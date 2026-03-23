@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "passed": 19,
+  "failed": 0,
+  "total": 19,
+  "test_file": "tools/test_support/test_pl_unit_test.py",
+  "details": [
+    {
+      "test": "test_audit_includes_date (__main__.TestAuditRecordWrittenToCompanionFile.test_audit_includes_date)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_audit_includes_rubric_score (__main__.TestAuditRecordWrittenToCompanionFile.test_audit_includes_rubric_score)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_audit_includes_test_count (__main__.TestAuditRecordWrittenToCompanionFile.test_audit_includes_test_count)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_companion_file_audit_section_documented (__main__.TestAuditRecordWrittenToCompanionFile.test_companion_file_audit_section_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap1_bad_example_shows_file_read (__main__.TestCardinalRuleRejectsSourceReading.test_ap1_bad_example_shows_file_read)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap1_describes_prose_inspection (__main__.TestCardinalRuleRejectsSourceReading.test_ap1_describes_prose_inspection)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap1_label_present (__main__.TestCardinalRuleRejectsSourceReading.test_ap1_label_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cardinal_rule_forbids_reading_source (__main__.TestCardinalRuleRejectsSourceReading.test_cardinal_rule_forbids_reading_source)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap3_bad_example_shows_mock_assertion (__main__.TestQualityRubricBlocksMockDominated.test_ap3_bad_example_shows_mock_assertion)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap3_describes_mock_dominated (__main__.TestQualityRubricBlocksMockDominated.test_ap3_describes_mock_dominated)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_ap3_label_present (__main__.TestQualityRubricBlocksMockDominated.test_ap3_label_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_self_mocking_rubric_check (__main__.TestQualityRubricBlocksMockDominated.test_no_self_mocking_rubric_check)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_builder_owner (__main__.TestRoleGateRejectsNonBuilder.test_first_line_declares_builder_owner)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_mentions_builder_agent (__main__.TestRoleGateRejectsNonBuilder.test_redirect_mentions_builder_agent)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_builder (__main__.TestRoleGateRejectsNonBuilder.test_redirect_message_for_non_builder)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_actual_runner_mandate (__main__.TestTestsJsonProducedByRunner.test_actual_runner_mandate)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_never_hand_written_mandate (__main__.TestTestsJsonProducedByRunner.test_never_hand_written_mandate)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_required_fields_documented (__main__.TestTestsJsonProducedByRunner.test_required_fields_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_total_greater_than_zero_mandate (__main__.TestTestsJsonProducedByRunner.test_total_greater_than_zero_mandate)",
+      "status": "PASS"
+    }
+  ]
+}
