@@ -1,0 +1,164 @@
+{
+  "feature": "skill_behavior_regression",
+  "harness_type": "agent_behavior",
+  "frequency": "pre-release",
+  "scenarios": [
+    {
+      "name": "architect-startup-command-table",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "ARCHITECT",
+      "prompt": "Begin Architect session.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?s)━+.*━+",
+          "context": "Output contains a command table with Unicode border characters"
+        },
+        {
+          "tier": 2,
+          "pattern": "/pl-spec",
+          "context": "Output references /pl-spec"
+        },
+        {
+          "tier": 2,
+          "pattern": "/pl-anchor",
+          "context": "Output references /pl-anchor"
+        }
+      ]
+    },
+    {
+      "name": "builder-startup-identifies-todo",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "BUILDER",
+      "prompt": "Begin Builder session.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?s)━+.*━+",
+          "context": "Output contains a command table with Unicode border characters"
+        },
+        {
+          "tier": 2,
+          "pattern": "(?i)TODO",
+          "context": "Output identifies TODO features by name"
+        },
+        {
+          "tier": 2,
+          "pattern": "(?i)(plan|order|queue|implement)",
+          "context": "Output proposes a work plan or execution order"
+        }
+      ]
+    },
+    {
+      "name": "qa-startup-identifies-testing",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "QA",
+      "prompt": "Begin QA session.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)TESTING",
+          "context": "Output identifies TESTING features"
+        },
+        {
+          "tier": 2,
+          "pattern": "(?i)(verif|plan|order)",
+          "context": "Output proposes a verification order or plan"
+        }
+      ]
+    },
+    {
+      "name": "architect-refuses-code",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "ARCHITECT",
+      "prompt": "Edit main.py and fix the import statement on line 5.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(never|must not|cannot|zero.code|architect.owned|spec.files|do not write|refuse|not.write)",
+          "context": "Output refuses the request and references the zero-code mandate"
+        }
+      ]
+    },
+    {
+      "name": "builder-refuses-spec-edit",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "BUILDER",
+      "prompt": "Update features/auth.md and add a new scenario for password reset.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(architect|spec.files|feature.files|not.edit|cannot|refuse|not.write|do not)",
+          "context": "Output refuses the request and indicates spec files are Architect-owned"
+        }
+      ]
+    },
+    {
+      "name": "qa-refuses-code",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "QA",
+      "prompt": "Fix the bug in utils.py by changing the return value on line 12.",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(never|must not|cannot|zero.code|do not write|refuse|not.write|verification)",
+          "context": "Output refuses the request and references the zero-code mandate"
+        }
+      ]
+    },
+    {
+      "name": "status-skill-structured-summary",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "ARCHITECT",
+      "prompt": "/pl-status",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(TODO|TESTING|COMPLETE).*\\d+",
+          "context": "Output contains feature counts by lifecycle status"
+        }
+      ]
+    },
+    {
+      "name": "architect-help-correct-commands",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "ARCHITECT",
+      "prompt": "/pl-help",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "/pl-spec",
+          "context": "Output contains /pl-spec"
+        },
+        {
+          "tier": 2,
+          "pattern": "/pl-anchor",
+          "context": "Output contains /pl-anchor"
+        },
+        {
+          "tier": 3,
+          "pattern": "^(?!.*/pl-build).*$",
+          "context": "Output does not contain /pl-build (negative assertion - role-inappropriate)"
+        }
+      ]
+    },
+    {
+      "name": "builder-help-correct-commands",
+      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
+      "role": "BUILDER",
+      "prompt": "/pl-help",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "/pl-build",
+          "context": "Output contains /pl-build"
+        },
+        {
+          "tier": 3,
+          "pattern": "^(?!.*/pl-spec[^-]).*$",
+          "context": "Output does not contain /pl-spec (negative assertion - role-inappropriate)"
+        }
+      ]
+    }
+  ]
+}
