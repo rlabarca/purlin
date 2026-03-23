@@ -10,6 +10,7 @@
 > Web Test: http://localhost:9086
 > Web Start: /pl-cdd
 
+[Complete]
 
 ## 1. Overview
 The CDD Dashboard exposes agent model configuration (model, effort, permissions) via an interactive Agents section in the Status view, and provides API endpoints for persisting changes to `config.local.json` (the gitignored local config). Reads use the config resolver (local config with shared fallback). This feature depends on the config schema defined in `features/models_configuration.md` and the config layering system defined in `features/config_layering.md`.
