@@ -359,7 +359,8 @@ When `role` is `builder`, the briefing adds:
 *   `anchor_constraints` -- Object keyed by anchor filename, each containing `label` and `forbidden_patterns` (array of `{pattern, scope}` extracted from anchor files).
 *   `in_scope_features` -- Filtered features list with `scenario_count` for scoping work.
 *   `delivery_plan_state` -- Object with `exists` (bool), and when true: `current_phases` (array of phase numbers in the current execution group) and `phase_features` (array of feature filenames across all phases in the current execution group). When only one phase is active, the array has one element -- backward compatible for consumers reading `current_phases[0]`.
-*   `phasing_recommended` -- Boolean. When `delivery_plan_state.exists` is false, the tool pre-computes the phasing heuristic: true if 3+ in-scope features exist, or 2+ features have `scenario_count >= 5` (HIGH-complexity proxy). Always false when a delivery plan already exists.
+*   `context_tier` -- String, either `"standard"` or `"extended"`. Resolved from the Builder's configured model: look up the model ID in the `models` array, read `context_window_tokens`. If `context_window_tokens > 200000`, tier is `"extended"`; otherwise `"standard"`. Defaults to `"standard"` if `context_window_tokens` is absent from the model definition.
+*   `phasing_recommended` -- Boolean. When `delivery_plan_state.exists` is false, the tool pre-computes the phasing heuristic using context-tier-aware thresholds. **Standard tier** (<=200K): true if 3+ in-scope features exist, or 2+ features have `scenario_count >= 5` (HIGH-complexity proxy). **Extended tier** (>200K): true if 7+ in-scope features exist, or 4+ features have `scenario_count >= 5`. Always false when a delivery plan already exists.
 
 #### 2.15.3 Architect Extension
 
@@ -869,6 +870,15 @@ These scenarios are validated by the Builder's automated test suite.
     When an agent runs tools/cdd/status.sh --startup builder
     Then phasing_recommended is true
     And delivery_plan_state has exists set to false
+
+#### Scenario: Extended context tier adjusts phasing threshold
+    Given no delivery plan exists at .purlin/delivery_plan.md
+    And the builder agent is configured with model "claude-opus-4-6[1m]"
+    And that model has context_window_tokens 1000000
+    And 5 features have non-terminal builder status with fewer than 5 scenarios each
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then context_tier is "extended"
+    And phasing_recommended is false because 5 is below the extended threshold of 7
 
 #### Scenario: Startup Briefing Mutual Exclusivity with Graph
     Given feature files exist in features/

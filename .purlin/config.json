@@ -7,6 +7,7 @@
         {
             "id": "claude-opus-4-6",
             "label": "Opus 4.6",
+            "context_window_tokens": 200000,
             "capabilities": {
                 "effort": true,
                 "permissions": true
@@ -15,6 +16,7 @@
         {
             "id": "claude-sonnet-4-6",
             "label": "Sonnet 4.6",
+            "context_window_tokens": 200000,
             "capabilities": {
                 "effort": true,
                 "permissions": true
@@ -23,6 +25,7 @@
         {
             "id": "claude-haiku-4-5-20251001",
             "label": "Haiku 4.5",
+            "context_window_tokens": 200000,
             "capabilities": {
                 "effort": true,
                 "permissions": true
@@ -31,6 +34,7 @@
         {
             "id": "claude-opus-4-6[1m]",
             "label": "Opus 4.6 [1M]",
+            "context_window_tokens": 1000000,
             "capabilities": {
                 "effort": true,
                 "permissions": true

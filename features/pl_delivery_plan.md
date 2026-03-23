@@ -27,13 +27,40 @@ The Builder's phased delivery skill that assesses implementation scope and propo
 
 - Run `status.sh` to get current feature status.
 - Read `dependency_graph.json` and build a prerequisite map.
-- Assess scope using heuristics: 2+ HIGH-complexity features or 3+ features of any mix recommends phasing.
+- Resolve the context tier (see 2.4) and assess scope using tier-aware heuristics.
 
-### 2.4 Phase Sizing
+### 2.4 Phase Sizing (Context-Tier-Aware)
 
-- Max 2 features per phase.
-- Max 1 HIGH-complexity feature per phase if combined with another feature.
-- Single HIGH-complexity feature with 5+ scenarios gets its own dedicated phase.
+Phase sizing caps are derived from the Builder's context tier:
+
+**Tier Resolution Chain:**
+1. Read the Builder's configured model from the agent config (`agents.builder.model`).
+2. Look up that model ID in the `models` array to get `context_window_tokens`.
+3. If `context_window_tokens > 200000`, use **Extended** tier. Otherwise, use **Standard** tier.
+4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
+
+**Tier Defaults:**
+
+| Parameter | Standard (<=200K) | Extended (>200K) |
+|---|---|---|
+| Max features per phase | 2 | 5 |
+| Max HIGH-complexity per phase (combined) | 1 | 2 |
+| HIGH solo-phase scenario threshold | 5 | 8 |
+| Phasing recommendation: any mix | 3+ features | 7+ features |
+| Phasing recommendation: HIGH | 2+ features | 4+ features |
+| Intra-feature phasing | 5+ scenarios | 8+ scenarios |
+
+**Per-Project Override:** An optional `phase_sizing` block in the agent config overrides individual tier defaults:
+```json
+"builder": {
+    "model": "claude-opus-4-6[1m]",
+    "phase_sizing": {
+        "max_features_per_phase": 3,
+        "high_solo_threshold": 6
+    }
+}
+```
+Only keys present in `phase_sizing` override the tier default; absent keys fall through to the tier table.
 
 ### 2.5 Phase Ordering
 
@@ -68,9 +95,10 @@ The Builder's phased delivery skill that assesses implementation scope and propo
     Then Phase 1 status and completion commit are shown
     And Phase 2 features with their implementation status are listed
 
-#### Scenario: Scope assessment recommends phasing for complex work
+#### Scenario: Scope assessment recommends phasing for complex work (standard tier)
 
-    Given 3 features in TODO state
+    Given the Builder's model resolves to context_window_tokens 200000
+    And 3 features in TODO state
     When /pl-delivery-plan assesses scope
     Then it recommends phased delivery
 
@@ -83,9 +111,26 @@ The Builder's phased delivery skill that assesses implementation scope and propo
 
 #### Scenario: Phase sizing cap enforced
 
-    Given 3 features assigned to a single phase
+    Given the Builder's model resolves to a context tier with max_features_per_phase of N
+    And N+1 features assigned to a single phase
     When /pl-delivery-plan validates the plan
-    Then the phase is split to respect the 2-feature-per-phase cap
+    Then the phase is split to respect the tier-derived max features per phase
+
+#### Scenario: Extended context tier increases phase capacity
+
+    Given the Builder's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
+    And 5 features in TODO state with no HIGH-complexity features
+    When /pl-delivery-plan creates a plan
+    Then the plan uses the Extended tier defaults
+    And all 5 features fit in a single phase
+
+#### Scenario: Phase sizing override takes precedence
+
+    Given the Builder's model resolves to the Extended tier
+    And the agent config contains phase_sizing with max_features_per_phase of 3
+    When /pl-delivery-plan creates a plan with 4 features
+    Then the plan splits into phases of at most 3 features each
+    And the override value takes precedence over the Extended tier default of 5
 
 ### QA Scenarios
 

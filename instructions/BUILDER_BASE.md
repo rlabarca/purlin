@@ -66,10 +66,10 @@ If a delivery plan exists (`delivery_plan_state.exists` in the startup briefing)
 
 #### 2.2.1 Scope Assessment
 If no delivery plan exists, assess whether the work scope warrants phased delivery. The startup
-briefing pre-computes `phasing_recommended` based on this heuristic (3+ in-scope features, or
-2+ with `scenario_count >= 5`), so the Builder can check that field directly instead of
-re-deriving the count. If 2+ HIGH-complexity features or 3+ features of any mix exist,
-recommend phasing. When proposing
+briefing pre-computes `phasing_recommended` using context-tier-aware thresholds (Standard tier:
+3+ features or 2+ HIGH; Extended tier: 7+ features or 4+ HIGH -- see
+`features/pl_delivery_plan.md` Section 2.4 for the full tier table), so the Builder can check
+that field directly instead of re-deriving the count. When proposing
 phase sizes, consider context budget -- phases with large cumulative scope (many specs to read,
 many files to modify, extensive tests) benefit from being smaller. See
 `instructions/references/phased_delivery.md` Section 10.9. Run `/pl-delivery-plan` to create

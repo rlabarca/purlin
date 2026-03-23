@@ -48,14 +48,27 @@ When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays
 
 ## 10.8 Phase Sizing Guidance
 
-Phase sizing is driven by **testability**, **parallelism**, and **interaction density**, not by hard caps. The Builder uses judgment to create phases that:
+Phase sizing is driven by **testability**, **parallelism**, **interaction density**, and **context tier**, with tier-derived caps as guardrails. The Builder uses judgment within those caps to create phases that:
 
 *   **Group related scenarios** -- features or scenario subsets that logically belong together for verification. A phase should produce a testable state where QA can meaningfully verify the delivered work. Features that share data models, APIs, or UI components benefit from being in the same phase -- B2 catches their cross-feature regressions.
 *   **Enable parallel delivery** -- when independent feature groups have no dependencies on each other, they can be placed in separate phases for concurrent agent work.
-*   **Keep large features focused** -- a single feature with many unimplemented scenarios (5+) benefits from a dedicated phase to keep the Builder focused and the QA verification cycle tight.
+*   **Keep large features focused** -- a single feature with many unimplemented scenarios benefits from a dedicated phase to keep the Builder focused and the QA verification cycle tight. The scenario threshold for a solo phase is tier-dependent (see table below).
 *   **Interaction grouping** -- features that interact should be grouped together: features sharing data models or APIs in the same phase (B2 catches contract breaks), features sharing UI components or layout in the same phase (B2 web-verify catches visual regressions). Features with no interaction can be in separate phases (B2 will not find cross-phase regressions anyway).
 
-There are no hard per-phase feature caps. The Builder balances phase size against session productivity and verification granularity.
+### Context-Tier Sizing Defaults
+
+Phase caps are derived from the Builder's context tier. The tier is resolved from the Builder's configured model: look up the model ID in the config `models` array and read `context_window_tokens`. If `context_window_tokens > 200000`, use Extended tier; otherwise Standard.
+
+| Parameter | Standard (<=200K) | Extended (>200K) |
+|---|---|---|
+| Max features per phase | 2 | 5 |
+| Max HIGH-complexity per phase (combined) | 1 | 2 |
+| HIGH solo-phase scenario threshold | 5 | 8 |
+| Phasing recommendation: any mix | 3+ features | 7+ features |
+| Phasing recommendation: HIGH | 2+ features | 4+ features |
+| Intra-feature phasing | 5+ scenarios | 8+ scenarios |
+
+An optional `phase_sizing` block in the Builder's agent config overrides individual tier defaults. Only keys present in `phase_sizing` override; absent keys fall through to the tier table.
 
 ## 10.9 Context Budget Awareness
 
@@ -71,7 +84,7 @@ This factor is **subordinate** to testability (Section 10.8) and dependency orde
 
 No hard token counting is required. This is qualitative judgment based on scope signals: number of features, spec length, estimated file count, and test complexity.
 
-B2 (Test Sub-Phase) re-runs all tests and web tests for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. When a phase contains features with known interaction complexity, budget more generously.
+B2 (Test Sub-Phase) re-runs all tests and web tests for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. This percentage applies to all context tiers -- a 1M-token window still needs 20-30% reserve for B2/B3, even though the absolute budget is larger. When a phase contains features with known interaction complexity, budget more generously.
 
 ## 10.10 Phase Internal Structure (B1/B2/B3)
 
