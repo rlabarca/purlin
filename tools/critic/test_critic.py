@@ -9424,21 +9424,31 @@ class TestRegressionGuidanceDetection(unittest.TestCase):
         self.root = tempfile.mkdtemp()
         self.features_dir = os.path.join(self.root, 'features')
         os.makedirs(self.features_dir)
+        self.qa_scenarios_dir = os.path.join(
+            self.root, 'tests', 'qa', 'scenarios')
+        os.makedirs(self.qa_scenarios_dir, exist_ok=True)
         self._orig_features = critic.FEATURES_DIR
+        self._orig_root = critic.PROJECT_ROOT
         critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
 
     def tearDown(self):
         import critic
         critic.FEATURES_DIR = self._orig_features
+        critic.PROJECT_ROOT = self._orig_root
         shutil.rmtree(self.root)
 
-    def _write_feature(self, name, has_regression_guidance=False):
+    def _write_feature(self, name, has_regression_guidance=False,
+                       regression_coverage=False):
         content = f"""\
 # Feature: {name}
 
 > Label: "{name}"
 > Prerequisite: features/policy_critic.md
-
+"""
+        if regression_coverage:
+            content += "> Regression Coverage: Yes\n"
+        content += """
 ## 1. Overview
 Overview.
 
@@ -9536,6 +9546,30 @@ None.
             i for i in items['qa']
             if i['category'] == 'regression_guidance_pending']
         self.assertEqual(len(rg_items), 1)
+
+    def test_suppressed_by_scenario_json(self):
+        """No item when tests/qa/scenarios/<name>.json exists."""
+        self._write_feature('rg_json', has_regression_guidance=True)
+        with open(os.path.join(
+                self.qa_scenarios_dir, 'rg_json.json'), 'w') as f:
+            json.dump({'scenarios': []}, f)
+        result, cdd = self._make_result('rg_json', 'testing')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 0)
+
+    def test_suppressed_by_coverage_metadata(self):
+        """No item when > Regression Coverage: Yes is present."""
+        self._write_feature('rg_meta', has_regression_guidance=True,
+                            regression_coverage=True)
+        result, cdd = self._make_result('rg_meta', 'testing')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 0)
 
 
 class TestStructuralCompletenessStillEnforced(unittest.TestCase):

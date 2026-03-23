@@ -1710,6 +1710,243 @@ Reqs.
 
 
 # ===================================================================
+# Scenario: QA CLEAN gate blocks when Regression Guidance pending
+# (critic_role_status Section 2.7)
+# ===================================================================
+
+
+class TestQACleanGateRegressionGuidance(unittest.TestCase):
+    """QA status MUST NOT be CLEAN when a feature has ## Regression
+    Guidance without corresponding regression harness or coverage
+    metadata."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Create tests/qa/scenarios/ directory structure
+        self.qa_scenarios_dir = os.path.join(
+            self.root, 'tests', 'qa', 'scenarios')
+        os.makedirs(self.qa_scenarios_dir, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _write_feature(self, name, content):
+        with open(os.path.join(self.features_dir, name), 'w') as f:
+            f.write(content)
+
+    def _run_with_feature(self, feature_name, cdd_status=None):
+        """Run compute_role_status with a patched environment."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
+        try:
+            result = _make_base_result()
+            result['feature_file'] = f'features/{feature_name}'
+            if cdd_status is None:
+                cdd_status = {
+                    'features': {
+                        'todo': [],
+                        'testing': [],
+                        'complete': [
+                            {'file': f'features/{feature_name}'}],
+                    }
+                }
+            return compute_role_status(result, cdd_status=cdd_status)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.PROJECT_ROOT = orig_root
+
+    def test_pending_regression_guidance_blocks_clean(self):
+        """Feature with ## Regression Guidance and no harness/coverage
+        metadata -> QA=TODO with reason 'regression harness authoring
+        pending'."""
+        self._write_feature('rg_feature.md', """\
+# Feature: RG Feature
+
+> Label: "RG Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Regression Guidance
+
+- Verify the output format matches spec
+- Check edge cases with empty input
+""")
+        status = self._run_with_feature('rg_feature.md')
+        self.assertEqual(status['qa'], 'TODO')
+        reason = status.get('role_status_reason', {}).get('qa', '')
+        self.assertEqual(reason, 'regression harness authoring pending')
+
+    def test_regression_guidance_suppressed_by_scenario_json(self):
+        """Feature with ## Regression Guidance AND existing
+        tests/qa/scenarios/<name>.json -> QA=CLEAN (suppressed)."""
+        self._write_feature('rg_covered.md', """\
+# Feature: RG Covered
+
+> Label: "RG Covered"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Regression Guidance
+
+- Verify the output format matches spec
+""")
+        # Create the regression scenario JSON file
+        scenario_file = os.path.join(
+            self.qa_scenarios_dir, 'rg_covered.json')
+        with open(scenario_file, 'w') as f:
+            json.dump({'scenarios': []}, f)
+
+        status = self._run_with_feature('rg_covered.md')
+        self.assertEqual(status['qa'], 'CLEAN')
+        reason = status.get('role_status_reason', {}).get('qa', '')
+        self.assertEqual(reason, 'tests pass, no discoveries')
+
+    def test_regression_guidance_suppressed_by_coverage_metadata(self):
+        """Feature with ## Regression Guidance AND
+        '> Regression Coverage: Yes' metadata -> QA=CLEAN."""
+        self._write_feature('rg_metadata.md', """\
+# Feature: RG Metadata
+
+> Label: "RG Metadata"
+> Regression Coverage: Yes
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Regression Guidance
+
+- Verify the output format matches spec
+""")
+        status = self._run_with_feature('rg_metadata.md')
+        self.assertEqual(status['qa'], 'CLEAN')
+        reason = status.get('role_status_reason', {}).get('qa', '')
+        self.assertEqual(reason, 'tests pass, no discoveries')
+
+    def test_no_regression_guidance_stays_clean(self):
+        """Feature without ## Regression Guidance -> QA=CLEAN
+        (unaffected by the gate)."""
+        self._write_feature('no_rg.md', """\
+# Feature: No RG
+
+> Label: "No RG"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+""")
+        status = self._run_with_feature('no_rg.md')
+        self.assertEqual(status['qa'], 'CLEAN')
+
+    def test_action_item_suppressed_when_coverage_present(self):
+        """generate_action_items should NOT generate a
+        regression_guidance_pending item when > Regression Coverage: Yes
+        is present."""
+        self._write_feature('rg_done.md', """\
+# Feature: RG Done
+
+> Label: "RG Done"
+> Regression Coverage: Yes
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Regression Guidance
+
+- Verify the output format matches spec
+""")
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/rg_done.md'
+            cdd_status = {
+                'features': {
+                    'todo': [],
+                    'testing': [{'file': 'features/rg_done.md'}],
+                    'complete': [],
+                }
+            }
+            items = generate_action_items(result, cdd_status=cdd_status)
+            rg_items = [i for i in items['qa']
+                        if i.get('category') == 'regression_guidance_pending']
+            self.assertEqual(len(rg_items), 0,
+                             'Should not generate regression guidance item '
+                             'when > Regression Coverage: Yes is present')
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.PROJECT_ROOT = orig_root
+
+
+# ===================================================================
 # Test runner with output to tests/critic_role_status/tests.json
 # ===================================================================
 
