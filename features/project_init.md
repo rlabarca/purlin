@@ -363,7 +363,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 
 ### QA Scenarios
 
-#### Scenario: Shim Initializes Submodule on Fresh Clone @auto
+#### Scenario: Shim Initializes Submodule on Fresh Clone
 
     Given a consumer project was cloned without --recurse-submodules
     And the submodule directory exists but is empty (not initialized)
@@ -372,7 +372,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then git submodule update --init is run for the submodule
     And tools/init.sh is executed (delegated via exec)
 
-#### Scenario: Refresh Mode Copies New and Updated Commands @auto
+#### Scenario: Refresh Mode Copies New and Updated Commands
 
     Given .purlin/ already exists at the project root
     And the submodule has a new command file pl-new-cmd.md in .claude/commands/
@@ -381,7 +381,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-new-cmd.md is copied to <project_root>/.claude/commands/
     And pl-status.md is overwritten with the newer submodule version
 
-#### Scenario: Refresh Mode Preserves Locally Modified Commands @auto
+#### Scenario: Refresh Mode Preserves Locally Modified Commands
 
     Given .purlin/ already exists at the project root
     And .claude/commands/pl-status.md at the project root has a modification timestamp newer than the submodule version
@@ -389,7 +389,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-status.md is NOT overwritten
     And the refresh summary reports the skip
 
-#### Scenario: Refresh Mode Excludes pl-edit-base.md @auto
+#### Scenario: Refresh Mode Excludes pl-edit-base.md
 
     Given .purlin/ already exists at the project root
     And the submodule has .claude/commands/pl-edit-base.md
@@ -397,21 +397,21 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-edit-base.md is NOT copied to the project root
     And pl-edit-base.md does not appear in any counts or reports
 
-#### Scenario: Refresh Mode Updates Upstream SHA @auto
+#### Scenario: Refresh Mode Updates Upstream SHA
 
     Given .purlin/ already exists at the project root
     And .purlin/.upstream_sha contains an older SHA
     When the user runs "purlin/tools/init.sh"
     Then .purlin/.upstream_sha is updated to the current submodule HEAD SHA
 
-#### Scenario: Shim Self-Update on Refresh @auto
+#### Scenario: Shim Self-Update on Refresh
 
     Given .purlin/ already exists at the project root
     And pl-init.sh at the project root has an older pinned SHA than the current submodule HEAD
     When the user runs "purlin/tools/init.sh"
     Then pl-init.sh is regenerated with the current SHA and version
 
-#### Scenario: Refresh Mode Never Touches Config or Overrides @auto
+#### Scenario: Refresh Mode Never Touches Config or Overrides
 
     Given .purlin/ already exists at the project root
     And .purlin/config.json has been customized by the user
@@ -421,7 +421,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And .purlin/ARCHITECT_OVERRIDES.md is unchanged
     And no file in .purlin/release/ is modified
 
-#### Scenario: CDD Symlinks Created on Refresh if Missing @auto
+#### Scenario: CDD Symlinks Created on Refresh if Missing
 
     Given .purlin/ already exists at the project root
     And pl-cdd-start.sh does NOT exist at the project root
@@ -429,7 +429,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
     And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
 
-#### Scenario: CDD Regular File Replaced with Symlink on Refresh @auto
+#### Scenario: CDD Regular File Replaced with Symlink on Refresh
 
     Given .purlin/ already exists at the project root
     And pl-cdd-start.sh exists at the project root as a regular file (not a symlink)
@@ -437,7 +437,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-cdd-start.sh is replaced with a symlink to purlin/tools/cdd/start.sh
     And the symlink uses a relative path
 
-#### Scenario: Launchers Always Regenerated on Refresh @auto
+#### Scenario: Launchers Always Regenerated on Refresh
 
     Given .purlin/ already exists at the project root
     And pl-run-architect.sh exists at the project root with outdated content
@@ -445,7 +445,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh are regenerated with current template content
     And all four launchers are executable
 
-#### Scenario: Idempotent Repeated Runs @auto
+#### Scenario: Idempotent Repeated Runs
 
     Given Purlin is added as a submodule at "purlin/"
     And the user has already run "purlin/tools/init.sh" once (full init completed)
@@ -453,7 +453,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then refresh mode is selected (not full init)
     And running git diff after the second run shows no changes
 
-#### Scenario: Refresh Removes Stale Launchers @auto
+#### Scenario: Refresh Removes Stale Launchers
 
     Given .purlin/ already exists at the project root
     And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
@@ -461,14 +461,14 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then run_architect.sh, run_builder.sh, run_qa.sh are removed
     And only pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist as launchers
 
-#### Scenario: --quiet Flag Suppresses Output @auto
+#### Scenario: --quiet Flag Suppresses Output
 
     Given .purlin/ already exists at the project root
     When the user runs "purlin/tools/init.sh --quiet"
     Then no output is written to stdout
     And the refresh completes successfully
 
-#### Scenario: Refresh Mode Copies New Agent Files @auto
+#### Scenario: Refresh Mode Copies New Agent Files
 
     Given .purlin/ already exists at the project root
     And the submodule has a new agent file builder-worker.md in .claude/agents/
@@ -477,14 +477,14 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .claude/agents/ is created at the project root
     And builder-worker.md is copied to .claude/agents/
 
-#### Scenario: Refresh Mode Preserves Locally Modified Agent Files @auto
+#### Scenario: Refresh Mode Preserves Locally Modified Agent Files
 
     Given .purlin/ already exists at the project root
     And .claude/agents/builder-worker.md at the project root has been locally modified (newer timestamp)
     When the user runs "purlin/tools/init.sh"
     Then builder-worker.md is NOT overwritten
 
-#### Scenario: Refresh Mode Appends New Gitignore Patterns @auto
+#### Scenario: Refresh Mode Appends New Gitignore Patterns
 
     Given .purlin/ already exists at the project root
     And .gitignore exists but does not contain "CRITIC_REPORT.md"
@@ -493,14 +493,14 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .gitignore now contains "CRITIC_REPORT.md"
     And all pre-existing .gitignore entries are preserved unchanged
 
-#### Scenario: Refresh Mode Does Not Duplicate Existing Patterns @auto
+#### Scenario: Refresh Mode Does Not Duplicate Existing Patterns
 
     Given .purlin/ already exists at the project root
     And .gitignore already contains all patterns from purlin-config-sample/gitignore.purlin
     When the user runs "purlin/tools/init.sh"
     Then .gitignore is unchanged (no duplicate entries appended)
 
-#### Scenario: Fresh Clone Collaborator Flow @auto
+#### Scenario: Fresh Clone Collaborator Flow
 
     Given a sandbox consumer project has been initialized with Purlin (full init completed)
     And pl-init.sh has been committed to the repository
@@ -513,7 +513,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And CDD convenience symlinks exist
     And the collaborator environment matches a normal full init
 
-#### Scenario: Hook Merges Into Existing Settings @auto
+#### Scenario: Hook Merges Into Existing Settings
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json exists with custom hooks (e.g., a PostToolUse hook)
@@ -521,7 +521,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .claude/settings.json contains the Purlin SessionStart clear hook
     And the pre-existing custom hook is unchanged
 
-#### Scenario: Refresh Removes Stale PreToolUse Architect Hook @auto
+#### Scenario: Refresh Removes Stale PreToolUse Architect Hook
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json contains a PreToolUse hook with the AGENT_ROLE architect check
@@ -530,14 +530,14 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And any other PreToolUse hooks the user added are preserved
     And the SessionStart hooks remain intact
 
-#### Scenario: Hook Installation Is Idempotent @auto
+#### Scenario: Hook Installation Is Idempotent
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json already contains the Purlin SessionStart clear hook
     When the user runs "purlin/tools/init.sh"
     Then .claude/settings.json is unchanged (no duplicate entries)
 
-#### Scenario: Full Init Installs MCP Servers from Manifest @auto
+#### Scenario: Full Init Installs MCP Servers from Manifest
 
     Given Purlin is added as a submodule at "purlin/"
     And no .purlin/ directory exists at the project root
@@ -548,7 +548,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And the summary includes installed count and post-install notes for figma
     And the summary includes "Restart Claude Code to load MCP servers."
 
-#### Scenario: MCP Installation Is Idempotent @auto
+#### Scenario: MCP Installation Is Idempotent
 
     Given Purlin is added as a submodule at "purlin/"
     And the user has already run "purlin/tools/init.sh" once (MCP servers installed)
@@ -556,7 +556,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then zero MCP servers are installed (all skipped as already present)
     And the summary shows 0 installed, 2 skipped
 
-#### Scenario: MCP Setup Skipped When Claude CLI Unavailable @auto
+#### Scenario: MCP Setup Skipped When Claude CLI Unavailable
 
     Given Purlin is added as a submodule at "purlin/"
     And the claude CLI is NOT available on PATH
@@ -564,7 +564,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then MCP server installation is skipped with an informational message
     And init completes successfully (non-zero exit is NOT produced)
 
-#### Scenario: MCP Setup Skipped When Manifest Missing @auto
+#### Scenario: MCP Setup Skipped When Manifest Missing
 
     Given Purlin is added as a submodule at "purlin/"
     And tools/mcp/manifest.json does not exist in the submodule
@@ -572,7 +572,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then MCP server installation is skipped with an informational message
     And init completes successfully
 
-#### Scenario: Refresh Mode Installs Missing MCP Servers @auto
+#### Scenario: Refresh Mode Installs Missing MCP Servers
 
     Given .purlin/ already exists at the project root
     And the submodule manifest declares server "playwright"
