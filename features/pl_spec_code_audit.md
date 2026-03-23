@@ -38,7 +38,19 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - All tool invocations MUST use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/status.sh`). No hardcoded `tools/` paths.
 - Path resolution MUST work in both standalone projects and projects consuming Purlin as a submodule.
 
-### 2.5 Phase 0 -- Project State and Constraint Loading
+### 2.5 Scope Confirmation
+
+- Before loading project state (Phase 0), the command MUST auto-detect code directories by scanning the project root for common patterns: `src/`, `lib/`, `app/`, `tools/`, `dev/`, `scripts/`, `.claude/commands/`, `tests/`.
+- The command MUST check `.purlin/config.json` for an optional `audit_code_paths` array. If present, use it as the default scope instead of auto-detection.
+- The command MUST present the detected scope to the user and ask for confirmation:
+  - Code directories found (only those that exist on disk)
+  - File patterns per directory (e.g., `*.py`, `*.sh`, `*.md` for `.claude/commands/`)
+  - Feature spec count from the dependency graph
+- Default is confirm (proceed). If the user requests adjustments, accept additions/removals, re-display, and re-confirm.
+- The confirmed scope is session-scoped (not persisted). For persistent scope, use `audit_code_paths` in `.purlin/config.json`.
+- The confirmed scope MUST constrain code discovery in all subsequent phases (triage light scan, deep mode source discovery).
+
+### 2.6 Phase 0 -- Project State and Constraint Loading
 
 - The command MUST run `${TOOLS_ROOT}/cdd/status.sh` and read `CRITIC_REPORT.md` and `.purlin/cache/dependency_graph.json`.
 - For each feature, the command MUST read `tests/<name>/critic.json` to extract scenario count from traceability detail.
@@ -46,7 +58,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - The command MUST collect anchor constraints from each unique anchor node in the transitive map: all `FORBIDDEN:` patterns (line + pattern text), numbered invariant statements, and named constraints. Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...]}}`.
 - Phase 0 reads only metadata and anchor node constraint sections -- never feature scenarios or source code.
 
-### 2.6 Cross-Session Resume
+### 2.7 Cross-Session Resume
 
 - The command MUST check for `.purlin/cache/audit_state.json` before starting analysis.
 - If found, the command MUST report resume status and skip to the next incomplete step.
@@ -55,11 +67,11 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - On resume in triage mode with scan complete, the command skips to Phase 2 synthesis.
 - The state file MUST be deleted after Phase 3 (Remediation) completes.
 
-### 2.7 Triage Mode (Default)
+### 2.8 Triage Mode (Default)
 
 - Triage mode MUST process all features in-agent without launching subagents.
 - For each feature, the command MUST:
-  - Read the feature file and check spec completeness across all 11 gap dimensions (see Section 2.12).
+  - Read the feature file and check spec completeness across all 11 gap dimensions (see Section 2.13).
   - Read companion file if it exists and check builder decisions and notes depth.
   - Read `tests/<name>/critic.json` for gate status and traceability.
   - Perform an anchor constraint surface check: for each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
@@ -71,7 +83,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - **Unused detection:** Cross-reference the dependency graph to find features with no implementation (no `tests/<name>/` directory, no source files discovered), no test coverage, and not listed as a prerequisite by any other feature. Flag these as orphaned specs.
 - After the cross-feature pass, results MUST be saved to `.purlin/cache/audit_state.json`.
 
-### 2.8 Deep Mode
+### 2.9 Deep Mode
 
 - Deep mode MUST classify features into two processing tracks:
   - **Spec-only track:** Anchor nodes (`arch_*`, `design_*`, `policy_*`) and features with zero automated scenarios.
@@ -81,7 +93,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - A dispatch manifest MUST be written to the plan file (wave/agent/feature/scenario-count table).
 - The transitive prerequisite map and collected anchor constraints MUST be included in each subagent's prompt payload so subagents do not need to re-derive them.
 
-### 2.9 Phase 1 -- Parallel Deep Scan (Deep Mode Only)
+### 2.10 Phase 1 -- Parallel Deep Scan (Deep Mode Only)
 
 - Subagents MUST be launched wave by wave. All subagents in a wave MUST be launched in a single message via multiple Task tool calls (concurrent execution).
 - Subagent type MUST be `Explore` (read-only).
@@ -107,17 +119,17 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - If a subagent returns incomplete results, a rescue batch MUST be created for the next wave.
 - If a subagent fails entirely, the batch MUST be re-queued.
 
-### 2.10 Phase 2 -- Synthesis
+### 2.11 Phase 2 -- Synthesis
 
 - The command MUST parse all gap findings from in-agent triage scan or subagent structured output.
-- In deep mode, the command MUST perform the cross-feature requirement hygiene pass (dimension 11) at this stage, since subagents operate on individual feature batches and cannot detect cross-feature issues. The same duplicate, conflict, and unused checks described in Section 2.7 apply.
+- In deep mode, the command MUST perform the cross-feature requirement hygiene pass (dimension 11) at this stage, since subagents operate on individual feature batches and cannot detect cross-feature issues. The same duplicate, conflict, and unused checks described in Section 2.8 apply.
 - The command MUST deduplicate gaps where the same implementation file is flagged by overlapping feature batches or transitive anchors.
-- Each gap MUST be classified by severity (CRITICAL, HIGH, MEDIUM, LOW), owner (ARCHITECT or BUILDER), and action (FIX if owner matches acting role, ESCALATE otherwise). See Section 2.13 for severity criteria.
+- Each gap MUST be classified by severity (CRITICAL, HIGH, MEDIUM, LOW), owner (ARCHITECT or BUILDER), and action (FIX if owner matches acting role, ESCALATE otherwise). See Section 2.14 for severity criteria.
 - The command MUST build an audit table sorted CRITICAL to LOW, then alphabetically by feature name. Rows are numbered sequentially.
 - The audit table MUST include columns: #, Feature, Severity, Dimension, Gap Description, Evidence, Anchor Source, Action, Planned Remediation.
 - The table header MUST include: Role, Mode, Total features scanned, Transitive anchor constraints checked (N invariants across M anchors), Gaps found (with per-severity counts), Will fix count, and Will escalate count.
 
-### 2.11 Role-Scoped Remediation Plan
+### 2.12 Role-Scoped Remediation Plan
 
 - The remediation plan MUST contain role-scoped FIX descriptions:
   - **Architect FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
@@ -126,7 +138,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - If no gaps are found, the command MUST output "No spec-code gaps detected across all N features." and call `ExitPlanMode`.
 - After writing the audit table and remediation plan, the command MUST call `ExitPlanMode` and wait for user approval.
 
-### 2.12 Gap Dimensions
+### 2.13 Gap Dimensions
 
 The command MUST assess each feature against these 11 dimensions (dimensions 1-10 are per-feature; dimension 11 is cross-feature):
 
@@ -144,7 +156,7 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
 | 10 | Anchor invariant drift | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | 11 | Requirement hygiene | Cross-feature analysis: **Duplicate** -- two or more features define scenarios or requirements that specify the same behavior for the same component (identical or near-identical Given/When/Then targeting the same endpoint, function, or UI element). **Conflicting** -- two features specify contradictory behavior for the same component (e.g., feature A says endpoint returns 200, feature B says it returns 404; or two anchors define incompatible invariants for the same domain). **Unused** -- a feature or scenario that has no implementation code, no test, and is not a prerequisite of any other feature (orphaned spec with no path to implementation). |
 
-### 2.13 Severity Classification
+### 2.14 Severity Classification
 
 | Severity | Criteria |
 |---|---|
@@ -153,7 +165,7 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
 | MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places) |
 | LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents |
 
-### 2.14 Phase 3 -- Remediation (Post-Approval)
+### 2.15 Phase 3 -- Remediation (Post-Approval)
 
 - After user approval, the command MUST execute FIX items first, then ESCALATE items.
 - **Architect FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
@@ -162,7 +174,7 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
 - **Builder ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next Architect session.
 - Post-remediation: run `${TOOLS_ROOT}/cdd/status.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
-### 2.15 Integration Test Fixture Tags
+### 2.16 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -437,6 +449,38 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
     Then a gap is recorded with dimension "Requirement hygiene"
     And the gap description identifies orphan_spec.md as an unused spec
     And the gap severity is LOW
+
+#### Scenario: Scope confirmation auto-detects existing code directories
+
+    Given a project with src/ and tools/ directories but no lib/
+    When scope confirmation runs
+    Then the presented scope includes src/ and tools/
+    And lib/ is not listed
+
+#### Scenario: Config-defined scope overrides auto-detection
+
+    Given .purlin/config.json contains audit_code_paths ["src/", ".claude/commands/"]
+    When scope confirmation runs
+    Then the presented scope matches the config array
+
+#### Scenario: User accepts default scope
+
+    Given scope confirmation presents detected directories
+    When the user confirms with default
+    Then the command proceeds to Phase 0 with the detected scope
+
+#### Scenario: User adjusts scope
+
+    Given scope confirmation presents detected directories without .claude/commands/
+    When the user adds .claude/commands/ to the scope
+    Then the updated scope includes .claude/commands/
+    And the command re-displays and re-confirms
+
+#### Scenario: Confirmed scope constrains triage code scan
+
+    Given the confirmed scope includes only src/ and tools/
+    When triage mode performs light code scan
+    Then source files are discovered only from src/ and tools/
 
 ### QA Scenarios
 
