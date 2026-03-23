@@ -155,9 +155,9 @@ Running the script multiple times MUST produce the same result. Specifically:
 
 After a successful submodule update (step 10 in the `/pl-update-purlin` workflow: atomic update), the skill MUST run `tools/init.sh --quiet` to refresh commands, symlinks, shim, and SHA. This replaces the skill's manual post-update copy logic with the canonical refresh mechanism. The skill's step 7 (command file changes with three-way diff) remains for conflict resolution on modified files. The skill's step 12 summary MUST note that init/refresh ran.
 
-### 2.12 Automated Verification Test Script
+### 2.12 Unit Test Script
 
-A comprehensive test script MUST be created at `tools/test_init.sh` (executable, `chmod +x`) that exercises all init and refresh scenarios in a simulated submodule sandbox.
+A unit test script MUST exist at `tools/test_init.sh` (executable, `chmod +x`) that exercises core init scenarios in a simulated submodule sandbox. This script covers the fast, structural assertions listed under `### Unit Tests` in Section 3. Behavioral integration tests (refresh mode, idempotency, collaborator flow, hook merging, MCP installation) are QA-owned regression tests covered under `### QA Scenarios` in Section 3 and described in Section 2.17.
 
 #### 2.12.1 Sandbox Architecture
 
@@ -166,83 +166,11 @@ A comprehensive test script MUST be created at `tools/test_init.sh` (executable,
 *   **Git Setup:** The sandbox repo MUST have the simulated submodule registered in `.gitmodules` and have an initial commit, so `git submodule` commands work correctly within the sandbox.
 *   **Cleanup:** The test MUST clean up all temporary directories on exit via `trap`, even on test failure.
 
-#### 2.12.2 Required Test Scenarios
-
-The test script MUST include assertions for all of the following. Each test MUST print a clear PASS/FAIL result with a descriptive label.
-
-**Full Init Tests:**
-
-1.  **Fresh init creates `.purlin/`:** Run `init.sh` in a clean sandbox. Assert `.purlin/` exists with `config.json`, all `*_OVERRIDES.md` templates, and `.upstream_sha`.
-2.  **Config JSON validity:** Assert the patched `config.json` is valid JSON via `python3 -c "import json; json.load(open(...))"`.
-3.  **Config `tools_root` is correct:** Assert `config.json` contains the expected `tools_root` value for the submodule path.
-4.  **Launcher scripts created:** Assert `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh` exist and are executable.
-5.  **Launcher scripts export PURLIN_PROJECT_ROOT:** Assert each launcher contains `export PURLIN_PROJECT_ROOT`.
-6.  **Command files copied:** Assert `.claude/commands/` exists and contains `pl-*.md` files.
-7.  **`pl-edit-base.md` excluded:** Assert `.claude/commands/pl-edit-base.md` does NOT exist.
-8.  **`features/` directory created:** Assert `features/` exists at the project root.
-9.  **Shim generated:** Assert `pl-init.sh` exists and is executable.
-10. **Shim contains metadata:** Assert `pl-init.sh` header contains the submodule remote URL, SHA, and version tag (or "untagged").
-11. **CDD symlinks created:** Assert `pl-cdd-start.sh` and `pl-cdd-stop.sh` exist as symlinks pointing to the correct targets.
-12. **CDD symlinks use relative paths:** Assert the symlink targets are relative (not absolute).
-13. **Output is concise:** Assert stdout contains "Purlin initialized" and the expected summary lines.
-
-**Refresh Mode Tests:**
-
-14. **Re-run enters refresh mode:** Run `init.sh` a second time. Assert no error, and that `.purlin/config.json` was NOT re-created (modification time unchanged).
-15. **Idempotent second run:** After the second run, assert `git diff` shows no changes in the sandbox (excluding untracked test artifacts).
-16. **New command files copied on refresh:** Create a new `pl-test-new.md` in the submodule's `.claude/commands/`. Run refresh. Assert it appears at the project root.
-17. **Locally modified commands preserved:** Touch a project-root command file to make it newer than the submodule version. Run refresh. Assert the file was NOT overwritten.
-18. **`pl-edit-base.md` excluded on refresh:** Assert `pl-edit-base.md` is not copied during refresh.
-19. **Upstream SHA updated on refresh:** Modify the submodule HEAD (e.g., create a commit). Run refresh. Assert `.purlin/.upstream_sha` contains the new SHA.
-20. **Config and overrides untouched on refresh:** Record checksums of `.purlin/config.json` and all `*_OVERRIDES.md` before refresh. Run refresh. Assert checksums match.
-21. **CDD symlinks repaired on refresh:** Delete one CDD symlink. Run refresh. Assert it is recreated.
-22. **CDD regular file replaced with symlink on refresh:** Replace `pl-cdd-start.sh` symlink with a regular file copy of `tools/cdd/start.sh`. Run refresh. Assert it is now a symlink pointing to the correct target.
-23. **Launchers always regenerated on refresh:** Modify `pl-run-architect.sh` content. Run refresh. Assert `pl-run-architect.sh` was overwritten with fresh template content and is executable.
-24. **Shim self-update on refresh:** Modify the submodule HEAD (new commit). Run refresh. Assert `purlin_init.sh` header contains the updated SHA.
-
-**CLI Flag Tests:**
-
-25. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
-26. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
-27. **Refresh removes stale launchers:** Create stale `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (old naming convention). Run `init.sh`. Assert stale launchers are removed. Assert only `pl-run-*.sh` launchers remain.
-
-**Claude Code Hook Tests:**
-
-32. **Full init creates hook:** Run `init.sh` in a clean sandbox. Assert `.claude/settings.json` exists, is valid JSON, and contains a `hooks.SessionStart` entry with `matcher: "clear"`.
-33. **Hook merges into existing settings:** Create `.claude/settings.json` with an existing custom hook (e.g., a `PostToolUse` entry) before running `init.sh`. Assert the `SessionStart` clear hook is present AND the pre-existing custom hook is preserved.
-34. **Hook idempotent on refresh:** Run `init.sh` twice. Assert `.claude/settings.json` contains exactly one `SessionStart` entry with `matcher: "clear"` (not duplicated).
-35. **Hook preserves existing SessionStart entries:** Create `.claude/settings.json` with an existing `SessionStart` hook using a different matcher (e.g., `"matcher": "custom"`). Run `init.sh`. Assert both the existing and Purlin hooks are present in the `SessionStart` array.
-36. **Refresh removes stale PreToolUse architect hook:** Create `.claude/settings.json` with a PreToolUse hook containing the AGENT_ROLE architect check. Run `init.sh` in refresh mode. Assert the PreToolUse architect hook entry is removed. Assert any other PreToolUse hooks are preserved.
-
-**MCP Server Installation Tests:**
-
-37. **Full init installs MCP servers from manifest:** Run `init.sh` in a clean sandbox with `claude` CLI available and a valid manifest. Assert MCP servers from the manifest are installed.
-38. **MCP installation is idempotent:** Run `init.sh` twice. Assert the second run installs zero MCP servers (all skipped as already present).
-39. **Graceful skip when `claude` CLI unavailable:** Remove `claude` from PATH before running `init.sh`. Assert init completes successfully. Assert an informational skip message is printed. Assert no MCP installation is attempted.
-40. **Graceful skip when manifest file missing:** Remove `tools/mcp/manifest.json` from the submodule. Run `init.sh`. Assert init completes successfully. Assert an informational skip message is printed.
-40. **Post-install notes displayed for OAuth servers:** Run `init.sh` with a manifest containing a server with `post_install_notes`. Assert the notes text appears in the output.
-41. **Partial failure (one server fails, other still installs):** Configure the manifest so one server's install command fails. Run `init.sh`. Assert the other server is still installed. Assert the failure is reported but init completes successfully.
-
-**Agent File Tests:**
-
-28. **Agent files copied on full init:** Run `init.sh` in a clean sandbox with `.claude/agents/` containing test files. Assert `.claude/agents/` exists at the project root with the expected files.
-29b. **Agent files refreshed on refresh:** Add a new agent file to the submodule's `.claude/agents/`. Run refresh. Assert it appears at the project root.
-29c. **Locally modified agent files preserved on refresh:** Touch a project-root agent file to make it newer. Run refresh. Assert the file was NOT overwritten.
-
-**Standalone Guard Tests:**
-
-29. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
-
-**Ergonomic Symlink Tests:**
-
-30. **Submodule root symlink exists:** Assert `<submodule>/pl-init.sh` is a symlink to `tools/init.sh`.
-31. **Submodule root symlink works:** Run `<submodule>/pl-init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
-
-#### 2.12.3 Test Output Format
+#### 2.12.2 Test Output Format
 
 *   Each test prints: `PASS: <description>` or `FAIL: <description>` followed by diagnostic details on failure.
 *   At the end, print a summary: `N/M tests passed`. Exit with non-zero status if any test failed.
-*   Tests MUST run independently where possible — a failure in one test MUST NOT prevent subsequent tests from running (use per-test `set +e` / `set -e` or subshell isolation).
+*   Tests MUST run independently where possible -- a failure in one test MUST NOT prevent subsequent tests from running (use per-test `set +e` / `set -e` or subshell isolation).
 
 ### 2.13 Standalone Mode Guard
 
@@ -338,11 +266,18 @@ On both full init and refresh, the script MUST install MCP servers declared in t
 | `main/project_init/fresh-directory` | Empty project directory with no .purlin or purlin submodule |
 | `main/project_init/partially-initialized` | Project directory with .purlin directory but incomplete initialization (missing override files) |
 
+### 2.17 Regression Testing
+
+The init/refresh behavioral integration tests are QA-owned regression tests. The regression approach uses the sandbox architecture (Section 2.12.1) to simulate consumer project environments, exercising multi-step workflows: init followed by state manipulation followed by refresh.
+
+*   **Scenarios covered:** All `### QA Scenarios` in Section 3, including refresh mode behavior, idempotency verification, hook merge strategy, MCP installation, collaborator fresh-clone flow, and gitignore sync.
+*   **Harness type:** `custom_script` -- the sandbox-based test approach does not map to `agent_behavior` or `web_test` harness types. QA authors a custom regression script that reuses the sandbox architecture from Section 2.12.1.
+
 ---
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Full Init Creates All Artifacts
 
@@ -376,127 +311,6 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     And pl-init.sh contains the SHA in its header comments
     And pl-init.sh contains "v0.9.0" in its header comments
 
-#### Scenario: Shim Initializes Submodule on Fresh Clone
-
-    Given a consumer project was cloned without --recurse-submodules
-    And the submodule directory exists but is empty (not initialized)
-    And pl-init.sh exists at the project root (previously committed)
-    When the user runs "./pl-init.sh"
-    Then git submodule update --init is run for the submodule
-    And tools/init.sh is executed (delegated via exec)
-
-#### Scenario: Refresh Mode Copies New and Updated Commands
-
-    Given .purlin/ already exists at the project root
-    And the submodule has a new command file pl-new-cmd.md in .claude/commands/
-    And an existing command file pl-status.md in the submodule is newer than the project root copy
-    When the user runs "purlin/tools/init.sh"
-    Then pl-new-cmd.md is copied to <project_root>/.claude/commands/
-    And pl-status.md is overwritten with the newer submodule version
-
-#### Scenario: Refresh Mode Preserves Locally Modified Commands
-
-    Given .purlin/ already exists at the project root
-    And .claude/commands/pl-status.md at the project root has a modification timestamp newer than the submodule version
-    When the user runs "purlin/tools/init.sh"
-    Then pl-status.md is NOT overwritten
-    And the refresh summary reports the skip
-
-#### Scenario: Refresh Mode Excludes pl-edit-base.md
-
-    Given .purlin/ already exists at the project root
-    And the submodule has .claude/commands/pl-edit-base.md
-    When the user runs "purlin/tools/init.sh"
-    Then pl-edit-base.md is NOT copied to the project root
-    And pl-edit-base.md does not appear in any counts or reports
-
-#### Scenario: Refresh Mode Updates Upstream SHA
-
-    Given .purlin/ already exists at the project root
-    And .purlin/.upstream_sha contains an older SHA
-    When the user runs "purlin/tools/init.sh"
-    Then .purlin/.upstream_sha is updated to the current submodule HEAD SHA
-
-#### Scenario: Shim Self-Update on Refresh
-
-    Given .purlin/ already exists at the project root
-    And pl-init.sh at the project root has an older pinned SHA than the current submodule HEAD
-    When the user runs "purlin/tools/init.sh"
-    Then pl-init.sh is regenerated with the current SHA and version
-
-#### Scenario: Refresh Mode Never Touches Config or Overrides
-
-    Given .purlin/ already exists at the project root
-    And .purlin/config.json has been customized by the user
-    And .purlin/ARCHITECT_OVERRIDES.md has custom content
-    When the user runs "purlin/tools/init.sh"
-    Then .purlin/config.json is unchanged
-    And .purlin/ARCHITECT_OVERRIDES.md is unchanged
-    And no file in .purlin/release/ is modified
-
-#### Scenario: CDD Symlinks Created on Refresh if Missing
-
-    Given .purlin/ already exists at the project root
-    And pl-cdd-start.sh does NOT exist at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
-    And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
-
-#### Scenario: CDD Regular File Replaced with Symlink on Refresh
-
-    Given .purlin/ already exists at the project root
-    And pl-cdd-start.sh exists at the project root as a regular file (not a symlink)
-    When the user runs "purlin/tools/init.sh"
-    Then pl-cdd-start.sh is replaced with a symlink to purlin/tools/cdd/start.sh
-    And the symlink uses a relative path
-
-#### Scenario: Launchers Always Regenerated on Refresh
-
-    Given .purlin/ already exists at the project root
-    And pl-run-architect.sh exists at the project root with outdated content
-    When the user runs "purlin/tools/init.sh"
-    Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh are regenerated with current template content
-    And all four launchers are executable
-
-#### Scenario: Idempotent Repeated Runs
-
-    Given Purlin is added as a submodule at "purlin/"
-    And the user has already run "purlin/tools/init.sh" once (full init completed)
-    When the user runs "purlin/tools/init.sh" a second time
-    Then refresh mode is selected (not full init)
-    And running git diff after the second run shows no changes
-
-#### Scenario: Refresh Removes Stale Launchers
-
-    Given .purlin/ already exists at the project root
-    And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then run_architect.sh, run_builder.sh, run_qa.sh are removed
-    And only pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist as launchers
-
-#### Scenario: --quiet Flag Suppresses Output
-
-    Given .purlin/ already exists at the project root
-    When the user runs "purlin/tools/init.sh --quiet"
-    Then no output is written to stdout
-    And the refresh completes successfully
-
-#### Scenario: Standalone Mode Guard Prevents Init in Purlin Repo
-
-    Given Purlin is the project (not a submodule)
-    And the computed PROJECT_ROOT (parent of the script's directory) is not a git repository
-    When the user runs "tools/init.sh"
-    Then the script prints an error to stderr explaining init.sh is for consumer projects only
-    And the script exits with non-zero status
-    And no files are created or modified outside the Purlin repo
-
-#### Scenario: Ergonomic Symlink at Submodule Root
-
-    Given Purlin is the submodule at "purlin/"
-    When the user inspects "purlin/pl-init.sh"
-    Then it is a symlink pointing to "tools/init.sh"
-    And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
-
 #### Scenario: Full Init Copies Agent Files
 
     Given Purlin is added as a submodule at "purlin/"
@@ -505,22 +319,6 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then .claude/agents/ exists at the project root
     And .claude/agents/builder-worker.md is copied from the submodule
     And .claude/agents/verification-runner.md is copied from the submodule
-
-#### Scenario: Refresh Mode Copies New Agent Files
-
-    Given .purlin/ already exists at the project root
-    And the submodule has a new agent file builder-worker.md in .claude/agents/
-    And no .claude/agents/ directory exists at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then .claude/agents/ is created at the project root
-    And builder-worker.md is copied to .claude/agents/
-
-#### Scenario: Refresh Mode Preserves Locally Modified Agent Files
-
-    Given .purlin/ already exists at the project root
-    And .claude/agents/builder-worker.md at the project root has been locally modified (newer timestamp)
-    When the user runs "purlin/tools/init.sh"
-    Then builder-worker.md is NOT overwritten
 
 #### Scenario: Full Init Stages Only Created Files
 
@@ -538,7 +336,155 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     When the user runs "purlin/tools/init.sh"
     Then .gitignore contains all patterns from purlin-config-sample/gitignore.purlin
 
-#### Scenario: Refresh Mode Appends New Gitignore Patterns
+#### Scenario: Full Init Installs Session Recovery Hook
+
+    Given Purlin is added as a submodule at "purlin/"
+    And no .claude/settings.json exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/settings.json exists and is valid JSON
+    And it contains a SessionStart hook with matcher "clear"
+    And the hook command echoes the pl-resume recovery instruction
+
+#### Scenario: Standalone Mode Guard Prevents Init in Purlin Repo
+
+    Given Purlin is the project (not a submodule)
+    And the computed PROJECT_ROOT (parent of the script's directory) is not a git repository
+    When the user runs "tools/init.sh"
+    Then the script prints an error to stderr explaining init.sh is for consumer projects only
+    And the script exits with non-zero status
+    And no files are created or modified outside the Purlin repo
+
+#### Scenario: Ergonomic Symlink at Submodule Root
+
+    Given Purlin is the submodule at "purlin/"
+    When the user inspects "purlin/pl-init.sh"
+    Then it is a symlink pointing to "tools/init.sh"
+    And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
+
+### QA Scenarios
+
+#### Scenario: Shim Initializes Submodule on Fresh Clone @auto
+
+    Given a consumer project was cloned without --recurse-submodules
+    And the submodule directory exists but is empty (not initialized)
+    And pl-init.sh exists at the project root (previously committed)
+    When the user runs "./pl-init.sh"
+    Then git submodule update --init is run for the submodule
+    And tools/init.sh is executed (delegated via exec)
+
+#### Scenario: Refresh Mode Copies New and Updated Commands @auto
+
+    Given .purlin/ already exists at the project root
+    And the submodule has a new command file pl-new-cmd.md in .claude/commands/
+    And an existing command file pl-status.md in the submodule is newer than the project root copy
+    When the user runs "purlin/tools/init.sh"
+    Then pl-new-cmd.md is copied to <project_root>/.claude/commands/
+    And pl-status.md is overwritten with the newer submodule version
+
+#### Scenario: Refresh Mode Preserves Locally Modified Commands @auto
+
+    Given .purlin/ already exists at the project root
+    And .claude/commands/pl-status.md at the project root has a modification timestamp newer than the submodule version
+    When the user runs "purlin/tools/init.sh"
+    Then pl-status.md is NOT overwritten
+    And the refresh summary reports the skip
+
+#### Scenario: Refresh Mode Excludes pl-edit-base.md @auto
+
+    Given .purlin/ already exists at the project root
+    And the submodule has .claude/commands/pl-edit-base.md
+    When the user runs "purlin/tools/init.sh"
+    Then pl-edit-base.md is NOT copied to the project root
+    And pl-edit-base.md does not appear in any counts or reports
+
+#### Scenario: Refresh Mode Updates Upstream SHA @auto
+
+    Given .purlin/ already exists at the project root
+    And .purlin/.upstream_sha contains an older SHA
+    When the user runs "purlin/tools/init.sh"
+    Then .purlin/.upstream_sha is updated to the current submodule HEAD SHA
+
+#### Scenario: Shim Self-Update on Refresh @auto
+
+    Given .purlin/ already exists at the project root
+    And pl-init.sh at the project root has an older pinned SHA than the current submodule HEAD
+    When the user runs "purlin/tools/init.sh"
+    Then pl-init.sh is regenerated with the current SHA and version
+
+#### Scenario: Refresh Mode Never Touches Config or Overrides @auto
+
+    Given .purlin/ already exists at the project root
+    And .purlin/config.json has been customized by the user
+    And .purlin/ARCHITECT_OVERRIDES.md has custom content
+    When the user runs "purlin/tools/init.sh"
+    Then .purlin/config.json is unchanged
+    And .purlin/ARCHITECT_OVERRIDES.md is unchanged
+    And no file in .purlin/release/ is modified
+
+#### Scenario: CDD Symlinks Created on Refresh if Missing @auto
+
+    Given .purlin/ already exists at the project root
+    And pl-cdd-start.sh does NOT exist at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
+    And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
+
+#### Scenario: CDD Regular File Replaced with Symlink on Refresh @auto
+
+    Given .purlin/ already exists at the project root
+    And pl-cdd-start.sh exists at the project root as a regular file (not a symlink)
+    When the user runs "purlin/tools/init.sh"
+    Then pl-cdd-start.sh is replaced with a symlink to purlin/tools/cdd/start.sh
+    And the symlink uses a relative path
+
+#### Scenario: Launchers Always Regenerated on Refresh @auto
+
+    Given .purlin/ already exists at the project root
+    And pl-run-architect.sh exists at the project root with outdated content
+    When the user runs "purlin/tools/init.sh"
+    Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh are regenerated with current template content
+    And all four launchers are executable
+
+#### Scenario: Idempotent Repeated Runs @auto
+
+    Given Purlin is added as a submodule at "purlin/"
+    And the user has already run "purlin/tools/init.sh" once (full init completed)
+    When the user runs "purlin/tools/init.sh" a second time
+    Then refresh mode is selected (not full init)
+    And running git diff after the second run shows no changes
+
+#### Scenario: Refresh Removes Stale Launchers @auto
+
+    Given .purlin/ already exists at the project root
+    And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then run_architect.sh, run_builder.sh, run_qa.sh are removed
+    And only pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist as launchers
+
+#### Scenario: --quiet Flag Suppresses Output @auto
+
+    Given .purlin/ already exists at the project root
+    When the user runs "purlin/tools/init.sh --quiet"
+    Then no output is written to stdout
+    And the refresh completes successfully
+
+#### Scenario: Refresh Mode Copies New Agent Files @auto
+
+    Given .purlin/ already exists at the project root
+    And the submodule has a new agent file builder-worker.md in .claude/agents/
+    And no .claude/agents/ directory exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/agents/ is created at the project root
+    And builder-worker.md is copied to .claude/agents/
+
+#### Scenario: Refresh Mode Preserves Locally Modified Agent Files @auto
+
+    Given .purlin/ already exists at the project root
+    And .claude/agents/builder-worker.md at the project root has been locally modified (newer timestamp)
+    When the user runs "purlin/tools/init.sh"
+    Then builder-worker.md is NOT overwritten
+
+#### Scenario: Refresh Mode Appends New Gitignore Patterns @auto
 
     Given .purlin/ already exists at the project root
     And .gitignore exists but does not contain "CRITIC_REPORT.md"
@@ -547,14 +493,14 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then .gitignore now contains "CRITIC_REPORT.md"
     And all pre-existing .gitignore entries are preserved unchanged
 
-#### Scenario: Refresh Mode Does Not Duplicate Existing Patterns
+#### Scenario: Refresh Mode Does Not Duplicate Existing Patterns @auto
 
     Given .purlin/ already exists at the project root
     And .gitignore already contains all patterns from purlin-config-sample/gitignore.purlin
     When the user runs "purlin/tools/init.sh"
     Then .gitignore is unchanged (no duplicate entries appended)
 
-#### Scenario: Fresh Clone Collaborator Flow
+#### Scenario: Fresh Clone Collaborator Flow @auto
 
     Given a sandbox consumer project has been initialized with Purlin (full init completed)
     And pl-init.sh has been committed to the repository
@@ -567,16 +513,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     And CDD convenience symlinks exist
     And the collaborator environment matches a normal full init
 
-#### Scenario: Full Init Installs Session Recovery Hook
-
-    Given Purlin is added as a submodule at "purlin/"
-    And no .claude/settings.json exists at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then .claude/settings.json exists and is valid JSON
-    And it contains a SessionStart hook with matcher "clear"
-    And the hook command echoes the pl-resume recovery instruction
-
-#### Scenario: Hook Merges Into Existing Settings
+#### Scenario: Hook Merges Into Existing Settings @auto
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json exists with custom hooks (e.g., a PostToolUse hook)
@@ -584,7 +521,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then .claude/settings.json contains the Purlin SessionStart clear hook
     And the pre-existing custom hook is unchanged
 
-#### Scenario: Refresh Removes Stale PreToolUse Architect Hook
+#### Scenario: Refresh Removes Stale PreToolUse Architect Hook @auto
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json contains a PreToolUse hook with the AGENT_ROLE architect check
@@ -593,14 +530,14 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     And any other PreToolUse hooks the user added are preserved
     And the SessionStart hooks remain intact
 
-#### Scenario: Hook Installation Is Idempotent
+#### Scenario: Hook Installation Is Idempotent @auto
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json already contains the Purlin SessionStart clear hook
     When the user runs "purlin/tools/init.sh"
     Then .claude/settings.json is unchanged (no duplicate entries)
 
-#### Scenario: Full Init Installs MCP Servers from Manifest
+#### Scenario: Full Init Installs MCP Servers from Manifest @auto
 
     Given Purlin is added as a submodule at "purlin/"
     And no .purlin/ directory exists at the project root
@@ -611,7 +548,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     And the summary includes installed count and post-install notes for figma
     And the summary includes "Restart Claude Code to load MCP servers."
 
-#### Scenario: MCP Installation Is Idempotent
+#### Scenario: MCP Installation Is Idempotent @auto
 
     Given Purlin is added as a submodule at "purlin/"
     And the user has already run "purlin/tools/init.sh" once (MCP servers installed)
@@ -619,7 +556,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then zero MCP servers are installed (all skipped as already present)
     And the summary shows 0 installed, 2 skipped
 
-#### Scenario: MCP Setup Skipped When Claude CLI Unavailable
+#### Scenario: MCP Setup Skipped When Claude CLI Unavailable @auto
 
     Given Purlin is added as a submodule at "purlin/"
     And the claude CLI is NOT available on PATH
@@ -627,7 +564,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then MCP server installation is skipped with an informational message
     And init completes successfully (non-zero exit is NOT produced)
 
-#### Scenario: MCP Setup Skipped When Manifest Missing
+#### Scenario: MCP Setup Skipped When Manifest Missing @auto
 
     Given Purlin is added as a submodule at "purlin/"
     And tools/mcp/manifest.json does not exist in the submodule
@@ -635,7 +572,7 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then MCP server installation is skipped with an informational message
     And init completes successfully
 
-#### Scenario: Refresh Mode Installs Missing MCP Servers
+#### Scenario: Refresh Mode Installs Missing MCP Servers @auto
 
     Given .purlin/ already exists at the project root
     And the submodule manifest declares server "playwright"
@@ -643,7 +580,3 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     When the user runs "purlin/tools/init.sh"
     Then "playwright" is installed via claude mcp add
     And the refresh summary includes MCP installation results
-
-### Manual Scenarios (Human Verification Required)
-
-None.

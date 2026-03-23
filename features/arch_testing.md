@@ -69,6 +69,37 @@ Regression test scripts MUST follow this naming convention to enable automated d
 - **Harness scripts:** `dev/<test_type>_<feature_stem>.sh` (Purlin-dev) or `tests/qa/<test_type>_<feature_stem>.sh` (consumer)
 - **Results:** Written to the feature's `tests/<feature_stem>/tests.json` via the `--write-results` convention.
 
+### Test Classification Heuristic
+
+The Builder MUST evaluate unit test suites for potential reclassification to the regression tier. When a test script under `### Unit Tests` exhibits behavioral/integration characteristics, the Builder proposes reclassification to the Architect via `[SPEC_PROPOSAL]` in the companion file.
+
+**Behavioral signals (2+ present indicate regression-tier work):**
+
+| Signal | Detection |
+|--------|-----------|
+| **Scale** | Test script exceeds 500 lines or has 50+ assertions |
+| **Sandbox creation** | Test creates temporary directories, clones repositories, or simulates deployment environments |
+| **Execution time** | Test takes >30 seconds wall clock to complete |
+| **Process lifecycle** | Test starts/stops external processes (servers, git operations beyond simple commands) |
+| **Multi-step flows** | Test exercises sequences of operations with state carried between steps (init then modify then verify) |
+| **Environment manipulation** | Test modifies PATH, environment variables, or filesystem state outside the test directory |
+
+**Builder action when 2+ signals are detected:**
+
+Record a `[SPEC_PROPOSAL]` entry in the feature's companion file:
+
+```
+[SPEC_PROPOSAL] Test reclassification: unit tests exhibit regression-tier characteristics
+- Signals detected: <list>
+- Recommendation: Move N scenarios from Unit Tests to QA Scenarios @auto
+- Rationale: <brief explanation of why these are behavioral, not unit>
+Proposed anchor: No new anchor (arch_testing.md Section "Test Classification Heuristic")
+```
+
+The Critic surfaces this as a HIGH-priority Architect action item. The Architect then updates the feature spec's scenario sections accordingly.
+
+**Timing:** The Builder runs this heuristic after completing `/pl-unit-test` for a feature. It is a post-test checkpoint, not a gate -- the Builder does not halt work. The proposal is informational and routes through the normal Critic cycle.
+
 ### Backward Compatibility
 
 During the transition from `> AFT Web:` to `> Web Test:` metadata, the Critic parser and `/pl-web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.
