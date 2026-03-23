@@ -27,6 +27,7 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
     *   **Precedence:** Canonical format always takes precedence. If a commit message contains both a canonical `[Complete features/<name>.md]` and a scope prefix, the canonical path is used. Abbreviated format is a fallback only.
     *   **Trailer parity:** Abbreviated-format commits with `[Scope: ...]` or `[Verified]` trailers MUST be processed identically to canonical-format commits. The trailer semantics are format-independent.
 *   **Sidecar File Exemption:** Edits to companion files (`<name>.impl.md`) and discovery sidecar files (`<name>.discoveries.md`) do NOT trigger lifecycle resets. Only edits to the feature spec file (`<name>.md`) itself trigger a reset to TODO. Because discoveries are stored in sidecar files (not in the feature file), QA housekeeping never causes false lifecycle resets.
+*   **QA Tag Classification Exemption:** Commits that only add or modify `@auto` or `@manual` tag suffixes on QA Scenario headings MUST NOT trigger lifecycle resets. The committing agent MUST include a `[QA-Tags]` trailer in the commit message to signal this exemption. The CDD MUST skip commits containing `[QA-Tags]` when computing the most recent spec-modifying timestamp for lifecycle reset detection. This exemption ensures that QA scenario classification does not force unnecessary Builder re-verification. If a `[QA-Tags]` commit also modifies non-tag content, the normal Critic gates catch behavioral drift independently.
 
 ### 2.2 UI & Layout
 

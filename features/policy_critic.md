@@ -220,6 +220,8 @@ A lifecycle reset to TODO occurs when the feature spec is modified after the las
 *   **Abbreviated:** `[Ready for Verification]`, `[Ready for Testing]`, `[Complete]` without an inline file path — feature resolved from the conventional commit scope (`<type>(<scope>):` → `features/<scope>.md`). Only applies when the resolved file exists on disk.
 *   **`[Verified]` detection:** A `[Complete]` commit (canonical or abbreviated) contains `[Verified]` when the tag appears anywhere in the commit message. The detection is format-independent.
 
+**Guard Clause:** This invariant applies EXCLUSIVELY to features with one or more manual QA scenarios (scenario headings without `@auto` tag under `### QA Scenarios` or `### Manual Scenarios`). Features with zero manual scenarios MUST NOT be evaluated for bypassed verification — they skip directly to the AUTO > CLEAN > N/A chain. The Critic MUST NOT set any bypassed-verification flag for features where manual scenario count is zero.
+
 **Detection:** When computing `qa_status` and `lifecycle_state == 'complete'`, the Critic MUST:
 1.  Parse the feature's scenarios and count manual scenarios.
 2.  If manual scenarios > 0, determine the most recent lifecycle reset point: the timestamp of the latest spec-modifying commit that post-dates the previous `[Complete]` or `[Testing]` status commit. If no status commit exists, the reset point is epoch zero (all TESTING-phase commits qualify).
