@@ -173,31 +173,52 @@ Proceeding to Phase B.
    - Missing or `total: 0` → **NOT_RUN**
 3. Read `QA_OVERRIDES.md` `## Test Priority Tiers` table (if it exists) to determine each feature's test priority tier (smoke, standard, full-only).
 4. Read each scenario file's `frequency` field (`per-feature` default, or `pre-release`).
-5. Group by frequency. Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
-6. Print the table:
+5. **Harness type detection:** Read each scenario file's `harness_type`. Suites with `harness_type: "agent_behavior"` CANNOT run inside an active Claude Code session (nested session protection). These must be run externally by the user.
+6. Group suites into three display categories based on frequency and harness type:
+   - **`per-feature (run in-session)`**: `per-feature` frequency with non-`agent_behavior` harness type. QA runs these directly.
+   - **`per-feature (agent_behavior — run externally)`**: `per-feature` frequency with `agent_behavior` harness type. User runs externally.
+   - **`pre-release (agent_behavior — run externally)`**: `pre-release` frequency (typically `agent_behavior`). User runs externally.
+   Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
+7. Print the table:
 
 ```
 Regression suites:
-  per-feature:
+  per-feature (run in-session):
     [STALE]   critic_tool (3/3, but source modified since) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
     [NOT_RUN] terminal_identity
 
-  pre-release:
+  per-feature (agent_behavior — run externally):
+    [NOT_RUN] release_record_version_notes (3 scenarios)
+
+  pre-release (agent_behavior — run externally):
     [NOT_RUN] skill_behavior_regression (9 scenarios)
 
-Run regression suites? [all / per-feature / pre-release / skip]
+Run in-session suites? [all / per-feature / skip]
 ```
 
-7. **User selection handling:**
-   - If the user selects a group (`per-feature` or `pre-release`): invoke `/pl-regression-run` with `--frequency <selected>`.
-   - If the user selects `all`: invoke `/pl-regression-run` without frequency filter.
+8. **agent_behavior suites:** QA MUST NOT attempt to run `agent_behavior` suites in-session. Instead, print a copy-pasteable CLI command for the user to run in a separate terminal:
+
+```
+These suites use agent_behavior (claude --print) and must run
+outside this session:
+
+    python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
+    python3 tools/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
+
+Run these in a separate terminal, then tell me when done.
+I'll process the results via /pl-regression-evaluate.
+```
+
+9. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session) based on user selection.
+
+10. **User selection handling:**
+   - If the user selects `all` or `per-feature`: run eligible in-session suites via the harness runner.
    - If the user selects `skip`: proceed to Phase B (or the regression gap table / decision point below). The table served its purpose — the user is now aware.
 
-8. **`auto_start` behavior:** When `auto_start` is `true`:
-   - Run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped).
-   - Skip non-smoke per-feature suites that are PASS (not stale).
-   - Run STALE and NOT_RUN standard per-feature suites automatically.
+11. **`auto_start` behavior:** When `auto_start` is `true`:
+   - Run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard).
+   - For `agent_behavior` suites: ALWAYS print the CLI command block — never attempt in-session execution, never silently skip.
    - For pre-release suites: print the table, then ALWAYS prompt the user `"Run pre-release regression suites? [yes / skip]"` — even under auto_start. Pre-release suites are long-running and require explicit opt-in every time. Do NOT silently skip them.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.

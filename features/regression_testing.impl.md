@@ -4,7 +4,9 @@
 
 **[CLARIFICATION]** The enriched `tests.json` format (Section 2.3) is documented and tested as a JSON schema convention — test harnesses that support `--write-results` are expected to produce these fields. No changes to existing harnesses were required for the format definition itself. (Severity: INFO)
 
-**[AUTONOMOUS]** The QA skills (`pl-regression-author.md`, `pl-regression-run.md`, `pl-regression-evaluate.md`) are structured as protocol documents rather than executable code, consistent with other slash commands in `.claude/commands/`. Each guides the QA agent through a single focused workflow. The former unified `pl-regression.md` was retired per spec Section 2.2.4. (Severity: WARN)
+**[AUTONOMOUS]** The QA skills (`pl-regression-author.md`, `pl-regression-run.md`, `pl-regression-evaluate.md`) are structured as protocol documents rather than executable code, consistent with other slash commands in `.claude/commands/`. Each guides the QA agent through a single focused workflow. The former unified `pl-regression.md` was retired per spec Section 2.2.5. (Severity: WARN)
+
+**[CLARIFICATION]** Section 2.2.4 (Regression Suite Status in /pl-verify Phase A): Updated pl-verify.md to separate suites by harness_type — `agent_behavior` suites are displayed in separate groups with CLI commands for external execution (nested session protection), while non-agent_behavior suites remain in-session runnable. Display groups: `per-feature (run in-session)`, `per-feature (agent_behavior — run externally)`, `pre-release (agent_behavior — run externally)`. auto_start behavior updated to run in-session suites automatically and always print CLI command blocks for agent_behavior suites. (Severity: INFO)
 
 **[DISCOVERY] [ACKNOWLEDGED]** Architect-owned files referenced the retired `/pl-regression` skill name. All 8 references updated in commit 7880f97: QA_BASE.md (5), qa_commands.md (2), test_fixture_repo.md (1). (Severity: HIGH)
 
