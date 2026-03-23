@@ -209,16 +209,17 @@ The test script MUST include assertions for all of the following. Each test MUST
 **Claude Code Hook Tests:**
 
 32. **Full init creates hook:** Run `init.sh` in a clean sandbox. Assert `.claude/settings.json` exists, is valid JSON, and contains a `hooks.SessionStart` entry with `matcher: "clear"`.
-33. **Hook merges into existing settings:** Create `.claude/settings.json` with an existing `PreToolUse` hook before running `init.sh`. Assert the `SessionStart` clear hook is present AND the `PreToolUse` hook is preserved.
+33. **Hook merges into existing settings:** Create `.claude/settings.json` with an existing custom hook (e.g., a `PostToolUse` entry) before running `init.sh`. Assert the `SessionStart` clear hook is present AND the pre-existing custom hook is preserved.
 34. **Hook idempotent on refresh:** Run `init.sh` twice. Assert `.claude/settings.json` contains exactly one `SessionStart` entry with `matcher: "clear"` (not duplicated).
 35. **Hook preserves existing SessionStart entries:** Create `.claude/settings.json` with an existing `SessionStart` hook using a different matcher (e.g., `"matcher": "custom"`). Run `init.sh`. Assert both the existing and Purlin hooks are present in the `SessionStart` array.
+36. **Refresh removes stale PreToolUse architect hook:** Create `.claude/settings.json` with a PreToolUse hook containing the AGENT_ROLE architect check. Run `init.sh` in refresh mode. Assert the PreToolUse architect hook entry is removed. Assert any other PreToolUse hooks are preserved.
 
 **MCP Server Installation Tests:**
 
-36. **Full init installs MCP servers from manifest:** Run `init.sh` in a clean sandbox with `claude` CLI available and a valid manifest. Assert MCP servers from the manifest are installed.
-37. **MCP installation is idempotent:** Run `init.sh` twice. Assert the second run installs zero MCP servers (all skipped as already present).
-38. **Graceful skip when `claude` CLI unavailable:** Remove `claude` from PATH before running `init.sh`. Assert init completes successfully. Assert an informational skip message is printed. Assert no MCP installation is attempted.
-39. **Graceful skip when manifest file missing:** Remove `tools/mcp/manifest.json` from the submodule. Run `init.sh`. Assert init completes successfully. Assert an informational skip message is printed.
+37. **Full init installs MCP servers from manifest:** Run `init.sh` in a clean sandbox with `claude` CLI available and a valid manifest. Assert MCP servers from the manifest are installed.
+38. **MCP installation is idempotent:** Run `init.sh` twice. Assert the second run installs zero MCP servers (all skipped as already present).
+39. **Graceful skip when `claude` CLI unavailable:** Remove `claude` from PATH before running `init.sh`. Assert init completes successfully. Assert an informational skip message is printed. Assert no MCP installation is attempted.
+40. **Graceful skip when manifest file missing:** Remove `tools/mcp/manifest.json` from the submodule. Run `init.sh`. Assert init completes successfully. Assert an informational skip message is printed.
 40. **Post-install notes displayed for OAuth servers:** Run `init.sh` with a manifest containing a server with `post_install_notes`. Assert the notes text appears in the output.
 41. **Partial failure (one server fails, other still installs):** Configure the manifest so one server's install command fails. Run `init.sh`. Assert the other server is still installed. Assert the failure is reported but init completes successfully.
 
@@ -578,10 +579,19 @@ On both full init and refresh, the script MUST install MCP servers declared in t
 #### Scenario: Hook Merges Into Existing Settings
 
     Given .purlin/ already exists at the project root
-    And .claude/settings.json exists with custom hooks (e.g., a PreToolUse hook)
+    And .claude/settings.json exists with custom hooks (e.g., a PostToolUse hook)
     When the user runs "purlin/tools/init.sh"
     Then .claude/settings.json contains the Purlin SessionStart clear hook
-    And the pre-existing PreToolUse hook is unchanged
+    And the pre-existing custom hook is unchanged
+
+#### Scenario: Refresh Removes Stale PreToolUse Architect Hook
+
+    Given .purlin/ already exists at the project root
+    And .claude/settings.json contains a PreToolUse hook with the AGENT_ROLE architect check
+    When the user runs "purlin/tools/init.sh" in refresh mode
+    Then the PreToolUse architect hook entry is removed from .claude/settings.json
+    And any other PreToolUse hooks the user added are preserved
+    And the SessionStart hooks remain intact
 
 #### Scenario: Hook Installation Is Idempotent
 

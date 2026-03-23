@@ -19,17 +19,6 @@
           }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ \"$AGENT_ROLE\" = \"architect\" ]; then case \"$TOOL_NAME\" in Write|Edit|NotebookEdit) exit 2;; esac; fi"
-          }
-        ]
-      }
     ]
   }
 }

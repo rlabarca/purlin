@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-Formalizes parallel feature building with dedicated sub-agent definitions, replaces ad-hoc Agent tool calls with structured `builder-worker` and `verification-runner` sub-agents, and consolidates duplicated implementation knowledge from `BUILDER_BASE.md` into skills that sub-agents can preload. Adds a robust rebase-before-merge protocol for parallel branches, server lifecycle management with port tracking, and Architect tool enforcement via `--disallowedTools`. Deprecates `--continuous` mode in favor of interactive multi-phase auto-progression.
+Formalizes parallel feature building with dedicated sub-agent definitions, replaces ad-hoc Agent tool calls with structured `builder-worker` and `verification-runner` sub-agents, and consolidates duplicated implementation knowledge from `BUILDER_BASE.md` into skills that sub-agents can preload. Adds a robust rebase-before-merge protocol for parallel branches, server lifecycle management with port tracking. Deprecates `--continuous` mode in favor of interactive multi-phase auto-progression.
 
 ---
 
@@ -179,12 +179,7 @@ A new skill at `.claude/commands/pl-server.md` with the following capabilities:
 *   NEVER use kill/pkill on processes not started in current session.
 *   Use `> Web Start:` command from feature spec when available.
 
-### 2.7 Architect Tool Enforcement
-
-*   **Primary:** Add `--disallowedTools "Write,Edit,NotebookEdit"` to the Architect launcher (`pl-run-architect.sh`).
-*   **Fallback:** PreToolUse hook reading `AGENT_ROLE` environment variable, blocking Write/Edit for architect role (exit code 2).
-
-### 2.8 Multi-Phase Auto-Progression
+### 2.7 Multi-Phase Auto-Progression
 
 When `auto_start: true` in the Builder's config:
 
@@ -193,7 +188,7 @@ When `auto_start: true` in the Builder's config:
 *   When `auto_start: true`, the Builder marks the phase COMPLETE, then immediately begins the next phase within the same session.
 *   The Builder runs all phases end-to-end without bash orchestration.
 
-### 2.9 Continuous Mode Deprecation
+### 2.8 Continuous Mode Deprecation
 
 *   `--continuous` flag in `pl-run-builder.sh` prints a deprecation warning and exits.
 *   Warning message: "The --continuous flag is deprecated. Set `auto_start: true` in agent config and relaunch the interactive Builder."
@@ -201,15 +196,15 @@ When `auto_start: true` in the Builder's config:
 *   Deprecated config keys: `continuous_evaluator_model`, `inter_phase_critic`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
 
-### 2.10 Context Recovery
+### 2.9 Context Recovery
 
-#### 2.10.1 Orphaned Sub-Agent Branches
+#### 2.9.1 Orphaned Sub-Agent Branches
 
 On `/pl-resume`, the Builder MUST check for orphaned worktree branches matching the pattern `worktree-*`:
 *   If found: attempt to merge them using the robust merge protocol (Section 2.4), then continue.
 *   If not found: the sub-agents either completed and merged, or never started. The delivery plan + Critic state tells the Builder what remains.
 
-#### 2.10.2 Checkpoint Format Extension
+#### 2.9.2 Checkpoint Format Extension
 
 Add to the Builder Context section of the checkpoint:
 ```markdown
@@ -217,7 +212,7 @@ Add to the Builder Context section of the checkpoint:
 **Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
 ```
 
-#### 2.10.3 Auto-Progression Continuity
+#### 2.9.3 Auto-Progression Continuity
 
 On resume, the Builder:
 1.  Reads delivery plan -- identifies current phase (IN_PROGRESS) and remaining phases (PENDING).
@@ -226,9 +221,9 @@ On resume, the Builder:
 4.  Continues with remaining features in the current phase.
 5.  Auto-progresses to next phases (if `auto_start: true`).
 
-### 2.11 Distribution to Consumer Projects
+### 2.10 Distribution to Consumer Projects
 
-#### 2.11.1 Init Changes
+#### 2.10.1 Init Changes
 
 *   Add `copy_agent_files()` function to `tools/init.sh` (same pattern as `copy_command_files()`).
 *   Source: `<submodule>/.claude/agents/`.
@@ -236,22 +231,22 @@ On resume, the Builder:
 *   Same skip logic: preserve locally modified versions (timestamp comparison).
 *   Called during both full init and refresh modes.
 
-#### 2.11.2 Update Changes
+#### 2.10.2 Update Changes
 
 *   `/pl-update-purlin` extends conflict detection to also scan `.claude/agents/` for local modifications vs upstream changes.
 *   Same resolution options: "Accept upstream", "Keep current", "Smart merge".
 
-### 2.12 Lifecycle Metadata Hash Exemption
+### 2.11 Lifecycle Metadata Hash Exemption
 
 The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value` at the top of feature files) when determining whether a feature spec has changed. Only body content (Overview, Requirements, Scenarios, Visual Specification) contributes to the hash. This uses an explicit allow-list of known metadata keys (`Label`, `Category`, `Prerequisite`, `Owner`, `Web Test`, `Web Start`, `AFT Web`, `AFT Start`, `Test Fixtures`, `Figma Status`, `Regression Coverage`). Unknown blockquote keys are preserved in the hash (conservative).
 
-### 2.13 Sync Invariants
+### 2.12 Sync Invariants
 
 *   `/pl-build` preloading by `builder-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
 *   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
-### 2.14 Execution Group Dispatch Bright-Line Rule
+### 2.13 Execution Group Dispatch Bright-Line Rule
 
 The Execution Group Dispatch MUST appear as a named bright-line rule in `/pl-build`,
 not only as a standalone section. The rule text:
@@ -464,20 +459,6 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then the user sees: "Dev server running: http://localhost:XXXX (PID YYYY)"
     When the dev server is stopped
     Then the user sees: "Dev server stopped (port XXXX)"
-
-#### Scenario: Architect cannot use Write or Edit tools
-
-    Given pl-run-architect.sh includes --disallowedTools "Write,Edit,NotebookEdit"
-    When the Architect session attempts to use the Write tool
-    Then the tool call is blocked by the CLI
-
-#### Scenario: Hook fallback blocks Write/Edit when AGENT_ROLE is architect
-
-    Given .claude/settings.json contains a PreToolUse hook checking AGENT_ROLE
-    And AGENT_ROLE is set to "architect"
-    When the Architect session attempts to use the Edit tool
-    Then the hook exits with code 2
-    And the tool call is blocked
 
 #### Scenario: init.sh copies .claude/agents/ to consumer project
 
