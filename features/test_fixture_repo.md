@@ -67,6 +67,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 - `fixture checkout <repo-url> <tag> [--dir <path>]` -- Shallow clone at the specified tag into a temp directory (or the path specified by `--dir`). Prints the checkout path to stdout. Uses `git clone --depth 1 --branch <tag>` for efficiency.
 - `fixture cleanup <path>` -- Remove the checked-out fixture directory (`rm -rf`). Validates the path is under `/tmp/` or the system temp directory before removing, as a safety guard.
 - `fixture list <repo-url> [--ref <project-ref>]` -- List available fixture tags via `git ls-remote --tags`. Optionally filter by `<project-ref>/` prefix. Output: one tag per line, sorted alphabetically.
+- `fixture verify-url <url>` -- Test read/write access to a fixture repo URL. If the URL is HTTPS and fails, automatically tries the SSH equivalent for GitHub/GitLab. Prints the working URL to stdout on success (exit 0). Prints diagnostic guidance to stderr on failure (exit 1). Agents call this before recording `> Test Fixtures:` metadata.
 - `fixture push <remote-url> [--tag <tag>]` -- Push fixture tags from the local convention-path repo to a remote git URL. When `--tag` is specified, pushes only that tag; otherwise pushes all tags. If push fails due to authentication, prints a diagnostic message guiding the user through setting up git push access (SSH key, token, etc.) and exits non-zero. The agent retries after the user confirms access is configured. This command enables the workflow where tags are created locally (via `fixture add-tag`) and then synced to a shared remote repo.
 - `fixture prune <repo-url> [--ref <project-ref>]` -- Cross-reference fixture tags against active feature files in the current project's `features/` directory. List orphan tags (feature no longer exists or has a tombstone). Prompt for confirmation before deleting remote tags.
 
@@ -99,7 +100,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 
 1. While designing a feature, the Architect identifies scenarios that need specific project state (git state, config values, branch topologies, etc.).
 2. The Architect prompts the user: "These scenarios need controlled state. Want to use a fixture repo for automated testing?"
-3. If yes: the user creates an empty git repo for test fixtures. The Architect records the URL as `> Test Fixtures: <repo-url>` in the feature spec.
+3. If yes: the user creates an empty git repo for test fixtures. Before recording the URL, the Architect MUST verify access (see Section 2.6.4).
 4. If no: scenarios stay manual (`@manual-interactive` / `@manual-visual`).
 5. The Architect writes scenarios with Given steps that reference fixture state (e.g., "Given the fixture tag `main/cdd_branch_collab/sync-state-ahead` is checked out").
 
@@ -127,6 +128,42 @@ QA MAY create and manage fixtures directly during regression authoring (`/pl-reg
 5. For complex fixtures requiring elaborate git history that QA cannot construct, QA writes a recommendation to `tests/qa/fixture_recommendations.md` for the Builder to handle.
 
 **Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). The Builder creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
+
+### 2.6.4 Fixture URL Access Verification
+
+Before recording a `> Test Fixtures: <url>` in a feature spec, the agent MUST verify that the URL is accessible for both read (checkout) and write (push) operations. Most fixture repos will be private — HTTPS URLs typically fail on private repos without explicit credential configuration, while SSH URLs work via configured keys.
+
+**Verification protocol:**
+
+1. **Test read access:** Run `git ls-remote --tags <url> 2>&1`. If this fails (non-zero exit, "could not read Username", or authentication error), the URL is not usable as-is.
+2. **Try SSH format:** If the URL is HTTPS and read fails, construct the SSH equivalent:
+   - `https://github.com/<owner>/<repo>` → `git@github.com:<owner>/<repo>.git`
+   - `https://gitlab.com/<owner>/<repo>` → `git@gitlab.com:<owner>/<repo>.git`
+   Test read access with the SSH URL. If it succeeds, use the SSH URL in the spec.
+3. **Test write access:** Run `git ls-remote <url> 2>&1` (without `--tags`). If this succeeds, push access is likely available. Full push verification happens during `fixture push`.
+4. **Guide the user:** If neither HTTPS nor SSH works, print:
+   ```
+   Cannot access <url> for read or write.
+
+   For GitHub private repos:
+     1. Ensure SSH key is configured: ssh -T git@github.com
+     2. Use SSH URL format: git@github.com:<owner>/<repo>.git
+
+   For HTTPS with token:
+     1. Configure credential helper: git config credential.helper store
+     2. Or use token URL: https://<token>@github.com/<owner>/<repo>
+   ```
+5. **Record the working URL:** Write the verified URL (usually SSH for private repos) to the spec's `> Test Fixtures:` metadata. Never record a URL that fails the read access test.
+
+**`fixture verify-url <url>` subcommand:**
+
+The fixture tool provides a `verify-url` subcommand that implements this protocol:
+- Tests read access via `git ls-remote --tags`.
+- If HTTPS fails, tries SSH equivalent for known hosts (GitHub, GitLab).
+- Prints the working URL to stdout, or an error with guidance to stderr.
+- Exit 0 with working URL, exit 1 with guidance.
+
+Agents MUST call `fixture verify-url <url>` before recording any fixture URL in a spec.
 
 ### 2.7 Integration with /pl-aft-web
 
@@ -385,6 +422,30 @@ When a feature needs a fixture repo and no remote URL is declared:
     Then the command exits 0
     And the tag `main/test_feature/existing-state` points to a new commit
     And checking out that tag yields the updated files
+
+#### Scenario: Verify-url succeeds with accessible SSH URL
+
+    Given a remote git repo exists at git@github.com:owner/repo.git
+    And SSH keys are configured for github.com
+    When `fixture verify-url git@github.com:owner/repo.git` is run
+    Then the command exits 0
+    And prints git@github.com:owner/repo.git to stdout
+
+#### Scenario: Verify-url falls back to SSH when HTTPS fails on private repo
+
+    Given a private remote git repo exists at https://github.com/owner/repo
+    And HTTPS auth is not configured
+    And SSH keys are configured for github.com
+    When `fixture verify-url https://github.com/owner/repo` is run
+    Then the command exits 0
+    And prints git@github.com:owner/repo.git to stdout
+
+#### Scenario: Verify-url prints guidance when no access method works
+
+    Given a remote git repo URL where neither HTTPS nor SSH access is configured
+    When `fixture verify-url <url>` is run
+    Then the command exits 1
+    And prints diagnostic guidance to stderr about configuring SSH keys or HTTPS tokens
 
 #### Scenario: Push syncs all tags to remote
 
