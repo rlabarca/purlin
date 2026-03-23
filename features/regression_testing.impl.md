@@ -6,7 +6,7 @@
 
 **[AUTONOMOUS]** The QA skills (`pl-regression-author.md`, `pl-regression-run.md`, `pl-regression-evaluate.md`) are structured as protocol documents rather than executable code, consistent with other slash commands in `.claude/commands/`. Each guides the QA agent through a single focused workflow. The former unified `pl-regression.md` was retired per spec Section 2.2.4. (Severity: WARN)
 
-**[DISCOVERY]** Architect-owned files still reference the retired `/pl-regression` skill name: `instructions/QA_BASE.md` (5 references), `instructions/references/qa_commands.md` (2 references), `features/test_fixture_repo.md` (1 reference). These need updating to the new split skill names (`/pl-regression-author`, `/pl-regression-run`, `/pl-regression-evaluate`). Builder updated all implementation artifacts (docs, command files); Architect must update instruction and spec files. (Severity: HIGH)
+**[DISCOVERY] [ACKNOWLEDGED]** Architect-owned files referenced the retired `/pl-regression` skill name. All 8 references updated in commit 7880f97: QA_BASE.md (5), qa_commands.md (2), test_fixture_repo.md (1). (Severity: HIGH)
 
 **[CLARIFICATION]** The harness runner (`tools/test_support/harness_runner.py`) handles `agent_behavior` scenarios by invoking `claude --print` with the scenario's role and prompt. In test environments, a fake `claude` script is placed on PATH to simulate output. The runner evaluates regex assertions against captured output and writes enriched `tests.json`. (Severity: INFO)
 
