@@ -28,3 +28,13 @@ Implemented 4 new scenarios covering QA AUTO status, QA TODO with mixed scenario
 **[CLARIFICATION]** The spec says "QA scenarios" in scenarios 2-4. Interpreted this as scenarios under `### QA Scenarios` or `### Manual Scenarios` headers (both are `is_manual: True`). The `@auto` tag suffix on scenario titles marks them as automatable despite being in a manual/QA section. (Severity: INFO)
 
 **[CLARIFICATION]** For Scenario 4 (visual spec on Web Test), the feature has NO QA scenarios (only visual items). The `testing_all_auto` flag is set True when there are visual items on a web-test feature with zero non-@auto manual scenarios, even when manual_count is 0. This matches the spec: "Zero manual QA items" means AUTO. (Severity: INFO)
+
+## Section 2.7 Schema Fix (2026-03-22)
+
+Fixed `role_status_reason` placement in `generate_critic_json()` output. Previously nested inside `role_status`; now extracted to top-level sibling per Section 2.7 canonical JSON schema. Added tests: `TestRoleStatusReasonPopulated` (reason keys + trigger content) and `TestRoleStatusReasonSchemaPosition` (sibling vs nested verification via `generate_critic_json()`).
+
+### Test Quality Audit
+- Rubric: 6/6 PASS
+- Tests: 40 total, 40 passed
+- AP scan: clean
+- Date: 2026-03-22
