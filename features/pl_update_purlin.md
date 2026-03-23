@@ -7,7 +7,7 @@
 > Prerequisite: features/init_preflight_checks.md
 > Test Fixtures: https://github.com/rlabarca/purlin-fixtures
 
-[Complete]
+[Complete] <!-- re-verified 2026-03-23 after metadata-only spec edits -->
 
 ## 1. Overview
 
