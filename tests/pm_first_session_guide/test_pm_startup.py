@@ -68,7 +68,7 @@ class TestEmptyProjectTriggersGuidedMode(unittest.TestCase):
     def test_pm_base_runs_startup_briefing(self):
         """PM_BASE instructs running startup briefing to check project state."""
         content = _get_pm_content()
-        self.assertIn('tools/cdd/status.sh --startup pm', content)
+        self.assertIn('cdd/status.sh --startup pm', content)
 
 
 class TestNonEmptyProjectSkipsGuidedMode(unittest.TestCase):
