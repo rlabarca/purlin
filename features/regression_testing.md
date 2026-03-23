@@ -4,7 +4,7 @@
 > Category: "Test Infrastructure"
 > Prerequisite: features/arch_testing.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
@@ -55,30 +55,60 @@ A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-
 }
 ```
 
-### 2.2 QA Regression Skill
+### 2.2 QA Regression Skills
 
-A QA-owned slash command at `.claude/commands/pl-regression.md`. QA owns the regression tier end-to-end: authoring scenario declarations, composing regression sets, and triaging results.
-
-**Skill architecture:** The skill is a state machine with three modes, determined by the current project state:
-
-1. **Author mode:** Features need scenario files. QA reads each feature spec's `### Regression Testing` section or `## Regression Guidance`, evaluates fixture needs, writes a scenario JSON file to `tests/qa/scenarios/<feature_name>.json`, and commits. One feature at a time.
-2. **Run mode:** Existing scenarios need execution (STALE/FAIL/NOT_RUN results). QA composes a single copy-pasteable command for the user to run externally.
-3. **Process mode:** Unprocessed results exist. QA reads `tests.json` files, creates BUG discoveries for failures, and reports tier distribution.
-
-**State detection priority:** Author mode takes precedence when both authoring and running are needed. The QA skill detects the current state and enters the appropriate mode automatically.
+Three QA-owned slash commands that replace the former unified `/pl-regression` skill. Each command has a single, clear purpose. QA owns the regression tier end-to-end: authoring scenario declarations, executing regression sets, and evaluating results.
 
 **Harness authorship:** QA writes and maintains the harness scripts that test behavioral scenarios (agent interaction flows, web UI regression, API contract checks). Harness scripts are behavioral verification artifacts, not application code. They live alongside other QA verification scripts. The Builder does NOT write regression harnesses.
 
-**Skill flow (Run mode):**
+**UX invariant:** Whenever the QA agent asks the user to run anything in an external terminal -- whether through any regression skill or ad-hoc during triage -- it MUST print the exact, complete command. Never describe what to run; print the literal command. The user should never have to assemble a command from prose.
+
+#### 2.2.1 `/pl-regression-author` (QA-owned)
+
+**Purpose:** Create scenario JSON files from feature specs. Infrequent -- only needed when new features reach Builder DONE status with no scenario file.
+
+**Command file:** `.claude/commands/pl-regression-author.md`
+
+**Behavior:**
+
+1. Discover features needing scenario authoring: feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata, Builder status is DONE, and no corresponding `tests/qa/scenarios/<feature_name>.json` exists.
+2. Present authoring plan to user with feature count and list.
+3. Per feature (one at a time, sequential): read spec, evaluate fixture needs (see Section 2.10.1), write scenario JSON to `tests/qa/scenarios/<feature_name>.json`, commit.
+4. Print handoff message with next steps (see Section 2.12).
+
+#### 2.2.2 `/pl-regression-run` (QA-owned)
+
+**Purpose:** Execute existing regression scenarios. Routine -- the common operation.
+
+**Command file:** `.claude/commands/pl-regression-run.md`
+
+**Behavior:**
 
 1. Read feature status via `tools/cdd/status.sh --role qa`.
-2. Identify regression-eligible features: features with `> Web Test:` metadata or `### Regression Testing` sections that have STALE, FAIL, or NOT_RUN test results.
+2. Identify regression-eligible features: features with existing scenario JSON that have STALE, FAIL, or NOT_RUN test results. Sort: STALE first, then FAIL, then NOT_RUN. Optional `--frequency <pre-release|per-feature>` filter (see Section 2.7.1).
 3. Present interactive options to the user: "Found N features eligible for regression. Run all, or select? [all / 1,2,... / skip]".
 4. Compose an external command based on user selection -- a direct harness invocation (single feature) or a sequential `&&` chain (multiple features). The runner (`dev/regression_runner.sh`) is a Purlin-dev convenience and is NOT part of the composed command.
 5. Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification.
-6. After user confirms completion: read `tests.json` files for each regression-tested feature, create `[BUG]` discovery sidecar entries for any failures, print a summary, and run `tools/cdd/status.sh`.
+6. Offer productive wait: "While tests run, I can author scenarios for other features or review open discoveries."
 
-**UX invariant:** Whenever the QA agent asks the user to run anything in an external terminal -- whether through this skill or ad-hoc during triage -- it MUST print the exact, complete command. Never describe what to run; print the literal command. The user should never have to assemble a command from prose.
+#### 2.2.3 `/pl-regression-evaluate` (QA-owned)
+
+**Purpose:** Process regression results after execution. Creates BUG discoveries for failures.
+
+**Command file:** `.claude/commands/pl-regression-evaluate.md`
+
+**Behavior:**
+
+1. Read `tests.json` files for features with recently updated regression results (mtime newer than last Critic run).
+2. For each feature with failures: create a `[BUG]` discovery sidecar entry in `features/<name>.discoveries.md` with `scenario_ref`, `actual_excerpt`, and `expected` from the enriched results.
+3. Compute and report assertion tier distribution across all detail entries.
+4. Flag `[SHALLOW]` suites where >50% of assertions are Tier 1.
+5. Run `tools/cdd/status.sh` to refresh the Critic report.
+6. Print handoff message if failures were found (see Section 2.12).
+
+#### 2.2.4 `/pl-regression` -- RETIRED
+
+The former unified state-machine skill is deleted. The three explicit skills above replace it entirely. No auto-detect alias is provided.
 
 ### 2.3 Enriched Result Format
 
@@ -130,6 +160,7 @@ QA authors JSON scenario files in `tests/qa/scenarios/<feature_name>.json`. Each
 {
   "feature": "<feature_name>",
   "harness_type": "<agent_behavior | web_test | custom_script>",
+  "frequency": "<optional: per-feature (default) | pre-release>",
   "scenarios": [
     {
       "name": "<scenario-slug>",
@@ -160,6 +191,13 @@ QA authors JSON scenario files in `tests/qa/scenarios/<feature_name>.json`. Each
 **File naming:** The JSON filename MUST match the feature file stem (`<feature_name>.json` for `features/<feature_name>.md`). One scenario file per feature.
 
 **Assertion tiers:** Each assertion's `tier` field (1, 2, or 3) maps to the assertion quality tiers defined in `features/arch_testing.md` Section 2.5. The harness runner propagates these to the enriched `tests.json` output.
+
+#### 2.7.1 Frequency Field
+
+The optional `frequency` field at the scenario file level controls when the suite is eligible for execution:
+
+- **`per-feature`** (default when absent): Standard regression -- eligible whenever results are STALE/FAIL/NOT_RUN.
+- **`pre-release`**: Long-running suites (e.g., skill behavior tests using `claude --print`) that run only during pre-release verification or manual trigger. `/pl-regression-run` skips `pre-release` suites unless invoked with `--frequency pre-release`.
 
 ### 2.8 Harness Runner Framework
 
@@ -232,7 +270,7 @@ exec "$(git rev-parse --show-toplevel)/purlin/tools/test_support/run_regression.
 
 ### 2.10 QA Authoring Workflow
 
-QA authors scenario files one feature at a time during `/pl-regression` author mode:
+QA authors scenario files one feature at a time during `/pl-regression-author`:
 
 1. Read the feature spec and its `### Regression Testing` section (or `## Regression Guidance`).
 2. Evaluate fixture needs per the fixture integration protocol (Section 2.10.1).
@@ -267,7 +305,7 @@ Per feature, QA applies this decision logic:
 3. No explicit fixture tags, but scenario needs controlled state?
    - Simple state (single config, no git history): Use inline `setup_commands` in the scenario JSON.
    - Moderate state (specific file content, config combinations): QA creates a fixture tag directly via `fixture add-tag`, then references it in the scenario JSON.
-   - Complex state (elaborate git history, build artifacts, database state): Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.13) for Builder to handle in a `-qa` session.
+   - Complex state (elaborate git history, build artifacts, database state): Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.13) for the Builder to handle.
 
 ### 2.11 Builder Feedback Protocol
 
@@ -321,9 +359,8 @@ Cannot author regression scenarios -- the harness runner framework
 has not been built yet.
 
 NEXT STEP:
-  Launch Builder with --qa flag:
-      Run ./pl-run-builder.sh -qa
-      The Builder will build the harness runner framework.
+  Launch Builder. The Builder will build the harness runner framework
+  as part of its normal TODO work.
   After Builder finishes, re-run QA to author scenarios.
 ```
 
@@ -334,10 +371,8 @@ N features need fixture repos before regression scenarios can be authored.
 Recorded recommendations in tests/qa/fixture_recommendations.md.
 
 NEXT STEP:
-  Launch Builder with --qa flag:
-      Run ./pl-run-builder.sh -qa
-      Tell it: "Create fixture tags for features listed in
-      tests/qa/fixture_recommendations.md"
+  Launch Builder. Tell it: "Create fixture tags for features listed in
+  tests/qa/fixture_recommendations.md"
   After Builder finishes, re-run QA to continue authoring.
 ```
 
@@ -430,7 +465,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     Given the project has 5 features with test metadata
     And 2 features have STALE test results
     And 1 feature has FAIL test results
-    When the QA agent invokes the regression skill
+    When the QA agent invokes /pl-regression-run
     Then the skill lists 3 eligible features sorted by staleness
     And presents the interactive selection prompt
 
@@ -515,7 +550,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
     Given a feature has a Regression Testing section and builder status DONE
     And no scenario file exists at tests/qa/scenarios/<feature_name>.json
-    When the QA agent enters author mode via /pl-regression
+    When the QA agent invokes /pl-regression-author
     Then the feature spec is read
     And a scenario JSON file is written to tests/qa/scenarios/<feature_name>.json
     And the file is committed
