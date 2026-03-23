@@ -120,20 +120,37 @@ After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification)
 
 ```
 Regression suites:
-  per-feature:
+  per-feature (run in-session):
     [STALE]   critic_tool (3/3, but source modified since) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
     [NOT_RUN] terminal_identity
 
-  pre-release:
+  per-feature (agent_behavior — run externally):
+    [NOT_RUN] release_record_version_notes (3 scenarios)
+
+  pre-release (agent_behavior — run externally):
     [NOT_RUN] skill_behavior_regression (9 scenarios)
 
-Run regression suites? [all / per-feature / pre-release / skip]
+Run in-session suites? [all / per-feature / skip]
 ```
 
-6. If the user selects a group, QA invokes `/pl-regression-run` with the appropriate `--frequency` filter. If "all", run without filter.
-7. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
-8. When `auto_start` is `true`: run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped). Skip non-smoke per-feature suites that are PASS (not stale). Run STALE and NOT_RUN standard per-feature suites automatically. For pre-release suites: print the table, then ALWAYS prompt the user `"Run pre-release regression suites? [yes / skip]"` — even under auto_start. Pre-release suites are long-running and require explicit opt-in every time. Do NOT silently skip them.
+6. **Harness type detection:** Before running any suite, read the scenario JSON's `harness_type`. Suites with `harness_type: "agent_behavior"` CANNOT run inside an active Claude Code session (nested session protection). These must be run externally by the user.
+7. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session).
+8. **agent_behavior suites:** QA MUST NOT attempt to run these in-session. Instead, print a copy-pasteable CLI command for the user to run in a separate terminal:
+
+```
+These suites use agent_behavior (claude --print) and must run
+outside this session:
+
+    python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
+    python3 tools/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
+
+Run these in a separate terminal, then tell me when done.
+I'll process the results via /pl-regression-evaluate.
+```
+
+9. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
+10. When `auto_start` is `true`: run STALE and NOT_RUN non-agent_behavior suites automatically (smoke first, then standard). For agent_behavior suites: ALWAYS print the CLI command block — never attempt in-session execution, never silently skip. For pre-release suites: print the table, then ALWAYS prompt the user `"Run pre-release regression suites? [yes / skip]"` — even under auto_start. Pre-release suites are long-running and require explicit opt-in every time. Do NOT silently skip them.
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 
