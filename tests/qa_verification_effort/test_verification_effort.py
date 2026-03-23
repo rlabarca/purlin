@@ -4,6 +4,7 @@ Covers all 9 Unit Test scenarios from the feature spec.
 """
 
 import os
+import json
 import sys
 import unittest
 
@@ -682,4 +683,22 @@ class TestBuilderVerifiedFeature(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+
+    status = 'PASS' if result.wasSuccessful() else 'FAIL'
+    failed = len(result.failures) + len(result.errors)
+    report = {
+        'status': status,
+        'passed': result.testsRun - failed,
+        'failed': failed,
+        'total': result.testsRun,
+        'test_file': 'tests/qa_verification_effort/test_verification_effort.py',
+    }
+    out_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(out_dir, 'tests.json'), 'w') as f:
+        json.dump(report, f)
+    print(f"\ntests.json: {status}")
+    sys.exit(0 if result.wasSuccessful() else 1)

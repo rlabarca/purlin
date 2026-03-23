@@ -9607,12 +9607,48 @@ if __name__ == '__main__':
     }
     with open(status_file, 'w') as f:
         json.dump(report, f)
-    # Also write to features that share this test suite
-    for shared_feature in ('qa_verification_effort', 'policy_critic'):
-        shared_dir = os.path.join(project_root, 'tests', shared_feature)
-        os.makedirs(shared_dir, exist_ok=True)
-        with open(os.path.join(shared_dir, 'tests.json'), 'w') as f:
-            json.dump(report, f)
+    # Write to policy_critic (tests live in this file, no dedicated test file).
+    # Count only policy_critic-specific classes from the completed run.
+    pc_class_prefixes = (
+        'TestParseFixtureTags', 'TestValidateFixtureTags',
+        'TestFixtureTag', 'TestResolveFixtureRepo',
+        'TestFixtureRepoNotFound', 'TestConventionPathFixtureRepo',
+        'TestPerFeatureOverrides', 'TestConfigOverrides',
+        'TestScenarioDiff', 'TestLifecycleResetActionItem',
+        'TestResetContextFor', 'TestBuilderActionItemGenerated',
+        'TestRoleStatusActionItemConsistency',
+        'TestRequirementsDiff', 'TestQADisputedInformational',
+        'TestSpecDisputeActionRequired', 'TestBuilderBlockedClears',
+        'TestBriefStalenessCheck', 'TestFigmaDevStatusAdvisory',
+        'TestTraceabilityNotEnforced', 'TestRegressionGuidanceDetection',
+        'TestStructuralCompletenessStillEnforced',
+    )
+    all_classes = [
+        obj for name, obj in vars(sys.modules[__name__]).items()
+        if isinstance(obj, type) and issubclass(obj, unittest.TestCase)
+        and any(name.startswith(p) for p in pc_class_prefixes)
+    ]
+    pc_total = sum(
+        loader.loadTestsFromTestCase(cls).countTestCases()
+        for cls in all_classes)
+    pc_class_names = {cls.__name__ for cls in all_classes}
+    pc_failed = sum(
+        1 for t, _ in result.failures + result.errors
+        if type(t).__name__ in pc_class_names)
+    pc_report = {
+        'status': 'PASS' if pc_failed == 0 else 'FAIL',
+        'passed': pc_total - pc_failed,
+        'failed': pc_failed,
+        'total': pc_total,
+        'test_file': 'tools/critic/test_critic.py',
+    }
+    pc_dir = os.path.join(project_root, 'tests', 'policy_critic')
+    os.makedirs(pc_dir, exist_ok=True)
+    with open(os.path.join(pc_dir, 'tests.json'), 'w') as f:
+        json.dump(pc_report, f)
+    # NOTE: qa_verification_effort has its own test file at
+    # tests/qa_verification_effort/test_verification_effort.py.
+    # Do NOT cross-write here -- its own __main__ is authoritative.
     print(f'\n{status_file}: {status}')
 
     sys.exit(0 if result.wasSuccessful() else 1)

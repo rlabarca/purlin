@@ -4038,11 +4038,27 @@ if __name__ == '__main__':
     with open(status_file, 'w') as f:
         json.dump(report, f)
     # Also write to cdd_qa_effort_display (covered by TestQaBadgeHtml,
-    # TestVerificationEffortInApiStatus in this same test suite)
+    # TestVerificationEffortInApiStatus in this same test suite).
+    # Count from the already-completed run -- no re-execution needed.
+    qa_effort_classes = (TestQaBadgeHtml, TestVerificationEffortInApiStatus)
+    qa_effort_class_names = {cls.__name__ for cls in qa_effort_classes}
+    qa_effort_total = sum(
+        loader.loadTestsFromTestCase(cls).countTestCases()
+        for cls in qa_effort_classes)
+    qa_effort_failed = sum(
+        1 for t, _ in result.failures + result.errors
+        if type(t).__name__ in qa_effort_class_names)
+    qa_effort_report = {
+        "status": "PASS" if qa_effort_failed == 0 else "FAIL",
+        "passed": qa_effort_total - qa_effort_failed,
+        "failed": qa_effort_failed,
+        "total": qa_effort_total,
+        "test_file": "tools/cdd/test_cdd.py"
+    }
     qa_effort_dir = os.path.join(project_root, "tests", "cdd_qa_effort_display")
     os.makedirs(qa_effort_dir, exist_ok=True)
     with open(os.path.join(qa_effort_dir, "tests.json"), 'w') as f:
-        json.dump(report, f)
+        json.dump(qa_effort_report, f)
     print(f"\n{status_file}: {status}")
 
     sys.exit(0 if result.wasSuccessful() else 1)
