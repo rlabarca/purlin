@@ -162,6 +162,86 @@ again refreshes the dashboard and action items for the next agent.
 
 ---
 
+## CLI Reference
+
+### status.sh
+
+`tools/cdd/status.sh` is the primary entry point for agents. It accepts
+several flags:
+
+| Flag | Description |
+|------|-------------|
+| *(none)* | Outputs `status.json` to stdout (default) |
+| `--startup <role>` | Startup briefing tailored to the given agent role (`architect`, `builder`, `qa`, `pm`) |
+| `--role <role>` | Role-filtered status output for the given role |
+| `--graph` | Outputs the dependency graph (`dependency_graph.json`) to stdout |
+| `--incomplete` | Lists features where any role column is not in its "done" state |
+| `--verbose` | Shows diagnostic stderr on the terminal (see [Error Logging](#error-logging) below) |
+
+The `--verbose` flag can be combined with any other flag. It is stripped
+from the argument list before the remaining flags are processed.
+
+### run.sh
+
+`tools/critic/run.sh` runs the Critic directly. Most agents will never call
+it -- `status.sh` invokes it automatically. It is useful for targeted
+analysis of a single feature:
+
+| Flag | Description |
+|------|-------------|
+| *(none)* | Analyze all features |
+| `features/X.md` | Analyze only the specified feature file |
+| `--verbose` | Shows diagnostic stderr on the terminal |
+
+---
+
+## Error Logging
+
+Both `status.sh` and `run.sh` capture stderr from their subprocesses
+(Python resolver, Critic engine, CDD status refresh) and append it to a
+persistent log file:
+
+```
+.purlin/runtime/purlin.log
+```
+
+Each line is prefixed with an ISO 8601 UTC timestamp and the script name
+that produced it:
+
+```
+[2026-03-22T14:05:12Z status.sh] Using project root venv at /path/to/.venv/bin/python3
+[2026-03-22T14:05:13Z run.sh] Some warning from critic.py
+```
+
+By default, this stderr is captured silently -- it goes only to the log
+file. When `--verbose` is passed, the captured stderr is also echoed to the
+terminal so the operator can see diagnostics in real time.
+
+The `.purlin/runtime/` directory is created automatically on first run.
+
+---
+
+## Health Checks
+
+When the CDD Dashboard server is started via `tools/cdd/start.sh`, a health
+check runs automatically after launch. The health check uses `curl` to
+request `/status.json` from the server on its assigned port (with a
+2-second timeout).
+
+The result is reported inline when the server starts:
+
+- **"confirmed responsive"** -- the server replied successfully.
+- **"may still be starting"** -- the health check failed; the server may
+  need a moment. A warning is also appended to `.purlin/runtime/purlin.log`.
+- **"skipped (curl unavailable)"** -- `curl` is not installed, so the check
+  was skipped.
+
+On restart (when `start.sh` detects an existing CDD process), the same
+health check runs against the newly launched instance. No manual
+intervention is needed -- the health status is informational.
+
+---
+
 ## Builder Decision Tags
 
 When the Builder makes implementation choices, it classifies them using
@@ -224,7 +304,14 @@ as QA action items.
 | What You Want | How To Get It |
 |---------------|---------------|
 | Run the Critic and refresh status | `tools/cdd/status.sh` (or `/pl-status` in an agent session) |
+| Get a startup briefing for your role | `tools/cdd/status.sh --startup <role>` |
+| View status filtered by role | `tools/cdd/status.sh --role <role>` |
+| List incomplete features | `tools/cdd/status.sh --incomplete` |
+| View the dependency graph | `tools/cdd/status.sh --graph` |
+| Run the Critic on a single feature | `tools/critic/run.sh features/X.md` |
+| Enable diagnostic output | Add `--verbose` to any command above |
 | View aggregate action items | Read `CRITIC_REPORT.md` at the project root |
 | View per-feature Critic results | Read `tests/<feature>/critic.json` |
 | See the CDD Dashboard | Start it with `/pl-cdd` and open the printed URL |
+| Check runtime error logs | Read `.purlin/runtime/purlin.log` |
 | Understand a role's next steps | Check that role's section in `CRITIC_REPORT.md` |
