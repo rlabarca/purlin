@@ -44,6 +44,22 @@ Tests operate in three tiers with different triggers, owners, and performance pr
 - **Spot Check:** Runs during Builder Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features skip spot checks during build.
 - **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `tests.json`. The Builder's only role in regression is consuming results to fix code.
 
+### Section Classification Contract
+
+Feature specs use three scenario section types. Each has a strict scope. Mixing classifications within a section is a spec defect.
+
+| Section | Owner | Scope | Characteristics |
+|---------|-------|-------|-----------------|
+| `### Unit Tests` | Builder | Fast, isolated, structural | Single setup, value assertions, exit codes, file existence checks. Completes in seconds. No multi-step state manipulation. No sandbox cloning. No external process lifecycle. |
+| `### QA Scenarios` | QA | Behavioral, integration, end-to-end | Multi-step workflows, state carried between operations, sandbox environments, process start/stop, environment manipulation, fixture-backed verification. May take minutes. Tagged `@auto` or `@manual`. |
+| `## Visual Specification` | Builder (verify) / PM (author) | Design alignment | Checklist-based visual acceptance criteria. Token maps, design references. Not Gherkin. |
+
+**Classification test:** If a scenario requires setup-act-modify-act-verify (two or more action phases with state changes between them), it is a QA Scenario, not a Unit Test. If it requires creating a sandbox, cloning a repo, or starting a server, it is a QA Scenario.
+
+**Builder obligation:** When the Builder encounters or creates unit tests that violate this contract (see Test Classification Heuristic below), the Builder MUST propose reclassification via `[SPEC_PROPOSAL]` in the companion file. The Builder does not halt work -- the proposal routes through the normal Critic cycle to the Architect.
+
+**Heading migration:** Old headings (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) are accepted by the Critic during transition. Agents rename to the new format when touching a spec. The classification contract applies regardless of heading format.
+
 ### Execution Constraints
 
 - Tests MUST be headless/non-interactive (no human in the loop during execution)
@@ -98,7 +114,9 @@ Proposed anchor: No new anchor (arch_testing.md Section "Test Classification Heu
 
 The Critic surfaces this as a HIGH-priority Architect action item. The Architect then updates the feature spec's scenario sections accordingly.
 
-**Timing:** The Builder runs this heuristic after completing `/pl-unit-test` for a feature. It is a post-test checkpoint, not a gate -- the Builder does not halt work. The proposal is informational and routes through the normal Critic cycle.
+**Timing:** The Builder runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- the Builder does not halt work. The proposal routes through the normal Critic cycle.
+
+**Relationship to Section Classification Contract:** The heuristic is the detection mechanism for violations of the Section Classification Contract (above). The contract defines what belongs where; the heuristic tells the Builder when to flag a mismatch.
 
 ### Backward Compatibility
 
