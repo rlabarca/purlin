@@ -78,11 +78,15 @@
 
 Implemented Section 2.2.2 "Single-Line Status Cells" requirement. Replaced `effort-subline` div beneath QA badges with `title` attribute tooltip on the badge `<span>`. Removed `effort-subline` CSS class. Updated 10 tests in `TestQaBadgeHtml` to verify tooltip-only rendering and no `<div>` elements in badge output.
 
+## QA Tag Classification Exemption (2026-03-23)
+
+Implemented Section 2.1 QA Tag Classification Exemption. Added `_only_qa_tag_commits_since(f_path, since_hash)` function that checks if all commits to a feature file since a given status commit contain the `[QA-Tags]` trailer. Integrated into `get_feature_status()` fallback paths for both COMPLETE and TESTING status detection. When `spec_content_unchanged()` returns False (content did change) but all intervening commits have `[QA-Tags]`, the lifecycle status is preserved. 4 new tests cover: COMPLETE preservation, TESTING preservation, mixed-commit reset, and empty-log non-exemption.
+
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 172 total, 172 passed
+- Tests: 176 total, 176 passed
 - AP scan: clean
-- Date: 2026-03-22
+- Date: 2026-03-23
 
 *   **CLI Role-Filtered Output (2026-03-17):** Implemented `--role <role>` flag per spec Section 2.7. Added `generate_role_filtered_status_json(role, cache)` to `serve.py` — filters full API JSON to features where the role has non-terminal status (not DONE/CLEAN/N/A), aggregates that role's action items from per-feature `critic.json` files, and compacts policy violations (grouped by file+pattern with counts) scoped to the filtered features. CLI wiring: `status.sh --role <role>` → `serve.py --cli-role-status <role>`. Side effects (write_internal_feature_status, write_api_status_json) run before filtering so cached artifacts stay fresh.
 
