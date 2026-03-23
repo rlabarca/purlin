@@ -7,7 +7,7 @@
 > Prerequisite: features/test_fixture_repo.md
 > Test Fixtures: https://github.com/rlabarca/purlin-fixtures
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
