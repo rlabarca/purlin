@@ -1423,7 +1423,7 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
     @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_active_heading_includes_phase_annotation(self, *mocks):
-        """ACTIVE heading shows [1/3 DONE | 1 RUNNING] when delivery plan has active phase."""
+        """ACTIVE heading shows [1/3 DONE | 1 IN PROGRESS] when delivery plan has active phase."""
         plan_content = (
             "# Delivery Plan\n\n"
             "## Phase 1 -- Foundation [COMPLETE]\n\n"
@@ -1451,8 +1451,8 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
         serve.PROJECT_ROOT = self.test_dir
         try:
             html = serve.generate_html()
-            self.assertIn('[1/3 DONE | 1 RUNNING]', html,
-                          "ACTIVE heading must include [1/3 DONE | 1 RUNNING] annotation")
+            self.assertIn('[1/3 DONE | 1 IN PROGRESS]', html,
+                          "ACTIVE heading must include [1/3 DONE | 1 IN PROGRESS] annotation")
         finally:
             serve.CACHE_DIR = orig_cache
             serve.FEATURES_ABS = orig_abs

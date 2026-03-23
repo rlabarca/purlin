@@ -2473,7 +2473,7 @@ def generate_html(cache=None):
         done = delivery_phase["completed"]
         total = delivery_phase["total"]
         running = delivery_phase["in_progress"]
-        running_seg = f' | {running} RUNNING' if running > 0 else ''
+        running_seg = f' | {running} IN PROGRESS' if running > 0 else ''
         phase_annotation = (
             f' <span style="color:var(--purlin-status-todo);font-weight:normal">'
             f'[{done}/{total} DONE{running_seg}]'
