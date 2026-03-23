@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "passed": 17,
+  "failed": 0,
+  "total": 17,
+  "test_file": "tools/test_support/test_pl_complete.py",
+  "details": [
+    {
+      "test": "test_commit_template_includes_complete_tag (__main__.TestAllGatesPassCreatesCompletionCommit.test_commit_template_includes_complete_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_commit_template_includes_verified_tag (__main__.TestAllGatesPassCreatesCompletionCommit.test_commit_template_includes_verified_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_status_sh_confirmation_after_commit (__main__.TestAllGatesPassCreatesCompletionCommit.test_status_sh_confirmation_after_commit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verified_tag_in_commit_command (__main__.TestAllGatesPassCreatesCompletionCommit.test_verified_tag_in_commit_command)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checks_delivery_plan (__main__.TestDeliveryPlanGatesCompletion.test_checks_delivery_plan)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checks_pending_phase (__main__.TestDeliveryPlanGatesCompletion.test_checks_pending_phase)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_phase_gated_failure_message (__main__.TestDeliveryPlanGatesCompletion.test_phase_gated_failure_message)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_current_state_placeholder (__main__.TestNotInTestingStateBlocksCompletion.test_current_state_placeholder)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_failure_message_template (__main__.TestNotInTestingStateBlocksCompletion.test_failure_message_template)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_requires_testing_state (__main__.TestNotInTestingStateBlocksCompletion.test_requires_testing_state)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checks_open_discoveries (__main__.TestOpenDiscoveriesBlockCompletion.test_checks_open_discoveries)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checks_spec_updated_discoveries (__main__.TestOpenDiscoveriesBlockCompletion.test_checks_spec_updated_discoveries)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_failure_message_for_open_discoveries (__main__.TestOpenDiscoveriesBlockCompletion.test_failure_message_for_open_discoveries)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_references_discoveries_file (__main__.TestOpenDiscoveriesBlockCompletion.test_references_discoveries_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_declares_qa_ownership (__main__.TestRoleGateRejectsNonQA.test_declares_qa_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_qa (__main__.TestRoleGateRejectsNonQA.test_redirect_message_for_non_qa)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_stop_instruction_after_redirect (__main__.TestRoleGateRejectsNonQA.test_stop_instruction_after_redirect)",
+      "status": "PASS"
+    }
+  ]
+}
