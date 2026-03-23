@@ -377,7 +377,7 @@ When `role` is `qa`, the briefing adds:
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 These scenarios are validated by the Builder's automated test suite.
 
 #### Scenario: Agent Reads Feature Status via API
@@ -875,7 +875,7 @@ These scenarios are validated by the Builder's automated test suite.
     Then the output is a startup briefing (not a dependency graph)
     And the startup flag takes precedence silently
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.
 

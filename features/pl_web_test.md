@@ -240,7 +240,7 @@ The following instruction files MUST be updated by the Builder to reference the 
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Auto-discover web-testable features
 
@@ -472,7 +472,7 @@ The following instruction files MUST be updated by the Builder to reference the 
     And the old skill file `.claude/commands/pl-web-verify.md` does not exist
     And the test directory is `tests/pl_web_test/` (not `tests/pl_web_verify/`)
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.
 

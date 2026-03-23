@@ -313,7 +313,7 @@ The following fixture tags provide real git branch topology for integration-leve
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: BRANCH Section Always Rendered in Dashboard HTML
 
@@ -967,7 +967,7 @@ The following fixture tags provide real git branch topology for integration-leve
     And DIVERGED branches show an orange badge (--purlin-status-warning)
     And EMPTY branches show normal text (--purlin-text) without badge background
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.
 

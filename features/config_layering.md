@@ -98,7 +98,7 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Resolver Returns Local Config When Local Exists
 
@@ -260,6 +260,6 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     Then a fresh config.local.json is created from config.json
     And the tool reads the shared defaults
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.

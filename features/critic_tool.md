@@ -317,7 +317,7 @@ The following fixture tags provide deterministic project states for integration-
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Spec Gate Section Completeness Check
     Given a feature file exists with all required sections (Overview, Requirements, Scenarios)
@@ -996,7 +996,7 @@ The following fixture tags provide deterministic project states for integration-
     And each entry shows format: `<feature_name>: <count>x <pattern> in <file> (lines <first3>...+<remaining> more)`
     And the first entry reads: `cdd_agent_configuration: 34x #hex in tools/cdd/serve.py (lines 259,262,265...+31 more)`
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None
 

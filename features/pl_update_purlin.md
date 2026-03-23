@@ -298,7 +298,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Auto-Fetch and Update When Behind
     Given the submodule's local HEAD is behind the remote tracking branch by 3 commits
@@ -582,7 +582,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     Then no MCP-related output appears in the summary
     And no "Restart Claude Code" notice is shown for MCP reasons
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 #### Scenario: Complex Three-Way Merge
     Given a command file has been modified both upstream and locally in conflicting ways
