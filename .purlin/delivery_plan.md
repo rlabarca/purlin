@@ -42,51 +42,51 @@
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Architect Spec Skills [PENDING]
+## Phase 7 -- Architect Spec Skills [COMPLETE]
 **Features:** pl_anchor.md, pl_spec.md
-**Completion Commit:** --
+**Completion Commit:** 5571093
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Architect Editing [PENDING]
+## Phase 8 -- Architect Editing [COMPLETE]
 **Features:** pl_override_edit.md, pl_edit_base.md
-**Completion Commit:** --
+**Completion Commit:** 954361e
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Retirement + QA Completion [PENDING]
+## Phase 9 -- Retirement + QA Completion [COMPLETE]
 **Features:** pl_tombstone.md, pl_complete.md
-**Completion Commit:** --
+**Completion Commit:** 4848a4b
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- QA Core [PENDING]
+## Phase 10 -- QA Core [COMPLETE]
 **Features:** pl_discovery.md, pl_verify.md
-**Completion Commit:** --
+**Completion Commit:** 7298b63
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Reporting + Reverse Spec [PENDING]
+## Phase 11 -- Reporting + Reverse Spec [COMPLETE]
 **Features:** pl_qa_report.md, pl_spec_from_code.md
-**Completion Commit:** --
+**Completion Commit:** 6a5e44b
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 12 -- Regression Skills [PENDING]
+## Phase 12 -- Regression Skills [COMPLETE]
 **Features:** pl_regression_author.md, pl_regression_run.md
-**Completion Commit:** --
+**Completion Commit:** ea6f9a0
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 13 -- Regression + Release [PENDING]
+## Phase 13 -- Regression + Release [COMPLETE]
 **Features:** pl_regression_evaluate.md, pl_release_check.md
-**Completion Commit:** --
+**Completion Commit:** df6140d
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 14 -- Release Skills [PENDING]
+## Phase 14 -- Release Skills [COMPLETE]
 **Features:** pl_release_run.md, pl_release_step.md
-**Completion Commit:** --
+**Completion Commit:** 423fe8a
 **Deferred:** --
 **QA Bugs Addressed:** --
 
