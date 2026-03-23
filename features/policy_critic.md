@@ -161,6 +161,23 @@ When a feature resets to TODO lifecycle state (spec modified after last status c
 *   **New scenario signal:** When new scenarios are detected, the action item description explicitly lists them so the Builder knows which behaviors need new test coverage. No keyword-matching or traceability cross-check is performed -- the Builder determines test organization.
 *   **Metadata Exemption:** Blockquote metadata lines (`> Label:`, `> Category:`, `> Prerequisite:`, `> Owner:`, `> Web Test:`, `> Web Start:`, `> Test Fixtures:`, `> Figma Status:`) are stripped from the content hash used for lifecycle comparison. Edits to these lines do not trigger lifecycle resets. This follows the same pattern as the Discoveries section exemption -- non-behavioral coordination data does not invalidate implementation status.
 
+### 2.12.1 Allow-Empty Status Commit Validation
+
+When the Critic detects a `[Complete ...]` status commit that is `--allow-empty` (does not modify the feature file), it MUST cross-validate by comparing the spec content hash at the status commit against the current on-disk content.
+
+**Problem:** A Builder can make an `--allow-empty` [Complete] commit with a timestamp AFTER all Architect spec edits, without actually implementing the new requirements. Because the commit doesn't modify the file, the CDD sees "latest [Complete] > latest file edit" and reports `builder: DONE`. The content hash comparison (Section 2.12) is bypassed because the `--allow-empty` commit has no file diff to compare.
+
+**Detection logic:**
+
+1. For each feature with a `[Complete ...]` status commit, check whether that commit modified the feature file: `git diff-tree --no-commit-id --name-only -r <commit_hash>` — if the feature file is NOT in the output, the commit is `--allow-empty` relative to this feature.
+2. For `--allow-empty` [Complete] commits: compare the spec content hash at the PREVIOUS status commit (or the commit that last modified the feature file, whichever is more recent) against the current on-disk content hash.
+3. If the hashes differ, the spec was modified between the previous real file edit and the `--allow-empty` [Complete] — meaning the Builder marked [Complete] without implementing the changes. Reset `builder` to `TODO` and generate a HIGH-priority action item: `"Builder marked [Complete] via --allow-empty but spec content changed since last implementation. N new/modified requirements sections need implementation."`.
+4. If the hashes match, the `--allow-empty` [Complete] is valid — the Builder legitimately re-tagged after verifying no code changes were needed (e.g., doc-only spec edits).
+
+**In-file tag cross-check:** As an additional guard, when the feature file contains an explicit `[TODO]` tag on a standalone line, the Critic MUST treat this as an Architect-issued reset regardless of status commit history. The in-file tag is an override — if the Architect wrote `[TODO]`, the feature is TODO. This catches cases where the Architect manually resets a feature that the Builder prematurely completed.
+
+**Constraint:** This validation runs as part of the lifecycle reset detection (Section 2.12), not as a separate audit. It extends the existing diff-aware detection to handle the `--allow-empty` edge case.
+
 ### 2.13 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, QA, and PM columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
