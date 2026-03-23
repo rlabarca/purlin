@@ -121,7 +121,7 @@ The Critic MUST track regression test failure patterns and surface tier promotio
 
 **Detection logic:**
 
-1. Read `tests/<feature>/tests.json` for each feature with regression scenario JSON (`tests/qa/scenarios/<feature>.json`).
+1. Read `tests/<feature>/regression.json` for each feature with regression scenario JSON (`tests/qa/scenarios/<feature>.json`).
 2. If a feature has `status: "FAIL"` in its most recent regression results AND is not currently classified as `smoke` in `QA_OVERRIDES.md`, generate a LOW-priority Architect action item: `"Regression failure on <feature> (not smoke-tier). Consider promoting to smoke if this feature blocks core workflow."`.
 3. Read `QA_OVERRIDES.md` to check the current tier table. Features already classified as `smoke` do not generate promotion recommendations.
 4. Features classified as `full-only` that fail are promoted to a MEDIUM recommendation: `"full-only feature <feature> has failing regression. Consider upgrading to standard or smoke."`.

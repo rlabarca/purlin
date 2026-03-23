@@ -99,7 +99,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Behavior:**
 
-1. Read `tests.json` files for features with recently updated regression results (mtime newer than last Critic run).
+1. Read `regression.json` files for features with recently updated regression results (mtime newer than last Critic run).
 2. For each feature with failures: create a `[BUG]` discovery sidecar entry in `features/<name>.discoveries.md` with `scenario_ref`, `actual_excerpt`, and `expected` from the enriched results.
 3. Compute and report assertion tier distribution across all detail entries.
 4. Flag `[SHALLOW]` suites where >50% of assertions are Tier 1.
@@ -113,7 +113,7 @@ After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification)
 **Behavior:**
 
 1. Scan `tests/qa/scenarios/*.json` for all scenario files.
-2. For each, check the corresponding `tests/<feature>/tests.json` for result status (PASS/FAIL/NOT_RUN/STALE).
+2. For each, check the corresponding `tests/<feature>/regression.json` for result status (PASS/FAIL/NOT_RUN/STALE).
 3. Read `QA_OVERRIDES.md` tier table (if it exists) to determine each feature's test priority tier.
 4. Group by frequency (`per-feature` vs `pre-release`). Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
 5. Print the table in the Phase A Summary, after the existing summary block:
@@ -153,18 +153,18 @@ These fields give the Builder enough context to batch-fix failures without re-ru
 
 The Builder does NOT trigger or author regression tests. The Builder's only role in the regression tier is consuming results to fix application code. The user tells the Builder "regression results are ready." The Builder then:
 
-1. Reads `tests.json` files for features with updated results.
+1. Reads `regression.json` files for features with updated regression results.
 2. Uses enriched fields (`scenario_ref`, `expected`, `actual_excerpt`) to diagnose and fix application code in one pass.
 3. Re-runs only unit tests (Step 3 tier) to confirm fixes, without re-running the full regression suite.
 4. Does NOT modify the harness scripts or scenario JSON files themselves. If a harness expectation is stale or a scenario assertion is wrong, the Builder flags it for QA via the feedback protocol (Section 2.11).
 
 ### 2.5 Staleness Detection
 
-A regression result is stale when the feature's source code was modified since the `tests.json` file's mtime. The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
+A regression result is stale when the feature's source code was modified since the `regression.json` file's mtime. The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
 
 ### 2.6 Assertion Tier Tracking
 
-Each `tests.json` detail entry MAY include an optional `assertion_tier` field with value `1`,
+Each `regression.json` detail entry MAY include an optional `assertion_tier` field with value `1`,
 `2`, or `3`, corresponding to the assertion quality tiers defined in
 `features/arch_testing.md` Section "Assertion Quality Invariant". This field is backward-compatible -- existing consumers
 that do not recognize it will ignore it.
@@ -219,7 +219,7 @@ QA authors JSON scenario files in `tests/qa/scenarios/<feature_name>.json`. Each
 
 **File naming:** The JSON filename MUST match the feature file stem (`<feature_name>.json` for `features/<feature_name>.md`). One scenario file per feature.
 
-**Assertion tiers:** Each assertion's `tier` field (1, 2, or 3) maps to the assertion quality tiers defined in `features/arch_testing.md` Section 2.5. The harness runner propagates these to the enriched `tests.json` output.
+**Assertion tiers:** Each assertion's `tier` field (1, 2, or 3) maps to the assertion quality tiers defined in `features/arch_testing.md` Section 2.5. The harness runner propagates these to the enriched `regression.json` output.
 
 #### 2.7.1 Frequency Field
 
@@ -244,10 +244,12 @@ A Python script that reads a single scenario JSON file and executes it:
       - `custom_script`: Execute the script at `script_path` with `--write-results`.
    d. Evaluate assertions against captured output (regex match for each pattern).
    e. If fixture was checked out, clean up via `fixture cleanup`.
-3. Write enriched `tests.json` to `tests/<feature_name>/tests.json` with:
+3. Write enriched results to `tests/<feature_name>/regression.json` (NOT `tests.json`) with:
    - Standard fields: `status`, `passed`, `failed`, `total`.
    - Per-detail enriched fields: `scenario_ref`, `expected` (from assertion context), `actual_excerpt`, `assertion_tier`.
 4. Exit with 0 if all assertions passed, non-zero otherwise.
+
+**Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Builder-owned (unit test results). Writing regression results to `tests.json` clobbers Builder counts and breaks the Critic's structural completeness gate. The Critic reads both files independently: `tests.json` for the Implementation Gate, `regression.json` for regression status.
 
 **CLI interface:**
 
