@@ -26,16 +26,35 @@ If no delivery plan exists:
 - After user confirmation, create the delivery plan at `.purlin/delivery_plan.md` using the canonical format below.
 - **Validation gate:** After writing `delivery_plan.md` but BEFORE committing, read `.purlin/cache/dependency_graph.json` and verify that no dependency cycles exist between phases. For each pair of phases, check if any feature in Phase A depends (transitively) on any feature in Phase B -- if so, Phase A must come after Phase B. If cycles or ordering violations are found, fix the plan (typically by moving the dependent feature to a later phase). Only commit after validation passes.
 
-**Scope Assessment Heuristics:**
-*   2+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
-*   3+ features of any complexity mix -> recommend phasing.
-*   Single feature with 5+ unimplemented scenarios -> consider intra-feature phasing.
+**Context Tier Resolution:**
+
+Before assessing scope, resolve the Builder's context tier:
+1. Read the Builder's configured model from agent config (`agents.builder.model`).
+2. Look up that model ID in the config `models` array to get `context_window_tokens`.
+3. If `context_window_tokens > 200000`, use **Extended** tier. Otherwise, use **Standard** tier.
+4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
+
+**Tier Defaults:**
+
+| Parameter | Standard (<=200K) | Extended (>200K) |
+|---|---|---|
+| Max features per phase | 2 | 5 |
+| Max HIGH-complexity per phase (combined) | 1 | 2 |
+| HIGH solo-phase scenario threshold | 5 | 8 |
+| Phasing recommendation: any mix | 3+ features | 7+ features |
+| Phasing recommendation: HIGH | 2+ features | 4+ features |
+| Intra-feature phasing | 5+ scenarios | 8+ scenarios |
+
+**Scope Assessment Heuristics (tier-aware):**
+*   **Standard tier:** 2+ HIGH-complexity features or 3+ features of any mix -> recommend phasing. Single feature with 5+ unimplemented scenarios -> consider intra-feature phasing.
+*   **Extended tier:** 4+ HIGH-complexity features or 7+ features of any mix -> recommend phasing. Single feature with 8+ unimplemented scenarios -> consider intra-feature phasing.
+*   A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
 *   **Context budget awareness:** When assessing phase sizing, estimate the context budget for each phase. A phase that would require reading many large feature specs, implementing across many files, and running extensive tests is more likely to exhaust context. Prefer smaller phases when the cumulative scope (spec reading + implementation + testing) is large. This is a soft signal, not a hard cap -- testability and dependency order take priority. See `instructions/references/phased_delivery.md` Section 10.9.
 
-**Per-Phase Sizing Caps:**
-*   Max **2 features per phase** regardless of complexity.
-*   Max **1 HIGH-complexity feature per phase** if the phase contains any other feature.
-*   A single HIGH-complexity feature with 5+ scenarios gets its own dedicated phase.
+**Per-Phase Sizing Caps (tier-derived):**
+*   Max features per phase: **2** (Standard) or **5** (Extended). Override via `phase_sizing.max_features_per_phase`.
+*   Max HIGH-complexity features per phase: **1** (Standard) or **2** (Extended). Override via `phase_sizing.max_high_per_phase`.
+*   A single HIGH-complexity feature with **5+** (Standard) or **8+** (Extended) scenarios gets its own dedicated phase. Override via `phase_sizing.high_solo_threshold`.
 *   See `instructions/references/phased_delivery.md` Section 10.8 for the normative rules.
 
 If phasing is warranted, present the user with two options:

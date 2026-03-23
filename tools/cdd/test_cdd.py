@@ -4005,6 +4005,169 @@ class TestStartupBriefingPhasingRecommendation(unittest.TestCase):
             self.assertFalse(result["delivery_plan_state"]["exists"])
 
 
+class TestExtendedContextTierAdjustsPhasingThreshold(unittest.TestCase):
+    """Scenario: Extended context tier adjusts phasing threshold"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_extended_tier_no_phasing_below_threshold(self, mock_fabs, mock_tdir):
+        """5 features with extended tier (threshold 7) -> phasing NOT recommended."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features = {}
+            for i in range(5):
+                features[f"f{i+1}"] = {
+                    "label": f"F{i+1}",
+                    "role_status": {"architect": "DONE",
+                                    "builder": "TODO",
+                                    "qa": "N/A", "pm": "N/A"},
+                    "scenarios": ["S1", "S2"],  # < 5, not HIGH
+                }
+            config = {
+                "models": [
+                    {"id": "claude-opus-4-6[1m]",
+                     "context_window_tokens": 1000000}
+                ],
+                "agents": {
+                    "builder": {"find_work": True, "auto_start": True,
+                                "model": "claude-opus-4-6[1m]",
+                                "effort": "high"},
+                    "qa": {"find_work": True, "auto_start": False,
+                           "model": "test-model", "effort": "medium"},
+                    "architect": {"find_work": False, "auto_start": False,
+                                  "model": "test-model", "effort": "high"},
+                    "pm": {"find_work": False, "auto_start": False,
+                           "model": "test-model", "effort": "high"},
+                },
+            }
+            env = _make_startup_env(tmpdir, features=features, config=config)
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            self.assertEqual(result["context_tier"], "extended")
+            self.assertFalse(result["phasing_recommended"])
+            self.assertFalse(result["delivery_plan_state"]["exists"])
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_extended_tier_phasing_at_threshold(self, mock_fabs, mock_tdir):
+        """7 features with extended tier -> phasing recommended."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features = {}
+            for i in range(7):
+                features[f"f{i+1}"] = {
+                    "label": f"F{i+1}",
+                    "role_status": {"architect": "DONE",
+                                    "builder": "TODO",
+                                    "qa": "N/A", "pm": "N/A"},
+                    "scenarios": ["S1", "S2"],
+                }
+            config = {
+                "models": [
+                    {"id": "claude-opus-4-6[1m]",
+                     "context_window_tokens": 1000000}
+                ],
+                "agents": {
+                    "builder": {"find_work": True, "auto_start": True,
+                                "model": "claude-opus-4-6[1m]",
+                                "effort": "high"},
+                    "qa": {"find_work": True, "auto_start": False,
+                           "model": "test-model", "effort": "medium"},
+                    "architect": {"find_work": False, "auto_start": False,
+                                  "model": "test-model", "effort": "high"},
+                    "pm": {"find_work": False, "auto_start": False,
+                           "model": "test-model", "effort": "high"},
+                },
+            }
+            env = _make_startup_env(tmpdir, features=features, config=config)
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            self.assertEqual(result["context_tier"], "extended")
+            self.assertTrue(result["phasing_recommended"])
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_standard_tier_phasing_at_3_features(self, mock_fabs, mock_tdir):
+        """3 features with standard tier (no context_window_tokens) -> phasing recommended."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features = {}
+            for i in range(3):
+                features[f"f{i+1}"] = {
+                    "label": f"F{i+1}",
+                    "role_status": {"architect": "DONE",
+                                    "builder": "TODO",
+                                    "qa": "N/A", "pm": "N/A"},
+                    "scenarios": ["S1"],
+                }
+            config = {
+                "models": [
+                    {"id": "claude-opus-4-6", "context_window_tokens": 200000}
+                ],
+                "agents": {
+                    "builder": {"find_work": True, "auto_start": True,
+                                "model": "claude-opus-4-6",
+                                "effort": "high"},
+                    "qa": {"find_work": True, "auto_start": False,
+                           "model": "test-model", "effort": "medium"},
+                    "architect": {"find_work": False, "auto_start": False,
+                                  "model": "test-model", "effort": "high"},
+                    "pm": {"find_work": False, "auto_start": False,
+                           "model": "test-model", "effort": "high"},
+                },
+            }
+            env = _make_startup_env(tmpdir, features=features, config=config)
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            self.assertEqual(result["context_tier"], "standard")
+            self.assertTrue(result["phasing_recommended"])
+
+
 class TestStartupBriefingMutualExclusivity(unittest.TestCase):
     """Scenario: Startup Briefing Mutual Exclusivity with Graph"""
 

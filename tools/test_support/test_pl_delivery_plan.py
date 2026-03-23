@@ -198,38 +198,113 @@ class TestDependencyValidationCatchesCycles(unittest.TestCase):
 class TestPhaseSizingCapEnforced(unittest.TestCase):
     """Scenario: Phase sizing cap enforced
 
-    Given a proposed phase breakdown
-    When /pl-delivery-plan validates phase sizes
-    Then no phase exceeds 2 features
+    Given the Builder's model resolves to a context tier with max_features_per_phase of N
+    And N+1 features assigned to a single phase
+    When /pl-delivery-plan validates the plan
+    Then the phase is split to respect the tier-derived max features per phase
 
-    Structural test: the command file describes the max 2 features
-    per phase cap.
+    Structural test: the command file describes tier-derived per-phase caps.
     """
 
-    def test_max_two_features_per_phase(self):
-        """Command must state max 2 features per phase."""
+    def test_tier_derived_max_features_per_phase(self):
+        """Command must describe tier-derived max features per phase (Standard: 2, Extended: 5)."""
         content = read_command_file()
+        # The tier defaults table must list both Standard and Extended caps
         self.assertRegex(
             content,
-            r"(?i)max\s+\**2\s+features\s+per\s+phase",
+            r"Standard.*2|2.*Standard",
+        )
+        self.assertRegex(
+            content,
+            r"Extended.*5|5.*Extended",
         )
 
     def test_high_complexity_phase_cap(self):
-        """Command must limit phases with HIGH-complexity features."""
+        """Command must limit phases with HIGH-complexity features per tier."""
         content = read_command_file()
-        # Max 1 HIGH-complexity feature per phase if another feature is present
-        self.assertRegex(
-            content,
-            r"(?i)max\s+\**1\s+HIGH[- ]complexity",
-        )
+        # Tier table has Standard: 1, Extended: 2 for HIGH-complexity
+        self.assertIn("Max HIGH-complexity per phase", content)
 
     def test_dedicated_phase_for_large_features(self):
-        """A single HIGH-complexity feature with 5+ scenarios gets its own phase."""
+        """A single HIGH-complexity feature with tier-dependent threshold gets its own phase."""
+        content = read_command_file()
+        # Standard: 5+, Extended: 8+
+        self.assertRegex(
+            content,
+            r"(?i)5\+.*Standard|Standard.*5\+",
+        )
+        self.assertRegex(
+            content,
+            r"(?i)8\+.*Extended|Extended.*8\+",
+        )
+
+
+class TestExtendedContextTierIncreasesPhaseCapacity(unittest.TestCase):
+    """Scenario: Extended context tier increases phase capacity
+
+    Given the Builder's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
+    And 5 features in TODO state with no HIGH-complexity features
+    When /pl-delivery-plan creates a plan
+    Then the plan uses the Extended tier defaults
+    And all 5 features fit in a single phase
+
+    Structural test: the command file describes context tier resolution and
+    the Extended tier with higher caps.
+    """
+
+    def test_context_tier_resolution_described(self):
+        """Command must describe how to resolve context tier from model config."""
+        content = read_command_file()
+        self.assertIn("context_window_tokens", content)
+        self.assertRegex(
+            content,
+            r"(?i)context\s+tier\s+resolution",
+        )
+
+    def test_extended_tier_has_higher_caps(self):
+        """Extended tier must allow more features per phase than Standard."""
+        content = read_command_file()
+        # Extended tier allows 5 features per phase vs Standard's 2
+        self.assertIn("Extended", content)
+        self.assertRegex(
+            content,
+            r"Extended.*>200K|>200K.*Extended",
+        )
+
+    def test_tier_resolution_uses_model_lookup(self):
+        """Tier resolution must look up the Builder model in the models array."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)5\+\s*scenarios.*dedicated\s+phase",
+            r"(?i)model\s+ID\s+in.*models",
         )
+
+
+class TestPhaseSizingOverrideTakesPrecedence(unittest.TestCase):
+    """Scenario: Phase sizing override takes precedence
+
+    Given the Builder's model resolves to the Extended tier
+    And the agent config contains phase_sizing with max_features_per_phase of 3
+    When /pl-delivery-plan creates a plan with 4 features
+    Then the plan splits into phases of at most 3 features each
+    And the override value takes precedence over the Extended tier default of 5
+
+    Structural test: the command file describes the phase_sizing override mechanism.
+    """
+
+    def test_phase_sizing_override_described(self):
+        """Command must describe the phase_sizing override block."""
+        content = read_command_file()
+        self.assertIn("phase_sizing", content)
+        self.assertRegex(
+            content,
+            r"(?i)(override|precedence|take[s]?\s+precedence)",
+        )
+
+    def test_override_keys_listed(self):
+        """Command must list override keys (max_features_per_phase, etc.)."""
+        content = read_command_file()
+        self.assertIn("max_features_per_phase", content)
 
 
 # ===================================================================

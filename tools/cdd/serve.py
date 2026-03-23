@@ -1288,14 +1288,30 @@ def generate_startup_briefing(role, cache=None):
         else:
             result["delivery_plan_state"] = {"exists": False}
 
-        # Phasing recommended (Section 2.15.2)
+        # Context tier resolution (Section 2.15.2)
+        builder_model_id = CONFIG.get("agents", {}).get(
+            "builder", {}).get("model", "")
+        models_list = CONFIG.get("models", [])
+        ctx_tokens = 200000  # default
+        for m in models_list:
+            if m.get("id") == builder_model_id:
+                ctx_tokens = m.get("context_window_tokens", 200000)
+                break
+        context_tier = "extended" if ctx_tokens > 200000 else "standard"
+        result["context_tier"] = context_tier
+
+        # Phasing recommended (Section 2.15.2) -- tier-aware
         if not result["delivery_plan_state"]["exists"]:
             n_features = len(features_with_count)
             high_complexity = sum(
                 1 for f in features_with_count
                 if f.get("scenario_count", 0) >= 5)
-            result["phasing_recommended"] = (
-                n_features >= 3 or high_complexity >= 2)
+            if context_tier == "extended":
+                result["phasing_recommended"] = (
+                    n_features >= 7 or high_complexity >= 4)
+            else:
+                result["phasing_recommended"] = (
+                    n_features >= 3 or high_complexity >= 2)
         else:
             result["phasing_recommended"] = False
 
