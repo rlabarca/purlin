@@ -26,8 +26,13 @@ In this repository, Builder-owned application code lives in `tools/` (consumer-f
 |---------|------|
 | policy_critic | smoke |
 | critic_role_status | smoke |
+| critic_tool | smoke |
 | cdd_status_monitor | smoke |
 | config_layering | smoke |
+| project_init | smoke |
+| regression_testing | smoke |
+| test_fixture_repo | smoke |
+| agent_launchers_common | smoke |
 
 ## Voice and Tone
 

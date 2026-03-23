@@ -114,14 +114,15 @@ After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification)
 
 1. Scan `tests/qa/scenarios/*.json` for all scenario files.
 2. For each, check the corresponding `tests/<feature>/tests.json` for result status (PASS/FAIL/NOT_RUN/STALE).
-3. Group by frequency (`per-feature` vs `pre-release`).
-4. Print the table in the Phase A Summary, after the existing summary block:
+3. Read `QA_OVERRIDES.md` tier table (if it exists) to determine each feature's test priority tier.
+4. Group by frequency (`per-feature` vs `pre-release`). Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
+5. Print the table in the Phase A Summary, after the existing summary block:
 
 ```
 Regression suites:
   per-feature:
+    [STALE]   critic_tool (3/3, but source modified since) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
-    [STALE]   critic_tool (3/3, but source modified since)
     [NOT_RUN] terminal_identity
 
   pre-release:
@@ -130,9 +131,9 @@ Regression suites:
 Run regression suites? [all / per-feature / pre-release / skip]
 ```
 
-5. If the user selects a group, QA invokes `/pl-regression-run` with the appropriate `--frequency` filter. If "all", run without filter.
-6. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
-7. When `auto_start` is `true`, skip per-feature suites that are PASS (not stale). Run STALE and NOT_RUN per-feature suites automatically. Print the pre-release table but do NOT auto-run pre-release suites (they are long-running and require explicit opt-in).
+6. If the user selects a group, QA invokes `/pl-regression-run` with the appropriate `--frequency` filter. If "all", run without filter.
+7. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
+8. When `auto_start` is `true`: run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped). Skip non-smoke per-feature suites that are PASS (not stale). Run STALE and NOT_RUN standard per-feature suites automatically. Print the pre-release table but do NOT auto-run pre-release suites (they are long-running and require explicit opt-in).
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 

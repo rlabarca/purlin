@@ -115,7 +115,23 @@ Feature files MAY contain a `## Visual Specification` section for features with 
 *   The Critic MUST check for `brief.json` at `features/design/<feature_stem>/brief.json` for features with Figma references. If `figma_last_modified` in the brief is newer than the spec's `- **Processed:**` date, produce LOW-priority PM action items with category `stale_token_map`.
 *   **Figma Dev Status Advisory Gate:** Features in Builder TODO state with `> Figma Status: Design` in their blockquote metadata generate a LOW-priority PM action item with category `figma_design_not_ready`: "Figma design not marked Ready for Dev". This is advisory, not blocking -- the Critic does not prevent the Builder from working on the feature.
 
-### 2.10 Targeted Scope Completeness
+### 2.10 Smoke Tier Promotion Recommendations
+
+The Critic MUST track regression test failure patterns and surface tier promotion candidates as LOW-priority Architect action items.
+
+**Detection logic:**
+
+1. Read `tests/<feature>/tests.json` for each feature with regression scenario JSON (`tests/qa/scenarios/<feature>.json`).
+2. If a feature has `status: "FAIL"` in its most recent regression results AND is not currently classified as `smoke` in `QA_OVERRIDES.md`, generate a LOW-priority Architect action item: `"Regression failure on <feature> (not smoke-tier). Consider promoting to smoke if this feature blocks core workflow."`.
+3. Read `QA_OVERRIDES.md` to check the current tier table. Features already classified as `smoke` do not generate promotion recommendations.
+4. Features classified as `full-only` that fail are promoted to a MEDIUM recommendation: `"full-only feature <feature> has failing regression. Consider upgrading to standard or smoke."`.
+
+**Constraints:**
+- Promotion recommendations are advisory (LOW/MEDIUM priority). The Architect makes the final tier decision.
+- The Critic does NOT auto-modify `QA_OVERRIDES.md`. It only surfaces recommendations.
+- This check runs as part of the supplementary audits (alongside User Testing Audit and Builder Decision Audit), not as part of the dual-gate model.
+
+### 2.11 Targeted Scope Completeness
 When a feature has `change_scope: "targeted:..."` and `builder: "DONE"`, the Critic MUST compare the scenario names in the targeted scope list against all scenario headings (`#### Scenario:` titles) in the feature file. If scenarios exist in the feature spec that are NOT listed in the targeted scope, the Critic MUST generate a MEDIUM-priority Architect action item identifying the unscoped scenarios.
 
 *   **Purpose:** Targeted scopes created during phased delivery may become stale after the delivery plan is completed. This audit catches cases where the Builder has marked work as done but the targeted scope does not cover all scenarios -- indicating either a stale scope or incomplete work.

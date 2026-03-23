@@ -104,6 +104,17 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 
 **Gradual migration:** The Critic accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 
+## Test Priority Tier Classification
+
+**MANDATE:** When creating or refining a feature spec, the Architect MUST evaluate whether the feature warrants a non-default tier classification in `QA_OVERRIDES.md` under `## Test Priority Tiers`.
+
+**Tier decision prompt (ask yourself):**
+1. **If this feature breaks, is the app unusable?** Can agents start up? Can the Critic run? Can projects initialize? If yes → `smoke`.
+2. **Is this an edge case, polish, or rarely-used path?** If yes → `full-only`.
+3. **Neither extreme?** Leave unclassified (defaults to `standard`).
+
+Features that are prerequisites for many others, or that gate the entire workflow (Critic, config, init, launchers), are strong smoke candidates. Features not listed in the tier table default to `standard` — only add entries for `smoke` or `full-only`.
+
 ## Anchor Nodes (arch_*, design_*, policy_*)
 
 **Required section headings** (Critic checks for these words, case-insensitive, substring match):
