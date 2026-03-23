@@ -61,6 +61,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
     Given the PM agent launches
     And the startup briefing shows feature_summary.total is 0
+    When the PM processes the startup briefing
     Then the PM enters guided onboarding mode
     And the PM does not display the standard command table
     And the PM asks what the user is building
@@ -69,6 +70,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
     Given the PM agent launches
     And the startup briefing shows feature_summary.total is greater than 0
+    When the PM processes the startup briefing
     Then the PM follows the standard startup protocol
     And guided onboarding mode is not activated
 
@@ -98,6 +100,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 #### Scenario: Next steps include Builder and CDD
 
     Given the PM has completed the guided onboarding flow
+    When the PM presents next steps to the user
     Then the PM output includes "./pl-run-builder.sh"
     And the PM output includes "./pl-cdd-start.sh"
     And the PM output includes a one-sentence explanation of what the Builder does
@@ -106,7 +109,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
     Given the PM agent is running (any project state)
     And Figma MCP tools are not available
-    And the user shares a Figma URL
+    When the user shares a Figma URL
     Then the PM offers to guide through Figma MCP setup
     And the guidance includes typing /mcp and selecting figma
     And the guidance includes completing browser authentication
@@ -115,6 +118,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
     Given the PM agent launches
     And Figma MCP tools are available
+    When the PM runs the Figma health check
     Then no Figma health check message is displayed
 
 #### Scenario: Figma MCP missing without visual context is silent
@@ -123,6 +127,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
     And Figma MCP tools are not available
     And no features have Visual Specification sections
     And the user has not mentioned Figma
+    When the PM runs the Figma health check
     Then no Figma health check message is displayed
 
 ### QA Scenarios
