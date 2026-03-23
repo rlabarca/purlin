@@ -7,7 +7,7 @@
 
 ### Audit Finding -- 2026-03-23
 
-[DISCOVERY] 246 FORBIDDEN pattern violations in shared CDD codebase
+[DISCOVERY][ACK] 246 FORBIDDEN pattern violations in shared CDD codebase
 
 **Source:** /pl-spec-code-audit --deep
 
