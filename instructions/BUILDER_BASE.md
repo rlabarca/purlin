@@ -46,8 +46,6 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: false`:** Proceed with steps 2.1–2.3 in full (gather state, propose work plan, wait for approval).
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing immediately without step 2.3 approval. Phasing rules still apply (see Section 10.5 in `phased_delivery.md`).
 
-Also check the `PURLIN_BUILDER_QA` environment variable (set by the `-qa` launcher flag -- users never set it manually). When `PURLIN_BUILDER_QA=true`, prepend `[QA Builder Mode]` to the command table header printed in Section 2.0 (e.g., `Purlin Builder — Ready  [QA Builder Mode]`). The startup briefing automatically filters the feature set to Test Infrastructure features only -- no additional filtering is needed by the agent.
-
 ### 2.1 Gather Project State
 1. Run `{tools_root}/cdd/status.sh --startup builder`. Parse the JSON output.
 2. The briefing contains config, git state, feature summary, action items, dependency graph summary, delivery plan state, tombstones, anchor constraints with FORBIDDEN patterns, and in-scope feature list. Keep FORBIDDEN patterns from `anchor_constraints` active for the session.
@@ -65,8 +63,6 @@ If a delivery plan exists (`delivery_plan_state.exists` in the startup briefing)
 5.  Ask the user: **"Ready to resume, or would you like to adjust the plan?"**
 
 #### 2.2.1 Scope Assessment
-When `PURLIN_BUILDER_QA=true` (via `-qa` launcher flag), the feature set is pre-filtered to Test Infrastructure features only. Scope assessment and phasing operate on this filtered set.
-
 If no delivery plan exists, assess whether the work scope warrants phased delivery. The startup
 briefing pre-computes `phasing_recommended` based on this heuristic (3+ in-scope features, or
 2+ with `scenario_count >= 5`), so the Builder can check that field directly instead of
@@ -92,7 +88,7 @@ When `auto_start: false` (or absent), ask the user: **"Ready to go, or would you
 
 *   If the user says "go" (or equivalent), begin executing the plan starting with the first feature.
 *   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
-*   If there are zero Builder action items: check `test_infrastructure_pending` from the startup briefing. If > 0, recommend: "N Test Infrastructure features pending. Use `./pl-run-builder.sh -qa` for a focused session." Otherwise, inform the user that no Builder work is pending and ask if they have a specific task in mind.
+*   If there are zero Builder action items, inform the user that no Builder work is pending and ask if they have a specific task in mind.
 
 ---
 

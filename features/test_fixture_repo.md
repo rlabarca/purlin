@@ -109,7 +109,7 @@ QA MAY create and manage fixtures directly during regression authoring (`/pl-reg
 2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.
 3. QA uses `fixture add-tag` to create fixture tags from constructed state directories.
 4. QA records fixture usage in `tests/qa/fixture_usage.json`.
-5. For complex fixtures requiring elaborate git history that QA cannot construct, QA writes a recommendation to `tests/qa/fixture_recommendations.md` for the Builder to handle in a `-qa` session.
+5. For complex fixtures requiring elaborate git history that QA cannot construct, QA writes a recommendation to `tests/qa/fixture_recommendations.md` for the Builder to handle.
 
 **Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). The Builder creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
 
@@ -191,7 +191,7 @@ During regression scenario authoring (see `features/regression_testing.md` Secti
 - **Status:** PENDING | CREATED
 ```
 
-The Builder reads this file when running with `--qa` flag and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
+The Builder reads this file during normal startup and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
 
 ### 2.14 Remote Fixture Awareness
 
@@ -366,7 +366,7 @@ When QA identifies features needing complex state fixtures:
 #### Scenario: Fixture recommendation file read by future sessions
 
     Given tests/qa/fixture_recommendations.md contains a PENDING recommendation for "branch_collab"
-    When a new Builder session starts with qa_mode enabled
+    When a new Builder session starts
     Then the Builder can read the recommendation file
     And identify which fixture tags need to be created
 

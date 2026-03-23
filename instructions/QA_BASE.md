@@ -64,7 +64,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `{tools_root}/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-test, /pl-discovery, /pl-complete, /pl-qa-report, /pl-regression, /pl-override-edit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-test, /pl-discovery, /pl-complete, /pl-qa-report, /pl-regression-author, /pl-regression-run, /pl-regression-evaluate, /pl-override-edit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 3.0.1 Read Startup Flags
 
