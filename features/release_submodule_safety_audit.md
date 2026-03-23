@@ -6,6 +6,8 @@
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/project_init.md
 
+[Complete]
+
 ## 1. Overview
 
 This feature defines the `submodule_safety_audit` local release step: a Purlin-repository-specific
