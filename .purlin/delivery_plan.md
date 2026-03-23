@@ -12,9 +12,9 @@
 - **Group 3:** Phase 4, Phase 5, Phase 6 (depend on Group 2 but not each other, can execute in parallel)
 - **Group 4:** Phase 7 (depends on Phase 5 from Group 3)
 
-## Phase 1 -- Foundation Roots [IN_PROGRESS]
+## Phase 1 -- Foundation Roots [COMPLETE]
 **Features:** project_init.md, critic_tool.md
-**Completion Commit:** --
+**Completion Commit:** fc23a65
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** Both are dependency roots that unblock later phases. project_init is targeted (2 scenarios); critic_tool is re-verification only. Parallel build opportunity (independent features).
@@ -26,9 +26,9 @@
 **QA Bugs Addressed:** --
 **Notes:** config_layering depends on project_init (Phase 1); cdd_status_monitor has all deps COMPLETE. config_layering is re-verification; cdd_status_monitor is targeted (Single-Line Status Cells). Parallel build opportunity (independent features).
 
-## Phase 3 -- Independent Skills [PENDING]
+## Phase 3 -- Independent Skills [COMPLETE]
 **Features:** pl_spec_code_audit.md, pl_web_test.md
-**Completion Commit:** --
+**Completion Commit:** 0b695e1
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** Both re-verification only. All dependencies are COMPLETE features. No deps on any TODO feature -- can execute in parallel with Phase 1 (Group 1). Parallel build opportunity (independent features).
