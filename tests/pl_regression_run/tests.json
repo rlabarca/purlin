@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "passed": 14,
+  "failed": 0,
+  "total": 14,
+  "test_file": "tools/test_support/test_pl_regression_run.py",
+  "details": [
+    {
+      "test": "test_command_in_formatted_block (__main__.TestCommandBlockIsCopyPasteable.test_command_in_formatted_block)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_copy_pasteable_ux_rule (__main__.TestCommandBlockIsCopyPasteable.test_copy_pasteable_ux_rule)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_multi_feature_sequential_chain (__main__.TestCommandBlockIsCopyPasteable.test_multi_feature_sequential_chain)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_feature_command_template (__main__.TestCommandBlockIsCopyPasteable.test_single_feature_command_template)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_frequency_argument_documented (__main__.TestFrequencyFilterExcludesPreRelease.test_frequency_argument_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_per_feature_is_default (__main__.TestFrequencyFilterExcludesPreRelease.test_per_feature_is_default)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_pre_release_exclusion_by_default (__main__.TestFrequencyFilterExcludesPreRelease.test_pre_release_exclusion_by_default)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_pre_release_inclusion_with_flag (__main__.TestFrequencyFilterExcludesPreRelease.test_pre_release_inclusion_with_flag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clean_state_mentions_current (__main__.TestNoEligibleFeaturesReportsCleanState.test_clean_state_mentions_current)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clean_state_message_present (__main__.TestNoEligibleFeaturesReportsCleanState.test_clean_state_message_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_zero_eligible_leads_to_stop (__main__.TestNoEligibleFeaturesReportsCleanState.test_zero_eligible_leads_to_stop)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_qa_ownership (__main__.TestRoleGateRejectsNonQA.test_first_line_declares_qa_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_qa (__main__.TestRoleGateRejectsNonQA.test_redirect_message_for_non_qa)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_stop_instruction_after_redirect (__main__.TestRoleGateRejectsNonQA.test_stop_instruction_after_redirect)",
+      "status": "PASS"
+    }
+  ]
+}
