@@ -6,9 +6,9 @@
 ## Summary
 28 skill command features reset to TODO after specs were authored (commit 978285a). Each feature requires: review command file against spec, write structural Python unit tests, run tests, produce tests.json. All features have QA Scenarios: None, so Builder marks [Complete] directly. Phase 1 resolves the dependency root (policy_critic + regression_testing); phases 2-14 are mutually independent and form a single execution group.
 
-## Phase 1 -- Foundations [IN_PROGRESS]
+## Phase 1 -- Foundations [COMPLETE]
 **Features:** policy_critic.md, regression_testing.md
-**Completion Commit:** --
+**Completion Commit:** 7251374
 **Deferred:** --
 **QA Bugs Addressed:** --
 
