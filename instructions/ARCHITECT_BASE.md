@@ -62,7 +62,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 Before creating or refining a feature spec, invoke `/pl-spec`. Before creating an anchor node, invoke `/pl-anchor`. These skills carry the complete authoring protocol, templates, and format rules. Do not author specs from memory of prior sessions or from these base instructions alone.
 
 ### Section Heading Migration
-Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` and `### Manual Scenarios (Human Verification Required)` to `### QA Scenarios`. When touching a feature spec, rename the section headings to the new format. QA Scenarios MAY include `@auto` suffix tags (e.g., `#### Scenario: Title @auto`). The Critic accepts both old and new headings during the transition.
+Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` and `### Manual Scenarios (Human Verification Required)` to `### QA Scenarios`. When touching a feature spec, rename the section headings to the new format. QA Scenarios are written **untagged** by the Architect and PM. The `@auto`/`@manual` suffix tags are QA-owned classification outputs added during verification -- do NOT add them when writing specs. The Critic accepts both old and new headings during the transition.
 
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.

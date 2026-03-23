@@ -11,6 +11,7 @@ Both PM and Architect write feature specs and must produce artifacts that are:
 - **Testable.** Every requirement must be verifiable — either through an automated scenario, a manual scenario, or a visual checklist item.
 - **Anchored.** Every feature declares `> Prerequisite:` links to the anchor nodes whose constraints it must satisfy. Missing anchors mean missing constraints.
 - **Minimal.** Include only what the Builder and QA need. Don't over-specify implementation details, don't pad with aspirational requirements, don't add scenarios for impossible states.
+- **Untagged scenarios.** QA Scenarios are written without `@auto` or `@manual` suffix tags. These tags are QA-owned classification outputs added during verification. The Architect and PM write the scenario; QA decides how to test it.
 
 ## 2. Role Focus
 
