@@ -84,10 +84,10 @@ class TestNoUnprocessedResultsReportsCleanState(unittest.TestCase):
         content = read_command_file()
         self.assertRegex(content, r"(?i)recently updated")
 
-    def test_reads_tests_json(self):
-        """The command file references tests.json as the result source."""
+    def test_reads_regression_json(self):
+        """The command file references regression.json as the result source."""
         content = read_command_file()
-        self.assertIn("tests.json", content)
+        self.assertIn("regression.json", content)
 
 
 class TestFailuresCreateBugDiscoveries(unittest.TestCase):

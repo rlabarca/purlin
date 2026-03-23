@@ -30,7 +30,7 @@
       "status": "PASS"
     },
     {
-      "test": "test_reads_tests_json (__main__.TestNoUnprocessedResultsReportsCleanState.test_reads_tests_json)",
+      "test": "test_reads_regression_json (__main__.TestNoUnprocessedResultsReportsCleanState.test_reads_regression_json)",
       "status": "PASS"
     },
     {
