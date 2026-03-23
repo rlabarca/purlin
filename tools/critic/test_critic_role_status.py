@@ -20,6 +20,7 @@ sys.path.insert(0, SCRIPT_DIR)
 from critic import (
     extract_owner,
     generate_action_items,
+    generate_critic_json,
     compute_role_status,
     generate_critic_report,
     parse_visual_spec,
@@ -1596,6 +1597,116 @@ Reqs.
                                 'should NOT be QA AUTO')
         finally:
             critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: Role status reason populated for all roles
+# ===================================================================
+
+class TestRoleStatusReasonPopulated(unittest.TestCase):
+
+    def test_reason_keys_present_for_all_roles(self):
+        result = _make_base_result()
+        result['action_items'] = generate_action_items(result)
+        status = compute_role_status(result)
+        reason = status.get('role_status_reason', {})
+        for role in ('architect', 'builder', 'qa', 'pm'):
+            self.assertIn(role, reason,
+                          f'role_status_reason missing key: {role}')
+            self.assertIsInstance(reason[role], str)
+            self.assertTrue(len(reason[role]) > 0,
+                            f'role_status_reason[{role}] is empty')
+
+    def test_builder_todo_reason_contains_trigger(self):
+        """Builder TODO due to lifecycle reset should mention the trigger."""
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/test.md'}],
+                'testing': [],
+                'complete': [],
+            }
+        }
+        result['action_items'] = generate_action_items(result, cdd_status)
+        status = compute_role_status(result, cdd_status)
+        self.assertEqual(status['builder'], 'TODO')
+        reason = status['role_status_reason']['builder']
+        self.assertIn('spec modified after status commit', reason)
+
+
+# ===================================================================
+# Scenario: Section 2.7 — role_status_reason is sibling of role_status
+# in generate_critic_json output
+# ===================================================================
+
+class TestRoleStatusReasonSchemaPosition(unittest.TestCase):
+    """Verify role_status_reason is a top-level sibling of role_status
+    in the critic.json output (Section 2.7 canonical schema)."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        self.tests_dir = os.path.join(self.root, 'tests')
+        os.makedirs(self.features_dir)
+        os.makedirs(self.tests_dir)
+
+        feature_content = """\
+# Feature: Schema Test
+
+> Label: "Schema Test"
+> Category: "Test"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Basic Test
+    Given a system
+    When tested
+    Then it works
+"""
+        self.feature_path = os.path.join(
+            self.features_dir, 'schema_test.md')
+        with open(self.feature_path, 'w') as f:
+            f.write(feature_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_role_status_reason_is_top_level_sibling(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.TESTS_DIR = self.tests_dir
+        critic.PROJECT_ROOT = self.root
+        try:
+            data = generate_critic_json(self.feature_path)
+            # role_status_reason MUST be a top-level key (sibling of
+            # role_status), not nested inside role_status
+            self.assertIn('role_status_reason', data,
+                          'role_status_reason must be a top-level key')
+            self.assertIn('role_status', data)
+            self.assertNotIn('role_status_reason', data['role_status'],
+                             'role_status_reason must NOT be nested '
+                             'inside role_status')
+            # Verify all four roles present in both
+            for role in ('architect', 'builder', 'qa', 'pm'):
+                self.assertIn(role, data['role_status'])
+                self.assertIn(role, data['role_status_reason'])
+                self.assertIsInstance(
+                    data['role_status_reason'][role], str)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
 
 
 # ===================================================================

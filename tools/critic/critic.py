@@ -3348,6 +3348,10 @@ def generate_critic_json(feature_path, cdd_status=None):
     # Compute role status (depends on action_items being populated)
     result['role_status'] = compute_role_status(result, cdd_status)
 
+    # Extract role_status_reason to top level per Section 2.7 canonical schema
+    result['role_status_reason'] = result['role_status'].pop(
+        'role_status_reason', {})
+
     # Role Status / Action Item Consistency check (policy_critic Section 2.11)
     # Every non-terminal role status must have at least one action item.
     _nonterminal = {
