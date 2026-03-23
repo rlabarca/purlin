@@ -1649,10 +1649,30 @@ def generate_action_items(feature_result, cdd_status=None):
     if cdd_status is not None:
         lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
 
+    # Section 2.12.1: In-file [TODO] tag override + allow-empty validation
+    # These can override CDD lifecycle to 'todo' even when CDD reports
+    # 'complete' or 'testing'.
+    _effective_todo = lifecycle_state == 'todo'
+    _allow_empty_detail = None
+
+    if not _effective_todo:
+        # Check in-file [TODO] tag
+        if _has_infile_todo_tag(feature_file):
+            _effective_todo = True
+        # Check allow-empty [Complete] validation
+        elif lifecycle_state == 'complete':
+            complete_hash, _ = _get_last_complete_commit_hash(feature_file)
+            if complete_hash and _is_allow_empty_complete(
+                    feature_file, complete_hash):
+                validation = _validate_allow_empty_complete(feature_file)
+                if validation['invalid']:
+                    _effective_todo = True
+                    _allow_empty_detail = validation['detail']
+
     # Feature in TODO lifecycle state -> HIGH (spec modified, needs review)
     # Use diff-aware detection to enrich the description (Section 2.12)
     scenario_diff = None
-    if lifecycle_state == 'todo':
+    if _effective_todo:
         feature_path = os.path.join(
             FEATURES_DIR, os.path.basename(feature_file))
         if os.path.isfile(feature_path):
@@ -1660,8 +1680,12 @@ def generate_action_items(feature_result, cdd_status=None):
             scenario_diff = _get_scenario_diff(
                 feature_path, _content)
 
-        desc = f'Review and implement spec changes for {feature_name}'
-        if scenario_diff and scenario_diff['has_diff']:
+        # Section 2.12.1: allow-empty description takes priority
+        if _allow_empty_detail:
+            desc = _allow_empty_detail
+        else:
+            desc = f'Review and implement spec changes for {feature_name}'
+        if not _allow_empty_detail and scenario_diff and scenario_diff['has_diff']:
             parts = []
             if scenario_diff['new']:
                 titles = ', '.join(scenario_diff['new'][:5])
@@ -1675,7 +1699,8 @@ def generate_action_items(feature_result, cdd_status=None):
             desc = (
                 f'Implement spec changes for {feature_name}: '
                 + ', '.join(parts))
-        elif (scenario_diff and not scenario_diff['has_diff']
+        elif (not _allow_empty_detail and scenario_diff
+              and not scenario_diff['has_diff']
               and scenario_diff.get('old_content')):
             # No scenario changes but spec was modified -- detect which
             # Requirements subsections changed (Section 2.12)
@@ -2630,6 +2655,239 @@ def _get_commit_changed_files(feature_file, project_root=None):
         return set()
 
 
+# ===================================================================
+# Allow-Empty Status Commit Validation (policy_critic Section 2.12.1)
+# ===================================================================
+
+
+def _has_infile_todo_tag(feature_file, project_root=None):
+    """Check if the feature file contains an explicit [TODO] tag on a
+    standalone line.
+
+    Per Section 2.12.1, this is an Architect-issued reset override that
+    takes precedence over status commit history.  The tag may have
+    trailing content (e.g. HTML comments) but ``[TODO]`` must appear at
+    the start of the line (after optional whitespace).
+
+    Returns True if the in-file [TODO] tag is found.
+    """
+    root = project_root or PROJECT_ROOT
+    abs_path = os.path.join(root, 'features',
+                            os.path.basename(feature_file))
+    try:
+        with open(abs_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped.startswith('[TODO]'):
+                    return True
+    except (IOError, OSError):
+        pass
+    return False
+
+
+def _get_last_complete_commit_hash(feature_file, project_root=None):
+    """Find the most recent [Complete ...] status commit for a feature.
+
+    Returns (commit_hash, commit_message) or (None, None).
+    Supports both canonical and abbreviated formats.
+    """
+    root = project_root or PROJECT_ROOT
+    basename = os.path.basename(feature_file)
+    feature_ref = f'features/{basename}'
+
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--all', '--fixed-strings',
+             '--grep', '[Complete',
+             '--format=%H %s'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return None, None
+
+        for line in result.stdout.strip().split('\n'):
+            if not line.strip():
+                continue
+            parts = line.strip().split(' ', 1)
+            if len(parts) < 2:
+                continue
+            commit_hash, msg = parts
+
+            # Canonical: [Complete features/<name>.md]
+            if feature_ref in msg and '[Complete' in msg:
+                return commit_hash, msg
+
+            # Abbreviated: [Complete] with conventional scope
+            if '[Complete]' in msg:
+                resolved = _resolve_abbreviated_scope(msg, root)
+                if resolved == feature_ref:
+                    return commit_hash, msg
+
+        return None, None
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return None, None
+
+
+def _is_allow_empty_complete(feature_file, commit_hash,
+                             project_root=None):
+    """Check if a [Complete] commit was allow-empty relative to the
+    feature file.
+
+    Uses ``git diff-tree`` to inspect what files the commit modified.
+    If the feature file is NOT in the output, the commit is allow-empty.
+
+    Returns True if the commit did NOT modify the feature file.
+    """
+    root = project_root or PROJECT_ROOT
+    feature_ref = f'features/{os.path.basename(feature_file)}'
+
+    try:
+        # Use --root to handle initial commits (no parent to diff against)
+        result = subprocess.run(
+            ['git', 'diff-tree', '--root', '--no-commit-id',
+             '--name-only', '-r', commit_hash],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0:
+            return False
+
+        changed_files = {f.strip() for f in result.stdout.strip().split('\n')
+                         if f.strip()}
+        return feature_ref not in changed_files
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+def _strip_metadata_for_hash(content):
+    """Strip blockquote metadata lines from content for hash comparison.
+
+    Per Section 2.12, metadata lines (> Label:, > Category:, etc.) are
+    stripped before content hashing so edits to them don't trigger resets.
+    """
+    metadata_prefixes = (
+        '> Label:', '> Category:', '> Prerequisite:', '> Owner:',
+        '> Web Test:', '> Web Start:', '> Test Fixtures:',
+        '> Figma Status:', '> AFT Web:',
+    )
+    lines = content.split('\n')
+    filtered = [
+        line for line in lines
+        if not any(line.strip().startswith(p) for p in metadata_prefixes)
+    ]
+    return '\n'.join(filtered)
+
+
+def _validate_allow_empty_complete(feature_file, project_root=None):
+    """Validate an allow-empty [Complete] commit.
+
+    Per Section 2.12.1, compares spec content hash at the PREVIOUS status
+    commit (before the allow-empty one) against the current on-disk
+    content.  If hashes differ, the spec was modified between the previous
+    implementation and the allow-empty [Complete] -- the Builder marked
+    [Complete] without implementing the changes.
+
+    Returns dict:
+        invalid: bool -- True if the allow-empty is illegitimate
+        detail: str -- human-readable explanation
+    """
+    import hashlib
+
+    root = project_root or PROJECT_ROOT
+    basename = os.path.basename(feature_file)
+    feature_ref = f'features/{basename}'
+    abs_path = os.path.join(root, 'features', basename)
+
+    # Read current on-disk content
+    try:
+        with open(abs_path, 'r', encoding='utf-8') as f:
+            current_content = f.read()
+    except (IOError, OSError):
+        return {'invalid': False, 'detail': 'Cannot read feature file'}
+
+    # Find the previous status commit -- the status commit before the
+    # allow-empty one.  We search for all status commits referencing
+    # this feature and take the second one (first is the allow-empty).
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--all', '--fixed-strings',
+             '--grep', f'features/{basename}',
+             '--format=%H %s'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            # No commits reference this feature at all -- invalid:
+            # allow-empty [Complete] with no history
+            return {
+                'invalid': True,
+                'detail': (
+                    f'Builder marked [Complete] via --allow-empty but '
+                    f'no previous status commit exists. Cannot verify '
+                    f'implementation occurred.'),
+            }
+
+        # Find status commits (skip non-status commits)
+        status_commits = []
+        for line in result.stdout.strip().split('\n'):
+            if not line.strip():
+                continue
+            parts = line.strip().split(' ', 1)
+            if len(parts) < 2:
+                continue
+            h, msg = parts
+            # Only status commits ([Complete, [Ready for)
+            if '[Complete' in msg or '[Ready for' in msg:
+                status_commits.append(h)
+
+        if len(status_commits) >= 2:
+            # Second entry is the previous status commit
+            prev_hash = status_commits[1]
+        elif status_commits:
+            # Only one status commit (the allow-empty one).
+            # Fall back to the FIRST commit that created the feature
+            # file.  Compare initial content against current to detect
+            # unimplemented changes.
+            result2 = subprocess.run(
+                ['git', 'log', '--reverse', '--format=%H',
+                 '--', feature_ref],
+                cwd=root, capture_output=True, text=True, timeout=10,
+            )
+            if result2.returncode != 0 or not result2.stdout.strip():
+                return {'invalid': False,
+                        'detail': 'No file history found'}
+            prev_hash = result2.stdout.strip().split('\n')[0]
+        else:
+            return {'invalid': False,
+                    'detail': 'No status commits found'}
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return {'invalid': False, 'detail': 'Git error'}
+
+    # Get content at the previous reference commit
+    # Use absolute path for _get_file_at_commit (it uses os.path.relpath)
+    old_content = _get_file_at_commit(abs_path, prev_hash, root)
+    if old_content is None:
+        return {'invalid': False, 'detail': 'Cannot read old content'}
+
+    # Hash comparison with metadata stripped
+    current_stripped = _strip_metadata_for_hash(current_content)
+    old_stripped = _strip_metadata_for_hash(old_content)
+    current_hash = hashlib.sha256(current_stripped.encode()).hexdigest()
+    old_hash = hashlib.sha256(old_stripped.encode()).hexdigest()
+
+    if current_hash == old_hash:
+        return {'invalid': False, 'detail': 'Content unchanged'}
+
+    # Content differs -- count changed requirements sections
+    req_diff = _get_requirements_diff(current_content, old_content)
+    section_count = len(req_diff.get('changed_sections', []))
+    detail = (
+        f'Builder marked [Complete] via --allow-empty but spec content '
+        f'changed since last implementation. '
+        f'{section_count} new/modified requirements sections need '
+        f'implementation.'
+    )
+    return {'invalid': True, 'detail': detail}
+
+
 def _get_previous_qa_status(feature_file, project_root=None):
     """Read the previous QA status from the on-disk critic.json for a feature.
 
@@ -3077,6 +3335,27 @@ def compute_role_status(feature_result, cdd_status=None):
     # Lifecycle state (shared by Builder + QA status computation)
     lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
     lifecycle_is_todo = lifecycle_state == 'todo'
+
+    # Section 2.12.1: In-file [TODO] tag override
+    # When the feature file contains an explicit [TODO] tag, treat it as
+    # an Architect-issued reset regardless of status commit history.
+    if not lifecycle_is_todo and _has_infile_todo_tag(feature_file):
+        lifecycle_is_todo = True
+        lifecycle_state = 'todo'
+
+    # Section 2.12.1: Allow-empty [Complete] validation
+    # When CDD reports complete but the [Complete] commit was allow-empty
+    # and spec content changed, override to TODO.
+    _allow_empty_invalid = False
+    if lifecycle_state == 'complete':
+        complete_hash, _ = _get_last_complete_commit_hash(feature_file)
+        if complete_hash and _is_allow_empty_complete(
+                feature_file, complete_hash):
+            validation = _validate_allow_empty_complete(feature_file)
+            if validation['invalid']:
+                lifecycle_is_todo = True
+                lifecycle_state = 'todo'
+                _allow_empty_invalid = True
 
     # Apply precedence: INFEASIBLE > BLOCKED > FAIL > TODO > DONE
     if has_infeasible:

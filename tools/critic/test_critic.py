@@ -77,6 +77,11 @@ from critic import (
     compute_verification_effort,
     _get_requirements_diff,
     extract_figma_status,
+    _has_infile_todo_tag,
+    _get_last_complete_commit_hash,
+    _is_allow_empty_complete,
+    _validate_allow_empty_complete,
+    _strip_metadata_for_hash,
 )
 import logic_drift
 
@@ -9616,6 +9621,304 @@ class TestStructuralCompletenessStillEnforced(unittest.TestCase):
 
 
 # ===================================================================
+# Section 2.12.1: Allow-Empty Status Commit Validation
+# ===================================================================
+
+
+class TestInFileTodoTag(unittest.TestCase):
+    """In-file [TODO] tag detection per Section 2.12.1."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        import critic
+        self._orig_root = critic.PROJECT_ROOT
+        self._orig_features = critic.FEATURES_DIR
+        critic.PROJECT_ROOT = self.root
+        critic.FEATURES_DIR = self.features_dir
+
+    def tearDown(self):
+        import critic
+        critic.PROJECT_ROOT = self._orig_root
+        critic.FEATURES_DIR = self._orig_features
+        shutil.rmtree(self.root)
+
+    def test_detects_standalone_todo_tag(self):
+        """[TODO] on its own line is detected."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n[TODO]\n\n## Overview\n')
+        self.assertTrue(
+            _has_infile_todo_tag('features/test.md', self.root))
+
+    def test_detects_todo_with_html_comment(self):
+        """[TODO] followed by HTML comment is detected."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n'
+                    '[TODO] <!-- Architect reset -->\n\n## Overview\n')
+        self.assertTrue(
+            _has_infile_todo_tag('features/test.md', self.root))
+
+    def test_no_tag_returns_false(self):
+        """Feature without [TODO] tag returns False."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n## Overview\nSome content.\n')
+        self.assertFalse(
+            _has_infile_todo_tag('features/test.md', self.root))
+
+    def test_todo_in_prose_not_detected(self):
+        """[TODO] inside a paragraph (not at line start) is not detected."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n## Overview\n'
+                    'This mentions the status [TODO] in prose.\n')
+        # [TODO] in the middle of a line — strip() will start with 'This'
+        self.assertFalse(
+            _has_infile_todo_tag('features/test.md', self.root))
+
+    def test_infile_tag_overrides_complete_lifecycle(self):
+        """In-file [TODO] forces builder=TODO even when CDD says complete."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n[TODO]\n\n## Overview\n')
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'complete': [{'file': 'features/test.md'}],
+                'testing': [], 'todo': [],
+            },
+        }
+        status = compute_role_status(result, cdd_status)
+        self.assertEqual(status['builder'], 'TODO')
+
+    def test_infile_tag_generates_lifecycle_reset_action_item(self):
+        """In-file [TODO] generates a lifecycle_reset action item."""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature: Test\n\n[TODO]\n\n'
+                    '## 1. Overview\nOverview.\n\n'
+                    '## 2. Requirements\nReqs.\n\n'
+                    '## 3. Scenarios\n\n### Unit Tests\nNone.\n')
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'complete': [{'file': 'features/test.md'}],
+                'testing': [], 'todo': [],
+            },
+        }
+        items = generate_action_items(result, cdd_status)
+        lifecycle_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset']
+        self.assertEqual(len(lifecycle_items), 1)
+        self.assertEqual(lifecycle_items[0]['priority'], 'HIGH')
+
+
+class TestAllowEmptyCompleteValidation(unittest.TestCase):
+    """Allow-empty [Complete] commit validation per Section 2.12.1."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        # Initialize a git repo for testing
+        subprocess.run(['git', 'init'], cwd=self.root,
+                       capture_output=True, timeout=10)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=self.root, capture_output=True, timeout=10)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=self.root, capture_output=True, timeout=10)
+
+        import critic
+        self._orig_root = critic.PROJECT_ROOT
+        self._orig_features = critic.FEATURES_DIR
+        critic.PROJECT_ROOT = self.root
+        critic.FEATURES_DIR = self.features_dir
+
+    def tearDown(self):
+        import critic
+        critic.PROJECT_ROOT = self._orig_root
+        critic.FEATURES_DIR = self._orig_features
+        shutil.rmtree(self.root)
+
+    def _commit_feature(self, name, content, message):
+        """Write a feature file and commit it."""
+        path = os.path.join(self.features_dir, f'{name}.md')
+        with open(path, 'w') as f:
+            f.write(content)
+        subprocess.run(['git', 'add', path], cwd=self.root,
+                       capture_output=True, timeout=10)
+        subprocess.run(
+            ['git', 'commit', '-m', message],
+            cwd=self.root, capture_output=True, timeout=10)
+
+    def _commit_allow_empty(self, message):
+        """Create an allow-empty commit."""
+        subprocess.run(
+            ['git', 'commit', '--allow-empty', '-m', message],
+            cwd=self.root, capture_output=True, timeout=10)
+
+    def test_allow_empty_with_content_change_is_invalid(self):
+        """Allow-empty [Complete] after spec edit detects content change."""
+        # Initial commit with feature
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## 1. Overview\nV1\n',
+            'feat: initial')
+
+        # Architect edits spec
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## 1. Overview\nV1\n\n'
+            '## 2. Requirements\n\n### 2.1 New Req\nStuff.\n',
+            'arch: add requirements')
+
+        # Builder marks [Complete] without implementing
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md] [Scope: full]')
+
+        result = _validate_allow_empty_complete(
+            'features/test.md', self.root)
+        self.assertTrue(result['invalid'])
+        self.assertIn('--allow-empty', result['detail'])
+
+    def test_allow_empty_with_no_change_is_valid(self):
+        """Allow-empty [Complete] with unchanged content is valid."""
+        content = '# Feature: Test\n\n## 1. Overview\nV1\n'
+        # Initial commit
+        self._commit_feature('test', content, 'feat: initial')
+
+        # Builder marks [Complete] (spec hasn't changed since creation)
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md] [Scope: full]')
+
+        result = _validate_allow_empty_complete(
+            'features/test.md', self.root)
+        self.assertFalse(result['invalid'])
+
+    def test_is_allow_empty_detects_empty_commit(self):
+        """_is_allow_empty_complete correctly detects allow-empty commits."""
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## Overview\nV1\n',
+            'feat: initial')
+
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+
+        # Get the allow-empty commit hash
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%H'],
+            cwd=self.root, capture_output=True, text=True, timeout=10)
+        commit_hash = result.stdout.strip()
+
+        self.assertTrue(
+            _is_allow_empty_complete('features/test.md',
+                                     commit_hash, self.root))
+
+    def test_normal_commit_not_allow_empty(self):
+        """A commit that modifies the feature file is not allow-empty."""
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## Overview\nV1\n',
+            'status(test): [Complete features/test.md]')
+
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%H'],
+            cwd=self.root, capture_output=True, text=True, timeout=10)
+        commit_hash = result.stdout.strip()
+
+        self.assertFalse(
+            _is_allow_empty_complete('features/test.md',
+                                     commit_hash, self.root))
+
+    def test_metadata_only_change_not_flagged(self):
+        """Metadata-only edits (> Label:, > Category:) are stripped."""
+        content_v1 = ('# Feature: Test\n\n'
+                      '> Label: "Test"\n> Category: "Cat"\n\n'
+                      '## 1. Overview\nV1\n')
+        self._commit_feature('test', content_v1, 'feat: initial')
+
+        # First [Complete] (real)
+        self._commit_feature(
+            'test', content_v1,
+            'status(test): [Complete features/test.md] [Scope: full]')
+
+        # Change only metadata
+        content_v2 = ('# Feature: Test\n\n'
+                      '> Label: "Test Renamed"\n'
+                      '> Category: "NewCat"\n\n'
+                      '## 1. Overview\nV1\n')
+        self._commit_feature('test', content_v2, 'arch: rename')
+
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+
+        result = _validate_allow_empty_complete(
+            'features/test.md', self.root)
+        self.assertFalse(result['invalid'])
+
+    def test_get_last_complete_commit_hash_finds_canonical(self):
+        """Finds canonical [Complete features/test.md] format."""
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## Overview\nV1\n',
+            'feat: initial')
+
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md] [Scope: full]')
+
+        commit_hash, msg = _get_last_complete_commit_hash(
+            'features/test.md', self.root)
+        self.assertIsNotNone(commit_hash)
+        self.assertIn('[Complete features/test.md]', msg)
+
+    def test_get_last_complete_commit_hash_finds_abbreviated(self):
+        """Finds abbreviated [Complete] format via scope resolution."""
+        self._commit_feature(
+            'test',
+            '# Feature: Test\n\n## Overview\nV1\n',
+            'feat: initial')
+
+        self._commit_allow_empty(
+            'status(test): [Complete] [Scope: full]')
+
+        commit_hash, msg = _get_last_complete_commit_hash(
+            'features/test.md', self.root)
+        self.assertIsNotNone(commit_hash)
+        self.assertIn('[Complete]', msg)
+
+
+class TestStripMetadataForHash(unittest.TestCase):
+    """Metadata stripping for content hash comparison."""
+
+    def test_strips_label_and_category(self):
+        """Label and Category metadata lines are stripped."""
+        content = ('# Feature\n\n> Label: "Test"\n'
+                   '> Category: "Cat"\n\n## Overview\n')
+        stripped = _strip_metadata_for_hash(content)
+        self.assertNotIn('> Label:', stripped)
+        self.assertNotIn('> Category:', stripped)
+        self.assertIn('## Overview', stripped)
+
+    def test_strips_all_metadata_types(self):
+        """All metadata prefixes are stripped."""
+        content = ('> Label: X\n> Category: Y\n> Prerequisite: Z\n'
+                   '> Owner: PM\n> Web Test: http://x\n'
+                   '> Web Start: cmd\n> Test Fixtures: tag\n'
+                   '> Figma Status: Design\n> AFT Web: http://y\n'
+                   'Content line\n')
+        stripped = _strip_metadata_for_hash(content)
+        self.assertEqual(stripped.strip(), 'Content line')
+
+    def test_preserves_non_metadata_blockquotes(self):
+        """Non-metadata blockquotes (> Prerequisite: is metadata, but
+        > Note: is not) are preserved."""
+        content = '> Note: This is a note.\n> Label: X\n'
+        stripped = _strip_metadata_for_hash(content)
+        self.assertIn('> Note:', stripped)
+        self.assertNotIn('> Label:', stripped)
+
+
+# ===================================================================
 # Test runner with output to tests/critic_tool/tests.json
 # ===================================================================
 
@@ -9656,6 +9959,8 @@ if __name__ == '__main__':
         'TestBriefStalenessCheck', 'TestFigmaDevStatusAdvisory',
         'TestTraceabilityNotEnforced', 'TestRegressionGuidanceDetection',
         'TestStructuralCompletenessStillEnforced',
+        'TestInFileTodoTag', 'TestAllowEmptyCompleteValidation',
+        'TestStripMetadataForHash',
     )
     all_classes = [
         obj for name, obj in vars(sys.modules[__name__]).items()
