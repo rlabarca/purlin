@@ -1105,8 +1105,8 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
 
     def test_stale_not_recorded_as_bug_discovery(self):
         """Skill file distinguishes STALE from BUG in result recording."""
-        # STALE items should NOT be recorded as [BUG] discoveries
-        self.assertIn('STALE/DRIFT', self.command_content)
+        # STALE items create DISCOVERY entries, not BUG discoveries
+        self.assertIn('STALE verdicts', self.command_content)
         self.assertIn('not BUG discoveries', self.command_content)
 
 
