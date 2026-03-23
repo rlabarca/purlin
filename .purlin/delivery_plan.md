@@ -19,9 +19,9 @@
 **QA Bugs Addressed:** --
 **Notes:** Both are dependency roots that unblock later phases. project_init is targeted (2 scenarios); critic_tool is re-verification only. Parallel build opportunity (independent features).
 
-## Phase 2 -- Core Infrastructure [PENDING]
+## Phase 2 -- Core Infrastructure [COMPLETE]
 **Features:** config_layering.md, cdd_status_monitor.md
-**Completion Commit:** --
+**Completion Commit:** 9ae1e19
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** config_layering depends on project_init (Phase 1); cdd_status_monitor has all deps COMPLETE. config_layering is re-verification; cdd_status_monitor is targeted (Single-Line Status Cells). Parallel build opportunity (independent features).
