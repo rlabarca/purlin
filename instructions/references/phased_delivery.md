@@ -146,3 +146,34 @@ For the complete dispatch protocol, see `/pl-build` (Execution Group Dispatch se
 
 - Sub-agent spec: `features/subagent_parallel_builder.md`
 - Builder launcher spec: `features/builder_agent_launcher.md`
+
+## 10.14 Phase Deferral Protocol
+
+A phase feature is **role-blocked** when the Builder cannot make progress because another role must act first. Specifically:
+
+*   `architect: TODO` -- the spec was modified or has gaps; the Architect must review before the Builder can proceed.
+*   `builder: BLOCKED` -- an OPEN SPEC_DISPUTE suspends work on this feature.
+*   `builder: INFEASIBLE` -- the Builder halted work; the Architect must revise the spec.
+
+When all remaining features in a phase are role-blocked:
+
+1.  **Detect:** During the per-feature loop, the Builder checks each feature's CDD status before starting Step 0. If the feature is role-blocked, the Builder skips it with a log message: `"Skipping <feature> -- <role> <status> (role-blocked)"`.
+2.  **Defer:** When all non-blocked features in the phase are complete and only role-blocked features remain, the Builder records the phase as COMPLETE with a `**Deferred:**` annotation listing the blocked features and their blocking reason.
+3.  **Re-queue:** Deferred features are appended to the next suitable PENDING phase in the delivery plan (one that does not create a dependency cycle). If no suitable phase exists, the Builder creates a new final phase labeled `Deferred Cleanup`. The re-queued features are added to the target phase's `**Features:**` line.
+4.  **Announce:** The Builder prints a clear deferral message:
+    ```
+    Phase N complete (with deferrals)
+    Completed: feature_a.md, feature_b.md
+    Deferred to Phase M: feature_c.md (architect TODO)
+    ```
+5.  **Advance:** The Builder advances to the next phase/group normally. The deferral does not block progression.
+
+**Deferral in the delivery plan format:** When a phase completes with deferrals, the phase entry includes:
+```
+**Deferred:** feature_c.md (architect TODO) -> Phase M
+```
+This line is added after `**Completion Commit:**`. It is a historical record -- the feature has already been moved to Phase M's feature list.
+
+**Re-activation:** When the blocking role resolves the issue (e.g., Architect fixes the spec), the feature returns to `builder: TODO` status. The Builder picks it up in the phase it was re-queued to, following the normal per-feature loop.
+
+**Dashboard impact:** Because deferred phases are marked COMPLETE (not stuck IN_PROGRESS), the dashboard accurately reflects progress. The deferred features appear as Builder TODO items in their new phase, and the Critic routes the blocking issue to the responsible role.

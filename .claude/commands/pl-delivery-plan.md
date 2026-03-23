@@ -66,11 +66,13 @@ If the user approves phasing, create the delivery plan using the canonical forma
 ## Phase 1 -- <Short Label> [IN_PROGRESS]
 **Features:** <feature-name-1.md>, <feature-name-2.md>
 **Completion Commit:** --
+**Deferred:** --
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- <Short Label> [PENDING]
 **Features:** <feature-name-3.md>
 **Completion Commit:** --
+**Deferred:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
@@ -82,4 +84,5 @@ _None._
 *   When a phase completes, set its status to COMPLETE and record the git commit hash in "Completion Commit".
 *   "QA Bugs Addressed" lists bug IDs or one-line descriptions of bugs fixed from prior phases before starting this phase.
 *   COMPLETE phases are immutable. Do not edit them after recording the commit hash.
+*   When a phase completes with deferred features, record them in the `**Deferred:**` field (e.g., `feature_c.md (architect TODO) -> Phase M`). The deferred features must also be added to the target phase's `**Features:**` line. See `instructions/references/phased_delivery.md` Section 10.14.
 *   When the final phase completes, delete the file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.

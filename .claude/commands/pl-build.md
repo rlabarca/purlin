@@ -70,6 +70,7 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
 *   **Companion File:** Read `features/<name>.impl.md` if it exists. Also read prerequisite companion files.
 *   **Prerequisite Stability:** For each `> Prerequisite:` link to a non-anchor feature, check if that feature is in `[TODO]` status. If so, read its full spec (`features/<prereq>.md`) to understand the unstable contract. Log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
 *   **Verify Status:** Confirm the target feature is in the expected state per CDD status.
+*   **Role-Blocked Detection (delivery plan only):** When a delivery plan is active, check if the feature is role-blocked: `architect: TODO`, `builder: BLOCKED`, or `builder: INFEASIBLE`. If role-blocked, skip this feature with: `"Skipping <feature> -- <role> <status> (role-blocked)"`. Proceed to the next feature in the phase. See Phase Deferral Protocol below.
 *   **New Scenario Detection:** Diff `#### Scenario:` headings against existing tests. New headings without coverage = real work. When `tests.json` reports `total: 0` or is missing, treat as "no tests exist."
 
 ### Step 1 -- Acknowledge and Plan
@@ -123,13 +124,17 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
 *   **D. Verify:** Run `${TOOLS_ROOT}/cdd/status.sh` and confirm expected state.
-*   **E. Group check:** If a delivery plan exists and this feature completes a phase within the current execution group: update the phase status to COMPLETE in the plan, record commit hash, commit plan update. If the entire execution group is now complete, check `auto_start`:
-    *   **`auto_start: false` (default):** STOP the session:
-        ```
-        Execution group complete (Phases N, M of T) -- [short label]
-        Recommended: run QA to verify completed phases. Relaunch Builder for next group.
-        ```
-    *   **`auto_start: true`:** Auto-advance to the next execution group. If the next group has 2+ features total, the Execution Group Dispatch is mandatory (see bright-line rule). Begin dispatch or sequential loop for the next group. Continue until all groups are complete or context is exhausted.
+*   **E. Group check:** If a delivery plan exists, check phase completion status:
+    *   **Phase fully complete** (all features done): Mark phase COMPLETE, record commit hash, commit plan update.
+    *   **Phase complete with deferrals** (all non-blocked features done, only role-blocked features remain): Apply the Phase Deferral Protocol -- mark phase COMPLETE with `**Deferred:**` annotation, re-queue blocked features to a later phase, announce the deferral. See `instructions/references/phased_delivery.md` Section 10.14.
+    *   **Phase still has actionable features:** Continue the per-feature loop.
+    *   When the entire execution group is complete (all member phases COMPLETE, including those completed with deferrals), check `auto_start`:
+        *   **`auto_start: false` (default):** STOP the session:
+            ```
+            Execution group complete (Phases N, M of T) -- [short label]
+            Recommended: run QA to verify completed phases. Relaunch Builder for next group.
+            ```
+        *   **`auto_start: true`:** Auto-advance to the next execution group. If the next group has 2+ features total, the Execution Group Dispatch is mandatory (see bright-line rule). Begin dispatch or sequential loop for the next group. Continue until all groups are complete or context is exhausted.
 
 ---
 
