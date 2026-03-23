@@ -9626,12 +9626,24 @@ class TestStructuralCompletenessStillEnforced(unittest.TestCase):
 
 
 class TestInFileTodoTag(unittest.TestCase):
-    """In-file [TODO] tag detection per Section 2.12.1."""
+    """In-file [TODO] tag detection per Section 2.12.1.
+
+    Tests require a git repo because the override detection compares
+    the current file against the version at the last [Complete] commit
+    to distinguish Architect overrides from stale tags.
+    """
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.features_dir = os.path.join(self.root, 'features')
         os.makedirs(self.features_dir)
+        # Initialize git repo
+        subprocess.run(['git', 'init'], cwd=self.root,
+                       capture_output=True, timeout=10)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=self.root, capture_output=True, timeout=10)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=self.root, capture_output=True, timeout=10)
         import critic
         self._orig_root = critic.PROJECT_ROOT
         self._orig_features = critic.FEATURES_DIR
@@ -9644,41 +9656,92 @@ class TestInFileTodoTag(unittest.TestCase):
         critic.FEATURES_DIR = self._orig_features
         shutil.rmtree(self.root)
 
-    def test_detects_standalone_todo_tag(self):
-        """[TODO] on its own line is detected."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n[TODO]\n\n## Overview\n')
+    def _commit(self, path, content, message):
+        """Write file and commit."""
+        with open(path, 'w') as f:
+            f.write(content)
+        subprocess.run(['git', 'add', path], cwd=self.root,
+                       capture_output=True, timeout=10)
+        subprocess.run(['git', 'commit', '-m', message],
+                       cwd=self.root, capture_output=True, timeout=10)
+
+    def _commit_allow_empty(self, message):
+        subprocess.run(['git', 'commit', '--allow-empty', '-m', message],
+                       cwd=self.root, capture_output=True, timeout=10)
+
+    def test_detects_standalone_todo_tag_added_after_complete(self):
+        """[TODO] added after [Complete] is detected as override."""
+        path = os.path.join(self.features_dir, 'test.md')
+        # Initial version without [TODO]
+        self._commit(path, '# Feature: Test\n\n## Overview\n',
+                     'feat: initial')
+        # Builder completes
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+        # Architect adds [TODO] tag
+        self._commit(path, '# Feature: Test\n\n[TODO]\n\n## Overview\n',
+                     'arch: reset')
         self.assertTrue(
             _has_infile_todo_tag('features/test.md', self.root))
 
     def test_detects_todo_with_html_comment(self):
-        """[TODO] followed by HTML comment is detected."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n'
-                    '[TODO] <!-- Architect reset -->\n\n## Overview\n')
+        """[TODO] with HTML comment added after [Complete] is detected."""
+        path = os.path.join(self.features_dir, 'test.md')
+        self._commit(path, '# Feature: Test\n\n## Overview\n',
+                     'feat: initial')
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+        self._commit(path,
+                     '# Feature: Test\n\n'
+                     '[TODO] <!-- Architect reset -->\n\n## Overview\n',
+                     'arch: reset')
         self.assertTrue(
+            _has_infile_todo_tag('features/test.md', self.root))
+
+    def test_stale_tag_from_creation_not_detected(self):
+        """[TODO] present since creation (stale) is not an override."""
+        path = os.path.join(self.features_dir, 'test.md')
+        # Create with [TODO] already in the file
+        self._commit(path,
+                     '# Feature: Test\n\n[TODO]\n\n## Overview\n',
+                     'feat: initial')
+        # Builder completes (allow-empty -- tag still in file)
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+        # Tag was present at [Complete] time -- not an override
+        self.assertFalse(
             _has_infile_todo_tag('features/test.md', self.root))
 
     def test_no_tag_returns_false(self):
         """Feature without [TODO] tag returns False."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n## Overview\nSome content.\n')
+        path = os.path.join(self.features_dir, 'test.md')
+        self._commit(path,
+                     '# Feature: Test\n\n## Overview\nSome content.\n',
+                     'feat: initial')
         self.assertFalse(
             _has_infile_todo_tag('features/test.md', self.root))
 
     def test_todo_in_prose_not_detected(self):
         """[TODO] inside a paragraph (not at line start) is not detected."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n## Overview\n'
-                    'This mentions the status [TODO] in prose.\n')
-        # [TODO] in the middle of a line — strip() will start with 'This'
+        path = os.path.join(self.features_dir, 'test.md')
+        self._commit(path,
+                     '# Feature: Test\n\n## Overview\n'
+                     'This mentions the status [TODO] in prose.\n',
+                     'feat: initial')
         self.assertFalse(
             _has_infile_todo_tag('features/test.md', self.root))
 
     def test_infile_tag_overrides_complete_lifecycle(self):
-        """In-file [TODO] forces builder=TODO even when CDD says complete."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n[TODO]\n\n## Overview\n')
+        """In-file [TODO] (added after Complete) forces builder=TODO."""
+        path = os.path.join(self.features_dir, 'test.md')
+        self._commit(path, '# Feature: Test\n\n## Overview\n',
+                     'feat: initial')
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+        self._commit(path,
+                     '# Feature: Test\n\n[TODO]\n\n## Overview\n',
+                     'arch: reset')
+
         result = _make_base_result()
         cdd_status = {
             'features': {
@@ -9690,12 +9753,23 @@ class TestInFileTodoTag(unittest.TestCase):
         self.assertEqual(status['builder'], 'TODO')
 
     def test_infile_tag_generates_lifecycle_reset_action_item(self):
-        """In-file [TODO] generates a lifecycle_reset action item."""
-        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
-            f.write('# Feature: Test\n\n[TODO]\n\n'
-                    '## 1. Overview\nOverview.\n\n'
-                    '## 2. Requirements\nReqs.\n\n'
-                    '## 3. Scenarios\n\n### Unit Tests\nNone.\n')
+        """In-file [TODO] (added after Complete) generates action item."""
+        path = os.path.join(self.features_dir, 'test.md')
+        self._commit(path,
+                     '# Feature: Test\n\n'
+                     '## 1. Overview\nOverview.\n\n'
+                     '## 2. Requirements\nReqs.\n\n'
+                     '## 3. Scenarios\n\n### Unit Tests\nNone.\n',
+                     'feat: initial')
+        self._commit_allow_empty(
+            'status(test): [Complete features/test.md]')
+        self._commit(path,
+                     '# Feature: Test\n\n[TODO]\n\n'
+                     '## 1. Overview\nOverview.\n\n'
+                     '## 2. Requirements\nReqs.\n\n'
+                     '## 3. Scenarios\n\n### Unit Tests\nNone.\n',
+                     'arch: reset')
+
         result = _make_base_result()
         cdd_status = {
             'features': {

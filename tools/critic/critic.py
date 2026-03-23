@@ -1649,25 +1649,13 @@ def generate_action_items(feature_result, cdd_status=None):
     if cdd_status is not None:
         lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
 
-    # Section 2.12.1: In-file [TODO] tag override + allow-empty validation
-    # These can override CDD lifecycle to 'todo' even when CDD reports
-    # 'complete' or 'testing'.
+    # Section 2.12.1: In-file [TODO] tag override
+    # Can override CDD lifecycle to 'todo' even when CDD reports 'complete'.
     _effective_todo = lifecycle_state == 'todo'
-    _allow_empty_detail = None
 
     if not _effective_todo:
-        # Check in-file [TODO] tag
         if _has_infile_todo_tag(feature_file):
             _effective_todo = True
-        # Check allow-empty [Complete] validation
-        elif lifecycle_state == 'complete':
-            complete_hash, _ = _get_last_complete_commit_hash(feature_file)
-            if complete_hash and _is_allow_empty_complete(
-                    feature_file, complete_hash):
-                validation = _validate_allow_empty_complete(feature_file)
-                if validation['invalid']:
-                    _effective_todo = True
-                    _allow_empty_detail = validation['detail']
 
     # Feature in TODO lifecycle state -> HIGH (spec modified, needs review)
     # Use diff-aware detection to enrich the description (Section 2.12)
@@ -1680,12 +1668,8 @@ def generate_action_items(feature_result, cdd_status=None):
             scenario_diff = _get_scenario_diff(
                 feature_path, _content)
 
-        # Section 2.12.1: allow-empty description takes priority
-        if _allow_empty_detail:
-            desc = _allow_empty_detail
-        else:
-            desc = f'Review and implement spec changes for {feature_name}'
-        if not _allow_empty_detail and scenario_diff and scenario_diff['has_diff']:
+        desc = f'Review and implement spec changes for {feature_name}'
+        if scenario_diff and scenario_diff['has_diff']:
             parts = []
             if scenario_diff['new']:
                 titles = ', '.join(scenario_diff['new'][:5])
@@ -1699,8 +1683,7 @@ def generate_action_items(feature_result, cdd_status=None):
             desc = (
                 f'Implement spec changes for {feature_name}: '
                 + ', '.join(parts))
-        elif (not _allow_empty_detail and scenario_diff
-              and not scenario_diff['has_diff']
+        elif (scenario_diff and not scenario_diff['has_diff']
               and scenario_diff.get('old_content')):
             # No scenario changes but spec was modified -- detect which
             # Requirements subsections changed (Section 2.12)
@@ -2661,28 +2644,62 @@ def _get_commit_changed_files(feature_file, project_root=None):
 
 
 def _has_infile_todo_tag(feature_file, project_root=None):
-    """Check if the feature file contains an explicit [TODO] tag on a
-    standalone line.
+    """Check if the feature file contains an explicit [TODO] tag that
+    was ADDED after the last [Complete] commit (Architect-issued reset).
 
-    Per Section 2.12.1, this is an Architect-issued reset override that
-    takes precedence over status commit history.  The tag may have
-    trailing content (e.g. HTML comments) but ``[TODO]`` must appear at
-    the start of the line (after optional whitespace).
+    Per Section 2.12.1, an in-file ``[TODO]`` tag is an Architect
+    override.  However, many features have stale ``[TODO]`` tags from
+    initial creation.  To distinguish Architect overrides from stale
+    tags, this function checks whether the tag was present at the last
+    ``[Complete]`` commit.  If it was, the tag is stale (not an
+    override).  If it was NOT present at the last ``[Complete]`` (or was
+    added after it), it is an Architect override.
 
-    Returns True if the in-file [TODO] tag is found.
+    Returns True if the in-file [TODO] tag is an active Architect override.
     """
     root = project_root or PROJECT_ROOT
-    abs_path = os.path.join(root, 'features',
-                            os.path.basename(feature_file))
+    basename = os.path.basename(feature_file)
+    abs_path = os.path.join(root, 'features', basename)
+
+    # Check if current file has [TODO] tag
+    current_has_tag = False
     try:
         with open(abs_path, 'r', encoding='utf-8') as f:
             for line in f:
                 stripped = line.strip()
                 if stripped.startswith('[TODO]'):
-                    return True
+                    current_has_tag = True
+                    break
     except (IOError, OSError):
         pass
-    return False
+
+    if not current_has_tag:
+        return False
+
+    # Check if the tag was present at the last [Complete] commit.
+    # If it was, it's stale.  If not, it was added after completion
+    # (Architect override).
+    complete_hash, _ = _get_last_complete_commit_hash(feature_file, root)
+    if complete_hash is None:
+        # No [Complete] commit exists -- the tag is from initial creation.
+        # Not an override (the feature was never completed).
+        return False
+
+    # Get the file content at the [Complete] commit
+    old_content = _get_file_at_commit(abs_path, complete_hash, root)
+    if old_content is None:
+        # Can't read old content -- assume override (safe default)
+        return True
+
+    # Check if the old content had [TODO] tag
+    for line in old_content.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('[TODO]'):
+            # Tag was present at [Complete] time -- stale, not override
+            return False
+
+    # Tag NOT present at [Complete] time -- added after (Architect override)
+    return True
 
 
 def _get_last_complete_commit_hash(feature_file, project_root=None):
@@ -3337,25 +3354,12 @@ def compute_role_status(feature_result, cdd_status=None):
     lifecycle_is_todo = lifecycle_state == 'todo'
 
     # Section 2.12.1: In-file [TODO] tag override
-    # When the feature file contains an explicit [TODO] tag, treat it as
-    # an Architect-issued reset regardless of status commit history.
+    # When the feature file contains an explicit [TODO] tag that was
+    # added AFTER the last [Complete] commit, treat it as an
+    # Architect-issued reset regardless of status commit history.
     if not lifecycle_is_todo and _has_infile_todo_tag(feature_file):
         lifecycle_is_todo = True
         lifecycle_state = 'todo'
-
-    # Section 2.12.1: Allow-empty [Complete] validation
-    # When CDD reports complete but the [Complete] commit was allow-empty
-    # and spec content changed, override to TODO.
-    _allow_empty_invalid = False
-    if lifecycle_state == 'complete':
-        complete_hash, _ = _get_last_complete_commit_hash(feature_file)
-        if complete_hash and _is_allow_empty_complete(
-                feature_file, complete_hash):
-            validation = _validate_allow_empty_complete(feature_file)
-            if validation['invalid']:
-                lifecycle_is_todo = True
-                lifecycle_state = 'todo'
-                _allow_empty_invalid = True
 
     # Apply precedence: INFEASIBLE > BLOCKED > FAIL > TODO > DONE
     if has_infeasible:
