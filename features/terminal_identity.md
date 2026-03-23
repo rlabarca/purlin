@@ -5,6 +5,8 @@
 > Prerequisite: features/agent_launchers_common.md
 > Prerequisite: features/project_init.md
 
+[Complete]
+
 ## 1. Overview
 
 When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent role name, with the Builder showing additional state during continuous-mode phase execution. Both are cleaned up on normal exit and Ctrl+C.
