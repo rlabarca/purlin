@@ -85,10 +85,10 @@ After init, your project root will contain:
 my-project/
 ├── .purlin/
 │   ├── config.json              # Main config (models, tools_root, agent settings)
-│   ├── HOW_WE_WORK_OVERRIDES.md # Project-specific workflow rules
-│   ├── ARCHITECT_OVERRIDES.md   # Architect customizations
-│   ├── BUILDER_OVERRIDES.md     # Builder customizations
-│   ├── QA_OVERRIDES.md          # QA customizations
+│   ├── HOW_WE_WORK_OVERRIDES.md # Workflow rules, submodule safety mandate
+│   ├── ARCHITECT_OVERRIDES.md   # Architect rules, submodule compatibility
+│   ├── BUILDER_OVERRIDES.md     # Builder rules, submodule safety checklist
+│   ├── QA_OVERRIDES.md          # QA rules, test tiers, voice/tone config
 │   ├── PM_OVERRIDES.md          # PM customizations
 │   ├── .upstream_sha            # Pinned Purlin version SHA
 │   ├── release/
@@ -268,11 +268,11 @@ takes precedence over `config.json` for any keys it defines.
 
 Each role has an override file in `.purlin/`:
 
-- `ARCHITECT_OVERRIDES.md` -- project-specific Architect rules
-- `BUILDER_OVERRIDES.md` -- project-specific Builder rules
-- `QA_OVERRIDES.md` -- project-specific QA rules, test tiers
+- `ARCHITECT_OVERRIDES.md` -- project-specific Architect rules, submodule compatibility checks
+- `BUILDER_OVERRIDES.md` -- project-specific Builder rules, submodule safety checklist
+- `QA_OVERRIDES.md` -- project-specific QA rules, test priority tiers, voice/tone config
 - `PM_OVERRIDES.md` -- project-specific PM rules
-- `HOW_WE_WORK_OVERRIDES.md` -- project-wide workflow additions
+- `HOW_WE_WORK_OVERRIDES.md` -- project-wide workflow additions, submodule safety mandate
 
 These are committed to git and shared with the team. Use `/pl-override-edit`
 for guided editing with conflict scanning.
