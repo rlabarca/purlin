@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for dev/regression_runner.sh, harness runner, meta-runner, and enriched tests.json.
+"""Tests for dev/regression_runner.sh, harness runner, meta-runner, and enriched regression.json.
 
 Covers automated scenarios from features/regression_testing.md.
 Outputs test results to tests/regression_testing/tests.json.
@@ -312,7 +312,7 @@ class TestEnrichedResultsFormat(unittest.TestCase):
     """Scenario: Enriched results include scenario-level context."""
 
     def test_enriched_fields_are_valid_json(self):
-        """Enriched tests.json entries with scenario_ref, expected,
+        """Enriched regression.json entries with scenario_ref, expected,
         and actual_excerpt are valid and parseable."""
         enriched = {
             'status': 'FAIL',
@@ -353,7 +353,7 @@ class TestEnrichedResultsFormat(unittest.TestCase):
         self.assertIn('actual_excerpt', parsed['details'][1])
 
     def test_enriched_format_backward_compatible(self):
-        """Standard tests.json consumers (status, passed, failed, total)
+        """Standard regression.json consumers (status, passed, failed, total)
         still work when enriched fields are present."""
         enriched = {
             'status': 'PASS',
@@ -378,7 +378,7 @@ class TestShallowAssertionSuite(unittest.TestCase):
     """Scenario: Shallow assertion suite flagged when majority are Tier 1."""
 
     def _compute_tier_distribution(self, details):
-        """Compute tier distribution from tests.json detail entries."""
+        """Compute tier distribution from regression.json detail entries."""
         tiers = {1: 0, 2: 0, 3: 0, 'untagged': 0}
         for entry in details:
             tier = entry.get('assertion_tier')
@@ -454,7 +454,7 @@ class TestStalenessDetection(unittest.TestCase):
     """Scenario: Staleness detection prioritizes re-testing."""
 
     def test_staleness_detection_prioritizes_retesting(self):
-        """Staleness detection: feature source newer than tests.json
+        """Staleness detection: feature source newer than regression.json
         means the feature is stale and prioritized for re-testing."""
         tmpdir = tempfile.mkdtemp()
         try:
@@ -463,8 +463,8 @@ class TestStalenessDetection(unittest.TestCase):
             os.makedirs(features_dir)
             os.makedirs(tests_dir)
 
-            # Create tests.json first (older)
-            tests_json = os.path.join(tests_dir, 'tests.json')
+            # Create regression.json first (older)
+            tests_json = os.path.join(tests_dir, 'regression.json')
             with open(tests_json, 'w') as f:
                 json.dump({'status': 'PASS', 'passed': 3, 'failed': 0,
                            'total': 3}, f)
@@ -480,12 +480,12 @@ class TestStalenessDetection(unittest.TestCase):
             new_time = time.time() - 3600
             os.utime(feature_file, (new_time, new_time))
 
-            # Staleness: feature mtime > tests.json mtime
+            # Staleness: feature mtime > regression.json mtime
             feature_mtime = os.path.getmtime(feature_file)
             tests_mtime = os.path.getmtime(tests_json)
             self.assertGreater(feature_mtime, tests_mtime)
 
-            # Fresh feature: tests.json newer than feature
+            # Fresh feature: regression.json newer than feature
             with open(tests_json, 'w') as f:
                 json.dump({'status': 'PASS', 'passed': 3, 'failed': 0,
                            'total': 3}, f)
@@ -532,7 +532,7 @@ class TestHarnessRunnerAgentBehavior(unittest.TestCase):
 
     def test_agent_behavior_scenario_processes_assertions(self):
         """Harness runner processes agent_behavior scenario, evaluates
-        assertions against output, and writes enriched tests.json."""
+        assertions against output, and writes enriched regression.json."""
         # Create scenario JSON
         scenario = {
             'feature': 'test_feature',
@@ -565,10 +565,10 @@ class TestHarnessRunnerAgentBehavior(unittest.TestCase):
             cwd=self.tmpdir, env=env,
         )
 
-        # Check tests.json was written
-        tests_json = os.path.join(self.tmpdir, 'tests', 'test_feature', 'tests.json')
+        # Check regression.json was written
+        tests_json = os.path.join(self.tmpdir, 'tests', 'test_feature', 'regression.json')
         self.assertTrue(os.path.isfile(tests_json),
-                        f"tests.json not found. stdout: {result.stdout}, stderr: {result.stderr}")
+                        f"regression.json not found. stdout: {result.stdout}, stderr: {result.stderr}")
         with open(tests_json) as f:
             data = json.load(f)
 
@@ -609,7 +609,7 @@ class TestHarnessRunnerWebTest(unittest.TestCase):
 
     def test_web_test_scenario_writes_results(self):
         """Harness runner processes web_test scenario and writes
-        enriched tests.json with pass/fail results."""
+        enriched regression.json with pass/fail results."""
         # Create a web_test scenario - use a URL that will likely fail
         # (we're testing the pipeline, not actual web connectivity)
         scenario = {
@@ -635,8 +635,8 @@ class TestHarnessRunnerWebTest(unittest.TestCase):
             cwd=self.tmpdir, env=env,
         )
 
-        # Should write tests.json (may FAIL due to unreachable URL, that's OK)
-        tests_json = os.path.join(self.tmpdir, 'tests', 'web_feature', 'tests.json')
+        # Should write regression.json (may FAIL due to unreachable URL, that's OK)
+        tests_json = os.path.join(self.tmpdir, 'tests', 'web_feature', 'regression.json')
         self.assertTrue(os.path.isfile(tests_json))
         with open(tests_json) as f:
             data = json.load(f)
@@ -719,7 +719,7 @@ class TestHarnessRunnerCustomScript(unittest.TestCase):
         self.assertEqual(result.returncode, 0,
                          f"Harness runner failed. stdout: {result.stdout}, stderr: {result.stderr}")
 
-        tests_json = os.path.join(self.tmpdir, 'tests', 'custom_feature', 'tests.json')
+        tests_json = os.path.join(self.tmpdir, 'tests', 'custom_feature', 'regression.json')
         self.assertTrue(os.path.isfile(tests_json))
         with open(tests_json) as f:
             data = json.load(f)
@@ -885,7 +885,7 @@ class TestQAAuthoringWorkflow(unittest.TestCase):
 
 
 class TestHarnessRunnerWritesEnrichedResults(unittest.TestCase):
-    """Scenario: Harness runner writes enriched tests.json."""
+    """Scenario: Harness runner writes enriched regression.json."""
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
@@ -902,7 +902,7 @@ class TestHarnessRunnerWritesEnrichedResults(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_enriched_tests_json_has_all_required_fields(self):
-        """Harness runner writes enriched tests.json with scenario_ref,
+        """Harness runner writes enriched regression.json with scenario_ref,
         assertion_tier, expected, actual_excerpt, and standard fields."""
         # Create a custom script that outputs mixed results
         script = os.path.join(self.qa_dir, 'test_enriched.sh')
@@ -944,7 +944,7 @@ class TestHarnessRunnerWritesEnrichedResults(unittest.TestCase):
         )
 
         tests_json = os.path.join(
-            self.tmpdir, 'tests', 'enriched_test', 'tests.json')
+            self.tmpdir, 'tests', 'enriched_test', 'regression.json')
         self.assertTrue(os.path.isfile(tests_json))
         with open(tests_json) as f:
             data = json.load(f)

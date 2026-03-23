@@ -162,12 +162,12 @@ execute_harness() {
     local completed_at
     completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-    # Detect tests.json path from harness --write-results convention
+    # Detect regression.json path from harness --write-results convention
     local tests_json_path=""
     local summary=""
-    # Look for the most recently modified tests.json under tests/
+    # Look for the most recently modified regression.json under tests/
     local latest_json
-    latest_json="$(find "$PROJECT_ROOT/tests" -name 'tests.json' -newer "$RESULT_FILE" 2>/dev/null | head -1 || true)"
+    latest_json="$(find "$PROJECT_ROOT/tests" -name 'regression.json' -newer "$RESULT_FILE" 2>/dev/null | head -1 || true)"
     if [[ -n "$latest_json" ]]; then
         tests_json_path="$(python3 -c "import os; print(os.path.relpath('$latest_json', '$PROJECT_ROOT'))" 2>/dev/null || echo "$latest_json")"
         summary="$(python3 -c "

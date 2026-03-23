@@ -37,9 +37,9 @@ Run `${TOOLS_ROOT}/cdd/status.sh --role qa` and parse the output. Identify regre
 
 - `tests/qa/scenarios/<feature_name>.json` exists for the feature.
 - **AND** one of:
-  - `tests.json` has `status: "FAIL"` (FAIL)
-  - `tests.json` is missing or has `total: 0` (NOT_RUN)
-  - Feature source was modified after `tests.json` mtime (STALE)
+  - `regression.json` has `status: "FAIL"` (FAIL)
+  - `regression.json` is missing or has `total: 0` (NOT_RUN)
+  - Feature source was modified after `regression.json` mtime (STALE)
 
 **Frequency filtering:** For each eligible scenario file, read the `frequency` field:
 - If `--frequency pre-release` was specified: include all suites regardless of frequency.

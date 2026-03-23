@@ -18,7 +18,7 @@ Process regression results after execution. Creates BUG discoveries for failures
 
 ## Step 1 -- Read Results
 
-Read `tests/<feature>/tests.json` for features with recently updated regression results (mtime newer than last Critic run, from `${TOOLS_ROOT}/cdd/status.sh` output).
+Read `tests/<feature>/regression.json` for features with recently updated regression results (mtime newer than last Critic run, from `${TOOLS_ROOT}/cdd/status.sh` output).
 
 If no recently updated results are found, print: "No unprocessed regression results found." and stop.
 
@@ -89,7 +89,7 @@ NEXT STEPS:
 
 ## Enriched Results Format
 
-When reading `tests.json` detail entries, look for these optional fields (backward-compatible):
+When reading `regression.json` detail entries, look for these optional fields (backward-compatible):
 
 - `scenario_ref` -- Feature file path and scenario name (e.g., `features/instruction_audit.md:Single-turn detection`)
 - `expected` -- Human-readable expected behavior from the Gherkin Then step

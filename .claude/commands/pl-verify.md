@@ -85,7 +85,7 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
     ```bash
     python3 ${TOOLS_ROOT}/test_support/harness_runner.py tests/qa/scenarios/<feature_name>.json
     ```
-    The harness runner handles: fixture checkout (if `fixture_tag` specified), execution based on `harness_type` (agent_behavior, web_test, custom_script), assertion evaluation, fixture cleanup, and writing enriched `tests/<feature_name>/tests.json`.
+    The harness runner handles: fixture checkout (if `fixture_tag` specified), execution based on `harness_type` (agent_behavior, web_test, custom_script), assertion evaluation, fixture cleanup, and writing enriched `tests/<feature_name>/regression.json`.
 
 4.  **Process results:**
     *   Exit 0 (all passed): record pass. Feature's @auto scenarios are complete.
@@ -166,7 +166,7 @@ Proceeding to Phase B.
 **Regression suite status table** (print after the summary block):
 
 1. Scan `tests/qa/scenarios/*.json` for all existing scenario files.
-2. For each, check the corresponding `tests/<feature>/tests.json`:
+2. For each, check the corresponding `tests/<feature>/regression.json`:
    - `status: "PASS"` and source NOT modified since mtime → **PASS**
    - `status: "PASS"` but source modified since mtime → **STALE**
    - `status: "FAIL"` → **FAIL**

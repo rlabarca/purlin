@@ -68,7 +68,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     echo "All skill behavior tests passed."
 else
     echo ""
-    echo "Some skill behavior tests failed. See tests/skill_behavior_regression/tests.json"
+    echo "Some skill behavior tests failed. See tests/skill_behavior_regression/regression.json"
 fi
 
 exit $EXIT_CODE

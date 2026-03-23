@@ -107,8 +107,8 @@ for scenario_file in "${scenario_files[@]}"; do
 
     if python3 "$HARNESS_RUNNER" "$scenario_file" --project-root "$PROJECT_ROOT" 2>&1; then
         ((passed_features++)) || true
-        # Read the tests.json for summary
-        tests_json="$PROJECT_ROOT/tests/$feature_name/tests.json"
+        # Read the regression.json for summary
+        tests_json="$PROJECT_ROOT/tests/$feature_name/regression.json"
         if [[ -f "$tests_json" ]]; then
             summary="$(python3 -c "
 import json
@@ -124,7 +124,7 @@ except Exception:
         fi
     else
         ((failed_features++)) || true
-        tests_json="$PROJECT_ROOT/tests/$feature_name/tests.json"
+        tests_json="$PROJECT_ROOT/tests/$feature_name/regression.json"
         if [[ -f "$tests_json" ]]; then
             summary="$(python3 -c "
 import json
@@ -154,7 +154,7 @@ total_passed=0
 total_tests=0
 for scenario_file in "${scenario_files[@]}"; do
     feature_name="$(basename "$scenario_file" .json)"
-    tests_json="$PROJECT_ROOT/tests/$feature_name/tests.json"
+    tests_json="$PROJECT_ROOT/tests/$feature_name/regression.json"
     if [[ -f "$tests_json" ]]; then
         p="$(python3 -c "import json; d=json.load(open('$tests_json')); print(d.get('passed',0))" 2>/dev/null || echo 0)"
         t="$(python3 -c "import json; d=json.load(open('$tests_json')); print(d.get('total',0))" 2>/dev/null || echo 0)"

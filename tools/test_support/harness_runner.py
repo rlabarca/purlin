@@ -2,7 +2,7 @@
 """Harness Runner Framework.
 
 Reads a single scenario JSON file and executes it based on harness_type.
-Writes enriched tests.json to tests/<feature_name>/tests.json.
+Writes enriched regression.json to tests/<feature_name>/regression.json.
 
 Consumer-facing, submodule-safe.
 See features/regression_testing.md Section 2.8 for full specification.
@@ -295,7 +295,7 @@ def process_scenario_file(scenario_path, project_root):
 
 
 def write_results(feature_name, details, passed, failed, project_root, test_file=''):
-    """Write enriched tests.json to tests/<feature_name>/tests.json."""
+    """Write enriched regression.json to tests/<feature_name>/regression.json."""
     total = passed + failed
     status = 'PASS' if failed == 0 and total > 0 else 'FAIL'
 
@@ -310,7 +310,7 @@ def write_results(feature_name, details, passed, failed, project_root, test_file
 
     output_dir = os.path.join(project_root, 'tests', feature_name)
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, 'tests.json')
+    output_path = os.path.join(output_dir, 'regression.json')
 
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2)
