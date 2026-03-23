@@ -497,6 +497,29 @@ def spec_content_unchanged(f_path, commit_hash):
     return committed_spec == current_spec
 
 
+def _only_qa_tag_commits_since(f_path, since_hash):
+    """Check if all commits to f_path since since_hash have [QA-Tags] trailer.
+
+    Returns True when every commit modifying the file between since_hash
+    and HEAD contains '[QA-Tags]' in its subject line. Returns False if
+    no commits exist or any commit lacks the trailer.
+
+    Per cdd_status_monitor.md Section 2.1 QA Tag Classification Exemption.
+    """
+    try:
+        output = run_command(
+            f"git log {since_hash}..HEAD --format='%H %s' -- {f_path}"
+        )
+        if not output.strip():
+            return False
+        for line in output.strip().split('\n'):
+            if '[QA-Tags]' not in line:
+                return False
+        return True
+    except Exception:
+        return False
+
+
 def get_feature_status(features_rel, features_abs, cache=None):
     """Gathers the status of all features for the project's features directory."""
     if not os.path.isdir(features_abs):
@@ -528,6 +551,9 @@ def get_feature_status(features_rel, features_abs, cache=None):
                 commit_hash = info.get('complete_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
                     status = "COMPLETE"
+                elif commit_hash and _only_qa_tag_commits_since(f_path, commit_hash):
+                    # QA Tag Classification Exemption (Section 2.1)
+                    status = "COMPLETE"
         elif test_ts > 0:
             if file_mod_ts < test_ts:
                 # Strictly earlier mtime — fast path, no content verification needed
@@ -536,6 +562,9 @@ def get_feature_status(features_rel, features_abs, cache=None):
                 # Same-second or later mtime — verify content hasn't changed
                 commit_hash = info.get('testing_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
+                    status = "TESTING"
+                elif commit_hash and _only_qa_tag_commits_since(f_path, commit_hash):
+                    # QA Tag Classification Exemption (Section 2.1)
                     status = "TESTING"
 
         if status == "COMPLETE":

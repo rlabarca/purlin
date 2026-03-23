@@ -36,6 +36,7 @@ from serve import (
     strip_discoveries_section,
     strip_metadata_lines,
     spec_content_unchanged,
+    _only_qa_tag_commits_since,
     _qa_badge_html,
 )
 
@@ -927,6 +928,227 @@ class TestLifecycleResetOnSpecChange(unittest.TestCase):
                 self.assertEqual(len(todo), 1)
                 self.assertEqual(todo[0], "test.md")
                 self.assertEqual(len(complete), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+
+class TestQaTagClassificationExemption(unittest.TestCase):
+    """Scenario: QA Tag Classification Exemption (Section 2.1).
+
+    Commits with [QA-Tags] trailer that only classify QA scenarios
+    MUST NOT trigger lifecycle resets.
+    """
+
+    @patch('serve.run_command')
+    def test_qa_tags_commit_preserves_complete_status(self, mock_run):
+        """COMPLETE feature stays COMPLETE when only QA-Tags commits exist."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "### QA Scenarios\n\n"
+                "#### Scenario: Foo\n\n"
+                "    Given x\n    When y\n    Then z\n"
+            )
+            # QA added @auto tag suffix
+            modified_content = (
+                "# Feature: Test\n\n"
+                "### QA Scenarios\n\n"
+                "#### Scenario: Foo @auto\n\n"
+                "    Given x\n    When y\n    Then z\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return "def456 qa(test): classify scenarios [QA-Tags]"
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_qa_tags_commit_preserves_testing_status(self, mock_run):
+        """TESTING feature stays TESTING when only QA-Tags commits exist."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "### QA Scenarios\n\n"
+                "#### Scenario: Bar\n\n"
+                "    Given a\n    When b\n    Then c\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "### QA Scenarios\n\n"
+                "#### Scenario: Bar @manual\n\n"
+                "    Given a\n    When b\n    Then c\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 0, 'complete_hash': '',
+                    'testing_ts': 2000000000, 'testing_hash': 'abc123',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return "def456 qa(test): classify scenarios [QA-Tags]"
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(testing), 1)
+                self.assertEqual(testing[0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_mixed_commits_still_resets(self, mock_run):
+        """Feature resets when commits include both QA-Tags and non-QA-Tags."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOriginal.\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nModified.\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return ("def456 qa(test): classify scenarios [QA-Tags]\n"
+                            "ghi789 arch(test): add new requirement")
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(todo), 1)
+                self.assertEqual(todo[0], "test.md")
+                self.assertEqual(len(complete), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_no_commits_since_does_not_exempt(self, mock_run):
+        """No commits since status commit means no QA-Tags exemption."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOriginal.\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nModified.\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return ""
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(todo), 1)
+                self.assertEqual(todo[0], "test.md")
             finally:
                 serve.PROJECT_ROOT = orig_root
         finally:
