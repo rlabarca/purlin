@@ -586,12 +586,12 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 ### QA Scenarios
 
-#### Scenario: Complex Three-Way Merge
+#### @manual Scenario: Complex Three-Way Merge
     Given a command file has been modified both upstream and locally in conflicting ways
     When /pl-update-purlin offers "Smart merge" option
     Then a human must verify the proposed merge preserves intended functionality
 
-#### Scenario: Go-Deeper Override Drift Analysis Accuracy
+#### @manual Scenario: Go-Deeper Override Drift Analysis Accuracy
     Given the consumer has multiple override files with various section references
     And upstream renamed or removed several headings across base files
     When the user accepts the go-deeper analysis
