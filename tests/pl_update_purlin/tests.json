@@ -1,16 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 1,
-  "failed": 0,
-  "total": 1,
-  "test_file": "tests/qa/scenarios/pl_update_purlin.json",
-  "details": [
-    {
-      "name": "pl_update_purlin_suite:pl-update-purlin standalone guard and behavior suite ran to completion",
-      "status": "PASS",
-      "scenario_ref": "features/pl_update_purlin.md:pl_update_purlin_suite",
-      "expected": "pl-update-purlin standalone guard and behavior suite ran to completion",
-      "assertion_tier": 2
-    }
-  ]
-}
+{"status": "PASS", "passed": 106, "failed": 0, "total": 106, "test_file": "tests/pl_update_purlin/test_command.py"}

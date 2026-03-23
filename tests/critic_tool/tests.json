@@ -1,16 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 1,
-  "failed": 0,
-  "total": 1,
-  "test_file": "tests/qa/scenarios/critic_tool.json",
-  "details": [
-    {
-      "name": "critic_tool_suite:critic tool regression suite ran to completion",
-      "status": "PASS",
-      "scenario_ref": "features/critic_tool.md:critic_tool_suite",
-      "expected": "critic tool regression suite ran to completion",
-      "assertion_tier": 2
-    }
-  ]
-}
+{"status": "PASS", "passed": 373, "failed": 0, "total": 373, "test_file": "tools/critic/test_critic.py"}

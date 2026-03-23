@@ -1,16 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 1,
-  "failed": 0,
-  "total": 1,
-  "test_file": "tests/qa/scenarios/pl_web_test.json",
-  "details": [
-    {
-      "name": "pl_web_test_suite:pl-web-test rename, role guard, and metadata pattern suite ran to completion",
-      "status": "PASS",
-      "scenario_ref": "features/pl_web_test.md:pl_web_test_suite",
-      "expected": "pl-web-test rename, role guard, and metadata pattern suite ran to completion",
-      "assertion_tier": 2
-    }
-  ]
-}
+{"status": "PASS", "passed": 151, "failed": 0, "total": 151, "test_file": "tests/pl_web_test/test_command.py"}
