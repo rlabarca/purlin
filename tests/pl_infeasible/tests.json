@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "passed": 13,
+  "failed": 0,
+  "total": 13,
+  "test_file": "tools/test_support/test_pl_infeasible.py",
+  "details": [
+    {
+      "test": "test_architect_action_item (__main__.TestCriticSurfacesInfeasibleAsCritical.test_architect_action_item)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_critic_report_surfacing (__main__.TestCriticSurfacesInfeasibleAsCritical.test_critic_report_surfacing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_status_sh_invocation (__main__.TestCriticSurfacesInfeasibleAsCritical.test_status_sh_invocation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_commit_includes_infeasible_tag (__main__.TestInfeasibleEntryRecordedInCompanion.test_commit_includes_infeasible_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_companion_file_reference (__main__.TestInfeasibleEntryRecordedInCompanion.test_companion_file_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detailed_rationale_required (__main__.TestInfeasibleEntryRecordedInCompanion.test_detailed_rationale_required)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_infeasible_tag_mentioned (__main__.TestInfeasibleEntryRecordedInCompanion.test_infeasible_tag_mentioned)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_must_revise_before_resume (__main__.TestNoCodeImplemented.test_architect_must_revise_before_resume)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_explicit_no_implementation_instruction (__main__.TestNoCodeImplemented.test_explicit_no_implementation_instruction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_implement_before_spec_revision (__main__.TestNoCodeImplemented.test_no_implement_before_spec_revision)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_builder_ownership (__main__.TestRoleGateRejectsNonBuilder.test_first_line_declares_builder_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_builder (__main__.TestRoleGateRejectsNonBuilder.test_redirect_message_for_non_builder)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_references_pl_infeasible (__main__.TestRoleGateRejectsNonBuilder.test_redirect_references_pl_infeasible)",
+      "status": "PASS"
+    }
+  ]
+}
