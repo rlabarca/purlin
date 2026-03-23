@@ -33,8 +33,12 @@ Implemented 4 new scenarios covering QA AUTO status, QA TODO with mixed scenario
 
 Fixed `role_status_reason` placement in `generate_critic_json()` output. Previously nested inside `role_status`; now extracted to top-level sibling per Section 2.7 canonical JSON schema. Added tests: `TestRoleStatusReasonPopulated` (reason keys + trigger content) and `TestRoleStatusReasonSchemaPosition` (sibling vs nested verification via `generate_critic_json()`).
 
+## QA CLEAN Gate — Regression Guidance (2026-03-22)
+
+Implemented Section 2.7 Regression Guidance gate: QA status MUST NOT be CLEAN when a feature has `## Regression Guidance` without corresponding `tests/qa/scenarios/<name>.json` or `> Regression Coverage: Yes` metadata. Extracted `_has_pending_regression_guidance()` helper shared by `compute_role_status()` (QA CLEAN gate) and `generate_action_items()` (action item suppression).
+
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 40 total, 40 passed
+- Tests: 45 total, 45 passed
 - AP scan: clean
 - Date: 2026-03-22
