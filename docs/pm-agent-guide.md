@@ -266,12 +266,16 @@ Here is a summary of every artifact the PM agent can produce.
 
 | Artifact | Location | Description |
 |---|---|---|
-| Feature spec | `features/<name>.md` | The primary specification: overview, requirements, scenarios, and optional visual specification. This is what the Builder implements against. |
+| Feature spec | `features/<name>.md` | The primary specification: overview, requirements, Unit Tests, QA Scenarios, and optional visual specification. This is what the Builder implements against. |
 | Anchor node | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
 | Design brief | `features/design/<feature_stem>/brief.json` | Machine-readable Figma data (tokens, screens, components) that the Builder reads instead of accessing Figma. |
 | Design artifacts | `features/design/<feature_stem>/` | Local copies of design assets (images, exported screens) stored alongside the brief. |
 | Token Map | Inside the feature spec's Visual Specification section | Mapping from Figma design variable names (or observed CSS values) to the project's CSS custom properties. |
 | Visual checklist | Inside the feature spec's Visual Specification section | Measurable acceptance criteria derived from design properties (dimensions, spacing, colors, typography). |
+
+### Visual Ownership: Specification vs. Verification
+
+The PM **authors** the Visual Specification -- Token Maps, acceptance checklists, and design briefs. The Builder **verifies** all visual checklist items during implementation (via `/pl-web-test` for web features, manual inspection for non-web features). QA does not re-verify visual items. This separation keeps the PM focused on design intent and the Builder accountable for visual fidelity in the implementation.
 
 ### How Artifacts Flow Between Agents
 
@@ -282,10 +286,11 @@ PM creates spec + brief.json
 Architect validates structure and requirements
     |
     v
-Builder reads spec + brief.json, writes code and tests
+Builder reads spec + brief.json, writes code and tests,
+  verifies visual checklist items during implementation
     |
     v
-QA triangulates Figma + Spec + App for verification
+QA verifies QA Scenarios (behavioral tests requiring human judgment)
 ```
 
 The Builder never needs Figma access. The brief.json and Token Map contain everything needed to match the design.
