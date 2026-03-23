@@ -1,0 +1,73 @@
+{
+  "status": "PASS",
+  "passed": 16,
+  "failed": 0,
+  "total": 16,
+  "test_file": "tools/test_support/test_pl_qa_report.py",
+  "details": [
+    {
+      "test": "test_completion_blockers_section_present (__main__.TestDeliveryPlanGatingShown.test_completion_blockers_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delivery_plan_context_section (__main__.TestDeliveryPlanGatingShown.test_delivery_plan_context_section)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delivery_plan_file_referenced (__main__.TestDeliveryPlanGatingShown.test_delivery_plan_file_referenced)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_phase_gated_reference (__main__.TestDeliveryPlanGatingShown.test_phase_gated_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_bug_type_grouping (__main__.TestOpenDiscoveriesGroupedByType.test_bug_type_grouping)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_open_discoveries_section_present (__main__.TestOpenDiscoveriesGroupedByType.test_open_discoveries_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_dispute_type_grouping (__main__.TestOpenDiscoveriesGroupedByType.test_spec_dispute_type_grouping)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_type_count_pattern_in_template (__main__.TestOpenDiscoveriesGroupedByType.test_type_count_pattern_in_template)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_manual_items_column_present (__main__.TestReportShowsTestingFeaturesWithCounts.test_manual_items_column_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_open_discoveries_column_present (__main__.TestReportShowsTestingFeaturesWithCounts.test_open_discoveries_column_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scope_column_present (__main__.TestReportShowsTestingFeaturesWithCounts.test_scope_column_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_testing_features_section_present (__main__.TestReportShowsTestingFeaturesWithCounts.test_testing_features_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_qa_ownership (__main__.TestRoleGateRejectsNonQAInvocation.test_first_line_declares_qa_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_qa (__main__.TestRoleGateRejectsNonQAInvocation.test_redirect_message_for_non_qa)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_references_command_name (__main__.TestRoleGateRejectsNonQAInvocation.test_redirect_references_command_name)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_gate_pattern_present (__main__.TestRoleGateRejectsNonQAInvocation.test_role_gate_pattern_present)",
+      "status": "PASS"
+    }
+  ]
+}
