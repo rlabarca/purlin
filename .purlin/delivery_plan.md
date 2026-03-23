@@ -133,12 +133,12 @@ Phases 20-25 are independent within the group. Depends on Group 2.
 **Completion Commit:** 543ba7e
 **QA Bugs Addressed:** --
 
-## Phase 24 — Builder Extensions [IN_PROGRESS]
+## Phase 24 — Builder Extensions [COMPLETE]
 **Features:** subagent_parallel_builder.md
-**Completion Commit:** --
+**Completion Commit:** 14a2559
 **QA Bugs Addressed:** --
 
-## Phase 25 — PM & Update Tools [PENDING]
+## Phase 25 — PM & Update Tools [IN_PROGRESS]
 **Features:** pm_first_session_guide.md, pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
