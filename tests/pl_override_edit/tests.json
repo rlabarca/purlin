@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "passed": 17,
+  "failed": 0,
+  "total": 17,
+  "test_file": "tools/test_support/test_pl_override_edit.py",
+  "details": [
+    {
+      "test": "test_additive_only_constraint_present (__main__.TestAdditiveOnlyConstraintEnforced.test_additive_only_constraint_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_delete_instruction (__main__.TestAdditiveOnlyConstraintEnforced.test_no_delete_instruction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_executable_content (__main__.TestAdditiveOnlyConstraintEnforced.test_no_executable_content)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_restructure_instruction (__main__.TestAdditiveOnlyConstraintEnforced.test_no_restructure_instruction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_decline_names_owner (__main__.TestBuilderCannotEditQAOverrides.test_builder_decline_names_owner)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_restricted_to_builder_overrides (__main__.TestBuilderCannotEditQAOverrides.test_builder_restricted_to_builder_overrides)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_qa_overrides_has_qa_owner (__main__.TestBuilderCannotEditQAOverrides.test_qa_overrides_has_qa_owner)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_scoped_declaration_in_first_line (__main__.TestBuilderCannotEditQAOverrides.test_role_scoped_declaration_in_first_line)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_base_override_file_pairs_defined (__main__.TestConflictScanDetectsContradiction.test_base_override_file_pairs_defined)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_citation_requirement (__main__.TestConflictScanDetectsContradiction.test_citation_requirement)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_classification_present (__main__.TestConflictScanDetectsContradiction.test_conflict_classification_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_info_classification_present (__main__.TestConflictScanDetectsContradiction.test_info_classification_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_warning_classification_present (__main__.TestConflictScanDetectsContradiction.test_warning_classification_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_only_appears_before_edit_steps (__main__.TestScanOnlyModeDoesNotModifyFiles.test_scan_only_appears_before_edit_steps)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_only_flag_documented (__main__.TestScanOnlyModeDoesNotModifyFiles.test_scan_only_flag_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_only_no_edits (__main__.TestScanOnlyModeDoesNotModifyFiles.test_scan_only_no_edits)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_only_stops_after_conflict_scan (__main__.TestScanOnlyModeDoesNotModifyFiles.test_scan_only_stops_after_conflict_scan)",
+      "status": "PASS"
+    }
+  ]
+}
