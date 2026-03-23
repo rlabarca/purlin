@@ -1,1 +1,457 @@
-{"status": "PASS", "passed": 93, "failed": 0, "total": 93, "test_file": "tests/pl_spec_code_audit/test_command.py"}
+{
+  "status": "PASS",
+  "passed": 112,
+  "failed": 0,
+  "total": 112,
+  "test_file": "tools/test_support/test_pl_spec_code_audit.py",
+  "details": [
+    {
+      "test": "test_command_describes_forbidden_extraction (__main__.TestAnchorConstraintCollection.test_command_describes_forbidden_extraction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_describes_invariant_extraction (__main__.TestAnchorConstraintCollection.test_command_describes_invariant_extraction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_reads_numbered_subsections (__main__.TestAnchorConstraintCollection.test_command_reads_numbered_subsections)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_constraint_output_format_has_all_fields (__main__.TestAnchorConstraintCollection.test_constraint_output_format_has_all_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_anything_else_clause (__main__.TestArgumentParsing.test_anything_else_clause)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_deep_flag_documented (__main__.TestArgumentParsing.test_deep_flag_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_deep_mode_uses_batches_and_waves (__main__.TestArgumentParsing.test_deep_mode_uses_batches_and_waves)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_invalid_argument_error_message (__main__.TestArgumentParsing.test_invalid_argument_error_message)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_argument_defaults_to_triage (__main__.TestArgumentParsing.test_no_argument_defaults_to_triage)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_triage_processes_all_features (__main__.TestArgumentParsing.test_triage_processes_all_features)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_triage_processes_in_agent_no_subagents (__main__.TestArgumentParsing.test_triage_processes_in_agent_no_subagents)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clean_output_message (__main__.TestCleanReport.test_clean_output_message)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_enter_plan_mode_at_start (__main__.TestCleanReport.test_enter_plan_mode_at_start)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_exits_plan_mode (__main__.TestCleanReport.test_exits_plan_mode)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_file_exists (__main__.TestCommandFileExists.test_command_file_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_file_not_empty (__main__.TestCommandFileExists.test_command_file_not_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_file_exists (__main__.TestCommandFileExists.test_feature_file_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_file_has_scenarios (__main__.TestCommandFileExists.test_feature_file_has_scenarios)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_checks_shared_prerequisite_anchor (__main__.TestCrossFeatureRequirementHygiene.test_conflict_checks_shared_prerequisite_anchor)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_detection_described (__main__.TestCrossFeatureRequirementHygiene.test_conflict_detection_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_flags_contradictory_assertions (__main__.TestCrossFeatureRequirementHygiene.test_conflict_flags_contradictory_assertions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_severity_is_high (__main__.TestCrossFeatureRequirementHygiene.test_conflict_severity_is_high)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dimension_is_requirement_hygiene (__main__.TestCrossFeatureRequirementHygiene.test_dimension_is_requirement_hygiene)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_duplicate_compares_scenario_signatures (__main__.TestCrossFeatureRequirementHygiene.test_duplicate_compares_scenario_signatures)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_duplicate_detection_described (__main__.TestCrossFeatureRequirementHygiene.test_duplicate_detection_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_duplicate_flags_same_endpoint (__main__.TestCrossFeatureRequirementHygiene.test_duplicate_flags_same_endpoint)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_duplicate_severity_is_medium (__main__.TestCrossFeatureRequirementHygiene.test_duplicate_severity_is_medium)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unused_checks_no_implementation (__main__.TestCrossFeatureRequirementHygiene.test_unused_checks_no_implementation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unused_checks_no_prerequisite_dependents (__main__.TestCrossFeatureRequirementHygiene.test_unused_checks_no_prerequisite_dependents)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unused_detection_described (__main__.TestCrossFeatureRequirementHygiene.test_unused_detection_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unused_flagged_as_orphaned (__main__.TestCrossFeatureRequirementHygiene.test_unused_flagged_as_orphaned)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unused_severity_is_low (__main__.TestCrossFeatureRequirementHygiene.test_unused_severity_is_low)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cleanup_deletes_state_file (__main__.TestCrossSessionResume.test_cleanup_deletes_state_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_resume_skips_completed_waves (__main__.TestCrossSessionResume.test_resume_skips_completed_waves)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_resume_state_file_documented (__main__.TestCrossSessionResume.test_resume_state_file_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_file_tracks_required_fields (__main__.TestCrossSessionResume.test_state_file_tracks_required_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_status_run_after_remediation (__main__.TestCrossSessionResume.test_status_run_after_remediation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_triage_resume_skips_to_phase2 (__main__.TestCrossSessionResume.test_triage_resume_skips_to_phase2)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_fit_decreasing (__main__.TestDeepModeBatching.test_first_fit_decreasing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_max_features_per_batch (__main__.TestDeepModeBatching.test_max_features_per_batch)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scenario_range_per_batch (__main__.TestDeepModeBatching.test_scenario_range_per_batch)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_solo_batch_rule (__main__.TestDeepModeBatching.test_solo_batch_rule)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_wave_limit_5_concurrent (__main__.TestDeepModeBatching.test_wave_limit_5_concurrent)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_anchor_prefixes_in_spec_only (__main__.TestDeepModeClassification.test_anchor_prefixes_in_spec_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_code_comparison_track_described (__main__.TestDeepModeClassification.test_code_comparison_track_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_only_track_described (__main__.TestDeepModeClassification.test_spec_only_track_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_zero_scenario_features_in_spec_only (__main__.TestDeepModeClassification.test_zero_scenario_features_in_spec_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_flags_contradictions (__main__.TestDeepModeSubagentPayload.test_flags_contradictions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_payload_includes_anchor_constraints (__main__.TestDeepModeSubagentPayload.test_payload_includes_anchor_constraints)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_payload_includes_transitive_map (__main__.TestDeepModeSubagentPayload.test_payload_includes_transitive_map)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scenario_comparison_protocol (__main__.TestDeepModeSubagentPayload.test_scenario_comparison_protocol)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_subagents_dont_recompute (__main__.TestDeepModeSubagentPayload.test_subagents_dont_recompute)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_traces_to_code_path (__main__.TestDeepModeSubagentPayload.test_traces_to_code_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_escalation_has_discovery_tag (__main__.TestEscalation.test_architect_escalation_has_discovery_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_escalation_has_severity_and_details (__main__.TestEscalation.test_architect_escalation_has_severity_and_details)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_escalation_has_source_field (__main__.TestEscalation.test_architect_escalation_has_source_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_escalation_has_suggested_fix (__main__.TestEscalation.test_architect_escalation_has_suggested_fix)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_escalation_has_spec_proposal (__main__.TestEscalation.test_builder_escalation_has_spec_proposal)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_escalation_has_suggested_spec_change (__main__.TestEscalation.test_builder_escalation_has_suggested_spec_change)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_escalation_targets_companion_files (__main__.TestEscalation.test_escalation_targets_companion_files)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_config_file_exists_with_tools_root (__main__.TestPathResolution.test_config_file_exists_with_tools_root)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reads_tools_root_from_config (__main__.TestPathResolution.test_reads_tools_root_from_config)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tools_root_invocations_use_variable (__main__.TestPathResolution.test_tools_root_invocations_use_variable)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_uses_tools_root_variable (__main__.TestPathResolution.test_uses_tools_root_variable)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_enter_plan_mode_before_any_file_reads (__main__.TestPlanModeIntegration.test_enter_plan_mode_before_any_file_reads)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_exit_plan_mode_after_audit_table (__main__.TestPlanModeIntegration.test_exit_plan_mode_after_audit_table)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_phase3_is_post_approval (__main__.TestPlanModeIntegration.test_phase3_is_post_approval)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_wait_for_user_approval (__main__.TestPlanModeIntegration.test_wait_for_user_approval)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_fix_before_builder_fix (__main__.TestRemediationPlan.test_architect_fix_before_builder_fix)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_fix_targets_specs_and_anchors (__main__.TestRemediationPlan.test_architect_fix_targets_specs_and_anchors)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_fix_targets_code_and_tests (__main__.TestRemediationPlan.test_builder_fix_targets_code_and_tests)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_contains_role_gate_message (__main__.TestRoleGating.test_command_contains_role_gate_message)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_gate_appears_before_analysis (__main__.TestRoleGating.test_role_gate_appears_before_analysis)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_gate_blocks_non_architect_builder (__main__.TestRoleGating.test_role_gate_blocks_non_architect_builder)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_gate_mentions_shared_role (__main__.TestRoleGating.test_role_gate_mentions_shared_role)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_forbidden_in_high_row (__main__.TestSeverityClassification.test_forbidden_in_high_row)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_forbidden_is_high_severity (__main__.TestSeverityClassification.test_forbidden_is_high_severity)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_missing_prereq_is_medium (__main__.TestSeverityClassification.test_missing_prereq_is_medium)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_severity_table_has_all_levels (__main__.TestSeverityClassification.test_severity_table_has_all_levels)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_and_command_both_define_severity_table (__main__.TestSpecFeatureAlignment.test_spec_and_command_both_define_severity_table)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_and_command_both_reference_11_dimensions (__main__.TestSpecFeatureAlignment.test_spec_and_command_both_reference_11_dimensions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_and_command_both_reference_explore_subagent_type (__main__.TestSpecFeatureAlignment.test_spec_and_command_both_reference_explore_subagent_type)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checks_contradictions_between_anchors (__main__.TestSpecOnlySubagents.test_checks_contradictions_between_anchors)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cross_anchor_consistency_described (__main__.TestSpecOnlySubagents.test_cross_anchor_consistency_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_skip_code_comparison_for_spec_only (__main__.TestSpecOnlySubagents.test_skip_code_comparison_for_spec_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_evidence_field (__main__.TestSubagentOutputFormat.test_evidence_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_footer_format (__main__.TestSubagentOutputFormat.test_feature_footer_format)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_header_format (__main__.TestSubagentOutputFormat.test_feature_header_format)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_gap_entry_format (__main__.TestSubagentOutputFormat.test_gap_entry_format)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_suggested_fix_field (__main__.TestSubagentOutputFormat.test_suggested_fix_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_auto_compaction_handling (__main__.TestSubagentType.test_auto_compaction_handling)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_explore_is_read_only (__main__.TestSubagentType.test_explore_is_read_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_subagent_type_is_explore (__main__.TestSubagentType.test_subagent_type_is_explore)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_deduplication_instruction_present (__main__.TestSynthesisAndAuditTable.test_deduplication_instruction_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_overlapping_batches_handled (__main__.TestSynthesisAndAuditTable.test_overlapping_batches_handled)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_table_has_all_required_columns (__main__.TestSynthesisAndAuditTable.test_table_has_all_required_columns)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_table_sorted_by_severity (__main__.TestSynthesisAndAuditTable.test_table_sorted_by_severity)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_transitive_anchor_overlap_handled (__main__.TestSynthesisAndAuditTable.test_transitive_anchor_overlap_handled)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_describes_ancestor_output (__main__.TestTransitivePrerequisiteMap.test_command_describes_ancestor_output)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_describes_recursive_bfs_walk (__main__.TestTransitivePrerequisiteMap.test_command_describes_recursive_bfs_walk)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dependency_graph_file_exists (__main__.TestTransitivePrerequisiteMap.test_dependency_graph_file_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dependency_graph_has_prerequisites (__main__.TestTransitivePrerequisiteMap.test_dependency_graph_has_prerequisites)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_all_11_gap_dimensions_listed (__main__.TestTriageModeAnalysis.test_all_11_gap_dimensions_listed)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_gap_dimensions_table_present (__main__.TestTriageModeAnalysis.test_gap_dimensions_table_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_grep_for_forbidden_patterns (__main__.TestTriageModeAnalysis.test_grep_for_forbidden_patterns)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_light_code_scan_described (__main__.TestTriageModeAnalysis.test_light_code_scan_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reads_up_to_3_source_files (__main__.TestTriageModeAnalysis.test_reads_up_to_3_source_files)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_skip_scenario_by_scenario_deep_comparison (__main__.TestTriageModeAnalysis.test_skip_scenario_by_scenario_deep_comparison)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_requeue_on_failure (__main__.TestWaveExecution.test_requeue_on_failure)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_rescue_batch_for_incomplete (__main__.TestWaveExecution.test_rescue_batch_for_incomplete)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_saved_after_each_wave (__main__.TestWaveExecution.test_saved_after_each_wave)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_file_path (__main__.TestWaveExecution.test_state_file_path)",
+      "status": "PASS"
+    }
+  ]
+}

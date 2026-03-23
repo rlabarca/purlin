@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 18,
+  "passed": 23,
   "failed": 0,
-  "total": 18,
+  "total": 23,
   "test_file": "tools/test_support/test_pl_delivery_plan.py",
   "details": [
     {
@@ -38,6 +38,18 @@
       "status": "PASS"
     },
     {
+      "test": "test_context_tier_resolution_described (__main__.TestExtendedContextTierIncreasesPhaseCapacity.test_context_tier_resolution_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_extended_tier_has_higher_caps (__main__.TestExtendedContextTierIncreasesPhaseCapacity.test_extended_tier_has_higher_caps)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tier_resolution_uses_model_lookup (__main__.TestExtendedContextTierIncreasesPhaseCapacity.test_tier_resolution_uses_model_lookup)",
+      "status": "PASS"
+    },
+    {
       "test": "test_dedicated_phase_for_large_features (__main__.TestPhaseSizingCapEnforced.test_dedicated_phase_for_large_features)",
       "status": "PASS"
     },
@@ -46,7 +58,15 @@
       "status": "PASS"
     },
     {
-      "test": "test_max_two_features_per_phase (__main__.TestPhaseSizingCapEnforced.test_max_two_features_per_phase)",
+      "test": "test_tier_derived_max_features_per_phase (__main__.TestPhaseSizingCapEnforced.test_tier_derived_max_features_per_phase)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_override_keys_listed (__main__.TestPhaseSizingOverrideTakesPrecedence.test_override_keys_listed)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_phase_sizing_override_described (__main__.TestPhaseSizingOverrideTakesPrecedence.test_phase_sizing_override_described)",
       "status": "PASS"
     },
     {
