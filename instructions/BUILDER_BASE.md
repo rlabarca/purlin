@@ -82,7 +82,7 @@ Present the user with a structured summary:
 4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
 
 ### 2.3 Wait for Approval
-**Skip this step entirely when `auto_start: true`.** When auto_start is true, begin executing the plan immediately after Step 2.2 — do NOT prompt the user.
+**Skip this step entirely when `auto_start: true`.** When auto_start is true, begin executing the plan immediately after Step 2.2 — do NOT prompt the user. This applies to ALL approval points: work plan approval, phasing approval, phase transitions, and plan amendments for minor changes. The user has delegated execution by enabling `auto_start`. The ONLY prompt permitted under `auto_start: true` is for major plan amendments (new features, removed phases). See `instructions/references/phased_delivery.md` Section 10.5.
 
 When `auto_start: false` (or absent), ask the user: **"Ready to go, or would you like to adjust the plan?"**
 

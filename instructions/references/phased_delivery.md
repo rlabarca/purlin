@@ -34,7 +34,11 @@ When execution groups complete, QA can verify all phases in the completed group 
 Phased delivery is never automatic unless the user has opted into autonomous execution. The Builder proposes phasing based on scope assessment, and the user decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
 
 **Exceptions:**
-*   **`auto_start: true`:** When the Builder's `auto_start` config flag is enabled and the scope assessment heuristics are met, the Builder creates the delivery plan automatically and begins Phase 1. The user has delegated approval by enabling `auto_start`.
+*   **`auto_start: true`:** When the Builder's `auto_start` config flag is enabled, the Builder MUST NOT prompt for phasing approval at any point. The user has delegated all execution decisions by enabling `auto_start`. Specifically:
+    - If scope assessment recommends phasing: create the delivery plan automatically and begin Phase 1 immediately. Do NOT present "all-in-one vs phased" options. Do NOT ask "Ready to go?" or any approval question.
+    - Phase transitions: auto-advance to the next phase without prompting. Do NOT halt at phase boundaries.
+    - Plan amendments for minor changes: auto-update without prompting.
+    - The ONLY exception requiring user input under `auto_start: true` is plan amendments for major changes (new features added, phases removed, dependencies restructured) — these require confirmation because they change the scope the user originally delegated.
 
 ## 10.6 Architect Awareness
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
