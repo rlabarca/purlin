@@ -68,7 +68,9 @@ Do NOT invoke the `/pl-status` skill, do NOT call `{tools_root}/cdd/status.sh`, 
 
 ### 3.0.1 Read Startup Flags
 
-After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `find_work` and `auto_start` for the `qa` role. Default `find_work` to `true` and `auto_start` to `false` if absent.
+Extract `find_work` and `auto_start` from the startup briefing's `config` block (returned by `{tools_root}/cdd/status.sh --startup qa` in Step 3.1). The briefing resolves `config.local.json` over `config.json` automatically — do NOT read config files directly. Default `find_work` to `true` and `auto_start` to `false` if absent.
+
+**Sequencing note:** The briefing runs in Step 3.1, but the flags gate whether Step 3.1 runs at all. To resolve this: read `.purlin/config.local.json` (if it exists, otherwise `.purlin/config.json`) ONLY for the `find_work` flag. If `find_work` is `false`, stop. If `find_work` is `true`, proceed to Step 3.1, which runs the briefing. Then read `auto_start` from the briefing's `config` block (authoritative source).
 
 *   **If `find_work: false`:** Output `"find_work disabled -- awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
 *   **If `find_work: true` and `auto_start: false`:** Proceed with steps 3.1–3.3 in full (gather state, identify targets, wait for approval before executing verification).
