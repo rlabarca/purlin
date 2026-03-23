@@ -7,6 +7,8 @@
 > Prerequisite: features/init_preflight_checks.md
 > Test Fixtures: https://github.com/rlabarca/weather1
 
+[Complete]
+
 ## 1. Overview
 
 The `/pl-update-purlin` agent skill updates the Purlin submodule in consumer projects.
