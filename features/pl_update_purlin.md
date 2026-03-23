@@ -5,7 +5,7 @@
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/init_preflight_checks.md
-> Test Fixtures: https://github.com/rlabarca/weather1
+> Test Fixtures: https://github.com/rlabarca/purlin-fixtures
 
 [Complete]
 
