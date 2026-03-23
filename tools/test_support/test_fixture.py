@@ -848,9 +848,8 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
 class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
     """Scenario: Fixture recommendation file read by future sessions
 
-    Validates that a Builder session with qa_mode enabled can read
-    fixture_recommendations.md and identify which fixture tags
-    need to be created (per spec Section 2.12).
+    Validates that a Builder session can read fixture_recommendations.md
+    and identify which fixture tags need to be created (per spec Section 2.12).
     """
 
     def setUp(self):
@@ -876,20 +875,6 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
                 "- **Suggested tags:** `main/instruction_audit/override-contradiction`\n"
                 "- **Recorded:** 2026-03-17\n"
                 "- **Status:** CREATED\n"
-            )
-
-        # Write config with qa_mode enabled
-        purlin_dir = os.path.join(self.fake_root, ".purlin")
-        os.makedirs(purlin_dir, exist_ok=True)
-        with open(os.path.join(purlin_dir, "config.json"), "w") as f:
-            json.dump(
-                {
-                    "tools_root": "tools",
-                    "agents": {
-                        "builder": {"qa_mode": True},
-                    },
-                },
-                f,
             )
 
     def tearDown(self):
@@ -970,13 +955,6 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
         self.assertEqual(branch_collab["status"], "PENDING")
         self.assertIn("main/branch_collab/diverged-history", branch_collab["suggested_tags"])
         self.assertIn("main/branch_collab/ahead-3", branch_collab["suggested_tags"])
-
-    def test_qa_mode_enabled_in_config(self):
-        """Builder config has qa_mode enabled (prerequisite for reading recs)."""
-        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
-        with open(config_path) as f:
-            config = json.load(f)
-        self.assertTrue(config["agents"]["builder"]["qa_mode"])
 
     def test_created_entries_skipped(self):
         """Features with CREATED status are not in the pending set."""

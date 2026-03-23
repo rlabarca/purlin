@@ -1127,23 +1127,12 @@ def generate_startup_briefing(role, cache=None):
     # Config: resolved agent config for this role
     agent_cfg = CONFIG.get("agents", {}).get(role, {})
 
-    # Resolve qa_mode for builder (env var > config, default false)
-    qa_mode = False
-    if role == "builder":
-        env_val = os.environ.get("PURLIN_BUILDER_QA", "").lower()
-        if env_val == "true":
-            qa_mode = True
-        else:
-            qa_mode = agent_cfg.get("qa_mode", False)
-
     config_block = {
         "find_work": agent_cfg.get("find_work", True),
         "auto_start": agent_cfg.get("auto_start", False),
         "model": agent_cfg.get("model", ""),
         "effort": agent_cfg.get("effort", ""),
     }
-    if role == "builder":
-        config_block["qa_mode"] = qa_mode
 
     # Git state
     branch = run_command("git rev-parse --abbrev-ref HEAD") or "unknown"
@@ -1210,46 +1199,7 @@ def generate_startup_briefing(role, cache=None):
         entry["scenario_count"] = _count_scenarios(fpath_abs)
         features_with_count.append(entry)
 
-    # Builder QA mode: filter features by category
-    if role == "builder":
-        _TEST_INFRA_CATEGORY = "Test Infrastructure"
-        if qa_mode:
-            # QA mode: only Test Infrastructure features
-            features_with_count = [
-                f for f in features_with_count
-                if f.get("category") == _TEST_INFRA_CATEGORY]
-        else:
-            # Normal mode: exclude Test Infrastructure features
-            features_with_count = [
-                f for f in features_with_count
-                if f.get("category") != _TEST_INFRA_CATEGORY]
-
-        # Also filter action items to match visible features
-        visible_stems = set()
-        for feat in features_with_count:
-            fname = os.path.basename(feat["file"])
-            stem = os.path.splitext(fname)[0]
-            visible_stems.add(stem)
-
-        action_items = [
-            item for item in role_data.get("action_items", [])
-            if item.get("feature", "") in visible_stems
-            or not item.get("feature")]
-
-        # Normal mode: count pending Test Infrastructure features and
-        # recommend -qa when all normal TODO items are done (Section 2.3)
-        if not qa_mode:
-            all_role_features = []
-            for feat in role_data.get("features", []):
-                entry = dict(feat)
-                all_role_features.append(entry)
-
-            test_infra_pending = sum(
-                1 for f in all_role_features
-                if f.get("category") == _TEST_INFRA_CATEGORY
-                and f.get("builder") not in _TERMINAL_STATUSES)
-    else:
-        action_items = role_data.get("action_items", [])
+    action_items = role_data.get("action_items", [])
 
     # Dependency graph summary
     dep_summary = {"total_features": 0, "cycles": [], "blocked_features": []}
@@ -1310,19 +1260,6 @@ def generate_startup_briefing(role, cache=None):
 
         # in_scope_features: same as features but explicitly named
         result["in_scope_features"] = features_with_count
-
-        # Test infrastructure pending count and recommendation (Section 2.3)
-        if not qa_mode:
-            result["test_infrastructure_pending"] = test_infra_pending
-            # Check if all normal TODO items are done
-            normal_todo = sum(
-                1 for f in features_with_count
-                if f.get("builder") not in _TERMINAL_STATUSES)
-            if normal_todo == 0 and test_infra_pending > 0:
-                result["qa_mode_recommendation"] = (
-                    f"{test_infra_pending} Test Infrastructure features "
-                    f"pending. Use ./pl-run-builder.sh -qa for a focused "
-                    f"session.")
 
         # Delivery plan state (Section 2.15.2)
         delivery = get_delivery_phase()

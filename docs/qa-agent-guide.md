@@ -198,7 +198,7 @@ When QA encounters a scenario that needs fixtures during regression authoring, i
 2. **Remote repo** -- You provide a git URL. Good for team-shared fixtures.
 3. **Inline setup** -- Uses shell commands in the regression JSON. Good for simple state.
 
-For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Builder to handle via `./pl-run-builder.sh -qa`.
+For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Builder to handle.
 
 ---
 

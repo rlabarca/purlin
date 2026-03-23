@@ -29,14 +29,6 @@ The Builder discovers its own work. At startup, it reads the Critic report, iden
 ./pl-run-builder.sh
 ```
 
-For test infrastructure work only:
-
-```bash
-./pl-run-builder.sh -qa
-```
-
-The `-qa` flag filters the feature set to Test Infrastructure features and prepends `[QA Builder Mode]` to the command table.
-
 ### What Happens at Startup
 
 The Builder prints a command table, then checks its startup configuration:
@@ -200,23 +192,7 @@ The Builder creates `features/<name>.impl.md` alongside the spec to document imp
 
 ---
 
-## 8. The -qa Flag
-
-```bash
-./pl-run-builder.sh -qa
-```
-
-This launches the Builder in QA Builder Mode, which pre-filters the feature set to Test Infrastructure features only. Use it when:
-
-- QA recorded fixture recommendations that need Builder expertise.
-- The regression harness runner framework needs to be built or updated.
-- Test support tooling needs changes.
-
-After completing test infrastructure work, the Builder prints a handoff message directing you to launch QA.
-
----
-
-## 9. Day-to-Day Tips
+## 8. Day-to-Day Tips
 
 ### Checking What Needs Building
 
@@ -256,7 +232,7 @@ When QA records a `[BUG]` discovery, it appears as a Builder action item. Fix th
 
 ---
 
-## 10. Command Reference
+## 9. Command Reference
 
 | Command | Description |
 |---------|-------------|

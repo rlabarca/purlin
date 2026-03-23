@@ -160,20 +160,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
-    # Part 1b: Builder-specific flag parsing (literal)
-    if [ "$ROLE" = "builder" ]; then
-        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
-
-# --- Parse launcher flags ---
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -qa) export PURLIN_BUILDER_QA=true; shift ;;
-        *) shift ;;
-    esac
-done
-LAUNCHER_EOF
-    fi
-
     # Part 2: CORE_DIR with submodule path (expanded)
     cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
 CORE_DIR="$FRAMEWORK_VAR"

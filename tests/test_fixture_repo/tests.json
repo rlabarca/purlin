@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 32,
+  "passed": 31,
   "failed": 0,
-  "total": 32,
+  "total": 31,
   "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
@@ -63,10 +63,6 @@
     },
     {
       "test": "test_pending_entry_has_suggested_tags (__main__.TestFixtureRecommendationReadByFutureSessions.test_pending_entry_has_suggested_tags)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_qa_mode_enabled_in_config (__main__.TestFixtureRecommendationReadByFutureSessions.test_qa_mode_enabled_in_config)",
       "status": "PASS"
     },
     {

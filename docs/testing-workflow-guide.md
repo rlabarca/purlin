@@ -217,31 +217,9 @@ Each tag is an immutable snapshot. The harness runner checks out the tag into a 
 
 ## 6. Build Test Infrastructure
 
-### Builder with `-qa` Flag
+Test Infrastructure features (fixture setup, regression harness, test tooling) appear alongside all other features in the Builder's TODO list. The Builder discovers and implements them through the normal Critic-driven workflow -- no special mode or flag needed.
 
-Launch: `./pl-run-builder.sh -qa`
-
-This is a separate mode. The Builder sees **only** Test Infrastructure features -- normal application features are hidden. Use it when:
-
-- QA recorded fixture recommendations that need Builder expertise
-- The regression harness runner framework needs to be built
-- Test support tooling needs updates
-
-The Builder reads `tests/qa/fixture_recommendations.md`, creates the requested fixture tags, and hands back to QA:
-
-```
-Created fixture tags for 3 features in .purlin/runtime/fixture-repo.
-
-NEXT STEP:
-  Launch QA to continue regression scenario authoring.
-```
-
-After normal Builder work is done, the Builder also tells you if test infrastructure is waiting:
-
-```
-All application features complete.
-3 Test Infrastructure features pending. Use ./pl-run-builder.sh -qa for a focused session.
-```
+For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Builder to pick up.
 
 ---
 
@@ -305,7 +283,7 @@ If a test failure is actually a broken test (not a code bug), Builder flags it f
 | Fix bugs found during QA | Builder, then QA |
 | Resolve a spec dispute | Architect, then Builder, then QA |
 | Set up regression coverage | QA (auto-detects via `/pl-regression`) |
-| Create complex test fixtures | Builder with `-qa` |
+| Create complex test fixtures | Builder |
 | Ship a release | Architect with `/pl-release-run` |
 
 ### Scenario Tag Lifecycle
@@ -334,8 +312,7 @@ Tags are QA outputs. Architects and PMs write scenarios without tags.
 
 | Command | Who | What it does |
 |---------|-----|-------------|
-| `./pl-run-builder.sh` | Builder | Normal implementation session |
-| `./pl-run-builder.sh -qa` | Builder | Test infrastructure only |
+| `./pl-run-builder.sh` | Builder | Implementation session |
 | `./tests/qa/run_all.sh` | You (terminal) | Run full regression suite |
 | `/pl-verify` | QA | Batched verification workflow |
 | `/pl-regression` | QA | Author/run/process regression scenarios |
