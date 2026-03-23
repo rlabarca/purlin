@@ -12,31 +12,31 @@
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Core Shared Skills [PENDING]
+## Phase 2 -- Core Shared Skills [IN_PROGRESS]
 **Features:** pl_status.md, pl_find.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Shared Skills (Reset) [PENDING]
+## Phase 3 -- Shared Skills (Reset) [IN_PROGRESS]
 **Features:** pl_fixture.md, pl_purlin_issue.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Builder Core [PENDING]
+## Phase 4 -- Builder Core [IN_PROGRESS]
 **Features:** pl_build.md, pl_unit_test.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Builder Support [PENDING]
+## Phase 5 -- Builder Support [IN_PROGRESS]
 **Features:** pl_delivery_plan.md, pl_server.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Builder Cross-Agent [PENDING]
+## Phase 6 -- Builder Cross-Agent [IN_PROGRESS]
 **Features:** pl_infeasible.md, pl_propose.md
 **Completion Commit:** --
 **Deferred:** --
