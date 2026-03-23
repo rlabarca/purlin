@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "passed": 18,
+  "failed": 0,
+  "total": 18,
+  "test_file": "tools/test_support/test_pl_delivery_plan.py",
+  "details": [
+    {
+      "test": "test_blocks_commit_on_cycle (__main__.TestDependencyValidationCatchesCycles.test_blocks_commit_on_cycle)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cycle_detection_described (__main__.TestDependencyValidationCatchesCycles.test_cycle_detection_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dependency_graph_used_for_validation (__main__.TestDependencyValidationCatchesCycles.test_dependency_graph_used_for_validation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_validation_gate_present (__main__.TestDependencyValidationCatchesCycles.test_validation_gate_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_displays_phase_status (__main__.TestExistingPlanDisplaysCurrentState.test_displays_phase_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reads_existing_delivery_plan (__main__.TestExistingPlanDisplaysCurrentState.test_reads_existing_delivery_plan)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_shows_completion_commits (__main__.TestExistingPlanDisplaysCurrentState.test_shows_completion_commits)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_shows_implementation_status (__main__.TestExistingPlanDisplaysCurrentState.test_shows_implementation_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dedicated_phase_for_large_features (__main__.TestPhaseSizingCapEnforced.test_dedicated_phase_for_large_features)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_high_complexity_phase_cap (__main__.TestPhaseSizingCapEnforced.test_high_complexity_phase_cap)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_max_two_features_per_phase (__main__.TestPhaseSizingCapEnforced.test_max_two_features_per_phase)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_builder_owner (__main__.TestRoleGateRejectsNonBuilder.test_first_line_declares_builder_owner)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_rejection_stops_execution (__main__.TestRoleGateRejectsNonBuilder.test_rejection_stops_execution)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_rejection_message_present (__main__.TestRoleGateRejectsNonBuilder.test_role_rejection_message_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_high_complexity_heuristic (__main__.TestScopeAssessmentRecommendsPhasing.test_high_complexity_heuristic)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_recommends_phasing (__main__.TestScopeAssessmentRecommendsPhasing.test_recommends_phasing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scope_assessment_section_present (__main__.TestScopeAssessmentRecommendsPhasing.test_scope_assessment_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_three_plus_features_heuristic (__main__.TestScopeAssessmentRecommendsPhasing.test_three_plus_features_heuristic)",
+      "status": "PASS"
+    }
+  ]
+}
