@@ -37,6 +37,22 @@ All tool invocations use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/status.sh
 
 ---
 
+## Scope Confirmation
+
+Before loading project state (Phase 0), auto-detect code directories:
+
+1. Scan the project root for common code directory patterns: `src/`, `lib/`, `app/`, `tools/`, `dev/`, `scripts/`, `.claude/commands/`, `tests/`.
+2. Check `.purlin/config.json` for an optional `audit_code_paths` array. If present, use it as the default scope instead of auto-detection.
+3. Present the detected scope to the user and ask for confirmation:
+   - Code directories found (only those that exist on disk)
+   - File patterns per directory (e.g., `*.py`, `*.sh`, `*.md` for `.claude/commands/`)
+   - Feature spec count from the dependency graph
+4. Default is confirm (proceed). If the user requests adjustments, accept additions/removals, re-display, and re-confirm.
+5. The confirmed scope is session-scoped (not persisted). For persistent scope, use `audit_code_paths` in `.purlin/config.json`.
+6. The confirmed scope constrains code discovery in all subsequent phases (triage light scan, deep mode source discovery, Phase 0.5 code inventory).
+
+---
+
 ## Phase 0: Triage (Parent Agent -- Both Modes)
 
 Parent loads project state, builds the transitive prerequisite constraint map, and constructs the dispatch plan. Reads only metadata and anchor node constraint sections -- never feature scenarios or source code in this phase.
@@ -70,13 +86,15 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 
 ### If mode is `triage`:
 
+**Lightweight code inventory** (before feature-level scanning): Run a lightweight code inventory using the confirmed scope. Enumerate code files (Step 0.5.1) and build an ownership map using only heuristics H1, H2, H4, and H5 (no import tracing -- that requires reading source). Orphan findings are reported as a single summary line in the gap table (total orphan count and top-3 by severity), not per-file entries. Full per-file code inventory analysis requires `--deep`.
+
 Process ALL features in-agent (no subagents). For each feature:
 
-1. Read the feature file -- check spec completeness across all 11 gap dimensions (see Gap Dimensions Table below).
+1. Read the feature file -- check spec completeness across all 12 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth.
 3. Read `tests/<name>/critic.json` -- check gate status, traceability.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
-5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
+5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
 6. Skip scenario-by-scenario deep comparison.
 
 After processing all features individually, perform a **cross-feature requirement hygiene pass** (dimension 11):
@@ -90,9 +108,10 @@ After the cross-feature pass, save results to `.purlin/cache/audit_state.json` a
 
 #### Step D.1 -- Classify Features
 
-Classify features into two processing tracks:
+Classify features into three processing tracks:
 - **Spec-only track**: Anchor nodes (`arch_*`, `design_*`, `policy_*`) + features with zero automated scenarios.
 - **Code-comparison track**: All features with automated scenarios.
+- **Orphan scan track**: All "orphaned executable" and "orphaned skill file" entries from Phase 0.5 (see below). Grouped into batches of up to 15 orphaned files per batch.
 
 #### Step D.2 -- Batch Features
 
@@ -100,12 +119,69 @@ Batch features using first-fit-decreasing bin packing:
 - Target: 50-75 scenarios per code-comparison batch, max 4-5 features per batch.
 - Solo batch for any feature with 50+ scenarios.
 - All spec-only features go in a single batch.
+- Orphan scan batches: group up to 15 orphaned files per batch.
 
 #### Step D.3 -- Assign Waves
 
 Assign batches to waves of up to 5 concurrent subagents. Write the dispatch manifest to the plan file (wave/agent/feature/scenario-count table). Include the transitive prerequisite map and collected anchor constraints in each subagent's prompt payload so subagents don't need to re-derive them.
 
-Then proceed to Phase 1.
+**Aggressive parallelism mandate:** All 5 subagent slots per wave MUST be filled whenever batches remain. Spec-only, code-comparison, and orphan scan batches are mixed freely within the same wave -- never sequentially by track. If fewer than 5 batches exist in a wave, remaining slots MUST be used for orphan scan batches or rescue batches from prior waves. The goal is to minimize total wall-clock time by never leaving a subagent slot idle when work remains.
+
+Then proceed to Phase 0.5 (Code Inventory), then Phase 1.
+
+---
+
+## Phase 0.5: Code Inventory (Deep Mode Full / Triage Lightweight)
+
+Phase 0.5 runs in the parent agent after Phase 0 and before dispatching subagents (Phase 1). It builds a complete code-to-feature ownership map and identifies orphaned code.
+
+### Step 0.5.1 -- Enumerate Code Files
+
+- Use the confirmed scope from Scope Confirmation (already established before Phase 0).
+- Glob all files matching code extensions: `.py`, `.sh`, `.js`, `.ts`, `.go`, `.rs`, `.java`, `.rb`.
+- For `.claude/commands/`: include `.md` files (skill files are executable behavior).
+- Apply exclusions: `__pycache__/`, `node_modules/`, `vendor/`, `dist/`, `build/`, `.purlin/cache/`, `.purlin/runtime/`, binary files (`.pyc`, `.o`, `.so`), and files with `# DO NOT EDIT` or `// DO NOT EDIT` headers (auto-generated).
+- Output: `code_inventory[]` -- list of `{path, extension, size_bytes}`.
+
+### Step 0.5.2 -- Build Ownership Map
+
+For each code file, attempt to find an owning feature using a ranked heuristic chain (first match wins):
+
+| Priority | Heuristic | Confidence | Method |
+|----------|-----------|------------|--------|
+| H1 | Companion explicit reference | HIGH | Companion `.impl.md` contains `Tool Location:` or `### Source Mapping` referencing the file path |
+| H2 | Spec explicit reference | HIGH | Feature spec `.md` mentions the file path in requirements or overview |
+| H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. **Deep mode only** -- requires reading source files. |
+| H4 | Command-to-feature naming | HIGH | `.claude/commands/pl-<name>.md` maps to `features/pl_<name>.md` (dash-to-underscore convention) |
+| H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `cdd_status_monitor` -> `tools/cdd/`) |
+| H6 | Name similarity | LOW | File stem substring-matches a feature name. **Deep mode only.** |
+
+- A file MAY have multiple owners (legitimate for shared modules).
+- Triage mode uses only H1, H2, H4, H5 (no source reading). Deep mode uses all six heuristics.
+- Output: `ownership_map{}` -- `{file_path: {owners: [feature_names], heuristic: "<H1-H6>", confidence: "HIGH|MEDIUM|LOW"}}`.
+
+### Step 0.5.3 -- Classify Unowned Files (Deep Mode Only)
+
+Files with zero owners are classified into sub-categories:
+
+| Classification | Criteria | Severity |
+|---|---|---|
+| **Orphaned executable** | Defines functions or entry points, no owner | MEDIUM |
+| **Orphaned skill file** | `.claude/commands/pl-*.md` with no `features/pl_*.md` | HIGH |
+| **Shared infrastructure** | Imported by 3+ features' test files but no dedicated spec | LOW |
+| **Dead code candidate** | Zero imports from any file AND zero owners | LOW |
+| **Infrastructure file** | Matches known patterns: `__init__.py`, `conftest.py`, `*_utils.*`, `setup.py`, `setup.cfg`, `pyproject.toml`, `Makefile`, `Dockerfile` | Excluded |
+
+- Infrastructure files are auto-excluded from gap reporting. They are included in the inventory count but never generate gap entries.
+- Output: `orphaned_files[]` -- `{path, classification, import_count, nearest_feature_suggestion}`.
+
+### False Positive Mitigation
+
+Three mechanisms prevent noise in code ownership findings:
+
+1. **Infrastructure file exclusion** -- Known patterns (`__init__.py`, `conftest.py`, `*_utils.*`, build system files) are auto-excluded from gap reporting.
+2. **Import fan-in threshold** -- Files imported by 3+ features are classified as "shared infrastructure" (LOW severity) rather than orphaned.
+3. **Confidence-weighted ownership** -- H5/H6 (MEDIUM/LOW confidence) matches suppress the gap but are noted as "weak ownership" in the audit table for human review.
 
 ---
 
@@ -135,7 +211,7 @@ For each assigned feature:
    - **Invariant coverage**: For each invariant statement, determine if any scenario or code path addresses it. Flag invariants with zero coverage in both scenarios and code.
    - **Constraint compliance**: For each named constraint, check if the code's behavior aligns. Flag contradictions.
 8. **Undocumented behavior scan**: Error handlers, config branches, edge cases in code with no scenario coverage.
-9. **Spec completeness**: All 10 gap dimensions (see Gap Dimensions Table).
+9. **Spec completeness**: All 12 gap dimensions (see Gap Dimensions Table).
 
 ### Spec-Only Subagent Protocol
 
@@ -146,9 +222,17 @@ Simplified scan:
 - **Cross-anchor consistency**: If this anchor is a prerequisite of other anchors, check for contradictions between their invariant sets.
 - Skip code comparison entirely.
 
+### Orphan Scan Subagent Protocol
+
+For each assigned orphaned file:
+1. Read the file and extract public functions, classes, and entry points.
+2. Assess complexity (line count, function count, import fan-out).
+3. Identify the nearest feature by directory proximity and name similarity.
+4. Return structured output using `=== ORPHAN: <path> ===` ... `=== END ORPHAN ===` format with classification (orphaned executable, orphaned skill, dead code candidate), public API summary, import fan-in count, and nearest feature suggestion.
+
 ### Structured Output Format
 
-Each subagent returns:
+Each subagent returns (code-comparison and spec-only):
 ```
 === FEATURE: <name> ===
 Mode: deep | Scenarios scanned: N | Source files read: file1, file2
@@ -160,6 +244,16 @@ GAPS:
   Suggested fix: concrete action
 NO_GAPS (if clean)
 === END FEATURE ===
+```
+
+Orphan scan subagents return:
+```
+=== ORPHAN: <path> ===
+Classification: orphaned executable | orphaned skill | dead code candidate
+Public API: function1(), function2(arg)
+Line count: N | Function count: N | Import fan-in: N
+Nearest feature: <feature_name> (by directory proximity / name similarity)
+=== END ORPHAN ===
 ```
 
 ### Wave Execution
@@ -185,9 +279,9 @@ NO_GAPS (if clean)
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component) |
-| MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (identical scenarios targeting same endpoint/function) |
-| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec) |
+| MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (identical scenarios targeting same endpoint/function); orphaned executable code with significant behavior (entry points, state mutation, I/O operations) |
+| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec) |
 
 **Owner:** Assign based on what needs to change, not who is running the command:
 - `ARCHITECT` -- the spec needs to be updated (to match reality, clarify ambiguity, add missing anchors, revise scenarios)
@@ -251,6 +345,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Code divergence** | Scenario assertions not reflected in code; significant code paths with no scenario coverage; hardcoded values the spec says should be configurable |
 | **Anchor invariant drift** | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | **Requirement hygiene** | Duplicate scenarios across features targeting the same endpoint/function with identical assertions; conflicting assertions across features sharing a prerequisite anchor or targeting the same component; orphaned specs with no implementation, no test coverage, and not listed as a prerequisite by any other feature |
+| **Code ownership** | Orphaned code files in audit scope not referenced by any feature spec, companion file, or test import chain; orphaned skill files (`.claude/commands/pl-*.md` with no corresponding `features/pl_*.md`); shared infrastructure (3+ importers, no dedicated spec); dead code candidates (zero imports, zero owners). Deep mode provides per-file analysis; triage mode reports summary counts only. Symmetric complement of Requirement hygiene's "unused spec" detection: Requirement hygiene finds specs without code; Code ownership finds code without specs. |
 
 ---
 
@@ -267,8 +362,10 @@ Saved after each wave (deep mode) or after triage scan completes with:
 - `dispatch_manifest`: per-wave completion status (deep mode only)
 - `accumulated_gaps`: gap findings so far
 - `scan_failures`: features that failed and need retry
+- `code_inventory`: tracks `total_files`, `owned_files`, `orphaned_files` (count), and `inventory_complete` (boolean)
+- `ownership_map_complete`: boolean (top-level field)
 
-On re-invocation: if state file exists, report resume status, skip Phase 0, resume from next incomplete step. Deleted after Phase 3 completes.
+On re-invocation: if state file exists, report resume status, skip Phase 0, resume from next incomplete step. If `inventory_complete` is true, Phase 0.5 is skipped entirely. Deleted after Phase 3 completes.
 
 ---
 
@@ -322,6 +419,12 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 
 3. Commit all escalation entries together.
 4. The Critic will surface these as Architect action items at the next Architect session.
+
+### Dimension 12 (Code Ownership) Remediation
+
+- **Architect FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
+- **Architect ESCALATE to Builder:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
+- **Builder ESCALATE to Architect:** If the Builder discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 
 ### Post-Remediation
 

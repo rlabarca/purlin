@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the /pl-spec-code-audit agent command.
 
-Covers all 36 automated scenarios from features/pl_spec_code_audit.md.
+Covers all 54 automated scenarios from features/pl_spec_code_audit.md.
 The command is an agent skill defined in .claude/commands/pl-spec-code-audit.md.
 Tests verify the command file content, structure, and referenced infrastructure.
 """
@@ -212,6 +212,7 @@ class TestTriageModeChecksSpecCompleteness(unittest.TestCase):
             'Builder decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
             'Anchor invariant drift', 'Requirement hygiene',
+            'Code ownership',
         ]
         for dim in dimensions:
             self.assertIn(dim, content,
@@ -461,7 +462,8 @@ class TestCrossSessionResumeFromInterruptedDeepModeWave(unittest.TestCase):
         content = _read_command()
         for field in ('mode', 'role', 'transitive_map',
                       'anchor_constraints', 'dispatch_manifest',
-                      'accumulated_gaps', 'scan_failures'):
+                      'accumulated_gaps', 'scan_failures',
+                      'code_inventory', 'ownership_map_complete'):
             self.assertIn(field, content,
                           f'State file missing field: {field}')
 
@@ -630,6 +632,324 @@ class TestUnusedFeatureSpecDetected(unittest.TestCase):
     def test_unused_flagged_as_orphaned(self):
         content = _read_command()
         self.assertIn('orphaned specs', content.lower())
+
+
+class TestScopeConfirmationAutoDetectsCodeDirectories(unittest.TestCase):
+    """Scenario: Scope confirmation auto-detects existing code directories"""
+
+    def test_scope_confirmation_section_exists(self):
+        content = _read_command()
+        self.assertIn('Scope Confirmation', content)
+
+    def test_auto_detects_common_patterns(self):
+        content = _read_command()
+        for pattern in ('src/', 'tools/', 'tests/', '.claude/commands/'):
+            self.assertIn(pattern, content,
+                          f'Missing auto-detect pattern: {pattern}')
+
+    def test_only_existing_directories(self):
+        content = _read_command()
+        self.assertIn('exist on disk', content)
+
+
+class TestConfigDefinedScopeOverridesAutoDetection(unittest.TestCase):
+    """Scenario: Config-defined scope overrides auto-detection"""
+
+    def test_audit_code_paths_config_key(self):
+        content = _read_command()
+        self.assertIn('audit_code_paths', content)
+
+    def test_config_overrides_auto_detection(self):
+        content = _read_command()
+        self.assertIn('instead of auto-detection', content)
+
+
+class TestUserAcceptsDefaultScope(unittest.TestCase):
+    """Scenario: User accepts default scope"""
+
+    def test_default_is_confirm(self):
+        content = _read_command()
+        self.assertIn('Default is confirm', content)
+
+    def test_proceeds_after_confirmation(self):
+        content = _read_command()
+        self.assertIn('confirmed scope', content.lower())
+
+
+class TestUserAdjustsScope(unittest.TestCase):
+    """Scenario: User adjusts scope"""
+
+    def test_accepts_additions_removals(self):
+        content = _read_command()
+        self.assertIn('additions/removals', content)
+
+    def test_redisplays_and_reconfirms(self):
+        content = _read_command()
+        self.assertIn('re-display', content)
+        self.assertIn('re-confirm', content)
+
+
+class TestConfirmedScopeConstrainsTriageCodeScan(unittest.TestCase):
+    """Scenario: Confirmed scope constrains triage code scan"""
+
+    def test_scope_constrains_code_discovery(self):
+        content = _read_command()
+        self.assertIn(
+            'confirmed scope constrains code discovery', content.lower())
+
+    def test_light_code_scan_uses_confirmed_scope(self):
+        content = _read_command()
+        self.assertIn('within the confirmed scope', content.lower())
+
+
+class TestCodeInventoryEnumeratesAllFiles(unittest.TestCase):
+    """Scenario: Code inventory enumerates all files in confirmed scope"""
+
+    def test_phase_05_section_exists(self):
+        content = _read_command()
+        self.assertIn('Phase 0.5', content)
+
+    def test_enumerate_code_files_step(self):
+        content = _read_command()
+        self.assertIn('Step 0.5.1', content)
+        self.assertIn('Enumerate Code Files', content)
+
+    def test_code_extensions_listed(self):
+        content = _read_command()
+        for ext in ('.py', '.sh', '.js', '.ts'):
+            self.assertIn(ext, content,
+                          f'Missing code extension: {ext}')
+
+    def test_output_includes_path_extension_size(self):
+        content = _read_command()
+        self.assertIn('path', content.lower())
+        self.assertIn('extension', content.lower())
+        self.assertIn('size_bytes', content)
+
+    def test_md_files_in_claude_commands(self):
+        content = _read_command()
+        self.assertIn('.claude/commands/', content)
+        self.assertIn('.md', content)
+
+
+class TestOwnershipMapUsesCompanionToolLocation(unittest.TestCase):
+    """Scenario: Ownership map uses companion Tool Location (H1)"""
+
+    def test_h1_heuristic_described(self):
+        content = _read_command()
+        self.assertIn('H1', content)
+        self.assertIn('Companion explicit reference', content)
+
+    def test_h1_uses_tool_location(self):
+        content = _read_command()
+        self.assertIn('Tool Location', content)
+
+    def test_h1_confidence_is_high(self):
+        content = _read_command()
+        # H1 row should show HIGH confidence
+        self.assertIn('Companion explicit reference | HIGH', content)
+
+
+class TestOwnershipMapUsesSpecPathReference(unittest.TestCase):
+    """Scenario: Ownership map uses spec path reference (H2)"""
+
+    def test_h2_heuristic_described(self):
+        content = _read_command()
+        self.assertIn('H2', content)
+        self.assertIn('Spec explicit reference', content)
+
+    def test_h2_checks_feature_spec(self):
+        content = _read_command()
+        self.assertIn('Feature spec', content)
+        self.assertIn('mentions the file path', content)
+
+
+class TestOwnershipMapUsesTestImportTracing(unittest.TestCase):
+    """Scenario: Ownership map uses test import tracing (H3)"""
+
+    def test_h3_heuristic_described(self):
+        content = _read_command()
+        self.assertIn('H3', content)
+        self.assertIn('Test import trace', content)
+
+    def test_h3_deep_mode_only(self):
+        content = _read_command()
+        self.assertIn('Deep mode only', content)
+
+    def test_h3_checks_test_imports(self):
+        content = _read_command()
+        self.assertIn('imports or executes the code file', content)
+
+
+class TestCommandFileMapsToFeatureByNaming(unittest.TestCase):
+    """Scenario: Command file maps to feature by naming convention (H4)"""
+
+    def test_h4_heuristic_described(self):
+        content = _read_command()
+        self.assertIn('H4', content)
+        self.assertIn('Command-to-feature naming', content)
+
+    def test_h4_dash_to_underscore(self):
+        content = _read_command()
+        self.assertIn('dash-to-underscore', content)
+
+    def test_h4_maps_pl_prefix(self):
+        content = _read_command()
+        self.assertIn('pl-<name>.md', content)
+        self.assertIn('pl_<name>.md', content)
+
+
+class TestOrphanedCodeFileDetectedAsDimension12(unittest.TestCase):
+    """Scenario: Orphaned code file detected and reported as dimension 12"""
+
+    def test_orphaned_executable_classification(self):
+        content = _read_command()
+        self.assertIn('Orphaned executable', content)
+
+    def test_orphaned_executable_severity_medium(self):
+        content = _read_command()
+        self.assertIn(
+            'orphaned executable code with significant behavior', content.lower())
+
+    def test_code_ownership_dimension_in_table(self):
+        content = _read_command()
+        self.assertIn('Code ownership', content)
+
+
+class TestOrphanedSkillFileDetectedAsHighSeverity(unittest.TestCase):
+    """Scenario: Orphaned skill file detected as HIGH severity"""
+
+    def test_orphaned_skill_file_classification(self):
+        content = _read_command()
+        self.assertIn('Orphaned skill file', content)
+
+    def test_orphaned_skill_file_severity_high(self):
+        content = _read_command()
+        self.assertIn(
+            'orphaned skill file', content.lower())
+        # Verify it appears in the HIGH severity row
+        self.assertIn(
+            'orphaned skill file (`.claude/commands/pl-*.md`', content)
+
+
+class TestDeadCodeCandidateClassifiedAsLowSeverity(unittest.TestCase):
+    """Scenario: Dead code candidate classified as LOW severity"""
+
+    def test_dead_code_candidate_classification(self):
+        content = _read_command()
+        self.assertIn('Dead code candidate', content)
+
+    def test_dead_code_severity_low(self):
+        content = _read_command()
+        self.assertIn(
+            'dead code candidate (zero imports, zero owners)', content.lower())
+
+    def test_dead_code_criteria(self):
+        content = _read_command()
+        self.assertIn('Zero imports from any file AND zero owners', content)
+
+
+class TestSharedInfrastructureNotFlaggedAsOrphaned(unittest.TestCase):
+    """Scenario: Shared infrastructure not flagged as orphaned"""
+
+    def test_shared_infrastructure_classification(self):
+        content = _read_command()
+        self.assertIn('Shared infrastructure', content)
+
+    def test_import_fan_in_threshold(self):
+        content = _read_command()
+        self.assertIn('3+ features', content)
+
+    def test_shared_infra_severity_low(self):
+        content = _read_command()
+        self.assertIn(
+            'shared infrastructure code (3+ importers, no dedicated spec)',
+            content.lower())
+
+
+class TestInfrastructureFilesExcludedFromGapReporting(unittest.TestCase):
+    """Scenario: Infrastructure files excluded from gap reporting"""
+
+    def test_infrastructure_file_classification(self):
+        content = _read_command()
+        self.assertIn('Infrastructure file', content)
+
+    def test_known_patterns_listed(self):
+        content = _read_command()
+        for pattern in ('__init__.py', 'conftest.py', 'setup.py'):
+            self.assertIn(pattern, content,
+                          f'Missing infrastructure pattern: {pattern}')
+
+    def test_excluded_from_gap_reporting(self):
+        content = _read_command()
+        self.assertIn(
+            'auto-excluded from gap reporting', content.lower())
+
+
+class TestTriageModeReportsOrphanCountAsSummaryOnly(unittest.TestCase):
+    """Scenario: Triage mode reports orphan count as summary only"""
+
+    def test_triage_lightweight_inventory(self):
+        content = _read_command()
+        self.assertIn('Lightweight code inventory', content)
+
+    def test_summary_not_per_file(self):
+        content = _read_command()
+        self.assertIn('summary line', content.lower())
+        self.assertIn('not per-file entries', content.lower())
+
+    def test_top_3_by_severity(self):
+        content = _read_command()
+        self.assertIn('top-3 by severity', content)
+
+    def test_triage_uses_limited_heuristics(self):
+        content = _read_command()
+        self.assertIn('H1, H2, H4, and H5', content)
+
+
+class TestOrphanScanSubagentExtractsFunctionSignatures(unittest.TestCase):
+    """Scenario: Orphan scan subagent extracts function signatures in deep
+    mode"""
+
+    def test_orphan_scan_protocol_exists(self):
+        content = _read_command()
+        self.assertIn('Orphan Scan Subagent Protocol', content)
+
+    def test_extracts_public_functions(self):
+        content = _read_command()
+        self.assertIn('public functions', content)
+
+    def test_orphan_header_format(self):
+        content = _read_command()
+        self.assertIn('=== ORPHAN:', content)
+
+    def test_orphan_footer_format(self):
+        content = _read_command()
+        self.assertIn('=== END ORPHAN ===', content)
+
+    def test_nearest_feature_suggestion(self):
+        content = _read_command()
+        self.assertIn('nearest feature', content.lower())
+
+
+class TestDeepModeFillsAllSubagentSlotsPerWave(unittest.TestCase):
+    """Scenario: Deep mode fills all subagent slots per wave"""
+
+    def test_aggressive_parallelism_mandate(self):
+        content = _read_command()
+        self.assertIn('Aggressive parallelism mandate', content)
+
+    def test_all_5_slots_filled(self):
+        content = _read_command()
+        self.assertIn('All 5 subagent slots per wave MUST be filled', content)
+
+    def test_tracks_mixed_freely(self):
+        content = _read_command()
+        self.assertIn('mixed freely within the same wave', content)
+
+    def test_orphan_scan_track_described(self):
+        content = _read_command()
+        self.assertIn('Orphan scan track', content)
 
 
 if __name__ == '__main__':
