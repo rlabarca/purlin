@@ -237,19 +237,42 @@ A Python script that reads a single scenario JSON file and executes it:
 1. Parse the scenario JSON file.
 2. For each scenario entry:
    a. If `fixture_tag` is specified, check out the fixture via `tools/test_support/fixture.sh checkout`.
-   b. If `setup_commands` are specified, execute them in order.
+   b. If `setup_commands` are specified, execute them in order (CWD = fixture dir if checked out, otherwise project root).
    c. Dispatch based on `harness_type`:
       - `agent_behavior`: Construct Claude invocation with `--print` flag, specified role, and prompt. Capture output.
-      - `web_test`: Start server (if `> Web Start:` available), navigate to URL, delegate to web test patterns.
+      - `web_test`: Manage CDD server lifecycle (see Section 2.8.1), fetch page content from URL, evaluate assertions.
       - `custom_script`: Execute the script at `script_path` with `--write-results`.
    d. Evaluate assertions against captured output (regex match for each pattern).
-   e. If fixture was checked out, clean up via `fixture cleanup`.
+   e. Clean up: if fixture was checked out, run `fixture cleanup`. If a server was started by the harness, stop it (see Section 2.8.1).
 3. Write enriched results to `tests/<feature_name>/regression.json` (NOT `tests.json`) with:
    - Standard fields: `status`, `passed`, `failed`, `total`.
    - Per-detail enriched fields: `scenario_ref`, `expected` (from assertion context), `actual_excerpt`, `assertion_tier`.
 4. Exit with 0 if all assertions passed, non-zero otherwise.
 
 **Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Builder-owned (unit test results). Writing regression results to `tests.json` clobbers Builder counts and breaks the Critic's structural completeness gate. The Critic reads both files independently: `tests.json` for the Implementation Gate, `regression.json` for regression status.
+
+#### 2.8.1 Web Test Server Lifecycle
+
+The harness runner manages CDD server lifecycle for `web_test` scenarios. The behavior depends on whether a fixture is checked out:
+
+**No fixture (testing against live project state):**
+
+1. Check if a CDD server is already running: read `.purlin/runtime/cdd.port`. If the file exists and the port is responsive (HTTP GET returns 200), reuse the existing server — do NOT start a new one, do NOT stop it after the test.
+2. If no server is running: start one via `tools/cdd/start.sh -p <port>` (use the port from `web_test_url`, or auto-select if not specified). Track the PID for cleanup. After all scenarios in this file complete, stop the server.
+3. **Readiness polling:** After starting a server, poll for readiness (HTTP GET to `http://localhost:<port>/status.json`) with retries: 10 attempts, 1 second apart. If the server is not responsive after 10 attempts, fail the scenario with `"Error: CDD server did not become ready within 10 seconds"`. Do NOT use a fixed `sleep`.
+
+**With fixture (testing against controlled project state):**
+
+1. Check if a CDD server is already running on the `web_test_url` port. If yes, start the fixture server on a DIFFERENT port (auto-select via OS) to avoid conflict. Update the `web_test_url` for assertions to use the new port.
+2. Start the CDD server against the fixture directory: `tools/cdd/start.sh -p <port> --project-root <fixture_dir>`. This runs CDD against the fixture's feature files, config, and test artifacts — providing the controlled state the fixture was designed for.
+3. **Readiness polling:** Same as above (10 attempts, 1 second apart).
+4. After all scenarios using this fixture complete, stop the fixture server. The pre-existing server (if any) is left untouched.
+
+**Cleanup mandate:** The harness runner MUST stop any server it started, even if scenarios fail or the harness crashes (use try/finally or atexit). Never leave orphaned server processes.
+
+**Scenario JSON changes:** With this server lifecycle management, `web_test` scenarios do NOT need `setup_commands` to start the CDD server. The harness runner handles it. Scenarios should specify `fixture_tag` for controlled state testing and `web_test_url` for the target URL (port). The harness adjusts the port if needed.
+
+**Preference for fixture-based web tests:** When a `web_test` scenario has a `fixture_tag`, the harness MUST start CDD against the fixture directory (not the live project). Fixture-based tests provide deterministic, controlled state — testing against live project state should be the fallback, not the default. QA should author `web_test` scenarios with fixture tags whenever the assertions depend on specific feature states, config values, or lifecycle statuses.
 
 **CLI interface:**
 
@@ -551,13 +574,37 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And the fixture is cleaned up
     And enriched regression.json is written with scenario_ref and assertion_tier
 
-#### Scenario: Harness runner handles web_test harness type
+#### Scenario: Harness runner handles web_test with no fixture and no running server
 
     Given a scenario JSON file with harness_type "web_test"
-    And the scenario specifies a web_test_url
+    And the scenario specifies web_test_url "http://localhost:9086"
+    And no CDD server is currently running
     When the harness runner processes the scenario file
-    Then the web test pattern is invoked against the specified URL
+    Then the harness starts a CDD server on port 9086
+    And polls for readiness before running assertions
     And enriched regression.json is written with pass/fail results
+    And the server is stopped after all scenarios complete
+
+#### Scenario: Harness runner reuses existing server for non-fixture web_test
+
+    Given a scenario JSON file with harness_type "web_test"
+    And a CDD server is already running on port 9086
+    And no fixture_tag is specified
+    When the harness runner processes the scenario file
+    Then the harness reuses the existing server (does not start a new one)
+    And the existing server is NOT stopped after scenarios complete
+
+#### Scenario: Harness runner starts fixture-scoped server for fixture web_test
+
+    Given a scenario JSON file with harness_type "web_test"
+    And the scenario has a fixture_tag and web_test_url "http://localhost:9086"
+    And a CDD server is already running on port 9086
+    When the harness runner processes the scenario file
+    Then the fixture is checked out
+    And the harness starts a SEPARATE CDD server against the fixture directory on a different port
+    And assertions run against the fixture server (not the existing one)
+    And the fixture server is stopped after scenarios complete
+    And the pre-existing server on port 9086 is left running
 
 #### Scenario: Harness runner falls back to custom_script
 
