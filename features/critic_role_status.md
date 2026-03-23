@@ -51,8 +51,8 @@ Builder Precedence (highest wins): INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 **QA Status:**
 *   `FAIL`: Has OPEN BUGs in discovery sidecar. (Lifecycle-independent.)
 *   `DISPUTED`: Has OPEN SPEC_DISPUTEs in discovery sidecar (no BUGs). (Lifecycle-independent.)
-*   `TODO`: Any of: (a) Feature in TESTING lifecycle state with at least one manual QA item (QA scenario without `@auto` tag, or visual spec item on non-web feature); (b) Has SPEC_UPDATED items AND feature is in TESTING lifecycle state. Mixed auto+manual = TODO.
-*   `AUTO`: Feature in TESTING lifecycle state with QA scenarios, ALL of which are `@auto`-tagged or auto-classified (visual spec items on `> Web Test:` features). Zero manual QA items.
+*   `TODO`: Any of: (a) Feature in TESTING lifecycle state with at least one manual QA item (QA scenario without `@auto` tag); (b) Has SPEC_UPDATED items AND feature is in TESTING lifecycle state. Mixed auto+manual = TODO.
+*   `AUTO`: Feature in TESTING lifecycle state with QA scenarios, ALL of which are `@auto`-tagged. Zero manual QA items. Visual spec items are Builder-verified and do NOT contribute to QA status.
 *   `CLEAN`: `tests/<feature>/tests.json` exists with `status: "PASS"`, AND no FAIL/DISPUTED/TODO/AUTO conditions matched.
 *   `N/A`: No FAIL/DISPUTED/TODO/AUTO/CLEAN conditions matched.
 

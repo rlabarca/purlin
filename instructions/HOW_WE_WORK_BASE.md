@@ -174,7 +174,7 @@ In addition to the dual-gate, the Critic runs these supplementary audits on ever
 
 *   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries in discovery sidecar files (`features/*.discoveries.md`). Each entry is routed to the responsible role's action items.
 *   **Builder Decision Audit:** Scans companion files (`features/*.impl.md`) for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags. These are flagged as HIGH-priority Architect action items.
-*   **Visual Specification Detection:** Detects `## Visual Specification` sections and surfaces visual checklist items as QA action items for the visual verification pass.
+*   **Visual Specification Detection:** Detects `## Visual Specification` sections. Visual checklist items are Builder-verified (via `/pl-web-test` for web features, manual inspection for non-web features) and do NOT generate QA action items. The Critic tracks visual specs for completeness auditing only.
 *   **Untracked File Audit:** Checks git status for untracked files in Architect-owned directories and flags them as MEDIUM-priority Architect triage items.
 
 ### 9.2 Role-Specific Action Items

@@ -127,6 +127,12 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 
 Testing protocol: `/pl-unit-test` (invoked by `/pl-build` Step 3). Server lifecycle: `/pl-server` (invoked by `/pl-build` during web test verification).
 
+### Visual Specification Verification Mandate
+When a feature has a `## Visual Specification` section, the Builder MUST verify ALL visual checklist items during implementation -- regardless of whether the design came from Figma, a screenshot, or text description. Visual verification is Builder-owned. QA does NOT re-verify visual items.
+
+*   **Web test features** (`> Web Test:` or `> AFT Web:` metadata): Run `/pl-web-test` to verify visual items via Playwright. Zero BUG/DRIFT verdicts required before status tag.
+*   **Non-web features** (no web test metadata): Verify visual items by inspecting the running application or output. For each visual checklist item, confirm the implementation matches the spec. Log verification results in the companion file. If visual verification is not possible (no UI, CLI-only), log a `[DISCOVERY]` in the companion file explaining why.
+
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:

@@ -180,10 +180,10 @@ The Critic MUST compute a `verification_effort` block for each feature, classify
 
 | Category | Key | Owner | Condition |
 |----------|-----|-------|-----------|
-| TestOnly | `test_only` | **Builder** | Feature has only Unit Tests, tests pass, no QA scenarios or visual items |
+| TestOnly | `test_only` | **Builder** | Feature has only Unit Tests, tests pass, no QA scenarios. Visual spec items are Builder-verified (via `/pl-web-test` or manual inspection) and do not affect this classification |
 | Skip | `skip` | **Builder** | Regression scope is `cosmetic` (not escalated) |
-| Auto | `auto` | **QA** | QA Scenarios with `@auto` tag, or visual spec items on `> Web Test:` features |
-| Manual | `manual` | **QA** | QA Scenarios without `@auto` tag, or visual spec items on non-web features |
+| Auto | `auto` | **QA** | QA Scenarios with `@auto` tag |
+| Manual | `manual` | **QA** | QA Scenarios without `@auto` tag |
 
 Builder-owned categories (TestOnly, Skip) are computed for status tracking but do NOT generate QA action items. Builder-owned items route to Builder action items. When the Builder marks `[Complete]` with zero QA scenarios, `qa: "N/A"`.
 
