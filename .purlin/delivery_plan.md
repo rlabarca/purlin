@@ -12,7 +12,7 @@ Four features reset to TODO by spec edits. All have existing implementations wit
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic & Dashboard [PENDING]
+## Phase 2 -- Critic & Dashboard [IN_PROGRESS]
 **Features:** critic_role_status.md, cdd_status_monitor.md
 **Completion Commit:** --
 **Deferred:** --
