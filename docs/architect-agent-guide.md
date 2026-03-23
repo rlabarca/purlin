@@ -122,7 +122,7 @@ This walks through the release checklist step by step:
 2. **Instruction Audit** -- Override files are consistent with base instructions.
 3. **Dependency Integrity** -- The feature graph is acyclic with no broken links.
 4. **Documentation Consistency** -- README and docs match the current feature set.
-5. **Version Notes** -- Record the release version and notes in README.md.
+5. **Version Notes** -- Record the release version and notes in `README.md`.
 6. **Push** -- Push commits and tags to the remote.
 
 Each step presents its status and asks for confirmation before proceeding.
