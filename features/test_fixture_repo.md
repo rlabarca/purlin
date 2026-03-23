@@ -4,7 +4,7 @@
 > Category: "Test Infrastructure"
 > Prerequisite: features/policy_critic.md
 
-[TODO]
+[Complete] <!-- re-verified 2026-03-23 after doc-only spec edits (decision matrix, section renumbering) -->
 
 ## 1. Overview
 
