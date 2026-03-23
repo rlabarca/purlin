@@ -41,6 +41,7 @@ Subcommands:
   checkout <repo-url> <tag> [--dir <path>]             Clone fixture at tag
   cleanup <path>                                       Remove fixture directory
   list <repo-url> [--ref <project-ref>]                List fixture tags
+  push <remote-url> [--tag <tag>]                      Push tags to remote
   prune <repo-url> [--ref <project-ref>]               Find orphan fixture tags
 USAGE
     exit 1
@@ -296,6 +297,76 @@ cmd_list() {
     fi
 }
 
+cmd_push() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: push requires <remote-url>" >&2
+        exit 1
+    fi
+
+    local remote_url="$1"
+    shift
+
+    local specific_tag=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --tag)
+                [[ $# -lt 2 ]] && { echo "Error: --tag requires a value" >&2; exit 1; }
+                specific_tag="$2"
+                shift 2
+                ;;
+            *)
+                echo "Error: Unknown option: $1" >&2
+                exit 1
+                ;;
+        esac
+    done
+
+    # Resolve local convention-path fixture repo
+    local project_root
+    project_root="$(resolve_project_root)"
+    local repo_path="$project_root/.purlin/runtime/fixture-repo"
+
+    if [[ ! -d "$repo_path" ]]; then
+        echo "Error: Local fixture repo not found at $repo_path. Run 'fixture init' first." >&2
+        exit 1
+    fi
+
+    local push_output
+    local push_rc=0
+
+    if [[ -n "$specific_tag" ]]; then
+        # Verify tag exists locally
+        if ! git -C "$repo_path" rev-parse "refs/tags/$specific_tag" >/dev/null 2>&1; then
+            echo "Error: Tag '$specific_tag' not found in local fixture repo." >&2
+            exit 1
+        fi
+        # Push specific tag
+        push_output=$(git -C "$repo_path" push "$remote_url" "refs/tags/$specific_tag:refs/tags/$specific_tag" 2>&1) || push_rc=$?
+    else
+        # Push all tags
+        push_output=$(git -C "$repo_path" push "$remote_url" --tags 2>&1) || push_rc=$?
+    fi
+
+    if [[ $push_rc -ne 0 ]]; then
+        echo "Error: Push to $remote_url failed." >&2
+        echo "" >&2
+        echo "Git output:" >&2
+        echo "$push_output" >&2
+        echo "" >&2
+        echo "This may be an authentication or permissions issue. To configure push access:" >&2
+        echo "  - SSH: Ensure your SSH key is added (ssh-add ~/.ssh/id_ed25519)" >&2
+        echo "  - HTTPS: Configure a personal access token (git credential-store)" >&2
+        echo "  - Permissions: Verify you have write access to the remote repository" >&2
+        exit 1
+    fi
+
+    if [[ -n "$specific_tag" ]]; then
+        echo "Pushed tag: $specific_tag"
+    else
+        echo "Pushed all tags to $remote_url"
+    fi
+}
+
 cmd_prune() {
     if [[ $# -lt 1 ]]; then
         echo "Error: prune requires <repo-url>" >&2
@@ -386,6 +457,9 @@ case "$subcommand" in
         ;;
     list)
         cmd_list "$@"
+        ;;
+    push)
+        cmd_push "$@"
         ;;
     prune)
         cmd_prune "$@"

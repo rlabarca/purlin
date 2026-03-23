@@ -968,6 +968,180 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
         self.assertIn("instruction_audit", created)
 
 
+class TestPushAllTags(unittest.TestCase):
+    """Scenario: Push syncs all tags to remote"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake_root = tempfile.mkdtemp(prefix="fixture-push-all-")
+        os.makedirs(os.path.join(cls.fake_root, "features"))
+
+        # Init fixture repo at convention path
+        rc, _, stderr = run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": cls.fake_root})
+        assert rc == 0, f"init failed: {stderr}"
+
+        # Add two tags
+        for slug, content in [("s1", "content-1"), ("s2", "content-2")]:
+            source = tempfile.mkdtemp(prefix=f"fixture-src-{slug}-")
+            with open(os.path.join(source, "data.txt"), "w") as f:
+                f.write(content)
+            rc, _, stderr = run_fixture(
+                "add-tag", f"main/feat_a/{slug}",
+                "--from-dir", source,
+                env_override={"PURLIN_PROJECT_ROOT": cls.fake_root},
+            )
+            assert rc == 0, f"add-tag failed: {stderr}"
+            subprocess.run(["rm", "-rf", source], capture_output=True)
+
+        # Create a remote bare repo (simulates remote)
+        cls.remote_repo = tempfile.mkdtemp(prefix="fixture-remote-all-")
+        subprocess.run(["rm", "-rf", cls.remote_repo], capture_output=True)
+        subprocess.run(
+            ["git", "init", "--bare", cls.remote_repo],
+            capture_output=True, check=True,
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        subprocess.run(["rm", "-rf", cls.fake_root, cls.remote_repo], capture_output=True)
+
+    def test_push_all_tags(self):
+        rc, stdout, stderr = run_fixture(
+            "push", self.remote_repo,
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        self.assertEqual(rc, 0, f"push failed: {stderr}")
+        self.assertIn("Pushed all tags", stdout)
+
+    def test_both_tags_visible_on_remote(self):
+        # Push first
+        run_fixture(
+            "push", self.remote_repo,
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        # Verify via fixture list
+        rc, list_out, stderr = run_fixture("list", self.remote_repo)
+        self.assertEqual(rc, 0, f"list failed: {stderr}")
+        self.assertIn("main/feat_a/s1", list_out)
+        self.assertIn("main/feat_a/s2", list_out)
+
+
+class TestPushSpecificTag(unittest.TestCase):
+    """Scenario: Push syncs a specific tag to remote"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake_root = tempfile.mkdtemp(prefix="fixture-push-specific-")
+        os.makedirs(os.path.join(cls.fake_root, "features"))
+
+        rc, _, stderr = run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": cls.fake_root})
+        assert rc == 0, f"init failed: {stderr}"
+
+        for slug, content in [("s1", "content-1"), ("s2", "content-2")]:
+            source = tempfile.mkdtemp(prefix=f"fixture-src-{slug}-")
+            with open(os.path.join(source, "data.txt"), "w") as f:
+                f.write(content)
+            rc, _, stderr = run_fixture(
+                "add-tag", f"main/feat_a/{slug}",
+                "--from-dir", source,
+                env_override={"PURLIN_PROJECT_ROOT": cls.fake_root},
+            )
+            assert rc == 0, f"add-tag failed: {stderr}"
+            subprocess.run(["rm", "-rf", source], capture_output=True)
+
+        cls.remote_repo = tempfile.mkdtemp(prefix="fixture-remote-specific-")
+        subprocess.run(["rm", "-rf", cls.remote_repo], capture_output=True)
+        subprocess.run(
+            ["git", "init", "--bare", cls.remote_repo],
+            capture_output=True, check=True,
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        subprocess.run(["rm", "-rf", cls.fake_root, cls.remote_repo], capture_output=True)
+
+    def test_push_specific_tag(self):
+        rc, stdout, stderr = run_fixture(
+            "push", self.remote_repo, "--tag", "main/feat_a/s1",
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        self.assertEqual(rc, 0, f"push failed: {stderr}")
+        self.assertIn("Pushed tag: main/feat_a/s1", stdout)
+
+    def test_only_specific_tag_on_remote(self):
+        # Push only s1
+        run_fixture(
+            "push", self.remote_repo, "--tag", "main/feat_a/s1",
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        rc, list_out, stderr = run_fixture("list", self.remote_repo)
+        self.assertEqual(rc, 0, f"list failed: {stderr}")
+        self.assertIn("main/feat_a/s1", list_out)
+        self.assertNotIn("main/feat_a/s2", list_out)
+
+
+class TestPushAuthError(unittest.TestCase):
+    """Scenario: Push fails gracefully on auth error"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake_root = tempfile.mkdtemp(prefix="fixture-push-auth-")
+        os.makedirs(os.path.join(cls.fake_root, "features"))
+
+        rc, _, stderr = run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": cls.fake_root})
+        assert rc == 0, f"init failed: {stderr}"
+
+        source = tempfile.mkdtemp(prefix="fixture-src-auth-")
+        with open(os.path.join(source, "data.txt"), "w") as f:
+            f.write("content")
+        rc, _, stderr = run_fixture(
+            "add-tag", "main/feat_a/s1",
+            "--from-dir", source,
+            env_override={"PURLIN_PROJECT_ROOT": cls.fake_root},
+        )
+        assert rc == 0, f"add-tag failed: {stderr}"
+        subprocess.run(["rm", "-rf", source], capture_output=True)
+
+        # Create a remote bare repo and make it read-only to simulate push failure
+        cls.remote_repo = tempfile.mkdtemp(prefix="fixture-remote-ro-")
+        subprocess.run(["rm", "-rf", cls.remote_repo], capture_output=True)
+        subprocess.run(
+            ["git", "init", "--bare", cls.remote_repo],
+            capture_output=True, check=True,
+        )
+        subprocess.run(
+            ["chmod", "-R", "a-w", cls.remote_repo],
+            capture_output=True, check=True,
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        subprocess.run(["chmod", "-R", "u+w", cls.remote_repo], capture_output=True)
+        subprocess.run(["rm", "-rf", cls.fake_root, cls.remote_repo], capture_output=True)
+
+    def test_push_exits_nonzero(self):
+        rc, stdout, stderr = run_fixture(
+            "push", self.remote_repo,
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        self.assertNotEqual(rc, 0, "Push should fail on permission error")
+
+    def test_push_prints_diagnostic(self):
+        rc, stdout, stderr = run_fixture(
+            "push", self.remote_repo,
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        self.assertIn("authentication or permissions", stderr.lower())
+
+    def test_push_suggests_access_steps(self):
+        rc, stdout, stderr = run_fixture(
+            "push", self.remote_repo,
+            env_override={"PURLIN_PROJECT_ROOT": self.fake_root},
+        )
+        self.assertIn("SSH", stderr)
+        self.assertIn("push access", stderr.lower())
+
+
 # ===================================================================
 # Test result output
 # ===================================================================

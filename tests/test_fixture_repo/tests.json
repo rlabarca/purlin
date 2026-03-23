@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 31,
+  "passed": 38,
   "failed": 0,
-  "total": 31,
+  "total": 38,
   "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
@@ -95,6 +95,34 @@
     },
     {
       "test": "test_prune_detects_tombstoned (__main__.TestPruneTombstone.test_prune_detects_tombstoned)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_both_tags_visible_on_remote (__main__.TestPushAllTags.test_both_tags_visible_on_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_push_all_tags (__main__.TestPushAllTags.test_push_all_tags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_push_exits_nonzero (__main__.TestPushAuthError.test_push_exits_nonzero)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_push_prints_diagnostic (__main__.TestPushAuthError.test_push_prints_diagnostic)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_push_suggests_access_steps (__main__.TestPushAuthError.test_push_suggests_access_steps)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_only_specific_tag_on_remote (__main__.TestPushSpecificTag.test_only_specific_tag_on_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_push_specific_tag (__main__.TestPushSpecificTag.test_push_specific_tag)",
       "status": "PASS"
     },
     {
