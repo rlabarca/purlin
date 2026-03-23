@@ -4,6 +4,8 @@
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
+[TODO]
+
 ## 1. Overview
 
 A shared skill available to all roles that generates a structured, copy-paste-ready issue report for the Purlin framework itself. Collects version info, environment context, git state, and active Critic issues into a formatted report that can be pasted into a Purlin Architect session for triage. Distinct from `/pl-discovery`, which records project-level bugs.

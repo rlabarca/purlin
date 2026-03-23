@@ -94,7 +94,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Role gate rejects non-Architect invocation
 
@@ -245,6 +245,6 @@ When Purlin is installed into a project with an existing codebase, there is no s
     And previously generated features are not regenerated
     And the user is not re-asked earlier phase questions
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
-None
+None.

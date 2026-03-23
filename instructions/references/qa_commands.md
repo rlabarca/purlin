@@ -39,6 +39,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-regression-run         Execute existing regression scenarios
   /pl-regression-evaluate    Process results, create BUG discoveries
   /pl-fixture                Test fixture convention reference
+  /pl-server                 Start, stop, or manage dev servers
 
   Cross-Agent Communication
   ──────
@@ -87,6 +88,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-regression-run         Execute existing regression scenarios
   /pl-regression-evaluate    Process results, create BUG discoveries
   /pl-fixture                Test fixture convention reference
+  /pl-server                 Start, stop, or manage dev servers
 
   Cross-Agent Communication
   ──────

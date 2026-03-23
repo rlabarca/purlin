@@ -5,6 +5,8 @@
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
 
+[TODO]
+
 ## 1. Overview
 
 This feature defines the CLI tool and Architect slash command for creating, modifying, and deleting local release steps. The tool enforces schema correctness and namespace safety before writing to `.purlin/release/local_steps.json` and `.purlin/release/config.json`, preventing the malformed states that manual JSON editing can introduce.
@@ -133,7 +135,7 @@ After any successful operation, confirm the outcome and note that the CDD Dashbo
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Create valid local step
 Given `local_steps.json` is absent and `config.json` is absent,
@@ -212,5 +214,6 @@ When `manage_step.py modify my_step --code "echo bye" --clear-code` is run,
 Then the tool exits with code 1,
 And stderr identifies `--code` and `--clear-code` as mutually exclusive.
 
-### Manual Scenarios
-None. All verification is automated.
+### QA Scenarios
+
+None.

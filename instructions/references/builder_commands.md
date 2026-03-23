@@ -34,6 +34,7 @@ Tell it what to build or let it pick up the next item.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-fixture                Test fixture convention and setup workflow
+  /pl-server                 Start, stop, or manage dev servers
 
   Cross-Agent Communication
   ──────
@@ -80,6 +81,7 @@ Tell it what to build or let it pick up the next item.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-fixture                Test fixture convention and setup workflow
+  /pl-server                 Start, stop, or manage dev servers
 
   Cross-Agent Communication
   ──────
