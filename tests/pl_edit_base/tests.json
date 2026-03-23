@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "passed": 15,
+  "failed": 0,
+  "total": 15,
+  "test_file": "tools/test_support/test_pl_edit_base.py",
+  "details": [
+    {
+      "test": "test_additive_only_principle_stated (__main__.TestAdditiveOnlyPrincipleEnforced.test_additive_only_principle_stated)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_explicit_confirmation_required (__main__.TestAdditiveOnlyPrincipleEnforced.test_explicit_confirmation_required)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_revisionary_changes_require_confirmation (__main__.TestAdditiveOnlyPrincipleEnforced.test_revisionary_changes_require_confirmation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_consumer_project_stop_instruction (__main__.TestConsumerProjectReceivesRedirect.test_consumer_project_stop_instruction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_purlin_submodule_check_present (__main__.TestConsumerProjectReceivesRedirect.test_purlin_submodule_check_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_appears_before_protocol (__main__.TestConsumerProjectReceivesRedirect.test_redirect_appears_before_protocol)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_to_override_edit (__main__.TestConsumerProjectReceivesRedirect.test_redirect_to_override_edit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_conflict_surfacing_before_proceeding (__main__.TestOverrideConflictScanRunsBeforeEdit.test_conflict_surfacing_before_proceeding)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_override_scan_references_override_edit (__main__.TestOverrideConflictScanRunsBeforeEdit.test_override_scan_references_override_edit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_only_flag_present (__main__.TestOverrideConflictScanRunsBeforeEdit.test_scan_only_flag_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scan_step_before_apply_step (__main__.TestOverrideConflictScanRunsBeforeEdit.test_scan_step_before_apply_step)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_bright_line_rule_category (__main__.TestProtocolDetailRoutedToSkillFile.test_bright_line_rule_category)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_context_budget_classification_section (__main__.TestProtocolDetailRoutedToSkillFile.test_context_budget_classification_section)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_protocol_detail_category (__main__.TestProtocolDetailRoutedToSkillFile.test_protocol_detail_category)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_skill_file_routing_instruction (__main__.TestProtocolDetailRoutedToSkillFile.test_skill_file_routing_instruction)",
+      "status": "PASS"
+    }
+  ]
+}
