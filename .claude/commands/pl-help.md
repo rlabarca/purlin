@@ -1,6 +1,6 @@
 **Purlin command: shared (all roles)**
 
-Display all Purlin help: slash commands for the current role AND user-facing CLI scripts with their flags. Invoke this when the user asks "how do I run...", "what flags does... accept", or needs help with any Purlin command or script.
+Display the Purlin slash command table for the current role and list available CLI launcher scripts. Invoke this when the user asks "how do I run...", "what commands are available", or needs help with any Purlin command.
 
 No side effects. Output only.
 
@@ -30,17 +30,11 @@ Read `instructions/references/{role}_commands.md` (where `{role}` is `architect`
 
 Print the appropriate variant verbatim.
 
-### 4. Discover CLI Scripts
+### 4. List CLI Scripts
 
 1. Determine project root: use `$PURLIN_PROJECT_ROOT` if set, else `git rev-parse --show-toplevel`.
 2. Glob `pl-*.sh` in the project root.
-3. For each script found, run: `timeout 3 bash "<script>" --help 2>/dev/null`
-4. If the command exits 0 and produces non-empty output, collect that output.
-5. If the command exits non-zero or produces no output, record: `(no help -- run pl-init.sh to refresh)`
-
-### 5. Print CLI Scripts Section
-
-After the slash command table, print:
+3. After the slash command table, print:
 
 ```
 ---
@@ -48,6 +42,5 @@ After the slash command table, print:
 ## CLI Scripts (run from terminal)
 ```
 
-Then for each discovered script, print its collected help output (or the refresh note), separated by blank lines.
-
-If no `pl-*.sh` scripts were found in the project root, print: `(no CLI scripts found in project root)`
+4. List each discovered script by filename (e.g., `pl-run-architect.sh`, `pl-run-builder.sh`). Do NOT attempt to run the scripts or fetch `--help` output.
+5. If no `pl-*.sh` scripts were found in the project root, print: `(no CLI scripts found in project root)`
