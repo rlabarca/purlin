@@ -192,8 +192,17 @@ When all TESTING features have been verified, execute these steps **in this exac
 
 If you find yourself about to say "that concludes our session" or present final results WITHOUT having run `{tools_root}/cdd/status.sh` in this step, STOP and run it now.
 
-### Step 2 -- Commit All Changes
-Ensure all changes are committed to git. No uncommitted modifications should remain.
+### Step 2 -- Clean Workspace (MANDATORY)
+Run `git status` and resolve ALL uncommitted changes before presenting the summary. No modified or untracked files should remain in `tests/` or `tests/qa/` after this step.
+
+**Resolution by file type:**
+- **`tests/<feature>/regression.json` (untracked):** Commit. These are regression results produced this session.
+- **`tests/<feature>/tests.json` (modified):** Check if the harness runner clobbered Builder's unit test results. If the content differs from the last committed version AND the change was caused by the harness runner (not by the Builder), restore with `git checkout -- tests/<feature>/tests.json`. If the Builder legitimately updated it, commit.
+- **`tests/qa/scenarios/*.json` (modified):** Commit. These are QA-owned scenario files updated during this session (e.g., fixture_tag changes, setup_commands fixes).
+- **Discovery sidecar files `features/*.discoveries.md` (modified/untracked):** Commit. These are QA-owned.
+- **Other untracked files:** Investigate. Do not blindly commit unknown files.
+
+Commit message format: `qa: commit regression results and scenario updates from verification session`.
 
 ### Step 3 -- Present Final Summary
 1.  Present a final summary: features verified, scenarios passed/failed, discoveries recorded, features marked as complete.
