@@ -160,6 +160,16 @@ The Critic handles two distinct states when fixture tags are declared:
 1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
 2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
+**SSH fallback for remote repos:**
+
+When `git ls-remote --tags <url>` fails on a remote URL (non-zero exit, empty output, or authentication error), the Critic MUST attempt an SSH fallback before reporting the repo as unavailable:
+
+- If the URL matches `https://github.com/<owner>/<repo>`, retry with `git@github.com:<owner>/<repo>.git`.
+- If the URL matches `https://gitlab.com/<owner>/<repo>`, retry with `git@gitlab.com:<owner>/<repo>.git`.
+- For other HTTPS URLs, no automatic fallback — report `fixture_repo_unavailable` with a note that the URL may require SSH format.
+
+This handles the common case of private repos where SSH keys are configured but HTTPS authentication is not. The fallback is silent — if SSH succeeds, the Critic proceeds normally without surfacing the HTTPS failure.
+
 ### 2.10 Fixture Usage Tracking
 
 QA maintains a usage tracker at `tests/qa/fixture_usage.json` (committed, QA-owned) that records which fixtures are used by which regression scenarios. This file is updated during regression scenario authoring (see `features/regression_testing.md` Section 2.10).
