@@ -12,8 +12,15 @@ This step's scope intentionally excludes `.purlin/` override files — those are
 **Details:** Spec §3 scenario requires automated detection of terminology mismatches between base instruction files (role names, lifecycle labels, step IDs across all 5 files). Neither `doc_consistency_check.py` nor any other automated script performs this cross-file comparison. The `CLASS_FEATURE_MAP` in `test_release_audit.py` borrows tests from doc_consistency and instruction_audit, but neither covers the 5-way base-instruction cross-reference.
 **Suggested fix:** Add a `check_terminology_consistency()` function to `doc_consistency_check.py` that scans all 5 base instruction files for predefined term variants and flags mismatches.
 
-**[DISCOVERY] [ACKNOWLEDGED]** README-vs-instruction consistency check absent
+**[DISCOVERY] [ACKNOWLEDGED] [IMPLEMENTED]** README-vs-instruction consistency check absent
 **Source:** /pl-spec-code-audit --deep (H12)
 **Severity:** HIGH
 **Details:** Spec §3 scenario requires automated detection of README content that contradicts current instruction file content. No such check exists. `doc_consistency_check.py` checks stale file path references in README and feature coverage gaps, but does not parse instruction file behavior descriptions and compare them semantically.
 **Suggested fix:** Add a structural check comparing README "The Agents" / "The Critic" sections against the corresponding BASE instruction file declarations.
+**Resolution:** Added `check_readme_instruction_consistency()` to `doc_consistency_check.py` with three structural checks: (1) role focus phrases from HOW_WE_WORK_BASE match README, (2) every role has a README section, (3) dual-gate architecture described in README when defined in instruction files. Tests added: `TestDocConsistencyReadmeInstructionDrift`, `TestDocConsistencyReadmeInstructionClean`, `TestDocConsistencyReadmeMissingDualGate`.
+
+### Test Quality Audit
+- Rubric: 6/6 PASS
+- Tests: 17 total, 17 passed (feature-scoped from shared test file)
+- AP scan: clean
+- Date: 2026-03-24

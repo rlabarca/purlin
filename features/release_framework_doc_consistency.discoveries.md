@@ -12,5 +12,6 @@
 - **Observed Behavior:** There is no automated cross-reference check between README content and instruction file content.
 - **Expected Behavior:** An automated consistency check should verify that README documentation aligns with the corresponding instruction files.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Added `check_readme_instruction_consistency()` to `doc_consistency_check.py` with three checks: role focus phrase consistency, role section coverage, and critic dual-gate architecture. 6 new tests in `test_release_audit.py`.
 - **Source:** Spec-code audit (deep mode). See release_framework_doc_consistency.impl.md for full context.

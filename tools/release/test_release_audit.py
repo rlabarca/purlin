@@ -1171,6 +1171,189 @@ class TestDocConsistencyTerminologyClean(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: README inconsistent with instruction file content
+# ===================================================================
+
+class TestDocConsistencyReadmeInstructionDrift(unittest.TestCase):
+    """Scenario: README content drifts from instruction file declarations"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                "# Project\n\n"
+                "## The Agents\n\n"
+                "### The Architect\n"
+                "Owns \"The What and The Why\".\n\n"
+                "### The Builder\n"
+                "Owns \"The How\".\n\n"
+                "### The QA Agent\n"
+                "Owns \"The Verification and The Feedback\".\n\n"
+                "## The Critic\n\n"
+                "### Dual-Gate Validation\n"
+                "Every feature gets checked twice.\n"
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                "# How We Work\n\n"
+                "## 2. Roles and Responsibilities\n\n"
+                "### The Architect Agent\n"
+                "*   **Focus:** \"The What and The Why\".\n\n"
+                "### The PM Agent\n"
+                "*   **Focus:** \"The Intent and The Design\".\n\n"
+                "### The Builder Agent\n"
+                "*   **Focus:** \"The How\".\n\n"
+                "### The QA Agent\n"
+                "*   **Focus:** \"The Verification and The Feedback\".\n\n"
+                "### The Human Executive\n"
+                "*   **Focus:** \"The Intent and The Review\".\n\n"
+                "## 9. Critic-Driven Coordination\n"
+                "*   **Spec Gate (pre-implementation):** Validates specs.\n"
+                "*   **Implementation Gate (post-implementation):** Validates code.\n"
+            ),
+            ".purlin/config.json": "{}",
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_missing_pm_focus_phrase(self):
+        """README has no PM focus phrase -- should flag drift."""
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        pm_findings = [f for f in drift if "PM" in f["message"]
+                       and "focus phrase" in f["message"]]
+        self.assertEqual(len(pm_findings), 1,
+                         "Should detect PM focus phrase missing from README")
+
+    def test_detects_missing_pm_section(self):
+        """README has no PM section heading -- should flag drift."""
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        section_findings = [f for f in drift if "PM" in f["message"]
+                            and "no section" in f["message"]]
+        self.assertEqual(len(section_findings), 1,
+                         "Should detect PM has no section in README")
+
+    def test_no_false_positive_on_present_roles(self):
+        """Architect, Builder, QA are all in README -- no drift for them."""
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        for f in drift:
+            self.assertNotIn("Architect", f["message"].split("'")[0],
+                             "Should not flag Architect (present in README)")
+            self.assertNotIn("Builder", f["message"].split("'")[0],
+                             "Should not flag Builder (present in README)")
+
+    def test_no_false_positive_on_dual_gate(self):
+        """README mentions Dual-Gate -- no drift for critic architecture."""
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        gate_findings = [f for f in drift if "dual-gate" in f["message"].lower()
+                         or "Spec Gate" in f["message"]]
+        self.assertEqual(len(gate_findings), 0,
+                         "Should not flag dual-gate when README describes it")
+
+
+class TestDocConsistencyReadmeInstructionClean(unittest.TestCase):
+    """Scenario: README accurately reflects instruction file content"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                "# Project\n\n"
+                "### The Architect\n"
+                "Owns \"The What and The Why\".\n\n"
+                "### The PM\n"
+                "Owns \"The Intent and The Design\".\n\n"
+                "### The Builder\n"
+                "Owns \"The How\".\n\n"
+                "### The QA Agent\n"
+                "Owns \"The Verification and The Feedback\".\n\n"
+                "## The Critic\n\n"
+                "### Dual-Gate Validation\n"
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                "# How We Work\n\n"
+                "### The Architect Agent\n"
+                "*   **Focus:** \"The What and The Why\".\n\n"
+                "### The PM Agent\n"
+                "*   **Focus:** \"The Intent and The Design\".\n\n"
+                "### The Builder Agent\n"
+                "*   **Focus:** \"The How\".\n\n"
+                "### The QA Agent\n"
+                "*   **Focus:** \"The Verification and The Feedback\".\n\n"
+                "### The Human Executive\n"
+                "*   **Focus:** \"The Intent and The Review\".\n\n"
+                "*   **Spec Gate (pre-implementation):** ok.\n"
+                "*   **Implementation Gate (post-implementation):** ok.\n"
+            ),
+            ".purlin/config.json": "{}",
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_no_readme_instruction_drift(self):
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        self.assertEqual(len(drift), 0,
+                         "Should find no README-instruction drift when aligned")
+
+
+class TestDocConsistencyReadmeMissingDualGate(unittest.TestCase):
+    """Scenario: README omits dual-gate description"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                "# Project\n\n"
+                "### The Architect\n"
+                "\"The What and The Why\"\n\n"
+                "### The PM\n"
+                "\"The Intent and The Design\"\n\n"
+                "### The Builder\n"
+                "\"The How\"\n\n"
+                "### The QA Agent\n"
+                "\"The Verification and The Feedback\"\n\n"
+                "## The Critic\n\n"
+                "The Critic checks stuff.\n"
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                "# How We Work\n\n"
+                "### The Architect Agent\n"
+                "*   **Focus:** \"The What and The Why\".\n\n"
+                "### The PM Agent\n"
+                "*   **Focus:** \"The Intent and The Design\".\n\n"
+                "### The Builder Agent\n"
+                "*   **Focus:** \"The How\".\n\n"
+                "### The QA Agent\n"
+                "*   **Focus:** \"The Verification and The Feedback\".\n\n"
+                "### The Human Executive\n"
+                "*   **Focus:** \"The Intent and The Review\".\n\n"
+                "*   **Spec Gate (pre-implementation):** validates.\n"
+                "*   **Implementation Gate (post-implementation):** validates.\n"
+            ),
+            ".purlin/config.json": "{}",
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_missing_dual_gate(self):
+        result = doc_consistency_main(self.root)
+        drift = [f for f in result["findings"]
+                 if f["category"] == "readme_instruction_drift"]
+        gate_findings = [f for f in drift if "dual-gate" in f["message"].lower()
+                         or "Spec Gate" in f["message"]]
+        self.assertEqual(len(gate_findings), 1,
+                         "Should detect missing dual-gate description in README")
+
+
+# ===================================================================
 # Scenario: All scripts produce valid JSON output
 # ===================================================================
 
@@ -1583,6 +1766,12 @@ CLASS_FEATURE_MAP = {
                                               "release_framework_doc_consistency"],
     "TestDocConsistencyTerminologyClean": ["release_doc_consistency_check",
                                            "release_framework_doc_consistency"],
+    "TestDocConsistencyReadmeInstructionDrift": ["release_doc_consistency_check",
+                                                  "release_framework_doc_consistency"],
+    "TestDocConsistencyReadmeInstructionClean": ["release_doc_consistency_check",
+                                                  "release_framework_doc_consistency"],
+    "TestDocConsistencyReadmeMissingDualGate": ["release_doc_consistency_check",
+                                                 "release_framework_doc_consistency"],
 }
 
 # TestAllScriptsValidJSON sub-tests map by method name

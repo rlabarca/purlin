@@ -148,6 +148,109 @@ def check_terminology_consistency(project_root):
     return findings
 
 
+def _extract_role_focus_phrases(content):
+    """Extract role -> focus phrase mappings from instruction file content.
+
+    Looks for patterns like: **Focus:** "The What and The Why".
+    Returns dict mapping role name to focus phrase.
+    """
+    roles = {}
+    current_role = None
+    for line in content.splitlines():
+        # Detect role headings like "### The Architect Agent"
+        role_match = re.match(r'###\s+The\s+(\w+)\s+Agent', line)
+        if role_match:
+            current_role = role_match.group(1)
+            continue
+        # Also detect "### The Human Executive"
+        exec_match = re.match(r'###\s+The\s+Human\s+Executive', line)
+        if exec_match:
+            current_role = "Human Executive"
+            continue
+        # Extract focus phrase
+        if current_role:
+            focus_match = re.search(r'\*\*Focus:\*\*\s*"([^"]+)"', line)
+            if focus_match:
+                roles[current_role] = focus_match.group(1)
+                current_role = None
+    return roles
+
+
+def check_readme_instruction_consistency(readme_path, project_root):
+    """Check README against instruction files for content drift.
+
+    Verifies that README accurately describes instruction-file-governed
+    behavior: role definitions, focus phrases, and critic architecture.
+    """
+    findings = []
+    hww_path = os.path.join(project_root, "instructions", "HOW_WE_WORK_BASE.md")
+
+    try:
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            readme_content = f.read()
+    except (IOError, OSError):
+        return findings
+
+    if not os.path.exists(hww_path):
+        return findings
+
+    try:
+        with open(hww_path, 'r', encoding='utf-8') as f:
+            hww_content = f.read()
+    except (IOError, OSError):
+        return findings
+
+    # Check 1: Role focus phrases from HOW_WE_WORK_BASE appear in README
+    role_phrases = _extract_role_focus_phrases(hww_content)
+    for role, phrase in role_phrases.items():
+        if role == "Human Executive":
+            continue  # Human Executive may not appear in README
+        if phrase not in readme_content:
+            findings.append(make_finding(
+                "WARNING", "readme_instruction_drift",
+                "README.md",
+                f"{role} focus phrase '{phrase}' from "
+                f"HOW_WE_WORK_BASE.md not found in README",
+            ))
+
+    # Check 2: Every agent role in HOW_WE_WORK_BASE has a README section
+    for role in role_phrases:
+        if role == "Human Executive":
+            continue
+        # Look for a heading or bold reference like "### The Builder" or
+        # "**The Builder:**"
+        pattern = re.compile(
+            r'(?:###\s+The\s+' + re.escape(role) + r'|'
+            r'\*\*The\s+' + re.escape(role) + r')'
+        )
+        if not pattern.search(readme_content):
+            findings.append(make_finding(
+                "WARNING", "readme_instruction_drift",
+                "README.md",
+                f"Role '{role}' defined in HOW_WE_WORK_BASE.md "
+                f"has no section in README",
+            ))
+
+    # Check 3: Critic dual-gate architecture consistency
+    hww_has_dual_gate = (
+        "Spec Gate" in hww_content and "Implementation Gate" in hww_content
+    )
+    readme_has_dual_gate = (
+        "Dual-Gate" in readme_content or "dual-gate" in readme_content
+        or ("Before coding" in readme_content
+            and "After coding" in readme_content)
+    )
+    if hww_has_dual_gate and not readme_has_dual_gate:
+        findings.append(make_finding(
+            "WARNING", "readme_instruction_drift",
+            "README.md",
+            "HOW_WE_WORK_BASE.md defines Spec Gate / Implementation Gate "
+            "dual-gate model but README does not describe it",
+        ))
+
+    return findings
+
+
 def check_tombstone_references(readme_path, tombstones_dir, project_root):
     """Check for references to tombstoned features in README."""
     findings = []
@@ -193,6 +296,7 @@ def main(project_root=None):
     findings.extend(check_feature_coverage(readme_path, features_dir))
     findings.extend(check_tombstone_references(readme_path, tombstones_dir, project_root))
     findings.extend(check_terminology_consistency(project_root))
+    findings.extend(check_readme_instruction_consistency(readme_path, project_root))
 
     result = make_output("doc_consistency_check", findings)
     return result
