@@ -161,35 +161,12 @@ The per-feature `critic.json` MUST include all four roles in `action_items`, `ro
 
 ### 2.7.1 Lifecycle Reset Context
 
-When a feature's lifecycle resets to TODO (spec file modified after status commit), the Critic MUST distinguish between genuinely unimplemented features and features that were reset by a spec touch. For `lifecycle_reset` category action items, the Critic MUST include a `reset_context` object:
+When a feature's lifecycle resets to TODO (spec file modified after status commit), the Critic MUST distinguish between genuinely unimplemented features and features that were reset by a spec touch. The `lifecycle_reset` action item's description MUST be context-aware based on the scenario diff and requirements analysis:
 
-```json
-{
-    "category": "lifecycle_reset",
-    "reset_context": {
-        "has_passing_tests": true,
-        "structural_completeness": "PASS | WARN | FAIL | MISSING",
-        "traceability": "PASS | WARN | FAIL",
-        "scenario_diff": {
-            "new": ["Scenario Title A"],
-            "modified": ["Scenario Title B"],
-            "removed": ["Scenario Title C"],
-            "has_diff": true
-        },
-        "requirements_changed": true,
-        "changed_sections": ["2.2", "2.5"]
-    },
-    "description": "<context-aware description>"
-}
-```
-
-**Field definitions:**
-*   `has_passing_tests`: `true` when `tests/<feature>/tests.json` exists AND contains `"status": "PASS"`. The timestamp of `tests.json` relative to the spec file is irrelevant — only the content matters. A cosmetic spec touch (heading rename, whitespace edit) MUST NOT invalidate passing tests.
-
-**Description generation rules based reset context:**
-*   If `has_passing_tests && !scenario_diff.has_diff && !requirements_changed`: `"Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"`
-*   If `scenario_diff.has_diff`: `"Implement spec changes for <feature_name>: N new scenario(s) [titles], M modified [titles], K removed [titles]"` (existing behavior)
-*   If `requirements_changed && !scenario_diff.has_diff`: `"Review requirements changes for <feature_name>: sections [changed_sections]"`
+*   If tests pass AND no scenario diff AND no requirements change: `"Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"`
+*   If scenario diff has changes: `"Implement spec changes for <feature_name>: N new scenario(s) [titles], M modified [titles], K removed [titles]"`
+*   If requirements changed but no scenario diff: `"Implement spec changes for <feature_name>: requirements sections modified [changed_sections]"`
+*   If no prior status commit exists (genuinely unimplemented): `"Implement spec changes for <feature_name>"` (default description)
 
 This eliminates the re-implementation loop where a Builder attempts to re-implement code that already exists because a spec file was touched without behavioral changes.
 
@@ -373,10 +350,7 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And the Architect touches the spec file (whitespace edit, no scenario or requirements change)
     And the feature resets to TODO lifecycle state
     When the Critic generates the lifecycle_reset action item
-    Then reset_context.has_passing_tests is true
-    And reset_context.scenario_diff.has_diff is false
-    And reset_context.requirements_changed is false
-    And the description reads "Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"
+    Then the description reads "Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"
 
 #### Scenario: Reset context with new scenarios
 
@@ -384,10 +358,7 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And the Architect adds 2 new automated scenarios and modifies 1 existing scenario
     And the feature resets to TODO lifecycle state
     When the Critic generates the lifecycle_reset action item
-    Then reset_context.scenario_diff.has_diff is true
-    And reset_context.scenario_diff.new contains 2 scenario titles
-    And reset_context.scenario_diff.modified contains 1 scenario title
-    And the description includes "2 new scenario(s)" and "1 modified"
+    Then the description includes "2 new scenario(s)" and "1 modified"
 
 #### Scenario: Reset context with requirements-only change
 
@@ -395,10 +366,7 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And the Architect modifies Requirements section 2.3 without changing any scenarios
     And the feature resets to TODO lifecycle state
     When the Critic generates the lifecycle_reset action item
-    Then reset_context.scenario_diff.has_diff is false
-    And reset_context.requirements_changed is true
-    And reset_context.changed_sections contains "2.3"
-    And the description includes "Review requirements changes"
+    Then the description includes "requirements sections modified" and "2.3"
 
 #### Scenario: Reset context for genuinely unimplemented feature
 
@@ -406,9 +374,7 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And the feature is in TODO lifecycle state
     When the Critic generates action items
     Then the builder action item has category "lifecycle_reset"
-    And reset_context.has_passing_tests is false
-    And reset_context.structural_completeness is "MISSING"
-    And the description follows the existing format "Implement spec changes for <feature_name>"
+    And the description reads "Implement spec changes for <feature_name>"
 
 #### Scenario: QA AUTO when all QA scenarios are @auto
 

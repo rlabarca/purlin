@@ -111,23 +111,7 @@ The symlinks MUST use relative paths (not absolute) so they remain valid after r
 
 ### 2.7 Full Init Output
 
-The full init summary MUST be concise — no verbose logs, just the essentials:
-
-```
-Purlin initialized. Files staged.
-
-  pl-init.sh              Run anytime to refresh
-  ./pl-run-architect.sh   Start Architect session
-  ./pl-run-builder.sh     Start Builder session
-  ./pl-run-qa.sh          Start QA session
-  ./pl-run-pm.sh          Start PM session
-  ./pl-cdd-start.sh       Start CDD dashboard
-  ./pl-cdd-stop.sh        Stop CDD dashboard
-
-Next: git commit -m "init purlin"
-```
-
-Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
+The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (Architect), (3) what the Builder does, (4) CDD dashboard command. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
 
 ### 2.8 Refresh Output
 

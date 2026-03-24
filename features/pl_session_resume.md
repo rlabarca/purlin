@@ -54,7 +54,7 @@ The checkpoint MUST include:
 When the saving agent is the Builder, the checkpoint MUST additionally include:
 
 - **Protocol Step** (current step in the per-feature implementation protocol: 0-preflight, 1-acknowledge/plan, 2-implement/document, 3-verify locally, 4-commit status tag)
-- **Delivery Plan Context** (current phase number, phase status, features completed this phase)
+- **Delivery Plan** (single line: "Phase X of Y -- STATUS", or "No delivery plan")
 - **Execution Group** (current execution group: which phases are in the group, group number, or "N/A" if no delivery plan)
 - **Work Queue** (remaining features in priority order with priority labels)
 - **Pending Decisions** (builder decisions not yet recorded in companion files)
@@ -171,6 +171,10 @@ When the system prompt already contains the role instructions (agent was started
 
 - Print a single line: `Commands: /pl-help for full list`
 - Do NOT read or print the full command table file. The one-liner is sufficient for resumed sessions (the agent already knows its commands from the system prompt or instruction reload).
+
+#### 2.3.4b Step 4b -- Orphaned Sub-Agent Branch Recovery (Builder Only)
+
+When the role is Builder, check for orphaned worktree branches (`git branch --list 'worktree-*'`). For each found branch, attempt to merge it into the current branch using the Robust Merge Protocol (safe-file auto-resolution with `--ours` for `CRITIC_REPORT.md`, `delivery_plan.md`, `.purlin/cache/*`; unsafe conflicts fall back to sequential). Report merged branches in the recovery summary.
 
 #### 2.3.5 Step 5 -- Gather Fresh Project State
 

@@ -46,14 +46,17 @@ The Critic MUST include a `verification_effort` block in each feature's `tests/<
 
 ```json
 "verification_effort": {
-    "auto": 5,
-    "manual": 6,
+    "web_test": 4,
+    "auto": 3,
+    "manual": 2,
     "test_only": 0,
     "skip": 0,
-    "summary": "6 manual"
+    "summary": "2 manual"
 }
 ```
 
+*   `web_test` counts visual spec checklist items on features with `> Web Test:` metadata. These are Builder-verified via `/pl-web-test` and are tracked separately from `auto`.
+*   `auto` counts @auto-tagged QA scenarios (harness-runner executed).
 *   `summary` is a human-readable string: `"<manual> manual"` when manual items exist, `"<auto> auto"` when only auto items exist, `"<auto> auto, <manual> manual"` when both exist.
 *   When all counts are zero (no QA work pending), `summary` is `"no QA items"`.
 *   When a feature is `[Complete]` via Builder (no `[Verified]`), `summary` is `"builder-verified"`.

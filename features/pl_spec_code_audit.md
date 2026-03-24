@@ -60,9 +60,9 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 ### 2.7 Cross-Session Resume
 
-- The command MUST check for `.purlin/cache/audit_state.json` before starting analysis.
-- If found, the command MUST report resume status and skip to the next incomplete step.
-- The state file MUST track: `mode`, `role`, `timestamp`, `transitive_map`, `anchor_constraints`, `dispatch_manifest` (deep mode), `accumulated_gaps`, `scan_failures`, and `code_inventory` (deep mode).
+- After Phase 0 metadata loads (Steps 0.1-0.3), the command MUST check for `.purlin/cache/audit_state.json` at Step 0.4.
+- If found, the command MUST report resume status, load transitive map and anchor constraints from the state file (skipping recomputation if already present), and skip to the next incomplete step.
+- The state file MUST track: `mode`, `role`, `timestamp`, `transitive_map`, `anchor_constraints`, `dispatch_manifest` (deep mode), `accumulated_gaps`, `scan_failures`, `code_inventory` (deep mode), and `ownership_map_complete` (boolean).
 - The `code_inventory` field MUST track: `total_files`, `owned_files`, `orphaned_files` (count), and `inventory_complete` (boolean).
 - The `ownership_map_complete` field (boolean) MUST be persisted at the top level of the state file.
 - On resume in deep mode, completed waves are skipped and the next incomplete wave resumes. If `inventory_complete` is true, Phase 0.5 is skipped entirely.

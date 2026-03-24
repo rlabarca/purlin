@@ -60,7 +60,7 @@ The Status view is the default view (`/#status`).
         - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
     *   **Collapsed Summary (Complete):** When the Complete section is collapsed, the section heading displays no summary badge. Complete implies all roles are satisfied; a badge is redundant.
-    *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean Slate" when the working tree is clean, or a brief status indicator when it is not. No annotation or parenthetical (e.g., "(ready for next task)") MUST be appended after "Clean Slate".
+    *   **Collapsed Summary (Local Branch):** When collapsed, displays a "Clean Slate" badge (using `st-done` styling) when the working tree is clean, or a brief status indicator when it is not. No parenthetical (e.g., "(ready for next task)") MUST be appended after "Clean Slate".
     *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default. The Active section shows its summary badge when collapsed; the Workspace section shows its status indicator; the Complete section shows nothing.
     *   **State Persistence:** Section expanded/collapsed states MUST be persisted to `localStorage` (key: `purlin-section-states`). On page load, saved states are restored, overriding the defaults above. This ensures the user's preferred section layout survives page reloads and browser restarts. Each toggle updates the stored state immediately.
 *   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
@@ -127,7 +127,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 ### 2.3 Verification Signals
 *   **Role Status Source:** The CDD monitor reads role status from pre-computed `tests/<name>/critic.json` files produced by the Critic tool. CDD does NOT compute role status itself.
 *   **Test Status (Internal):** The monitor still resolves `tests/<name>/tests.json` for internal lifecycle logic, but test status is no longer displayed as a separate column on the dashboard or exposed as a standalone field in the API. Test pass/fail state is reflected through the Builder role status (DONE vs FAIL).
-*   **Section Heading Visual Separation:** The dashboard MUST render section headings ("ACTIVE", "COMPLETE", "WORKSPACE") with an underline separator (e.g., a bottom border or `<hr>`) to clearly distinguish them from the content beneath.
+*   **Section Heading Visual Separation:** The dashboard MUST render section headings ("ACTIVE", "COMPLETE", "LOCAL BRANCH") with an underline separator (e.g., a bottom border or `<hr>`) to clearly distinguish them from the content beneath.
 
 ### 2.4 Machine-Readable Output (Agent Interface)
 *   **API Endpoint (`/status.json`):** The server MUST expose a `/status.json` route that returns the feature status JSON directly with `Content-Type: application/json`. This is the **primary** agent interface.
@@ -284,7 +284,7 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 *   **Static Elements (rendered once on initial page load, never re-created or replaced):**
     *   Page header structure (logo, title, project name).
     *   Theme toggle, search input, and Run Critic button.
-    *   Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") and table column headers. Note: the ACTIVE heading includes dynamic inline annotations (feature count, phase progress) that update on each refresh cycle; the heading structure itself is static.
+    *   Section headings ("ACTIVE", "COMPLETE", "LOCAL BRANCH") and table column headers. Note: the ACTIVE heading includes dynamic inline annotations (feature count, phase progress) that update on each refresh cycle; the heading structure itself is static.
     *   Google Fonts CDN `<link>` tags.
 *   **Font Stability:** Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
@@ -941,7 +941,7 @@ None.
 - [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
 - [ ] Scroll position is preserved across auto-refresh cycles
 - [ ] Only feature status data updates; table headers and section headings remain stable
-- [ ] Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") have a visible underline separator
+- [ ] Section headings ("ACTIVE", "COMPLETE", "LOCAL BRANCH") have a visible underline separator
 - [ ] Section headings are clearly distinguished from the content beneath them
 - [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
 - [ ] Collapsed Active section shows no badge when empty; shows TODO/most-severe badge when non-empty; Complete section shows no badge when collapsed
