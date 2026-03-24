@@ -13,7 +13,7 @@
 *   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY]** CDD_PORT env var priority chain not implemented
+**[DISCOVERY] [ACKNOWLEDGED]** CDD_PORT env var priority chain not implemented
 **Source:** /pl-spec-code-audit --deep (H3)
 **Severity:** HIGH
 **Details:** Spec §2.12 requires port resolution: CDD_PORT env var > cdd_port in config.json > default 8086. `serve.py` never reads CDD_PORT; `start.sh` passes `--port` directly to `serve.py`. The actual behavior is: `--port` arg > OS-assigned free port. The priority chain described in the spec is not followed.

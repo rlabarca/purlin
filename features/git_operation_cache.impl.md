@@ -5,7 +5,7 @@
 *   **Section 2.3 (Batched Diff Extraction):** Added `_DIFF_BATCH_SIZE = 50` constant and `_batched_diff()` helper to `extract_whats_different.py`. Splits batched diff output by `diff --git` header lines. Binary files are detected and skipped gracefully. The existing `_extract_decisions_from_diff()` was refactored to collect file paths by category, then issue one batched diff call per category instead of N per-file calls.
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY]** cached_git_status() is dead code
+**[DISCOVERY] [ACKNOWLEDGED]** cached_git_status() is dead code
 **Source:** /pl-spec-code-audit --deep (H6)
 **Severity:** HIGH
 **Details:** `cached_git_status()` is defined in `serve.py:239` but has zero callers in production code. `serve.py` uses `run_command("git status --porcelain")` directly at lines 1140 and 1385. `critic.py` calls `subprocess.run(['git', 'status', '--porcelain'])` directly at line 2135. The shared cache mechanism specified in §2.4 is not connected to any consumer.

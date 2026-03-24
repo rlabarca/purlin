@@ -14,7 +14,7 @@
 
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY]** Join Modal BEHIND+SAME shows wrong button
+**[DISCOVERY] [ACKNOWLEDGED]** Join Modal BEHIND+SAME shows wrong button
 **Source:** /pl-spec-code-audit --deep (H4)
 **Severity:** HIGH
 **Details:** Spec §2.8 mandates [Update Remote & Join] with action `update-to-head` when HEAD-relative is BEHIND and local-vs-remote is SAME. Test class `TestJoinBranchModalShowsCheckoutForLocalSameWithHeadBehind` asserts [Join]/checkout instead. The test passes but contradicts the spec.
