@@ -115,7 +115,7 @@ Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` a
 
 16. **Routing Code-Fix Work to Builder:** When the Architect identifies a code or test gap that requires Builder action (e.g., from a spec-code audit), the Architect uses **two artifacts**:
     *   **Companion file** (`features/<name>.impl.md`): `[DISCOVERY] [ACKNOWLEDGED]` entry with full context (Source, Severity, Details, Suggested fix). This is the knowledge record.
-    *   **Discovery sidecar** (`features/<name>.discoveries.md`): A `[BUG]` or `[DISCOVERY]` entry with `Action Required: Builder` and `Status: OPEN`. This is the routing signal — the Critic reads it and generates a Builder action item. Use `[BUG]` when code contradicts a scenario; use `[DISCOVERY]` when code has undocumented behavior or missing test coverage.
+    *   **Discovery sidecar** (`features/<name>.discoveries.md`): A `[BUG]` entry with `Action Required: Builder` and `Status: OPEN`. This is the routing signal — the Critic reads it and generates a Builder action item. Always use `[BUG]` for Builder-routed entries (the Critic routes `[DISCOVERY]` to Architect regardless of `Action Required`).
     *   The sidecar entry MUST reference the companion file for details: `See <name>.impl.md for full context.`
     *   Discovery sidecar edits are status-reset-exempt (no lifecycle disruption).
     *   The Builder resolves the sidecar entry after fixing the code. QA prunes it during the next verification pass.
