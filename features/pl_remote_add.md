@@ -65,12 +65,18 @@ Scan for hosting-provider hints that may help the user identify available remote
 
 Present findings as informational suggestions (e.g., "Detected: github.com (SSH key)"). Do not auto-select any host.
 
-### 2.5 URL Prompt and Validation
+### 2.5 URL Prompt, Normalization, and Validation
 
 - If `<url>` argument was provided, skip the prompt and validate directly.
-- Otherwise, prompt: "Enter a git remote URL (SSH or HTTPS -- any git-compatible host):"
+- Otherwise, prompt: "Enter a git remote URL (SSH or HTTPS -- any git-compatible host). You can paste a browser URL too."
 - If hosting hints were found (Section 2.4), they are already displayed above the prompt as part of the banner.
 - Accept any valid git URL format: `git@host:user/repo.git`, `https://host/user/repo.git`, `ssh://...`, or local paths.
+- **Browser URL normalization:** If the user pastes a browser URL (e.g., `https://bitbucket.org/team/repo/src/main/` or `https://github.com/user/repo/tree/main`), the skill MUST auto-normalize it to a proper git URL:
+  1. Strip trailing path segments after the repo name (`/src/main/`, `/tree/main`, `/blob/...`, etc.).
+  2. Append `.git` if not present.
+  3. Convert to SSH format: `git@<host>:<owner>/<repo>.git`.
+  4. Show the normalized URL and ask for confirmation: `"Normalized to: git@bitbucket.org:team/repo.git — use this? [Y/n]"`
+  5. If declined, prompt for manual entry.
 
 ### 2.6 Remote Name Prompt
 
@@ -96,12 +102,50 @@ When `git remote -v` returns one or more remotes:
 - Run `git ls-remote <name>`.
 - On success: proceed to success output.
 - On failure:
-  1. **Error classification:** Check stderr for auth indicators ("Permission denied", "403", "authentication") vs. network indicators ("Could not resolve host", "Network is unreachable"). Tailor guidance accordingly: auth errors suggest checking SSH keys or credentials; network errors suggest correcting the URL.
-  2. **Correction offer:** Offer the user a chance to correct the URL. If the user provides a corrected URL, execute `git remote set-url <name> <corrected-url>` and re-verify.
-  3. **Rollback on decline:** If the user declines to correct:
+  1. **Error classification:** Check stderr for auth indicators ("Permission denied", "publickey", "403", "authentication") vs. network indicators ("Could not resolve host", "Network is unreachable"). Tailor guidance accordingly.
+  2. **SSH auth failure — automatic key setup (Section 2.8.1):** If the error indicates SSH auth failure and the URL is SSH format, proceed to the SSH key setup flow. The skill does the work — it does NOT print commands for the user to run.
+  3. **HTTPS auth failure:** Suggest switching to SSH (offer to convert the URL) or setting up a credential helper. If the user wants SSH, convert the URL and proceed to SSH key setup (Section 2.8.1).
+  4. **Network failure:** Offer the user a chance to correct the URL. If the user provides a corrected URL, execute `git remote set-url <name> <corrected-url>` and re-verify.
+  5. **Rollback on decline:** If the user declines all correction/setup options:
      - If the remote was **newly added** (`git remote add`): remove it via `git remote remove <name>`.
      - If the remote **already existed** (`git remote set-url`): restore the previous URL via `git remote set-url <name> <old-url>`. The old URL MUST be captured before attempting set-url.
      - Exit with code 1.
+
+### 2.8.1 SSH Key Setup Flow
+
+When SSH authentication fails, the skill MUST handle the entire setup process. The user should only need to copy-paste one public key into their hosting provider's web UI.
+
+**Step 1 — Check for existing keys:**
+- Read `~/.ssh/` for existing key files (`id_ed25519`, `id_rsa`, `id_ecdsa`, and their `.pub` counterparts).
+- If a suitable key exists, skip to Step 3.
+
+**Step 2 — Generate a new key (if none found):**
+- Run: `ssh-keygen -t ed25519 -C "<user.email from git config>" -f ~/.ssh/id_ed25519 -N ""`
+- The skill runs this directly — do NOT ask the user to run it. The empty passphrase (`-N ""`) avoids interactive prompts. If the user wants a passphrase, they can add one later.
+- If `~/.ssh/` does not exist, create it: `mkdir -p ~/.ssh && chmod 700 ~/.ssh`.
+
+**Step 3 — Ensure the host is in known_hosts:**
+- Run: `ssh-keyscan <host> >> ~/.ssh/known_hosts 2>/dev/null`
+- This prevents the "authenticity of host" interactive prompt on first connection.
+
+**Step 4 — Display the public key:**
+- Read and display the contents of `~/.ssh/id_ed25519.pub` (or whichever key was found/generated).
+- Print clear instructions with the hosting-provider-specific URL for adding SSH keys:
+  - `github.com` → `https://github.com/settings/keys`
+  - `bitbucket.org` → `https://bitbucket.org/account/settings/ssh-keys/`
+  - `gitlab.com` → `https://gitlab.com/-/user_settings/ssh_keys`
+  - Other hosts → `"Add this public key to your SSH keys on <host>"`
+- Format: `"Copy this key and add it at <url>:\n\n<key contents>\n\nPress Enter when done."`
+
+**Step 5 — Wait and re-verify:**
+- After the user confirms, re-run `git ls-remote <name>`.
+- On success: proceed to success output (Section 2.9).
+- On failure: report the error and offer to retry or rollback.
+
+**Constraints:**
+- The skill MUST NOT ask the user to run terminal commands. It runs them directly.
+- The skill MUST NOT overwrite existing SSH keys without asking.
+- If `id_ed25519` already exists and auth still fails, the key may not be registered with the host. Skip to Step 4 (display the existing key for the user to add).
 
 ### 2.9 Success Output
 
@@ -226,6 +270,40 @@ This ensures the one-step setup promise holds: after `/pl-remote-add`, push and 
     And git ls-remote fails and the user declines to correct
     Then the command restores the original URL "git@github.com:user/old-repo.git"
     And does not remove the remote
+
+#### Scenario: pl-remote-add Normalizes Browser URL to SSH
+
+    Given no git remotes are configured
+    When /pl-remote-add https://bitbucket.org/team/repo/src/main/ is invoked
+    Then the command normalizes to "git@bitbucket.org:team/repo.git"
+    And asks the user to confirm the normalized URL
+    When the user confirms
+    Then git remote add origin git@bitbucket.org:team/repo.git is executed
+
+#### Scenario: pl-remote-add Sets Up SSH Key On Auth Failure
+
+    Given no git remotes are configured
+    And no SSH key exists at ~/.ssh/id_ed25519
+    When /pl-remote-add git@bitbucket.org:team/repo.git is invoked
+    And git ls-remote fails with "Permission denied (publickey)"
+    Then the command generates an SSH key via ssh-keygen (no user commands)
+    And runs ssh-keyscan to add the host to known_hosts
+    And displays the public key contents
+    And prints the Bitbucket SSH key settings URL
+    And waits for the user to confirm the key was added
+    When the user confirms
+    Then the command re-runs git ls-remote and succeeds
+
+#### Scenario: pl-remote-add Uses Existing SSH Key When Available
+
+    Given no git remotes are configured
+    And ~/.ssh/id_ed25519.pub exists
+    When /pl-remote-add git@github.com:user/repo.git is invoked
+    And git ls-remote fails with "Permission denied (publickey)"
+    Then the command does NOT generate a new key
+    And displays the existing public key contents
+    And prints the GitHub SSH key settings URL
+    And waits for the user to confirm
 
 #### Scenario: pl-remote-add Does Not Require Branch Guard
 
