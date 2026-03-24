@@ -4,7 +4,7 @@
   "scenarios": [
     {
       "name": "whats_different_diverged",
-      "fixture_tag": "main/collab_whats_different/divergent-branches",
+      "setup_commands": ["tools/cdd/start.sh -p 9086 > /dev/null 2>&1; sleep 2"],
       "web_test_url": "http://localhost:9086",
       "assertions": [
         {

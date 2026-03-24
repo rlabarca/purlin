@@ -4,7 +4,7 @@
   "scenarios": [
     {
       "name": "startup_controls_render",
-      "fixture_tag": "main/cdd_startup_controls/all-disabled",
+      "setup_commands": ["tools/cdd/start.sh -p 9086 > /dev/null 2>&1; sleep 2"],
       "web_test_url": "http://localhost:9086",
       "assertions": [
         {

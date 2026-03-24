@@ -4,7 +4,7 @@
   "scenarios": [
     {
       "name": "status_monitor_dashboard_structure",
-      "fixture_tag": "main/cdd_status_monitor/mixed-states",
+      "setup_commands": ["tools/cdd/start.sh -p 9086 > /dev/null 2>&1; sleep 2"],
       "web_test_url": "http://localhost:9086",
       "assertions": [
         {
@@ -21,7 +21,6 @@
     },
     {
       "name": "status_monitor_empty_active",
-      "fixture_tag": "main/cdd_status_monitor/empty-active",
       "web_test_url": "http://localhost:9086",
       "assertions": [
         {

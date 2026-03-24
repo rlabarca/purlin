@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/terminal_identity.json",
+  "details": [
+    {
+      "name": "terminal_identity_suite:terminal identity regression suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/terminal_identity.md:terminal_identity_suite",
+      "expected": "terminal identity regression suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

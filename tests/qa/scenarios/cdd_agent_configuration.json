@@ -4,7 +4,7 @@
   "scenarios": [
     {
       "name": "agent_config_dashboard_renders",
-      "fixture_tag": "main/cdd_agent_configuration/mixed-models",
+      "setup_commands": ["tools/cdd/start.sh -p 9086 > /dev/null 2>&1; sleep 2"],
       "web_test_url": "http://localhost:9086",
       "assertions": [
         {

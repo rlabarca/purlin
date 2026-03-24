@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/instruction_audit.json",
+  "details": [
+    {
+      "name": "instruction_audit_suite:instruction audit detection suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/instruction_audit.md:instruction_audit_suite",
+      "expected": "instruction audit detection suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

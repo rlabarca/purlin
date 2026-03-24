@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/regression_testing.json",
+  "details": [
+    {
+      "name": "regression_testing_suite:regression testing infrastructure suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/regression_testing.md:regression_testing_suite",
+      "expected": "regression testing infrastructure suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

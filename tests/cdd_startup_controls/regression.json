@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "passed": 2,
+  "failed": 0,
+  "total": 2,
+  "test_file": "tests/qa/scenarios/cdd_startup_controls.json",
+  "details": [
+    {
+      "name": "startup_controls_render:dashboard renders startup control labels (find_work, auto_start)",
+      "status": "PASS",
+      "scenario_ref": "features/cdd_startup_controls.md:startup_controls_render",
+      "expected": "dashboard renders startup control labels (find_work, auto_start)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "startup_controls_render:dashboard contains checkbox controls for startup flags",
+      "status": "PASS",
+      "scenario_ref": "features/cdd_startup_controls.md:startup_controls_render",
+      "expected": "dashboard contains checkbox controls for startup flags",
+      "assertion_tier": 1
+    }
+  ]
+}
