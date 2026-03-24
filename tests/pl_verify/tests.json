@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 34,
+  "passed": 40,
   "failed": 0,
-  "total": 34,
+  "total": 40,
   "test_file": "tools/test_support/test_pl_verify.py",
   "details": [
     {
@@ -31,6 +31,10 @@
     },
     {
       "test": "test_batch_all_keyword (__main__.TestBatchModeIncludesAllTestingFeatures.test_batch_all_keyword)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_batch_includes_action_item_features (__main__.TestBatchModeIncludesAllTestingFeatures.test_batch_includes_action_item_features)",
       "status": "PASS"
     },
     {
@@ -86,6 +90,14 @@
       "status": "PASS"
     },
     {
+      "test": "test_step_5a_allow_empty_per_feature (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_allow_empty_per_feature)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_artifacts_before_status_tags (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_artifacts_before_status_tags)",
+      "status": "PASS"
+    },
+    {
       "test": "test_step_5a_b_fires_before_external_gate (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_b_fires_before_external_gate)",
       "status": "PASS"
     },
@@ -98,6 +110,10 @@
       "status": "PASS"
     },
     {
+      "test": "test_step_5a_critical_callout_artifacts_not_finalization (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_critical_callout_artifacts_not_finalization)",
+      "status": "PASS"
+    },
+    {
       "test": "test_step_5a_dual_fire_checkpoints (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_dual_fire_checkpoints)",
       "status": "PASS"
     },
@@ -106,7 +122,15 @@
       "status": "PASS"
     },
     {
+      "test": "test_step_5a_hard_gate_on_cdd_update (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_hard_gate_on_cdd_update)",
+      "status": "PASS"
+    },
+    {
       "test": "test_step_5a_runs_cdd_status (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_runs_cdd_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_verify_finalization_clears_auto_todo (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_verify_finalization_clears_auto_todo)",
       "status": "PASS"
     },
     {

@@ -36,11 +36,13 @@
 - **Observed Behavior:** QA agent only processes `testing_features` from the startup briefing. Features with `qa_status: AUTO` that appear in QA action items (category `visual_verification`) but NOT in `testing_features` are excluded from Phase A. The QA agent sees them as action items but does not include them in the verification workflow, requiring explicit user intervention.
 - **Expected Behavior:** The skill file's Scope section must batch the UNION of: (1) `testing_features` and (2) features from QA action items with `visual_verification` or `regression_run` categories. Change line 16 from "batch ALL TESTING features" to include both sources. This ensures AUTO features are processed during Phase A regardless of lifecycle state.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Updated Scope section to batch the union of testing_features and QA action items with visual_verification/regression_run categories, with explicit "Do NOT limit to testing_features alone" guard.
 
 ### [BUG] QA agent commits regression artifacts but skips status tag commits in Step 5a (Discovered: 2026-03-24)
 - **Scenario:** Phase A Checkpoint — Step 5a
 - **Observed Behavior:** QA agent runs 5 AUTO web tests (all PASS), commits regression artifacts and scenario JSON files, then moves to the manual checklist. It does NOT commit `[Complete] [Verified]` status tags and does NOT run `status.sh`. Features remain AUTO in the dashboard because the Critic tracks lifecycle via status commit messages, not file changes.
 - **Expected Behavior:** Step 5a in the skill file must enforce the full sequence: (1) commit artifacts, (2) commit one `--allow-empty` status tag per feature, (3) run `status.sh` as a HARD GATE before Phase B, (4) verify features cleared from AUTO/TODO in Critic output. Add the "CRITICAL: Committing regression artifacts is NOT finalization" callout from QA_BASE. The CDD update is a hard gate — do NOT present the manual checklist until it completes.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Restructured Step 5a: reordered to artifacts-first then status tags, added CRITICAL callout about artifacts not being finalization, added --allow-empty with ONE COMMIT PER FEATURE mandate, made CDD update a HARD GATE, added verify-finalization step checking AUTO/TODO clearing.

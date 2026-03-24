@@ -20,7 +20,7 @@ No additional gaps found between spec and implementation.
 
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 31 total, 31 passed
+- Tests: 40 total, 40 passed
 - AP scan: clean
 - Date: 2026-03-24
 

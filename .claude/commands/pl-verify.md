@@ -13,7 +13,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 ## Scope
 
 If an argument was provided, scope verification to `features/<arg>.md` only.
-If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch ALL TESTING features into a single verification pass. Phase A executes @auto scenarios; Phase B presents remaining manual items.
+If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch the union of: (1) ALL TESTING features from `testing_features`, and (2) features from QA action items with `visual_verification` or `regression_run` categories (these are AUTO features that may not be in the TESTING lifecycle but still need automated re-verification). Do NOT limit to `testing_features` alone. Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
 
@@ -149,7 +149,7 @@ This is a smoke check -- it clears visual items that can be verified now, reduci
 
 **Feature completion via Step 5a:** For features (both AUTO and TODO) where all items are automated/web-test, this step completes their verification — if all pass, they are eligible for finalization at the next Step 5a checkpoint. No Phase B items are generated for these features.
 
-### Step 5a -- Phase A Checkpoint (MANDATORY)
+### Step 5a -- Phase A Checkpoint (MANDATORY HARD GATE)
 
 This checkpoint fires at **two** points during Phase A:
 
@@ -157,13 +157,16 @@ This checkpoint fires at **two** points during Phase A:
 
 **Checkpoint (B) — after in-session regression suites pass:** Finalize features whose in-session (non-agent_behavior) regression suites passed. This fires BEFORE the external agent_behavior gate. The external test gate MUST NOT block completion of features that are already clean from in-session work.
 
-At each checkpoint, execute this sequence for all newly-clean features (both AUTO and TODO):
+At each checkpoint, execute this sequence IN ORDER for all newly-clean features (both AUTO and TODO):
 
-1.  **Commit completions:** For each feature where all automated QA work passed, commit `[Complete] [Verified]` status tags. These are QA completions, so `[Verified]` is required.
-2.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
-3.  **Update CDD:** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard.
-4.  **Verify clean workspace:** Confirm no uncommitted changes remain.
-5.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
+> **CRITICAL: Committing regression artifacts is NOT finalization.** The CDD lifecycle tracks status via commit messages containing `[Complete]`. Committing regression JSON files, scenario tags, or test results does NOT change lifecycle status. You MUST commit the explicit `[Complete] [Verified]` status tag commits (step 2 below) or the features remain TODO/AUTO in the dashboard.
+
+1.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
+2.  **Commit status tags:** For each feature where all automated QA work passed, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit.
+3.  **Update CDD (HARD GATE):** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard. Do NOT proceed to Phase B until this completes.
+4.  **Verify finalization:** Check Critic output — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
+5.  **Verify clean workspace:** Confirm no uncommitted changes remain.
+6.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
 
 ### Phase A Summary
 

@@ -142,6 +142,23 @@ class TestBatchModeIncludesAllTestingFeatures(unittest.TestCase):
             "Must describe batching all TESTING features"
         )
 
+    def test_batch_includes_action_item_features(self):
+        """Batch mode includes features from QA action items, not just testing_features."""
+        content = read_command_file()
+        scope_match = re.search(r"## Scope.*?---", content, re.DOTALL)
+        self.assertIsNotNone(scope_match, "Scope section must exist")
+        scope_text = scope_match.group(0)
+        self.assertRegex(
+            scope_text,
+            r"visual_verification|regression_run",
+            "Scope must include QA action item categories (visual_verification/regression_run)"
+        )
+        self.assertRegex(
+            scope_text,
+            r"(?i)do NOT limit to.*testing_features.*alone",
+            "Scope must warn against limiting to testing_features alone"
+        )
+
 
 class TestCosmeticScopeSkipsFeature(unittest.TestCase):
     """Scenario: Cosmetic scope skips feature entirely
@@ -371,6 +388,81 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
             step5a_text,
             r"both AUTO and TODO",
             "Step 5a must handle both AUTO and TODO features"
+        )
+
+    def test_step_5a_critical_callout_artifacts_not_finalization(self):
+        """Step 5a must contain CRITICAL callout that artifacts are NOT finalization."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"CRITICAL.*artifacts is NOT finalization|CRITICAL.*artifacts.*NOT.*finalization",
+            "Step 5a must contain CRITICAL callout that committing artifacts is NOT finalization"
+        )
+
+    def test_step_5a_artifacts_before_status_tags(self):
+        """Regression artifacts must be committed BEFORE status tag commits."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        artifacts_pos = step5a_text.find("Commit regression artifacts")
+        status_pos = step5a_text.find("Commit status tags")
+        self.assertGreater(artifacts_pos, -1,
+                           "Step 5a must have 'Commit regression artifacts' step")
+        self.assertGreater(status_pos, -1,
+                           "Step 5a must have 'Commit status tags' step")
+        self.assertLess(artifacts_pos, status_pos,
+                        "Regression artifacts must be committed BEFORE status tags")
+
+    def test_step_5a_allow_empty_per_feature(self):
+        """Step 5a status tag commits use --allow-empty, one per feature."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertIn("--allow-empty", step5a_text,
+                       "Step 5a must use --allow-empty for status tag commits")
+        self.assertRegex(
+            step5a_text,
+            r"ONE COMMIT PER FEATURE",
+            "Step 5a must enforce ONE COMMIT PER FEATURE"
+        )
+
+    def test_step_5a_hard_gate_on_cdd_update(self):
+        """CDD update in Step 5a must be a HARD GATE blocking Phase B."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"HARD GATE.*cdd/status\.sh|Update CDD.*HARD GATE",
+            "CDD update must be a HARD GATE"
+        )
+
+    def test_step_5a_verify_finalization_clears_auto_todo(self):
+        """Step 5a must verify finalized features no longer show AUTO/TODO."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"(?i)verify finalization|no longer show AUTO/TODO",
+            "Step 5a must verify finalized features cleared from AUTO/TODO"
         )
 
 
