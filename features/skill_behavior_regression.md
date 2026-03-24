@@ -7,7 +7,7 @@
 > Prerequisite: features/test_fixture_repo.md
 > Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
 
-[Complete]
+[TODO] <!-- Reset: regression.json shows FAIL from nested session. QA must prompt user to re-run externally. -->
 
 ## 1. Overview
 
