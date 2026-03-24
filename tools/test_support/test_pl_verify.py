@@ -270,10 +270,10 @@ class TestAutoPassCreditsBuilderVerifiedFeatures(unittest.TestCase):
 
 
 class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
-    """Step 5a Phase A Checkpoint must finalize AUTO features before Phase B.
+    """Step 5a Phase A Checkpoint must finalize features before Phase B.
 
-    Structural test: the command file contains Step 5a with AUTO finalization,
-    CDD update, and zero-manual-items fast path.
+    Structural test: the command file contains Step 5a with dual-fire
+    checkpoints (A and B), CDD update, and zero-manual-items fast path.
     """
 
     def test_step_5a_exists(self):
@@ -325,6 +325,52 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
             step5a_text,
             r"(?i)zero manual items|skip.*Phase B",
             "Step 5a must provide fast path when no manual items remain"
+        )
+
+    def test_step_5a_dual_fire_checkpoints(self):
+        """Step 5a fires at two points: (A) after Steps 1-5, (B) after in-session suites."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"Checkpoint \(A\).*after Steps 1.5",
+            "Step 5a must describe Checkpoint (A) after Steps 1-5"
+        )
+        self.assertRegex(
+            step5a_text,
+            r"Checkpoint \(B\).*in-session regression",
+            "Step 5a must describe Checkpoint (B) after in-session regression suites"
+        )
+
+    def test_step_5a_b_fires_before_external_gate(self):
+        """Step 5a(B) must fire BEFORE the agent_behavior external gate."""
+        content = read_command_file()
+        # In-session checkpoint reference must appear before agent_behavior gate
+        checkpoint_b_pos = content.find("Step 5a(B)")
+        agent_gate_pos = content.find("agent_behavior suites — HARD GATE")
+        self.assertGreater(checkpoint_b_pos, -1,
+                           "Step 5a(B) checkpoint must exist in regression section")
+        self.assertGreater(agent_gate_pos, -1,
+                           "agent_behavior HARD GATE must exist")
+        self.assertLess(checkpoint_b_pos, agent_gate_pos,
+                        "Step 5a(B) must appear BEFORE the agent_behavior gate")
+
+    def test_step_5a_covers_both_auto_and_todo(self):
+        """Step 5a handles both AUTO and TODO features, not just AUTO."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"both AUTO and TODO",
+            "Step 5a must handle both AUTO and TODO features"
         )
 
 

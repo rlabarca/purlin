@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 31,
+  "passed": 34,
   "failed": 0,
-  "total": 31,
+  "total": 34,
   "test_file": "tools/test_support/test_pl_verify.py",
   "details": [
     {
@@ -86,7 +86,19 @@
       "status": "PASS"
     },
     {
+      "test": "test_step_5a_b_fires_before_external_gate (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_b_fires_before_external_gate)",
+      "status": "PASS"
+    },
+    {
       "test": "test_step_5a_commits_auto_completions (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_commits_auto_completions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_covers_both_auto_and_todo (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_covers_both_auto_and_todo)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_dual_fire_checkpoints (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_dual_fire_checkpoints)",
       "status": "PASS"
     },
     {
