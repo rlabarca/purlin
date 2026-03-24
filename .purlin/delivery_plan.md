@@ -22,17 +22,17 @@
 **Parallel Build:** All 5 features fully independent (no mutual dependencies)
 **Execution Group:** A (parallel with Phase 1)
 
-## Phase 3 -- Skills & Release Batch 2 [PENDING]
+## Phase 3 -- Skills & Release Batch 2 [COMPLETE]
 **Features:** pl_spec_code_audit.md, pl_update_purlin.md, release_critic_consistency_check.md, release_audit_automation.md, cdd_qa_effort_display.md
-**Completion Commit:** --
+**Completion Commit:** 5710a001
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Parallel Build:** All 5 independent at phase start (shared deps resolved in Phase 1)
 **Execution Group:** B (parallel with Phase 4; depends on Phase 1)
 
-## Phase 4 -- Critic Chain [PENDING]
+## Phase 4 -- Critic Chain [COMPLETE]
 **Features:** critic_tool.md, skill_behavior_regression.md, critic_role_status.md
-**Completion Commit:** --
+**Completion Commit:** 5710a001
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Parallel Build:** critic_tool + skill_behavior_regression parallel; critic_role_status sequential after critic_tool
