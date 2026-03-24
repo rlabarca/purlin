@@ -831,6 +831,213 @@ fi
 
 rm -rf "$ACK_CLI_SANDBOX"
 
+# --- Scenario: Launcher Updates Claude CLI When Out of Date ---
+echo ""
+echo "[Scenario] Launcher Updates Claude CLI When Out of Date"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {"model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+# Mock claude: update --check returns 1 (update available), update returns 0, session captures args
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+if [ "\$1" = "update" ]; then
+    if [ "\${2:-}" = "--check" ]; then
+        exit 1
+    fi
+    exit 0
+fi
+echo "\$@" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+if echo "$STDERR_CAPTURED" | grep -q "Checking for Claude Code updates..."; then
+    log_pass "Launcher prints update check message to stderr"
+else
+    log_fail "Launcher did not print update check message (stderr: $STDERR_CAPTURED)"
+fi
+
+if echo "$STDERR_CAPTURED" | grep -q "Claude Code updated successfully."; then
+    log_pass "Launcher prints update success message after update"
+else
+    log_fail "Launcher did not print update success message (stderr: $STDERR_CAPTURED)"
+fi
+
+# Verify session claude was still invoked after the update
+if [ -f "$CAPTURE_FILE" ]; then
+    log_pass "Launcher still invoked claude session command after update"
+else
+    log_fail "Launcher did not invoke claude session command after update"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Skips Update When Already Current ---
+echo ""
+echo "[Scenario] Launcher Skips Update When Already Current"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {"model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+# Mock claude: update --check returns 0 (up to date), track if update was called
+UPDATE_CALLED_FILE="$MOCK_DIR/update_called"
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+if [ "\$1" = "update" ]; then
+    if [ "\${2:-}" = "--check" ]; then
+        exit 0
+    fi
+    echo "called" > "$UPDATE_CALLED_FILE"
+    exit 0
+fi
+echo "\$@" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+if echo "$STDERR_CAPTURED" | grep -q "Checking for Claude Code updates..."; then
+    log_pass "Launcher prints check message even when up to date"
+else
+    log_fail "Launcher did not print check message (stderr: $STDERR_CAPTURED)"
+fi
+
+if [ ! -f "$UPDATE_CALLED_FILE" ]; then
+    log_pass "Launcher did not run claude update when already current"
+else
+    log_fail "Launcher ran claude update unnecessarily"
+fi
+
+if echo "$STDERR_CAPTURED" | grep -qv "Claude Code updated successfully."; then
+    log_pass "Launcher does not print update success message when already current"
+else
+    log_fail "Launcher printed update success message unexpectedly (stderr: $STDERR_CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Continues When Update Fails ---
+echo ""
+echo "[Scenario] Launcher Continues When Update Fails"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {"model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+# Mock claude: update --check returns 1 (update available), update returns 1 (failure)
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+if [ "\$1" = "update" ]; then
+    if [ "\${2:-}" = "--check" ]; then
+        exit 1
+    fi
+    exit 1
+fi
+echo "\$@" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+if echo "$STDERR_CAPTURED" | grep -q "WARNING: Claude Code update failed. Continuing with current version."; then
+    log_pass "Launcher prints update failure warning"
+else
+    log_fail "Launcher did not print update failure warning (stderr: $STDERR_CAPTURED)"
+fi
+
+# Verify session claude was still invoked despite update failure
+if [ -f "$CAPTURE_FILE" ]; then
+    log_pass "Launcher still invoked claude session command after update failure"
+else
+    log_fail "Launcher did not invoke claude session command after update failure"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Skips Update Check When Claude Not on PATH ---
+echo ""
+echo "[Scenario] Launcher Skips Update Check When Claude Not on PATH"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {"model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+# Use an empty directory as PATH so claude is not found
+EMPTY_PATH_DIR="$(mktemp -d)"
+# But we need python3 and basic utils — create a wrapper that fails for claude only
+cat > "$EMPTY_PATH_DIR/claude" << 'MOCK_EOF'
+#!/bin/bash
+exit 127
+MOCK_EOF
+# Don't make it executable — command -v should not find it
+# Instead, remove the mock dir's claude entirely and use a PATH without claude
+rm -f "$EMPTY_PATH_DIR/claude"
+
+# We need bash, python3, cat, etc. but NOT claude
+# Create symlinks for needed tools
+for tool in bash python3 cat printf mktemp rm chmod mkdir grep echo sed; do
+    tool_path="$(command -v "$tool" 2>/dev/null)"
+    if [ -n "$tool_path" ]; then
+        ln -sf "$tool_path" "$EMPTY_PATH_DIR/$tool"
+    fi
+done
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$EMPTY_PATH_DIR" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+LAUNCHER_EXIT=$?
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+# Update check should be skipped entirely (no "Checking" message)
+if echo "$STDERR_CAPTURED" | grep -qv "Checking for Claude Code updates..."; then
+    log_pass "Launcher skips update check when claude not on PATH"
+else
+    log_fail "Launcher attempted update check without claude on PATH (stderr: $STDERR_CAPTURED)"
+fi
+
+rm -rf "$EMPTY_PATH_DIR"
+teardown_launcher_sandbox
+
 ###############################################################################
 # Results
 ###############################################################################

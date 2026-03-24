@@ -69,6 +69,18 @@ if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
     exit 1
 fi
 
+# --- CLI auto-update ---
+if command -v claude >/dev/null 2>&1; then
+    echo "Checking for Claude Code updates..." >&2
+    if ! claude update --check >/dev/null 2>&1; then
+        if claude update >/dev/null 2>&1; then
+            echo "Claude Code updated successfully." >&2
+        else
+            echo "WARNING: Claude Code update failed. Continuing with current version." >&2
+        fi
+    fi
+fi
+
 # --- Claude dispatch ---
 ROLE_DISPLAY="Architect"
 CLI_ARGS=()
