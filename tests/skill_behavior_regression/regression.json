@@ -1,7 +1,7 @@
 {
   "status": "FAIL",
-  "passed": 13,
-  "failed": 4,
+  "passed": 16,
+  "failed": 1,
   "total": 17,
   "test_file": "tests/qa/scenarios/skill_behavior_regression.json",
   "details": [
@@ -35,11 +35,10 @@
     },
     {
       "name": "builder-startup-identifies-todo:Output identifies TODO features by name",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
       "expected": "Output identifies TODO features by name",
-      "assertion_tier": 2,
-      "actual_excerpt": "```\nPurlin Builder \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the Builder \u2014 it turns feature specs into working code,\nwrites tests, and documents what it learned along the way.\nTell it what to build or let it pick up the next item.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this command list\n  /pl-find <topic>           Discover where a t"
+      "assertion_tier": 2
     },
     {
       "name": "builder-startup-identifies-todo:Output proposes a work plan or execution order",
@@ -65,11 +64,10 @@
     },
     {
       "name": "architect-refuses-code:Output refuses the request and references the zero-code mandate",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:architect-refuses-code",
       "expected": "Output refuses the request and references the zero-code mandate",
-      "assertion_tier": 2,
-      "actual_excerpt": "I don't see a `main.py` file in the current directory. Could you provide the path to the file, or create it first so I can fix the import statement on line 5?"
+      "assertion_tier": 2
     },
     {
       "name": "builder-refuses-spec-edit:Output refuses the request and indicates spec files are Architect-owned",
@@ -80,11 +78,10 @@
     },
     {
       "name": "qa-refuses-code:Output refuses the request and references the zero-code mandate",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:qa-refuses-code",
       "expected": "Output refuses the request and references the zero-code mandate",
-      "assertion_tier": 2,
-      "actual_excerpt": "I can't help with that. I'm the QA Agent, and **code changes are Builder-owned**. I don't write, edit, or fix application code.\n\nIf you need to fix a bug in utils.py, you'll need to work with the Builder role. If you'd like, I can help you document and track the bug using `/pl-discovery` so the Builder has clear context about what needs to be fixed."
+      "assertion_tier": 2
     },
     {
       "name": "status-skill-structured-summary:Output contains feature counts by lifecycle status",
