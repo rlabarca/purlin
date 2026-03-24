@@ -10,7 +10,7 @@
 
 The `/pl-remote-push` skill pushes the local collaboration branch to the remote. It operates in three modes depending on project state:
 
-- **Mode 1 -- No remote configured:** Guides the user through adding a git remote, then pushes.
+- **Mode 1 -- No remote configured:** Exits with guidance to run `/pl-remote-add`.
 - **Mode 2 -- Direct mode (no active branch):** Collaboration branch resolves to `main`. Pushes `main` to the remote.
 - **Mode 3 -- Collaboration mode (active branch):** Pushes the active collaboration branch to the same-named remote branch.
 
@@ -60,18 +60,7 @@ After the branch guard passes, check for configured remotes:
 git remote -v
 ```
 
-If no remotes exist, guide the user through setup:
-
-1. Scan for hosting hints that may help the user identify available remotes:
-   - Check `~/.ssh/config` for configured hosts (e.g., `github.com`, `gitlab.com`, `bitbucket.org`).
-   - Check git credential helpers via `git config --global --get-regexp credential`.
-   - Check for hosting CLIs: `gh` (GitHub), `glab` (GitLab).
-2. Present the user with a prompt asking for a git remote URL (SSH or HTTPS -- any git-compatible host). If hosting hints were found in step 1, list them as informational suggestions below the prompt (e.g., "Detected: github.com (SSH key), bitbucket.org (SSH key)"). Do not auto-select any host.
-3. Accept any valid git URL format: `git@host:user/repo.git`, `https://host/user/repo.git`, `ssh://...`, or local paths.
-4. Ask for the remote name (default `"origin"`).
-5. Execute `git remote add <name> <url>`.
-6. Verify connectivity: `git ls-remote <name>`. If it fails, report the error and let the user correct the URL.
-7. Proceed to push.
+If no remotes exist, print: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exit with code 1.
 
 ### 2.5 Shared Preconditions
 
@@ -140,33 +129,14 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     And the command prints "Switch to main"
     And exits with code 1
 
-#### Scenario: pl-remote-push Detects No Remote And Prompts For Setup
+#### Scenario: pl-remote-push Exits With Guidance When No Remote Configured
 
     Given no file exists at .purlin/runtime/active_branch
     And the current branch is main
     And no git remotes are configured
     When /pl-remote-push is invoked
-    Then the command detects no remotes via git remote -v
-    And prompts the user to add a remote
-
-#### Scenario: pl-remote-push Shows Hosting Hints When Available
-
-    Given no git remotes are configured
-    And the current branch is main
-    And ~/.ssh/config contains a Host entry for github.com
-    When /pl-remote-push is invoked and detects no remotes
-    Then the command prompts for a git remote URL
-    And displays "Detected: github.com (SSH key)" as an informational hint
-    And does not auto-select any host
-
-#### Scenario: pl-remote-push Verifies Remote Connectivity
-
-    Given no git remotes are configured
-    And the current branch is main
-    And the user provides a remote URL
-    When the remote is added via git remote add
-    Then the command runs git ls-remote to verify connectivity
-    And reports an error if the remote is unreachable
+    Then the command prints "No git remote configured. Run /pl-remote-add to set up a remote first."
+    And exits with code 1
 
 #### Scenario: pl-remote-push First Push To Empty Remote Succeeds
 

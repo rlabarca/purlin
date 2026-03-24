@@ -63,7 +63,7 @@ After the branch guard passes (or is skipped in explicit-branch mode), check for
 git remote -v
 ```
 
-If no remotes exist, print: "No git remote configured. Run `/pl-remote-push` to set up a remote first." and exit with code 1.
+If no remotes exist, print: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exit with code 1.
 
 ### 2.5 Shared Preconditions
 
@@ -147,7 +147,7 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     And the current branch is main
     And no git remotes are configured
     When /pl-remote-pull is invoked
-    Then the command prints "No git remote configured. Run /pl-remote-push to set up a remote first."
+    Then the command prints "No git remote configured. Run /pl-remote-add to set up a remote first."
     And exits with code 1
 
 #### Scenario: pl-remote-pull First Pull Shows Safety Confirmation
