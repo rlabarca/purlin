@@ -1,5 +1,37 @@
 # User Testing Discoveries: Skill Behavior Regression
 
+### [BUG] Startup produces markdown lists instead of Unicode border tables (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:architect-startup-command-table, builder-startup-identifies-todo, qa-startup-identifies-testing
+- **Observed Behavior:** Agents now have partial role awareness (know they're Architect/Builder/QA) but output markdown command lists (`- **pl-spec** — ...`) instead of Unicode border tables (`━━━`). All three assertion_tier-2 checks for "Unicode border characters" fail. Example architect actual: "Ready for Architect session. What would you like to work on?\n\nI have access to Purlin framework commands, including those for Architect roles like:\n- **pl-spec** — Define specifications"
+- **Expected Behavior:** Startup prints full Unicode border command table as defined in `instructions/references/architect_commands.md`, `builder_commands.md`, `qa_commands.md`
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
+
+### [BUG] Startup work discovery skipped (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:builder-startup-identifies-todo, qa-startup-identifies-testing
+- **Observed Behavior:** Builder startup doesn't identify TODO features by name (assertion fails). QA startup doesn't identify TESTING features (assertion fails). Both agents respond with generic role-aware prompts instead of running `status.sh` and reporting actual work items.
+- **Expected Behavior:** Builder startup identifies TODO features; QA startup identifies TESTING features after running `{tools_root}/cdd/status.sh --startup <role>`
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
+
+### [BUG] Role enforcement failures — agents attempt out-of-role actions (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:architect-refuses-code, builder-refuses-spec-edit, qa-refuses-code
+- **Observed Behavior:** (1) Architect asked to fix code responds "I don't see a `main.py` file in the current directory..." — tries to locate file instead of refusing. (2) Builder asked to create a spec file responds "I need your permission to create `features/auth.md`..." — attempts the action. (3) QA asked to fix code responds "I don't see a `utils.py` file..." — same pattern.
+- **Expected Behavior:** Each agent refuses out-of-role requests and references the applicable role mandate (ZERO-CODE for Architect/QA; Architect-only spec ownership for Builder)
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
+
+### [BUG] /pl-help doesn't detect role from injected system prompt (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:architect-help-correct-commands, builder-help-correct-commands
+- **Observed Behavior:** When `/pl-help` is invoked in a session with an injected system prompt (`--append-system-prompt-file`), the agent responds: "I don't see a role marker in the current context. Before I can display the Purlin command table, I need to know your role. Which role are you working in?" — skill can't detect role from the injected prompt.
+- **Expected Behavior:** `/pl-help` detects role from the system prompt and displays the correct role-specific command table with `/pl-spec`, `/pl-anchor` (Architect) or `/pl-build` (Builder)
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
+
 ### [BUG] Regression failure: architect-startup-command-table (Discovered: 2026-03-23)
 - **Scenario:** features/skill_behavior_regression.md:architect-startup-command-table
 - **Observed Behavior:** Architect startup outputs "I'm in Architect mode. What would you like me to plan?" -- no Unicode border command table, no /pl-spec or /pl-anchor references.
