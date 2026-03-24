@@ -21,8 +21,12 @@ This guide covers three scenarios:
 
 - Git (any recent version)
 - Python 3.8+ (used by [Critic](critic-and-cdd-guide.md) and CDD tooling)
-- Claude Code CLI (`claude`) installed and authenticated
+- Claude Code CLI (`claude`) **2.1.81 or later**, installed and authenticated
 - Node.js (optional, for the [CDD Dashboard](status-grid-guide.md) web UI and web testing via Playwright)
+
+> **Note:** Agent launchers (`pl-run-*.sh`) automatically check for Claude Code
+> updates at startup and will update the CLI if a newer version is available.
+> You can also run `claude update` manually at any time.
 
 ### Step-by-Step
 
