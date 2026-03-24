@@ -7,7 +7,7 @@
 - **Status:** OPEN
 - **Source:** Spec-code audit (deep mode). See regression_testing.impl.md for full context.
 
-### [DISCOVERY] M35: pl-verify 2.2.4 regression table untested (Discovered: 2026-03-23)
+### [BUG] M35: pl-verify 2.2.4 regression table untested (Discovered: 2026-03-23)
 - **Observed Behavior:** There are no unit tests for the status table rendering or hard gate logic in the pl-verify regression section (2.2.4).
 - **Expected Behavior:** Unit tests should cover the regression status table rendering and the hard gate pass/fail logic.
 - **Action Required:** Builder

@@ -1,6 +1,6 @@
 # User Testing Discoveries: Context Recovery Hook
 
-### [DISCOVERY] M47: CLAUDE.md installation scenarios absent (Discovered: 2026-03-23)
+### [BUG] M47: CLAUDE.md installation scenarios absent (Discovered: 2026-03-23)
 - **Observed Behavior:** All 7 test cases from spec section 2.6 are missing from test_init.sh; CLAUDE.md installation paths are untested.
 - **Expected Behavior:** test_init.sh should include all 7 CLAUDE.md installation scenarios defined in spec section 2.6.
 - **Action Required:** Builder

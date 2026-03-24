@@ -7,7 +7,7 @@
 - **Status:** OPEN
 - **Source:** Spec-code audit (deep mode). See release_audit_automation.impl.md for full context.
 
-### [DISCOVERY] M42: Contradiction detection heuristic-only (Discovered: 2026-03-23)
+### [BUG] M42: Contradiction detection heuristic-only (Discovered: 2026-03-23)
 - **Observed Behavior:** Contradiction detection relies entirely on heuristic text matching with no structural analysis of rule subjects and objects.
 - **Expected Behavior:** Contradiction detection should include structural analysis of rule subjects and objects in addition to heuristic matching for more reliable detection.
 - **Action Required:** Builder

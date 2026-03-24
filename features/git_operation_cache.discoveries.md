@@ -1,6 +1,6 @@
 # User Testing Discoveries: Git Operation Cache
 
-### [DISCOVERY] H6: cached_git_status() dead code (Discovered: 2026-03-23)
+### [BUG] H6: cached_git_status() dead code (Discovered: 2026-03-23)
 - **Observed Behavior:** `cached_git_status()` is defined in serve.py but has zero callers; critic.py calls git status directly, bypassing the cache entirely.
 - **Expected Behavior:** Code that calls git status should use the cached version to benefit from the operation cache.
 - **Action Required:** Builder
