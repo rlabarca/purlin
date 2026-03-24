@@ -1077,6 +1077,40 @@ class TestModifiedAgentFileWithUpstreamConflict(unittest.TestCase):
         self.assertIn('command or agent file', content.lower())
 
 
+class TestProjectRootDetection(unittest.TestCase):
+    """Spec Section 2.13: Project Root Detection
+
+    The skill uses PURLIN_PROJECT_ROOT (env var) for project root detection,
+    with directory-climbing as fallback.
+    """
+
+    def test_command_references_purlin_project_root(self):
+        """Command references PURLIN_PROJECT_ROOT env var for path resolution."""
+        content = _get_command_content()
+        self.assertIn('PURLIN_PROJECT_ROOT', content)
+
+    def test_command_has_path_resolution_section(self):
+        """Command includes a Path Resolution section."""
+        content = _get_command_content()
+        self.assertIn('Path Resolution', content)
+
+    def test_command_uses_env_var_with_climbing_fallback(self):
+        """Command uses env var as primary with directory-climbing fallback."""
+        content = _get_command_content()
+        self.assertIn('PURLIN_PROJECT_ROOT', content)
+        self.assertIn('climbing', content.lower())
+
+    def test_path_resolution_before_behavior(self):
+        """Path Resolution section appears before the Behavior section."""
+        content = _get_command_content()
+        path_pos = content.find('Path Resolution')
+        behavior_pos = content.find('**Behavior:**')
+        self.assertGreater(path_pos, -1, 'Path Resolution section not found')
+        self.assertGreater(behavior_pos, -1, 'Behavior section not found')
+        self.assertLess(path_pos, behavior_pos,
+                        'Path Resolution should appear before Behavior')
+
+
 if __name__ == '__main__':
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])

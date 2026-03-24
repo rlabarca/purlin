@@ -4,6 +4,14 @@
 
 Update the Purlin submodule to the latest version with automatic artifact refresh and conflict detection.
 
+**Path Resolution:**
+
+Resolve the project root:
+- Use `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there.
+- Otherwise, detect from the current working directory by climbing until `.purlin/` is found.
+
+Set `<project_root>` to the resolved path. The submodule directory is `<project_root>/purlin` (or the configured submodule path). All paths below (`.purlin/`, `purlin-config-sample/`, launcher scripts, etc.) are relative to `<project_root>`.
+
 **Behavior:**
 
 0. **Standalone Mode Guard:**
