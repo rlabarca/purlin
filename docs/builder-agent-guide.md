@@ -159,7 +159,8 @@ When the Builder has multiple features to implement, it uses phased delivery to 
 
 ### Phase Structure
 
-Each phase has up to 2 features and follows three sub-phases:
+Each phase groups related features (sized by testability, parallelism, and
+context budget -- there is no hard per-phase cap) and follows three sub-phases:
 
 - **B1 (Build)** -- Implement and test each feature locally.
 - **B2 (Test)** -- Re-run all tests across phase features to catch cross-feature regressions.
