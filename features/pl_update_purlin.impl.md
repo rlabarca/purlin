@@ -13,7 +13,7 @@
 **Details:** The spec (Section 2.3, Scenario "MCP Manifest Diff") requires the update command to detect changes to `.claude/mcp.json` and report added/removed/modified MCP server entries. The command file references MCP manifest diffing but the test coverage does not verify the diff output format (added/removed/modified server names). The structural test checks for keyword presence but not behavioral completeness.
 **Suggested fix:** Add a test assertion that verifies the command file contains instructions for reporting specific MCP server changes (server name, change type). Alternatively, if the current keyword check is deemed sufficient for an agent skill, document this as an intentional test-depth tradeoff in the companion file.
 
-**[DISCOVERY] [ACKNOWLEDGED]** Skill file missing PURLIN_PROJECT_ROOT reference
+**[DISCOVERY]** Skill file missing PURLIN_PROJECT_ROOT reference
 **Source:** /pl-spec-code-audit --deep (M16)
 **Severity:** MEDIUM
 **Details:** Spec §2.13 requires the skill to use `PURLIN_PROJECT_ROOT` (env var) for project root detection with directory-climbing as fallback. The skill file (`.claude/commands/pl-update-purlin.md`) contains no mention of either mechanism.

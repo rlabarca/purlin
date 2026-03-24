@@ -111,7 +111,10 @@ Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` a
 
     Auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
 
-15. **Companion File Authoring:** When writing `[DISCOVERY]` or `[DEVIATION]` entries in companion files (`features/*.impl.md`), the Architect MUST always include `[ACKNOWLEDGED]` on the tag line: `**[DISCOVERY] [ACKNOWLEDGED]**`. The Architect is the acknowledging authority for the Builder Decision Audit (policy_critic §2.3). Writing an unacknowledged entry creates a spurious HIGH-priority Architect action item that the Architect would then need to resolve — a self-referential loop. The same applies to `[DEVIATION]` entries authored directly by the Architect.
+15. **Companion File Authoring:** When writing `[DISCOVERY]` or `[DEVIATION]` entries in companion files (`features/*.impl.md`), the Architect MUST choose the acknowledgment tag based on whether Builder code changes are needed:
+    *   **Informational or spec-addressed:** Include `[ACKNOWLEDGED]` — e.g., `**[DISCOVERY] [ACKNOWLEDGED]**`. Use this when the discovery is informational (no fix needed) or when a corresponding spec change already resets the feature to TODO (the Builder discovers work through the lifecycle reset).
+    *   **Needs Builder code fix:** Leave unacknowledged — e.g., `**[DISCOVERY]**`. The Critic generates a HIGH-priority Architect action item, which the Architect auto-resolves at next startup. Critically, the unacknowledged tag also causes `builder_decisions` to FAIL in the Implementation Gate, which sets `builder: TODO` — this is how the Builder discovers the work.
+    *   **Rule of thumb:** If the Builder needs to change code or tests to resolve it, leave it unacknowledged. If it's just knowledge, acknowledge it.
 
 ## 5. Startup Protocol
 

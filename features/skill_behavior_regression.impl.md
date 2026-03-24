@@ -10,7 +10,7 @@
 
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY] [ACKNOWLEDGED]** 12/17 regression assertions still failing
+**[DISCOVERY]** 12/17 regression assertions still failing
 **Source:** /pl-spec-code-audit --deep (H9)
 **Severity:** HIGH
 **Details:** Two failure classes: (A) Fixture missing skill commands -- `main/skill_behavior/mixed-lifecycle` fixture lacks `.claude/commands/pl-status.md` and `pl-help.md`, causing scenarios 7-9 to fail with "Unknown skill". (B) Instruction-level behavior -- Architect/QA role refusals fail (agents try to locate the requested file instead of refusing); startup command tables not produced in expected Unicode border format. Builder's `copy_skill_files()` fix partially addressed this but 12/17 still fail.

@@ -12,13 +12,13 @@
 *   **User Testing Discovery Parsing:** The original line-by-line parsing in `generate_action_items()` and `compute_role_status()` checked for `[TYPE]` tag and `OPEN` status on the same line. Real feature files use a heading-based format (`### [TYPE] Title` on one line, `- **Status:** OPEN` on a separate line), so the checks never matched. Fixed by adding `parse_discovery_entries()` -- a block-level parser that extracts type, title, and status from each discovery entry as a unit. All functions now pre-parse entries once and use structured lookups instead of line-by-line text matching. Test fixtures updated to use the real heading-based format.
 ### Audit Findings -- 2026-03-23
 
-**[DISCOVERY] [ACKNOWLEDGED]** Compact Policy Violation Grouping not implemented
+**[DISCOVERY]** Compact Policy Violation Grouping not implemented
 **Source:** /pl-spec-code-audit --deep (H1)
 **Severity:** HIGH
 **Details:** Spec §2.8 requires policy violations grouped by (feature, pattern) with count and first 3 line numbers: `N x pattern in file (lines N,M,O...+K more)`. Code at `critic.py:3872-3880` emits one line per individual violation. With 34 violations for one pattern, the report produces 34 lines instead of 1.
 **Suggested fix:** Add grouping logic in the aggregate report generator. Group by `(feature, pattern)`, collect line numbers, emit compact format.
 
-**[DISCOVERY] [ACKNOWLEDGED]** Weak Traceability Match Detection not wired
+**[DISCOVERY]** Weak Traceability Match Detection not wired
 **Source:** /pl-spec-code-audit --deep (H2)
 **Severity:** HIGH
 **Details:** Spec §2.10 requires detecting when a new scenario (post-status-commit) only matches pre-existing tests via keyword overlap, flagging as HIGH `weak_traceability` Builder item. Helper `_test_added_after_commit()` exists at `critic.py:2550-2574` but `generate_action_items()` never reads `scenario_diff` combined with `_weak_matches` to generate this item. The `weak_matches` key is always an empty list because traceability is not enforced.
@@ -58,7 +58,7 @@
 *   **Requirements section change detection (2026-03-13):** Added `_get_requirements_diff()` function implementing policy_critic.md §2.12's requirements-section-change-detection clause. When `_get_scenario_diff()` returns `has_diff: False` (no scenario title/body changes) but the feature is still in TODO lifecycle (spec was modified), the function compares `### 2.x` subsections under `## Requirements` between old and current file content to identify which sections changed. Also detects `## Visual Specification` section changes. The action item description is enriched from generic "Review and implement spec changes" to "Implement spec changes for <feature>: requirements sections modified [2.2, 2.5]" (with optional ", visual spec updated"). `_get_scenario_diff()` now returns `old_content` to avoid redundant git fetches. 12 new tests: `TestRequirementsDiff` (8 unit tests for the diff function) + `TestRequirementsDiffActionItem` (4 integration tests for action item generation).
 *   **[SPEC_PROPOSAL] tag support (2026-03-20):** Added `[SPEC_PROPOSAL]` as a first-class Builder Decision tag per policy_critic.md §2.3. Four changes: (1) `parse_builder_decisions()` recognizes SPEC_PROPOSAL in its regex and returns it in the decisions dict. (2) `check_builder_decisions()` tracks SPEC_PROPOSAL acknowledgment and includes unacknowledged entries in the FAIL condition alongside DEVIATION/DISCOVERY. (3) `generate_action_items()` routes unacknowledged SPEC_PROPOSAL entries to Architect with category `spec_proposal` (separate from the `builder_decisions` category used for DEVIATION/DISCOVERY). (4) `generate_report()` includes SPEC_PROPOSAL in the Builder Decision Audit section. 7 new tests: 4 in `TestBuilderDecisionAudit` (parse, FAIL, acknowledged PASS, mixed) + 2 in `TestActionItemsBuilder` (routing, acknowledged no-item) + implicit coverage from existing tests. Total: 371 tests pass.
 
-**[DISCOVERY] [ACKNOWLEDGED]** targeted_scope_audit lifecycle condition inverted
+**[DISCOVERY]** targeted_scope_audit lifecycle condition inverted
 **Source:** /pl-spec-code-audit --deep (M1)
 **Severity:** MEDIUM
 **Details:** The `targeted_scope_audit` block in `critic.json` emits when `lifecycle_state == 'todo'` but omits when `lifecycle_state in ('testing', 'complete')`. The spec says the opposite: emit when builder is DONE (testing/complete), omit when TODO. The action item generation (lines 1817-1869) correctly uses the DONE condition but the critic.json output block at line 3675 is inverted.

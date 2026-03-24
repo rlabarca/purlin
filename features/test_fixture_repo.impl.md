@@ -9,7 +9,7 @@
 *   **[CLARIFICATION]** The `release_audit_automation.md` fixture tags use different feature slugs (e.g., `release_verify_deps/` instead of `release_audit_automation/`) because those integration tests verify multiple release steps, each with their own namespace. This is intentional per the tag convention. (Severity: INFO)
 *   **[CLARIFICATION]** The `agent_behavior_tests.md` fixture tags reference tags in other features' namespaces (`cdd_startup_controls/`, `pl_session_resume/`, `pl_help/`) rather than `agent_behavior_tests/`. These cross-references are correct — the behavior tests consume project states defined by those features. The setup script creates all referenced tags. (Severity: INFO)
 
-**[DISCOVERY] [ACKNOWLEDGED]** QA recommendation decision logic untested
+**[DISCOVERY]** QA recommendation decision logic untested
 **Source:** /pl-spec-code-audit --deep (M32)
 **Severity:** MEDIUM
 **Details:** Tests validate the `fixture_recommendations.md` file format but not the QA decision logic (when to recommend a remote repo) or that the Builder startup sequence reads the file. Both are agent-level behaviors but should have structural tests verifying the skill file documents the workflow.

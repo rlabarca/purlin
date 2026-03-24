@@ -13,7 +13,7 @@
 *   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY] [ACKNOWLEDGED]** CDD_PORT env var priority chain not implemented
+**[DISCOVERY]** CDD_PORT env var priority chain not implemented
 **Source:** /pl-spec-code-audit --deep (H3)
 **Severity:** HIGH
 **Details:** Spec §2.12 requires port resolution: CDD_PORT env var > cdd_port in config.json > default 8086. `serve.py` never reads CDD_PORT; `start.sh` passes `--port` directly to `serve.py`. The actual behavior is: `--port` arg > OS-assigned free port. The priority chain described in the spec is not followed.
@@ -105,7 +105,7 @@ Implemented Section 2.1 QA Tag Classification Exemption. Added `_only_qa_tag_com
 
 *   **Abbreviated Status Commit Format (2026-03-18):** Implemented Section 2.1 abbreviated format support in `build_status_commit_cache()`. Changed git log grep from `--grep='\\[Complete features/'` to `--grep='\\[Complete'` to capture both canonical and abbreviated commits. Added three new regex patterns: `abbrev_complete_re` (`\[Complete\]`), `abbrev_testing_re` (`\[Ready for (?:Verification|Testing)\]`), and `conv_scope_re` (`^\w+\(([^)]+)\):`) for conventional commit scope extraction. Canonical format is tried first; abbreviated is a fallback only. Abbreviated format resolves to `features/<scope>.md` and verifies file existence on disk via `os.path.isfile()`. Non-existent scopes and commits without conventional scope prefixes are silently ignored. 8 new unit tests in `TestAbbreviatedStatusCommitCache` cover: scope resolution, both Ready for Verification/Testing variants, non-existent scope, missing scope prefix, canonical precedence within same commit, scope trailer extraction, and mixed format timeline. 3 new stages in `test_lifecycle.sh` (5a, 5b, 5c) cover the end-to-end lifecycle integration.
 
-**[DISCOVERY] [ACKNOWLEDGED]** delivery_plan_gating fully_delivered_features always empty
+**[DISCOVERY]** delivery_plan_gating fully_delivered_features always empty
 **Source:** /pl-spec-code-audit --deep (M6)
 **Severity:** MEDIUM
 **Details:** `delivery_plan_gating.fully_delivered_features` in the startup briefing is always an empty array. The code never computes which features are eligible for [Complete] (not gated by pending phases). `phase_gated_features` produces phase-level labels instead of feature-level filenames.
