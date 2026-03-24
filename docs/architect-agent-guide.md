@@ -263,6 +263,7 @@ Edit `.purlin/ARCHITECT_OVERRIDES.md` to add project-specific rules. This file i
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
 | `/pl-fixture` | Test fixture convention and workflow reference. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
+| `/pl-agent-config` | View or modify agent model and startup settings. |
 | `/pl-override-edit` | Edit ARCHITECT_OVERRIDES.md with conflict scanning. |
 | `/pl-whats-different` | Compare branches (main checkout only). |
 | `/pl-remote-push` | Push [collaboration branch](branch-collaboration-guide.md) to remote. |

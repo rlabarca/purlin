@@ -33,8 +33,8 @@ The Builder discovers its own work. At startup, it reads the Critic report, iden
 
 The Builder prints a command table, then checks its startup configuration:
 
-- **Find Work + Auto Start** (default): The Builder identifies TODO features, proposes a delivery plan if needed, and begins implementing immediately.
-- **Find Work only**: The Builder proposes a work plan and waits for your approval.
+- **Find Work only** (default): The Builder identifies TODO features, proposes a delivery plan if needed, and waits for your approval before starting.
+- **Find Work + Auto Start**: The Builder proposes a work plan and begins implementing immediately without waiting for approval.
 - **Find Work disabled**: The Builder waits for your direct instruction.
 
 ---
@@ -159,7 +159,8 @@ When the Builder has multiple features to implement, it uses phased delivery to 
 
 ### Phase Structure
 
-Each phase has up to 2 features and follows three sub-phases:
+Each phase groups related features (sized by testability, parallelism, and
+context budget -- there is no hard per-phase cap) and follows three sub-phases:
 
 - **B1 (Build)** -- Implement and test each feature locally.
 - **B2 (Test)** -- Re-run all tests across phase features to catch cross-feature regressions.
@@ -248,7 +249,11 @@ When QA records a `[BUG]` discovery, it appears as a Builder action item. Fix th
 | `/pl-fixture` | Test fixture convention and workflow. |
 | `/pl-server` | Dev server lifecycle management. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
+| `/pl-agent-config` | View or modify agent model and startup settings. |
 | `/pl-override-edit` | Edit BUILDER_OVERRIDES.md. |
+| `/pl-whats-different` | Compare branches (main checkout only). |
+| `/pl-remote-push` | Push [collaboration branch](branch-collaboration-guide.md) to remote. |
+| `/pl-remote-pull` | Pull remote into current branch. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore session state. |
 | `/pl-update-purlin` | Update the Purlin submodule. |

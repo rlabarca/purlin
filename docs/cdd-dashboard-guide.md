@@ -70,7 +70,8 @@ The Status View contains several sections stacked vertically:
 **Active Features** -- Features where at least one role still has work to
 do. Sorted by urgency: red statuses (FAIL, INFEASIBLE) first, then yellow
 (TODO, DISPUTED), then alphabetical. Each row shows the feature name and
-four role status badges.
+four role status badges. When a delivery plan is active, the section heading
+shows phase progress inline (e.g., `ACTIVE (5) [4/10 DONE | 2 RUNNING]`).
 
 **Complete Features** -- Features where all roles are in terminal states
 (DONE, CLEAN, N/A). Capped at the 10 most recently completed. These are
@@ -148,7 +149,7 @@ Search is case-insensitive substring matching against feature names.
 
 ## Auto-Refresh
 
-The dashboard polls for changes every 2 seconds. When feature files are
+The dashboard polls for changes every 5 seconds. When feature files are
 modified (by agents committing changes), the status grid and spec map update
 automatically.
 

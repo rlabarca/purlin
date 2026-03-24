@@ -175,13 +175,14 @@ Purlin uses a two-file configuration system:
   used instead. There is no merging -- the local file completely replaces the
   shared file when present.
 
+- **Copy-on-first-access:** The first time any tool reads config and no
+  `config.local.json` exists, the resolver automatically copies `config.json`
+  to `config.local.json`. From that point forward, all reads and writes target
+  the local file. This happens on the first read, not just on the first save.
+
 - **Writing:** All changes from the dashboard (and from the `/pl-agent-config`
   command) write to `config.local.json`. The shared `config.json` is never
   modified by these tools.
-
-- **First save:** The first time the dashboard saves a change, it creates
-  `config.local.json` as a copy of `config.json` with your change applied. From
-  that point forward, all reads and writes target the local file.
 
 ### Resetting to team defaults
 
