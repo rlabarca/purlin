@@ -22,7 +22,7 @@ This guide covers three scenarios:
 - Git (any recent version)
 - Python 3.8+ (used by [Critic](critic-and-cdd-guide.md) and CDD tooling)
 - Claude Code CLI (`claude`) installed and authenticated
-- Node.js (optional, for the [CDD Dashboard](status-grid-guide.md) web UI)
+- Node.js (optional, for the [CDD Dashboard](status-grid-guide.md) web UI and web testing via Playwright)
 
 ### Step-by-Step
 
@@ -51,7 +51,8 @@ file.
 ```
 
 This is the only command you need to remember. It detects that this is a
-first-time setup and runs **Full Init Mode**, which:
+first-time setup, checks for missing tools (and tells you how to install
+them), then runs **Full Init Mode**, which:
 
 - Copies config templates to `.purlin/` (config, overrides, release setup).
 - Sets `tools_root` in your config to `"purlin/tools"`.
