@@ -4,5 +4,5 @@
 - **Observed Behavior:** Hardcoded tools/test_support/harness_runner.py paths at pl-verify.md lines 206-207.
 - **Expected Behavior:** Should use ${TOOLS_ROOT}/test_support/harness_runner.py.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See pl_verify.impl.md for context.

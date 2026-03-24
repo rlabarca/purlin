@@ -203,8 +203,8 @@ Run in-session suites? [all / per-feature / skip]
 These suites use agent_behavior (claude --print) and must run
 outside this session:
 
-    python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
-    python3 tools/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
+    python3 ${TOOLS_ROOT}/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
+    python3 ${TOOLS_ROOT}/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
 
 Run in a separate terminal, then say "done" when finished.
 Or say "skip" to proceed without running them.
