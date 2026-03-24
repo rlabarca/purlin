@@ -36,7 +36,7 @@ from serve import (
     strip_discoveries_section,
     strip_metadata_lines,
     spec_content_unchanged,
-    _only_qa_tag_commits_since,
+    _only_exempt_commits_since,
     _qa_badge_html,
 )
 
@@ -1096,11 +1096,11 @@ class TestLifecycleResetOnSpecChange(unittest.TestCase):
             shutil.rmtree(test_dir)
 
 
-class TestQaTagClassificationExemption(unittest.TestCase):
-    """Scenario: QA Tag Classification Exemption (Section 2.1).
+class TestExemptCommitLifecyclePreservation(unittest.TestCase):
+    """Scenario: Exempt Commit Lifecycle Preservation (Section 2.1).
 
-    Commits with [QA-Tags] trailer that only classify QA scenarios
-    MUST NOT trigger lifecycle resets.
+    Commits with [QA-Tags] or [Spec-FMT] trailer MUST NOT trigger
+    lifecycle resets.
     """
 
     @patch('serve.run_command')
@@ -1311,6 +1311,114 @@ class TestQaTagClassificationExemption(unittest.TestCase):
                     "features", features_abs, cache)
                 self.assertEqual(len(todo), 1)
                 self.assertEqual(todo[0], "test.md")
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_spec_fmt_commit_preserves_complete_status(self, mock_run):
+        """COMPLETE feature stays COMPLETE when only Spec-FMT commits exist."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "#### Scenario: Foo\n\n"
+                "    given x\n    when y\n    then z\n"
+            )
+            # Formatting fix: Gherkin casing
+            modified_content = (
+                "# Feature: Test\n\n"
+                "#### Scenario: Foo\n\n"
+                "    Given x\n    When y\n    Then z\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return "def456 spec(test): fix scenario format [Spec-FMT]"
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_mixed_exempt_commits_preserve_status(self, mock_run):
+        """Feature stays COMPLETE when commits are a mix of QA-Tags and Spec-FMT."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "#### Scenario: Foo\n\n"
+                "    given x\n    when y\n    then z\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "#### Scenario: Foo @auto\n\n"
+                "    Given x\n    When y\n    Then z\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                if "git log abc123..HEAD" in cmd and "features/test.md" in cmd:
+                    return ("def456 qa(test): classify scenarios [QA-Tags]\n"
+                            "ghi789 spec(test): fix Gherkin casing [Spec-FMT]")
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
             finally:
                 serve.PROJECT_ROOT = orig_root
         finally:

@@ -26,4 +26,5 @@
 - **Observed Behavior:** A formatting-only spec edit (`spec(release_record_version_notes): fix scenario format for Critic parsing`) reset the feature lifecycle to TODO, forcing full re-verification despite no behavioral changes. The CDD only exempts `[QA-Tags]` commits from lifecycle reset.
 - **Expected Behavior:** Extend `_only_qa_tag_commits_since()` in `serve.py` to also exempt `[Spec-FMT]` commits. The function should treat `[Spec-FMT]` identically to `[QA-Tags]` — if all commits since the last status commit contain either tag (or a combination), the lifecycle is preserved. Rename the function to reflect the broader scope (e.g., `_only_exempt_commits_since`). Add unit tests mirroring the existing `[QA-Tags]` test cases.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Renamed `_only_qa_tag_commits_since()` to `_only_exempt_commits_since()`, added `[Spec-FMT]` check alongside `[QA-Tags]`, updated both callers and comments, added 2 new tests (Spec-FMT only, mixed QA-Tags+Spec-FMT).
