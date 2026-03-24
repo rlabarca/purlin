@@ -24,3 +24,9 @@
 **Severity:** MEDIUM
 **Details:** The spec requires verifying "exactly 2 git diff subprocess calls are made (one per category)" for a single batch of fewer than 50 files. The test uses a counting wrapper but never asserts the call count.
 **Suggested fix:** Add `assertEqual(call_count[0], 2)` to the single-batch test.
+
+### Test Quality Audit
+- Rubric: 6/6 PASS
+- Tests: 26 total, 26 passed
+- AP scan: clean
+- Date: 2026-03-24
