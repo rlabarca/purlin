@@ -394,10 +394,17 @@ class TestHashHitWhenSpecContentUnchanged(CacheTestBase):
 
         with patch('serve.PROJECT_ROOT', self.root), \
              patch('serve.STATUS_COMMIT_CACHE_PATH', cache_path), \
-             patch('serve.run_command') as mock_run:
+             patch('serve.run_command') as mock_run, \
+             patch('builtins.open', wraps=open) as mock_open:
             result = spec_content_unchanged('features/feat1.md', 'some_hash')
             # Should not call git show (hash path used)
             mock_run.assert_not_called()
+            # Verify the file was read from disk (file I/O path)
+            feat_path = os.path.join(self.root, 'features', 'feat1.md')
+            open_calls = [c for c in mock_open.call_args_list
+                          if len(c.args) > 0 and feat_path in str(c.args[0])]
+            self.assertGreater(len(open_calls), 0,
+                               "spec file should be read from disk for hash comparison")
 
         self.assertTrue(result)
 
@@ -666,14 +673,23 @@ class TestSingleBatchForFewerThan50Files(BatchedDiffTestBase):
         subprocess.run(['git', 'commit', '-m', 'changes'], cwd=self.root,
                         capture_output=True, check=True)
 
-        with patch('extract_whats_different._run_git', wraps=lambda args: self._run_git(args)) as mock_git:
+        call_count = [0]
+        original_run_git = self._run_git
+        def counting_run_git(args):
+            call_count[0] += 1
+            return original_run_git(args)
+
+        with patch('extract_whats_different._run_git', side_effect=counting_run_git):
             result = _batched_diff('main...test-branch', impl_files)
+            impl_calls = call_count[0]
+            call_count[0] = 0
             result2 = _batched_diff('main...test-branch', feat_files)
+            feat_calls = call_count[0]
 
         # 15 companion files < 50, so 1 call; 8 feature files < 50, so 1 call
-        # Total: 2 git diff calls (one per category)
-        self.assertLessEqual(len(impl_files), 50)
-        self.assertLessEqual(len(feat_files), 50)
+        # Total: exactly 2 git diff calls (one per category)
+        self.assertEqual(impl_calls, 1, "Single batch of 15 files should make exactly 1 git diff call")
+        self.assertEqual(feat_calls, 1, "Single batch of 8 files should make exactly 1 git diff call")
         # Results should contain entries
         self.assertGreater(len(result), 0)
 

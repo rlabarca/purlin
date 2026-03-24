@@ -1156,7 +1156,7 @@ def generate_startup_briefing(role, cache=None):
     # Git state
     branch = run_command("git rev-parse --abbrev-ref HEAD") or "unknown"
     active_collab = get_active_branch()
-    porcelain = run_command("git status --porcelain") or ""
+    porcelain = cached_git_status() or ""
     porcelain_lines = [l for l in porcelain.splitlines()
                        if not any(x in l for x in ['.DS_Store', '.purlin/'])]
     modified = [l for l in porcelain_lines if l and l[0] in ('M', 'A', 'D', 'R')
@@ -1404,8 +1404,11 @@ def generate_startup_briefing(role, cache=None):
 # ===================================================================
 
 def get_git_status():
-    """Gets the current git status."""
-    return run_command("git status --porcelain | grep -v '.DS_Store' | grep -v '.cache/' | grep -v '.purlin/'")
+    """Gets the current git status, using the shared cache."""
+    raw = cached_git_status() or ""
+    lines = [l for l in raw.splitlines()
+             if '.DS_Store' not in l and '.cache/' not in l and '.purlin/' not in l]
+    return '\n'.join(lines) if lines else ""
 
 
 def get_last_commit():

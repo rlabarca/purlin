@@ -15,6 +15,8 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
+import time
 from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
@@ -2155,17 +2157,28 @@ def generate_action_items(feature_result, cdd_status=None):
 # Untracked File Audit (Section 2.12)
 # ===================================================================
 
-def audit_untracked_files(project_root=None):
-    """Detect untracked files and generate Architect action items.
+def _cached_git_status_output(root):
+    """Read git status from the shared cache file, falling back to subprocess.
 
-    Runs ``git status --porcelain`` and collects untracked entries (``??``).
-    Excludes ``.purlin/`` and ``.claude/`` directories.
-
-    Returns:
-        list of action item dicts with priority MEDIUM and category
-        ``untracked_file``.
+    Shares the same cache file as serve.py's cached_git_status() at
+    .purlin/cache/git_status_snapshot.txt with a 10-second TTL.
     """
-    root = project_root or PROJECT_ROOT
+    cache_path = os.path.join(root, '.purlin', 'cache', 'git_status_snapshot.txt')
+    try:
+        stat = os.stat(cache_path)
+        age = time.time() - stat.st_mtime
+        if age <= 10 and stat.st_size > 0:
+            with open(cache_path, 'r') as f:
+                content = f.read()
+            # Detect truncation: content should end with newline or be empty
+            if content and not content.endswith('\n') and '\n' in content:
+                pass  # Truncated — fall through to fresh call
+            else:
+                return content
+    except (IOError, OSError):
+        pass
+
+    # Fresh call
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain'],
@@ -2175,12 +2188,48 @@ def audit_untracked_files(project_root=None):
             timeout=10,
         )
         if result.returncode != 0:
-            return []
+            return ""
+        output = result.stdout
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-        return []
+        return ""
+
+    # Write cache atomically (advisory -- failures are silently ignored)
+    try:
+        cache_dir = os.path.dirname(cache_path)
+        os.makedirs(cache_dir, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=cache_dir, suffix='.tmp')
+        try:
+            with os.fdopen(fd, 'w') as f:
+                f.write(output + '\n' if output else '')
+            os.replace(tmp, cache_path)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+    return output
+
+
+def audit_untracked_files(project_root=None):
+    """Detect untracked files and generate Architect action items.
+
+    Uses the shared git status cache at .purlin/cache/git_status_snapshot.txt
+    (10s TTL) to avoid redundant subprocess calls. Falls back to a direct
+    ``git status --porcelain`` call when the cache is missing or stale.
+    Excludes ``.purlin/`` and ``.claude/`` directories.
+
+    Returns:
+        list of action item dicts with priority MEDIUM and category
+        ``untracked_file``.
+    """
+    root = project_root or PROJECT_ROOT
+    raw = _cached_git_status_output(root)
 
     items = []
-    for line in result.stdout.strip().split('\n'):
+    for line in raw.strip().split('\n'):
         if not line.startswith('??'):
             continue
         path = line[3:].strip()
