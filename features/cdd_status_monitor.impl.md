@@ -11,6 +11,14 @@
 *   **Path Normalization:** `os.path.relpath` may resolve to `.`, making `features_rel` = `./features`. The `f_path` used for git grep MUST be normalized with `os.path.normpath()` to strip the `./` prefix, otherwise status commit patterns like `[Complete features/file.md]` won't match `./features/file.md`.
 *   **Section Heading Underline:** Section headings ("ACTIVE", "COMPLETE") require a visible underline separator to distinguish them from feature rows. Verified 2026-02-19.
 *   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
+### Audit Finding -- 2026-03-23
+
+**[DISCOVERY]** CDD_PORT env var priority chain not implemented
+**Source:** /pl-spec-code-audit --deep (H3)
+**Severity:** HIGH
+**Details:** Spec §2.12 requires port resolution: CDD_PORT env var > cdd_port in config.json > default 8086. `serve.py` never reads CDD_PORT; `start.sh` passes `--port` directly to `serve.py`. The actual behavior is: `--port` arg > OS-assigned free port. The priority chain described in the spec is not followed.
+**Suggested fix:** In `start.sh`, check CDD_PORT env var first, then read `cdd_port` from config, then fall back to 8086. Export as `--port` to `serve.py`.
+
 *   **CLI Mode:** `serve.py --cli-status` outputs API JSON to stdout and regenerates `feature_status.json`. `status.sh` is a shell wrapper that detects project root and calls this mode.
 *   **[DISCOVERY]** `status.json` was only available via HTTP endpoint or stdout — never written to disk. Agents attempting to read `.purlin/cache/status.json` as a file got `FileNotFoundError`. Added `write_api_status_json()` to write `.purlin/cache/status.json` alongside `feature_status.json` on every status regeneration (CLI, HTTP API, and dashboard requests). Spec Section 2.6 "Side Effect" updated to document this cached artifact. (Severity: HIGH) — Acknowledged. Spec already updated to reflect this discovery.
 *   **Start/Stop PID Path Consistency:** `start.sh` writes PID files to `.purlin/runtime/`. `stop.sh` MUST read from the same runtime directory using the same project root detection logic. A path mismatch between start and stop causes orphaned server processes and port conflicts on subsequent starts.

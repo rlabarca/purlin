@@ -12,6 +12,14 @@
 
 **[CLARIFICATION]** The `start_auto_fetch()` call is placed in the `if __name__ == "__main__"` block alongside `start_file_watcher()`. The daemon thread only runs when the server is started directly, not during test imports. (Severity: INFO)
 
+### Audit Finding -- 2026-03-23
+
+**[DISCOVERY]** Join Modal BEHIND+SAME shows wrong button
+**Source:** /pl-spec-code-audit --deep (H4)
+**Severity:** HIGH
+**Details:** Spec §2.8 mandates [Update Remote & Join] with action `update-to-head` when HEAD-relative is BEHIND and local-vs-remote is SAME. Test class `TestJoinBranchModalShowsCheckoutForLocalSameWithHeadBehind` asserts [Join]/checkout instead. The test passes but contradicts the spec.
+**Suggested fix:** Update test to assert `update-to-head` and `Update Remote & Join`. Verify `_bcShowJoinPhase2()` JS renders the correct button for the BEHIND+SAME state.
+
 **[CLARIFICATION]** The `branch_collab_branches` API uses local perspective for `sync_state` (AHEAD = local ahead, BEHIND = local behind), matching `compute_remote_sync_state()`. The JS modal maps: API `BEHIND` -> data loss warning (remote has extra commits), API `AHEAD`/`SAME` -> standard confirmation. (Severity: INFO)
 
 **[CLARIFICATION]** Branch sync state data is embedded as `window._bcBranchesData` in a `<script>` tag within the `_branch_collab_section_html` output. This allows the UI to read per-branch sync state without an additional server request. The data refreshes with each 5-second HTML poll cycle. (Severity: INFO)

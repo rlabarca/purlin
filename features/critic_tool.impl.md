@@ -10,6 +10,20 @@
 *   **Critic Report Readability scenario removed:** SPEC_DISPUTE resolved -- manual readability scenario removed since CRITIC_REPORT.md is agent-facing. Verified 2026-02-20.
 *   **[CLARIFICATION]** QA CLEAN computation restructured: pre-computes `testing_with_manual` flag then uses flat elif chain. This ensures TESTING + 0 manual scenarios falls through to CLEAN (not N/A), and TODO lifecycle with passing tests returns CLEAN (lifecycle-independent). Matches spec Sections 2.11 QA CLEAN/N/A definitions. (Severity: INFO)
 *   **User Testing Discovery Parsing:** The original line-by-line parsing in `generate_action_items()` and `compute_role_status()` checked for `[TYPE]` tag and `OPEN` status on the same line. Real feature files use a heading-based format (`### [TYPE] Title` on one line, `- **Status:** OPEN` on a separate line), so the checks never matched. Fixed by adding `parse_discovery_entries()` -- a block-level parser that extracts type, title, and status from each discovery entry as a unit. All functions now pre-parse entries once and use structured lookups instead of line-by-line text matching. Test fixtures updated to use the real heading-based format.
+### Audit Findings -- 2026-03-23
+
+**[DISCOVERY]** Compact Policy Violation Grouping not implemented
+**Source:** /pl-spec-code-audit --deep (H1)
+**Severity:** HIGH
+**Details:** Spec §2.8 requires policy violations grouped by (feature, pattern) with count and first 3 line numbers: `N x pattern in file (lines N,M,O...+K more)`. Code at `critic.py:3872-3880` emits one line per individual violation. With 34 violations for one pattern, the report produces 34 lines instead of 1.
+**Suggested fix:** Add grouping logic in the aggregate report generator. Group by `(feature, pattern)`, collect line numbers, emit compact format.
+
+**[DISCOVERY]** Weak Traceability Match Detection not wired
+**Source:** /pl-spec-code-audit --deep (H2)
+**Severity:** HIGH
+**Details:** Spec §2.10 requires detecting when a new scenario (post-status-commit) only matches pre-existing tests via keyword overlap, flagging as HIGH `weak_traceability` Builder item. Helper `_test_added_after_commit()` exists at `critic.py:2550-2574` but `generate_action_items()` never reads `scenario_diff` combined with `_weak_matches` to generate this item. The `weak_matches` key is always an empty list because traceability is not enforced.
+**Suggested fix:** Wire `_test_added_after_commit()` into the action item generation path for features with new scenarios post-status-commit.
+
 *   **Builder FAIL vs TODO for open BUGs:** `compute_role_status()` incorrectly set builder=FAIL when `has_open_bugs` was True. Per spec Section 2.11, Builder FAIL is specifically "tests.json exists with status FAIL". Open BUGs generate Builder action items (TODO), not test failures (FAIL). Fixed by removing `has_open_bugs` from the FAIL condition — open BUGs now correctly flow through to TODO via the action items path.
 *   **QA role_status FAIL for open BUGs:** BUG resolved 2026-02-20 — QA role_status was computed as TODO instead of FAIL when OPEN BUGs existed. Builder fixed the precedence logic and action item generation. Verified: QA column correctly shows FAIL on dashboard for features with open BUGs.
 *   **SPEC_UPDATED-to-Builder action item routing (SUPERSEDED):** Previously, `generate_action_items()` checked SPEC_UPDATED entries for "Builder" in `action_required` and generated Builder items. This was redundant with lifecycle-based Builder signaling (spec edits reset the feature to TODO lifecycle, which gives Builder a TODO). Removed in the "QA Actionability" spec update. SPEC_UPDATED discoveries now only generate QA re-verify items when the feature is in TESTING lifecycle. The `Action Required` field is informational only.

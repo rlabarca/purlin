@@ -13,7 +13,7 @@
 
 ## 1. Overview
 
-The CDD Dashboard's QA column shows status values (TODO, AUTO, CLEAN, FAIL, DISPUTED, N/A). `AUTO` is a real Critic status (not a display hack) indicating all QA work is automatable. The display uses a two-line layout: the primary status badge on the first line, and a compact effort summary on a second sub-line (10px, `var(--purlin-dim)`) showing the auto/manual breakdown. No tooltip. Both are derived from the Critic's `verification_effort` block.
+The CDD Dashboard's QA column shows status values (TODO, AUTO, CLEAN, FAIL, DISPUTED, N/A). `AUTO` is a real Critic status (not a display hack) indicating all QA work is automatable. The display is single-line only: one status badge per cell, no sub-line, no tooltip. Agents get detailed effort breakdowns from the CLI (`status.sh --role <role>`), not the dashboard. Both status and effort data are derived from the Critic's `verification_effort` block.
 
 ---
 
@@ -27,16 +27,13 @@ The CDD Dashboard's QA column shows status values (TODO, AUTO, CLEAN, FAIL, DISP
 
 ### 2.1.1 No Aggregate QA Queue Summary
 
-*   The Active section MUST NOT display an aggregate QA queue summary (e.g., "QA Queue: N auto-resolvable, N manual across N features"). Per-feature effort is communicated exclusively through per-cell AUTO/TODO badges and their hover tooltips. No aggregate text is rendered in the section body or heading.
+*   The Active section MUST NOT display an aggregate QA queue summary (e.g., "QA Queue: N auto-resolvable, N manual across N features"). Per-feature effort is communicated exclusively through per-cell AUTO/TODO badges. No aggregate text is rendered in the section body or heading.
 
-### 2.2 Two-Line Effort Display
+### 2.2 Single-Line Badge Display
 
-*   When a feature's QA status is `TODO` or `AUTO`, the QA cell MUST display a second sub-line below the status badge showing the effort summary from `verification_effort.summary`.
-*   **Sub-line styling:** 10px font size, `var(--purlin-dim)` color. Compact and unobtrusive.
-*   **Examples:** `AUTO` on line 1, `3 auto` on line 2. Or `TODO` on line 1, `2 auto, 4 manual` on line 2.
-*   When the summary is `"awaiting builder"` or `"no QA items"`, no sub-line is shown.
-*   Non-TODO/AUTO QA statuses do not show a sub-line.
-*   **No tooltip.** The sub-line replaces the previous tooltip approach.
+*   Each QA cell displays exactly one status badge. No sub-line. No tooltip. No hover text.
+*   The dashboard is a visual summary only. Agents access detailed effort breakdowns via `status.sh --role <role>` (CLI), which includes the `verification_effort` block with auto/manual/web_test counts.
+*   **Rationale:** Multi-line cells cause inconsistent row heights and visual noise. The dashboard's purpose is at-a-glance status, not detailed workload planning.
 
 ### 2.3 Data Source
 
@@ -48,7 +45,6 @@ The CDD Dashboard's QA column shows status values (TODO, AUTO, CLEAN, FAIL, DISP
 
 *   `TODO` continues to use `var(--purlin-status-todo)`.
 *   `AUTO` uses `var(--purlin-status-auto)` in both themes.
-*   The tooltip MUST be legible in both light and dark themes.
 
 ### 2.5 Web-Verify Fixture Tags
 
@@ -71,21 +67,21 @@ The following fixture tags provide deterministic project states for web-verify t
     Then the QA cell displays "AUTO"
     And the AUTO text uses `var(--purlin-status-auto)` color (green)
 
-#### Scenario: TODO status with effort shows sub-line
+#### Scenario: TODO status displays single-line badge only
 
     Given a feature has QA status "TODO"
     And its `verification_effort.summary` is "2 auto, 4 manual"
     When the CDD dashboard renders the Status view
-    Then the QA cell displays "TODO" on line 1
-    And "2 auto, 4 manual" on a sub-line (10px, `var(--purlin-dim)`)
+    Then the QA cell displays "TODO" as a single badge
+    And no sub-line or tooltip is rendered
 
-#### Scenario: AUTO status with effort shows sub-line
+#### Scenario: AUTO status displays single-line badge only
 
     Given a feature has QA status "AUTO"
     And its `verification_effort.summary` is "3 auto"
     When the CDD dashboard renders the Status view
-    Then the QA cell displays "AUTO" on line 1
-    And "3 auto" on a sub-line
+    Then the QA cell displays "AUTO" as a single badge
+    And no sub-line or tooltip is rendered
 
 #### Scenario: QA TODO with zero effort shows plain TODO
 
@@ -126,9 +122,9 @@ None.
 ### Screen: QA Effort Column
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** QA column cells show TODO (yellow) or AUTO (orange) status. Hovering over TODO or AUTO reveals a tooltip with the full effort breakdown. Non-TODO statuses are unchanged.
+- **Description:** QA column cells show a single-line status badge: TODO (yellow) or AUTO (green). No sub-line, no tooltip. Non-TODO statuses are unchanged.
 - [ ] AUTO badge uses `var(--purlin-status-auto)` (green), visually distinct from TODO's yellow
 - [ ] TODO badge continues to use `var(--purlin-status-todo)` (yellow)
-- [ ] Sub-line below TODO/AUTO shows effort summary (10px, `var(--purlin-dim)`)
+- [ ] QA cells contain exactly one line (badge only, no sub-line or hover text)
 - [ ] Both light and dark themes render AUTO (green) and TODO (yellow) with clearly distinct colors
 
