@@ -253,7 +253,7 @@ Before ending a session, QA runs a mandatory workspace cleanup. It resolves all 
 | `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
 | `/pl-server` | Dev server lifecycle management. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
-| `/pl-override-edit` | Edit QA_OVERRIDES.md. |
+| `/pl-override-edit` | Edit `QA_OVERRIDES.md`. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore session state. |
 | `/pl-purlin-issue` | Report a Purlin framework issue. |

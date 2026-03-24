@@ -250,7 +250,7 @@ When QA records a `[BUG]` discovery, it appears as a Builder action item. Fix th
 | `/pl-server` | Dev server lifecycle management. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-agent-config` | View or modify agent model and startup settings. |
-| `/pl-override-edit` | Edit BUILDER_OVERRIDES.md. |
+| `/pl-override-edit` | Edit `BUILDER_OVERRIDES.md`. |
 | `/pl-whats-different` | Compare branches (main checkout only). |
 | `/pl-remote-push` | Push [collaboration branch](branch-collaboration-guide.md) to remote. |
 | `/pl-remote-pull` | Pull remote into current branch. |

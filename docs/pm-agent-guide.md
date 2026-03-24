@@ -149,7 +149,7 @@ The PM generates `features/design/<feature_stem>/brief.json`, a machine-readable
 - Code Connect mappings (if present in the Figma file).
 - Figma dev status and version ID.
 
-This file is what the **Builder reads instead of needing Figma access**. The Builder never opens Figma -- it works entirely from the spec and brief.json.
+This file is what the **Builder reads instead of needing Figma access**. The Builder never opens Figma -- it works entirely from the spec and `brief.json`.
 
 ### Step 6: What Gets Added to Your Feature Spec
 
@@ -297,7 +297,7 @@ Builder reads spec + brief.json, writes code and tests,
 QA verifies QA Scenarios (behavioral tests requiring human judgment)
 ```
 
-The Builder never needs Figma access. The brief.json and Token Map contain everything needed to match the design.
+The Builder never needs Figma access. The `brief.json` and Token Map contain everything needed to match the design.
 
 ---
 
@@ -364,13 +364,13 @@ This runs the CDD status tool and shows the current state of all features -- whi
 | Command | Description |
 |---|---|
 | `/pl-spec <topic>` | Create a new feature spec or update an existing one. Launches the probing question protocol for new specs. |
-| `/pl-design-ingest <source>` | Ingest a Figma URL, live web page (prefix with `live:`), or local image/PDF into a feature's visual specification. Generates Token Map and brief.json. |
+| `/pl-design-ingest <source>` | Ingest a Figma URL, live web page (prefix with `live:`), or local image/PDF into a feature's visual specification. Generates Token Map and `brief.json`. |
 | `/pl-design-audit` | Audit design artifacts for consistency with specs and design anchors. |
 | `/pl-find <topic>` | Search across all specs to discover where a topic is discussed. |
 | `/pl-status` | Check CDD status: feature states, Critic action items, and overall project health. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore PM session state. |
 | `/pl-agent-config` | Modify PM [agent configuration](agent-configuration-guide.md) (model, effort, permissions). |
-| `/pl-override-edit` | Edit PM_OVERRIDES.md to customize PM behavior for your project. |
+| `/pl-override-edit` | Edit `PM_OVERRIDES.md` to customize PM behavior for your project. |
 | `/pl-purlin-issue` | Report a Purlin framework issue. |
 | `/pl-update-purlin` | Update the Purlin submodule with intelligent conflict handling. |
