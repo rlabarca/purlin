@@ -311,7 +311,7 @@ class TestMissingLocalReferenceDetected(unittest.TestCase):
 
         missing = [i for i in items if i["category"] == "missing_design_reference"]
         self.assertEqual(len(missing), 1)
-        self.assertEqual(missing[0]["priority"], "MEDIUM")
+        self.assertEqual(missing[0]["priority"], "CRITICAL")
 
     def test_existing_local_file_no_missing_item(self):
         """Local reference to an existing file does not produce a missing item."""

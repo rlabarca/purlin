@@ -472,13 +472,13 @@ def validate_visual_references(visual_spec, project_root=None,
                 ),
             })
 
-        # Reference integrity check — local files only (MEDIUM)
+        # Reference integrity check — local files only (CRITICAL)
         if ref['reference_type'] == 'local' and ref['reference_path']:
             full_path = os.path.join(root, ref['reference_path'])
             if not os.path.isfile(full_path):
                 missing_count += 1
                 items.append({
-                    'priority': 'MEDIUM',
+                    'priority': 'CRITICAL',
                     'category': 'missing_design_reference',
                     'description': (
                         f'Missing design artifact for screen '

@@ -6383,7 +6383,7 @@ class TestValidateVisualReferences(unittest.TestCase):
         missing = [i for i in items
                    if i['category'] == 'missing_design_reference']
         self.assertEqual(len(missing), 1)
-        self.assertEqual(missing[0]['priority'], 'MEDIUM')
+        self.assertEqual(missing[0]['priority'], 'CRITICAL')
         self.assertEqual(visual_spec['missing_reference_count'], 1)
 
     def test_unprocessed_artifact(self):
