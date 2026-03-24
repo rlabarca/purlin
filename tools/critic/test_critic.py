@@ -82,6 +82,7 @@ from critic import (
     _is_allow_empty_complete,
     _validate_allow_empty_complete,
     _strip_metadata_for_hash,
+    audit_orphan_companions,
 )
 import logic_drift
 
@@ -6982,6 +6983,144 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
             critic.TESTS_DIR = orig_tests
             critic.PROJECT_ROOT = orig_root
             shutil.rmtree(root)
+
+
+class TestVerificationEffortAutoClassification(unittest.TestCase):
+    """Scenario: Verification Effort Classification Output
+
+    Given a feature has 3 @auto QA scenarios and 2 manual QA scenarios
+    and a Visual Specification with 4 checklist items
+    And the feature has Web Test metadata
+    When the Critic computes verification_effort
+    Then the output includes auto: 3, manual_interactive: 2, web_test: 4
+    And the summary reads "2 manual"
+    """
+
+    FEATURE_CONTENT = """\
+# Feature: Auto Classification
+
+> Label: "Auto Classification"
+> Web Test: http://localhost:9086
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Auto test
+    Given something
+    When action
+    Then result
+
+### QA Scenarios
+
+#### Scenario: QA Auto One @auto
+    Given a
+    When b
+    Then c
+
+#### Scenario: QA Auto Two @auto
+    Given d
+    When e
+    Then f
+
+#### Scenario: QA Auto Three @auto
+    Given g
+    When h
+    Then i
+
+#### Scenario: Manual One
+    Given x
+    When y
+    Then z
+
+#### Scenario: Manual Two
+    Given p
+    When q
+    Then r
+
+## Visual Specification
+
+### Screen: Dashboard
+- [ ] Layout correct
+- [ ] Colors match
+- [ ] Spacing consistent
+- [ ] Typography correct
+"""
+
+    def test_auto_manual_visual_web_classification(self):
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': ['QA Auto One', 'QA Auto Two', 'QA Auto Three',
+                          'Manual One', 'Manual Two'],
+            'visual_items': 4,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            self.FEATURE_CONTENT, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto'], 3)
+        self.assertEqual(ve['manual_interactive'], 2)
+        self.assertEqual(ve['web_test'], 4)
+        self.assertEqual(ve['total_auto'], 7)  # 3 auto + 4 web_test
+        self.assertEqual(ve['total_manual'], 2)
+        self.assertIn('manual', ve['summary'])
+
+
+class TestOrphanCompanionFile(unittest.TestCase):
+    """Scenario: Orphan Companion File Detected
+
+    Given a file features/deleted_feature.impl.md exists
+    And no file features/deleted_feature.md exists
+    When the Critic runs
+    Then a MEDIUM-priority Architect action item is generated
+    with category orphan_companion
+    And the description identifies the file as an orphaned companion
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_orphan_companion_detected(self):
+        # Create companion without parent
+        impl_path = os.path.join(self.features_dir, 'deleted_feature.impl.md')
+        with open(impl_path, 'w') as f:
+            f.write('# Implementation Notes\nSome notes.')
+        items = audit_orphan_companions(self.features_dir)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['priority'], 'MEDIUM')
+        self.assertEqual(items[0]['category'], 'orphan_companion')
+        self.assertIn('deleted_feature.impl.md', items[0]['description'])
+
+    def test_no_orphan_when_parent_exists(self):
+        # Create both parent and companion
+        parent = os.path.join(self.features_dir, 'my_feature.md')
+        impl = os.path.join(self.features_dir, 'my_feature.impl.md')
+        with open(parent, 'w') as f:
+            f.write('# Feature: My Feature')
+        with open(impl, 'w') as f:
+            f.write('# Implementation Notes')
+        items = audit_orphan_companions(self.features_dir)
+        self.assertEqual(len(items), 0)
+
+    def test_no_companion_files_returns_empty(self):
+        # Only regular feature files
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write('# Feature')
+        items = audit_orphan_companions(self.features_dir)
+        self.assertEqual(len(items), 0)
 
 
 # ===================================================================
