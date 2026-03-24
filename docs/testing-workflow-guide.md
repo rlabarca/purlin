@@ -337,4 +337,4 @@ Tags are QA outputs. Architects and PMs write scenarios without tags.
 | `/pl-regression-run` | QA | Execute existing regression scenarios |
 | `/pl-regression-evaluate` | QA | Process results, create BUG discoveries |
 | `/pl-web-test` | Builder | Visual verification via Playwright |
-| `/pl-status` | Any agent | Show Critic report and feature status |
+| `/pl-status` | Any agent | Show [Critic](critic-and-cdd-guide.md) report and feature status |

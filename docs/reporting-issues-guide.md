@@ -17,7 +17,7 @@ the report.
 
 Use `/pl-purlin-issue` when the problem is with Purlin's tooling:
 
-- The Critic produces incorrect action items or crashes.
+- The [Critic](critic-and-cdd-guide.md) produces incorrect action items or crashes.
 - The [CDD Dashboard](status-grid-guide.md) shows wrong data or fails to start.
 - A slash command (`/pl-build`, `/pl-verify`, etc.) behaves incorrectly.
 - The init script fails or produces a broken scaffold.

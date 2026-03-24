@@ -51,7 +51,7 @@ Node height varies depending on how the label wraps.
 
 ### Anchor Nodes
 
-Anchor nodes represent foundational constraints: architecture decisions,
+[Anchor nodes](critic-and-cdd-guide.md) represent foundational constraints: architecture decisions,
 design standards, and policies. They are identified by a filename prefix of
 `arch_`, `design_`, or `policy_`.
 

@@ -45,7 +45,7 @@ A feature appears here when:
 
 Collaboration metadata: the current branch, contributor table, and sync
 status indicators (SAME, AHEAD, BEHIND, DIVERGED). This section is relevant
-when working on collaboration branches.
+when working on [collaboration branches](branch-collaboration-guide.md).
 
 ---
 
@@ -60,7 +60,7 @@ Each feature row has four status columns. The values in each column reflect
 |--------|-------|---------|
 | **DONE** | Green | No Architect action items. The spec is complete and well-formed. |
 | **TODO** | Yellow | Spec gaps exist, unacknowledged Builder decisions, or other Architect work is pending. |
-| **??** | Gray | No `critic.json` exists for this feature yet (Critic has not run). |
+| **??** | Gray | No `critic.json` exists for this feature yet ([Critic](critic-and-cdd-guide.md) has not run). |
 
 The Architect column reflects the **[Spec Gate](critic-and-cdd-guide.md)**. When [the Critic](critic-and-cdd-guide.md) finds
 missing sections, malformed scenarios, or undeclared prerequisites, this

@@ -174,7 +174,7 @@ refreshes.
 - **Use search** to find features quickly in large projects.
 - **Check the Spec Map** to understand how features depend on each other
   before starting a new spec or refactoring an [anchor node](critic-and-cdd-guide.md).
-- **The status grid tells you who needs to act.** Red = blocked, Yellow =
+- **The [status grid](status-grid-guide.md) tells you who needs to act.** Red = blocked, Yellow =
   work pending, Green = done, Gray = not applicable.
-- **Branch Collaboration** only matters in multi-machine setups. If you are
+- **[Branch Collaboration](branch-collaboration-guide.md)** only matters in multi-machine setups. If you are
   working solo, ignore that section.
