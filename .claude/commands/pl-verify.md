@@ -48,6 +48,8 @@ If the Critic emitted a cross-validation WARNING (e.g., `cosmetic` scope but mod
 
 Credit features where Builder status is DONE and zero QA scenarios exist (TestOnly or Skip in Critic). These require no QA action.
 
+**AUTO features are NOT auto-passed.** Features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that MUST execute in Steps 2–5. Do NOT credit, skip, or auto-complete them here — they require test execution even though they need zero human time. **Regression guidance exclusion:** Features where the Critic reports `qa_reason` = `"regression harness authoring pending"` MUST be excluded from auto-pass. Do NOT mark them `[Complete]`, do NOT commit status tags for them, do NOT edit their lifecycle tags. Acknowledge them silently in the Phase A summary and route them to Step 3 for regression authoring.
+
 *   When `find_work` is `true`: execute acknowledgments silently.
 *   When `find_work` is `false`: present the list and wait for user confirmation.
 *   Output per feature: `"Auto-pass: <feature> (builder-verified, zero QA scenarios)."`
@@ -144,6 +146,18 @@ For features in scope that have visual specification sections:
 *   **Non-web features:** Request a screenshot from the human: `"Please provide a screenshot of <screen name> for visual smoke check."` Read the screenshot and evaluate visual checklist items that are screenshot-verifiable.
 
 This is a smoke check -- it clears visual items that can be verified now, reducing the Phase B manual list. Items that cannot be verified from a screenshot remain in the Phase B checklist.
+
+**AUTO feature completion:** For AUTO features where all items are automated/web-test, this step completes their verification — if all pass, the feature is eligible for completion in Step 5a. No Phase B items are generated for these features.
+
+### Step 5a -- Phase A Checkpoint (MANDATORY)
+
+After Steps 1–5, immediately finalize all AUTO features that passed verification:
+
+1.  **Commit AUTO completions:** For each AUTO feature where all automated tests passed, commit `[Complete] [Verified]` status tags. These are QA completions, so `[Verified]` is required.
+2.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced during Phase A (Steps 3–4).
+3.  **Update CDD:** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard with all Phase A results.
+4.  **Verify clean workspace:** Confirm no uncommitted changes remain from Phase A work.
+5.  **Zero manual items check:** If zero manual items remain after Phase A (all features are either auto-passed, AUTO-completed, or have only @auto scenarios that passed), skip Phase B entirely and proceed to Session Conclusion.
 
 ### Phase A Summary
 
@@ -357,7 +371,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 ### Step 11 -- Batch Completion
 
 1.  **Present Phase A results:** `"Automated (Phase A): N @auto scenarios executed, M passed, K failed."`
-2.  **Identify passing features:** All items (Phase A + Phase B) passed and zero discoveries recorded.
+2.  **Identify passing features:** All items (Phase A + Phase B) passed and zero discoveries recorded. Exclude features already completed in Step 5a (AUTO features).
 3.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 4.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 5.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.

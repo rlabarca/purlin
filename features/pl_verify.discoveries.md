@@ -12,4 +12,5 @@
 - **Observed Behavior:** QA agent auto-passes or skips AUTO features (`qa_status: AUTO`) during Phase A, requiring explicit user intervention to run their automated tests (web tests, @auto scenarios). The skill file lacks the AUTO exclusion language added to QA_BASE Section 3.3.
 - **Expected Behavior:** AUTO features MUST NOT be auto-passed. Their automated tests must execute in Steps 2-5, then Step 5a (Phase A Checkpoint) must commit completions, clean workspace, and update CDD status before any manual work begins. The skill file (`pl-verify.md`) must sync with the updated QA_BASE Section 3.3: add the AUTO feature mandate callout, update Step 1 to exclude AUTO features, add Step 5a (Phase A Checkpoint) between Step 5 and Phase A Summary, and update the Critic-run guidance to "once per phase."
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Added AUTO exclusion language and regression guidance exclusion to Step 1; added AUTO feature completion path to Step 5; added Step 5a (Phase A Checkpoint) for AUTO finalization, CDD update, and zero-manual-items fast path; clarified Step 11 excludes Step 5a completions.
