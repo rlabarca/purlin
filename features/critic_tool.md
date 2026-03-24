@@ -16,7 +16,7 @@ The Critic tool is the project coordination engine. It performs dual-gate valida
 ### 2.1 Spec Gate (Pre-Implementation Validation)
 The Spec Gate validates that a feature specification is structurally complete and properly formed. It runs without requiring any implementation code.
 
-Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) receive a REDUCED Spec Gate evaluation. They are checked only for section presence of Purpose and Invariants (not Overview/Requirements/Scenarios). Scenario classification and Gherkin quality checks are skipped (reported as PASS with "N/A - anchor node"). Anchor nodes also skip the Implementation Gate entirely — their `implementation_gate.status` is reported as "PASS" with detail "N/A - anchor node exempt".
+Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) receive a REDUCED Spec Gate evaluation. They are checked only for section presence of Purpose and Invariants (not Overview/Requirements/Scenarios). Scenario classification and Gherkin quality checks are skipped (reported as PASS with "N/A - anchor node"). For the Implementation Gate, anchor nodes receive a reduced evaluation: the `builder_decisions` check IS run (anchor nodes may have companion files with decisions), while all other Implementation Gate checks report PASS with "N/A - anchor node exempt".
 
 | Check | PASS | WARN | FAIL |
 |-------|------|------|------|
@@ -29,7 +29,7 @@ Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) receive a REDUCED 
 ### 2.2 Implementation Gate (Post-Implementation Validation)
 The Implementation Gate validates that the implementation aligns with the specification. It requires implementation code and test results to exist.
 
-> Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) are exempt from the Implementation Gate. All checks report PASS with "N/A - anchor node exempt".
+> Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) receive a reduced Implementation Gate. The `builder_decisions` check IS run on anchor nodes. All other checks report PASS with "N/A - anchor node exempt".
 
 | Check | PASS | WARN | FAIL |
 |-------|------|------|------|
@@ -767,16 +767,7 @@ The following fixture tags provide deterministic project states for integration-
     And the feature has a prerequisite to policy_critic.md
     When the Critic computes the regression set
     Then the regression_scope.declared is "dependency-only"
-    And the regression set includes only scenarios referencing the prerequisite surface
-
-#### Scenario: Regression Scope Cross-Validation Warning
-    Given a feature is in TESTING state
-    And the most recent status commit contains [Scope: cosmetic]
-    And the status commit modifies files referenced by manual scenarios
-    When the Critic computes the regression set
-    Then a cross-validation WARNING is emitted
-    And the warning appears in regression_scope.cross_validation_warnings
-    And the warning appears in CRITIC_REPORT.md
+    And the regression set includes ALL manual scenarios (conservative default)
 
 #### Scenario: Regression Scope in Critic JSON Output
     Given the Critic tool completes analysis of a TESTING feature
@@ -877,8 +868,9 @@ The following fixture tags provide deterministic project states for integration-
 #### Scenario: Implementation Gate Anchor Node Exempt
     Given a feature file is an anchor node (arch_*.md, design_*.md, or policy_*.md)
     When the Critic tool runs the Implementation Gate
-    Then all checks report PASS with "N/A - anchor node exempt"
-    And the overall implementation_gate status is PASS
+    Then the builder_decisions check IS run on anchor nodes (not exempt)
+    And all other Implementation Gate checks report PASS with "N/A - anchor node exempt"
+    And the overall implementation_gate status reflects the builder_decisions result
 
 #### Scenario: Targeted Scope Gap Detected When Builder Is DONE
     Given a feature has builder status DONE

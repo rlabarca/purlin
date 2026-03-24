@@ -14,13 +14,10 @@ As feature files grow, their Implementation Notes sections consume increasing pr
 - Companion files MUST use the naming pattern `features/<name>.impl.md` alongside `features/<name>.md`.
 - Example: `features/critic_tool.md` has companion `features/critic_tool.impl.md`.
 
-### 2.2 Feature File Stub Format
-When a companion file exists, the feature file's `## Implementation Notes` section is reduced to a stub containing a link:
+### 2.2 Companion File Resolution
+Companion files are resolved by naming convention: for a feature file `features/<name>.md`, the companion is `features/<name>.impl.md`. Feature files do NOT reference companion files -- companion files are standalone, discovered purely by naming convention. This aligns with HOW_WE_WORK_BASE Section 4.3: "companion files are standalone -- feature files do NOT reference them."
 
-```markdown
-## Implementation Notes
-See [<name>.impl.md](<name>.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
-```
+When a companion file exists, the feature file's `## Implementation Notes` section MAY contain a stub or be absent entirely. The Critic resolves the companion by convention, not by parsing links.
 
 ### 2.3 Companion File Structure
 The companion file contains the extracted implementation notes content. The file has no metadata headers (no Label, Category, or Prerequisite lines). It begins with a heading and contains the implementation knowledge directly.
@@ -44,9 +41,9 @@ The companion file contains the extracted implementation notes content. The file
 
 ### 2.6 Companion File Resolution in Critic
 - The Critic's Implementation Gate MUST resolve companion file content when evaluating builder decisions, traceability overrides, and section completeness.
-- When the inline `## Implementation Notes` stub contains a companion file reference (link to `<name>.impl.md`), the Critic reads the companion file.
-- When no companion file reference exists (backward compatibility), the Critic uses inline content as before.
-- A stub with a companion file reference is NOT considered "empty notes" for section completeness purposes.
+- The Critic resolves companion files by naming convention: for `features/<name>.md`, it checks whether `features/<name>.impl.md` exists on disk. If it does, the Critic reads the companion file content.
+- When no companion file exists (backward compatibility), the Critic uses inline `## Implementation Notes` content as before.
+- A feature with a companion file on disk is NOT considered to have "empty notes" for section completeness purposes, regardless of what the inline stub contains.
 
 ### 2.7 Orphan Detection
 - If `<name>.md` is flagged as orphaned, `<name>.impl.md` and `<name>.discoveries.md` MUST also be flagged.

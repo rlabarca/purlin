@@ -109,7 +109,7 @@ The SPEC_DISPUTE informational item satisfies the role_status/action_item consis
 | SPEC_DISPUTEs on features with `> Owner: PM` | HIGH | "Review disputed scenario in X: [dispute title]" |
 | SPEC_DISPUTEs referencing Visual Specification screens (regardless of Owner tag) | HIGH | "Review visual dispute in X: [dispute title]" |
 | SPEC_DISPUTEs with explicit `Action Required: PM` (Architect triage) | HIGH | "Review disputed scenario in X: [dispute title]" |
-| `stale_design_description` items | LOW | "Re-process stale design for X: [screen]" |
+| `stale_token_map` items | LOW | "Re-process stale design for X: [screen]" |
 | `unprocessed_artifact` items | HIGH | "Process design artifact for X: [screen]" |
 | `missing_design_reference` items | MEDIUM | "Fix missing design reference for X: [screen]" |
 | DESIGN_CONFLICT warnings (from `/pl-design-audit`, not Critic-generated) | MEDIUM | "Resolve design conflict in X: [detail]" |
@@ -222,8 +222,8 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     Given a feature with a Visual Specification screen
     And the referenced artifact file is newer than the Processed date
     When the Critic runs the visual specification audit
-    Then a `stale_design_description` action item is generated for the `pm` role
-    And no `stale_design_description` item is generated for the `architect` role
+    Then a `stale_token_map` action item is generated for the `pm` role
+    And no `stale_token_map` item is generated for the `architect` role
 
 #### Scenario: Unprocessed artifact routes to PM
 

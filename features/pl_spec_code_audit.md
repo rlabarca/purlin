@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The `/pl-spec-code-audit` command performs a bidirectional audit between feature specifications and implementation code, detecting gaps in both directions: spec-side deficiencies (missing sections, broken anchors, stale notes) and code-side deviations (undocumented behaviors, scenario-code contradictions, anchor invariant violations). In `--deep` mode, the audit also performs a **reverse code-to-spec scan** (Phase 0.5): it enumerates all code files in the project, builds a code-to-feature ownership map, and surfaces orphaned code with no corresponding specification -- closing the blind spot where code exists outside any feature's purview. It operates in two modes: **triage** (default, fast, runs entirely in-agent) and **deep** (parallel subagent waves with scenario-by-scenario comparison, transitive anchor constraint validation, and reverse code inventory). Both modes produce a prioritized gap table with role-scoped remediation, then execute fixes within the acting role's authority and escalate cross-role gaps through companion files.
+The `/pl-spec-code-audit` command performs a bidirectional audit between feature specifications and implementation code, detecting gaps in both directions: spec-side deficiencies (missing sections, broken anchors, stale notes) and code-side deviations (undocumented behaviors, scenario-code contradictions, anchor invariant violations). The audit also performs a **reverse code-to-spec scan** (Phase 0.5): it enumerates all code files in the project, builds a code-to-feature ownership map, and surfaces orphaned code with no corresponding specification -- closing the blind spot where code exists outside any feature's purview. The audit uses parallel subagent waves with scenario-by-scenario comparison, transitive anchor constraint validation, and reverse code inventory. It produces a prioritized gap table with role-scoped remediation, then executes fixes within the acting role's authority and escalates cross-role gaps through companion files.
 
 ---
 
@@ -27,9 +27,8 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 ### 2.3 Argument Parsing
 
 - The command MUST accept an optional `$ARGUMENTS` parameter.
-- No argument or empty: mode is `triage` (default).
-- `--deep`: mode is `deep`.
-- Any other argument MUST abort with: `Error: Unknown argument '<arg>'. Valid: --deep`
+- No argument or empty: runs the standard deep audit.
+- Any argument MUST abort with: `Error: Unknown argument '<arg>'. No flags required -- the audit runs in deep mode by default.`
 
 ### 2.4 Path Resolution
 
@@ -48,7 +47,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - Feature spec count from the dependency graph
 - Default is confirm (proceed). If the user requests adjustments, accept additions/removals, re-display, and re-confirm.
 - The confirmed scope is session-scoped (not persisted). For persistent scope, use `audit_code_paths` in `.purlin/config.json`.
-- The confirmed scope MUST constrain code discovery in all subsequent phases (triage light scan, deep mode source discovery).
+- The confirmed scope MUST constrain code discovery in all subsequent phases (source discovery, ownership mapping, orphan classification).
 
 ### 2.6 Phase 0 -- Project State and Constraint Loading
 
@@ -62,31 +61,13 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 - After Phase 0 metadata loads (Steps 0.1-0.3), the command MUST check for `.purlin/cache/audit_state.json` at Step 0.4.
 - If found, the command MUST report resume status, load transitive map and anchor constraints from the state file (skipping recomputation if already present), and skip to the next incomplete step.
-- The state file MUST track: `mode`, `role`, `timestamp`, `transitive_map`, `anchor_constraints`, `dispatch_manifest` (deep mode), `accumulated_gaps`, `scan_failures`, `code_inventory` (deep mode), and `ownership_map_complete` (boolean).
+- The state file MUST track: `role`, `timestamp`, `transitive_map`, `anchor_constraints`, `dispatch_manifest`, `accumulated_gaps`, `scan_failures`, `code_inventory`, and `ownership_map_complete` (boolean).
 - The `code_inventory` field MUST track: `total_files`, `owned_files`, `orphaned_files` (count), and `inventory_complete` (boolean).
 - The `ownership_map_complete` field (boolean) MUST be persisted at the top level of the state file.
-- On resume in deep mode, completed waves are skipped and the next incomplete wave resumes. If `inventory_complete` is true, Phase 0.5 is skipped entirely.
-- On resume in triage mode with scan complete, the command skips to Phase 2 synthesis.
+- On resume, completed waves are skipped and the next incomplete wave resumes. If `inventory_complete` is true, Phase 0.5 is skipped entirely.
 - The state file MUST be deleted after Phase 3 (Remediation) completes.
 
-### 2.8 Triage Mode (Default)
-
-- Triage mode MUST process all features in-agent without launching subagents.
-- Before feature-level scanning, triage mode MUST run a lightweight code inventory (see Section 2.17, Step 0.5.1 and Step 0.5.2) using only heuristics H1, H2, H4, and H5 (no import tracing -- that requires reading source). Orphan findings are reported as a single summary line in the gap table (total orphan count and top-3 by severity), not per-file entries. Full per-file code inventory analysis requires `--deep`.
-- For each feature, the command MUST:
-  - Read the feature file and check spec completeness across all 12 gap dimensions (see Section 2.13).
-  - Read companion file if it exists and check builder decisions and notes depth.
-  - Read `tests/<name>/critic.json` for gate status and traceability.
-  - Perform an anchor constraint surface check: for each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
-  - Perform a light code scan (if implementation exists): read up to 3 primary source files (discovered via test imports or companion file Tool Location) and grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
-- Triage mode MUST skip scenario-by-scenario deep comparison.
-- After processing all features individually, the command MUST perform a cross-feature requirement hygiene pass (dimension 11):
-  - **Duplicate detection:** Compare scenario titles and Given/When/Then signatures across all features. Flag pairs where two scenarios in different features target the same endpoint, function, or UI element with the same preconditions and assertions.
-  - **Conflict detection:** Compare requirements sections and scenario assertions across features that share a prerequisite anchor or target the same component. Flag contradictory assertions (e.g., different expected status codes, incompatible state transitions, contradictory anchor invariants).
-  - **Unused detection:** Cross-reference the dependency graph to find features with no implementation (no `tests/<name>/` directory, no source files discovered), no test coverage, and not listed as a prerequisite by any other feature. Flag these as orphaned specs.
-- After the cross-feature pass, results MUST be saved to `.purlin/cache/audit_state.json`.
-
-### 2.9 Deep Mode
+### 2.8 Deep Mode (Default)
 
 - Deep mode MUST classify features into three processing tracks:
   - **Spec-only track:** Anchor nodes (`arch_*`, `design_*`, `policy_*`) and features with zero automated scenarios.
@@ -99,7 +80,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - A dispatch manifest MUST be written to the plan file (wave/agent/feature/scenario-count table).
 - The transitive prerequisite map and collected anchor constraints MUST be included in each subagent's prompt payload so subagents do not need to re-derive them.
 
-### 2.10 Phase 1 -- Parallel Deep Scan (Deep Mode Only)
+### 2.9 Phase 1 -- Parallel Deep Scan
 
 - Subagents MUST be launched wave by wave. All subagents in a wave MUST be launched in a single message via multiple Agent tool calls (concurrent execution). The command MUST NOT wait for one subagent to complete before launching others in the same wave.
 - Subagent type MUST be `Explore` (read-only).
@@ -126,21 +107,24 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - Return structured output using `=== ORPHAN: <path> ===` ... `=== END ORPHAN ===` format with classification (orphaned executable, orphaned skill, dead code candidate), public API summary, import fan-in count, and nearest feature suggestion.
 - Each subagent MUST return structured output in the format: `=== FEATURE: <name> ===` ... `=== END FEATURE ===` (or `=== ORPHAN: <path> ===` ... `=== END ORPHAN ===` for orphan batches) with gaps listed as `[SEVERITY] [DIMENSION] [OWNER]` entries including Evidence, Anchor source, and Suggested fix fields.
 - After each wave completes, accumulated results MUST be saved to `.purlin/cache/audit_state.json`.
-- If auto-compaction occurs, the command MUST save state and instruct the user to resume with `/pl-spec-code-audit --deep`.
+- If auto-compaction occurs, the command MUST save state and instruct the user to resume with `/pl-spec-code-audit`.
 - If a subagent returns incomplete results, a rescue batch MUST be created for the next wave.
 - If a subagent fails entirely, the batch MUST be re-queued.
 
-### 2.11 Phase 2 -- Synthesis
+### 2.10 Phase 2 -- Synthesis
 
-- The command MUST parse all gap findings from in-agent triage scan or subagent structured output.
-- In deep mode, the command MUST perform the cross-feature requirement hygiene pass (dimension 11) at this stage, since subagents operate on individual feature batches and cannot detect cross-feature issues. The same duplicate, conflict, and unused checks described in Section 2.8 apply.
+- The command MUST parse all gap findings from subagent structured output.
+- The command MUST perform the cross-feature requirement hygiene pass (dimension 11) at this stage, since subagents operate on individual feature batches and cannot detect cross-feature issues:
+  - **Duplicate detection:** Compare scenario titles and Given/When/Then signatures across all features. Flag pairs where two scenarios in different features target the same endpoint, function, or UI element with the same preconditions and assertions.
+  - **Conflict detection:** Compare requirements sections and scenario assertions across features that share a prerequisite anchor or target the same component. Flag contradictory assertions (e.g., different expected status codes, incompatible state transitions, contradictory anchor invariants).
+  - **Unused detection:** Cross-reference the dependency graph to find features with no implementation (no `tests/<name>/` directory, no source files discovered), no test coverage, and not listed as a prerequisite by any other feature. Flag these as orphaned specs.
 - The command MUST deduplicate gaps where the same implementation file is flagged by overlapping feature batches or transitive anchors.
 - Each gap MUST be classified by severity (CRITICAL, HIGH, MEDIUM, LOW), owner (ARCHITECT or BUILDER), and action (FIX if owner matches acting role, ESCALATE otherwise). See Section 2.14 for severity criteria.
 - The command MUST build an audit table sorted CRITICAL to LOW, then alphabetically by feature name. Rows are numbered sequentially.
 - The audit table MUST include columns: #, Feature, Severity, Dimension, Gap Description, Evidence, Anchor Source, Action, Planned Remediation.
 - The table header MUST include: Role, Mode, Total features scanned, Transitive anchor constraints checked (N invariants across M anchors), Gaps found (with per-severity counts), Will fix count, and Will escalate count.
 
-### 2.12 Role-Scoped Remediation Plan
+### 2.11 Role-Scoped Remediation Plan
 
 - The remediation plan MUST contain role-scoped FIX descriptions:
   - **Architect FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
@@ -149,7 +133,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - If no gaps are found, the command MUST output "No spec-code gaps detected across all N features." and call `ExitPlanMode`.
 - After writing the audit table and remediation plan, the command MUST call `ExitPlanMode` and wait for user approval.
 
-### 2.13 Gap Dimensions
+### 2.12 Gap Dimensions
 
 The command MUST assess each feature against these 12 dimensions (dimensions 1-10 are per-feature; dimensions 11-12 are cross-feature/project-wide):
 
@@ -166,9 +150,9 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 | 9 | Code divergence | Scenario assertions not reflected in code; significant code paths with no scenario coverage; hardcoded values the spec says should be configurable |
 | 10 | Anchor invariant drift | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | 11 | Requirement hygiene | Cross-feature analysis: **Duplicate** -- two or more features define scenarios or requirements that specify the same behavior for the same component (identical or near-identical Given/When/Then targeting the same endpoint, function, or UI element). **Conflicting** -- two features specify contradictory behavior for the same component (e.g., feature A says endpoint returns 200, feature B says it returns 404; or two anchors define incompatible invariants for the same domain). **Unused** -- a feature or scenario that has no implementation code, no test, and is not a prerequisite of any other feature (orphaned spec with no path to implementation). |
-| 12 | Code ownership | **Orphaned code** -- code files in audit scope not referenced by any feature spec, companion file, or test import chain. **Orphaned skills** -- `.claude/commands/pl-*.md` command files with no corresponding `features/pl_*.md` feature spec. **Shared infrastructure** -- heavily-imported code (3+ feature importers) with no dedicated spec. **Dead code candidates** -- zero imports from any file AND zero feature owners. Deep mode provides per-file analysis; triage mode reports summary counts only. This is the symmetric complement of Dimension 11's "unused spec" detection: Dimension 11 finds specs without code; Dimension 12 finds code without specs. |
+| 12 | Code ownership | **Orphaned code** -- code files in audit scope not referenced by any feature spec, companion file, or test import chain. **Orphaned skills** -- `.claude/commands/pl-*.md` command files with no corresponding `features/pl_*.md` feature spec. **Shared infrastructure** -- heavily-imported code (3+ feature importers) with no dedicated spec. **Dead code candidates** -- zero imports from any file AND zero feature owners. Per-file analysis with classification and nearest-feature suggestions. This is the symmetric complement of Dimension 11's "unused spec" detection: Dimension 11 finds specs without code; Dimension 12 finds code without specs. |
 
-### 2.14 Severity Classification
+### 2.13 Severity Classification
 
 | Severity | Criteria |
 |---|---|
@@ -177,7 +161,7 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 | MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places); orphaned executable code with significant behavior (entry points, state mutation, I/O operations) |
 | LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec) |
 
-### 2.15 Phase 3 -- Remediation (Post-Approval)
+### 2.14 Phase 3 -- Remediation (Post-Approval)
 
 - After user approval, the command MUST execute FIX items first, then ESCALATE items.
 - **Architect FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
@@ -190,13 +174,13 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
   - **Builder ESCALATE to Architect:** If the Builder discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 - Post-remediation: run `${TOOLS_ROOT}/cdd/status.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
-### 2.16 Integration Test Fixture Tags
+### 2.15 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
 | `main/pl_spec_code_audit/spec-code-gaps` | Project with feature specs that have known divergence from implementation code |
 
-### 2.17 Phase 0.5 -- Code Inventory (Deep Mode Full / Triage Lightweight)
+### 2.16 Phase 0.5 -- Code Inventory
 
 Phase 0.5 runs in the parent agent after Phase 0 (Section 2.6) and before dispatching subagents (Phase 1). It builds a complete code-to-feature ownership map and identifies orphaned code.
 
@@ -216,16 +200,16 @@ Phase 0.5 runs in the parent agent after Phase 0 (Section 2.6) and before dispat
 |----------|-----------|------------|--------|
 | H1 | Companion explicit reference | HIGH | Companion `.impl.md` contains `Tool Location:` or `### Source Mapping` referencing the file path |
 | H2 | Spec explicit reference | HIGH | Feature spec `.md` mentions the file path in requirements or overview |
-| H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. **Deep mode only** -- requires reading source files. |
+| H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. Requires reading source files. |
 | H4 | Command-to-feature naming | HIGH | `.claude/commands/pl-<name>.md` maps to `features/pl_<name>.md` (dash-to-underscore convention) |
 | H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `cdd_status_monitor` -> `tools/cdd/`) |
-| H6 | Name similarity | LOW | File stem substring-matches a feature name. **Deep mode only.** |
+| H6 | Name similarity | LOW | File stem substring-matches a feature name. |
 
 - A file MAY have multiple owners (legitimate for shared modules).
-- Triage mode uses only H1, H2, H4, H5 (no source reading). Deep mode uses all six heuristics.
+- All six heuristics are used.
 - Output: `ownership_map{}` -- `{file_path: {owners: [feature_names], heuristic: "<H1-H6>", confidence: "HIGH|MEDIUM|LOW"}}`.
 
-#### Step 0.5.3 -- Classify Unowned Files (Deep Mode Only)
+#### Step 0.5.3 -- Classify Unowned Files
 
 - Files with zero owners are classified into sub-categories:
 
@@ -248,14 +232,13 @@ Three mechanisms prevent noise in code ownership findings:
 2. **Import fan-in threshold** -- Files imported by 3+ features are classified as "shared infrastructure" (LOW severity) rather than orphaned.
 3. **Confidence-weighted ownership** -- H5/H6 (MEDIUM/LOW confidence) matches suppress the gap but are noted as "weak ownership" in the audit table for human review.
 
-### 2.18 Aggressive Subagent Parallelism
+### 2.17 Aggressive Subagent Parallelism
 
 The command MUST maximize subagent parallelism throughout all phases to minimize wall-clock audit time:
 
-- **Phase 0.5 ownership map:** In deep mode, if the code inventory exceeds 50 files, the ownership map construction (Step 0.5.2) MUST be parallelized by dispatching up to 5 Explore subagents, each assigned a partition of the code inventory. Each subagent reads its assigned files and returns ownership results. The parent agent merges results.
+- **Phase 0.5 ownership map:** If the code inventory exceeds 50 files, the ownership map construction (Step 0.5.2) MUST be parallelized by dispatching up to 5 Explore subagents, each assigned a partition of the code inventory. Each subagent reads its assigned files and returns ownership results. The parent agent merges results.
 - **Phase 1 wave packing:** All 5 subagent slots per wave MUST be filled whenever batches remain. Spec-only, code-comparison, and orphan scan batches are mixed freely within the same wave. Empty slots MUST be filled with rescue batches from prior waves or remaining orphan scan batches.
 - **Inter-wave launch:** The next wave MUST be dispatched immediately when the current wave's results are collected. No manual approval between waves.
-- **Triage mode exception:** Triage runs entirely in-agent (no subagents) for speed on small projects. However, if the project has more than 30 features, triage mode MAY dispatch up to 3 Explore subagents for the per-feature scan phase, partitioning features across subagents.
 
 ---
 
@@ -270,18 +253,10 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Then the command responds with "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit."
     And no analysis is performed
 
-#### Scenario: Default invocation uses triage mode
+#### Scenario: Default invocation uses deep mode
 
     Given an Architect agent session
     When the agent invokes /pl-spec-code-audit with no arguments
-    Then the command runs in triage mode
-    And no subagents are launched
-    And all features are processed in-agent
-
-#### Scenario: Deep flag activates deep mode
-
-    Given an Architect agent session
-    When the agent invokes /pl-spec-code-audit --deep
     Then the command runs in deep mode
     And features are batched for parallel subagent waves
 
@@ -289,7 +264,7 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
     Given an Architect agent session
     When the agent invokes /pl-spec-code-audit --invalid
-    Then the command responds with "Error: Unknown argument '--invalid'. Valid: --deep"
+    Then the command responds with "Error: Unknown argument '--invalid'. No flags required -- the audit runs in deep mode by default."
     And no analysis is performed
 
 #### Scenario: Path resolution reads tools_root from config
@@ -317,28 +292,6 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Given anchor node policy_critic.md contains numbered invariants in an Invariants section
     When the command collects anchor constraints
     Then policy_critic.md's constraint entry includes all numbered invariant statements
-
-#### Scenario: Triage mode checks spec completeness across all gap dimensions
-
-    Given a feature file exists with a missing Prerequisite link to an applicable anchor
-    When triage mode processes the feature
-    Then a gap is recorded with dimension "Policy anchoring"
-
-#### Scenario: Triage mode performs light code scan for FORBIDDEN patterns
-
-    Given a feature has implementation code
-    And a transitive ancestor anchor defines FORBIDDEN pattern "os.system"
-    And a source file contains "os.system" on line 42
-    When triage mode performs the light code scan
-    Then a gap is recorded with dimension "Anchor invariant drift"
-    And the evidence includes the file path and line number
-
-#### Scenario: Triage mode skips scenario-by-scenario comparison
-
-    Given a feature has 10 automated scenarios
-    When triage mode processes the feature
-    Then individual scenario-to-code comparison is not performed
-    And only surface-level checks are applied
 
 #### Scenario: Deep mode classifies anchor nodes into spec-only track
 
@@ -435,22 +388,14 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     When the Builder reads the remediation plan instructions
     Then the instructions explicitly state that Builder FIX edits target source code and tests only
 
-#### Scenario: Cross-session resume from interrupted deep mode wave
+#### Scenario: Cross-session resume from interrupted wave
 
-    Given deep mode wave 1 completed and wave 2 was interrupted
+    Given wave 1 completed and wave 2 was interrupted
     And .purlin/cache/audit_state.json records wave 1 as complete with accumulated gaps
-    When the agent invokes /pl-spec-code-audit --deep
+    When the agent invokes /pl-spec-code-audit
     Then the command reads the state file and resumes from wave 2
     And the transitive map and anchor constraints are loaded from the state file (not recomputed)
     And wave 1 results are preserved in the accumulated gaps
-
-#### Scenario: Cross-session resume from completed triage scan
-
-    Given triage mode completed its scan and saved results
-    And .purlin/cache/audit_state.json exists with accumulated gaps
-    When the agent invokes /pl-spec-code-audit
-    Then the command skips Phase 0 and proceeds to Phase 2 synthesis
-    And all previously scanned results are used
 
 #### Scenario: Audit state file deleted after remediation
 
@@ -553,10 +498,10 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Then the updated scope includes .claude/commands/
     And the command re-displays and re-confirms
 
-#### Scenario: Confirmed scope constrains triage code scan
+#### Scenario: Confirmed scope constrains code scan
 
     Given the confirmed scope includes only src/ and tools/
-    When triage mode performs light code scan
+    When Phase 0.5 enumerates code files
     Then source files are discovered only from src/ and tools/
 
 #### Scenario: Code inventory enumerates all files in confirmed scope
@@ -638,16 +583,7 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Then tools/__init__.py and tools/conftest.py are classified as "infrastructure file"
     And no gap entries are generated for either file
 
-#### Scenario: Triage mode reports orphan count as summary only
-
-    Given triage mode runs the lightweight code inventory
-    And 8 orphaned files are detected using H1, H2, H4, H5 heuristics
-    When the gap table is built
-    Then a single summary gap entry is created for dimension "Code ownership"
-    And the entry reports total orphan count (8) and the top-3 by severity
-    And no per-file orphan entries appear in the triage gap table
-
-#### Scenario: Orphan scan subagent extracts function signatures in deep mode
+#### Scenario: Orphan scan subagent extracts function signatures
 
     Given an orphan scan subagent is assigned tools/orphan_script.py
     And tools/orphan_script.py defines functions "run_backup()" and "cleanup_logs(path)"

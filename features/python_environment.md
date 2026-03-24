@@ -37,7 +37,6 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 | `tools/critic/run.sh` | `exec python3 "$SCRIPT_DIR/critic.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/status.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
-| `tools/cdd/stop.sh` | No Python invocation | No migration needed (does not invoke Python) |
 | `tools/init.sh` | `python3 -c "import json; ..."` (JSON validation) | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
 

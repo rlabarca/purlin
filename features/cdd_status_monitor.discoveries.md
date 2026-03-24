@@ -13,3 +13,10 @@
 - **Action Required:** Builder
 - **Status:** OPEN
 - **Source:** Spec-code audit (deep mode). See cdd_status_monitor.impl.md for full context.
+
+### [BUG] Undocumented API fields in /status.json (Discovered: 2026-03-23)
+- **Observed Behavior:** Fields category, complete_ts, verification_effort, branch_collab, branch_collab_branches appear in API but not in spec Section 2.4 schema.
+- **Expected Behavior:** All API fields should be documented in spec Section 2.4 schema.
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Spec-code audit (LOW). See cdd_status_monitor.impl.md for context.

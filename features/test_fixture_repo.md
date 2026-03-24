@@ -92,7 +92,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 | **Architect** | Writing a spec where scenarios need controlled project state (multi-feature interactions, specific lifecycle states, config variations) | Declare `### Integration Test Fixture Tags` section with tag table and state descriptions in the feature spec |
 | **Builder** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag |
 | **QA** (during `/pl-regression-author`) | Scenario needs state beyond inline `setup_commands` | Create fixtures directly via `fixture add-tag`; record in `fixture_usage.json` |
-| **QA** (during `/pl-regression-author`) | Feature has NO Architect-declared fixture tags but controlled state would improve test determinism | Assess need: create if moderate complexity, escalate to `fixture_recommendations.md` if complex |
+| **QA** (during `/pl-regression-author`) | Feature has NO Architect-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
 
 **Key principle:** QA is authorized to create fixtures without Architect pre-declaration. The Architect declares fixture needs when obvious at spec time; QA discovers needs during regression authoring. Both paths are valid. The Architect path provides upfront planning; the QA path captures discoveries made during test design.
 
@@ -125,7 +125,6 @@ QA MAY create and manage fixtures directly during regression authoring (`/pl-reg
 2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.
 3. QA uses `fixture add-tag` to create fixture tags from constructed state directories.
 4. QA records fixture usage in `tests/qa/fixture_usage.json`.
-5. For complex fixtures requiring elaborate git history that QA cannot construct, QA writes a recommendation to `tests/qa/fixture_recommendations.md` for the Builder to handle.
 
 **Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). The Builder creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
 
@@ -233,29 +232,7 @@ QA maintains a usage tracker at `tests/qa/fixture_usage.json` (committed, QA-own
 
 QA announces fixture usage during authoring: `"Using fixture tag main/instruction_audit/override-contradiction (local repo)"`.
 
-### 2.11 Fixture Recommendations
-
-QA records fixture infrastructure recommendations in `tests/qa/fixture_recommendations.md` (committed, QA-owned). This file persists across sessions and tells future QA, Builder, and Architect agents what fixture work is pending.
-
-**When QA records a recommendation:**
-
-During regression scenario authoring (see `features/regression_testing.md` Section 2.10.1), if a feature needs complex state that cannot be expressed via inline `setup_commands` (elaborate git history, multiple branches, config combinations), QA prints a recommendation to the user and records it in this file.
-
-**Format:**
-
-```markdown
-# Fixture Recommendations
-
-## <feature_name>
-- **Reason:** <why persistent fixtures are needed>
-- **Suggested tags:** <list of tag paths that would be useful>
-- **Recorded:** <YYYY-MM-DD>
-- **Status:** PENDING | CREATED
-```
-
-The Builder reads this file during normal startup and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
-
-### 2.12 Remote Fixture Repos
+### 2.11 Remote Fixture Repos
 
 When a feature spec declares `> Test Fixtures: <remote-url>`, the Critic validates tags against the remote repo (via `git ls-remote --tags`). Tags must exist on the remote for the Critic to clear them. The local convention-path repo is a staging area; the remote is the source of truth for declared fixtures.
 
@@ -286,7 +263,7 @@ When a feature needs a fixture repo and no remote URL is declared:
 
 `fixture checkout` already supports remote URLs. When a remote URL is the resolved fixture repo (via the three-tier lookup), `fixture checkout <remote-url> <tag>` performs a shallow clone from the remote. No local convention-path repo is needed for checkout — only for tag creation.
 
-### 2.13 Integration Test Fixture Tags
+### 2.12 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -480,23 +457,6 @@ When a feature needs a fixture repo and no remote URL is declared:
     Then tests/qa/fixture_usage.json is updated with the feature entry
     And the entry records fixture_type "local" and the tag used
     And last_authored is set to the current timestamp
-
-#### Scenario: QA recommends remote fixture repo for complex-state feature
-
-    Given QA is authoring a regression scenario for a feature needing complex git state
-    And the feature requires multiple branches and divergent history
-    And no fixture_repo_url is configured
-    When QA evaluates the fixture needs
-    Then QA prints a recommendation describing the complex state requirement
-    And asks the user whether to record the recommendation
-    And if approved, writes the recommendation to tests/qa/fixture_recommendations.md
-
-#### Scenario: Fixture recommendation file read by future sessions
-
-    Given tests/qa/fixture_recommendations.md contains a PENDING recommendation for "branch_collab"
-    When a new Builder session starts
-    Then the Builder can read the recommendation file
-    And identify which fixture tags need to be created
 
 ### QA Scenarios
 

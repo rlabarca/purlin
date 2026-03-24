@@ -42,7 +42,7 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 6b. **Agent File Distribution:** Copy `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. If the destination directory does not exist, create it. If a destination file is newer than the source (local modification), skip it. Same skip logic as command files.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
-8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Read `purlin-config-sample/gitignore.purlin` from the submodule and merge patterns into the consumer's `.gitignore`. For each non-comment, non-blank line in the template, append it if not already present.
+8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. When no `.gitignore` exists, copy the template file `purlin-config-sample/gitignore.purlin` verbatim (including comments) as the consumer's `.gitignore`. When `.gitignore` already exists, use additive pattern merging: read `purlin-config-sample/gitignore.purlin` and for each non-comment, non-blank line in the template, append it if not already present.
 9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
@@ -316,12 +316,13 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And pre-existing untracked files are NOT staged
     And the summary suggests "git commit" without "git add -A"
 
-#### Scenario: Full Init Installs Complete Gitignore Patterns
+#### Scenario: Full Init Copies Gitignore Template Verbatim When No Gitignore Exists
 
     Given Purlin is added as a submodule at "purlin/"
     And no .purlin/ directory exists at the project root
+    And no .gitignore exists at the project root
     When the user runs "purlin/tools/init.sh"
-    Then .gitignore contains all patterns from purlin-config-sample/gitignore.purlin
+    Then .gitignore is a verbatim copy of purlin-config-sample/gitignore.purlin (including comments)
 
 #### Scenario: Full Init Installs Session Recovery Hook
 
