@@ -76,5 +76,6 @@
 - **Observed Behavior:** Role refusals fail (agents try to locate file instead of refusing); startup command tables not produced; fixture missing skill commands pl-status.md and pl-help.md
 - **Expected Behavior:** Architect/QA refuse code requests; startup prints Unicode command table; all skills dispatch correctly from fixture
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** All root causes addressed in harness_runner.py: (1) `construct_system_prompt()` builds the 4-layer prompt from fixture instruction files matching dev/test_agent_behavior.sh; (2) `execute_agent_behavior()` passes prompt via `--append-system-prompt-file` with `--no-session-persistence`, `--model`, `--output-format json`, and `.result` extraction; (3) `copy_skill_files()` copies `.claude/commands/` from project root to fixture dir when absent.
 - **Source:** Spec-code audit (deep mode). See skill_behavior_regression.impl.md for full context.
