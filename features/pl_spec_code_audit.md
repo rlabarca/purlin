@@ -92,7 +92,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - **Spec-only track:** Anchor nodes (`arch_*`, `design_*`, `policy_*`) and features with zero automated scenarios.
   - **Code-comparison track:** All features with automated scenarios.
   - **Orphan scan track:** All "orphaned executable" and "orphaned skill file" entries from Phase 0.5 (Section 2.17). These are grouped into one or more orphan scan batches.
-- Deep mode MUST batch features using first-fit-decreasing bin packing: 50-75 scenarios per code-comparison batch, max 4-5 features per batch. Features with 50+ scenarios get a solo batch. All spec-only features go in a single batch.
+- Deep mode MUST batch features using first-fit-decreasing bin packing: 50-75 scenarios per code-comparison batch, max 4-5 features per batch. Features with 50+ scenarios get a solo batch (solo takes precedence over batch grouping when a feature meets the threshold). All spec-only features go in a single batch.
 - Orphan scan batches MUST group up to 15 orphaned files per batch.
 - Batches MUST be assigned to waves of up to 5 concurrent subagents.
 - **Aggressive parallelism mandate:** The command MUST maximize subagent concurrency at every opportunity. All 5 subagent slots per wave MUST be filled whenever batches remain. Spec-only, code-comparison, and orphan scan batches MUST be mixed freely within the same wave -- never sequentially by track. If fewer than 5 batches exist in a wave, remaining slots MUST be used for orphan scan batches or rescue batches from prior waves. The goal is to minimize total wall-clock time by never leaving a subagent slot idle when work remains.

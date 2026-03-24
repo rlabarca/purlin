@@ -44,7 +44,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.5 Phase 2 -- Taxonomy Review
 
-- The command MUST read the inventory and propose a category taxonomy grouping feature candidates into logical categories.
+- The command MUST read the inventory and propose a category taxonomy grouping feature candidates into logical categories. If `features/*.md` files already exist, the command MUST read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns, and reuse them where applicable.
 - Each category MUST be presented with its name, feature count, and per-feature name + one-line description.
 - The user MUST be asked (via `AskUserQuestion`, in batches of 2-3 categories) to validate each category: confirm the name, confirm feature membership, and identify missed features.
 - The command MUST propose anchor nodes derived from detected cross-cutting concerns, classified by type (`arch_*`, `design_*`, `policy_*`).

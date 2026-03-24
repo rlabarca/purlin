@@ -322,6 +322,8 @@ Uncommitted:    [none | summary]
     Then the agent lists the available checkpoint roles (builder, architect)
     And prompts the user to select which role to resume
 
+Note: The three `auto-test-only` scenarios below require an `agent_behavior` harness test with session-boundary simulation (context clear + new session). These are not exercisable via structural tests alone — they require fixture tags with pre-written checkpoint files.
+
 #### Scenario: Builder Mid-Feature Resume (auto-test-only)
 
     Given a Builder agent is mid-implementation of a feature at protocol step 2

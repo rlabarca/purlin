@@ -139,7 +139,7 @@ Purlin Builder — Ready
     Given a POST /config/agents request body with find_work true and auto_start false for all agents
     When the endpoint processes the request
     Then it returns HTTP 200
-    And config.json is updated with the new values
+    And config.local.json is updated with the new values
 
 #### Scenario: Startup Print Sequence Appears First (auto-test-only)
     Given any agent is launched with any combination of startup controls

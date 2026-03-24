@@ -138,7 +138,7 @@ Accepts the updated config as a JSON body and writes it to `.purlin/release/conf
 **Error response:** HTTP 400 with `{"ok": false, "error": "<message>"}` for validation failures (e.g., duplicate IDs, unknown fields). HTTP 500 for file write failures.
 
 The server MUST validate that:
-*   Each `id` in the request body corresponds to a known step (present in global or local steps). Unknown IDs are accepted but logged as warnings, consistent with the auto-discovery orphan behavior.
+*   Each `id` in the request body corresponds to a known step (present in global or local steps). Unknown IDs are accepted silently (no validation error), consistent with the auto-discovery orphan behavior in `policy_release.md` §2.5.
 *   No `id` appears more than once in the request.
 
 ### 2.10 Web-Verify Fixture Tags

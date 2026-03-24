@@ -78,7 +78,7 @@ The core spec authoring skill shared by PM and Architect roles. Provides a guide
     When /pl-spec creates a new feature file
     Then the file contains overview, requirements, and scenarios sections
     And scenario headings use four-hash format
-    And a lifecycle tag is present
+    And the file is ready for Builder implementation
 
 #### Scenario: Category scan prevents duplicate categories
 

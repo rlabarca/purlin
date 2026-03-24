@@ -258,6 +258,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 
 *   **Scenarios covered:** All `### QA Scenarios` in Section 3, including refresh mode behavior, idempotency verification, hook merge strategy, MCP installation, collaborator fresh-clone flow, and gitignore sync.
 *   **Harness type:** `custom_script` -- the sandbox-based test approach does not map to `agent_behavior` or `web_test` harness types. QA authors a custom regression script that reuses the sandbox architecture from Section 2.12.1.
+*   **Cross-feature integration:** `/pl-update-purlin` (Section 2.11 of that spec) calls `tools/init.sh --quiet` as part of every update. This integration path is tested by the update feature, not by this feature.
 
 ---
 

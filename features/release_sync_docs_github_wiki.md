@@ -46,14 +46,14 @@ Page names are derived from filenames: remove `.md` extension, replace spaces wi
 `_Sidebar.md` provides persistent navigation visible on every wiki page. It contains:
 
 1. A "Purlin Docs" heading.
-2. Wiki links (`[[Page Name]]`) for each page, grouped by section if subdirectories exist.
+2. Wiki links (`[[Page Name]]`) for each page. *(Deferred: section grouping by subdirectory is not yet implemented — pages are listed flat.)*
 3. Generated automatically on each sync.
 
 ### 2.5 Image Handling
 
 1. Scan all markdown files for `![alt](path)` image references.
 2. Copy referenced images into the wiki repo, preserving relative paths where possible.
-3. Adjust image references in the wiki markdown copies if path structure differs from source.
+3. Adjust image references in the wiki markdown copies if path structure differs from source. *(Deferred: no utility function exists for path adjustment — delegated to agent judgment.)*
 
 ### 2.6 First-Time Setup Flow
 

@@ -150,7 +150,7 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
     Given config.local.json exists with agent settings
     When resolve_config.py architect is invoked
-    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_FIND_WORK=, AGENT_AUTO_START=
+    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_FIND_WORK=, AGENT_AUTO_START=, AGENT_MODEL_WARNING=, AGENT_MODEL_WARNING_DISMISSED=
 
 #### Scenario: Agent Config Command Writes to Local Not Shared
 
