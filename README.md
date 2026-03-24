@@ -39,7 +39,7 @@ Then create your project. Copy and paste this block into your terminal:
 ```bash
 mkdir my-app && cd my-app
 git init
-git submodule add git@github.com:rlabarca/purlin.git purlin
+git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 ./purlin/pl-init.sh
 git add -A && git commit -m "init purlin"
 ```

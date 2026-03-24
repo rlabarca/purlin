@@ -42,7 +42,7 @@ If you already have a git repository, skip this step.
 **2. Add Purlin as a submodule:**
 
 ```bash
-git submodule add git@github.com:rlabarca/purlin.git purlin
+git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 ```
 
 This clones Purlin into a `purlin/` directory and creates a `.gitmodules`
