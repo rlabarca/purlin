@@ -71,3 +71,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
+
+### [BUG] 12/17 regression assertions still failing after harness fix (Discovered: 2026-03-23)
+- **Observed Behavior:** Role refusals fail (agents try to locate file instead of refusing); startup command tables not produced; fixture missing skill commands pl-status.md and pl-help.md
+- **Expected Behavior:** Architect/QA refuse code requests; startup prints Unicode command table; all skills dispatch correctly from fixture
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Spec-code audit (deep mode). See skill_behavior_regression.impl.md for full context.

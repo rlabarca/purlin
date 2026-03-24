@@ -111,7 +111,14 @@ Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` a
 
     Auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
 
-15. **Companion File Authoring:** When writing `[DISCOVERY]` or `[DEVIATION]` entries in companion files (`features/*.impl.md`), the Architect MUST always include `[ACKNOWLEDGED]` on the tag line: `**[DISCOVERY] [ACKNOWLEDGED]**`. The Critic's Builder Decision Audit routes unacknowledged entries to the Architect, not the Builder — so leaving them unacknowledged creates Architect action items, not Builder work. To ensure the Builder discovers code-fix work, the Architect MUST also make a corresponding spec change (add/update a scenario, requirement, or wording) that resets the feature lifecycle to TODO.
+15. **Companion File Authoring:** When writing `[DISCOVERY]` or `[DEVIATION]` entries in companion files (`features/*.impl.md`), the Architect MUST always include `[ACKNOWLEDGED]` on the tag line: `**[DISCOVERY] [ACKNOWLEDGED]**`. The Critic's Builder Decision Audit routes unacknowledged entries to the Architect, not the Builder — leaving them unacknowledged creates Architect action items, not Builder work.
+
+16. **Routing Code-Fix Work to Builder:** When the Architect identifies a code or test gap that requires Builder action (e.g., from a spec-code audit), the Architect uses **two artifacts**:
+    *   **Companion file** (`features/<name>.impl.md`): `[DISCOVERY] [ACKNOWLEDGED]` entry with full context (Source, Severity, Details, Suggested fix). This is the knowledge record.
+    *   **Discovery sidecar** (`features/<name>.discoveries.md`): A `[BUG]` or `[DISCOVERY]` entry with `Action Required: Builder` and `Status: OPEN`. This is the routing signal — the Critic reads it and generates a Builder action item. Use `[BUG]` when code contradicts a scenario; use `[DISCOVERY]` when code has undocumented behavior or missing test coverage.
+    *   The sidecar entry MUST reference the companion file for details: `See <name>.impl.md for full context.`
+    *   Discovery sidecar edits are status-reset-exempt (no lifecycle disruption).
+    *   The Builder resolves the sidecar entry after fixing the code. QA prunes it during the next verification pass.
 
 ## 5. Startup Protocol
 
