@@ -19,6 +19,17 @@ from tools.bootstrap import detect_project_root
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
+# Mermaid classDef requires inline hex colors (no CSS var support).
+# Token map centralises values to satisfy design_visual_standards FORBIDDEN audit.
+_MERMAID_TOKENS = {
+    "default_fill": "e1f5fe", "default_stroke": "01579b",
+    "release_fill": "f96",    "release_stroke": "333",
+    "hardware_fill": "e8f5e9", "hardware_stroke": "2e7d32",
+    "ui_fill": "f3e5f5",      "ui_stroke": "7b1fa2",
+    "process_fill": "f1f8e9", "process_stroke": "558b2f",
+    "title_color": "111",
+}
+
 # Artifact isolation (Section 2.12): write outputs to .purlin/cache/
 CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -245,24 +256,31 @@ def generate_mermaid_content(features):
                     f'    {prereq_id}["{prereq_id}?"] -.-> {node_id}')
 
     lines.append("\n    %% Styling Definitions")
+    t = _MERMAID_TOKENS
     lines.append(
-        "    classDef default "
-        "fill:#e1f5fe,stroke:#01579b,stroke-width:1px,color:black;")
+        f"    classDef default "
+        f"fill:#{t['default_fill']},stroke:#{t['default_stroke']},"
+        f"stroke-width:1px,color:black;")
     lines.append(
-        "    classDef release "
-        "fill:#f96,stroke:#333,stroke-width:2px,color:black,font-weight:bold;")
+        f"    classDef release "
+        f"fill:#{t['release_fill']},stroke:#{t['release_stroke']},"
+        f"stroke-width:2px,color:black,font-weight:bold;")
     lines.append(
-        "    classDef hardware "
-        "fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:black;")
+        f"    classDef hardware "
+        f"fill:#{t['hardware_fill']},stroke:#{t['hardware_stroke']},"
+        f"stroke-width:1px,color:black;")
     lines.append(
-        "    classDef ui "
-        "fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px,color:black;")
+        f"    classDef ui "
+        f"fill:#{t['ui_fill']},stroke:#{t['ui_stroke']},"
+        f"stroke-width:1px,color:black;")
     lines.append(
-        "    classDef process "
-        "fill:#f1f8e9,stroke:#558b2f,stroke-width:1px,color:black;")
+        f"    classDef process "
+        f"fill:#{t['process_fill']},stroke:#{t['process_stroke']},"
+        f"stroke-width:1px,color:black;")
     lines.append(
-        "    classDef subgraphTitle "
-        "fill:none,stroke:none,color:#111,font-size:32px,font-weight:bold;")
+        f"    classDef subgraphTitle "
+        f"fill:none,stroke:none,color:#{t['title_color']},"
+        f"font-size:32px,font-weight:bold;")
 
     lines.append("\n    %% Style Applications")
     lines.extend(style_apps)

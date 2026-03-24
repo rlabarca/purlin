@@ -41,11 +41,30 @@ _resolve_config = lambda root: load_config(root)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.local.json")
 CONFIG_SHARED_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.json")
 
-def resolve_port(cli_port=None):
-    """Resolve CDD port. --port flag or auto-select via OS."""
+def resolve_port(cli_port=None, config=None):
+    """Resolve CDD port. Priority: CDD_PORT env > cli_port > config > auto.
+
+    Args:
+        cli_port: Port from --port flag (int or None).
+        config: Config dict with optional 'cdd_port' key.
+    """
+    # 1. CDD_PORT env var takes highest priority
+    env_port = os.environ.get('CDD_PORT')
+    if env_port is not None:
+        try:
+            return int(env_port)
+        except ValueError:
+            pass
+    # 2. --port CLI flag
     if cli_port is not None:
         return cli_port
-    # Auto-select: bind to port 0, let OS assign a free port
+    # 3. Config file cdd_port
+    if config and config.get('cdd_port') is not None:
+        try:
+            return int(config['cdd_port'])
+        except (ValueError, TypeError):
+            pass
+    # 4. Auto-select: bind to port 0, let OS assign a free port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
@@ -66,7 +85,7 @@ for i, arg in enumerate(sys.argv[1:], 1):
             pass
         break
 
-PORT = resolve_port(cli_port=_cli_port)
+PORT = resolve_port(cli_port=_cli_port, config=CONFIG)
 PROJECT_NAME = CONFIG.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 FEATURES_REL = "features"
@@ -1366,11 +1385,15 @@ def generate_startup_briefing(role, cache=None):
             "fully_delivered_features": [],
         }
         if delivery:
-            # Features in PENDING phases are gated
             for p in delivery.get("phases", []):
                 if p["status"] == "PENDING":
                     gating["phase_gated_features"].append(
                         f"Phase {p['number']}: {p['label']}")
+                elif p["status"] == "COMPLETE":
+                    for feat_file in p.get("features", []):
+                        stem = feat_file.replace(".md", "")
+                        if stem not in gating["fully_delivered_features"]:
+                            gating["fully_delivered_features"].append(stem)
         result["delivery_plan_gating"] = gating
 
     return result

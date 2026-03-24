@@ -38,7 +38,7 @@
 **Parallel Build:** critic_tool + skill_behavior_regression parallel; critic_role_status sequential after critic_tool
 **Execution Group:** B (parallel with Phase 3; depends on Phase 1)
 
-## Phase 5 -- CDD Dashboard [PENDING]
+## Phase 5 -- CDD Dashboard [IN_PROGRESS]
 **Features:** cdd_status_monitor.md, cdd_spec_map.md, cdd_branch_collab.md, cdd_agent_configuration.md, release_checklist_ui.md
 **Completion Commit:** --
 **Deferred:** git_operation_cache.md (architect TODO), release_framework_doc_consistency.md (architect TODO)

@@ -4,5 +4,5 @@
 - **Observed Behavior:** graph.py lines 250-265 use hardcoded hex color literals in Mermaid classDef declarations.
 - **Expected Behavior:** Hex color literals are FORBIDDEN by design_visual_standards. Colors must be sourced from the design token system, not hardcoded as hex values.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (deep mode). See cdd_spec_map.impl.md for full context.
