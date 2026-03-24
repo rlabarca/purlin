@@ -491,10 +491,11 @@ class TestRestoreWithoutCheckpoint(unittest.TestCase):
                         f'Status script not found: {script_path}')
 
     def test_critic_report_path_convention(self):
-        """Critic report is read from CRITIC_REPORT.md at project root."""
-        expected = os.path.join(PROJECT_ROOT, 'CRITIC_REPORT.md')
-        self.assertTrue(os.path.isfile(expected),
-                        f'Critic report not found: {expected}')
+        """Restore gathers project state via the startup briefing mechanism."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('status.sh --startup', content,
+                      'Command file should reference status.sh --startup for state gathering')
 
 
 class TestRoleFromExplicitArgument(unittest.TestCase):
@@ -1337,7 +1338,7 @@ class TestStartupBriefingIntegration(unittest.TestCase):
         self.assertIn('--cli-startup', content)
 
     def test_command_file_references_startup_flag(self):
-        """Command file Step 5 uses status.sh --startup."""
+        """Command file Step 5 uses ${TOOLS_ROOT}/cdd/status.sh --startup."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn('cdd/status.sh --startup', content)

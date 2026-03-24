@@ -56,7 +56,7 @@ Append these sections after the common fields:
 ```markdown
 ## Builder Context
 **Protocol Step:** <0-preflight | 1-acknowledge/plan | 2-implement/document | 3-verify locally | 4-commit status tag>
-**Delivery Plan:** <Phase X of Y -- STATUS, or "No delivery plan">
+**Delivery Plan:** <Phase X of Y -- STATUS, completed: <features>, or "No delivery plan">
 **Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
 **Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
 **Work Queue:**
@@ -71,8 +71,6 @@ Append these sections after the common fields:
 **Current Scenario:** <scenario name>
 **Discoveries:** <discoveries recorded this session, or "None">
 **Verification Queue:** <features verified vs. remaining>
-**Regression Authoring:** <e.g., "5 of 8 features authored" or "N/A">
-**Last Authored Feature:** <feature name, or "N/A">
 ```
 
 **Architect only:**
