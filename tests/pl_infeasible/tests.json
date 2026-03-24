@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 13,
+  "passed": 14,
   "failed": 0,
-  "total": 13,
+  "total": 14,
   "test_file": "tools/test_support/test_pl_infeasible.py",
   "details": [
     {
@@ -11,6 +11,10 @@
     },
     {
       "test": "test_critic_report_surfacing (__main__.TestCriticSurfacesInfeasibleAsCritical.test_critic_report_surfacing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_critical_priority_designation (__main__.TestCriticSurfacesInfeasibleAsCritical.test_critical_priority_designation)",
       "status": "PASS"
     },
     {

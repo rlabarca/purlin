@@ -4,5 +4,5 @@
 - **Observed Behavior:** Skill only says "surface in the Critic report" without mentioning CRITICAL priority.
 - **Expected Behavior:** Spec says INFEASIBLE generates a CRITICAL-priority Architect action item. Skill should mention CRITICAL.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See pl_infeasible.impl.md for context.

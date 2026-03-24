@@ -154,6 +154,12 @@ class TestCriticSurfacesInfeasibleAsCritical(unittest.TestCase):
         self.assertIn("critic", content,
                        "Must reference the Critic report")
 
+    def test_critical_priority_designation(self):
+        """Command file must designate INFEASIBLE as CRITICAL priority."""
+        content = read_command_file().lower()
+        self.assertIn("critical", content,
+                       "Must designate INFEASIBLE escalation as CRITICAL priority")
+
     def test_architect_action_item(self):
         """Command file must describe the escalation targeting the Architect."""
         content = read_command_file().lower()
