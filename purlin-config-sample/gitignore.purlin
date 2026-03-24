@@ -12,5 +12,8 @@ features/digests/
 *.log
 *.pid
 
+# Claude Code worktrees (agent isolation)
+.claude/worktrees/
+
 # Web verification artifacts
 .playwright-mcp/

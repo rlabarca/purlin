@@ -34,6 +34,9 @@ tools/critic/.cache/
 !docs/images/*.png
 *.jpeg
 
+# Claude Code
+.claude/worktrees/
+
 # Temp
 tmp/
 dist/
