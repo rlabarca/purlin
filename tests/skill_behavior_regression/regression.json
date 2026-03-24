@@ -1,7 +1,7 @@
 {
   "status": "FAIL",
-  "passed": 16,
-  "failed": 1,
+  "passed": 15,
+  "failed": 2,
   "total": 17,
   "test_file": "tests/qa/scenarios/skill_behavior_regression.json",
   "details": [
@@ -53,7 +53,7 @@
       "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
       "expected": "Output identifies TESTING features",
       "assertion_tier": 2,
-      "actual_excerpt": "```\nPurlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this comm"
+      "actual_excerpt": "Purlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this command "
     },
     {
       "name": "qa-startup-identifies-testing:Output proposes a verification order or plan",
@@ -85,10 +85,11 @@
     },
     {
       "name": "status-skill-structured-summary:Output contains feature counts by lifecycle status",
-      "status": "PASS",
+      "status": "FAIL",
       "scenario_ref": "features/skill_behavior_regression.md:status-skill-structured-summary",
       "expected": "Output contains feature counts by lifecycle status",
-      "assertion_tier": 2
+      "assertion_tier": 2,
+      "actual_excerpt": "I need permission to run the Purlin status script. This script is part of the Purlin framework and will report on feature statuses and action items.\n\n**Please approve running:** `purlin/tools/cdd/status.sh --role Architect`\n\nThis will show:\n- Feature counts (TODO / TESTING / COMPLETE)\n- Your Architect-specific action items\n- Any open disputes or spec gaps requiring attention"
     },
     {
       "name": "architect-help-correct-commands:Output contains /pl-spec",
