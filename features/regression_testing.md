@@ -184,7 +184,15 @@ The Builder does NOT trigger or author regression tests. The Builder's only role
 
 ### 2.5 Staleness Detection
 
-A regression result is stale when the feature's source code was modified since the `regression.json` file's mtime. The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
+A regression result is stale when ANY of these conditions hold:
+
+1. **Feature source changed:** The feature's source code was modified since the `regression.json` file's mtime.
+2. **Harness infrastructure changed:** `tools/test_support/harness_runner.py` or the scenario JSON file (`tests/qa/scenarios/<feature>.json`) was modified since the `regression.json` file's mtime. This catches cases where the Builder fixes a harness bug — the regression results from before the fix are no longer valid.
+3. **Prior failure:** `regression.json` has `status: "FAIL"`. Failed results are always stale (they need re-running after the fix).
+
+The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
+
+**Completion gate:** A feature with a `[STALE]` or `[FAIL]` `regression.json` MUST NOT be marked `[Complete]` by QA. If the feature has `agent_behavior` regression scenarios that require external execution, QA MUST print the CLI command and wait for the user to run it (per Section 2.2.4 step 8) before marking complete. Features with only passing, non-stale regression results may proceed to `[Complete]`.
 
 ### 2.6 Assertion Tier Tracking
 
