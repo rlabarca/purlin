@@ -13,21 +13,21 @@
 **QA Bugs Addressed:** project_init --preflight-only BUG (RESOLVED)
 **Notes:** Both foundational. project_init is a prerequisite for Phase 2 features (config_layering, python_environment). impl_notes_companion is a prerequisite for Phase 3 features (pl_infeasible, pl_spec, pl_spec_from_code). Features are independent — parallel build opportunity.
 
-## Phase 2 -- Config & Environment [PENDING]
+## Phase 2 -- Config & Environment [IN_PROGRESS]
 **Features:** config_layering.md, python_environment.md, cdd_startup_controls.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** config_layering and python_environment depend on project_init (Phase 1). cdd_startup_controls depends only on COMPLETE features. All three independent — parallel build opportunity. Execution Group 2 (with Phases 3 and 4).
 
-## Phase 3 -- Agent Skills [PENDING]
+## Phase 3 -- Agent Skills [IN_PROGRESS]
 **Features:** pl_infeasible.md, pl_spec.md, pl_spec_from_code.md, pl_verify.md, pl_session_resume.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** pl_infeasible, pl_spec, pl_spec_from_code depend on impl_notes_companion (Phase 1). pl_verify and pl_session_resume depend only on COMPLETE features. All five independent — parallel build opportunity. Execution Group 2 (with Phases 2 and 4).
 
-## Phase 4 -- Remaining Features [PENDING]
+## Phase 4 -- Remaining Features [IN_PROGRESS]
 **Features:** pm_first_session_guide.md, release_record_version_notes.md, release_sync_docs_github_wiki.md
 **Completion Commit:** --
 **Deferred:** git_operation_cache.md (architect TODO), release_framework_doc_consistency.md (architect TODO)
