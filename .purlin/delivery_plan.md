@@ -10,13 +10,13 @@
 - **Group 1:** Phase 1, Phase 2 (no cross-dependencies — can execute in parallel)
 - **Group 2:** Phase 3, Phase 4 (both depend on Phase 1 only — can execute in parallel after Group 1)
 
-## Phase 1 -- Critic Foundation [IN_PROGRESS]
+## Phase 1 -- Critic Foundation [COMPLETE]
 **Features:** policy_critic.md, critic_tool.md, policy_release.md
-**Completion Commit:** --
+**Completion Commit:** ef7165a
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Init, Regression & Pull [PENDING]
+## Phase 2 -- Init, Regression & Pull [IN_PROGRESS]
 **Features:** project_init.md, init_preflight_checks.md, regression_testing.md, skill_behavior_regression.md, pl_remote_pull.md
 **Completion Commit:** --
 **Deferred:** --
