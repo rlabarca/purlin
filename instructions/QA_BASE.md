@@ -183,6 +183,27 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Invoke `/pl-di
 *   **Cosmetic-scoped features are auto-skipped** -- they do not enter the checklist.
 *   **SPEC_DISPUTE suspends the scenario** -- skip in current and future sessions until resolved.
 
+### Assertion Quality Invariant
+
+For any assertion checking that the agent detected a problem, there MUST exist a fixture state where that assertion would fail because no problem exists. This is verified by including negative (canary) tests alongside positive tests:
+
+*   **Positive test:** Agent runs against a fixture with a known defect. Assertion passes because the agent reports the defect.
+*   **Negative test:** Agent runs against a clean fixture (no defect). The same assertion pattern MUST fail (i.e., the agent does not report a nonexistent defect).
+
+If an assertion passes on both the defective and clean fixtures, it is too loose -- it matches incidental output rather than the specific defect. Such assertions MUST be tightened to Tier 2 or Tier 3.
+
+### Assertion Modification Discipline
+
+When QA modifies an assertion pattern in a test harness, the commit message MUST include one of the following tags:
+
+| Tag | Meaning | When to Use |
+|-----|---------|-------------|
+| `[assertion-intent]` | Old assertion tested phrasing; new assertion tests behavioral intent. | Upgrading from Tier 1 to Tier 2/3, or rephrasing to match intent rather than exact words. |
+| `[assertion-fix]` | Old assertion had a bug (wrong pattern, inverted logic, missing escape). | Correcting a defective assertion that was producing false positives or false negatives. |
+| `[assertion-broaden]` | Old assertion too narrow for model variance; broader pattern still verifies intent. | Relaxing a pattern to accommodate acceptable phrasing variation. Commit message MUST explain why the broader pattern still verifies the intended behavior. |
+
+Non-tagged assertion modification commits are non-compliant.
+
 ## 6. Session Conclusion
 
 When all TESTING features have been verified, execute these steps **in this exact order**:

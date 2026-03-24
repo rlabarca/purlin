@@ -14,6 +14,12 @@
 
 ### Audit Finding -- 2026-03-23
 
+**[DISCOVERY] [ACKNOWLEDGED]** Branch skill files need FORBIDDEN pattern reflection
+**Source:** /pl-spec-code-audit --deep (A7)
+**Severity:** MEDIUM
+**Details:** `policy_branch_collab.md` Section 4 defines 5 FORBIDDEN patterns (no force push, no push to main in collab mode, no checkout main while active, no manual config editing, no push/pull from wrong branch). These are not reflected in the skill files `pl-remote-push.md` or `pl-remote-pull.md`. Agents executing these skills without running the briefing first would have no awareness of the constraints.
+**Suggested fix:** Add a FORBIDDEN enforcement section to both `pl-remote-push.md` and `pl-remote-pull.md` skill files listing the relevant prohibitions from policy_branch_collab.md Section 4.
+
 **[DISCOVERY] [ACKNOWLEDGED]** Join Modal BEHIND+SAME shows wrong button
 **Source:** /pl-spec-code-audit --deep (H4)
 **Severity:** HIGH

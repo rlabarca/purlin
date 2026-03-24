@@ -250,6 +250,15 @@ QA verification uses three independent sources to detect discrepancies:
 *   Processing extracts the current visual state of an existing web page -- useful for reverse-engineering a live UI into a visual spec, or establishing a baseline before redesign.
 *   The processing step additionally extracts observable CSS patterns, component structure, and computed styles to compare against the anchor's token system.
 
+## FORBIDDEN Patterns
+
+These constraints are behavioral (not grepable by the Critic) but are formalized here for documentation clarity and cross-reference:
+
+*   **Builder MUST NOT write to Figma.** Figma write access is PM-only. Builder and QA read Figma for reference; only the PM writes to it via MCP.
+*   **Prose descriptions FORBIDDEN in Visual Specification sections.** Visual specs use per-screen checklists with design anchor references, not paragraph-form descriptions. Prose belongs in the Overview or Requirements sections.
+*   **Separate top-level design directories FORBIDDEN.** All design artifacts (images, briefs, token maps) live under `features/design/<feature_stem>/`. No top-level `design/`, `assets/`, or `images/` directories.
+*   **Raw hex colors FORBIDDEN in Token Map values.** Token Map entries MUST use `var(--token-name)` references, not literal hex values. The design anchor's token table is the source of truth for color values.
+
 ## Scenarios
 
 No automated or manual scenarios. This is a policy anchor node -- its "scenarios" are
