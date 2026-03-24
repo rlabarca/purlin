@@ -97,11 +97,11 @@ Launch a QA session. QA finds all `[Ready for Verification]` features automatica
 
 ### The Auto-First Protocol
 
-QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through seven steps:
+QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through seven steps plus a mandatory checkpoint:
 
 #### Step 1 -- Credit Builder Work
 
-Features the Builder already completed (unit-tests-only, cosmetic changes) are auto-credited. No human time.
+Features the Builder already completed (unit-tests-only, cosmetic changes) are auto-credited. No human time. **AUTO features are NOT auto-passed** -- features with `qa_status: AUTO` (all QA work is automated) must have their tests executed during Phase A, not skipped.
 
 #### Step 2 -- Smoke Gate
 
@@ -117,7 +117,7 @@ This catches catastrophic breakage before you spend time on the full batch. If t
 
 #### Step 3 -- Run Existing Automations
 
-Scenarios tagged `@auto` from a prior QA session already have regression JSON. QA invokes the harness runner. No human involvement. Smoke-tier `@auto` scenarios already ran in Step 2 -- they're skipped here.
+Scenarios tagged `@auto` from a prior QA session already have regression JSON. QA invokes the harness runner. No human involvement. Smoke-tier `@auto` scenarios already ran in Step 2 -- they're skipped here. Regression suites with a valid PASS result (source files not modified since the result was written) are not re-run -- only STALE, FAIL, and NOT_RUN results require action.
 
 #### Step 4 -- Classify New Scenarios
 
@@ -139,7 +139,16 @@ This is the key step. For every QA Scenario that has **no tag** yet (Architect/P
 
 **After this step, every scenario is tagged.** Nothing stays untagged. Smoke-tier untagged scenarios already classified in Step 2 -- skipped here.
 
-#### Step 5 -- LLM Delegation
+#### Step 5a -- Phase A Checkpoint (HARD GATE)
+
+Before any manual work begins, QA finalizes every feature that passed automated verification. This checkpoint fires at two points:
+
+- **Checkpoint A** -- after Steps 1-5: finalize AUTO features verified by web tests, @auto scenarios, and visual smoke.
+- **Checkpoint B** -- after in-session regression suites pass: finalize features whose regression suites ran and passed this session, before the external agent_behavior test gate.
+
+At each checkpoint, QA commits status tags (`[Complete] [Verified]`, one per feature) and updates the CDD dashboard. QA does not proceed to Phase B until the dashboard reflects completions.
+
+#### Step 6 -- LLM Delegation
 
 Some scenarios need Claude to analyze output (complex reasoning, multi-step evaluation). QA composes the exact command and asks you to run it in a separate terminal.
 
