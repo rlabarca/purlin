@@ -276,12 +276,12 @@ if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 fi
 LAUNCHER_EOF
-    elif [ "$ROLE" = "qa" ]; then
+    elif [ "$ROLE" = "qa" ] || [ "$ROLE" = "pm" ]; then
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 else
-    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
+    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Write" "Edit" "Glob" "Grep")
 fi
 LAUNCHER_EOF
     elif [ "$ROLE" = "architect" ]; then

@@ -145,6 +145,48 @@ fi
 
 teardown_launcher_sandbox
 
+# --- Scenario: PM Launcher Non-Bypass AllowedTools Includes Write and Edit ---
+echo ""
+echo "[Scenario] PM Launcher Non-Bypass AllowedTools Includes Write and Edit"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-pm.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "pm": {
+            "model": "claude-sonnet-4-6",
+            "effort": "medium",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-pm.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
+    pm_pass "PM launcher passes --allowedTools when bypass=false"
+else
+    pm_fail "PM launcher missing --allowedTools when bypass=false (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q 'Write' && echo "$CAPTURED" | grep -q 'Edit'; then
+    pm_pass "PM --allowedTools includes Write and Edit"
+else
+    pm_fail "PM --allowedTools missing Write/Edit (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
+    pm_fail "PM should NOT pass --dangerously-skip-permissions when bypass=false"
+else
+    pm_pass "PM does not pass --dangerously-skip-permissions when bypass=false"
+fi
+
+teardown_launcher_sandbox
+
 # --- Scenario: PM Launcher Falls Back When Config is Missing ---
 echo ""
 echo "[Scenario] PM Launcher Falls Back When Config is Missing"
