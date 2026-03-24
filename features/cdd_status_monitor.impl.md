@@ -92,9 +92,9 @@ Implemented Section 2.1 QA Tag Classification Exemption. Added `_only_qa_tag_com
 
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 176 total, 176 passed
+- Tests: 196 total, 196 passed
 - AP scan: clean
-- Date: 2026-03-23
+- Date: 2026-03-24
 
 *   **CLI Role-Filtered Output (2026-03-17):** Implemented `--role <role>` flag per spec Section 2.7. Added `generate_role_filtered_status_json(role, cache)` to `serve.py` — filters full API JSON to features where the role has non-terminal status (not DONE/CLEAN/N/A), aggregates that role's action items from per-feature `critic.json` files, and compacts policy violations (grouped by file+pattern with counts) scoped to the filtered features. CLI wiring: `status.sh --role <role>` → `serve.py --cli-role-status <role>`. Side effects (write_internal_feature_status, write_api_status_json) run before filtering so cached artifacts stay fresh.
 
