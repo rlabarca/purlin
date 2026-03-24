@@ -14,13 +14,13 @@
 
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY]** Branch skill files need FORBIDDEN pattern reflection
+**[DISCOVERY] [ACKNOWLEDGED]** Branch skill files need FORBIDDEN pattern reflection
 **Source:** /pl-spec-code-audit --deep (A7)
 **Severity:** MEDIUM
 **Details:** `policy_branch_collab.md` Section 4 defines 5 FORBIDDEN patterns (no force push, no push to main in collab mode, no checkout main while active, no manual config editing, no push/pull from wrong branch). These are not reflected in the skill files `pl-remote-push.md` or `pl-remote-pull.md`. Agents executing these skills without running the briefing first would have no awareness of the constraints.
 **Suggested fix:** Add a FORBIDDEN enforcement section to both `pl-remote-push.md` and `pl-remote-pull.md` skill files listing the relevant prohibitions from policy_branch_collab.md Section 4.
 
-**[DISCOVERY]** Join Modal BEHIND+SAME shows wrong button
+**[DISCOVERY] [ACKNOWLEDGED]** Join Modal BEHIND+SAME shows wrong button
 **Source:** /pl-spec-code-audit --deep (H4)
 **Severity:** HIGH
 **Details:** Spec §2.8 mandates [Update Remote & Join] with action `update-to-head` when HEAD-relative is BEHIND and local-vs-remote is SAME. Test class `TestJoinBranchModalShowsCheckoutForLocalSameWithHeadBehind` asserts [Join]/checkout instead. The test passes but contradicts the spec.
@@ -73,7 +73,7 @@ INTENT_DRIFT -- Branch dropdown and sync badge lacked left-edge alignment; spec 
 **Details:** The branch collab section of serve.py references `--purlin-fg` which is not defined in design_visual_standards.md Section 2.2. The spec also references it.
 **Suggested fix:** Replace `--purlin-fg` with the appropriate defined token: `--purlin-text` for body text or `--purlin-surface` for high-contrast text on colored backgrounds.
 
-**[DISCOVERY]** Leave with non-default base branch untested
+**[DISCOVERY] [ACKNOWLEDGED]** Leave with non-default base branch untested
 **Source:** /pl-spec-code-audit --deep (M13)
 **Severity:** MEDIUM
 **Details:** The leave test (`TestLeaveClearsActiveBranch`) only checks `main` is checked out. No test sets up a `branch_collab_base_branch` file with a non-default value (e.g., `develop`). The spec says the stored base branch should be read and checked out.

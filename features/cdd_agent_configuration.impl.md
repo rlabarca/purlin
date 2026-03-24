@@ -44,7 +44,7 @@ DISCOVERY — Concurrent threshold changes caused value revert due to pending-wr
 **Details:** Implementation notes describe per-request lock association as warranted, but no test covers concurrent rapid edits being isolated from stale responses.
 **Suggested fix:** Add test `test_pending_lock_per_request_isolation()` or escalate as infeasible if concurrency testing is impractical in the current test harness.
 
-**[DISCOVERY]** Pending write concurrent isolation untested
+**[DISCOVERY] [ACKNOWLEDGED]** Pending write concurrent isolation untested
 **Source:** /pl-spec-code-audit --deep (M40)
 **Severity:** MEDIUM
 **Details:** The per-request pending-write lock (preventing stale POST responses from overwriting newer edits) has no runtime concurrency test. Only structural presence of JS patterns is tested. The impl note already acknowledges this.

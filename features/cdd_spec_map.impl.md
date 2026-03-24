@@ -13,7 +13,7 @@
 *   **Theme-Responsive Graph (2026-02-21):** `createNodeLabelSVG()` now accepts a `colors` parameter for SVG `fill` values instead of hardcoded `#E8E8E8`/`#888`. `buildCytoscapeElements()` passes `colors` through. `createCytoscape()` accepts `colors` and uses `c.surface`, `c.border`, `c.dim` for category parent bg, border, edge colors. `renderGraph()` calls `getThemeColors()` and passes colors through the chain. On `toggleTheme()`, `renderGraph()` is called to rebuild the entire Cytoscape instance with updated theme colors (preserving zoom/pan).
 ### Audit Finding -- 2026-03-23
 
-**[DISCOVERY]** Hardcoded hex colors in Mermaid classDef (previously acknowledged)
+**[DISCOVERY] [ACKNOWLEDGED]** Hardcoded hex colors in Mermaid classDef (previously acknowledged)
 **Source:** /pl-spec-code-audit --deep (H5)
 **Severity:** HIGH
 **Details:** `graph.py` lines 250-265 contain hardcoded hex literals (`#e1f5fe`, `#01579b`, `#f96`, `#333`, `#e8f5e9`, `#2e7d32`, `#f3e5f5`, `#7b1fa2`, `#f1f8e9`, `#558b2f`, `#111`) in the Mermaid CSS `classDef` rules. This violates `design_visual_standards` §2.7 FORBIDDEN hex color constraint. The Cytoscape/JS path was remediated but the Mermaid output was not.

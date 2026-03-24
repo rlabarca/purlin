@@ -12,13 +12,13 @@
 
 **[CLARIFICATION]** The meta-runner (`tools/test_support/run_regression.sh`) uses `find` with `-print0` and `sort -z` for null-safe scenario file discovery, ensuring correct handling of filenames with special characters. (Severity: INFO)
 
-**[DISCOVERY]** Runner does not capture stderr from harness
+**[DISCOVERY] [ACKNOWLEDGED]** Runner does not capture stderr from harness
 **Source:** /pl-spec-code-audit --deep (M33)
 **Severity:** MEDIUM
 **Details:** When a harness invocation fails and stderr contains claude connection errors, the runner should record `stderr_excerpt` in `regression_result.json`. Currently `execute_harness()` in `regression_runner.sh` does not redirect stderr separately — it goes to the terminal or is lost.
 **Suggested fix:** Redirect harness stderr to a temp file, read it on failure, include first 500 chars as `stderr_excerpt` in the result JSON.
 
-**[DISCOVERY]** pl-verify §2.2.4 regression table has no unit tests
+**[DISCOVERY] [ACKNOWLEDGED]** pl-verify §2.2.4 regression table has no unit tests
 **Source:** /pl-spec-code-audit --deep (M35)
 **Severity:** MEDIUM
 **Details:** `test_pl_verify.py` has no test classes for the Phase A regression suite status table or the agent_behavior hard gate behavior. The existing test coverage covers role gating, scoped mode, batch mode, cosmetic scope, auto-pass, commit tags, and failures — but nothing related to Section 2.2.4.
