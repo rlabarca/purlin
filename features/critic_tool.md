@@ -996,6 +996,27 @@ The following fixture tags provide deterministic project states for integration-
     And each entry shows format: `<feature_name>: <count>x <pattern> in <file> (lines <first3>...+<remaining> more)`
     And the first entry reads: `cdd_agent_configuration: 34x #hex in tools/cdd/serve.py (lines 259,262,265...+31 more)`
 
+#### Scenario: Orphan Companion File Detected
+    Given a file features/deleted_feature.impl.md exists
+    And no file features/deleted_feature.md exists
+    When the Critic runs
+    Then a MEDIUM-priority Architect action item is generated with category orphan_companion
+    And the description identifies deleted_feature.impl.md as an orphaned companion
+
+#### Scenario: In-File TODO Tag Overrides Lifecycle
+    Given feature features/auth.md has a [Complete] status commit
+    And the feature file contains a [TODO] tag added after the Complete commit
+    When the Critic computes role status
+    Then the feature lifecycle is treated as TODO (the in-file tag overrides the commit history)
+    And a HIGH-priority Builder action item is generated for lifecycle_reset
+
+#### Scenario: Verification Effort Classification Output
+    Given a feature has 3 @auto QA scenarios and 2 manual QA scenarios and a Visual Specification with 4 checklist items
+    And the feature has Web Test metadata
+    When the Critic computes verification_effort
+    Then the output includes auto: 3, manual_interactive: 2, web_test: 4
+    And the summary reads "2 manual"
+
 ### QA Scenarios
 
 None

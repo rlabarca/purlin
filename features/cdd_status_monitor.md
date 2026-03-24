@@ -886,6 +886,18 @@ These scenarios are validated by the Builder's automated test suite.
     Then the output is a startup briefing (not a dependency graph)
     And the startup flag takes precedence silently
 
+#### Scenario: QA-Tags Commit Does Not Reset Lifecycle
+    Given feature features/auth.md has a [Complete] status commit
+    And a subsequent commit modifies only QA scenario tags (@auto/@manual) with a [QA-Tags] trailer
+    When the CDD monitor evaluates lifecycle state
+    Then the feature remains in COMPLETE state (not reset to TODO)
+
+#### Scenario: Abbreviated Status Commit Trailer Parity
+    Given a commit message reads "feat(auth): [Complete features/auth.md] [Scope: targeted:login] [Verified]"
+    When the CDD monitor parses status commits
+    Then the [Scope: targeted:login] trailer is extracted identically to a canonical-format commit
+    And the [Verified] trailer is recognized
+
 ### QA Scenarios
 
 None.

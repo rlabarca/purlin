@@ -233,6 +233,14 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     Then the command prints "Local feature/auth is already in sync with remote"
     And no git merge is executed
 
+#### Scenario: pl-remote-pull Generates Digest After Successful Merge
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And origin/feature/auth has 3 commits not in local feature/auth
+    When /pl-remote-pull is invoked and the fast-forward succeeds
+    Then the command runs generate_whats_different.sh for the branch
+    And the digest output is displayed inline
+    And if the digest script fails the pull still reports success with a warning
+
 ### Manual Scenarios (Human Verification Required)
 
 None.

@@ -967,6 +967,20 @@ The following fixture tags provide real git branch topology for integration-leve
     And DIVERGED branches show an orange badge (--purlin-status-warning)
     And EMPTY branches show normal text (--purlin-text) without badge background
 
+#### Scenario: Join Branch Pre-Join Pulls When Current Branch Is BEHIND Remote
+    Given the current branch feature/old has an active branch feature/old
+    And local feature/old is BEHIND origin/feature/old by 2 commits
+    When the user initiates a join to feature/new
+    Then the system pulls feature/old before fetching feature/new
+    And the pre-join pull result shows "pulled 2 commits"
+
+#### Scenario: Join Branch Pre-Join Diverged Returns Guidance
+    Given the current branch feature/old has an active branch feature/old
+    And local feature/old is DIVERGED from origin/feature/old
+    When the user initiates a join to feature/new
+    Then the response includes push_result "diverged"
+    And push_guidance contains a git pull command for feature/old
+
 ### QA Scenarios
 
 None.
