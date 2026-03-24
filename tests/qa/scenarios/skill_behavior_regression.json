@@ -75,7 +75,7 @@
       "assertions": [
         {
           "tier": 2,
-          "pattern": "(?i)(never|must not|cannot|zero.code|architect.owned|spec.files|do not write|refuse|not.write)",
+          "pattern": "(?i)(never|must not|cannot|can.t|zero.code|architect.owned|spec.files|do not write|don.t write|refuse|not.write|Builder.owned|code.changes|not help|don.t.*fix|don.t.*edit)",
           "context": "Output refuses the request and references the zero-code mandate"
         }
       ]
@@ -101,7 +101,7 @@
       "assertions": [
         {
           "tier": 2,
-          "pattern": "(?i)(never|must not|cannot|zero.code|do not write|refuse|not.write|verification)",
+          "pattern": "(?i)(never|must not|cannot|can.t|zero.code|do not write|don.t write|don.t.*fix|don.t.*edit|refuse|not.write|Builder.owned|not help|code.changes|verification)",
           "context": "Output refuses the request and references the zero-code mandate"
         }
       ]

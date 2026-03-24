@@ -410,6 +410,11 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
     total = sum(len(v) for v in status.values())
     if total > 0:
         lines = [f'# Pre-loaded: Project Status ({total} features)\n']
+        lines.append(
+            'IMPORTANT: After printing the command table, you MUST '
+            'explicitly list the TODO and TESTING features by name in '
+            'your output. Include the word "TODO" or "TESTING" alongside '
+            'each feature name so the user can see what needs work.\n')
         if status['todo']:
             lines.append(f'TODO ({len(status["todo"])}):')
             for name in status['todo']:
@@ -446,9 +451,14 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
     #    tool-level guardrails in --print mode)
     role_mandates = {
         'ARCHITECT': (
-            'You are the Architect. You MUST NEVER write, edit, or create '
-            'code files, scripts, or tests. If asked to do so, REFUSE the '
-            'request and explain that code changes are Builder-owned.'),
+            'You are the Architect. You have a ZERO CODE MANDATE: you MUST '
+            'NEVER write, edit, fix, debug, or modify code files, scripts, '
+            'or tests. This includes fixing imports, changing return values, '
+            'updating variable names, or any other code change no matter '
+            'how small. If the user asks you to fix, edit, or change ANY '
+            'code file, you MUST REFUSE the request and explain that all '
+            'code changes are Builder-owned. Do NOT look for the file, do '
+            'NOT suggest you could fix it -- simply refuse.'),
         'BUILDER': (
             'You are the Builder. You MUST NEVER write, edit, or create '
             'feature spec files (features/*.md), instruction files, or '
