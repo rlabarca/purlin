@@ -86,7 +86,7 @@ When `git remote -v` returns one or more remotes:
    - If the named remote already exists: execute `git remote set-url <name> <url>`.
    - If the named remote does not exist: execute `git remote add <name> <url>`.
 3. If arguments are not provided, present options:
-   - **Change URL of existing remote:** Ask which remote to update (default: the first or only remote), then prompt for new URL. Execute `git remote set-url <name> <new-url>`.
+   - **Change URL of existing remote:** Display remotes as a numbered list. Prompt: "Which remote to update?" Default: `"origin"` if it exists, otherwise the first remote from `git remote`. Then prompt for new URL. Execute `git remote set-url <name> <new-url>`.
    - **Add additional remote:** Prompt for a new remote name (must not conflict with existing names) and URL. Execute `git remote add <name> <url>`.
 4. Verify connectivity (Section 2.8).
 5. Print success output (Section 2.9).
@@ -95,7 +95,13 @@ When `git remote -v` returns one or more remotes:
 
 - Run `git ls-remote <name>`.
 - On success: proceed to success output.
-- On failure: report the error and offer the user a chance to correct the URL. If the user provides a corrected URL, execute `git remote set-url <name> <corrected-url>` and re-verify. If the user declines to correct, remove the just-added remote (`git remote remove <name>`) and exit with code 1.
+- On failure:
+  1. **Error classification:** Check stderr for auth indicators ("Permission denied", "403", "authentication") vs. network indicators ("Could not resolve host", "Network is unreachable"). Tailor guidance accordingly: auth errors suggest checking SSH keys or credentials; network errors suggest correcting the URL.
+  2. **Correction offer:** Offer the user a chance to correct the URL. If the user provides a corrected URL, execute `git remote set-url <name> <corrected-url>` and re-verify.
+  3. **Rollback on decline:** If the user declines to correct:
+     - If the remote was **newly added** (`git remote add`): remove it via `git remote remove <name>`.
+     - If the remote **already existed** (`git remote set-url`): restore the previous URL via `git remote set-url <name> <old-url>`. The old URL MUST be captured before attempting set-url.
+     - Exit with code 1.
 
 ### 2.9 Success Output
 
@@ -110,11 +116,21 @@ Remote configured:
 Branch collaboration features are now available in the CDD dashboard.
 ```
 
-### 2.10 FORBIDDEN Pattern Enforcement
+### 2.10 Config Sync
+
+After a successful add or set-url, check whether the configured remote name matches the `branch_collab.remote` value in `.purlin/config.json` (default: `"origin"`; fallback: `remote_collab.remote`).
+
+- If the remote name matches the config value (or is `"origin"` and no config override exists): no action needed.
+- If the remote name does NOT match and it is the **only** configured remote: prompt the user: "Remote `<name>` is not the default (`origin`). Should `/pl-remote-push` and `/pl-remote-pull` use `<name>` as the default remote? [Y/n]" If yes, write or update the `branch_collab.remote` field in `.purlin/config.json`.
+- If there are multiple remotes: inform the user which remote push/pull will use (per config), and suggest updating config if they want to change the default.
+
+This ensures the one-step setup promise holds: after `/pl-remote-add`, push and pull work without manual config editing.
+
+### 2.11 FORBIDDEN Pattern Enforcement
 
 - MUST NOT execute any push or pull operations. This is a configuration-only command.
-- MUST NOT delete existing remotes unless rolling back a failed add (Section 2.8 failure recovery only).
-- User-provided remote names and URLs MUST be validated against shell injection before passing to git commands.
+- MUST NOT delete existing remotes unless rolling back a **newly added** remote after a failed connectivity check (Section 2.8 failure recovery only). For existing remotes where set-url was used, rollback restores the old URL -- never removes.
+- User-provided remote names and URLs MUST be properly quoted when passed to git commands to prevent shell injection.
 
 ---
 
@@ -186,14 +202,30 @@ Branch collaboration features are now available in the CDD dashboard.
     Then the command executes git remote add upstream git@github.com:user/fork.git
     And verifies connectivity via git ls-remote upstream
 
-#### Scenario: pl-remote-add Reports Connectivity Failure
+#### Scenario: pl-remote-add Reports Connectivity Failure And Classifies Error
+
+    Given no git remotes are configured
+    And the user provides a URL with an SSH auth failure
+    When the remote is added via git remote add
+    Then git ls-remote fails
+    And the command suggests checking SSH keys or credentials
+    And offers the user a chance to correct the URL
+
+#### Scenario: pl-remote-add Rolls Back New Remote On Declined Correction
 
     Given no git remotes are configured
     And the user provides an unreachable URL
-    When the remote is added via git remote add
-    Then git ls-remote fails
-    And the command reports the connectivity error
-    And offers the user a chance to correct the URL
+    When git ls-remote fails and the user declines to correct
+    Then the command executes git remote remove to clean up the failed add
+    And exits with code 1
+
+#### Scenario: pl-remote-add Restores Old URL On Set-Url Failure
+
+    Given a remote "origin" is configured with URL "git@github.com:user/old-repo.git"
+    When /pl-remote-add git@bad-host:user/repo.git --name origin is invoked
+    And git ls-remote fails and the user declines to correct
+    Then the command restores the original URL "git@github.com:user/old-repo.git"
+    And does not remove the remote
 
 #### Scenario: pl-remote-add Does Not Require Branch Guard
 
@@ -216,6 +248,22 @@ Branch collaboration features are now available in the CDD dashboard.
     When /pl-remote-add is invoked and the remote is successfully added
     Then no git push or git pull is executed
     And the command exits after printing the success summary
+
+#### Scenario: pl-remote-add Prompts Config Sync When Non-Origin Name Is Only Remote
+
+    Given no git remotes are configured
+    When /pl-remote-add git@github.com:user/repo.git --name upstream is invoked
+    And connectivity verification succeeds
+    Then the command prompts whether push/pull should use "upstream" as the default
+    And if user confirms, branch_collab.remote is set to "upstream" in .purlin/config.json
+
+#### Scenario: pl-remote-add Skips Config Sync When Name Is Origin
+
+    Given no git remotes are configured
+    When /pl-remote-add git@github.com:user/repo.git --name origin is invoked
+    And connectivity verification succeeds
+    Then the command does not prompt about config sync
+    And .purlin/config.json is not modified
 
 ### QA Scenarios
 
