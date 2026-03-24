@@ -79,7 +79,7 @@ Launch: `./pl-run-builder.sh`
 The Builder discovers TODO features from the Critic report and for each one:
 
 1. **Implements** -- application code, scripts, config files.
-2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`.
+2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`. Unit tests must be fast, isolated, and structural -- single setup, value assertions, exit codes, file existence checks. If a test requires multi-step state manipulation, sandbox cloning, or process lifecycle management, it belongs under QA Scenarios instead.
 3. **Verifies visual specs** -- for features with a Visual Specification section, the Builder verifies ALL visual checklist items. Web test features (`> Web Test:` metadata) are verified via Playwright (`/pl-web-test`). Non-web features are verified by inspecting the running application or output. Visual verification is Builder-owned -- QA does not re-verify visual items.
 4. **Commits a status tag:**
    - **Unit Tests only** (no QA Scenarios in the spec): Builder marks `[Complete]`. Done. QA never sees this feature.
@@ -246,7 +246,7 @@ Total: 16/18 passed (3 features, 1 failure)
 
 ### Processing Results
 
-Launch QA after the run completes. QA reads the results, creates BUG discoveries for failures, and reports assertion quality:
+Launch QA after the run completes. QA reads `regression.json` results (written by the harness runner, separate from the Builder's `tests.json`), creates BUG discoveries for failures, and reports assertion quality:
 
 ```
 Tier Distribution: T1=3  T2=12  T3=6  (untagged=0)
@@ -257,6 +257,15 @@ Tier Distribution: T1=3  T2=12  T3=6  (untagged=0)
 - **Tier 3** -- state verification (checked the agent's output artifact). Most robust.
 
 Suites with >50% Tier 1 assertions get flagged as `[SHALLOW]`.
+
+### Assertion Quality Invariant
+
+For any assertion checking that the agent detected a problem, there must exist a fixture state where that assertion would fail because no problem exists. This is verified by including negative (canary) tests alongside positive tests:
+
+- **Positive test:** Agent runs against a fixture with a known defect. Assertion passes because the agent reports the defect.
+- **Negative test:** Agent runs against a clean fixture (no defect). The same assertion pattern must fail (the agent does not report a nonexistent defect).
+
+If an assertion passes on both the defective and clean fixtures, it is too loose -- it matches incidental output rather than the specific defect. Such assertions must be tightened to Tier 2 or Tier 3.
 
 ### The Feedback Loop
 
