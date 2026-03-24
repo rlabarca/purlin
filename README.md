@@ -2,13 +2,11 @@
 
 ![Purlin Logo](assets/purlin-logo.svg)
 
-## Current Release: RC0.8.4 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
+## Current Release: v0.8.4 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
 
 **Collaborative Design-Driven Agentic Development Framework**
 
 [![Watch the video](https://img.youtube.com/vi/ob7_RzriVdI/maxresdefault.jpg)](https://youtu.be/ob7_RzriVdI)
-
-**Have questions?** Chat with the [Purlin NotebookLM](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf) -- an AI-powered knowledge base that can answer questions about how Purlin works.
 
 **How to work with the agents:** [English](https://youtu.be/sLk6YqoVW4c) | [Portugues Brasileiro](https://youtu.be/hxARP-1TMk0)
 
@@ -236,7 +234,7 @@ The dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED), a con
 
 ### 1. Install Claude Code
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) must be installed before using Purlin. Purlin agents run exclusively inside Claude Code sessions.
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) **2.1.81 or later** must be installed before using Purlin. Purlin agents run exclusively inside Claude Code sessions. Run `claude update` to make sure you're on the latest version.
 
 ### 2. Add Purlin and Initialize
 
