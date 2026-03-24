@@ -133,6 +133,16 @@ When a feature has a `## Visual Specification` section, the Builder MUST verify 
 *   **Web test features** (`> Web Test:` or `> AFT Web:` metadata): Run `/pl-web-test` to verify visual items via Playwright. Zero BUG/DRIFT verdicts required before status tag.
 *   **Non-web features** (no web test metadata): Verify visual items by inspecting the running application or output. For each visual checklist item, confirm the implementation matches the spec. Log verification results in the companion file. If visual verification is not possible (no UI, CLI-only), log a `[DISCOVERY]` in the companion file explaining why.
 
+### Discovery Sidecar Resolution
+
+When the Builder fixes code or tests in response to a `[BUG]` entry in a discovery sidecar (`features/<name>.discoveries.md`), the Builder MUST mark the entry as RESOLVED in the same commit or a follow-up commit:
+
+*   Change `- **Status:** OPEN` to `- **Status:** RESOLVED`
+*   Add `- **Resolution:** <one-line summary of what was fixed>`
+*   If ALL entries in the sidecar are RESOLVED, the file may be left as-is (QA prunes resolved entries during verification) or deleted if no OPEN entries remain.
+
+This is critical because open sidecar entries generate Architect and Builder action items in the Critic. Fixing the code without marking the entry RESOLVED leaves stale action items that block the feature from reaching DONE status.
+
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
