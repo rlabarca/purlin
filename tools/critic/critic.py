@@ -1870,7 +1870,7 @@ def generate_action_items(feature_result, cdd_status=None):
 
     # --- Test Quality Audit Trail (policy_critic Section 2.17) ---
     # --- QA items ---
-    # Features in TESTING status (from CDD) -> MEDIUM (scope-aware)
+    # Features in TESTING status (from CDD) -> HIGH (scope-aware)
     regression_scope = feature_result.get('regression_scope', {})
     visual_spec = feature_result.get('visual_spec', {})
     declared_scope = regression_scope.get('declared', 'full')
@@ -1892,7 +1892,7 @@ def generate_action_items(feature_result, cdd_status=None):
                 # Generate scope-aware QA action items
                 if declared_scope == 'cosmetic':
                     qa_items.append({
-                        'priority': 'MEDIUM',
+                        'priority': 'HIGH',
                         'category': 'testing_status',
                         'feature': feature_name,
                         'description': (
@@ -1913,7 +1913,7 @@ def generate_action_items(feature_result, cdd_status=None):
                     if manual_targeted:
                         names = ', '.join(manual_targeted)
                         qa_items.append({
-                            'priority': 'MEDIUM',
+                            'priority': 'HIGH',
                             'category': 'testing_status',
                             'feature': feature_name,
                             'description': (
@@ -1926,7 +1926,7 @@ def generate_action_items(feature_result, cdd_status=None):
                 elif declared_scope == 'dependency-only':
                     dep_count = len(regression_scope.get('scenarios', []))
                     qa_items.append({
-                        'priority': 'MEDIUM',
+                        'priority': 'HIGH',
                         'category': 'testing_status',
                         'feature': feature_name,
                         'description': (
@@ -1945,7 +1945,7 @@ def generate_action_items(feature_result, cdd_status=None):
                     if vis_items > 0:
                         desc += f', {vis_items} visual item(s)'
                     qa_items.append({
-                        'priority': 'MEDIUM',
+                        'priority': 'HIGH',
                         'category': 'testing_status',
                         'feature': feature_name,
                         'description': desc,

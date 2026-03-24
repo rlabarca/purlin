@@ -2531,7 +2531,7 @@ Reqs.
             items = generate_action_items(result, cdd_status=cdd_status)
             qa_items = items['qa']
             self.assertTrue(len(qa_items) > 0)
-            self.assertEqual(qa_items[0]['priority'], 'MEDIUM')
+            self.assertEqual(qa_items[0]['priority'], 'HIGH')
             self.assertIn('2 manual', qa_items[0]['description'])
         finally:
             critic.FEATURES_DIR = orig_features

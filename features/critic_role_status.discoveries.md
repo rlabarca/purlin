@@ -4,5 +4,5 @@
 - **Observed Behavior:** Code emits MEDIUM priority for QA TESTING items at 4 separate sites.
 - **Expected Behavior:** Spec says QA TESTING items should have HIGH priority.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (deep mode). See critic_role_status.impl.md for full context.

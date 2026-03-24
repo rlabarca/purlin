@@ -800,6 +800,8 @@ Reqs.
             self.assertTrue(len(qa_items) > 0,
                             'TESTING with manual scenarios should create QA item')
             self.assertIn('3 manual scenario', qa_items[0]['description'])
+            self.assertEqual(qa_items[0]['priority'], 'HIGH',
+                             'QA TESTING items must have HIGH priority per spec 2.5')
         finally:
             critic.FEATURES_DIR = orig_features
 
@@ -1262,6 +1264,8 @@ Reqs.
                           'QA action item should identify the feature')
             self.assertIn('3 manual scenario', desc,
                           'QA action item should include scenario count')
+            self.assertEqual(qa_items[0]['priority'], 'HIGH',
+                             'QA TESTING items must have HIGH priority per spec 2.5')
         finally:
             critic.FEATURES_DIR = orig
 
