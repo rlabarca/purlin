@@ -387,7 +387,33 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
     sections = []
     role_lower = role.lower()
 
-    # 1. Command table (normally obtained via Read tool at startup)
+    # 1. Feature status FIRST (normally obtained via status.sh)
+    #    Placed before the command table so the model outputs feature
+    #    names early, before the long command table consumes output budget.
+    status = scan_fixture_features(fixture_dir)
+    total = sum(len(v) for v in status.values())
+    if total > 0:
+        lines = [f'# Pre-loaded: Project Status ({total} features)\n']
+        lines.append(
+            'CRITICAL: You MUST include these feature names in your '
+            'output. Print "TODO: <name>" or "TESTING: <name>" for each '
+            'feature listed below. Do this IMMEDIATELY after the command '
+            'table. This is required — do NOT skip it.\n')
+        if status['todo']:
+            lines.append(f'TODO ({len(status["todo"])}):')
+            for name in status['todo']:
+                lines.append(f'  - {name}')
+        if status['testing']:
+            lines.append(f'TESTING ({len(status["testing"])}):')
+            for name in status['testing']:
+                lines.append(f'  - {name}')
+        if status['complete']:
+            lines.append(f'COMPLETE ({len(status["complete"])}):')
+            for name in status['complete']:
+                lines.append(f'  - {name}')
+        sections.append('\n'.join(lines))
+
+    # 2. Command table (normally obtained via Read tool at startup)
     for base in (fixture_dir, project_root):
         cmd_path = os.path.join(
             base, 'instructions', 'references', f'{role_lower}_commands.md')
@@ -404,30 +430,6 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
             except (IOError, OSError):
                 pass
             break
-
-    # 2. Feature status (normally obtained via status.sh)
-    status = scan_fixture_features(fixture_dir)
-    total = sum(len(v) for v in status.values())
-    if total > 0:
-        lines = [f'# Pre-loaded: Project Status ({total} features)\n']
-        lines.append(
-            'IMPORTANT: After printing the command table, you MUST '
-            'explicitly list the TODO and TESTING features by name in '
-            'your output. Include the word "TODO" or "TESTING" alongside '
-            'each feature name so the user can see what needs work.\n')
-        if status['todo']:
-            lines.append(f'TODO ({len(status["todo"])}):')
-            for name in status['todo']:
-                lines.append(f'  - {name}')
-        if status['testing']:
-            lines.append(f'TESTING ({len(status["testing"])}):')
-            for name in status['testing']:
-                lines.append(f'  - {name}')
-        if status['complete']:
-            lines.append(f'COMPLETE ({len(status["complete"])}):')
-            for name in status['complete']:
-                lines.append(f'  - {name}')
-        sections.append('\n'.join(lines))
 
     # 3. Skill content (for skill-dispatch prompts like /pl-help, /pl-status)
     if prompt.startswith('/'):

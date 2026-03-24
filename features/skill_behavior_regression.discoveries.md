@@ -5,7 +5,8 @@
 - **Observed Behavior:** QA startup output shows the command table (Step 3.0 print sequence) but assertion "Output identifies TESTING features" fails. Actual excerpt ends mid-command-table (500-char truncation). The agent does not appear to proceed past Step 3.0 to identify TESTING features in `--print` mode. builder-startup-identifies-todo now passes (16/17), so Builder-side fix partially worked. QA-side identification still missing.
 - **Expected Behavior:** QA startup identifies TESTING features by name after printing the command table
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Restructured build_print_mode_context() to place feature status section BEFORE the command table. The model now receives the CRITICAL directive and feature names earlier in the prompt, ensuring they appear in output even when the command table consumes most of the output budget. Also strengthened directive from IMPORTANT to CRITICAL.
 - **Source:** Regression test (auto-detected) — regression persists after prior RESOLVED fix; targeted scope: scan_fixture_features, build_print_mode_context, print-mode-context-augmentation
 
 ### [BUG] Print-mode startup doesn't include TODO/TESTING feature names in output (Discovered: 2026-03-24)
