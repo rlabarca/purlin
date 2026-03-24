@@ -80,13 +80,17 @@ This walkthrough shows how to bring a Figma design into a Purlin feature spec.
 
 ### Step 1: Set Up Figma MCP (One-Time)
 
-The PM checks for Figma MCP availability every time it starts. If the Figma connection is missing and you mention a Figma URL, the PM walks you through setup:
+The PM checks for Figma MCP availability every time it starts. If the Figma connection is missing and either (a) the project has features with Visual Specification sections or (b) you mention a Figma URL, the PM walks you through setup:
 
-```
-claude mcp add --transport http figma https://mcp.figma.com/mcp
-```
-
-Then restart Claude, run the `/mcp` command, select "figma" from the list, and complete OAuth in the browser window that opens.
+1. Add the Figma MCP server:
+   ```
+   claude mcp add --transport http figma https://mcp.figma.com/mcp
+   ```
+2. Restart Claude to pick up the new MCP server.
+3. Type `/mcp` in the terminal.
+4. Select "figma" from the list to begin authentication.
+5. Complete the authentication in the browser window that opens.
+6. Return to the terminal -- Figma MCP tools are now available.
 
 Once configured, this step is not needed again.
 
@@ -368,4 +372,5 @@ This runs the CDD status tool and shows the current state of all features -- whi
 | `/pl-resume [save\|role]` | Save or restore PM session state. |
 | `/pl-agent-config` | Modify PM [agent configuration](agent-configuration-guide.md) (model, effort, permissions). |
 | `/pl-override-edit` | Edit PM_OVERRIDES.md to customize PM behavior for your project. |
+| `/pl-purlin-issue` | Report a Purlin framework issue. |
 | `/pl-update-purlin` | Update the Purlin submodule with intelligent conflict handling. |
