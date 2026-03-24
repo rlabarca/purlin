@@ -27,7 +27,10 @@ PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 from tools.release.verify_dependency_integrity import (
     main as verify_deps_main, ensure_cache_fresh,
 )
-from tools.release.verify_zero_queue import main as verify_zero_main
+from tools.release.verify_zero_queue import (
+    main as verify_zero_main,
+    load_feature_status as verify_zero_load_status,
+)
 from tools.release.submodule_safety_audit import main as submodule_safety_main
 from tools.release.critic_consistency_check import main as critic_consistency_main
 from tools.release.doc_consistency_check import main as doc_consistency_main
@@ -195,21 +198,27 @@ class TestZeroQueueBlocking(unittest.TestCase):
 
     def setUp(self):
         self.root = create_fixture({
-            "tests/feature_a/critic.json": json.dumps({
-                "role_status": {
+            ".purlin/config.json": '{}',
+        })
+        # Status data in status.sh JSON output format
+        self.status_data = {
+            "features": [
+                {
+                    "file": "features/feature_a.md",
+                    "label": "Feature A",
+                    "category": "Test",
                     "architect": "DONE",
                     "builder": "TODO",
                     "qa": "N/A",
                 }
-            }),
-            ".purlin/config.json": '{}',
-        })
+            ],
+        }
 
     def tearDown(self):
         shutil.rmtree(self.root)
 
     def test_reports_blocking(self):
-        result = verify_zero_main(self.root)
+        result = verify_zero_main(self.root, status_data=self.status_data)
         self.assertEqual(result["status"], "FAIL")
         blocking = [f for f in result["findings"] if f["category"] == "blocking_feature"]
         self.assertGreater(len(blocking), 0)
@@ -767,7 +776,7 @@ class TestCriticConsistencyRouting(unittest.TestCase):
         result = critic_consistency_main(self.root)
         routing = [f for f in result["findings"] if f["category"] == "routing_inconsistency"]
         self.assertGreater(len(routing), 0)
-        self.assertEqual(routing[0]["severity"], "WARNING")
+        self.assertEqual(routing[0]["severity"], "CRITICAL")
 
 
 # ===================================================================
@@ -775,20 +784,41 @@ class TestCriticConsistencyRouting(unittest.TestCase):
 # ===================================================================
 
 class TestCriticConsistencyWarningLevel(unittest.TestCase):
-    """Scenario: WARNING-level finding does not halt"""
+    """Scenario: WARNING-level finding does not halt
+
+    Uses a README with '## The Critic' section in wrong order (after
+    '## Setup & Configuration') to produce a WARNING without any CRITICAL.
+    Routing rules are consistent (both files present) so no CRITICAL is
+    triggered, and Phase 2 ordering check emits a WARNING.
+    """
 
     def setUp(self):
-        # No deprecated terms (no CRITICAL), but routing inconsistency (WARNING)
         self.root = create_fixture({
             "features/policy_critic.md": (
                 '# Policy: Critic\n'
                 '## Routing\n'
                 'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
             ),
             "instructions/HOW_WE_WORK_BASE.md": (
                 '# How We Work\n'
                 '## Coordination\n'
                 'The coordination engine handles routing.\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "README.md": (
+                '# Project\n'
+                '## The Agents\n'
+                'Agent info.\n'
+                '## Setup & Configuration\n'
+                'Setup info.\n'
+                '## The Critic\n'
+                'Critic info.\n'
             ),
             ".purlin/config.json": '{}',
         })
@@ -798,10 +828,159 @@ class TestCriticConsistencyWarningLevel(unittest.TestCase):
 
     def test_warning_status_not_fail(self):
         result = critic_consistency_main(self.root)
-        # With only WARNING-level findings, status should be WARNING, not FAIL
+        # With only WARNING-level findings (ordering), status should be WARNING, not FAIL
         self.assertNotEqual(result["status"], "FAIL")
         if result["findings"]:
             self.assertEqual(result["status"], "WARNING")
+
+
+# ===================================================================
+# Scenario: Phase 2 README — missing Critic section detected
+# ===================================================================
+
+class TestCriticConsistencyReadmeMissing(unittest.TestCase):
+    """Scenario: Phase 2 detects missing '## The Critic' section in README"""
+
+    def setUp(self):
+        # Clean Phase 1 (consistent routing, no deprecated terms) but
+        # README has no '## The Critic' heading.
+        self.root = create_fixture({
+            "features/policy_critic.md": (
+                '# Policy: Critic\n'
+                '## Routing\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                '# How We Work\n'
+                '## Coordination\n'
+                'The coordination engine handles routing.\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "README.md": (
+                '# Project\n'
+                '## The Agents\n'
+                'Agent info.\n'
+                '## Setup & Configuration\n'
+                'Setup info.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_missing_critic_section(self):
+        result = critic_consistency_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        missing = [
+            f for f in result["findings"]
+            if f["category"] == "readme_missing_critic_section"
+        ]
+        self.assertGreater(len(missing), 0)
+        self.assertEqual(missing[0]["severity"], "CRITICAL")
+        self.assertIn("The Critic", missing[0]["message"])
+
+
+# ===================================================================
+# Scenario: Phase 2 README — Critic section present and ordered
+# ===================================================================
+
+class TestCriticConsistencyReadmeClean(unittest.TestCase):
+    """Scenario: Clean audit -- README updated (Phase 2 passes)"""
+
+    def setUp(self):
+        # Clean Phase 1 and clean Phase 2: Critic section in correct position
+        self.root = create_fixture({
+            "features/policy_critic.md": (
+                '# Policy: Critic\n'
+                '## Routing\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                '# How We Work\n'
+                '## Coordination\n'
+                'The coordination engine handles routing.\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "README.md": (
+                '# Project\n'
+                '## The Agents\n'
+                'Agent info.\n'
+                '## The Critic\n'
+                'The Critic is the coordination engine.\n'
+                '## Setup & Configuration\n'
+                'Setup info.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_clean_audit_passes(self):
+        result = critic_consistency_main(self.root)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(len(result["findings"]), 0)
+
+
+# ===================================================================
+# Scenario: Phase 2 skipped when Phase 1 has CRITICAL findings
+# ===================================================================
+
+class TestCriticConsistencyPhase2Skipped(unittest.TestCase):
+    """Scenario: Phase 2 is skipped when Phase 1 has CRITICAL findings"""
+
+    def setUp(self):
+        # Deprecated term triggers CRITICAL in Phase 1; Phase 2 should be skipped
+        # even though README is missing the Critic section
+        self.root = create_fixture({
+            "features/policy_critic.md": (
+                '# Policy: Critic\n'
+                '## Purpose\n'
+                'The quality gate validates all features.\n'
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                '# How We Work\n'
+                '## Critic\n'
+                'The coordination engine.\n'
+            ),
+            "README.md": (
+                '# Project\n'
+                '## The Agents\n'
+                'Agent info.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_phase2_skipped_on_critical(self):
+        result = critic_consistency_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        # Should have deprecated term finding but NOT readme_missing_critic_section
+        deprecated = [
+            f for f in result["findings"] if f["category"] == "deprecated_term"
+        ]
+        readme_missing = [
+            f for f in result["findings"]
+            if f["category"] == "readme_missing_critic_section"
+        ]
+        self.assertGreater(len(deprecated), 0, "Phase 1 should find deprecated term")
+        self.assertEqual(len(readme_missing), 0,
+                         "Phase 2 should be skipped when Phase 1 has CRITICAL")
 
 
 # ===================================================================
@@ -1076,6 +1255,9 @@ CLASS_FEATURE_MAP = {
     "TestCriticConsistencyDeprecated": ["release_critic_consistency_check"],
     "TestCriticConsistencyRouting": ["release_critic_consistency_check"],
     "TestCriticConsistencyWarningLevel": ["release_critic_consistency_check"],
+    "TestCriticConsistencyReadmeMissing": ["release_critic_consistency_check"],
+    "TestCriticConsistencyReadmeClean": ["release_critic_consistency_check"],
+    "TestCriticConsistencyPhase2Skipped": ["release_critic_consistency_check"],
     "TestDocConsistencyStaleRef": ["release_doc_consistency_check",
                                    "release_framework_doc_consistency"],
     "TestDocConsistencyCoverageGap": ["release_doc_consistency_check"],

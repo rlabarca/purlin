@@ -128,7 +128,7 @@ def check_routing_consistency(project_root):
 
         if in_policy != in_hww:
             findings.append(make_finding(
-                "WARNING", "routing_inconsistency",
+                "CRITICAL", "routing_inconsistency",
                 "features/policy_critic.md",
                 f"Routing rule for {discovery_type} -> {expected_role} "
                 f"{'found' if in_policy else 'missing'} in policy but "
@@ -138,13 +138,94 @@ def check_routing_consistency(project_root):
     return findings
 
 
+def check_readme_critic_section(project_root):
+    """Phase 2: Verify README.md contains the required '## The Critic' section.
+
+    Per spec Section 2.3, after a clean Phase 1, the README must have a
+    '## The Critic' section placed after '## The Agents' and before
+    '## Setup & Configuration'.
+    """
+    findings = []
+    readme_path = os.path.join(project_root, "README.md")
+
+    if not os.path.exists(readme_path):
+        findings.append(make_finding(
+            "CRITICAL", "readme_missing",
+            "README.md",
+            "README.md not found -- Phase 2 cannot verify Critic section",
+        ))
+        return findings
+
+    try:
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except (IOError, OSError):
+        findings.append(make_finding(
+            "CRITICAL", "readme_unreadable",
+            "README.md",
+            "README.md could not be read -- Phase 2 cannot verify Critic section",
+        ))
+        return findings
+
+    # Check for the required section heading
+    if not re.search(r'^## The Critic\b', content, re.MULTILINE):
+        findings.append(make_finding(
+            "CRITICAL", "readme_missing_critic_section",
+            "README.md",
+            "README.md is missing the required '## The Critic' section "
+            "(must be placed after '## The Agents' and before "
+            "'## Setup & Configuration')",
+        ))
+        return findings
+
+    # If section exists, verify ordering: Agents -> Critic -> Setup
+    headings = re.findall(r'^(## .+)$', content, re.MULTILINE)
+    heading_names = [h.strip() for h in headings]
+
+    agents_idx = None
+    critic_idx = None
+    setup_idx = None
+
+    for i, h in enumerate(heading_names):
+        if h.startswith("## The Agents"):
+            agents_idx = i
+        elif h.startswith("## The Critic"):
+            critic_idx = i
+        elif h.startswith("## Setup & Configuration") or h.startswith("## Setup &"):
+            setup_idx = i
+
+    if agents_idx is not None and critic_idx is not None and critic_idx <= agents_idx:
+        findings.append(make_finding(
+            "WARNING", "readme_critic_ordering",
+            "README.md",
+            "'## The Critic' section should appear after '## The Agents'",
+        ))
+
+    if setup_idx is not None and critic_idx is not None and critic_idx >= setup_idx:
+        findings.append(make_finding(
+            "WARNING", "readme_critic_ordering",
+            "README.md",
+            "'## The Critic' section should appear before "
+            "'## Setup & Configuration'",
+        ))
+
+    return findings
+
+
 def main(project_root=None):
     if project_root is None:
         project_root = detect_project_root(SCRIPT_DIR)
 
     findings = []
+
+    # Phase 1: Audit checks
     findings.extend(check_deprecated_terms(project_root))
     findings.extend(check_routing_consistency(project_root))
+
+    # Phase 2: README Critic section check (only if Phase 1 has no CRITICAL)
+    has_critical = any(f["severity"] == "CRITICAL" for f in findings)
+    if not has_critical:
+        findings.extend(check_readme_critic_section(project_root))
 
     result = make_output("critic_consistency_check", findings)
     return result
