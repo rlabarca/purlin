@@ -271,6 +271,168 @@ class TestApiStatusJsonRoleStatus(unittest.TestCase):
             shutil.rmtree(test_dir)
 
 
+class TestApiStatusJsonVerificationEffort(unittest.TestCase):
+    """Scenario: Status JSON includes verification_effort (end-to-end API).
+
+    Verifies that the /status.json endpoint (generate_api_status_json)
+    includes the verification_effort block for features that have it in
+    critic.json, and omits it for features that do not.
+    Addresses [BUG] M38: verification_effort test traceability.
+    """
+
+    def test_status_json_includes_verification_effort(self):
+        """generate_api_status_json includes verification_effort when present."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            # Create feature file
+            with open(os.path.join(features_dir, "effort_test.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "Effort Test"\n')
+
+            # Create critic.json with verification_effort
+            feat_test_dir = os.path.join(tests_dir, "effort_test")
+            os.makedirs(feat_test_dir)
+            effort_data = {
+                "web_test": 3, "test_only": 2, "skip": 0,
+                "manual_interactive": 1, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 5, "total_manual": 1,
+                "summary": "5 auto, 1 manual",
+            }
+            with open(os.path.join(feat_test_dir, "critic.json"), "w") as f:
+                json.dump({
+                    "role_status": {
+                        "architect": "DONE",
+                        "builder": "DONE",
+                        "qa": "TODO",
+                        "pm": "N/A",
+                    },
+                    "verification_effort": effort_data,
+                }, f)
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                features = data["features"]
+                self.assertEqual(len(features), 1)
+                entry = features[0]
+                # verification_effort must be present in API response
+                self.assertIn("verification_effort", entry)
+                ve = entry["verification_effort"]
+                self.assertEqual(ve["total_auto"], 5)
+                self.assertEqual(ve["total_manual"], 1)
+                self.assertEqual(ve["summary"], "5 auto, 1 manual")
+                self.assertEqual(ve["web_test"], 3)
+                self.assertEqual(ve["test_only"], 2)
+                self.assertEqual(ve["manual_interactive"], 1)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+    def test_status_json_omits_verification_effort_when_absent(self):
+        """generate_api_status_json omits verification_effort when not in critic."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "no_effort.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "No Effort"\n')
+
+            feat_test_dir = os.path.join(tests_dir, "no_effort")
+            os.makedirs(feat_test_dir)
+            with open(os.path.join(feat_test_dir, "critic.json"), "w") as f:
+                json.dump({
+                    "role_status": {
+                        "architect": "DONE",
+                        "builder": "DONE",
+                        "qa": "CLEAN",
+                        "pm": "N/A",
+                    },
+                }, f)
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                features = data["features"]
+                self.assertEqual(len(features), 1)
+                entry = features[0]
+                self.assertNotIn("verification_effort", entry)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+    def test_status_json_auto_feature_has_effort(self):
+        """Auto-resolvable feature in /status.json has verification_effort."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "auto_feat.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "Auto Feature"\n')
+
+            feat_test_dir = os.path.join(tests_dir, "auto_feat")
+            os.makedirs(feat_test_dir)
+            effort_data = {
+                "web_test": 4, "test_only": 1, "skip": 0,
+                "manual_interactive": 0, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 5, "total_manual": 0,
+                "summary": "5 auto",
+            }
+            with open(os.path.join(feat_test_dir, "critic.json"), "w") as f:
+                json.dump({
+                    "role_status": {
+                        "architect": "DONE",
+                        "builder": "DONE",
+                        "qa": "TODO",
+                        "pm": "N/A",
+                    },
+                    "verification_effort": effort_data,
+                }, f)
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                entry = data["features"][0]
+                self.assertIn("verification_effort", entry)
+                ve = entry["verification_effort"]
+                self.assertEqual(ve["total_auto"], 5)
+                self.assertEqual(ve["total_manual"], 0)
+                # This is the kind of feature that would display AUTO
+                self.assertEqual(entry["qa"], "TODO")
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+
 class TestApiStatusJsonOmitWhenNoCritic(unittest.TestCase):
     """Scenario: Role Status Omitted When No Critic File"""
 
