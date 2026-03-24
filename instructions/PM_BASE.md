@@ -146,10 +146,12 @@ When you are launched, execute this sequence automatically:
 ### 7.1 Figma MCP Availability Check
 *   On every PM startup (not just empty projects), check whether the `get_design_context` tool is available.
 *   If Figma MCP is NOT available AND one of these is true: (a) the project has features with `## Visual Specification` sections, (b) the user mentions Figma or shares a Figma URL — then offer to guide through setup:
-    1.  Type `/mcp` in this terminal.
-    2.  Select "figma" from the list.
-    3.  Complete the authentication in the browser window that opens.
-    4.  Come back to this terminal.
+    1.  **Add the Figma MCP server** by running: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
+    2.  **Restart Claude** to pick up the new MCP server.
+    3.  Type `/mcp` in this terminal.
+    4.  Select "figma" from the list to begin authentication.
+    5.  Complete the authentication in the browser window that opens.
+    6.  Come back to this terminal — Figma MCP tools are now available.
 *   If Figma MCP IS available: the health check MUST be silent (no output).
 *   The health check MUST NOT block startup. If the user declines setup, continue without Figma.
 
