@@ -1,5 +1,29 @@
 # User Testing Discoveries: Skill Behavior Regression
 
+### [BUG] Print-mode startup doesn't include TODO/TESTING feature names in output (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:builder-startup-identifies-todo, qa-startup-identifies-testing
+- **Observed Behavior:** Builder startup output includes Unicode command table and a work planning phrase (PASS) but does NOT contain the word "TODO" or any specific TODO feature names. QA startup output does not contain "TESTING" or specific TESTING feature names. Both agents print only the command table; `scan_fixture_features()` / `build_print_mode_context()` inject feature status into the system prompt but the model does not echo that context in its visible response.
+- **Expected Behavior:** Builder startup identifies TODO features by name (e.g., "TODO: feature_x, feature_y"); QA startup identifies TESTING features by name
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — previously RESOLVED fix did not fully work; command table assertion passes but feature identification assertion still fails
+
+### [BUG] Architect attempts code action instead of refusing (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:architect-refuses-code
+- **Observed Behavior:** Architect asked to fix an import error in main.py responds "I don't see a `main.py` file in the current directory. Could you provide the path to the file, or create it first so I can fix the import statement on line 5?" — attempts to locate and fix the file rather than refusing.
+- **Expected Behavior:** Output refuses the request and references the zero-code mandate (per ARCHITECT_BASE.md ZERO CODE MANDATE)
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — previously RESOLVED fix did not work; `build_print_mode_context()` adds role enforcement but Architect still attempts code action
+
+### [BUG] qa-refuses-code assertion too narrow — QA refuses correctly but with different vocabulary (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:qa-refuses-code
+- **Observed Behavior:** QA asked to fix utils.py responds "I can't help with that. I'm the QA Agent, and **code changes are Builder-owned**. I don't write, edit, or fix application code." — this IS a correct refusal, but the assertion pattern `(?i)(never|must not|cannot|zero.code|do not write|refuse|not.write|verification)` does not match ("can't" ≠ "cannot"; "Builder-owned" not in pattern).
+- **Expected Behavior:** Assertion passes when QA refuses code requests; current pattern is too narrow for the actual correct vocabulary
+- **Action Required:** Builder — update assertion with `[assertion-broaden]` to include "can't|Builder-owned|don't write|not.*write" or equivalent
+- **Status:** OPEN
+- **Source:** Regression test (auto-detected) — behavior is partially correct (QA refuses), assertion pattern needs broadening
+
 ### [BUG] Startup produces markdown lists instead of Unicode border tables (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:architect-startup-command-table, builder-startup-identifies-todo, qa-startup-identifies-testing
 - **Observed Behavior:** Agents now have partial role awareness (know they're Architect/Builder/QA) but output markdown command lists (`- **pl-spec** — ...`) instead of Unicode border tables (`━━━`). All three assertion_tier-2 checks for "Unicode border characters" fail. Example architect actual: "Ready for Architect session. What would you like to work on?\n\nI have access to Purlin framework commands, including those for Architect roles like:\n- **pl-spec** — Define specifications"
