@@ -6,6 +6,8 @@
 
 **Collaborative Design-Driven Agentic Development Framework**
 
+**[Documentation](docs/index.md)** | **[Release Notes](RELEASE_NOTES.md)**
+
 [![Watch the video](https://img.youtube.com/vi/ob7_RzriVdI/maxresdefault.jpg)](https://youtu.be/ob7_RzriVdI)
 
 **How to work with the agents:** [English](https://youtu.be/sLk6YqoVW4c) | [Portugues Brasileiro](https://youtu.be/hxARP-1TMk0)
@@ -83,7 +85,9 @@ When a team member clones your repository, a single command handles everything:
 
 This initializes the submodule if needed, then creates or repairs launchers, commands, and symlinks without touching project-specific config.
 
-### Updating the Submodule After a Pull
+### Updating Purlin
+
+Use `/pl-update-purlin` from any agent session. It fetches the latest version, analyzes what changed, preserves your `.purlin/` customizations, and offers merge strategies for conflicts. See the [Installation Guide](docs/installation-guide.md) for details.
 
 If `git pull` advances the Purlin submodule pointer (you'll see `purlin` in `git status` as modified), sync it with:
 
@@ -97,23 +101,6 @@ git submodule update --init purlin
 
 **Python environment:** Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) need: `python3 -m venv .venv && .venv/bin/pip install -r purlin/requirements-optional.txt`
 
-## Upgrading
-
-### From v0.7.5 or earlier
-
-```bash
-git submodule update --remote purlin   # fetch latest
-./purlin/pl-init.sh                    # refresh launchers and commands
-rm -f run_architect.sh run_builder.sh run_qa.sh   # remove old launcher names
-git add -A && git commit -m "chore: upgrade purlin"
-```
-
-### From v0.8.0+
-
-Use `/pl-update-purlin` from any agent session. It fetches upstream, analyzes changes semantically, preserves your `.purlin/` customizations, and offers merge strategies for conflicts.
-
-See the [Release Notes](RELEASE_NOTES.md) for what changed in each version.
-
 ---
 
 ## Screenshots
@@ -123,12 +110,6 @@ See the [Release Notes](RELEASE_NOTES.md) for what changed in each version.
 
 **CDD Spec Map**
 ![CDD Spec Map](assets/PurlinSpecMapV0.8.3.png)
-
----
-
-## Documentation
-
-Full guides covering agents, dashboard, workflows, collaboration, and the complete command reference are in the [docs](docs/index.md) folder.
 
 ---
 
