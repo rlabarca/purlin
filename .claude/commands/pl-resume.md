@@ -217,7 +217,15 @@ Action Items:   <count> items from Critic report
 <QA only>       Verification queue: N features in TESTING
 <PM only>       Figma MCP: <available | not available>
 Uncommitted:    <none | summary>
+<If role was provided as explicit argument (tier 1) AND system prompt contained a different role (tier 2):>
+Session name:   run /rename <ProjectName> | <NewRole> to update
 ```
+
+**Rename suggestion rules:**
+- The rename suggestion appears ONLY when: (1) the user passed an explicit role argument to `/pl-resume` (tier 1 detection), AND (2) the system prompt contains role identity markers for a *different* role (tier 2 detection succeeded with a different role).
+- When the role is unchanged (tier 1 == tier 2), or when no system prompt role markers exist (tier 2 did not detect a role), the "Session name:" line is omitted entirely.
+- `<ProjectName>` is resolved by reading `project_name` from config (via `${TOOLS_ROOT}/config/resolve_config.py --key project_name`), falling back to the project directory basename when the key is absent or empty.
+- `<NewRole>` uses the display name mapping: `architect` -> `Architect`, `builder` -> `Builder`, `qa` -> `QA`, `pm` -> `PM`.
 
 ### Step 7 -- Cleanup and Continue
 

@@ -91,12 +91,14 @@ if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
 fi
 
 # --- Build common CLI args ---
+ROLE_DISPLAY="Builder"
 CLI_ARGS=()
 [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
 [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
 if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 fi
+CLI_ARGS+=(--remote-control "$PROJECT_NAME | $ROLE_DISPLAY")
 
 # --- Launch ---
 if [ "$CONTINUOUS_MODE" = "true" ]; then

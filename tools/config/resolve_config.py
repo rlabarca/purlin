@@ -261,6 +261,10 @@ def _cli_role(project_root, role):
     print(f'AGENT_MODEL_WARNING="{warning}"')
     print(f'AGENT_MODEL_WARNING_DISMISSED="{dismissed}"')
 
+    # Project name: config key with basename fallback
+    project_name = config.get('project_name', '') or os.path.basename(project_root)
+    print(f'PROJECT_NAME="{project_name}"')
+
 
 def _cli_acknowledge_warning(project_root, model_id):
     """Add a model ID to acknowledged_warnings in config.local.json."""

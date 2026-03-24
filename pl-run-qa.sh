@@ -70,6 +70,7 @@ if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
 fi
 
 # --- Claude dispatch ---
+ROLE_DISPLAY="QA"
 CLI_ARGS=()
 [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
 [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
@@ -78,5 +79,6 @@ if [ "$AGENT_BYPASS" = "true" ]; then
 else
     CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
 fi
+CLI_ARGS+=(--remote-control "$PROJECT_NAME | $ROLE_DISPLAY")
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "QA"
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
