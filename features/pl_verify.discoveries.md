@@ -28,4 +28,5 @@
 - **Observed Behavior:** QA agent flags `release_record_version_notes` regression.json as `[PASS] ← prior run; re-run needed` despite the result being PASS with source files unmodified (not STALE). The agent repeatedly requests re-validation of already-passing suites, creating unnecessary work.
 - **Expected Behavior:** The staleness check is the sole arbiter: PASS + source not modified = valid pass, no re-run. The skill file must add an explicit note after the staleness classification (step 2 of the regression suite status table) prohibiting re-run requests for valid PASS results. Text: "PASS results are valid — do NOT flag as 'prior run; re-run needed' or request fresh execution. Only STALE, FAIL, and NOT_RUN require action."
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Added explicit note after staleness classification in step 2 of the regression suite status table: "PASS results are valid — do NOT flag as 'prior run; re-run needed' or request fresh execution. Only STALE, FAIL, and NOT_RUN require action."

@@ -191,6 +191,7 @@ Proceeding to Phase B.
    - `status: "PASS"` but source modified since mtime → **STALE**
    - `status: "FAIL"` → **FAIL**
    - Missing or `total: 0` → **NOT_RUN**
+   PASS results are valid — do NOT flag as "prior run; re-run needed" or request fresh execution. Only STALE, FAIL, and NOT_RUN require action.
 3. Read `QA_OVERRIDES.md` `## Test Priority Tiers` table (if it exists) to determine each feature's test priority tier (smoke, standard, full-only).
 4. Read each scenario file's `frequency` field (`per-feature` default, or `pre-release`).
 5. **Harness type detection:** Read each scenario file's `harness_type`. Suites with `harness_type: "agent_behavior"` CANNOT run inside an active Claude Code session (nested session protection). These must be run externally by the user.
