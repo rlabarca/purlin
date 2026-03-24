@@ -6,11 +6,11 @@
 ## Summary
 15 Builder TODO features reset by spec changes and QA bug discoveries. 2 features deferred (architect: TODO prerequisites). Phased by dependency order: foundation first, then three parallel groups of config/skills/release features. All features within each phase are independent and can build concurrently via parallel dispatch.
 
-## Phase 1 -- Foundation [IN_PROGRESS]
+## Phase 1 -- Foundation [COMPLETE]
 **Features:** project_init.md, impl_notes_companion.md
-**Completion Commit:** --
+**Completion Commit:** 568f9a3c
 **Deferred:** --
-**QA Bugs Addressed:** --
+**QA Bugs Addressed:** project_init --preflight-only BUG (RESOLVED)
 **Notes:** Both foundational. project_init is a prerequisite for Phase 2 features (config_layering, python_environment). impl_notes_companion is a prerequisite for Phase 3 features (pl_infeasible, pl_spec, pl_spec_from_code). Features are independent — parallel build opportunity.
 
 ## Phase 2 -- Config & Environment [PENDING]
