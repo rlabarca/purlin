@@ -452,36 +452,31 @@ class TestBuildPrintModeContext(unittest.TestCase):
         self.assertIn('/pl-anchor', ctx)
 
     def test_includes_feature_status(self):
-        """Feature status summary is included with correct counts."""
+        """Feature status summary is included with feature names."""
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
-        self.assertIn('TODO (1)', ctx)
-        self.assertIn('Authentication', ctx)
-        self.assertIn('TESTING (1)', ctx)
-        self.assertIn('Login Flow', ctx)
-        self.assertIn('COMPLETE (1)', ctx)
-        self.assertIn('User Signup', ctx)
+        self.assertIn('TODO: Authentication', ctx)
+        self.assertIn('TESTING: Login Flow', ctx)
+        self.assertIn('COMPLETE:', ctx)
 
-    def test_feature_status_includes_output_directive(self):
-        """Feature status section tells model to echo TODO/TESTING names."""
+    def test_feature_status_integrated_with_command_table(self):
+        """Feature status is integrated into the command table directive."""
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
-        self.assertIn('CRITICAL', ctx)
-        self.assertIn('You MUST include these feature names in your output', ctx)
+        self.assertIn('Command Table & Status', ctx)
+        self.assertIn('you MUST print this feature status', ctx)
+        self.assertIn('TODO: Authentication', ctx)
 
-    def test_feature_status_appears_before_command_table(self):
-        """Feature status section appears before the command table."""
+    def test_no_tools_notice_present(self):
+        """No-tools notice is present for --print mode."""
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
-        status_pos = ctx.find('Pre-loaded: Project Status')
-        table_pos = ctx.find('Pre-loaded: Command Table')
-        self.assertGreater(status_pos, -1, "Project Status must exist")
-        self.assertGreater(table_pos, -1, "Command Table must exist")
-        self.assertLess(status_pos, table_pos,
-                        "Feature status must appear before command table")
+        self.assertIn('Execution Mode', ctx)
+        self.assertIn('You CANNOT execute tools', ctx)
+        self.assertIn('Do NOT say you need permission', ctx)
 
     def test_includes_skill_content_for_slash_commands(self):
         """Skill file content is included when prompt is a slash command."""
