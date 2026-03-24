@@ -6,17 +6,17 @@
 ## Summary
 25 TODO features require re-verification and bug fixes following a bulk discovery sidecar audit. Phasing splits work by dependency layer (foundations first, CDD dashboard last) with parallel execution groups to enable concurrent Builder sessions. 2 features deferred pending Architect spec resolution.
 
-## Phase 1 -- Foundations [IN_PROGRESS]
+## Phase 1 -- Foundations [COMPLETE]
 **Features:** test_fixture_repo.md, regression_testing.md, context_recovery_hook.md, pm_agent_launcher.md, pl_help.md
-**Completion Commit:** --
+**Completion Commit:** f135c732
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Parallel Build:** test_fixture_repo, regression_testing independent foundations; context_recovery_hook, pm_agent_launcher, pl_help fully independent
 **Execution Group:** A (parallel with Phase 2)
 
-## Phase 2 -- Independent Skills [PENDING]
+## Phase 2 -- Independent Skills [COMPLETE]
 **Features:** pl_remote_push.md, pl_release_step.md, pl_web_test.md, pl_design_audit.md, release_verify_dependency_integrity.md
-**Completion Commit:** --
+**Completion Commit:** f135c732
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Parallel Build:** All 5 features fully independent (no mutual dependencies)
