@@ -468,8 +468,20 @@ class TestBuildPrintModeContext(unittest.TestCase):
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
-        self.assertIn('IMPORTANT', ctx)
-        self.assertIn('you MUST explicitly list the TODO and TESTING features', ctx)
+        self.assertIn('CRITICAL', ctx)
+        self.assertIn('You MUST include these feature names in your output', ctx)
+
+    def test_feature_status_appears_before_command_table(self):
+        """Feature status section appears before the command table."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        status_pos = ctx.find('Pre-loaded: Project Status')
+        table_pos = ctx.find('Pre-loaded: Command Table')
+        self.assertGreater(status_pos, -1, "Project Status must exist")
+        self.assertGreater(table_pos, -1, "Command Table must exist")
+        self.assertLess(status_pos, table_pos,
+                        "Feature status must appear before command table")
 
     def test_includes_skill_content_for_slash_commands(self):
         """Skill file content is included when prompt is a slash command."""
