@@ -46,10 +46,11 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
-12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
-13. **MCP Server Installation:** Install required MCP servers from the framework manifest (Section 2.16).
-14. **Post-Init Staging:** After all artifacts are created, the script MUST stage exactly the files it created or modified using explicit `git add` calls. The script MUST NOT suggest or use `git add -A` or `git add .`.
-15. **Summary Output:** Print a concise summary (Section 2.7).
+12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both the `clear` and `compact` session-recovery hooks (Section 2.15). The `compact` hook handles auto-compaction events by reminding the agent to check role guard-rails.
+13. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root using marker-based block insertion (`<!-- purlin:start -->` / `<!-- purlin:end -->`). Source template is `purlin-config-sample/CLAUDE.md.purlin`. Preserves user content outside the markers. See `context_recovery_hook.md` Section 2.3 for the full protocol.
+14. **MCP Server Installation:** Install required MCP servers from the framework manifest (Section 2.16).
+15. **Post-Init Staging:** After all artifacts are created, the script MUST stage exactly the files it created or modified (including `CLAUDE.md`) using explicit `git add` calls. The script MUST NOT suggest or use `git add -A` or `git add .`.
+16. **Summary Output:** Print a concise summary (Section 2.7).
 
 ### 2.4 Refresh Mode
 
@@ -65,7 +66,8 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
 5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
-6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
+6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both session-recovery hooks (Section 2.15).
+6b. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root (same marker-based protocol as full init step 13). The refresh path MUST also stage `CLAUDE.md` via `git add`.
 7.  **Gitignore Pattern Sync:** Read `<submodule>/purlin-config-sample/gitignore.purlin`. For each pattern not already present in the consumer's `.gitignore`, append it under a `# Added by Purlin refresh` header. Never remove or modify existing entries.
 8.  **MCP Server Installation:** Install required MCP servers from the framework manifest (Section 2.16).
 9.  **Refresh Summary:** Print a concise summary (Section 2.8).

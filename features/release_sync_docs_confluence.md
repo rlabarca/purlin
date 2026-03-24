@@ -118,8 +118,10 @@ If no images are found, skip directly to page sync.
 
 1. Search for existing child pages under parent page `4011458562`.
 2. For each subdirectory in `docs/`: find or create a section page as a child of the parent page (directory name to title-case, with `reference` mapping to "Technical Reference").
-3. For each `*.md` file: derive page title from filename, read content, apply image URL replacements if any, and create or update the child page under its section page via MCP.
-4. NEVER delete pages that have no local counterpart.
+3. Build a **LINK MAP** — for each `*.md` file to be synced, compute the Confluence URL it will have. Convert relative markdown links (`[Title](filename.md)`) to absolute Confluence URLs using this map before uploading content.
+4. For each `*.md` file: derive page title from filename, read content, apply image URL and link replacements, and create or update the child page under its section page via MCP. Use `contentFormat: "markdown"` (never `representation: "wiki"`).
+5. **Version tag:** Append the current release version to page titles: `"<page title> (<version>)"`. This allows Confluence readers to see which release the documentation corresponds to.
+6. NEVER delete pages that have no local counterpart.
 
 ### 2.8 Scope Constraint
 

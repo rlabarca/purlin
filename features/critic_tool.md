@@ -996,6 +996,13 @@ The following fixture tags provide deterministic project states for integration-
     And each entry shows format: `<feature_name>: <count>x <pattern> in <file> (lines <first3>...+<remaining> more)`
     And the first entry reads: `cdd_agent_configuration: 34x #hex in tools/cdd/serve.py (lines 259,262,265...+31 more)`
 
+#### Scenario: Allow-Empty Complete Commit Validated Against Spec Hash
+    Given a feature has a [Complete] status commit using --allow-empty
+    And the spec content hash at the Complete commit differs from the current on-disk spec
+    When the Critic validates the status commit
+    Then the allow-empty commit is flagged as invalid (spec changed but Builder used --allow-empty)
+    And the feature lifecycle resets to TODO
+
 #### Scenario: Orphan Companion File Detected
     Given a file features/deleted_feature.impl.md exists
     And no file features/deleted_feature.md exists
