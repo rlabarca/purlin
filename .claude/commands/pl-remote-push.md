@@ -3,7 +3,7 @@ Push: push local collaboration branch to remote.
 **Owner: All roles**
 
 The command operates in three modes:
-- **Mode 1 — No remote configured:** Guides the user through adding a git remote, then pushes.
+- **Mode 1 — No remote configured:** Exits with guidance to run `/pl-remote-add`.
 - **Mode 2 — Direct mode (no active branch):** Collaboration branch resolves to `main`. Pushes `main` to the remote.
 - **Mode 3 — Collaboration mode (active branch):** Pushes the active collaboration branch to the same-named remote branch.
 
@@ -44,23 +44,7 @@ Check for configured remotes:
 git remote -v
 ```
 
-If no remotes exist, guide the user through setup:
-
-1. Scan for hosting hints:
-   - Check `~/.ssh/config` for configured hosts (e.g., `github.com`, `gitlab.com`, `bitbucket.org`).
-   - Check git credential helpers: `git config --global --get-regexp credential`.
-   - Check for hosting CLIs: `gh` (GitHub), `glab` (GitLab).
-2. Present the user with a prompt:
-   ```
-   No remote configured. Enter a git remote URL
-   (SSH or HTTPS — any git-compatible host):
-   ```
-   If hosting hints were found in step 1, list them as informational suggestions below the prompt (e.g., "Detected: github.com (SSH key)"). Do not auto-select any host.
-3. Accept any valid git URL format: `git@host:user/repo.git`, `https://host/user/repo.git`, `ssh://...`, or local paths.
-4. Ask for the remote name (default `"origin"`).
-5. Execute `git remote add <name> <url>`.
-6. Verify connectivity: `git ls-remote <name>`. If it fails, report the error and let the user correct the URL.
-7. Proceed to push.
+If no remotes exist, print: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exit with code 1.
 
 ### 3. Load Config
 
@@ -154,7 +138,7 @@ On failure: Print the git error message. Exit with failure.
 
 - Does NOT merge anything. Use `/pl-remote-pull` first if behind or diverged.
 - Branches are created via the CDD dashboard, not this command.
-- **Mode 1 (no remote):** Detected after the branch guard passes. Scans for hosting hints (SSH keys, credential helpers, CLIs) and prompts for any git-compatible remote URL.
+- **Mode 1 (no remote):** Detected after the branch guard passes. Prints guidance to run `/pl-remote-add` and exits.
 - **Mode 2 (direct mode):** No active branch file → resolves to `main`. Pushes main directly.
 - **Mode 3 (collaboration mode):** Active branch file present → pushes that branch.
 - If the remote branch does not exist, `git push` creates it automatically. The first-push safety confirmation applies.

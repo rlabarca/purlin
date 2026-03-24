@@ -52,7 +52,7 @@ After the branch guard passes (or is skipped in explicit-branch mode), check for
 git remote -v
 ```
 
-If no remotes exist, print: "No git remote configured. Run `/pl-remote-push` to set up a remote first." and exit with code 1.
+If no remotes exist, print: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exit with code 1.
 
 ### 3. Load Config
 

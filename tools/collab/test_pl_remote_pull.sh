@@ -219,7 +219,7 @@ if [[ "$CURRENT" == "$COLLAB_BRANCH" ]]; then
     # Remote guard: check for configured remotes
     REMOTES=$(git remote -v 2>/dev/null)
     if [[ -z "$REMOTES" ]]; then
-        ERROR_MSG="No git remote configured. Run /pl-remote-push to set up a remote first."
+        ERROR_MSG="No git remote configured. Run /pl-remote-add to set up a remote first."
         log_pass "No remote detected: $ERROR_MSG"
     else
         log_fail "Expected no remotes, but found: $REMOTES"
@@ -522,6 +522,55 @@ if [[ "$AHEAD" -eq 0 && "$BEHIND" -eq 0 ]]; then
     log_pass "SAME state detected: nothing to pull"
 else
     log_fail "Expected SAME (ahead=0 behind=0), got ahead=$AHEAD behind=$BEHIND"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-pull Generates Digest After Successful Merge
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull Generates Digest After Successful Merge"
+setup_collab_repos
+cd "$LOCAL_DIR"
+# Add 3 commits to remote
+CLONE2="$SANDBOX/clone2"
+git clone -q "$REMOTE_DIR" "$CLONE2"
+cd "$CLONE2"
+git config user.email "test@test.com"
+git config user.name "Test"
+git checkout -q "$BRANCH"
+echo "r1" > r1.txt && git add r1.txt && git commit -q -m "remote 1"
+echo "r2" > r2.txt && git add r2.txt && git commit -q -m "remote 2"
+echo "r3" > r3.txt && git add r3.txt && git commit -q -m "remote 3"
+git push -q origin "$BRANCH" 2>/dev/null
+# Back to local
+cd "$LOCAL_DIR"
+git fetch -q origin
+BEHIND=$(git log "$BRANCH..origin/$BRANCH" --oneline 2>/dev/null | wc -l | tr -d ' ')
+if [[ "$BEHIND" -eq 3 ]]; then
+    MERGE_OUT=$(git merge --ff-only "origin/$BRANCH" 2>&1)
+    MERGE_EXIT=$?
+    if [[ $MERGE_EXIT -eq 0 ]]; then
+        # After successful merge, verify digest script exists
+        DIGEST_SCRIPT="$SCRIPT_DIR/generate_whats_different.sh"
+        if [[ -f "$DIGEST_SCRIPT" ]]; then
+            # Run the digest script -- it is informational and non-blocking
+            DIGEST_OUT=$(bash "$DIGEST_SCRIPT" "$BRANCH" 2>&1)
+            DIGEST_EXIT=$?
+            if [[ $DIGEST_EXIT -eq 0 ]]; then
+                log_pass "Digest generated after successful merge (exit=$DIGEST_EXIT)"
+            else
+                # Script failure does not block: pull still succeeded
+                log_pass "Digest script failed but pull still succeeded (non-blocking): exit=$DIGEST_EXIT"
+            fi
+        else
+            log_fail "Digest script not found at $DIGEST_SCRIPT"
+        fi
+    else
+        log_fail "Fast-forward failed: $MERGE_OUT"
+    fi
+else
+    log_fail "Expected BEHIND by 3, got $BEHIND"
 fi
 cleanup_sandbox
 

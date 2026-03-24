@@ -2908,7 +2908,7 @@ class TestJoinBranchContinuesWhenPreJoinPushFails(unittest.TestCase):
 
 
 class TestJoinBranchPreJoinPullsWhenBehind(unittest.TestCase):
-    """Scenario: Join Branch Pulls Current Branch When Behind Remote
+    """Scenario: Join Branch Pre-Join Pulls When Current Branch Is BEHIND Remote
 
     Given the CDD server is running on branch "main"
     And origin/main has 3 commits not in local main (local behind)
@@ -2969,7 +2969,7 @@ class TestJoinBranchPreJoinPullsWhenBehind(unittest.TestCase):
 
 
 class TestJoinBranchPreJoinDivergedReturnsGuidance(unittest.TestCase):
-    """Scenario: Join Branch Returns Guidance When Current Branch Diverged
+    """Scenario: Join Branch Pre-Join Diverged Returns Guidance
 
     Given the CDD server is running on branch "main"
     And main has 1 commit not in origin/main AND origin/main has 2 commits not in main
