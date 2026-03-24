@@ -20,4 +20,5 @@
 - **Observed Behavior:** QA agent runs in-session regression suites (critic_tool, project_init both PASS), but does not commit [Complete] status tags or update CDD. Features remain as TODO/AUTO in the dashboard. The agent waits for external agent_behavior tests before finalizing anything.
 - **Expected Behavior:** Step 5a must fire at two points: (A) after Steps 1-5 for web-test/visual/auto-verified features, and (B) after in-session regression suites pass — BEFORE the external agent_behavior gate. Features that passed in-session must be finalized immediately. The external test gate must NOT block completion of already-clean features. Applies to both AUTO and TODO features whose automated work is satisfied.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Restructured Step 5a to fire at two checkpoints (A and B). Reordered regression suite section: in-session suites run first (step 8), Step 5a(B) checkpoint fires (step 9), then agent_behavior gate (step 10). Updated Step 5a to cover both AUTO and TODO features. Updated Step 5 and Step 11 to reference both feature types.

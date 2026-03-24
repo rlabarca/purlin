@@ -147,17 +147,23 @@ For features in scope that have visual specification sections:
 
 This is a smoke check -- it clears visual items that can be verified now, reducing the Phase B manual list. Items that cannot be verified from a screenshot remain in the Phase B checklist.
 
-**AUTO feature completion:** For AUTO features where all items are automated/web-test, this step completes their verification — if all pass, the feature is eligible for completion in Step 5a. No Phase B items are generated for these features.
+**Feature completion via Step 5a:** For features (both AUTO and TODO) where all items are automated/web-test, this step completes their verification — if all pass, they are eligible for finalization at the next Step 5a checkpoint. No Phase B items are generated for these features.
 
 ### Step 5a -- Phase A Checkpoint (MANDATORY)
 
-After Steps 1–5, immediately finalize all AUTO features that passed verification:
+This checkpoint fires at **two** points during Phase A:
 
-1.  **Commit AUTO completions:** For each AUTO feature where all automated tests passed, commit `[Complete] [Verified]` status tags. These are QA completions, so `[Verified]` is required.
-2.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced during Phase A (Steps 3–4).
-3.  **Update CDD:** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard with all Phase A results.
-4.  **Verify clean workspace:** Confirm no uncommitted changes remain from Phase A work.
-5.  **Zero manual items check:** If zero manual items remain after Phase A (all features are either auto-passed, AUTO-completed, or have only @auto scenarios that passed), skip Phase B entirely and proceed to Session Conclusion.
+**Checkpoint (A) — after Steps 1–5:** Finalize features verified by web tests, @auto scenarios, and visual smoke. This fires immediately after Step 5 completes.
+
+**Checkpoint (B) — after in-session regression suites pass:** Finalize features whose in-session (non-agent_behavior) regression suites passed. This fires BEFORE the external agent_behavior gate. The external test gate MUST NOT block completion of features that are already clean from in-session work.
+
+At each checkpoint, execute this sequence for all newly-clean features (both AUTO and TODO):
+
+1.  **Commit completions:** For each feature where all automated QA work passed, commit `[Complete] [Verified]` status tags. These are QA completions, so `[Verified]` is required.
+2.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
+3.  **Update CDD:** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard.
+4.  **Verify clean workspace:** Confirm no uncommitted changes remain.
+5.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
 
 ### Phase A Summary
 
@@ -211,7 +217,11 @@ Regression suites:
 Run in-session suites? [all / per-feature / skip]
 ```
 
-8. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run `agent_behavior` suites in-session. QA MUST print the CLI commands AND STOP. Do NOT proceed to Phase B until the user responds. This is a blocking prompt — the user must either run the commands and report back, or explicitly skip.
+8. **Non-agent_behavior suites (run first):** QA runs these directly via the harness runner (in-session) based on user selection. When `auto_start` is `true`: run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard). For pre-release non-`agent_behavior` suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
+
+9. **Step 5a(B) — In-session checkpoint:** After all in-session regression suites complete, execute Step 5a checkpoint (B). Finalize features whose in-session automated work is now satisfied — commit `[Complete] [Verified]` status tags, commit regression artifacts, update CDD. This MUST happen BEFORE the agent_behavior gate so already-clean features are not blocked by external tests.
+
+10. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run `agent_behavior` suites in-session. QA MUST print the CLI commands AND STOP. Do NOT proceed to Phase B until the user responds. This is a blocking prompt — the user must either run the commands and report back, or explicitly skip.
 
 ```
 These suites use agent_behavior (claude --print) and must run
@@ -228,10 +238,6 @@ Or say "skip" to proceed without running them.
 
 When the user says "done": run `/pl-regression-evaluate` to process results, then proceed to Phase B.
 When the user says "skip": proceed to Phase B.
-
-9. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session) based on user selection.
-
-10. **`auto_start` behavior:** When `auto_start` is `true`: run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard). For `agent_behavior` suites: the hard gate in step 8 applies unconditionally. For pre-release non-`agent_behavior` suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 
@@ -371,7 +377,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 ### Step 11 -- Batch Completion
 
 1.  **Present Phase A results:** `"Automated (Phase A): N @auto scenarios executed, M passed, K failed."`
-2.  **Identify passing features:** All items (Phase A + Phase B) passed and zero discoveries recorded. Exclude features already completed in Step 5a (AUTO features).
+2.  **Identify passing features:** All items (Phase A + Phase B) passed and zero discoveries recorded. Exclude features already completed in Step 5a checkpoints.
 3.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 4.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 5.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.
