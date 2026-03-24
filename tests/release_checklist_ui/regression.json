@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "passed": 3,
+  "failed": 0,
+  "total": 3,
+  "test_file": "tests/qa/scenarios/release_checklist_ui.json",
+  "details": [
+    {
+      "name": "release_checklist_section_renders:Release Checklist section heading present in dashboard",
+      "status": "PASS",
+      "scenario_ref": "features/release_checklist_ui.md:release_checklist_section_renders",
+      "expected": "Release Checklist section heading present in dashboard",
+      "assertion_tier": 2
+    },
+    {
+      "name": "release_checklist_section_renders:release checklist table body element present in DOM",
+      "status": "PASS",
+      "scenario_ref": "features/release_checklist_ui.md:release_checklist_section_renders",
+      "expected": "release checklist table body element present in DOM",
+      "assertion_tier": 2
+    },
+    {
+      "name": "release_checklist_section_renders:release checklist collapse/expand UI elements present",
+      "status": "PASS",
+      "scenario_ref": "features/release_checklist_ui.md:release_checklist_section_renders",
+      "expected": "release checklist collapse/expand UI elements present",
+      "assertion_tier": 1
+    }
+  ]
+}

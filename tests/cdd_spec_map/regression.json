@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "passed": 3,
+  "failed": 0,
+  "total": 3,
+  "test_file": "tests/qa/scenarios/cdd_spec_map.json",
+  "details": [
+    {
+      "name": "spec_map_view_present:Spec Map view toggle button present in dashboard header",
+      "status": "PASS",
+      "scenario_ref": "features/cdd_spec_map.md:spec_map_view_present",
+      "expected": "Spec Map view toggle button present in dashboard header",
+      "assertion_tier": 2
+    },
+    {
+      "name": "spec_map_view_present:Recenter Graph button present in spec map canvas",
+      "status": "PASS",
+      "scenario_ref": "features/cdd_spec_map.md:spec_map_view_present",
+      "expected": "Recenter Graph button present in spec map canvas",
+      "assertion_tier": 2
+    },
+    {
+      "name": "spec_map_view_present:spec map graph JS infrastructure present in page",
+      "status": "PASS",
+      "scenario_ref": "features/cdd_spec_map.md:spec_map_view_present",
+      "expected": "spec map graph JS infrastructure present in page",
+      "assertion_tier": 1
+    }
+  ]
+}

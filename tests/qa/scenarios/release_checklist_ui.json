@@ -1,0 +1,30 @@
+{
+  "feature": "release_checklist_ui",
+  "harness_type": "web_test",
+  "scenarios": [
+    {
+      "name": "release_checklist_section_renders",
+      "setup_commands": [
+        "tools/cdd/start.sh -p 9086 > /dev/null 2>&1; sleep 2"
+      ],
+      "web_test_url": "http://localhost:9086",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Release Checklist",
+          "context": "Release Checklist section heading present in dashboard"
+        },
+        {
+          "tier": 2,
+          "pattern": "rc-tbody",
+          "context": "release checklist table body element present in DOM"
+        },
+        {
+          "tier": 1,
+          "pattern": "(?i)(chevron|toggleSection|release-checklist)",
+          "context": "release checklist collapse/expand UI elements present"
+        }
+      ]
+    }
+  ]
+}
