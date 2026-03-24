@@ -28,3 +28,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Resolution:** Renamed `_only_qa_tag_commits_since()` to `_only_exempt_commits_since()`, added `[Spec-FMT]` check alongside `[QA-Tags]`, updated both callers and comments, added 2 new tests (Spec-FMT only, mixed QA-Tags+Spec-FMT).
+
+### [BUG] Git status clean filter uses substring match instead of prefix match (Discovered: 2026-03-24)
+- **Observed Behavior:** `get_workspace_json()` (serve.py ~line 1163) and `get_git_status()` (serve.py ~line 1412) filter `.purlin/` paths using a substring match (`'.purlin/' in line`). This silently hides files like `tests/.purlin/` from the clean/dirty calculation, reporting the workspace as "clean" when untracked files exist outside the project root `.purlin/` directory.
+- **Expected Behavior:** All git status filter points should use prefix-based filtering consistent with `_get_dirty_files()` (serve.py ~line 1926), which correctly uses `path.startswith('.purlin/')`. The substring match in `get_workspace_json()` and `get_git_status()` should be replaced with equivalent prefix logic applied to the parsed file path (column 4+ of porcelain output), not the raw line.
+- **Action Required:** Builder
+- **Status:** OPEN
+- **Source:** User-reported. Branch join blocked on `tests/.purlin/` while CDD status reported clean.
