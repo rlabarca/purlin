@@ -17,3 +17,7 @@ Verified all spec requirements (Sections 2.1-2.4) are covered in the skill file:
 - 2.4 Phase B: Steps 6-11 all present with correct content.
 
 No additional gaps found between spec and implementation.
+
+## AUTO Feature Handling Gap
+
+**[DISCOVERY] [ACKNOWLEDGED]** The QA agent was not automatically executing automated tests for features with `qa_status: AUTO` during Phase A. Root cause: QA_BASE Section 3.3 and the skill file did not explicitly distinguish AUTO features from builder-verified. The QA agent conflated "zero manual work" with "no QA action needed." Fix applied to QA_BASE (authoritative source): added AUTO feature mandate callout, excluded AUTO from Step 1 auto-pass, clarified Step 5 completes AUTO feature verification. Skill file update routed to Builder via discovery sidecar. (2026-03-24)
