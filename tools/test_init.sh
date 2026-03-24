@@ -575,6 +575,275 @@ fi
 
 cleanup_sandbox
 
+# CRH idempotent test: compact hook not duplicated on refresh
+echo ""
+echo "[CRH Scenario] Compact Hook Idempotent on Refresh"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+# Run again (refresh mode)
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+COMPACT_COUNT=$(python3 -c "
+import json
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+print(sum(1 for e in hooks if isinstance(e, dict) and e.get('matcher') == 'compact'))
+" 2>/dev/null)
+
+if [ "$COMPACT_COUNT" = "1" ]; then
+    crh_pass "Exactly one compact hook entry after refresh (not duplicated)"
+else
+    crh_fail "Expected 1 compact hook, found $COMPACT_COUNT (duplicated)"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== CLAUDE.md Installation Tests ==="
+###############################################################################
+
+# CRH CLAUDE.md test 1: Fresh init creates CLAUDE.md via template
+echo ""
+echo "[CRH Scenario] Full Init Creates CLAUDE.md via Template"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+if [ -f "$CLAUDE_MD" ]; then
+    crh_pass "CLAUDE.md exists after full init"
+else
+    crh_fail "CLAUDE.md missing after full init"
+fi
+
+if grep -q '<!-- purlin:start -->' "$CLAUDE_MD" && grep -q '<!-- purlin:end -->' "$CLAUDE_MD"; then
+    crh_pass "CLAUDE.md contains purlin start/end markers"
+else
+    crh_fail "CLAUDE.md missing purlin markers"
+fi
+
+# Check content between markers matches template
+TEMPLATE="$PROJECT/purlin/purlin-config-sample/CLAUDE.md.purlin"
+if [ -f "$TEMPLATE" ]; then
+    TEMPLATE_CONTENT="$(cat "$TEMPLATE")"
+    if grep -qF "Role Boundaries" "$CLAUDE_MD"; then
+        crh_pass "CLAUDE.md contains role boundary text"
+    else
+        crh_fail "CLAUDE.md missing role boundary text"
+    fi
+    if grep -qF "Architect" "$CLAUDE_MD" && grep -qF "Builder" "$CLAUDE_MD" && grep -qF "QA" "$CLAUDE_MD" && grep -qF "PM" "$CLAUDE_MD"; then
+        crh_pass "CLAUDE.md contains text for all four roles"
+    else
+        crh_fail "CLAUDE.md missing text for one or more roles"
+    fi
+else
+    crh_fail "CLAUDE.md.purlin template missing"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 2: Replaces marked block when markers exist
+echo ""
+echo "[CRH Scenario] CLAUDE.md Replaces Marked Block on Refresh"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+# Add user content before and after markers, and modify content between markers
+python3 -c "
+with open('$CLAUDE_MD', 'r') as f:
+    content = f.read()
+# Add user content outside markers and replace inner content with outdated text
+new_content = '# My Custom Header\n\n' + content.replace('Role Boundaries', 'OUTDATED CONTENT') + '\n\n# My Custom Footer\n'
+with open('$CLAUDE_MD', 'w') as f:
+    f.write(new_content)
+" 2>/dev/null
+
+# Run refresh
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+# Check that markers still exist and content between them is current
+if grep -qF "Role Boundaries" "$CLAUDE_MD"; then
+    crh_pass "Marked block replaced with current template content"
+else
+    crh_fail "Marked block NOT replaced (still has outdated content)"
+fi
+
+# Check user content outside markers is preserved
+if grep -qF "My Custom Header" "$CLAUDE_MD" && grep -qF "My Custom Footer" "$CLAUDE_MD"; then
+    crh_pass "User content outside markers preserved"
+else
+    crh_fail "User content outside markers lost"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 3: Appends marked block when no markers exist
+echo ""
+echo "[CRH Scenario] CLAUDE.md Appends Block When No Markers Exist"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+# Replace CLAUDE.md with user-only content (no markers)
+echo "# My Project" > "$CLAUDE_MD"
+echo "" >> "$CLAUDE_MD"
+echo "This is my custom CLAUDE.md with no purlin markers." >> "$CLAUDE_MD"
+
+# Run refresh
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+# Check original content preserved
+if grep -qF "My Project" "$CLAUDE_MD"; then
+    crh_pass "Original user content preserved when appending"
+else
+    crh_fail "Original user content lost when appending"
+fi
+
+# Check purlin block appended
+if grep -q '<!-- purlin:start -->' "$CLAUDE_MD" && grep -q '<!-- purlin:end -->' "$CLAUDE_MD"; then
+    crh_pass "Purlin marked block appended to existing CLAUDE.md"
+else
+    crh_fail "Purlin marked block NOT appended"
+fi
+
+# Check role text present
+if grep -qF "Role Boundaries" "$CLAUDE_MD"; then
+    crh_pass "Appended block contains role boundary text"
+else
+    crh_fail "Appended block missing role boundary text"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 4: Preserves user content outside markers
+echo ""
+echo "[CRH Scenario] CLAUDE.md Preserves User Content Outside Markers"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+# Add user content before and after markers
+python3 -c "
+with open('$CLAUDE_MD', 'r') as f:
+    content = f.read()
+new_content = '# User Preamble\n\nCustom instructions here.\n\n' + content + '\n\n# User Epilogue\n\nMore custom content.\n'
+with open('$CLAUDE_MD', 'w') as f:
+    f.write(new_content)
+" 2>/dev/null
+
+# Run refresh
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+if grep -qF "User Preamble" "$CLAUDE_MD" && grep -qF "Custom instructions here." "$CLAUDE_MD"; then
+    crh_pass "User preamble preserved after refresh"
+else
+    crh_fail "User preamble lost after refresh"
+fi
+
+if grep -qF "User Epilogue" "$CLAUDE_MD" && grep -qF "More custom content." "$CLAUDE_MD"; then
+    crh_pass "User epilogue preserved after refresh"
+else
+    crh_fail "User epilogue lost after refresh"
+fi
+
+if grep -q '<!-- purlin:start -->' "$CLAUDE_MD" && grep -q '<!-- purlin:end -->' "$CLAUDE_MD"; then
+    crh_pass "Purlin markers still present after refresh with user content"
+else
+    crh_fail "Purlin markers lost after refresh with user content"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 5: Idempotent on refresh
+echo ""
+echo "[CRH Scenario] CLAUDE.md Installation Is Idempotent"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+# Record content after first run
+FIRST_CONTENT="$(cat "$CLAUDE_MD")"
+
+# Run refresh (second run)
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+SECOND_CONTENT="$(cat "$CLAUDE_MD")"
+
+if [ "$FIRST_CONTENT" = "$SECOND_CONTENT" ]; then
+    crh_pass "CLAUDE.md unchanged after second run (idempotent)"
+else
+    crh_fail "CLAUDE.md changed after second run (not idempotent)"
+fi
+
+# Check no duplicate markers
+MARKER_COUNT=$(grep -c '<!-- purlin:start -->' "$CLAUDE_MD")
+if [ "$MARKER_COUNT" = "1" ]; then
+    crh_pass "Exactly one purlin:start marker (no duplicates)"
+else
+    crh_fail "Expected 1 purlin:start marker, found $MARKER_COUNT"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 6: Staged in post-init git add
+echo ""
+echo "[CRH Scenario] CLAUDE.md Is Staged in Post-Init Git Add"
+setup_sandbox
+
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+STAGED_FILES="$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null)"
+
+if echo "$STAGED_FILES" | grep -q "CLAUDE.md"; then
+    crh_pass "CLAUDE.md is staged after full init"
+else
+    crh_fail "CLAUDE.md is NOT staged after full init"
+fi
+
+cleanup_sandbox
+
+# CRH CLAUDE.md test 7: CLAUDE.md staged after refresh path
+echo ""
+echo "[CRH Scenario] CLAUDE.md Staged After Refresh"
+setup_sandbox
+
+# Full init first
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+# Commit everything so refresh has a clean slate
+git -C "$PROJECT" add -A > /dev/null 2>&1
+git -C "$PROJECT" commit -q -m "after init" 2>/dev/null
+
+# Modify the template to force a change during refresh
+echo "# Updated Template" >> "$PROJECT/purlin/purlin-config-sample/CLAUDE.md.purlin"
+
+# Run refresh
+PATH="$RESTRICTED_PATH" "$INIT_SH" > /dev/null 2>&1
+
+STAGED_FILES="$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null)"
+
+if echo "$STAGED_FILES" | grep -q "CLAUDE.md"; then
+    crh_pass "CLAUDE.md is staged after refresh (M48 fix verified)"
+else
+    crh_fail "CLAUDE.md is NOT staged after refresh (M48 regression)"
+fi
+
+cleanup_sandbox
+
 ###############################################################################
 # Results
 ###############################################################################

@@ -1,16 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 1,
-  "failed": 0,
-  "total": 1,
-  "test_file": "tests/qa/scenarios/project_init.json",
-  "details": [
-    {
-      "name": "project_init_integration_suite:integration test suite ran to completion",
-      "status": "PASS",
-      "scenario_ref": "features/project_init.md:project_init_integration_suite",
-      "expected": "integration test suite ran to completion",
-      "assertion_tier": 2
-    }
-  ]
-}
+{"status": "FAIL", "passed": 46, "failed": 2, "total": 48, "test_file": "tools/test_init.sh"}

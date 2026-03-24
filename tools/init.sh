@@ -960,6 +960,7 @@ else
 
     # 4.7 CLAUDE.md Installation (context_recovery_hook.md §2.3)
     install_claude_md
+    git -C "$PROJECT_ROOT" add CLAUDE.md 2>/dev/null || true
 
     # 4.8 Gitignore Pattern Sync (project_init.md §2.4 step 7)
     GITIGNORE="$PROJECT_ROOT/.gitignore"
