@@ -387,33 +387,34 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
     sections = []
     role_lower = role.lower()
 
-    # 1. Feature status FIRST (normally obtained via status.sh)
-    #    Placed before the command table so the model outputs feature
-    #    names early, before the long command table consumes output budget.
+    # 0. No-tools notice (--print mode cannot execute tools)
+    sections.append(
+        '# CRITICAL: Execution Mode\n\n'
+        'You are in --print mode. You CANNOT execute tools, run shell '
+        'commands, read files, or use Bash. All data you need has been '
+        'pre-loaded below. Use ONLY this pre-loaded data to generate '
+        'your response. Do NOT say you need permission or that you '
+        'cannot access something — just use the data provided.')
+
+    # 1. Feature status (normally obtained via status.sh)
     status = scan_fixture_features(fixture_dir)
     total = sum(len(v) for v in status.values())
-    if total > 0:
-        lines = [f'# Pre-loaded: Project Status ({total} features)\n']
-        lines.append(
-            'CRITICAL: You MUST include these feature names in your '
-            'output. Print "TODO: <name>" or "TESTING: <name>" for each '
-            'feature listed below. Do this IMMEDIATELY after the command '
-            'table. This is required — do NOT skip it.\n')
-        if status['todo']:
-            lines.append(f'TODO ({len(status["todo"])}):')
-            for name in status['todo']:
-                lines.append(f'  - {name}')
-        if status['testing']:
-            lines.append(f'TESTING ({len(status["testing"])}):')
-            for name in status['testing']:
-                lines.append(f'  - {name}')
-        if status['complete']:
-            lines.append(f'COMPLETE ({len(status["complete"])}):')
-            for name in status['complete']:
-                lines.append(f'  - {name}')
-        sections.append('\n'.join(lines))
 
-    # 2. Command table (normally obtained via Read tool at startup)
+    # Build a compact feature status line to embed in command table output
+    status_line = ''
+    if total > 0:
+        parts = []
+        if status['todo']:
+            names = ', '.join(status['todo'])
+            parts.append(f'TODO: {names}')
+        if status['testing']:
+            names = ', '.join(status['testing'])
+            parts.append(f'TESTING: {names}')
+        if status['complete']:
+            parts.append(f'COMPLETE: {len(status["complete"])} features')
+        status_line = '\n'.join(parts)
+
+    # 2. Command table with integrated feature status
     for base in (fixture_dir, project_root):
         cmd_path = os.path.join(
             base, 'instructions', 'references', f'{role_lower}_commands.md')
@@ -421,15 +422,29 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
             try:
                 with open(cmd_path) as f:
                     table_content = f.read()
+                # Integrate feature status into the command table instruction
+                # so both are output as a single block
+                status_instruction = ''
+                if status_line:
+                    status_instruction = (
+                        '\n\nAfter the command table, you MUST print this '
+                        'feature status:\n\n' + status_line + '\n')
                 sections.append(
-                    '# Pre-loaded: Command Table\n\n'
+                    '# Pre-loaded: Command Table & Status\n\n'
                     'Print the Main Branch Variant below VERBATIM '
                     '(including the ━━━ border characters) when starting '
-                    'a session or when /pl-help is invoked.\n\n'
+                    'a session or when /pl-help is invoked.'
+                    + status_instruction + '\n\n'
                     + table_content)
             except (IOError, OSError):
                 pass
             break
+
+    # If no command table but we have status, add it standalone
+    if total > 0 and not any('Command Table' in s for s in sections):
+        sections.append(
+            f'# Pre-loaded: Project Status ({total} features)\n\n'
+            + status_line)
 
     # 3. Skill content (for skill-dispatch prompts like /pl-help, /pl-status)
     if prompt.startswith('/'):
