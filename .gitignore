@@ -15,6 +15,7 @@ venv/
 .purlin/cache/
 .purlin/runtime/
 .purlin/config.local.json
+tests/.purlin/
 
 # Generated digests (per-machine, not committed)
 features/digests/
