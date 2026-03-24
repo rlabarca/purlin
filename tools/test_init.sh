@@ -362,6 +362,38 @@ fi
 
 ###############################################################################
 echo ""
+echo "[Scenario] Full Init Copies Gitignore Template Verbatim When No Gitignore Exists"
+###############################################################################
+
+cleanup_sandbox
+setup_sandbox
+
+# Ensure no .gitignore exists before init (sandbox should not have one)
+rm -f "$PROJECT/.gitignore"
+
+"$INIT_SH" > /dev/null 2>&1
+
+GITIGNORE="$PROJECT/.gitignore"
+TEMPLATE="$PROJECT/purlin/purlin-config-sample/gitignore.purlin"
+
+if [ -f "$GITIGNORE" ] && [ -f "$TEMPLATE" ]; then
+    if diff -q "$GITIGNORE" "$TEMPLATE" > /dev/null 2>&1; then
+        log_pass ".gitignore is a verbatim copy of gitignore.purlin (including comments)"
+    else
+        log_fail ".gitignore differs from gitignore.purlin template"
+        diff "$TEMPLATE" "$GITIGNORE" 2>&1 | head -10
+    fi
+else
+    if [ ! -f "$GITIGNORE" ]; then
+        log_fail ".gitignore was not created"
+    fi
+    if [ ! -f "$TEMPLATE" ]; then
+        log_fail "gitignore.purlin template not found"
+    fi
+fi
+
+###############################################################################
+echo ""
 echo "[Scenario] Full Init Installs Session Recovery Hook"
 ###############################################################################
 

@@ -14,12 +14,10 @@ set -euo pipefail
 # 0. CLI Flag Parsing
 ###############################################################################
 QUIET=false
-PREFLIGHT_ONLY=false
 
 for arg in "$@"; do
     case "$arg" in
         --quiet) QUIET=true ;;
-        --preflight-only) PREFLIGHT_ONLY=true ;;
         *) echo "Unknown flag: $arg" >&2; exit 1 ;;
     esac
 done
@@ -100,11 +98,6 @@ if [ "$PREFLIGHT_FAILED" = true ]; then
     echo "" >&2
     echo "Fix these and re-run: $SUBMODULE_NAME/tools/init.sh" >&2
     exit 1
-fi
-
-# --preflight-only: exit after checks (used by /pl-update-purlin §2.6)
-if [ "$PREFLIGHT_ONLY" = true ]; then
-    exit 0
 fi
 
 ###############################################################################

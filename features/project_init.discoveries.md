@@ -4,5 +4,5 @@
 - **Observed Behavior:** Code has undocumented --preflight-only flag at lines 17, 105-108.
 - **Expected Behavior:** Spec does not include a --preflight-only flag. The flag should be removed.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See project_init.impl.md for context.
