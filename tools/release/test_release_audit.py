@@ -234,28 +234,34 @@ class TestZeroQueueClean(unittest.TestCase):
 
     def setUp(self):
         self.root = create_fixture({
-            "tests/feature_a/critic.json": json.dumps({
-                "role_status": {
+            ".purlin/config.json": '{}',
+        })
+        self.status_data = {
+            "features": [
+                {
+                    "file": "features/feature_a.md",
+                    "label": "Feature A",
+                    "category": "Test",
                     "architect": "DONE",
                     "builder": "DONE",
                     "qa": "CLEAN",
-                }
-            }),
-            "tests/feature_b/critic.json": json.dumps({
-                "role_status": {
+                },
+                {
+                    "file": "features/feature_b.md",
+                    "label": "Feature B",
+                    "category": "Test",
                     "architect": "DONE",
                     "builder": "DONE",
                     "qa": "N/A",
-                }
-            }),
-            ".purlin/config.json": '{}',
-        })
+                },
+            ],
+        }
 
     def tearDown(self):
         shutil.rmtree(self.root)
 
     def test_passes_all_clean(self):
-        result = verify_zero_main(self.root)
+        result = verify_zero_main(self.root, status_data=self.status_data)
         self.assertEqual(result["status"], "PASS")
         self.assertIn("2", result["summary"])  # total count
 
@@ -693,21 +699,26 @@ class TestZeroQueueQABlocking(unittest.TestCase):
 
     def setUp(self):
         self.root = create_fixture({
-            "tests/feature_a/critic.json": json.dumps({
-                "role_status": {
+            ".purlin/config.json": '{}',
+        })
+        self.status_data = {
+            "features": [
+                {
+                    "file": "features/feature_a.md",
+                    "label": "Feature A",
+                    "category": "Test",
                     "architect": "DONE",
                     "builder": "DONE",
                     "qa": "TODO",
                 }
-            }),
-            ".purlin/config.json": '{}',
-        })
+            ],
+        }
 
     def tearDown(self):
         shutil.rmtree(self.root)
 
     def test_reports_qa_blocking(self):
-        result = verify_zero_main(self.root)
+        result = verify_zero_main(self.root, status_data=self.status_data)
         self.assertEqual(result["status"], "FAIL")
         blocking = [f for f in result["findings"] if f["category"] == "blocking_feature"]
         self.assertGreater(len(blocking), 0)
@@ -723,21 +734,26 @@ class TestZeroQueueArchitectBlocking(unittest.TestCase):
 
     def setUp(self):
         self.root = create_fixture({
-            "tests/feature_a/critic.json": json.dumps({
-                "role_status": {
+            ".purlin/config.json": '{}',
+        })
+        self.status_data = {
+            "features": [
+                {
+                    "file": "features/feature_a.md",
+                    "label": "Feature A",
+                    "category": "Test",
                     "architect": "TODO",
                     "builder": "TODO",
                     "qa": "N/A",
                 }
-            }),
-            ".purlin/config.json": '{}',
-        })
+            ],
+        }
 
     def tearDown(self):
         shutil.rmtree(self.root)
 
     def test_reports_architect_blocking(self):
-        result = verify_zero_main(self.root)
+        result = verify_zero_main(self.root, status_data=self.status_data)
         self.assertEqual(result["status"], "FAIL")
         blocking = [f for f in result["findings"] if f["category"] == "blocking_feature"]
         self.assertGreater(len(blocking), 0)
@@ -1077,13 +1093,6 @@ class TestAllScriptsValidJSON(unittest.TestCase):
                 '> Label: "Feature A"\n'
                 '> Category: "Test"\n'
             ),
-            "tests/feature_a/critic.json": json.dumps({
-                "role_status": {
-                    "architect": "DONE",
-                    "builder": "DONE",
-                    "qa": "CLEAN",
-                }
-            }),
             "README.md": "# Project\n",
             ".purlin/HOW_WE_WORK_OVERRIDES.md": "# Overrides\n",
             ".purlin/ARCHITECT_OVERRIDES.md": "# Overrides\n",
@@ -1092,6 +1101,18 @@ class TestAllScriptsValidJSON(unittest.TestCase):
             ".purlin/config.json": '{}',
             "instructions/HOW_WE_WORK_BASE.md": "# HWW\n",
         })
+        self.zero_queue_status = {
+            "features": [
+                {
+                    "file": "features/feature_a.md",
+                    "label": "Feature A",
+                    "category": "Test",
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "CLEAN",
+                }
+            ],
+        }
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -1112,7 +1133,9 @@ class TestAllScriptsValidJSON(unittest.TestCase):
         self._assert_valid_output(verify_deps_main(self.root))
 
     def test_verify_zero_queue(self):
-        self._assert_valid_output(verify_zero_main(self.root))
+        self._assert_valid_output(
+            verify_zero_main(self.root, status_data=self.zero_queue_status)
+        )
 
     def test_submodule_safety_audit(self):
         self._assert_valid_output(submodule_safety_main(self.root))
@@ -1203,6 +1226,198 @@ class TestDepIntegrityStaleCacheRegeneration(unittest.TestCase):
 
 
 # ===================================================================
+# M41: verify_zero_queue uses status.sh instead of critic.json
+# ===================================================================
+
+class TestZeroQueueUsesStatusSh(unittest.TestCase):
+    """M41 fix: verify_zero_queue parses status.sh JSON output format."""
+
+    def test_load_feature_status_from_status_data(self):
+        """load_feature_status correctly parses status.sh format."""
+        status_data = {
+            "features": [
+                {
+                    "file": "features/alpha.md",
+                    "label": "Alpha",
+                    "category": "Core",
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "CLEAN",
+                },
+                {
+                    "file": "features/beta.md",
+                    "label": "Beta",
+                    "category": "Core",
+                    "architect": "TODO",
+                    "builder": "TODO",
+                    "qa": "N/A",
+                },
+            ],
+        }
+        statuses = verify_zero_load_status("/tmp/fake", status_data=status_data)
+        self.assertEqual(len(statuses), 2)
+        self.assertEqual(statuses[0]["feature"], "alpha")
+        self.assertEqual(statuses[0]["architect"], "DONE")
+        self.assertEqual(statuses[1]["feature"], "beta")
+        self.assertEqual(statuses[1]["builder"], "TODO")
+
+    def test_load_feature_status_skips_tombstones(self):
+        """Tombstone entries in status.sh output are excluded."""
+        status_data = {
+            "features": [
+                {
+                    "file": "features/active.md",
+                    "label": "Active",
+                    "category": "Core",
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "CLEAN",
+                },
+                {
+                    "file": "features/tombstones/old.md",
+                    "label": "Old",
+                    "category": "Core",
+                },
+            ],
+        }
+        statuses = verify_zero_load_status("/tmp/fake", status_data=status_data)
+        self.assertEqual(len(statuses), 1)
+        self.assertEqual(statuses[0]["feature"], "active")
+
+    def test_load_feature_status_empty_data(self):
+        """Empty status data returns empty list."""
+        statuses = verify_zero_load_status("/tmp/fake", status_data=None)
+        self.assertEqual(statuses, [])
+
+    def test_finding_uses_file_path_from_status(self):
+        """Findings reference file path from status.sh, not constructed path."""
+        status_data = {
+            "features": [
+                {
+                    "file": "features/my_feature.md",
+                    "label": "My Feature",
+                    "category": "Core",
+                    "architect": "DONE",
+                    "builder": "TODO",
+                    "qa": "N/A",
+                }
+            ],
+        }
+        result = verify_zero_main("/tmp/fake", status_data=status_data)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["findings"][0]["file"], "features/my_feature.md")
+
+
+# ===================================================================
+# M42: Structural contradiction detection in instruction_audit
+# ===================================================================
+
+class TestInstructionAuditStructuralContradiction(unittest.TestCase):
+    """M42 fix: Structural analysis detects contradictions by section match."""
+
+    def setUp(self):
+        self.root = create_fixture({
+            ".purlin/HOW_WE_WORK_OVERRIDES.md": (
+                '# Overrides\n'
+                '## Commit Protocol\n'
+                'The Builder MUST NOT push to remote after commit.\n'
+            ),
+            ".purlin/ARCHITECT_OVERRIDES.md": '# Architect Overrides\n',
+            ".purlin/BUILDER_OVERRIDES.md": '# Builder Overrides\n',
+            ".purlin/QA_OVERRIDES.md": '# QA Overrides\n',
+            "instructions/BUILDER_BASE.md": (
+                '# Builder Instructions\n'
+                '## Commit Protocol\n'
+                'The Builder MUST push to remote after commit.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_structural_section_contradiction(self):
+        """Contradictions within matching sections are detected."""
+        result = instruction_audit_main(self.root)
+        contrad = [
+            f for f in result["findings"] if f["category"] == "contradiction"
+        ]
+        self.assertGreater(len(contrad), 0,
+                           "Should detect structural contradiction")
+        self.assertEqual(contrad[0]["severity"], "CRITICAL")
+
+
+class TestInstructionAuditStructuralNoFalsePositive(unittest.TestCase):
+    """M42 fix: Structural analysis does not produce false positives
+    when override and base rules are in unrelated sections with
+    minimal word overlap (fewer than 2 shared context words)."""
+
+    def setUp(self):
+        self.root = create_fixture({
+            ".purlin/HOW_WE_WORK_OVERRIDES.md": (
+                '# Overrides\n'
+                '## Linting\n'
+                'Validators MUST NOT skip formatting checks.\n'
+            ),
+            ".purlin/ARCHITECT_OVERRIDES.md": '# Architect Overrides\n',
+            ".purlin/BUILDER_OVERRIDES.md": '# Builder Overrides\n',
+            ".purlin/QA_OVERRIDES.md": '# QA Overrides\n',
+            "instructions/BUILDER_BASE.md": (
+                '# Builder Instructions\n'
+                '## Deployment\n'
+                'Agents MUST push artifacts to remote after staging.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_no_false_positive_across_sections(self):
+        """Different sections with different subjects are not flagged."""
+        result = instruction_audit_main(self.root)
+        contrad = [
+            f for f in result["findings"] if f["category"] == "contradiction"
+        ]
+        self.assertEqual(len(contrad), 0,
+                         "Should not flag contradiction across unrelated sections")
+
+
+class TestInstructionAuditStructuralDeduplicate(unittest.TestCase):
+    """M42 fix: Heuristic and structural findings are deduplicated."""
+
+    def setUp(self):
+        self.root = create_fixture({
+            ".purlin/HOW_WE_WORK_OVERRIDES.md": (
+                '# Overrides\n'
+                'The Builder MUST NOT commit implementation code.\n'
+            ),
+            ".purlin/ARCHITECT_OVERRIDES.md": '# Architect Overrides\n',
+            ".purlin/BUILDER_OVERRIDES.md": '# Builder Overrides\n',
+            ".purlin/QA_OVERRIDES.md": '# QA Overrides\n',
+            "instructions/BUILDER_BASE.md": (
+                '# Builder Instructions\n'
+                'The Builder MUST commit implementation code after each feature.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_no_duplicate_findings(self):
+        """Same contradiction found by both methods is reported only once."""
+        result = instruction_audit_main(self.root)
+        contrad = [
+            f for f in result["findings"] if f["category"] == "contradiction"
+        ]
+        # The same override line should only appear once in findings
+        lines_reported = [f["line"] for f in contrad]
+        self.assertEqual(len(lines_reported), len(set(lines_reported)),
+                         "Each contradiction line should appear only once")
+
+
+# ===================================================================
 # Test result output
 # ===================================================================
 
@@ -1266,6 +1481,13 @@ CLASS_FEATURE_MAP = {
                                           "release_framework_doc_consistency"],
     "TestInstructionAuditStalePath": ["instruction_audit",
                                       "release_framework_doc_consistency"],
+    "TestZeroQueueUsesStatusSh": ["release_verify_zero_queue"],
+    "TestInstructionAuditStructuralContradiction": ["instruction_audit",
+                                                     "release_framework_doc_consistency"],
+    "TestInstructionAuditStructuralNoFalsePositive": ["instruction_audit",
+                                                       "release_framework_doc_consistency"],
+    "TestInstructionAuditStructuralDeduplicate": ["instruction_audit",
+                                                   "release_framework_doc_consistency"],
 }
 
 # TestAllScriptsValidJSON sub-tests map by method name
