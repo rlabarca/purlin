@@ -11,5 +11,5 @@
 - **Observed Behavior:** fixture.sh:128 regex accepts underscores in the slug segment of tag paths.
 - **Expected Behavior:** Spec says scenario slugs use hyphens only (kebab-case). Fix regex to reject underscores in the third path segment.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See test_fixture_repo.impl.md for context.

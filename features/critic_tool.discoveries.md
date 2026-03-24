@@ -28,12 +28,12 @@
 - **Observed Behavior:** Code generates LOW PM action item when lifecycle=TODO and figma_status=Design. No scenario covers this.
 - **Expected Behavior:** Need scenario coverage for the Figma Dev Status Advisory Gate behavior.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See critic_tool.impl.md for context.
 
 ### [BUG] Regression Guidance Detection has no scenario (Discovered: 2026-03-23)
 - **Observed Behavior:** Code detects features with ## Regression Guidance and no regression coverage, generating MEDIUM QA action item. No scenario covers this.
 - **Expected Behavior:** Need scenario coverage for the Regression Guidance Detection behavior.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See critic_tool.impl.md for context.

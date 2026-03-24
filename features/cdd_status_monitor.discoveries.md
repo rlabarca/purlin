@@ -18,5 +18,5 @@
 - **Observed Behavior:** Fields category, complete_ts, verification_effort, branch_collab, branch_collab_branches appear in API but not in spec Section 2.4 schema.
 - **Expected Behavior:** All API fields should be documented in spec Section 2.4 schema.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See cdd_status_monitor.impl.md for context.

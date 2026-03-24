@@ -11,5 +11,5 @@
 - **Observed Behavior:** test_all_11_gap_dimensions_listed and test_spec_and_command_both_reference_11_dimensions should reference 12. The newer test file is correct.
 - **Expected Behavior:** Both test functions should reference 12 gap dimensions.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See pl_spec_code_audit.impl.md for context.
