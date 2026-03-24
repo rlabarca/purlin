@@ -258,6 +258,31 @@ The optional `frequency` field at the scenario file level controls when the suit
 
 A Python script that reads a single scenario JSON file and executes it:
 
+**Progress output (mandatory):** The harness runner MUST print progress to stderr as it runs. Users run this from the command line and need to know what's happening, especially for long-running `agent_behavior` suites (30-60 seconds per scenario).
+
+Print at startup:
+```
+skill_behavior_regression: 9 scenarios (agent_behavior, ~5-10 min)
+```
+
+Print per scenario:
+```
+  [1/9] architect-startup-command-table ... (running)
+  [1/9] architect-startup-command-table ... PASS (34s)
+  [2/9] builder-startup-identifies-todo ... (running)
+  [2/9] builder-startup-identifies-todo ... FAIL (28s)
+```
+
+Print at completion:
+```
+skill_behavior_regression: 7/9 passed (4m 12s total)
+Results: tests/skill_behavior_regression/regression.json
+```
+
+The `(running)` line is printed before execution starts (flushed immediately so the user sees it). The result line overwrites or follows it. Time estimates at startup are derived from `harness_type`: `agent_behavior` ~30-60s per scenario, `web_test` ~5-10s, `custom_script` ~10-30s.
+
+**Execution steps:**
+
 1. Parse the scenario JSON file.
 2. For each scenario entry:
    a. If `fixture_tag` is specified, check out the fixture via `tools/test_support/fixture.sh checkout`.
