@@ -43,13 +43,13 @@ QA prints a command table, then checks its configuration:
 
 QA verification has two phases: Phase A (automated, runs first) and Phase B (manual, presented after).
 
-### Phase A -- Automated (8 Steps)
+### Phase A -- Automated (8 Steps + Checkpoint)
 
-**Step 1 -- Credit Builder Work.** Features the Builder already completed (unit-tests-only, no QA scenarios) are auto-credited. No human time needed.
+**Step 1 -- Credit Builder Work.** Features the Builder already completed (unit-tests-only, no QA scenarios) are auto-credited. No human time needed. **AUTO features are NOT auto-passed** -- features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that must execute in Steps 2-5 even though they need zero human time.
 
 **Step 2 -- Smoke Gate.** If test priority tiers are configured in `QA_OVERRIDES.md`, QA runs all smoke-tier scenarios first. If any fail, QA halts and asks whether to stop or continue.
 
-**Step 3 -- Run @auto Scenarios.** Scenarios tagged `@auto` from prior sessions already have regression JSON. QA invokes the harness runner automatically.
+**Step 3 -- Run @auto Scenarios.** Scenarios tagged `@auto` from prior sessions already have regression JSON. QA invokes the harness runner automatically. Regression suites with a valid PASS result (source files not modified since the result was written) are NOT re-run -- only STALE, FAIL, and NOT_RUN results require action.
 
 **Step 4 -- Classify Untagged Scenarios.** For each QA scenario with no tag yet:
 - QA evaluates whether it can be automated (deterministic assertions, no hardware, no subjective judgment).
@@ -58,6 +58,12 @@ QA verification has two phases: Phase A (automated, runs first) and Phase B (man
 - After this step, every scenario is tagged.
 
 **Step 5 -- Visual Smoke.** For features with visual specifications, QA runs a quick Playwright check (web features) or asks for a screenshot (non-web features).
+
+**Step 5a -- Phase A Checkpoint (HARD GATE).** Status tag commits are mandatory before proceeding to Phase B. This checkpoint fires at two points:
+- **Checkpoint A** -- after Steps 1-5: finalize AUTO features verified by web tests, @auto scenarios, and visual smoke.
+- **Checkpoint B** -- after in-session regression suites pass: finalize features whose regression suites ran and passed this session.
+
+At each checkpoint, QA commits regression artifacts, commits one `[Complete] [Verified]` status tag per eligible feature, runs CDD status to update the dashboard, and verifies the finalized features no longer show as AUTO/TODO. QA does not proceed to Phase B until the CDD update completes.
 
 **Step 6 -- LLM Delegation.** For scenarios needing Claude to analyze output, QA composes a command for you to run externally.
 
