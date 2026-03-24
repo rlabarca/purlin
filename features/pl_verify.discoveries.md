@@ -22,3 +22,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Resolution:** Restructured Step 5a to fire at two checkpoints (A and B). Reordered regression suite section: in-session suites run first (step 8), Step 5a(B) checkpoint fires (step 9), then agent_behavior gate (step 10). Updated Step 5a to cover both AUTO and TODO features. Updated Step 5 and Step 11 to reference both feature types.
+
+### [BUG] QA agent re-runs passing regression suites unnecessarily (Discovered: 2026-03-24)
+- **Scenario:** Phase A regression suite status table
+- **Observed Behavior:** QA agent flags `release_record_version_notes` regression.json as `[PASS] ← prior run; re-run needed` despite the result being PASS with source files unmodified (not STALE). The agent repeatedly requests re-validation of already-passing suites, creating unnecessary work.
+- **Expected Behavior:** The staleness check is the sole arbiter: PASS + source not modified = valid pass, no re-run. The skill file must add an explicit note after the staleness classification (step 2 of the regression suite status table) prohibiting re-run requests for valid PASS results. Text: "PASS results are valid — do NOT flag as 'prior run; re-run needed' or request fresh execution. Only STALE, FAIL, and NOT_RUN require action."
+- **Action Required:** Builder
+- **Status:** OPEN
