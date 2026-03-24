@@ -1469,6 +1469,259 @@ class TestFrequencyFieldSupport(unittest.TestCase):
             sys.path.pop(0)
 
 
+class TestProgressOutput(unittest.TestCase):
+    """Scenario: Harness runner prints mandatory progress to stderr (Section 2.8)."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+        with open(os.path.join(self.features_dir, 'progress_test.md'), 'w') as f:
+            f.write('# Feature: Progress Test\n')
+
+        # Create a fake claude that echoes predictable text
+        self.bin_dir = os.path.join(self.tmpdir, 'bin')
+        os.makedirs(self.bin_dir)
+        fake_claude = os.path.join(self.bin_dir, 'claude')
+        with open(fake_claude, 'w') as f:
+            f.write('#!/usr/bin/env bash\necho "test output alpha"\n')
+        os.chmod(fake_claude, 0o755)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def _run_harness(self, scenario):
+        scenario_path = os.path.join(self.tmpdir, 'scenario.json')
+        with open(scenario_path, 'w') as f:
+            json.dump(scenario, f)
+        env = os.environ.copy()
+        env['PATH'] = self.bin_dir + ':' + env.get('PATH', '')
+        env['PURLIN_PROJECT_ROOT'] = self.tmpdir
+        return subprocess.run(
+            ['python3', HARNESS_RUNNER, scenario_path,
+             '--project-root', self.tmpdir],
+            capture_output=True, text=True, timeout=30, env=env,
+        )
+
+    def test_startup_line_format(self):
+        """Progress startup line shows feature name, count, and harness type."""
+        result = self._run_harness({
+            'feature': 'progress_test',
+            'harness_type': 'agent_behavior',
+            'scenarios': [
+                {'name': 'a', 'role': 'BUILDER', 'prompt': 'Hi',
+                 'assertions': [{'tier': 1, 'pattern': 'test', 'context': 'c'}]},
+                {'name': 'b', 'role': 'BUILDER', 'prompt': 'Hi',
+                 'assertions': [{'tier': 1, 'pattern': 'test', 'context': 'c'}]},
+            ]
+        })
+        self.assertIn('progress_test: 2 scenarios', result.stderr)
+        self.assertIn('agent_behavior', result.stderr)
+
+    def test_per_scenario_running_and_result(self):
+        """Progress shows [N/M] running and result lines."""
+        result = self._run_harness({
+            'feature': 'progress_test',
+            'harness_type': 'agent_behavior',
+            'scenarios': [
+                {'name': 'scenario-alpha', 'role': 'BUILDER', 'prompt': 'Hi',
+                 'assertions': [{'tier': 1, 'pattern': 'test', 'context': 'c'}]},
+            ]
+        })
+        self.assertIn('[1/1] scenario-alpha ... (running)', result.stderr)
+        self.assertRegex(
+            result.stderr,
+            r'\[1/1\] scenario-alpha \.\.\. PASS \(\d+s\)')
+
+    def test_completion_line_format(self):
+        """Completion line shows passed/total and elapsed time."""
+        result = self._run_harness({
+            'feature': 'progress_test',
+            'harness_type': 'agent_behavior',
+            'scenarios': [
+                {'name': 'p', 'role': 'BUILDER', 'prompt': 'Hi',
+                 'assertions': [{'tier': 1, 'pattern': 'test', 'context': 'c'}]},
+            ]
+        })
+        self.assertRegex(
+            result.stderr,
+            r'progress_test: 1/1 passed \(\d+s total\)')
+        self.assertIn('Results:', result.stderr)
+
+    def test_failed_scenario_shows_fail(self):
+        """Failed scenario shows FAIL in progress output."""
+        result = self._run_harness({
+            'feature': 'progress_test',
+            'harness_type': 'agent_behavior',
+            'scenarios': [
+                {'name': 'will-fail', 'role': 'BUILDER', 'prompt': 'Hi',
+                 'assertions': [{'tier': 1, 'pattern': 'NONEXISTENT', 'context': 'c'}]},
+            ]
+        })
+        self.assertRegex(
+            result.stderr,
+            r'\[1/1\] will-fail \.\.\. FAIL \(\d+s\)')
+        self.assertRegex(result.stderr, r'progress_test: 0/1 passed')
+
+
+class TestSystemPromptConstruction(unittest.TestCase):
+    """Tests for 4-layer system prompt construction in agent_behavior."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.fixture_dir = os.path.join(self.tmpdir, 'fixture')
+        instr_dir = os.path.join(self.fixture_dir, 'instructions')
+        purlin_dir = os.path.join(self.fixture_dir, '.purlin')
+        os.makedirs(instr_dir)
+        os.makedirs(purlin_dir)
+        with open(os.path.join(instr_dir, 'HOW_WE_WORK_BASE.md'), 'w') as f:
+            f.write('LAYER_1_CONTENT\n')
+        with open(os.path.join(instr_dir, 'BUILDER_BASE.md'), 'w') as f:
+            f.write('LAYER_2_CONTENT\n')
+        with open(os.path.join(purlin_dir, 'HOW_WE_WORK_OVERRIDES.md'), 'w') as f:
+            f.write('LAYER_3_CONTENT\n')
+        with open(os.path.join(purlin_dir, 'BUILDER_OVERRIDES.md'), 'w') as f:
+            f.write('LAYER_4_CONTENT\n')
+
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'test_support'))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+        sys.path.pop(0)
+
+    def test_concatenates_all_4_layers(self):
+        """Builds a temp file with all 4 instruction layers."""
+        import harness_runner
+        path = harness_runner.construct_system_prompt(
+            self.fixture_dir, 'BUILDER')
+        self.assertIsNotNone(path)
+        try:
+            with open(path) as f:
+                content = f.read()
+            self.assertIn('LAYER_1_CONTENT', content)
+            self.assertIn('LAYER_2_CONTENT', content)
+            self.assertIn('LAYER_3_CONTENT', content)
+            self.assertIn('LAYER_4_CONTENT', content)
+        finally:
+            os.unlink(path)
+
+    def test_returns_none_for_empty_fixture(self):
+        """Returns None when no instruction files exist."""
+        empty_dir = os.path.join(self.tmpdir, 'empty')
+        os.makedirs(empty_dir)
+        import harness_runner
+        result = harness_runner.construct_system_prompt(empty_dir, 'BUILDER')
+        self.assertIsNone(result)
+
+    def test_handles_missing_override_layers(self):
+        """Includes available layers, skips missing ones."""
+        os.unlink(os.path.join(
+            self.fixture_dir, '.purlin', 'HOW_WE_WORK_OVERRIDES.md'))
+        os.unlink(os.path.join(
+            self.fixture_dir, '.purlin', 'BUILDER_OVERRIDES.md'))
+        import harness_runner
+        path = harness_runner.construct_system_prompt(
+            self.fixture_dir, 'BUILDER')
+        self.assertIsNotNone(path)
+        try:
+            with open(path) as f:
+                content = f.read()
+            self.assertIn('LAYER_1_CONTENT', content)
+            self.assertIn('LAYER_2_CONTENT', content)
+            self.assertNotIn('LAYER_3_CONTENT', content)
+        finally:
+            os.unlink(path)
+
+
+class TestSkillFileCopying(unittest.TestCase):
+    """Tests for skill file copying to fixture directories."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.project_root = os.path.join(self.tmpdir, 'project')
+        self.commands_dir = os.path.join(
+            self.project_root, '.claude', 'commands')
+        os.makedirs(self.commands_dir)
+        with open(os.path.join(self.commands_dir, 'pl-help.md'), 'w') as f:
+            f.write('# Help\n')
+        with open(os.path.join(self.commands_dir, 'pl-status.md'), 'w') as f:
+            f.write('# Status\n')
+
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'test_support'))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+        sys.path.pop(0)
+
+    def test_copies_skill_files_to_fixture(self):
+        """Copies .claude/commands/ when absent in fixture."""
+        fixture_dir = os.path.join(self.tmpdir, 'fixture')
+        os.makedirs(fixture_dir)
+        import harness_runner
+        harness_runner.copy_skill_files(self.project_root, fixture_dir)
+        dst = os.path.join(fixture_dir, '.claude', 'commands')
+        self.assertTrue(os.path.isfile(os.path.join(dst, 'pl-help.md')))
+        self.assertTrue(os.path.isfile(os.path.join(dst, 'pl-status.md')))
+
+    def test_skips_when_fixture_already_has_skills(self):
+        """Does not overwrite existing .claude/commands/ in fixture."""
+        fixture_dir = os.path.join(self.tmpdir, 'fixture')
+        dst = os.path.join(fixture_dir, '.claude', 'commands')
+        os.makedirs(dst)
+        with open(os.path.join(dst, 'custom.md'), 'w') as f:
+            f.write('# Custom\n')
+        import harness_runner
+        harness_runner.copy_skill_files(self.project_root, fixture_dir)
+        self.assertTrue(os.path.isfile(os.path.join(dst, 'custom.md')))
+        self.assertFalse(os.path.isfile(os.path.join(dst, 'pl-help.md')))
+
+    def test_no_error_if_project_has_no_skills(self):
+        """No crash when project root lacks .claude/commands/."""
+        empty_root = os.path.join(self.tmpdir, 'empty')
+        os.makedirs(empty_root)
+        fixture_dir = os.path.join(self.tmpdir, 'fixture')
+        os.makedirs(fixture_dir)
+        import harness_runner
+        harness_runner.copy_skill_files(empty_root, fixture_dir)
+        self.assertFalse(os.path.isdir(
+            os.path.join(fixture_dir, '.claude', 'commands')))
+
+
+class TestFormatTimeEstimate(unittest.TestCase):
+    """Tests for time estimate formatting helper."""
+
+    def setUp(self):
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'test_support'))
+
+    def tearDown(self):
+        sys.path.pop(0)
+
+    def test_agent_behavior_estimates(self):
+        """agent_behavior with 9 scenarios gives minute-range estimate."""
+        import harness_runner
+        est = harness_runner.format_time_estimate('agent_behavior', 9)
+        self.assertIn('~', est)
+        self.assertIn('min', est)
+
+    def test_short_suite_gives_seconds(self):
+        """Short suite with few web_test scenarios gives second-range estimate."""
+        import harness_runner
+        est = harness_runner.format_time_estimate('web_test', 2)
+        self.assertIn('~', est)
+        self.assertIn('s', est)
+        self.assertNotIn('min', est)
+
+    def test_format_elapsed_seconds(self):
+        """format_elapsed shows seconds for < 60."""
+        import harness_runner
+        self.assertEqual(harness_runner.format_elapsed(34), '34s')
+
+    def test_format_elapsed_minutes(self):
+        """format_elapsed shows minutes and seconds for >= 60."""
+        import harness_runner
+        self.assertEqual(harness_runner.format_elapsed(252), '4m 12s')
+
+
 # ===================================================================
 # Test runner with output to tests/regression_testing/tests.json
 # ===================================================================

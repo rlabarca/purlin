@@ -13,11 +13,14 @@ Usage:
 
 import atexit
 import json
+import math
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.parse
 import urllib.request
@@ -44,6 +47,84 @@ def resolve_project_root(explicit=None):
 
     print("Error: Could not detect project root", file=sys.stderr)
     sys.exit(1)
+
+
+# --- Progress output (Section 2.8 mandatory) ---
+
+TIME_ESTIMATES = {
+    'agent_behavior': (30, 60),   # seconds per scenario
+    'web_test': (5, 10),
+    'custom_script': (10, 30),
+}
+
+
+def format_time_estimate(harness_type, count):
+    """Format a human-readable time estimate for a suite."""
+    lo_per, hi_per = TIME_ESTIMATES.get(harness_type, (10, 30))
+    lo_total = lo_per * count
+    hi_total = hi_per * count
+    if hi_total < 60:
+        return f"~{lo_total}-{hi_total}s"
+    lo_min = math.ceil(lo_total / 60)
+    hi_min = math.ceil(hi_total / 60)
+    if lo_min == hi_min:
+        return f"~{lo_min} min"
+    return f"~{lo_min}-{hi_min} min"
+
+
+def format_elapsed(seconds):
+    """Format elapsed seconds as human-readable string."""
+    s = int(seconds)
+    if s >= 60:
+        return f"{s // 60}m {s % 60}s"
+    return f"{s}s"
+
+
+class ProgressReporter:
+    """Mandatory progress output to stderr (Section 2.8)."""
+
+    def __init__(self, feature_name, harness_type, scenario_count):
+        self.feature_name = feature_name
+        self.harness_type = harness_type
+        self.total = scenario_count
+        self.start_time = time.time()
+        self.scenarios_passed = 0
+        self.scenarios_failed = 0
+
+    def print_startup(self):
+        est = format_time_estimate(self.harness_type, self.total)
+        print(
+            f"{self.feature_name}: {self.total} scenarios "
+            f"({self.harness_type}, {est})",
+            file=sys.stderr, flush=True,
+        )
+
+    def print_running(self, index, name):
+        print(
+            f"  [{index}/{self.total}] {name} ... (running)",
+            file=sys.stderr, flush=True,
+        )
+
+    def print_result(self, index, name, passed, elapsed_seconds):
+        status = "PASS" if passed else "FAIL"
+        if passed:
+            self.scenarios_passed += 1
+        else:
+            self.scenarios_failed += 1
+        print(
+            f"  [{index}/{self.total}] {name} ... "
+            f"{status} ({format_elapsed(elapsed_seconds)})",
+            file=sys.stderr, flush=True,
+        )
+
+    def print_completion(self, output_path):
+        elapsed = format_elapsed(time.time() - self.start_time)
+        print(
+            f"{self.feature_name}: {self.scenarios_passed}/{self.total} "
+            f"passed ({elapsed} total)",
+            file=sys.stderr, flush=True,
+        )
+        print(f"Results: {output_path}", file=sys.stderr, flush=True)
 
 
 def run_fixture_checkout(project_root, fixture_tag):
@@ -220,6 +301,43 @@ def stop_cdd_server(project_root, target_dir=None):
         pass
 
 
+def construct_system_prompt(fixture_dir, role):
+    """Build the 4-layer system prompt from fixture instruction files.
+
+    Returns path to temp file containing concatenated prompt, or None.
+    Caller must delete the temp file after use.
+    """
+    layers = [
+        os.path.join(fixture_dir, 'instructions', 'HOW_WE_WORK_BASE.md'),
+        os.path.join(fixture_dir, 'instructions', f'{role}_BASE.md'),
+        os.path.join(fixture_dir, '.purlin', 'HOW_WE_WORK_OVERRIDES.md'),
+        os.path.join(fixture_dir, '.purlin', f'{role}_OVERRIDES.md'),
+    ]
+
+    content = ''
+    for layer_path in layers:
+        if os.path.isfile(layer_path):
+            with open(layer_path) as f:
+                content += f.read() + '\n\n'
+
+    if not content.strip():
+        return None
+
+    fd, path = tempfile.mkstemp(suffix='.md', prefix='purlin_prompt_')
+    with os.fdopen(fd, 'w') as f:
+        f.write(content)
+    return path
+
+
+def copy_skill_files(project_root, fixture_dir):
+    """Copy .claude/commands/ from project root to fixture dir if absent."""
+    src = os.path.join(project_root, '.claude', 'commands')
+    dst = os.path.join(fixture_dir, '.claude', 'commands')
+    if os.path.isdir(src) and not os.path.isdir(dst):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copytree(src, dst)
+
+
 def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     """Execute an agent_behavior scenario. Returns (output, success)."""
     role = scenario.get('role', 'BUILDER')
@@ -228,19 +346,43 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     if not prompt:
         return ("Error: agent_behavior scenario requires 'prompt' field", False)
 
-    # Build claude --print command
-    cmd = ['claude', '--print', '-p', prompt]
-
-    # Set working directory to fixture dir if available
     cwd = fixture_dir or project_root
+    prompt_file = None
 
     try:
+        # Construct 4-layer system prompt from fixture instruction files
+        if fixture_dir:
+            prompt_file = construct_system_prompt(fixture_dir, role)
+            copy_skill_files(project_root, fixture_dir)
+
+        # Build claude --print command (spec Section 2.3)
+        cmd = [
+            'claude', '--print',
+            '--no-session-persistence',
+            '--model', 'claude-haiku-4-5-20251001',
+            '--output-format', 'json',
+        ]
+        if prompt_file:
+            cmd.extend(['--append-system-prompt-file', prompt_file])
+        cmd.append(prompt)
+
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=300,
             cwd=cwd,
             env={**os.environ, 'PURLIN_PROJECT_ROOT': project_root},
         )
-        output = result.stdout + result.stderr
+
+        # Extract .result from JSON response (spec Section 2.3 step 4)
+        output = ''
+        try:
+            data = json.loads(result.stdout)
+            output = data.get('result', '')
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            output = result.stdout + result.stderr
+
+        if not output:
+            output = result.stdout + result.stderr
+
         return (output, result.returncode == 0)
     except subprocess.TimeoutExpired:
         return ("Error: agent_behavior scenario timed out after 300s", False)
@@ -248,6 +390,9 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
         return ("Error: 'claude' command not found", False)
     except OSError as e:
         return (f"Error: {e}", False)
+    finally:
+        if prompt_file and os.path.isfile(prompt_file):
+            os.unlink(prompt_file)
 
 
 def execute_web_test(scenario, project_root, url_override=None):
@@ -316,7 +461,7 @@ def evaluate_assertions(output, assertions):
     return results
 
 
-def process_scenario_file(scenario_path, project_root):
+def process_scenario_file(scenario_path, project_root, progress=None):
     """Process a single scenario JSON file. Returns (feature_name, details, passed, failed)."""
     with open(scenario_path) as f:
         data = json.load(f)
@@ -356,7 +501,7 @@ def process_scenario_file(scenario_path, project_root):
                         base_server_started = True
                         base_server_port = actual
 
-        for scenario in scenarios:
+        for idx, scenario in enumerate(scenarios, 1):
             name = scenario.get('name', 'unnamed')
             fixture_tag = scenario.get('fixture_tag')
             setup_commands = scenario.get('setup_commands', [])
@@ -364,6 +509,10 @@ def process_scenario_file(scenario_path, project_root):
 
             fixture_dir = None
             fixture_server_started = False
+
+            if progress:
+                progress.print_running(idx, name)
+            scenario_start = time.time()
 
             try:
                 # Step a: Fixture checkout
@@ -497,6 +646,17 @@ def process_scenario_file(scenario_path, project_root):
                         total_passed += 1
                     details.append(detail)
 
+                # Scenario-level progress tracking
+                if progress:
+                    if assertion_results:
+                        scenario_ok = all(
+                            p for _, p, _ in assertion_results)
+                    else:
+                        scenario_ok = exec_success
+                    progress.print_result(
+                        idx, name, scenario_ok,
+                        time.time() - scenario_start)
+
             finally:
                 # Step e: Cleanup (try/finally for cleanup mandate)
                 if fixture_server_started:
@@ -555,9 +715,26 @@ def main():
         print(f"Error: scenario file not found: {scenario_path}", file=sys.stderr)
         sys.exit(1)
 
+    # Read scenario file metadata for progress reporter
+    try:
+        with open(scenario_path) as f:
+            scenario_data = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error: invalid scenario file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    feature_name_pre = scenario_data.get('feature', '')
+    harness_type_pre = scenario_data.get('harness_type', '')
+    scenario_count = len(scenario_data.get('scenarios', []))
+
+    # Create progress reporter and print startup
+    progress = ProgressReporter(
+        feature_name_pre, harness_type_pre, scenario_count)
+    progress.print_startup()
+
     try:
         feature_name, details, passed, failed = process_scenario_file(
-            scenario_path, project_root)
+            scenario_path, project_root, progress=progress)
     except (json.JSONDecodeError, KeyError) as e:
         print(f"Error: invalid scenario file: {e}", file=sys.stderr)
         sys.exit(1)
@@ -565,6 +742,9 @@ def main():
     output_path = write_results(
         feature_name, details, passed, failed, project_root,
         test_file=os.path.relpath(scenario_path, project_root))
+
+    # Print completion progress to stderr
+    progress.print_completion(output_path)
 
     total = passed + failed
     status = 'PASS' if failed == 0 and total > 0 else 'FAIL'

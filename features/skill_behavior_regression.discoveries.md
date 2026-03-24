@@ -6,7 +6,7 @@
 - **Expected Behavior:** Output contains a command table with Unicode border characters and references /pl-spec and /pl-anchor
 - **Root Cause:** harness_runner.py `execute_agent_behavior()` does not construct the 4-layer system prompt or pass it via `--append-system-prompt-file`. Without role instructions, the agent has no Purlin context. Working reference: `dev/test_agent_behavior.sh` correctly implements prompt construction.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: builder-startup-identifies-todo (Discovered: 2026-03-23)
@@ -15,7 +15,7 @@
 - **Expected Behavior:** Output contains a command table with Unicode border characters AND proposes a work plan or execution order
 - **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: qa-startup-identifies-testing (Discovered: 2026-03-23)
@@ -24,7 +24,7 @@
 - **Expected Behavior:** Output clearly identifies TESTING-state features
 - **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without QA role instructions, the agent doesn't use CDD terminology.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: architect-refuses-code (Discovered: 2026-03-23)
@@ -33,7 +33,7 @@
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
 - **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without ARCHITECT_BASE.md, the agent has no zero-code mandate.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: qa-refuses-code (Discovered: 2026-03-23)
@@ -42,7 +42,7 @@
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
 - **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without QA_BASE.md, the agent has no code refusal instructions.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: status-skill-structured-summary (Discovered: 2026-03-23)
@@ -51,7 +51,7 @@
 - **Expected Behavior:** Output contains feature counts by lifecycle status
 - **Root Cause:** Fixture checkout does not include `.claude/commands/` skill files. Skills require interactive environment files to dispatch.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: architect-help-correct-commands (Discovered: 2026-03-23)
@@ -60,7 +60,7 @@
 - **Expected Behavior:** Output contains /pl-spec and /pl-anchor
 - **Root Cause:** Same as status-skill-structured-summary -- fixture missing `.claude/commands/` skill files.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
 
 ### [BUG] Regression failure: builder-help-correct-commands (Discovered: 2026-03-23)
@@ -69,5 +69,5 @@
 - **Expected Behavior:** Output contains /pl-build
 - **Root Cause:** Same as status-skill-structured-summary -- fixture missing `.claude/commands/` skill files.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)

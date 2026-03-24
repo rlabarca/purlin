@@ -18,9 +18,13 @@
 
 **[CLARIFICATION]** The meta-runner (`tools/test_support/run_regression.sh`) uses `find` with `-print0` and `sort -z` for null-safe scenario file discovery, ensuring correct handling of filenames with special characters. (Severity: INFO)
 
+**[CLARIFICATION]** Mandatory progress output (Section 2.8): added `ProgressReporter` class to `harness_runner.py` that prints startup, per-scenario running/result, and completion lines to stderr. Time estimates derived from harness_type constants. Format matches spec example: `feature_name: N scenarios (type, ~X-Y min)`, `[N/M] name ... PASS (Ns)`, `feature_name: X/Y passed (Nm Ns total)`. Existing stdout output preserved for backward compatibility with meta-runner. (Severity: INFO)
+
+**[CLARIFICATION]** Section 2.8 also requires `execute_agent_behavior()` to construct the 4-layer system prompt from fixture instruction files and pass it via `--append-system-prompt-file`. Implemented `construct_system_prompt()` and `copy_skill_files()` helpers. The JSON output from `claude --print --output-format json` is parsed to extract `.result`. Falls back to raw stdout+stderr when JSON parsing fails (e.g., in test environments with fake claude). (Severity: INFO)
+
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 40 total, 40 passed
+- Tests: 54 total, 54 passed
 - AP scan: clean
 - Date: 2026-03-23
 
