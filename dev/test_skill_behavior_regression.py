@@ -463,6 +463,14 @@ class TestBuildPrintModeContext(unittest.TestCase):
         self.assertIn('COMPLETE (1)', ctx)
         self.assertIn('User Signup', ctx)
 
+    def test_feature_status_includes_output_directive(self):
+        """Feature status section tells model to echo TODO/TESTING names."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        self.assertIn('IMPORTANT', ctx)
+        self.assertIn('you MUST explicitly list the TODO and TESTING features', ctx)
+
     def test_includes_skill_content_for_slash_commands(self):
         """Skill file content is included when prompt is a slash command."""
         ctx = harness_runner.build_print_mode_context(
@@ -481,11 +489,12 @@ class TestBuildPrintModeContext(unittest.TestCase):
         self.assertNotIn('Skill Content', ctx)
 
     def test_architect_role_enforcement(self):
-        """Architect role enforcement mentions NEVER write code."""
+        """Architect role enforcement mentions ZERO CODE MANDATE."""
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
-        self.assertIn('NEVER write, edit, or create code files', ctx)
+        self.assertIn('ZERO CODE MANDATE', ctx)
+        self.assertIn('MUST NEVER write, edit, fix, debug, or modify code files', ctx)
         self.assertIn('REFUSE', ctx)
 
     def test_builder_role_enforcement(self):
