@@ -28,6 +28,6 @@
 
 ### Test Quality Audit
 - Rubric: 6/6 PASS
-- Tests: 40 total, 40 passed
+- Tests: 41 total, 41 passed
 - AP scan: clean
 - Date: 2026-03-24
