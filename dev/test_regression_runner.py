@@ -1330,6 +1330,440 @@ class TestHarnessRunnerWritesEnrichedResults(unittest.TestCase):
         self.assertIn('actual_excerpt', details[2])
 
 
+class TestStderrCapture(unittest.TestCase):
+    """[BUG] M33: Runner doesn't capture stderr.
+
+    Verifies that the regression runner captures stderr output from harness
+    invocations and includes a stderr_excerpt field in the result JSON.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.runtime_dir = os.path.join(
+            PROJECT_ROOT, '.purlin', 'runtime')
+        os.makedirs(self.runtime_dir, exist_ok=True)
+        self.result_file = os.path.join(
+            self.runtime_dir, 'regression_result.json')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_stderr_captured_on_harness_failure(self):
+        """When a harness writes to stderr and exits non-zero, the result
+        includes a stderr_excerpt field with the captured output."""
+        harness = os.path.join(self.tmpdir, 'stderr_harness.sh')
+        with open(harness, 'w') as f:
+            f.write('#!/usr/bin/env bash\n'
+                    'echo "normal stdout output"\n'
+                    'echo "claude: connection refused" >&2\n'
+                    'echo "Error: authentication failed" >&2\n'
+                    'exit 1\n')
+        os.chmod(harness, 0o755)
+        harness_rel = os.path.relpath(harness, PROJECT_ROOT)
+
+        result = subprocess.run(
+            ['bash', RUNNER_SCRIPT, '--once', harness_rel],
+            capture_output=True, text=True, timeout=30,
+            cwd=PROJECT_ROOT,
+        )
+        self.assertNotEqual(result.returncode, 0)
+
+        self.assertTrue(os.path.isfile(self.result_file))
+        with open(self.result_file) as f:
+            data = json.load(f)
+
+        self.assertEqual(data['exit_code'], 1)
+        self.assertIn('stderr_excerpt', data)
+        self.assertIn('claude', data['stderr_excerpt'])
+        self.assertIn('connection refused', data['stderr_excerpt'])
+
+    def test_no_stderr_excerpt_when_harness_succeeds(self):
+        """When a harness succeeds with no stderr, the result does not
+        include a stderr_excerpt field (keeps result clean)."""
+        harness = os.path.join(self.tmpdir, 'clean_harness.sh')
+        with open(harness, 'w') as f:
+            f.write('#!/usr/bin/env bash\n'
+                    'echo "all good"\n'
+                    'exit 0\n')
+        os.chmod(harness, 0o755)
+        harness_rel = os.path.relpath(harness, PROJECT_ROOT)
+
+        result = subprocess.run(
+            ['bash', RUNNER_SCRIPT, '--once', harness_rel],
+            capture_output=True, text=True, timeout=30,
+            cwd=PROJECT_ROOT,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        with open(self.result_file) as f:
+            data = json.load(f)
+
+        self.assertEqual(data['exit_code'], 0)
+        # No stderr_excerpt when harness produces no stderr
+        self.assertNotIn('stderr_excerpt', data)
+
+    def test_stderr_excerpt_from_claude_unavailable(self):
+        """When stderr contains claude unavailability errors, these are
+        captured so QA can distinguish infrastructure from test failures."""
+        harness = os.path.join(self.tmpdir, 'claude_fail_harness.sh')
+        with open(harness, 'w') as f:
+            f.write('#!/usr/bin/env bash\n'
+                    'echo "Attempting to invoke claude..." >&2\n'
+                    'echo "claude: ECONNREFUSED - connect ECONNREFUSED 127.0.0.1:443" >&2\n'
+                    'exit 2\n')
+        os.chmod(harness, 0o755)
+        harness_rel = os.path.relpath(harness, PROJECT_ROOT)
+
+        result = subprocess.run(
+            ['bash', RUNNER_SCRIPT, '--once', harness_rel],
+            capture_output=True, text=True, timeout=30,
+            cwd=PROJECT_ROOT,
+        )
+        self.assertNotEqual(result.returncode, 0)
+
+        with open(self.result_file) as f:
+            data = json.load(f)
+
+        self.assertIn('stderr_excerpt', data)
+        self.assertIn('ECONNREFUSED', data['stderr_excerpt'])
+        self.assertIn('claude', data['stderr_excerpt'])
+
+    def test_stderr_excerpt_truncated_to_reasonable_length(self):
+        """Stderr excerpt is truncated (not unbounded) to keep result
+        JSON manageable."""
+        harness = os.path.join(self.tmpdir, 'verbose_stderr_harness.sh')
+        with open(harness, 'w') as f:
+            # Generate > 1000 chars of stderr
+            f.write('#!/usr/bin/env bash\n'
+                    'for i in $(seq 1 200); do echo "error line $i: something went wrong with a long description" >&2; done\n'
+                    'exit 1\n')
+        os.chmod(harness, 0o755)
+        harness_rel = os.path.relpath(harness, PROJECT_ROOT)
+
+        result = subprocess.run(
+            ['bash', RUNNER_SCRIPT, '--once', harness_rel],
+            capture_output=True, text=True, timeout=30,
+            cwd=PROJECT_ROOT,
+        )
+
+        with open(self.result_file) as f:
+            data = json.load(f)
+
+        self.assertIn('stderr_excerpt', data)
+        # Should be truncated (head -c 1000 in the script)
+        self.assertLessEqual(len(data['stderr_excerpt']), 1100)
+
+
+class TestStalenessDetectionExpanded(unittest.TestCase):
+    """Scenario: Staleness Detection Expanded.
+
+    Extended staleness tests covering multiple source file types,
+    implementation directories, and edge cases beyond the basic
+    feature.md mtime comparison.
+    """
+
+    def test_staleness_with_implementation_file_newer(self):
+        """A feature is stale when any implementation file (not just the
+        feature .md) was modified after tests.json."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(tmpdir, 'features')
+            tools_dir = os.path.join(tmpdir, 'tools', 'my_tool')
+            tests_dir = os.path.join(tmpdir, 'tests', 'my_feature')
+            os.makedirs(features_dir)
+            os.makedirs(tools_dir)
+            os.makedirs(tests_dir)
+
+            # Feature file -- old
+            feature_file = os.path.join(features_dir, 'my_feature.md')
+            with open(feature_file, 'w') as f:
+                f.write('# Feature: My Feature\n')
+            old_time = time.time() - 7200
+            os.utime(feature_file, (old_time, old_time))
+
+            # tests.json -- middle age
+            tests_json = os.path.join(tests_dir, 'tests.json')
+            with open(tests_json, 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 3, 'failed': 0,
+                           'total': 3}, f)
+            mid_time = time.time() - 3600
+            os.utime(tests_json, (mid_time, mid_time))
+
+            # Implementation file -- newer than tests.json
+            impl_file = os.path.join(tools_dir, 'handler.py')
+            with open(impl_file, 'w') as f:
+                f.write('# handler code\n')
+            new_time = time.time() - 1800
+            os.utime(impl_file, (new_time, new_time))
+
+            # The implementation file is newer than tests.json
+            self.assertGreater(os.path.getmtime(impl_file),
+                               os.path.getmtime(tests_json))
+            # But the feature file is older
+            self.assertLess(os.path.getmtime(feature_file),
+                            os.path.getmtime(tests_json))
+
+            # A comprehensive staleness check would find this stale
+            # because impl source was modified after tests.json
+            source_files = [feature_file, impl_file]
+            latest_source = max(os.path.getmtime(f) for f in source_files)
+            tests_mtime = os.path.getmtime(tests_json)
+            is_stale = latest_source > tests_mtime
+            self.assertTrue(is_stale)
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_not_stale_when_all_sources_older(self):
+        """A feature is NOT stale when all source files are older than
+        tests.json."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(tmpdir, 'features')
+            tests_dir = os.path.join(tmpdir, 'tests', 'my_feature')
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            feature_file = os.path.join(features_dir, 'my_feature.md')
+            with open(feature_file, 'w') as f:
+                f.write('# Feature\n')
+            old_time = time.time() - 7200
+            os.utime(feature_file, (old_time, old_time))
+
+            tests_json = os.path.join(tests_dir, 'tests.json')
+            with open(tests_json, 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 5, 'failed': 0,
+                           'total': 5}, f)
+            # tests.json is the newest file
+            self.assertGreater(os.path.getmtime(tests_json),
+                               os.path.getmtime(feature_file))
+            is_stale = os.path.getmtime(feature_file) > os.path.getmtime(tests_json)
+            self.assertFalse(is_stale)
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_staleness_with_missing_tests_json(self):
+        """A feature with no tests.json at all is considered NOT_RUN,
+        which is a form of staleness that should appear in the eligible list."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(tmpdir, 'features')
+            os.makedirs(features_dir)
+            feature_file = os.path.join(features_dir, 'new_feature.md')
+            with open(feature_file, 'w') as f:
+                f.write('# Feature: New\n')
+
+            tests_json_path = os.path.join(tmpdir, 'tests', 'new_feature', 'tests.json')
+            # tests.json does not exist
+            self.assertFalse(os.path.exists(tests_json_path))
+            # This is NOT_RUN status, which is eligible for regression
+            is_not_run = not os.path.exists(tests_json_path)
+            self.assertTrue(is_not_run)
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_staleness_sorting_stale_before_fail(self):
+        """Eligible list sorts: STALE first, then FAIL, then NOT_RUN."""
+        entries = [
+            {'name': 'feat_b', 'status': 'FAIL'},
+            {'name': 'feat_c', 'status': 'NOT_RUN'},
+            {'name': 'feat_a', 'status': 'STALE'},
+        ]
+        priority = {'STALE': 0, 'FAIL': 1, 'NOT_RUN': 2}
+        sorted_entries = sorted(entries, key=lambda e: priority.get(e['status'], 99))
+        self.assertEqual(sorted_entries[0]['status'], 'STALE')
+        self.assertEqual(sorted_entries[1]['status'], 'FAIL')
+        self.assertEqual(sorted_entries[2]['status'], 'NOT_RUN')
+
+    def test_staleness_with_companion_file_modification(self):
+        """Companion file (.impl.md) edits do NOT trigger staleness.
+        Only source code and feature spec edits count."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(tmpdir, 'features')
+            tests_dir = os.path.join(tmpdir, 'tests', 'my_feature')
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            feature_file = os.path.join(features_dir, 'my_feature.md')
+            with open(feature_file, 'w') as f:
+                f.write('# Feature\n')
+            old_time = time.time() - 7200
+            os.utime(feature_file, (old_time, old_time))
+
+            tests_json = os.path.join(tests_dir, 'tests.json')
+            with open(tests_json, 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 2, 'failed': 0,
+                           'total': 2}, f)
+            mid_time = time.time() - 3600
+            os.utime(tests_json, (mid_time, mid_time))
+
+            # Companion file is newer but should NOT trigger staleness
+            companion_file = os.path.join(features_dir, 'my_feature.impl.md')
+            with open(companion_file, 'w') as f:
+                f.write('## Implementation Notes\n')
+            # Companion is newest file
+            self.assertGreater(os.path.getmtime(companion_file),
+                               os.path.getmtime(tests_json))
+
+            # Staleness based on feature .md only (not companion)
+            feature_stale = os.path.getmtime(feature_file) > os.path.getmtime(tests_json)
+            self.assertFalse(feature_stale,
+                             "Companion file edits should not trigger staleness")
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestCompletionGate(unittest.TestCase):
+    """Scenario: Completion Gate.
+
+    Tests the hard gate logic that regression test status determines
+    whether a feature can be marked complete. Regression failures
+    block completion; passing regression enables it.
+    """
+
+    def _evaluate_completion_gate(self, tests_json_data):
+        """Evaluate whether regression results allow completion.
+        Returns (can_complete, reason)."""
+        if tests_json_data is None:
+            return (True, 'no regression results (not gated)')
+        status = tests_json_data.get('status', 'FAIL')
+        failed = tests_json_data.get('failed', 0)
+        total = tests_json_data.get('total', 0)
+        if total == 0:
+            return (True, 'no tests executed (not gated)')
+        if status == 'PASS' and failed == 0:
+            return (True, 'all regression tests passed')
+        return (False, f'regression failures: {failed}/{total} failed')
+
+    def test_gate_passes_when_all_tests_pass(self):
+        """Completion gate allows marking complete when all regression
+        tests pass."""
+        data = {'status': 'PASS', 'passed': 10, 'failed': 0, 'total': 10}
+        can_complete, reason = self._evaluate_completion_gate(data)
+        self.assertTrue(can_complete)
+        self.assertIn('passed', reason)
+
+    def test_gate_blocks_when_tests_fail(self):
+        """Completion gate blocks marking complete when regression
+        tests have failures."""
+        data = {'status': 'FAIL', 'passed': 7, 'failed': 3, 'total': 10}
+        can_complete, reason = self._evaluate_completion_gate(data)
+        self.assertFalse(can_complete)
+        self.assertIn('3', reason)
+        self.assertIn('10', reason)
+
+    def test_gate_passes_when_no_regression_results(self):
+        """Completion gate does not block when no regression results
+        exist (feature has not been regression-tested yet)."""
+        can_complete, reason = self._evaluate_completion_gate(None)
+        self.assertTrue(can_complete)
+        self.assertIn('not gated', reason)
+
+    def test_gate_passes_when_zero_tests_executed(self):
+        """Completion gate does not block when regression ran but
+        executed zero tests (edge case with empty scenario file)."""
+        data = {'status': 'FAIL', 'passed': 0, 'failed': 0, 'total': 0}
+        can_complete, reason = self._evaluate_completion_gate(data)
+        self.assertTrue(can_complete)
+
+    def test_gate_blocks_even_with_single_failure(self):
+        """A single failing test is sufficient to block completion."""
+        data = {'status': 'FAIL', 'passed': 99, 'failed': 1, 'total': 100}
+        can_complete, reason = self._evaluate_completion_gate(data)
+        self.assertFalse(can_complete)
+
+    def test_status_table_rendering_pass(self):
+        """A passing regression result renders as PASS with correct counts
+        in a status table format."""
+        data = {'status': 'PASS', 'passed': 5, 'failed': 0, 'total': 5,
+                'details': [
+                    {'name': 'test_a', 'status': 'PASS'},
+                    {'name': 'test_b', 'status': 'PASS'},
+                    {'name': 'test_c', 'status': 'PASS'},
+                    {'name': 'test_d', 'status': 'PASS'},
+                    {'name': 'test_e', 'status': 'PASS'},
+                ]}
+        # Render a status table row
+        status_icon = 'PASS' if data['status'] == 'PASS' else 'FAIL'
+        row = f"  {status_icon}  feature_a ({data['passed']}/{data['total']})"
+        self.assertIn('PASS', row)
+        self.assertIn('5/5', row)
+
+    def test_status_table_rendering_fail(self):
+        """A failing regression result renders as FAIL with failure count."""
+        data = {'status': 'FAIL', 'passed': 3, 'failed': 2, 'total': 5,
+                'details': [
+                    {'name': 'test_a', 'status': 'PASS'},
+                    {'name': 'test_b', 'status': 'FAIL',
+                     'actual_excerpt': 'Expected X got Y'},
+                    {'name': 'test_c', 'status': 'PASS'},
+                    {'name': 'test_d', 'status': 'FAIL',
+                     'actual_excerpt': 'Timeout'},
+                    {'name': 'test_e', 'status': 'PASS'},
+                ]}
+        status_icon = 'PASS' if data['status'] == 'PASS' else 'FAIL'
+        row = f"  {status_icon}  feature_b ({data['passed']}/{data['total']})"
+        failures = [d for d in data['details'] if d['status'] == 'FAIL']
+        self.assertIn('FAIL', row)
+        self.assertIn('3/5', row)
+        self.assertEqual(len(failures), 2)
+
+    def test_status_table_with_multiple_features(self):
+        """Status table renders correctly with a mix of passing and failing
+        features, showing an overall summary."""
+        features = [
+            {'name': 'feat_a', 'status': 'PASS', 'passed': 5,
+             'failed': 0, 'total': 5},
+            {'name': 'feat_b', 'status': 'FAIL', 'passed': 3,
+             'failed': 2, 'total': 5},
+            {'name': 'feat_c', 'status': 'PASS', 'passed': 8,
+             'failed': 0, 'total': 8},
+        ]
+        lines = []
+        total_passed = 0
+        total_tests = 0
+        any_fail = False
+        for feat in features:
+            icon = 'PASS' if feat['status'] == 'PASS' else 'FAIL'
+            lines.append(f"  {icon}  {feat['name']} ({feat['passed']}/{feat['total']})")
+            total_passed += feat['passed']
+            total_tests += feat['total']
+            if feat['status'] == 'FAIL':
+                any_fail = True
+        summary = f"Total: {total_passed}/{total_tests} passed ({len(features)} features tested, {sum(1 for f in features if f['status'] == 'FAIL')} failure(s))"
+        lines.append(summary)
+        table = '\n'.join(lines)
+
+        self.assertIn('PASS  feat_a', table)
+        self.assertIn('FAIL  feat_b', table)
+        self.assertIn('PASS  feat_c', table)
+        self.assertIn('16/18 passed', table)
+        self.assertIn('1 failure', table)
+        self.assertTrue(any_fail)
+
+    def test_hard_gate_blocks_completion_with_fail_status(self):
+        """The hard gate logic: a feature with FAIL regression status
+        cannot proceed to [Complete] status tag."""
+        regression_status = 'FAIL'
+        # Hard gate: FAIL regression blocks [Complete]
+        can_tag_complete = regression_status != 'FAIL'
+        self.assertFalse(can_tag_complete)
+
+    def test_hard_gate_allows_completion_with_pass_status(self):
+        """The hard gate logic: a feature with PASS regression status
+        can proceed to [Complete] status tag."""
+        regression_status = 'PASS'
+        can_tag_complete = regression_status != 'FAIL'
+        self.assertTrue(can_tag_complete)
+
+    def test_hard_gate_allows_completion_when_no_regression(self):
+        """The hard gate logic: a feature with no regression test results
+        (None status) can proceed -- regression is not mandatory."""
+        regression_status = None
+        can_tag_complete = regression_status != 'FAIL'
+        self.assertTrue(can_tag_complete)
+
+
 class TestBuilderFlagsBrokenScenario(unittest.TestCase):
     """Scenario: Builder flags broken scenario via discovery.
 

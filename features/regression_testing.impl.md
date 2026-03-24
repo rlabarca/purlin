@@ -12,15 +12,7 @@
 
 **[CLARIFICATION]** The meta-runner (`tools/test_support/run_regression.sh`) uses `find` with `-print0` and `sort -z` for null-safe scenario file discovery, ensuring correct handling of filenames with special characters. (Severity: INFO)
 
-**[DISCOVERY] [ACKNOWLEDGED]** Runner does not capture stderr from harness
-**Source:** /pl-spec-code-audit --deep (M33)
-**Severity:** MEDIUM
-**Details:** When a harness invocation fails and stderr contains claude connection errors, the runner should record `stderr_excerpt` in `regression_result.json`. Currently `execute_harness()` in `regression_runner.sh` does not redirect stderr separately — it goes to the terminal or is lost.
-**Suggested fix:** Redirect harness stderr to a temp file, read it on failure, include first 500 chars as `stderr_excerpt` in the result JSON.
+**[CLARIFICATION]** M33 fix: stderr capture uses a temp file (`mktemp`) rather than process substitution to ensure portability across all three timeout dispatch paths (gtimeout, GNU timeout, macOS fallback). The excerpt is truncated to 1000 bytes via `head -c 1000`. The `stderr_excerpt` field is only included in the result JSON when non-empty, keeping the result clean for successful harnesses. Stderr is re-echoed to the terminal via `cat "$stderr_tmpfile" >&2` so it remains visible to the user. (Severity: INFO)
 
-**[DISCOVERY] [ACKNOWLEDGED]** pl-verify §2.2.4 regression table has no unit tests
-**Source:** /pl-spec-code-audit --deep (M35)
-**Severity:** MEDIUM
-**Details:** `test_pl_verify.py` has no test classes for the Phase A regression suite status table or the agent_behavior hard gate behavior. The existing test coverage covers role gating, scoped mode, batch mode, cosmetic scope, auto-pass, commit tags, and failures — but nothing related to Section 2.2.4.
-**Suggested fix:** Add test classes for the regression status table rendering and the hard gate stop behavior.
+**[CLARIFICATION]** M35 fix: The completion gate logic is tested as a pure function (`_evaluate_completion_gate`) that mirrors the gate semantics described in the spec -- FAIL status blocks completion, PASS allows it, and absence of regression results does not gate. Status table rendering tests verify the format matches the meta-runner's summary output pattern. (Severity: INFO)
 

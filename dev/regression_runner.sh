@@ -122,20 +122,24 @@ execute_harness() {
 
     local exit_code=0
     local harness_path="$PROJECT_ROOT/$harness"
+    local stderr_tmpfile
+    stderr_tmpfile="$(mktemp)"
 
     if [[ ! -f "$harness_path" ]]; then
         echo "Error: harness not found: $harness_path" >&2
+        echo "Error: harness not found: $harness_path" > "$stderr_tmpfile"
         exit_code=127
     else
         # Run harness with timeout using a portable approach:
         # Start harness in its own process group, then kill group on timeout.
+        # Stderr is captured to a temp file for inclusion in results.
         if command -v gtimeout &>/dev/null; then
-            gtimeout "$TIMEOUT" bash "$harness_path" "$@" || exit_code=$?
+            gtimeout "$TIMEOUT" bash "$harness_path" "$@" 2>"$stderr_tmpfile" || exit_code=$?
         elif command -v timeout &>/dev/null; then
-            timeout "$TIMEOUT" bash "$harness_path" "$@" || exit_code=$?
+            timeout "$TIMEOUT" bash "$harness_path" "$@" 2>"$stderr_tmpfile" || exit_code=$?
         else
             # macOS fallback: background job + polling kill
-            bash "$harness_path" "$@" </dev/null &
+            bash "$harness_path" "$@" </dev/null 2>"$stderr_tmpfile" &
             local bg_pid=$!
             local elapsed=0
             while kill -0 "$bg_pid" 2>/dev/null; do
@@ -159,6 +163,15 @@ execute_harness() {
         fi
     fi
 
+    # Capture stderr excerpt (first ~1000 chars) for result reporting
+    local stderr_excerpt=""
+    if [[ -s "$stderr_tmpfile" ]]; then
+        stderr_excerpt="$(head -c 1000 "$stderr_tmpfile")"
+        # Echo stderr to the terminal so it is still visible
+        cat "$stderr_tmpfile" >&2
+    fi
+    rm -f "$stderr_tmpfile"
+
     local completed_at
     completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -180,9 +193,10 @@ except Exception:
 " 2>/dev/null || echo "unknown")"
     fi
 
-    # Write result file
+    # Write result file (including stderr_excerpt when non-empty)
     python3 -c "
-import json
+import json, sys
+stderr_text = sys.stdin.read().strip()
 result = {
     'harness': '$harness',
     'exit_code': $exit_code,
@@ -191,9 +205,11 @@ result = {
     'tests_json_path': '$tests_json_path',
     'summary': '$summary'
 }
+if stderr_text:
+    result['stderr_excerpt'] = stderr_text
 with open('$RESULT_FILE', 'w') as f:
     json.dump(result, f, indent=2)
-"
+" <<< "$stderr_excerpt"
     echo "[$completed_at] Result: exit_code=$exit_code summary=$summary"
 
     # Track for session summary
