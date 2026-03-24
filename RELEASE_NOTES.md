@@ -53,6 +53,9 @@
 - STALE web test verdicts automatically record as PM-routed discoveries -- no manual Builder triage needed
 - The Architect silently resolves routine Critic items (untracked files, straightforward acknowledgments) and summarizes what it did
 
+**Known Issues**
+- QA process is still not optimal. Gaps in workflow to be addressed.
+
 ### v0.8.3 — 2026-03-19
 
 **New Commands**
