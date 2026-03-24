@@ -284,6 +284,284 @@ class TestHarnessRunnerProcessesScenarioJSON(unittest.TestCase):
 
 
 # ===================================================================
+# Print-Mode Context Augmentation Tests
+# ===================================================================
+
+class TestScanFixtureFeatures(unittest.TestCase):
+    """Tests scan_fixture_features() with realistic fixture directories."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def _write_feature(self, name, content):
+        with open(os.path.join(self.features_dir, name), 'w') as f:
+            f.write(content)
+
+    def test_classifies_todo_testing_complete(self):
+        """Features are classified by their lifecycle tag."""
+        self._write_feature('auth.md',
+                            '# Feature: Auth\n> Label: "Authentication"\n[TODO]\n')
+        self._write_feature('dashboard.md',
+                            '# Feature: Dashboard\n> Label: "Dashboard UI"\n[TESTING]\n')
+        self._write_feature('login.md',
+                            '# Feature: Login\n> Label: "Login Flow"\n[COMPLETE]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(result['todo'], ['Authentication'])
+        self.assertEqual(result['testing'], ['Dashboard UI'])
+        self.assertEqual(result['complete'], ['Login Flow'])
+
+    def test_uses_filename_when_no_label(self):
+        """Falls back to filename stem when no Label declaration exists."""
+        self._write_feature('my_feature.md', '# Feature: My Feature\n[TODO]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(result['todo'], ['my_feature'])
+
+    def test_skips_companion_files(self):
+        """Companion files (.impl.md) are excluded from scanning."""
+        self._write_feature('auth.md',
+                            '# Feature: Auth\n> Label: "Auth"\n[TODO]\n')
+        self._write_feature('auth.impl.md',
+                            '## Implementation Notes\n[TODO]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(len(result['todo']), 1)
+        self.assertEqual(result['todo'], ['Auth'])
+
+    def test_skips_discovery_sidecars(self):
+        """Discovery sidecar files (.discoveries.md) are excluded."""
+        self._write_feature('auth.md',
+                            '# Feature: Auth\n> Label: "Auth"\n[COMPLETE]\n')
+        self._write_feature('auth.discoveries.md',
+                            '### [BUG] Something\n[TODO]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(len(result['complete']), 1)
+        self.assertEqual(result['todo'], [])
+
+    def test_skips_anchor_nodes(self):
+        """Anchor nodes (arch_*, design_*, policy_*) are excluded."""
+        self._write_feature('arch_data_layer.md',
+                            '# Architecture: Data Layer\n[TODO]\n')
+        self._write_feature('design_visual.md',
+                            '# Design: Visual\n[TODO]\n')
+        self._write_feature('policy_release.md',
+                            '# Policy: Release\n[TODO]\n')
+        self._write_feature('real_feature.md',
+                            '# Feature: Real\n> Label: "Real Feature"\n[TODO]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(len(result['todo']), 1)
+        self.assertEqual(result['todo'], ['Real Feature'])
+
+    def test_empty_features_directory(self):
+        """Returns empty lists when features directory is empty."""
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(result['todo'], [])
+        self.assertEqual(result['testing'], [])
+        self.assertEqual(result['complete'], [])
+
+    def test_missing_features_directory(self):
+        """Returns empty lists when features directory does not exist."""
+        empty_dir = tempfile.mkdtemp()
+        try:
+            result = harness_runner.scan_fixture_features(empty_dir)
+            self.assertEqual(result['todo'], [])
+            self.assertEqual(result['testing'], [])
+            self.assertEqual(result['complete'], [])
+        finally:
+            shutil.rmtree(empty_dir)
+
+    def test_multiple_features_per_status(self):
+        """Multiple features can share the same lifecycle status."""
+        self._write_feature('a.md', '# Feature: A\n> Label: "Feature A"\n[TODO]\n')
+        self._write_feature('b.md', '# Feature: B\n> Label: "Feature B"\n[TODO]\n')
+        self._write_feature('c.md', '# Feature: C\n> Label: "Feature C"\n[TODO]\n')
+
+        result = harness_runner.scan_fixture_features(self.tmpdir)
+
+        self.assertEqual(len(result['todo']), 3)
+        self.assertIn('Feature A', result['todo'])
+        self.assertIn('Feature B', result['todo'])
+        self.assertIn('Feature C', result['todo'])
+
+
+class TestBuildPrintModeContext(unittest.TestCase):
+    """Tests build_print_mode_context() with realistic fixture structures."""
+
+    def setUp(self):
+        self.fixture_dir = tempfile.mkdtemp()
+        self.project_root = tempfile.mkdtemp()
+
+        # Create fixture features directory with mixed lifecycle
+        features_dir = os.path.join(self.fixture_dir, 'features')
+        os.makedirs(features_dir)
+        with open(os.path.join(features_dir, 'auth.md'), 'w') as f:
+            f.write('# Feature: Auth\n> Label: "Authentication"\n[TODO]\n')
+        with open(os.path.join(features_dir, 'login.md'), 'w') as f:
+            f.write('# Feature: Login\n> Label: "Login Flow"\n[TESTING]\n')
+        with open(os.path.join(features_dir, 'signup.md'), 'w') as f:
+            f.write('# Feature: Signup\n> Label: "User Signup"\n[COMPLETE]\n')
+
+        # Create command table in fixture
+        refs_dir = os.path.join(
+            self.fixture_dir, 'instructions', 'references')
+        os.makedirs(refs_dir)
+        self.architect_table = (
+            '## Main Branch Variant\n\n```\n'
+            'Purlin Architect — Ready\n'
+            '━━━━━━━━━━━━━━━━━━━━━━━━\n'
+            '  /pl-spec    Create specs\n'
+            '  /pl-anchor  Create anchors\n'
+            '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')
+        with open(os.path.join(refs_dir, 'architect_commands.md'), 'w') as f:
+            f.write(self.architect_table)
+
+        # Create skill file in fixture
+        commands_dir = os.path.join(self.fixture_dir, '.claude', 'commands')
+        os.makedirs(commands_dir)
+        self.help_skill = (
+            '## Section 1: Role Detection\n'
+            'Search for "Role Definition: The <Role>" in system prompt.\n')
+        with open(os.path.join(commands_dir, 'pl-help.md'), 'w') as f:
+            f.write(self.help_skill)
+
+    def tearDown(self):
+        shutil.rmtree(self.fixture_dir)
+        shutil.rmtree(self.project_root)
+
+    def test_includes_command_table(self):
+        """Command table content is included in the context."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        self.assertIn('━━━━━━━━━━━━━━━━━━━━━━━━', ctx)
+        self.assertIn('/pl-spec', ctx)
+        self.assertIn('/pl-anchor', ctx)
+
+    def test_includes_feature_status(self):
+        """Feature status summary is included with correct counts."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        self.assertIn('TODO (1)', ctx)
+        self.assertIn('Authentication', ctx)
+        self.assertIn('TESTING (1)', ctx)
+        self.assertIn('Login Flow', ctx)
+        self.assertIn('COMPLETE (1)', ctx)
+        self.assertIn('User Signup', ctx)
+
+    def test_includes_skill_content_for_slash_commands(self):
+        """Skill file content is included when prompt is a slash command."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', '/pl-help')
+
+        self.assertIn('Role Detection', ctx)
+        self.assertIn('Role Definition', ctx)
+
+    def test_no_skill_content_for_regular_prompts(self):
+        """Skill content is NOT included for non-slash-command prompts."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT',
+            'Edit main.py and fix the import.')
+
+        self.assertNotIn('Role Detection', ctx)
+        self.assertNotIn('Skill Content', ctx)
+
+    def test_architect_role_enforcement(self):
+        """Architect role enforcement mentions NEVER write code."""
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        self.assertIn('NEVER write, edit, or create code files', ctx)
+        self.assertIn('REFUSE', ctx)
+
+    def test_builder_role_enforcement(self):
+        """Builder role enforcement mentions spec files are Architect-owned."""
+        # Create builder command table
+        refs_dir = os.path.join(
+            self.fixture_dir, 'instructions', 'references')
+        with open(os.path.join(refs_dir, 'builder_commands.md'), 'w') as f:
+            f.write('## Main Branch Variant\n\n```\n'
+                    'Purlin Builder — Ready\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n'
+                    '  /pl-build   Build features\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')
+
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'BUILDER', 'Begin session.')
+
+        self.assertIn('NEVER write, edit, or create feature spec files', ctx)
+        self.assertIn('Architect-owned', ctx)
+
+    def test_qa_role_enforcement(self):
+        """QA role enforcement mentions NEVER write application code."""
+        refs_dir = os.path.join(
+            self.fixture_dir, 'instructions', 'references')
+        with open(os.path.join(refs_dir, 'qa_commands.md'), 'w') as f:
+            f.write('## Main Branch Variant\n\n```\n'
+                    'Purlin QA — Ready\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n'
+                    '  /pl-verify  Verify features\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')
+
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'QA', 'Begin session.')
+
+        self.assertIn('NEVER write, edit, or create application code', ctx)
+        self.assertIn('Builder-owned', ctx)
+
+    def test_falls_back_to_project_root_for_command_table(self):
+        """Falls back to project_root when fixture has no command table."""
+        # Remove fixture command table
+        fixture_refs = os.path.join(
+            self.fixture_dir, 'instructions', 'references')
+        shutil.rmtree(fixture_refs)
+
+        # Create command table in project root instead
+        proj_refs = os.path.join(
+            self.project_root, 'instructions', 'references')
+        os.makedirs(proj_refs)
+        with open(os.path.join(proj_refs, 'architect_commands.md'), 'w') as f:
+            f.write('## Main Branch Variant\n\n```\n'
+                    'Purlin Architect — Ready\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n'
+                    '  /pl-spec    From project root\n'
+                    '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')
+
+        ctx = harness_runner.build_print_mode_context(
+            self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
+
+        self.assertIn('From project root', ctx)
+        self.assertIn('━━━━━━━━━━━━━━━━━━━━━━━━', ctx)
+
+    def test_returns_empty_string_when_no_data(self):
+        """Returns empty string when fixture has no relevant data."""
+        empty_fixture = tempfile.mkdtemp()
+        empty_project = tempfile.mkdtemp()
+        try:
+            ctx = harness_runner.build_print_mode_context(
+                empty_fixture, empty_project, 'ARCHITECT', 'Begin session.')
+            # Should still have role enforcement even without other data
+            self.assertIn('CRITICAL: Role Enforcement', ctx)
+        finally:
+            shutil.rmtree(empty_fixture)
+            shutil.rmtree(empty_project)
+
+
+# ===================================================================
 # Test runner with output to tests/skill_behavior_regression/tests.json
 # ===================================================================
 
