@@ -17,3 +17,9 @@ All effort data comes from the Critic's per-feature `critic.json` output. The da
 **Severity:** MEDIUM
 **Details:** The automated scenario asserting /status.json includes a verification_effort block could not be conclusively matched to a specific test function. Traceability may be coincidental keyword overlap.
 **Suggested fix:** Verify that test_cdd.py or equivalent includes an explicit assertion for the verification_effort key in /status.json response. Add test if missing.
+
+**[DISCOVERY] [ACKNOWLEDGED]** verification_effort test traceability uncertain
+**Source:** /pl-spec-code-audit --deep (M38)
+**Severity:** MEDIUM
+**Details:** The scenario "Status JSON includes verification_effort" could not be conclusively matched to a specific test function. The existing impl note acknowledges this. An explicit test for the `/status.json` verification_effort field should be added.
+**Suggested fix:** Add an explicit test that GETs `/status.json` and asserts the `verification_effort` key exists on feature objects.

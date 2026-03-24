@@ -28,3 +28,11 @@ Three independent mechanisms layer to reduce noise:
 1.  **Infrastructure exclusion list** targets files that exist in nearly every Python/JS project and are never feature-specific. The list (`__init__.py`, `conftest.py`, `*_utils.*`, build system files) can be extended via `.purlin/config.json` `audit_infra_patterns` if a project has additional boilerplate.
 2.  **Import fan-in threshold** (3+ features) prevents shared utility modules from being flagged as orphaned. The threshold of 3 was chosen because a module imported by only 1-2 features should be co-owned by those features; a module imported by 3+ is genuinely cross-cutting infrastructure.
 3.  **Confidence-weighted ownership** ensures that weak heuristic matches (H5/H6) suppress the gap finding but still surface in the audit table as review items. This avoids both false positives (marking genuinely owned code as orphaned) and false negatives (silently accepting a weak match without human verification).
+*   The command is an agent instruction file, not executable code. Tests verify that the command file contains the correct instructions, keywords, structural elements, and referenced infrastructure for all 33 automated scenarios.
+*   The command file previously referenced "9 gap dimensions" in two places; corrected to "10" to match the spec's Section 2.12 and the command file's own Gap Dimensions Table which lists all 10 dimensions.
+
+**[DISCOVERY] [ACKNOWLEDGED]** test_support test file missing 3 state fields
+**Source:** /pl-spec-code-audit --deep (M15)
+**Severity:** MEDIUM
+**Details:** `tools/test_support/test_pl_spec_code_audit.py` `TestCrossSessionResume.test_state_file_tracks_required_fields` checks for 7 fields but omits `timestamp`, `code_inventory`, and `ownership_map_complete`. The newer `tests/pl_spec_code_audit/test_command.py` correctly checks all 10.
+**Suggested fix:** Add the 3 missing fields to the older test file's assertion list.

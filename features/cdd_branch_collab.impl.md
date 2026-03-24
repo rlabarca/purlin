@@ -72,3 +72,9 @@ INTENT_DRIFT -- Branch dropdown and sync badge lacked left-edge alignment; spec 
 **Severity:** HIGH
 **Details:** The branch collab section of serve.py references `--purlin-fg` which is not defined in design_visual_standards.md Section 2.2. The spec also references it.
 **Suggested fix:** Replace `--purlin-fg` with the appropriate defined token: `--purlin-text` for body text or `--purlin-surface` for high-contrast text on colored backgrounds.
+
+**[DISCOVERY] [ACKNOWLEDGED]** Leave with non-default base branch untested
+**Source:** /pl-spec-code-audit --deep (M13)
+**Severity:** MEDIUM
+**Details:** The leave test (`TestLeaveClearsActiveBranch`) only checks `main` is checked out. No test sets up a `branch_collab_base_branch` file with a non-default value (e.g., `develop`). The spec says the stored base branch should be read and checked out.
+**Suggested fix:** Add a test that writes `develop` to `.purlin/runtime/branch_collab_base_branch`, invokes leave, and asserts `develop` is checked out instead of `main`.

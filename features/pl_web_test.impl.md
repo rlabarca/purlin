@@ -22,3 +22,9 @@ DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .pur
 **Details:** The spec defines specific behaviors for dynamic port resolution (reading `.purlin/runtime/cdd.port`), auto-starting the CDD server via `/pl-cdd`, and detecting/configuring Playwright MCP. These are implemented in the skill command file as agent instructions, but no automated tests verify these code paths. The existing tests focus on command file structure and keyword presence.
 **Suggested fix:** Add test scenarios that verify: (a) port resolution reads from `.purlin/runtime/cdd.port` and falls back correctly, (b) server auto-start is triggered when the port file is missing or server is not responding, (c) Playwright MCP detection logic (checking for `@playwright/mcp` availability). These could be structural tests verifying the command file contains the required logic references, consistent with the existing test pattern for agent skills.
 
+**[DISCOVERY] [ACKNOWLEDGED]** STALE verdict discovery format test too shallow
+**Source:** /pl-spec-code-audit --deep (M25)
+**Severity:** MEDIUM
+**Details:** The test `test_stale_not_recorded_as_bug_discovery` only checks that the word "STALE" appears in the command file. It does not validate the 6-field discovery format, sidecar file creation, or the distinct STALE commit message pattern (`discovery(scope): [STALE] web-test findings for PM re-ingestion`).
+**Suggested fix:** Add assertions for all 6 required STALE discovery fields and the commit message format.
+

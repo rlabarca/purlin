@@ -12,3 +12,15 @@
 **Suggested fix:** Wire `cached_git_status()` into the hot paths in both `serve.py` and `critic.py`, or remove it and update the spec to reflect direct calls.
 
 *   **Section 2.4 (Shared Git Status Cache):** Cache stored at `.purlin/cache/git_status_cache.json` with 10-second TTL. `cached_git_status()` replaces direct `git status --porcelain` calls in the hot path. Cache includes a timestamp for TTL validation. Uses the same atomic write pattern as the status commit cache.
+
+**[DISCOVERY] [ACKNOWLEDGED]** Hash hit test doesn't verify file I/O path
+**Source:** /pl-spec-code-audit --deep (M29)
+**Severity:** MEDIUM
+**Details:** The test calls `spec_content_unchanged()` and patches `run_command`, asserting it is not called. However, `spec_content_unchanged()` reads the local file directly (not via `run_command`). The mock proves no git subprocess was called but doesn't verify the actual file read path.
+**Suggested fix:** Add an assertion that verifies the file was read from disk (e.g., mock `open` or check that the hash was computed from the local file content).
+
+**[DISCOVERY] [ACKNOWLEDGED]** Single batch test missing subprocess call count assertion
+**Source:** /pl-spec-code-audit --deep (M30)
+**Severity:** MEDIUM
+**Details:** The spec requires verifying "exactly 2 git diff subprocess calls are made (one per category)" for a single batch of fewer than 50 files. The test uses a counting wrapper but never asserts the call count.
+**Suggested fix:** Add `assertEqual(call_count[0], 2)` to the single-batch test.

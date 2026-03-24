@@ -39,15 +39,13 @@ When expanded, the section renders an ordered list of steps. Each row contains t
 
 ### 2.4 Drag-to-Reorder
 
-Drag-and-drop reordering is supported using the HTML5 Drag and Drop API or a lightweight JS library consistent with the dashboard's existing implementation stack.
+Drag-and-drop reordering is supported via mouse event handlers (`mousedown`, `mousemove`, `mouseup`) on a dedicated drag handle element. This approach avoids cross-browser inconsistencies with the HTML5 Drag and Drop API while remaining lightweight and consistent with the dashboard's existing implementation stack.
 
 Behavior when a user drops a step at a new position:
 1.  The UI optimistically updates the displayed order immediately.
 2.  A `POST /release-checklist/config` request is sent with the full new ordered list (all step IDs with their current enabled states).
 3.  On a successful response, the in-memory config is updated to match the new order.
 4.  On a failure response (non-2xx or network error), the UI reverts to the previous order and displays a brief inline error indicator adjacent to the drag handle.
-
-The drag handle element MUST have `draggable="true"` set on the row or a dedicated drag-source element.
 
 ### 2.5 Enable/Disable Toggle
 

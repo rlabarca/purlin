@@ -42,3 +42,8 @@ Implemented Section 2.7 Regression Guidance gate: QA status MUST NOT be CLEAN wh
 - Tests: 45 total, 45 passed
 - AP scan: clean
 - Date: 2026-03-22
+**[DISCOVERY] [ACKNOWLEDGED]** QA TESTING action item priority should be HIGH not MEDIUM
+**Source:** /pl-spec-code-audit --deep (M27)
+**Severity:** MEDIUM
+**Details:** Spec §2.5 routing table says QA action items for features in TESTING state are HIGH priority. Code emits MEDIUM at 4 sites in `generate_action_items()` (lines ~1894, 1916, 1929, 1948).
+**Suggested fix:** Change priority from `'MEDIUM'` to `'HIGH'` at all 4 sites.
