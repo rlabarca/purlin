@@ -745,6 +745,8 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
     (multiple branches, divergent history) and no fixture_repo_url is
     configured, QA writes the recommendation to
     tests/qa/fixture_recommendations.md (per spec Section 2.12).
+
+    Uses the production functions from fixture_recommendations.py.
     """
 
     def setUp(self):
@@ -754,74 +756,45 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
         # Config without fixture_repo_url
         purlin_dir = os.path.join(self.fake_root, ".purlin")
         os.makedirs(purlin_dir, exist_ok=True)
-        with open(os.path.join(purlin_dir, "config.json"), "w") as f:
+        self.config_path = os.path.join(purlin_dir, "config.json")
+        with open(self.config_path, "w") as f:
             json.dump({"tools_root": "tools"}, f)
+        self.rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
 
     def tearDown(self):
         subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
 
-    def _evaluate_fixture_needs_and_recommend(self, feature_name, reason, suggested_tags):
-        """Simulate QA evaluating fixture needs and recording a recommendation.
-
-        Per spec Section 2.12: QA records fixture infrastructure recommendations
-        when a feature needs complex state that cannot be expressed via inline
-        setup_commands. This writes to tests/qa/fixture_recommendations.md.
-        """
-        # Step 1: Check if fixture_repo_url is configured
-        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
-        with open(config_path) as f:
-            config = json.load(f)
-        has_remote = "fixture_repo_url" in config
-
-        # Step 2: No remote configured and complex state needed -> recommend
-        rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
-
-        # Read existing content or start fresh
-        if os.path.isfile(rec_path):
-            with open(rec_path) as f:
-                content = f.read()
-        else:
-            content = "# Fixture Recommendations\n"
-
-        # Append recommendation for this feature
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        tags_list = ", ".join(f"`{t}`" for t in suggested_tags)
-        content += f"\n## {feature_name}\n"
-        content += f"- **Reason:** {reason}\n"
-        content += f"- **Suggested tags:** {tags_list}\n"
-        content += f"- **Recorded:** {today}\n"
-        content += "- **Status:** PENDING\n"
-
-        with open(rec_path, "w") as f:
-            f.write(content)
-
-        return rec_path, has_remote
-
     def test_no_fixture_repo_url_configured(self):
         """Confirms fixture_repo_url is not in config (prerequisite)."""
-        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
-        with open(config_path) as f:
+        with open(self.config_path) as f:
             config = json.load(f)
         self.assertNotIn("fixture_repo_url", config)
 
     def test_recommendation_file_created(self):
         """Recommendation is written to fixture_recommendations.md."""
-        rec_path, has_remote = self._evaluate_fixture_needs_and_recommend(
-            "branch_collab",
+        from fixture_recommendations import (
+            evaluate_fixture_needs, write_recommendation,
+        )
+        result = evaluate_fixture_needs(self.config_path, "complex")
+        self.assertEqual(result["action"], "recommend")
+        self.assertFalse(result["has_remote"])
+
+        write_recommendation(
+            self.rec_path, "branch_collab",
             "complex git state with multiple branches",
             ["main/branch_collab/diverged-history", "main/branch_collab/ahead-3"],
         )
-        self.assertFalse(has_remote)
-        self.assertTrue(os.path.isfile(rec_path))
+        self.assertTrue(os.path.isfile(self.rec_path))
 
     def test_recommendation_contains_required_fields(self):
         """Recommendation has reason, suggested tags, recorded date, and PENDING status."""
-        rec_path, _ = self._evaluate_fixture_needs_and_recommend(
-            "branch_collab",
+        from fixture_recommendations import write_recommendation
+        write_recommendation(
+            self.rec_path, "branch_collab",
             "complex git state with multiple branches",
             ["main/branch_collab/diverged-history", "main/branch_collab/ahead-3"],
         )
-        with open(rec_path) as f:
+        with open(self.rec_path) as f:
             content = f.read()
 
         self.assertIn("## branch_collab", content)
@@ -835,12 +808,13 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
 
     def test_recommendation_header_present(self):
         """File starts with '# Fixture Recommendations' header."""
-        rec_path, _ = self._evaluate_fixture_needs_and_recommend(
-            "branch_collab",
+        from fixture_recommendations import write_recommendation
+        write_recommendation(
+            self.rec_path, "branch_collab",
             "complex git state with multiple branches",
             ["main/branch_collab/diverged-history"],
         )
-        with open(rec_path) as f:
+        with open(self.rec_path) as f:
             first_line = f.readline().strip()
         self.assertEqual(first_line, "# Fixture Recommendations")
 
@@ -848,8 +822,11 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
 class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
     """Scenario: Fixture recommendation file read by future sessions
 
-    Validates that a Builder session can read fixture_recommendations.md
-    and identify which fixture tags need to be created (per spec Section 2.12).
+    Validates that a Builder session with qa_mode enabled can read
+    fixture_recommendations.md and identify which fixture tags
+    need to be created (per spec Section 2.12).
+
+    Uses the production parse_recommendations() from fixture_recommendations.py.
     """
 
     def setUp(self):
@@ -880,77 +857,25 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
     def tearDown(self):
         subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
 
-    def _parse_recommendations(self, rec_path):
-        """Parse fixture_recommendations.md and return structured data.
-
-        Simulates what a Builder session does when reading
-        recommendations: parse each feature section and extract
-        reason, suggested tags, recorded date, and status.
-        """
-        with open(rec_path) as f:
-            content = f.read()
-
-        recommendations = {}
-        current_feature = None
-
-        for line in content.splitlines():
-            # Match feature header: ## <feature_name>
-            header_match = re.match(r'^## (\S+)', line)
-            if header_match:
-                current_feature = header_match.group(1)
-                recommendations[current_feature] = {}
-                continue
-
-            if current_feature is None:
-                continue
-
-            # Match fields
-            reason_match = re.match(r'^- \*\*Reason:\*\* (.+)', line)
-            if reason_match:
-                recommendations[current_feature]["reason"] = reason_match.group(1)
-                continue
-
-            tags_match = re.match(r'^- \*\*Suggested tags:\*\* (.+)', line)
-            if tags_match:
-                raw = tags_match.group(1)
-                tags = re.findall(r'`([^`]+)`', raw)
-                recommendations[current_feature]["suggested_tags"] = tags
-                continue
-
-            recorded_match = re.match(r'^- \*\*Recorded:\*\* (.+)', line)
-            if recorded_match:
-                recommendations[current_feature]["recorded"] = recorded_match.group(1)
-                continue
-
-            status_match = re.match(r'^- \*\*Status:\*\* (.+)', line)
-            if status_match:
-                recommendations[current_feature]["status"] = status_match.group(1)
-                continue
-
-        return recommendations
-
     def test_builder_can_read_recommendation_file(self):
         """Builder reads the recommendations file and gets structured data."""
-        recs = self._parse_recommendations(self.rec_path)
+        from fixture_recommendations import parse_recommendations
+        recs = parse_recommendations(self.rec_path)
         self.assertIn("branch_collab", recs)
         self.assertIn("instruction_audit", recs)
 
     def test_builder_identifies_pending_tags(self):
         """Builder identifies PENDING features that need fixture tags created."""
-        recs = self._parse_recommendations(self.rec_path)
-
-        pending = {
-            name: data
-            for name, data in recs.items()
-            if data.get("status") == "PENDING"
-        }
+        from fixture_recommendations import get_pending_recommendations
+        pending = get_pending_recommendations(self.rec_path)
         self.assertEqual(len(pending), 1)
         self.assertIn("branch_collab", pending)
         self.assertNotIn("instruction_audit", pending)
 
     def test_pending_entry_has_suggested_tags(self):
         """PENDING entry includes suggested tags the Builder should create."""
-        recs = self._parse_recommendations(self.rec_path)
+        from fixture_recommendations import parse_recommendations
+        recs = parse_recommendations(self.rec_path)
         branch_collab = recs["branch_collab"]
         self.assertEqual(branch_collab["status"], "PENDING")
         self.assertIn("main/branch_collab/diverged-history", branch_collab["suggested_tags"])
@@ -958,14 +883,414 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
 
     def test_created_entries_skipped(self):
         """Features with CREATED status are not in the pending set."""
-        recs = self._parse_recommendations(self.rec_path)
-        created = {
-            name: data
-            for name, data in recs.items()
-            if data.get("status") == "CREATED"
-        }
-        self.assertEqual(len(created), 1)
-        self.assertIn("instruction_audit", created)
+        from fixture_recommendations import get_pending_recommendations
+        pending = get_pending_recommendations(self.rec_path)
+        self.assertNotIn("instruction_audit", pending)
+
+
+# ===================================================================
+# Decision Logic Tests (BUG M32)
+# ===================================================================
+
+class TestEvaluateFixtureNeedsDecisionLogic(unittest.TestCase):
+    """Tests for the QA recommendation decision logic.
+
+    Covers all branches of the decision tree from
+    regression_testing.md Section 2.10.1:
+    1. Feature has fixture tags -> use_existing
+    2. No tags, no controlled state needed -> none
+    3. No tags, simple state -> inline_setup
+    4. No tags, complex state, remote configured -> use_remote
+    5. No tags, complex state, no remote -> recommend
+    """
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-decision-")
+        purlin_dir = os.path.join(self.fake_root, ".purlin")
+        os.makedirs(purlin_dir, exist_ok=True)
+        self.config_path = os.path.join(purlin_dir, "config.json")
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def _write_config(self, config_data):
+        with open(self.config_path, "w") as f:
+            json.dump(config_data, f)
+
+    def test_has_fixture_tags_returns_use_existing(self):
+        """When feature references fixture tags, action is use_existing."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        result = evaluate_fixture_needs(
+            self.config_path, "complex", has_fixture_tags=True,
+        )
+        self.assertEqual(result["action"], "use_existing")
+
+    def test_has_fixture_tags_with_remote_still_use_existing(self):
+        """Fixture tags take priority even when remote is configured."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({
+            "tools_root": "tools",
+            "fixture_repo_url": "https://example.com/fixtures.git",
+        })
+        result = evaluate_fixture_needs(
+            self.config_path, "complex", has_fixture_tags=True,
+        )
+        self.assertEqual(result["action"], "use_existing")
+        self.assertTrue(result["has_remote"])
+
+    def test_no_state_needed_returns_none(self):
+        """When state_complexity is 'none', action is none."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        result = evaluate_fixture_needs(self.config_path, "none")
+        self.assertEqual(result["action"], "none")
+
+    def test_simple_state_returns_inline_setup(self):
+        """Simple state uses inline setup_commands."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        result = evaluate_fixture_needs(self.config_path, "simple")
+        self.assertEqual(result["action"], "inline_setup")
+        self.assertFalse(result["has_remote"])
+
+    def test_complex_state_no_remote_returns_recommend(self):
+        """Complex state without remote -> recommend fixture repo."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        result = evaluate_fixture_needs(self.config_path, "complex")
+        self.assertEqual(result["action"], "recommend")
+        self.assertFalse(result["has_remote"])
+
+    def test_complex_state_with_remote_returns_use_remote(self):
+        """Complex state with remote configured -> use_remote."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({
+            "tools_root": "tools",
+            "fixture_repo_url": "https://example.com/fixtures.git",
+        })
+        result = evaluate_fixture_needs(self.config_path, "complex")
+        self.assertEqual(result["action"], "use_remote")
+        self.assertTrue(result["has_remote"])
+
+    def test_missing_config_file_defaults_no_remote(self):
+        """When config.json doesn't exist, has_remote is False."""
+        from fixture_recommendations import evaluate_fixture_needs
+        result = evaluate_fixture_needs(
+            "/nonexistent/config.json", "complex",
+        )
+        self.assertEqual(result["action"], "recommend")
+        self.assertFalse(result["has_remote"])
+
+    def test_malformed_config_file_defaults_no_remote(self):
+        """When config.json is invalid JSON, has_remote is False."""
+        from fixture_recommendations import evaluate_fixture_needs
+        with open(self.config_path, "w") as f:
+            f.write("not valid json {{{")
+        result = evaluate_fixture_needs(self.config_path, "complex")
+        self.assertEqual(result["action"], "recommend")
+        self.assertFalse(result["has_remote"])
+
+    def test_none_config_path_defaults_no_remote(self):
+        """When config_path is None, has_remote is False."""
+        from fixture_recommendations import evaluate_fixture_needs
+        result = evaluate_fixture_needs(None, "complex")
+        self.assertEqual(result["action"], "recommend")
+        self.assertFalse(result["has_remote"])
+
+    def test_unrecognized_complexity_returns_none(self):
+        """Unrecognized state_complexity falls back to none."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        result = evaluate_fixture_needs(self.config_path, "unknown_value")
+        self.assertEqual(result["action"], "none")
+
+    def test_result_always_has_required_keys(self):
+        """Every result has action, has_remote, and reason keys."""
+        from fixture_recommendations import evaluate_fixture_needs
+        self._write_config({"tools_root": "tools"})
+        for complexity in ("none", "simple", "complex"):
+            for has_tags in (True, False):
+                result = evaluate_fixture_needs(
+                    self.config_path, complexity, has_fixture_tags=has_tags,
+                )
+                self.assertIn("action", result)
+                self.assertIn("has_remote", result)
+                self.assertIn("reason", result)
+
+
+# ===================================================================
+# Builder Startup Read Path Edge Cases (BUG M32)
+# ===================================================================
+
+class TestParseRecommendationsEdgeCases(unittest.TestCase):
+    """Tests for the Builder startup read path edge cases.
+
+    Covers: empty file, missing file, malformed content, partial fields,
+    multiple entries with mixed statuses, single-tag entries.
+    """
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-parse-edge-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        os.makedirs(self.qa_dir, exist_ok=True)
+        self.rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def test_nonexistent_file_returns_empty(self):
+        """parse_recommendations returns empty dict for missing file."""
+        from fixture_recommendations import parse_recommendations
+        result = parse_recommendations("/nonexistent/path.md")
+        self.assertEqual(result, {})
+
+    def test_empty_file_returns_empty(self):
+        """parse_recommendations returns empty dict for empty file."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write("")
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(result, {})
+
+    def test_header_only_returns_empty(self):
+        """File with only header and no features returns empty dict."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write("# Fixture Recommendations\n")
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(result, {})
+
+    def test_feature_with_missing_fields(self):
+        """Feature section with partial fields still parses what exists."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## partial_feature\n"
+                "- **Reason:** some reason\n"
+                "- **Status:** PENDING\n"
+            )
+        result = parse_recommendations(self.rec_path)
+        self.assertIn("partial_feature", result)
+        self.assertEqual(result["partial_feature"]["reason"], "some reason")
+        self.assertEqual(result["partial_feature"]["status"], "PENDING")
+        self.assertNotIn("suggested_tags", result["partial_feature"])
+        self.assertNotIn("recorded", result["partial_feature"])
+
+    def test_feature_with_no_fields(self):
+        """Feature header with no fields returns empty dict for that feature."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## bare_feature\n\n"
+                "## another_feature\n"
+                "- **Status:** PENDING\n"
+            )
+        result = parse_recommendations(self.rec_path)
+        self.assertIn("bare_feature", result)
+        self.assertEqual(result["bare_feature"], {})
+        self.assertIn("another_feature", result)
+        self.assertEqual(result["another_feature"]["status"], "PENDING")
+
+    def test_multiple_statuses(self):
+        """Multiple features with different statuses are parsed correctly."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## feat_pending\n"
+                "- **Status:** PENDING\n\n"
+                "## feat_created\n"
+                "- **Status:** CREATED\n\n"
+                "## feat_pending2\n"
+                "- **Status:** PENDING\n"
+            )
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result["feat_pending"]["status"], "PENDING")
+        self.assertEqual(result["feat_created"]["status"], "CREATED")
+        self.assertEqual(result["feat_pending2"]["status"], "PENDING")
+
+    def test_single_tag_entry(self):
+        """Feature with a single suggested tag parses correctly."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## single_tag\n"
+                "- **Suggested tags:** `main/single_tag/state-one`\n"
+                "- **Status:** PENDING\n"
+            )
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(
+            result["single_tag"]["suggested_tags"],
+            ["main/single_tag/state-one"],
+        )
+
+    def test_many_tags_entry(self):
+        """Feature with many suggested tags parses all of them."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## many_tags\n"
+                "- **Suggested tags:** `main/many_tags/s1`, `main/many_tags/s2`, "
+                "`main/many_tags/s3`, `main/many_tags/s4`\n"
+                "- **Status:** PENDING\n"
+            )
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(len(result["many_tags"]["suggested_tags"]), 4)
+
+    def test_whitespace_only_file_returns_empty(self):
+        """File with only whitespace returns empty dict."""
+        from fixture_recommendations import parse_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write("   \n  \n  \n")
+        result = parse_recommendations(self.rec_path)
+        self.assertEqual(result, {})
+
+
+class TestGetPendingRecommendations(unittest.TestCase):
+    """Tests for the get_pending_recommendations convenience wrapper."""
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-pending-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        os.makedirs(self.qa_dir, exist_ok=True)
+        self.rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def test_filters_to_pending_only(self):
+        """Only PENDING entries are returned."""
+        from fixture_recommendations import get_pending_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## feat_a\n- **Status:** PENDING\n\n"
+                "## feat_b\n- **Status:** CREATED\n\n"
+                "## feat_c\n- **Status:** PENDING\n"
+            )
+        result = get_pending_recommendations(self.rec_path)
+        self.assertEqual(len(result), 2)
+        self.assertIn("feat_a", result)
+        self.assertIn("feat_c", result)
+        self.assertNotIn("feat_b", result)
+
+    def test_no_pending_returns_empty(self):
+        """Returns empty dict when all entries are CREATED."""
+        from fixture_recommendations import get_pending_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## feat_a\n- **Status:** CREATED\n\n"
+                "## feat_b\n- **Status:** CREATED\n"
+            )
+        result = get_pending_recommendations(self.rec_path)
+        self.assertEqual(result, {})
+
+    def test_missing_file_returns_empty(self):
+        """Returns empty dict for nonexistent file."""
+        from fixture_recommendations import get_pending_recommendations
+        result = get_pending_recommendations("/nonexistent/path.md")
+        self.assertEqual(result, {})
+
+    def test_pending_entries_have_suggested_tags(self):
+        """PENDING entries include suggested_tags from the parsed data."""
+        from fixture_recommendations import get_pending_recommendations
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n\n"
+                "## feat_a\n"
+                "- **Suggested tags:** `main/feat_a/state-1`, `main/feat_a/state-2`\n"
+                "- **Status:** PENDING\n"
+            )
+        result = get_pending_recommendations(self.rec_path)
+        self.assertEqual(
+            result["feat_a"]["suggested_tags"],
+            ["main/feat_a/state-1", "main/feat_a/state-2"],
+        )
+
+
+class TestWriteRecommendation(unittest.TestCase):
+    """Tests for the write_recommendation production function."""
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-write-rec-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        os.makedirs(self.qa_dir, exist_ok=True)
+        self.rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def test_creates_new_file_with_header(self):
+        """Creates file with header when it does not exist."""
+        from fixture_recommendations import write_recommendation
+        write_recommendation(
+            self.rec_path, "new_feature", "needs fixtures",
+            ["main/new_feature/state-1"],
+        )
+        with open(self.rec_path) as f:
+            content = f.read()
+        self.assertTrue(content.startswith("# Fixture Recommendations"))
+
+    def test_appends_to_existing_file(self):
+        """Appends new recommendation to existing file."""
+        from fixture_recommendations import write_recommendation
+        write_recommendation(
+            self.rec_path, "first_feature", "reason 1",
+            ["main/first_feature/s1"],
+        )
+        write_recommendation(
+            self.rec_path, "second_feature", "reason 2",
+            ["main/second_feature/s1"],
+        )
+        with open(self.rec_path) as f:
+            content = f.read()
+        self.assertIn("## first_feature", content)
+        self.assertIn("## second_feature", content)
+
+    def test_written_file_is_parseable(self):
+        """File written by write_recommendation is parseable by parse_recommendations."""
+        from fixture_recommendations import (
+            write_recommendation, parse_recommendations,
+        )
+        write_recommendation(
+            self.rec_path, "roundtrip_feat", "roundtrip test",
+            ["main/roundtrip_feat/s1", "main/roundtrip_feat/s2"],
+        )
+        result = parse_recommendations(self.rec_path)
+        self.assertIn("roundtrip_feat", result)
+        self.assertEqual(result["roundtrip_feat"]["status"], "PENDING")
+        self.assertEqual(result["roundtrip_feat"]["reason"], "roundtrip test")
+        self.assertEqual(
+            result["roundtrip_feat"]["suggested_tags"],
+            ["main/roundtrip_feat/s1", "main/roundtrip_feat/s2"],
+        )
+
+    def test_creates_parent_directories(self):
+        """Creates parent directories if they don't exist."""
+        from fixture_recommendations import write_recommendation
+        deep_path = os.path.join(
+            self.fake_root, "deep", "nested", "fixture_recommendations.md",
+        )
+        write_recommendation(
+            deep_path, "deep_feat", "deep test", ["main/deep_feat/s1"],
+        )
+        self.assertTrue(os.path.isfile(deep_path))
+
+    def test_returns_absolute_path(self):
+        """write_recommendation returns the absolute path of the written file."""
+        from fixture_recommendations import write_recommendation
+        result = write_recommendation(
+            self.rec_path, "abs_feat", "test", ["main/abs_feat/s1"],
+        )
+        self.assertTrue(os.path.isabs(result))
+        self.assertTrue(os.path.isfile(result))
 
 
 class TestVerifyUrlAccessibleRepo(unittest.TestCase):
