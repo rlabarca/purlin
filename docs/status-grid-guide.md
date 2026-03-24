@@ -74,7 +74,7 @@ column turns yellow.
 | **TODO** | Yellow | Feature is in TODO lifecycle state or has other Builder action items. |
 | **FAIL** | Red | `tests.json` exists with `status: "FAIL"`. Tests are broken. |
 | **INFEASIBLE** | Red (critical) | Builder has declared the feature cannot be implemented as specified. Release is blocked. |
-| **BLOCKED** | Red | An open SPEC_DISPUTE exists. The Builder cannot proceed until the dispute is resolved. |
+| **BLOCKED** | Gray | An open SPEC_DISPUTE exists. The Builder cannot proceed until the dispute is resolved. |
 | **??** | Gray | No `critic.json` exists for this feature yet. |
 
 The Builder column reflects the **[Implementation Gate](critic-and-cdd-guide.md)** and the feature's
@@ -89,7 +89,7 @@ INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 | **AUTO** | Green | All QA scenarios are `@auto`-tagged. Automated verification covers everything. |
 | **TODO** | Yellow | Manual scenarios need verification, or SPEC_UPDATED items need re-verification. |
 | **FAIL** | Red | Open BUG entries exist in the discovery sidecar file. |
-| **DISPUTED** | Red | Open SPEC_DISPUTE entries exist. The spec itself is contested. |
+| **DISPUTED** | Orange | Open SPEC_DISPUTE entries exist. The spec itself is contested. |
 | **N/A** | Gray | No QA work needed. The feature has no manual scenarios; the Builder verified everything with unit tests. |
 | **??** | Gray | No `critic.json` exists for this feature yet. |
 
@@ -116,8 +116,9 @@ backend or infrastructure features will show N/A.
 |-------|----------|---------|
 | **Green** | DONE, CLEAN, AUTO | Role's work is complete. |
 | **Yellow** | TODO | Work is pending but not blocking. |
-| **Red** | FAIL, INFEASIBLE, BLOCKED, DISPUTED | Something is broken or blocked. Needs attention. |
-| **Gray** | N/A, ?? | Not applicable or not yet analyzed. |
+| **Orange** | DISPUTED | Spec is contested. Resolution needed from PM or Architect. |
+| **Red** | FAIL, INFEASIBLE | Something is broken. Needs immediate attention. |
+| **Gray** | BLOCKED, N/A, ?? | Blocked by dispute, not applicable, or not yet analyzed. |
 
 ---
 
