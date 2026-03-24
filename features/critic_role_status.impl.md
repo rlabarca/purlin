@@ -7,3 +7,9 @@ The last implementation cycle used targeted scope covering 2 of 19 scenarios (th
 ## [DISCOVERY] (acknowledged) compute_role_status was not reading sidecar files (2026-03-13)
 
 `compute_role_status()` parsed discovery entries from the inline `## User Testing Discoveries` section of the feature file, but all modern features use sidecar files (`features/<name>.discoveries.md`). This meant QA DISPUTED status and Builder BLOCKED status could not trigger from sidecar-based disputes — only from inline sections (which are deprecated). Fixed by adding sidecar file lookup (matching the pattern in `audit_user_testing_section`) before falling back to inline section parsing. This bug affected all role status computations involving disputes, not just the two new scenarios.
+
+**[DISCOVERY] [ACKNOWLEDGED]** QA TESTING action item priority should be HIGH not MEDIUM
+**Source:** /pl-spec-code-audit --deep (M27)
+**Severity:** MEDIUM
+**Details:** Spec §2.5 routing table says QA action items for features in TESTING state are HIGH priority. Code emits MEDIUM at 4 sites in `generate_action_items()` (lines ~1894, 1916, 1929, 1948).
+**Suggested fix:** Change priority from `'MEDIUM'` to `'HIGH'` at all 4 sites.
