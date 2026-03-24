@@ -10,7 +10,9 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
+from unittest import mock
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _framework_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
@@ -22,7 +24,9 @@ from tools.release.audit_common import detect_project_root
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 # Import the scripts under test
-from tools.release.verify_dependency_integrity import main as verify_deps_main
+from tools.release.verify_dependency_integrity import (
+    main as verify_deps_main, ensure_cache_fresh,
+)
 from tools.release.verify_zero_queue import main as verify_zero_main
 from tools.release.submodule_safety_audit import main as submodule_safety_main
 from tools.release.critic_consistency_check import main as critic_consistency_main
@@ -945,6 +949,81 @@ class TestAllScriptsValidJSON(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Graph file is stale -- triggers regeneration (H10 fix)
+# ===================================================================
+
+class TestDepIntegrityStaleCacheRegeneration(unittest.TestCase):
+    """Scenario: Graph file is stale or absent -- triggers cache regeneration."""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "features/feature_a.md": (
+                '# Feature A\n'
+                '> Label: "Feature A"\n'
+                '> Category: "Test"\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @mock.patch(
+        "tools.release.verify_dependency_integrity.run_full_generation"
+    )
+    def test_absent_cache_triggers_regeneration(self, mock_regen):
+        """When dependency_graph.json is absent, ensure_cache_fresh regenerates."""
+        features_dir = os.path.join(self.root, "features")
+        result = ensure_cache_fresh(self.root, features_dir)
+        self.assertTrue(result, "Should return True when cache was regenerated")
+        mock_regen.assert_called_once_with(features_dir)
+
+    @mock.patch(
+        "tools.release.verify_dependency_integrity.run_full_generation"
+    )
+    def test_stale_cache_triggers_regeneration(self, mock_regen):
+        """When dependency_graph.json is older than a feature file, regenerate."""
+        features_dir = os.path.join(self.root, "features")
+        cache_dir = os.path.join(self.root, ".purlin", "cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, "dependency_graph.json")
+        # Create a cache file with old timestamp
+        with open(cache_file, "w") as f:
+            json.dump({"features": []}, f)
+        # Set cache mtime to 1 hour in the past
+        old_time = time.time() - 3600
+        os.utime(cache_file, (old_time, old_time))
+        # Touch a feature file to make it newer
+        feature_file = os.path.join(features_dir, "feature_a.md")
+        os.utime(feature_file, None)  # sets to current time
+
+        result = ensure_cache_fresh(self.root, features_dir)
+        self.assertTrue(result, "Should return True when cache was regenerated")
+        mock_regen.assert_called_once_with(features_dir)
+
+    @mock.patch(
+        "tools.release.verify_dependency_integrity.run_full_generation"
+    )
+    def test_fresh_cache_skips_regeneration(self, mock_regen):
+        """When dependency_graph.json is newer than all feature files, skip."""
+        features_dir = os.path.join(self.root, "features")
+        cache_dir = os.path.join(self.root, ".purlin", "cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, "dependency_graph.json")
+        # Set feature file mtime to 1 hour in the past
+        feature_file = os.path.join(features_dir, "feature_a.md")
+        old_time = time.time() - 3600
+        os.utime(feature_file, (old_time, old_time))
+        # Create cache file now (newer than feature)
+        with open(cache_file, "w") as f:
+            json.dump({"features": []}, f)
+
+        result = ensure_cache_fresh(self.root, features_dir)
+        self.assertFalse(result, "Should return False when cache is fresh")
+        mock_regen.assert_not_called()
+
+
+# ===================================================================
 # Test result output
 # ===================================================================
 
@@ -982,6 +1061,7 @@ CLASS_FEATURE_MAP = {
     "TestDepIntegrityClean": ["release_verify_dependency_integrity"],
     "TestDepIntegrityBrokenLink": ["release_verify_dependency_integrity"],
     "TestDepIntegrityReverseRef": ["release_verify_dependency_integrity"],
+    "TestDepIntegrityStaleCacheRegeneration": ["release_verify_dependency_integrity"],
     "TestZeroQueueBlocking": ["release_verify_zero_queue"],
     "TestZeroQueueClean": ["release_verify_zero_queue"],
     "TestZeroQueueQABlocking": ["release_verify_zero_queue"],

@@ -18,7 +18,46 @@ if _framework_root not in sys.path:
 from tools.release.audit_common import (
     detect_project_root, make_finding, make_output, output_and_exit,
 )
-from tools.cdd.graph import parse_features, detect_cycles
+from tools.cdd.graph import parse_features, detect_cycles, run_full_generation
+
+
+def ensure_cache_fresh(project_root, features_dir):
+    """Check if dependency_graph.json is stale or absent; regenerate if needed.
+
+    Per spec Section 2.1: if the cache file is absent or its modification time
+    predates the most recently modified feature file, regenerate it before
+    proceeding.
+
+    Returns True if the cache was regenerated, False if it was already fresh.
+    """
+    cache_file = os.path.join(project_root, ".purlin", "cache",
+                              "dependency_graph.json")
+
+    # If cache file does not exist, regenerate
+    if not os.path.exists(cache_file):
+        run_full_generation(features_dir)
+        return True
+
+    cache_mtime = os.path.getmtime(cache_file)
+
+    # Find the most recently modified feature file
+    latest_feature_mtime = 0
+    if os.path.isdir(features_dir):
+        for filename in os.listdir(features_dir):
+            if not filename.endswith(".md"):
+                continue
+            filepath = os.path.join(features_dir, filename)
+            if os.path.isfile(filepath):
+                mtime = os.path.getmtime(filepath)
+                if mtime > latest_feature_mtime:
+                    latest_feature_mtime = mtime
+
+    # If any feature file is newer than the cache, regenerate
+    if latest_feature_mtime > cache_mtime:
+        run_full_generation(features_dir)
+        return True
+
+    return False
 
 
 def check_broken_links(features, features_dir):
@@ -85,6 +124,10 @@ def main(project_root=None):
         project_root = detect_project_root(SCRIPT_DIR)
 
     features_dir = os.path.join(project_root, "features")
+
+    # Spec Section 2.1: check staleness of dependency_graph.json before use
+    ensure_cache_fresh(project_root, features_dir)
+
     features = parse_features(features_dir)
     findings = []
 
