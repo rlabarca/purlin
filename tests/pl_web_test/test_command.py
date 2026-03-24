@@ -487,6 +487,54 @@ def _assign_triangulation_verdict(figma_val, spec_val, app_val):
     return 'BUG'
 
 
+def _format_stale_verdict_line(item, figma_val, spec_val):
+    """Format a STALE verdict line in the 6-field report format.
+
+    The 6 fields are:
+      1. [STALE]          -- verdict tag
+      2. <item>           -- checklist item name
+      3. Figma=<val>      -- Figma source value
+      4. Spec=<val>       -- Spec source value
+      5. <-               -- arrow indicator
+      6. Figma updated    -- commit message / description
+
+    Returns a formatted string matching the triangulated report line format:
+        [STALE] <item>         Figma=<val> Spec=<val>             <- Figma updated
+    """
+    return (
+        f'[STALE] {item}'
+        f'         Figma={figma_val} Spec={spec_val}'
+        f'             <- Figma updated'
+    )
+
+
+def _format_stale_discovery_entry(
+        item_text, screen_name, figma_ref_url, discovered_date):
+    """Format a STALE discovery sidecar entry with all 6 required fields.
+
+    The 6 fields in the discovery entry are:
+      1. ### [DISCOVERY] STALE: <item> (Discovered: <date>)  -- heading
+      2. - **Screen:** <screen name>
+      3. - **Checklist Item:** <item text>
+      4. - **Figma Reference:** <url>
+      5. - **Detail:** <description>
+      6. - **Action Required:** PM / - **Status:** OPEN
+
+    Returns the multi-line discovery entry string.
+    """
+    lines = [
+        f'### [DISCOVERY] STALE: {item_text} (Discovered: {discovered_date})',
+        f'- **Screen:** {screen_name}',
+        f'- **Checklist Item:** {item_text}',
+        f'- **Figma Reference:** {figma_ref_url}',
+        '- **Detail:** Figma design updated after spec extraction'
+        ' \u2014 spec value is outdated.',
+        '- **Action Required:** PM',
+        '- **Status:** OPEN',
+    ]
+    return '\n'.join(lines)
+
+
 def _extract_web_start(content):
     """Extract the Web Start command from feature file content."""
     match = re.search(r'>\s*(?:Web Start|AFT Start):\s*(.+)', content)
@@ -1072,7 +1120,7 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
     And the output notes Figma was updated but spec was not re-ingested
     And a PM action item is generated for re-ingestion
 
-    Test: Verifies STALE verdict logic and PM routing.
+    Test: Verifies STALE verdict logic, 6-field format, and PM routing.
     """
 
     def setUp(self):
@@ -1093,10 +1141,118 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
         self.assertEqual(stale, 'STALE')
         self.assertEqual(bug, 'BUG')
 
-    def test_skill_documents_stale_verdict_row(self):
-        """Skill file includes STALE in the verdict matrix."""
-        self.assertIn('STALE', self.command_content)
-        self.assertIn('Figma updated', self.command_content)
+    def test_stale_verdict_line_has_6_fields(self):
+        """STALE verdict line contains all 6 fields in the correct format.
+
+        The 6 fields: [STALE], item, Figma=val, Spec=val, <-, Figma updated.
+        """
+        line = _format_stale_verdict_line(
+            'heading-lg font', 'heading-xl', 'heading-lg')
+        # Field 1: verdict tag
+        self.assertIn('[STALE]', line)
+        # Field 2: item name
+        self.assertIn('heading-lg font', line)
+        # Field 3: Figma value
+        self.assertIn('Figma=heading-xl', line)
+        # Field 4: Spec value
+        self.assertIn('Spec=heading-lg', line)
+        # Field 5: arrow indicator
+        self.assertIn('<-', line)
+        # Field 6: description / commit message
+        self.assertIn('Figma updated', line)
+
+    def test_stale_verdict_line_excludes_app_value(self):
+        """STALE verdict line does NOT include App= (only Figma and Spec).
+
+        Per spec Section 2.10, STALE lines omit App because the app matches
+        the outdated spec -- only Figma and Spec values are shown.
+        """
+        line = _format_stale_verdict_line('item', 'new_val', 'old_val')
+        self.assertNotIn('App=', line)
+
+    def test_stale_verdict_line_matches_command_format(self):
+        """STALE verdict line format matches the template in the command file.
+
+        The command file defines the format as:
+          [STALE] <item>         Figma=<val> Spec=<val>             <- Figma updated
+        """
+        # Verify the command file contains the template line
+        self.assertRegex(
+            self.command_content,
+            r'\[STALE\]\s+<item>\s+Figma=<val>\s+Spec=<val>\s+<-\s+Figma updated'
+        )
+
+    def test_stale_verdict_line_field_order(self):
+        """STALE verdict line fields appear in the correct order."""
+        line = _format_stale_verdict_line('card width', '200px', '120px')
+        stale_pos = line.index('[STALE]')
+        item_pos = line.index('card width')
+        figma_pos = line.index('Figma=')
+        spec_pos = line.index('Spec=')
+        arrow_pos = line.index('<-')
+        desc_pos = line.index('Figma updated')
+        self.assertLess(stale_pos, item_pos)
+        self.assertLess(item_pos, figma_pos)
+        self.assertLess(figma_pos, spec_pos)
+        self.assertLess(spec_pos, arrow_pos)
+        self.assertLess(arrow_pos, desc_pos)
+
+    def test_stale_discovery_entry_has_all_6_fields(self):
+        """STALE discovery sidecar entry contains all 6 required fields.
+
+        The 6 fields: heading with [DISCOVERY] STALE, Screen, Checklist Item,
+        Figma Reference, Detail, Action Required + Status.
+        """
+        entry = _format_stale_discovery_entry(
+            'heading-lg font',
+            'Dashboard Main',
+            'https://figma.com/file/abc/node-id=123',
+            '2026-03-23'
+        )
+        # Field 1: heading with discovery type, item text, and date
+        self.assertIn('### [DISCOVERY] STALE: heading-lg font', entry)
+        self.assertIn('(Discovered: 2026-03-23)', entry)
+        # Field 2: screen name
+        self.assertIn('- **Screen:** Dashboard Main', entry)
+        # Field 3: checklist item text
+        self.assertIn('- **Checklist Item:** heading-lg font', entry)
+        # Field 4: Figma reference URL
+        self.assertIn(
+            '- **Figma Reference:** https://figma.com/file/abc/node-id=123',
+            entry)
+        # Field 5: detail description
+        self.assertIn('- **Detail:** Figma design updated after spec', entry)
+        self.assertIn('spec value is outdated', entry)
+        # Field 6: action required and status
+        self.assertIn('- **Action Required:** PM', entry)
+        self.assertIn('- **Status:** OPEN', entry)
+
+    def test_stale_discovery_routes_to_pm_not_builder(self):
+        """STALE discovery Action Required is PM, not Builder."""
+        entry = _format_stale_discovery_entry(
+            'item', 'screen', 'https://figma.com/x', '2026-01-01')
+        self.assertIn('- **Action Required:** PM', entry)
+        self.assertNotIn('- **Action Required:** Builder', entry)
+
+    def test_stale_discovery_status_is_open(self):
+        """STALE discovery status starts as OPEN."""
+        entry = _format_stale_discovery_entry(
+            'item', 'screen', 'https://figma.com/x', '2026-01-01')
+        self.assertIn('- **Status:** OPEN', entry)
+
+    def test_skill_documents_stale_discovery_format(self):
+        """Skill file contains the STALE discovery sidecar format template."""
+        # Verify the command file documents the full STALE discovery format
+        self.assertIn(
+            '### [DISCOVERY] STALE:', self.command_content)
+        self.assertIn('- **Screen:**', self.command_content)
+        self.assertIn('- **Checklist Item:**', self.command_content)
+        self.assertIn('- **Figma Reference:**', self.command_content)
+        self.assertIn(
+            '- **Detail:** Figma design updated after spec extraction',
+            self.command_content)
+        self.assertIn('- **Action Required:** PM', self.command_content)
+        self.assertIn('- **Status:** OPEN', self.command_content)
 
     def test_skill_routes_stale_to_pm(self):
         """Skill file routes STALE items to PM for re-ingestion."""
@@ -1104,10 +1260,22 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
         self.assertIn('re-ingest', self.command_content.lower())
 
     def test_stale_not_recorded_as_bug_discovery(self):
-        """Skill file distinguishes STALE from BUG in result recording."""
-        # STALE items create DISCOVERY entries, not BUG discoveries
-        self.assertIn('STALE verdicts', self.command_content)
+        """Skill file distinguishes STALE from BUG in result recording.
+
+        STALE items get [DISCOVERY] entries (PM action), not [BUG] entries.
+        DRIFT items are noted as PM action items, not BUG discoveries.
+        """
+        # STALE items use [DISCOVERY] STALE: format, not [BUG]
+        self.assertIn('### [DISCOVERY] STALE:', self.command_content)
+        self.assertIn('- **Action Required:** PM', self.command_content)
+        # DRIFT items are explicitly called out as not BUG discoveries
         self.assertIn('not BUG discoveries', self.command_content)
+
+    def test_stale_commit_message_format(self):
+        """Skill file documents the STALE commit message format."""
+        self.assertIn(
+            'discovery(<scope>): [STALE] web-test findings for PM re-ingestion',
+            self.command_content)
 
 
 class TestFigmaTriangulatedDetectsTokenDrift(unittest.TestCase):
@@ -1213,9 +1381,22 @@ class TestThreeSourceReportFormat(unittest.TestCase):
         self.assertIn('<- code wrong', self.command_content)
 
     def test_report_shows_stale_verdict(self):
-        """Report STALE lines show Figma and Spec values."""
-        self.assertIn('[STALE]', self.command_content)
-        self.assertIn('<- Figma updated', self.command_content)
+        """Report STALE line has complete 6-field format with Figma and Spec."""
+        # Validate the complete STALE line format in the command file:
+        #   [STALE] <item>  Figma=<val> Spec=<val>  <- Figma updated
+        # Must have all 6 fields: verdict, item, Figma=, Spec=, <-, description
+        self.assertRegex(
+            self.command_content,
+            r'\[STALE\]\s+\S.*?Figma=\S+\s+Spec=\S+\s+.*<-\s+Figma updated'
+        )
+        # STALE line must NOT include App= (only BUG and DRIFT show App)
+        stale_line_match = re.search(
+            r'\[STALE\][^\n]+', self.command_content)
+        self.assertIsNotNone(stale_line_match,
+                             'STALE verdict line not found in command file')
+        stale_line = stale_line_match.group(0)
+        self.assertNotIn('App=', stale_line,
+                         'STALE line should not contain App= field')
 
     def test_report_shows_drift_verdict(self):
         """Report DRIFT lines show Figma, Spec, App values."""
