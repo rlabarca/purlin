@@ -250,7 +250,7 @@ Before ending a session, QA runs a mandatory workspace cleanup. It resolves all 
 | `/pl-qa-report` | Summary of open discoveries and QA status. |
 | `/pl-status` | Check CDD status and action items. |
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
-| `/pl-fixture` | Test fixture convention and workflow. |
+| `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
 | `/pl-server` | Dev server lifecycle management. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-override-edit` | Edit QA_OVERRIDES.md. |

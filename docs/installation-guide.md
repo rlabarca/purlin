@@ -248,7 +248,7 @@ overwriting your customizations:
 
 ### Agent Configuration
 
-Edit `.purlin/config.json` (or use the CDD Dashboard's Agent Config panel)
+Edit `.purlin/config.json` (or use the [CDD Dashboard](status-grid-guide.md)'s Agent Config panel)
 to change:
 
 - Which Claude model each agent uses.
@@ -306,7 +306,7 @@ remove the `.purlin/` directory first to trigger it).
 
 ### Python venv not set up
 
-If Critic or CDD tools fail with import errors, create a virtual
+If [Critic](critic-and-cdd-guide.md) or CDD tools fail with import errors, create a virtual
 environment:
 
 ```bash

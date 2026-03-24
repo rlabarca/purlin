@@ -224,7 +224,7 @@ The `.purlin/runtime/` directory is created automatically on first run.
 
 ## Health Checks
 
-When the CDD Dashboard server is started via `tools/cdd/start.sh`, a health
+When the [CDD Dashboard](status-grid-guide.md) server is started via `tools/cdd/start.sh`, a health
 check runs automatically after launch. The health check uses `curl` to
 request `/status.json` from the server on its assigned port (with a
 2-second timeout).
@@ -308,7 +308,7 @@ as QA action items.
 | Get a startup briefing for your role | `tools/cdd/status.sh --startup <role>` |
 | View status filtered by role | `tools/cdd/status.sh --role <role>` |
 | List incomplete features | `tools/cdd/status.sh --incomplete` |
-| View the dependency graph | `tools/cdd/status.sh --graph` |
+| View the [dependency graph](spec-map-guide.md) | `tools/cdd/status.sh --graph` |
 | Run the Critic on a single feature | `tools/critic/run.sh features/X.md` |
 | Enable diagnostic output | Add `--verbose` to any command above |
 | View aggregate action items | Read `CRITIC_REPORT.md` at the project root |

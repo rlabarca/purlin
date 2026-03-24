@@ -62,7 +62,7 @@ Each feature row has four status columns. The values in each column reflect
 | **TODO** | Yellow | Spec gaps exist, unacknowledged Builder decisions, or other Architect work is pending. |
 | **??** | Gray | No `critic.json` exists for this feature yet (Critic has not run). |
 
-The Architect column reflects the **Spec Gate**. When the Critic finds
+The Architect column reflects the **[Spec Gate](critic-and-cdd-guide.md)**. When [the Critic](critic-and-cdd-guide.md) finds
 missing sections, malformed scenarios, or undeclared prerequisites, this
 column turns yellow.
 

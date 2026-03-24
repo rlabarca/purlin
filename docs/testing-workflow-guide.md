@@ -76,7 +76,7 @@ The Architect runs automatically after specs exist. It:
 
 Launch: `./pl-run-builder.sh`
 
-The Builder discovers TODO features from the Critic report and for each one:
+The Builder discovers TODO features from [the Critic](critic-and-cdd-guide.md) report and for each one:
 
 1. **Implements** -- application code, scripts, config files.
 2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`. Unit tests must be fast, isolated, and structural -- single setup, value assertions, exit codes, file existence checks. If a test requires multi-step state manipulation, sandbox cloning, or process lifecycle management, it belongs under QA Scenarios instead.

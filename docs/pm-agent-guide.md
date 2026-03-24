@@ -271,7 +271,7 @@ Here is a summary of every artifact the PM agent can produce.
 | Artifact | Location | Description |
 |---|---|---|
 | Feature spec | `features/<name>.md` | The primary specification: overview, requirements, Unit Tests, QA Scenarios, and optional visual specification. This is what the Builder implements against. |
-| Anchor node | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
+| [Anchor node](critic-and-cdd-guide.md) | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
 | Design brief | `features/design/<feature_stem>/brief.json` | Machine-readable Figma data (tokens, screens, components) that the Builder reads instead of accessing Figma. |
 | Design artifacts | `features/design/<feature_stem>/` | Local copies of design assets (images, exported screens) stored alongside the brief. |
 | Token Map | Inside the feature spec's Visual Specification section | Mapping from Figma design variable names (or observed CSS values) to the project's CSS custom properties. |
@@ -355,7 +355,7 @@ This checks that design artifacts, Token Maps, and visual specifications are con
 /pl-status
 ```
 
-This runs the CDD status tool and shows the current state of all features -- which are in TODO, which are being built, which are complete, and what the Critic has flagged.
+This runs the CDD status tool and shows the current state of all features -- which are in TODO, which are being built, which are complete, and what [the Critic](critic-and-cdd-guide.md) has flagged.
 
 ---
 

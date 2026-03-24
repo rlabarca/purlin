@@ -19,7 +19,7 @@ Use the Spec Map to:
 
 ## Opening the Spec Map
 
-1. Launch the CDD Dashboard.
+1. Launch the [CDD Dashboard](status-grid-guide.md).
 2. Click the **Spec Map** tab in the header, or navigate directly to
    `http://localhost:<port>/#map`.
 
@@ -31,7 +31,7 @@ is visible.
 The screenshot above shows a typical project with categories such as "Common
 Design Standards", "Coordination & Lifecycle", "CDD Dashboard", "Agent
 Skills", "Release Process", "Test Infrastructure", and "Install, Update &
-Scripts". Anchor nodes are distinguishable by their green borders.
+Scripts". [Anchor nodes](critic-and-cdd-guide.md) are distinguishable by their green borders.
 
 ---
 

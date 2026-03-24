@@ -80,7 +80,7 @@ ready for release.
 **Workspace** -- Git status: current branch, whether the working tree is
 clean, and untracked file count.
 
-**Branch Collaboration** -- For multi-machine workflows. Shows collaboration
+**[Branch Collaboration](branch-collaboration-guide.md)** -- For multi-machine workflows. Shows collaboration
 branches with sync state badges (SAME, AHEAD, BEHIND, DIVERGED), a Create
 Branch input, and Join buttons.
 
@@ -103,9 +103,9 @@ For detailed coverage of each section, see:
 
 ![Spec Map with category groups and dependency arrows](images/cdd-spec-map.png)
 
-The Spec Map is an interactive [dependency graph](spec-map-guide.md). Every feature appears as a
+The [Spec Map](spec-map-guide.md) is an interactive [dependency graph](spec-map-guide.md). Every feature appears as a
 node, grouped by category, with directed arrows showing prerequisite
-relationships. Anchor nodes (arch\_, design\_, policy\_) are highlighted with
+relationships. [Anchor nodes](critic-and-cdd-guide.md) (arch\_, design\_, policy\_) are highlighted with
 green borders.
 
 - **Zoom and pan** with scroll wheel and drag.
@@ -150,7 +150,7 @@ Search is case-insensitive substring matching against feature names.
 ## Auto-Refresh
 
 The dashboard polls for changes every 5 seconds. When feature files are
-modified (by agents committing changes), the status grid and spec map update
+modified (by agents committing changes), the [status grid](status-grid-guide.md) and spec map update
 automatically.
 
 On the Spec Map, your zoom and pan position is preserved across refreshes.

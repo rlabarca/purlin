@@ -12,7 +12,7 @@ The Architect agent:
 
 - **Creates feature specifications** with Gherkin scenarios that define expected behavior.
 - **Creates [anchor nodes](critic-and-cdd-guide.md)** that establish shared constraints (architecture, design, governance).
-- **Validates specs** against the Critic's Spec Gate to ensure completeness.
+- **Validates specs** against [the Critic](critic-and-cdd-guide.md)'s [Spec Gate](critic-and-cdd-guide.md) to ensure completeness.
 - **Manages the release process** through a structured checklist.
 - **Retires features** via the tombstone protocol when they are no longer needed.
 - **Never writes code.** Not scripts, not tests, not config files. If code needs to change, the Architect writes a spec -- the Builder discovers it at startup and implements it.
@@ -76,7 +76,7 @@ The Architect checks if a spec already exists. If not, it runs a structured prob
 4. **Design** -- Do Figma designs exist? What is the visual priority?
 5. **Constraints** -- Performance budgets? Platform targets? Simplest useful version?
 
-After gathering answers, the Architect drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to anchor nodes, and commits.
+After gathering answers, the Architect drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to [anchor nodes](critic-and-cdd-guide.md), and commits.
 
 If a spec already exists, the Architect reads it, identifies gaps, and proposes targeted refinements. Specs are always edited in place -- never versioned as v2/v3 files.
 
@@ -261,7 +261,7 @@ Edit `.purlin/ARCHITECT_OVERRIDES.md` to add project-specific rules. This file i
 | `/pl-release-step` | Create, modify, or delete a release step definition. |
 | `/pl-status` | Check CDD status and Critic action items. |
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
-| `/pl-fixture` | Test fixture convention and workflow reference. |
+| `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow reference. |
 | `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-agent-config` | View or modify agent model and startup settings. |
 | `/pl-override-edit` | Edit ARCHITECT_OVERRIDES.md with conflict scanning. |

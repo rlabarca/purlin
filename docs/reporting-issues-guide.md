@@ -18,7 +18,7 @@ the report.
 Use `/pl-purlin-issue` when the problem is with Purlin's tooling:
 
 - The Critic produces incorrect action items or crashes.
-- The CDD Dashboard shows wrong data or fails to start.
+- The [CDD Dashboard](status-grid-guide.md) shows wrong data or fails to start.
 - A slash command (`/pl-build`, `/pl-verify`, etc.) behaves incorrectly.
 - The init script fails or produces a broken scaffold.
 - Agent startup hangs, crashes, or loads the wrong instructions.
@@ -146,6 +146,6 @@ questions about your environment or version -- it is all in the table.
 - **Include reproduction steps in your description.** The command collects
   environment data, but only you know the exact sequence of actions that
   triggered the bug.
-- **Check for known issues first.** Run `/pl-status` to see if the Critic
+- **Check for known issues first.** Run `/pl-status` to see if [the Critic](critic-and-cdd-guide.md)
   has already flagged something relevant. The issue may be a known gap
   rather than a bug.

@@ -24,7 +24,7 @@ Behind the scenes, this executes `git remote add <name> <url>` and verifies conn
 
 ## Creating a Collaboration Branch
 
-The easiest way to create a branch is through the CDD Dashboard.
+The easiest way to create a branch is through the [CDD Dashboard](status-grid-guide.md).
 
 1. Open the CDD Dashboard.
 2. In the Branch Collaboration section, type your branch name into the "Create Branch" input field (for example, `feature-sprint-q2`).
