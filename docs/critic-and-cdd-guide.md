@@ -76,6 +76,7 @@ Beyond the two gates, the Critic runs additional checks on every pass:
 | **Builder Decision** | Scans companion files for unacknowledged `[DEVIATION]`, `[DISCOVERY]`, and `[SPEC_PROPOSAL]` tags |
 | **Visual Specification** | Detects `## Visual Specification` sections and flags missing design references |
 | **Untracked File** | Checks git status for orphaned files in Architect-owned directories |
+| **Orphan Companion** | Detects `features/*.impl.md` files with no corresponding parent feature file |
 | **Regression Scoping** | Validates `[Scope: ...]` trailers on status commits and routes QA effort accordingly |
 
 ---
@@ -112,7 +113,7 @@ the role responsible for fixing it.
 **QA** receives:
 - Features in TESTING lifecycle state (ready to verify)
 - SPEC_UPDATED discoveries awaiting re-verification
-- Visual verification passes for UI features
+- Visual verification items for UI features
 - Regression guidance based on Builder's scope declarations
 
 **PM** receives:
