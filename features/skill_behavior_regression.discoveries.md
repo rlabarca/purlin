@@ -1,5 +1,19 @@
 # User Testing Discoveries: Skill Behavior Regression
 
+### [BUG] qa-startup-identifies-testing re-regression after Step 3.0 reorder (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:qa-startup-identifies-testing
+- **Observed Behavior:** QA startup prints command table (Step 3.0) but assertion "Output identifies TESTING features" still fails. Actual excerpt shows only the command table — TESTING feature names not present in output. Prior fix (placing feature status before command table in build_print_mode_context) was itself superseded by the Step 3.0 reorder fix, which moves command table print to be the literal first output, potentially before the feature status context is visible.
+- **Expected Behavior:** QA startup output identifies TESTING features by name (Step 3.1–3.2 results appear in output)
+- **Action Required:** Builder
+- **Status:** OPEN
+
+### [BUG] status-skill-structured-summary permission gate re-regression (Discovered: 2026-03-24)
+- **Scenario:** features/skill_behavior_regression.md:status-skill-structured-summary
+- **Observed Behavior:** Agent says "I need permission to run the Purlin status script" — asking for approval instead of running. Prior fix addressed skill file copying; this is a new failure mode: the harness does not have bypass_permissions enabled, so the agent halts at the permission prompt.
+- **Expected Behavior:** Output contains feature counts by lifecycle status (agent runs status.sh without a permission gate)
+- **Action Required:** Builder — harness_runner.py agent_behavior execution needs bypass_permissions / --allowedTools flag to permit shell commands
+- **Status:** OPEN
+
 ### [BUG] qa-startup-identifies-testing still failing after build_print_mode_context fix (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:qa-startup-identifies-testing
 - **Observed Behavior:** QA startup output shows the command table (Step 3.0 print sequence) but assertion "Output identifies TESTING features" fails. Actual excerpt ends mid-command-table (500-char truncation). The agent does not appear to proceed past Step 3.0 to identify TESTING features in `--print` mode. builder-startup-identifies-todo now passes (16/17), so Builder-side fix partially worked. QA-side identification still missing.
