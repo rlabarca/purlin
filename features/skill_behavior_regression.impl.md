@@ -17,3 +17,11 @@
 **Suggested fix:** (A) Rebuild fixture tag with skill commands included. (B) Investigate instruction file compliance -- role refusal must fire before file lookup; startup print sequence must produce command table.
 
 **[DISCOVERY] [ACKNOWLEDGED] [RESOLVED]** All 8 regression failures fixed. (1) `harness_runner.py` `execute_agent_behavior()` now implements spec Section 2.3 steps 2-4: constructs 4-layer system prompt from fixture instruction files via `construct_system_prompt()`, writes to temp file, passes via `--append-system-prompt-file`. Also uses `--no-session-persistence`, `--model claude-haiku-4-5-20251001`, `--output-format json` with `.result` extraction. (2) `copy_skill_files()` copies `.claude/commands/` from project root to fixture dir when absent, ensuring skill dispatch works without modifying fixture tags. (Severity: HIGH)
+
+### Print-Mode Context Augmentation -- 2026-03-24
+
+**[CLARIFICATION]** `claude --print` mode has no tool access (Read, Bash, Glob, etc.). The 4-layer instruction files tell agents to "Read `instructions/references/builder_commands.md`" and "Run `tools/cdd/status.sh`" -- impossible in `--print` mode. The model approximates (markdown lists instead of Unicode tables, file-lookup instead of role refusal). Fix: `build_print_mode_context()` pre-loads data that agents would normally obtain via tool calls -- command tables, feature status, skill content, and role enforcement reinforcement. This is appended after the 4-layer prompt as a supplementary section. (Severity: INFO)
+
+**[CLARIFICATION]** `scan_fixture_features()` reads the fixture's `features/` directory to extract lifecycle status ([TODO], [TESTING], [COMPLETE]) and feature labels. This provides the feature status data that `status.sh --startup` would normally return. Skips companion files, discovery sidecars, and anchor nodes. (Severity: INFO)
+
+**[CLARIFICATION]** Role enforcement reinforcement is added because `--print` mode lacks tool-level guardrails. In interactive mode, Claude Code's tool permissions block unauthorized file writes. In `--print` mode, only the system prompt constrains the model. The supplementary section adds explicit REFUSE instructions for each role's boundaries. (Severity: INFO)

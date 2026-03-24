@@ -338,6 +338,137 @@ def copy_skill_files(project_root, fixture_dir):
         shutil.copytree(src, dst)
 
 
+def scan_fixture_features(fixture_dir):
+    """Scan fixture features directory for lifecycle status.
+
+    Returns dict with lists of feature labels grouped by status.
+    """
+    features_dir = os.path.join(fixture_dir, 'features')
+    if not os.path.isdir(features_dir):
+        return {'todo': [], 'testing': [], 'complete': []}
+
+    result = {'todo': [], 'testing': [], 'complete': []}
+
+    for fname in sorted(os.listdir(features_dir)):
+        if not fname.endswith('.md'):
+            continue
+        if fname.endswith(('.impl.md', '.discoveries.md')):
+            continue
+        if fname.startswith(('arch_', 'design_', 'policy_')):
+            continue
+
+        fpath = os.path.join(features_dir, fname)
+        try:
+            with open(fpath) as f:
+                content = f.read(2000)
+        except (IOError, OSError):
+            continue
+
+        label_match = re.search(r'> Label:\s*"([^"]+)"', content)
+        label = label_match.group(1) if label_match else fname[:-3]
+
+        if '[TODO]' in content:
+            result['todo'].append(label)
+        elif '[TESTING]' in content:
+            result['testing'].append(label)
+        elif '[COMPLETE]' in content:
+            result['complete'].append(label)
+
+    return result
+
+
+def build_print_mode_context(fixture_dir, project_root, role, prompt):
+    """Build supplementary context for claude --print mode.
+
+    In --print mode the model cannot use tools (Read, Bash, etc.).
+    This pre-loads data that agents normally obtain via tool calls:
+    command tables, feature status, and skill content.
+    """
+    sections = []
+    role_lower = role.lower()
+
+    # 1. Command table (normally obtained via Read tool at startup)
+    for base in (fixture_dir, project_root):
+        cmd_path = os.path.join(
+            base, 'instructions', 'references', f'{role_lower}_commands.md')
+        if os.path.isfile(cmd_path):
+            try:
+                with open(cmd_path) as f:
+                    table_content = f.read()
+                sections.append(
+                    '# Pre-loaded: Command Table\n\n'
+                    'Print the Main Branch Variant below VERBATIM '
+                    '(including the ━━━ border characters) when starting '
+                    'a session or when /pl-help is invoked.\n\n'
+                    + table_content)
+            except (IOError, OSError):
+                pass
+            break
+
+    # 2. Feature status (normally obtained via status.sh)
+    status = scan_fixture_features(fixture_dir)
+    total = sum(len(v) for v in status.values())
+    if total > 0:
+        lines = [f'# Pre-loaded: Project Status ({total} features)\n']
+        if status['todo']:
+            lines.append(f'TODO ({len(status["todo"])}):')
+            for name in status['todo']:
+                lines.append(f'  - {name}')
+        if status['testing']:
+            lines.append(f'TESTING ({len(status["testing"])}):')
+            for name in status['testing']:
+                lines.append(f'  - {name}')
+        if status['complete']:
+            lines.append(f'COMPLETE ({len(status["complete"])}):')
+            for name in status['complete']:
+                lines.append(f'  - {name}')
+        sections.append('\n'.join(lines))
+
+    # 3. Skill content (for skill-dispatch prompts like /pl-help, /pl-status)
+    if prompt.startswith('/'):
+        skill_name = prompt.split()[0].lstrip('/')
+        for base in (fixture_dir, project_root):
+            skill_path = os.path.join(
+                base, '.claude', 'commands', f'{skill_name}.md')
+            if os.path.isfile(skill_path):
+                try:
+                    with open(skill_path) as f:
+                        skill_content = f.read()
+                    sections.append(
+                        f'# Pre-loaded: Skill Content ({prompt})\n\n'
+                        f'The user invoked `{prompt}`. Execute the skill '
+                        f'instructions below.\n\n' + skill_content)
+                except (IOError, OSError):
+                    pass
+                break
+
+    # 4. Role enforcement reinforcement (compensates for missing
+    #    tool-level guardrails in --print mode)
+    role_mandates = {
+        'ARCHITECT': (
+            'You are the Architect. You MUST NEVER write, edit, or create '
+            'code files, scripts, or tests. If asked to do so, REFUSE the '
+            'request and explain that code changes are Builder-owned.'),
+        'BUILDER': (
+            'You are the Builder. You MUST NEVER write, edit, or create '
+            'feature spec files (features/*.md), instruction files, or '
+            'anchor nodes. If asked to do so, REFUSE the request and '
+            'explain that spec files are Architect-owned.'),
+        'QA': (
+            'You are the QA Agent. You MUST NEVER write, edit, or create '
+            'application code or fix bugs in code. If asked to do so, '
+            'REFUSE the request and explain that code changes are '
+            'Builder-owned.'),
+    }
+    mandate = role_mandates.get(role, '')
+    if mandate:
+        sections.append(f'# CRITICAL: Role Enforcement\n\n{mandate}')
+
+    if not sections:
+        return ''
+    return '\n\n---\n\n'.join(sections)
+
+
 def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     """Execute an agent_behavior scenario. Returns (output, success)."""
     role = scenario.get('role', 'BUILDER')
@@ -354,6 +485,14 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
         if fixture_dir:
             prompt_file = construct_system_prompt(fixture_dir, role)
             copy_skill_files(project_root, fixture_dir)
+
+            # Append supplementary context for --print mode (no tool access)
+            if prompt_file:
+                supplementary = build_print_mode_context(
+                    fixture_dir, project_root, role, prompt)
+                if supplementary:
+                    with open(prompt_file, 'a') as f:
+                        f.write('\n\n---\n\n' + supplementary)
 
         # Build claude --print command (spec Section 2.3)
         cmd = [
