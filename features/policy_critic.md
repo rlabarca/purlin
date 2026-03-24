@@ -140,7 +140,7 @@ When a feature has `change_scope: "targeted:..."` and `builder: "DONE"`, the Cri
 *   **Exemption:** Features with `change_scope: "full"`, `"cosmetic"`, or `"dependency-only"` are exempt from this check. Only `targeted:` scopes are audited.
 *   **Suppression when builder is TODO:** When `builder: "TODO"`, the targeted scope completeness check is suppressed entirely. The Builder already has a HIGH-priority action item to implement the feature, which inherently covers all scenarios in the spec. Generating an additional Architect warning for unscoped scenarios is redundant noise.
 
-### 2.11 Fixture Tag Validation
+### 2.12 Fixture Tag Validation
 When a feature spec declares fixture tags (via a `### 2.x Web Test Fixture Tags` or `### 2.x Integration Test Fixture Tags` section, or via `> Test Fixtures:` metadata with Given steps referencing tags), the Critic MUST validate that the declared tags exist in the fixture repo. Missing tags produce a MEDIUM-priority Builder action item.
 
 *   **Purpose:** Prevents features from being marked complete when their declared test infrastructure does not exist. Without this check, specs can declare fixture tags that remain aspirational indefinitely.
@@ -149,7 +149,7 @@ When a feature spec declares fixture tags (via a `### 2.x Web Test Fixture Tags`
 *   **Repo Resolution (Convention Over Configuration):** The Critic resolves the fixture repo using a three-tier lookup: (1) per-feature `> Test Fixtures:` metadata, (2) project-level `fixture_repo_url` in `.purlin/config.json`, (3) convention path `.purlin/runtime/fixture-repo`. The first path that resolves to an accessible git repo wins. Relative paths are resolved against `PURLIN_PROJECT_ROOT`. Most projects use the convention path exclusively — no configuration needed.
 *   **Fixture repo not found:** When a feature declares fixture tags but no fixture repo is accessible (none of the three resolution tiers point to a valid repo), the Critic MUST generate a MEDIUM-priority Builder action item with category `fixture_repo_unavailable`: `"Fixture repo not found for <name> — run the setup script to create it at .purlin/runtime/fixture-repo"`. This is a Builder item because creating fixture repos via setup scripts is an implementation task.
 
-### 2.12 Diff-Aware Lifecycle Reset Detection
+### 2.13 Diff-Aware Lifecycle Reset Detection
 When a feature resets to TODO lifecycle state (spec modified after last status commit), the Critic MUST perform a **scenario diff** to determine what changed. The Critic compares the current set of automated scenario titles against the set that existed at the time of the last status commit (extracted from git history of the feature file).
 
 *   **New scenarios:** Scenario titles present in the current spec but absent from the last-committed version. These represent NEW requirements that need NEW tests and NEW implementation code. Re-tagging without implementing them is incorrect.
@@ -161,7 +161,7 @@ When a feature resets to TODO lifecycle state (spec modified after last status c
 *   **New scenario signal:** When new scenarios are detected, the action item description explicitly lists them so the Builder knows which behaviors need new test coverage. No keyword-matching or traceability cross-check is performed -- the Builder determines test organization.
 *   **Metadata Exemption:** Blockquote metadata lines (`> Label:`, `> Category:`, `> Prerequisite:`, `> Owner:`, `> Web Test:`, `> Web Start:`, `> Test Fixtures:`, `> Figma Status:`) are stripped from the content hash used for lifecycle comparison. Edits to these lines do not trigger lifecycle resets. This follows the same pattern as the Discoveries section exemption -- non-behavioral coordination data does not invalidate implementation status.
 
-### 2.12.1 Allow-Empty Status Commit Validation
+### 2.13.1 Allow-Empty Status Commit Validation
 
 When the Critic detects a `[Complete ...]` status commit that is `--allow-empty` (does not modify the feature file), it MUST cross-validate by comparing the spec content hash at the status commit against the current on-disk content.
 
@@ -178,7 +178,7 @@ When the Critic detects a `[Complete ...]` status commit that is `--allow-empty`
 
 **Constraint:** This validation runs as part of the lifecycle reset detection (Section 2.12), not as a separate audit. It extends the existing diff-aware detection to handle the `--allow-empty` edge case.
 
-### 2.13 CDD Decoupling
+### 2.14 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, QA, and PM columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
 ### 2.15 Structural Completeness Integrity

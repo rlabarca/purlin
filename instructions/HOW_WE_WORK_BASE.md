@@ -168,7 +168,7 @@ The Critic is the project coordination engine. It validates quality AND generate
 The Critic applies a **dual-gate model** to every feature:
 
 *   **Spec Gate (pre-implementation):** Validates that required spec sections are present, scenarios are well-formed, and prerequisite anchor nodes are declared. This gate runs regardless of feature lifecycle status and is the primary signal for Architect action items.
-*   **Implementation Gate (post-implementation):** Validates that automated tests trace to their Gherkin scenarios (traceability), that code does not violate FORBIDDEN patterns from anchor nodes (policy adherence), and optionally checks for LLM-detected logic drift (disabled by default, configurable via `config.json`).
+*   **Implementation Gate (post-implementation):** Validates that code does not violate FORBIDDEN patterns from anchor nodes (policy adherence), and optionally checks for LLM-detected logic drift (disabled by default, configurable via `config.json`). Note: scenario-to-test traceability is not enforced (see `policy_critic.md` Section 2.2).
 
 In addition to the dual-gate, the Critic runs these supplementary audits on every pass:
 
@@ -183,7 +183,7 @@ Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggrega
 **Priority levels:**
 *   **CRITICAL:** INFEASIBLE escalation; the release is blocked until resolved.
 *   **HIGH:** Gate FAIL, open BUG entries, unacknowledged builder decisions, SPEC_DISPUTE.
-*   **MEDIUM:** Traceability gaps, gate warnings, untracked files.
+*   **MEDIUM:** Gate warnings, untracked files.
 *   **LOW:** Informational warnings that do not block release.
 
 **Role routing:**
@@ -206,7 +206,9 @@ components. This section uses per-screen checklists (not Gherkin) with design an
 references. It is exempt from Gherkin traceability. The PM agent is the primary author of
 Visual Specification sections. When a PM is active, the Architect defers visual spec
 authoring to the PM and focuses on structural validation. The Critic detects visual spec
-sections and generates QA action items for visual verification.
+sections. Visual checklist items are Builder-verified (via `/pl-web-test` for web features,
+manual inspection for non-web features) and do NOT generate QA action items. The Critic
+tracks visual specs for completeness auditing only.
 
 For the full convention (format, inheritance, design pipeline, verification methods), see
 `instructions/references/visual_spec_convention.md`. Use `/pl-verify` for the complete visual verification protocol.

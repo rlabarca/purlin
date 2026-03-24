@@ -1,3 +1,3 @@
 ## Implementation Notes
 
-This is a new feature. Implementation notes will be populated during development.
+*   **Test Harness:** `tools/test_per_role_launchers.sh` (shared across all four launcher features).
