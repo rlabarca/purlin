@@ -1,56 +1,52 @@
 {
   "status": "FAIL",
-  "passed": 5,
-  "failed": 12,
+  "passed": 13,
+  "failed": 4,
   "total": 17,
   "test_file": "tests/qa/scenarios/skill_behavior_regression.json",
   "details": [
     {
       "name": "architect-startup-command-table:Output contains a command table with Unicode border characters",
-      "status": "FAIL",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
-      "expected": "Output contains a command table with Unicode border characters",
-      "assertion_tier": 2,
-      "actual_excerpt": "I'm in Architect mode. What would you like me to plan? Tell me about the feature, change, or task you'd like to implement, and I'll explore the codebase and design an approach.\n"
-    },
-    {
-      "name": "architect-startup-command-table:Output references /pl-spec",
-      "status": "FAIL",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
-      "expected": "Output references /pl-spec",
-      "assertion_tier": 2,
-      "actual_excerpt": "I'm in Architect mode. What would you like me to plan? Tell me about the feature, change, or task you'd like to implement, and I'll explore the codebase and design an approach.\n"
-    },
-    {
-      "name": "architect-startup-command-table:Output references /pl-anchor",
-      "status": "FAIL",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
-      "expected": "Output references /pl-anchor",
-      "assertion_tier": 2,
-      "actual_excerpt": "I'm in Architect mode. What would you like me to plan? Tell me about the feature, change, or task you'd like to implement, and I'll explore the codebase and design an approach.\n"
-    },
-    {
-      "name": "builder-startup-identifies-todo:Output contains a command table with Unicode border characters",
-      "status": "FAIL",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
-      "expected": "Output contains a command table with Unicode border characters",
-      "assertion_tier": 2,
-      "actual_excerpt": "Builder session ready. Here's the project state:\n\n**Features by status:**\n\n| Status | Features |\n|---|---|\n| **TODO** | feature_alpha, feature_beta, feature_gamma |\n| **Ready for Verification** | feature_delta, feature_epsilon |\n| **Complete** | feature_zeta, feature_eta |\n\n- TODO features have no tests yet\n- Ready for Verification and Complete features all have passing tests (`PASS`, 1/1)\n\nWhat would you like me to build? I can pick up any of the TODO features (alpha, beta, gamma) or work on so"
-    },
-    {
-      "name": "builder-startup-identifies-todo:Output identifies TODO features by name",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
-      "expected": "Output identifies TODO features by name",
+      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
+      "expected": "Output contains a command table with Unicode border characters",
       "assertion_tier": 2
     },
     {
-      "name": "builder-startup-identifies-todo:Output proposes a work plan or execution order",
+      "name": "architect-startup-command-table:Output references /pl-spec",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
+      "expected": "Output references /pl-spec",
+      "assertion_tier": 2
+    },
+    {
+      "name": "architect-startup-command-table:Output references /pl-anchor",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
+      "expected": "Output references /pl-anchor",
+      "assertion_tier": 2
+    },
+    {
+      "name": "builder-startup-identifies-todo:Output contains a command table with Unicode border characters",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
+      "expected": "Output contains a command table with Unicode border characters",
+      "assertion_tier": 2
+    },
+    {
+      "name": "builder-startup-identifies-todo:Output identifies TODO features by name",
       "status": "FAIL",
       "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
-      "expected": "Output proposes a work plan or execution order",
+      "expected": "Output identifies TODO features by name",
       "assertion_tier": 2,
-      "actual_excerpt": "Builder session ready. Here's the project state:\n\n**Features by status:**\n\n| Status | Features |\n|---|---|\n| **TODO** | feature_alpha, feature_beta, feature_gamma |\n| **Ready for Verification** | feature_delta, feature_epsilon |\n| **Complete** | feature_zeta, feature_eta |\n\n- TODO features have no tests yet\n- Ready for Verification and Complete features all have passing tests (`PASS`, 1/1)\n\nWhat would you like me to build? I can pick up any of the TODO features (alpha, beta, gamma) or work on so"
+      "actual_excerpt": "```\nPurlin Builder \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the Builder \u2014 it turns feature specs into working code,\nwrites tests, and documents what it learned along the way.\nTell it what to build or let it pick up the next item.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this command list\n  /pl-find <topic>           Discover where a t"
+    },
+    {
+      "name": "builder-startup-identifies-todo:Output proposes a work plan or execution order",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
+      "expected": "Output proposes a work plan or execution order",
+      "assertion_tier": 2
     },
     {
       "name": "qa-startup-identifies-testing:Output identifies TESTING features",
@@ -58,7 +54,7 @@
       "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
       "expected": "Output identifies TESTING features",
       "assertion_tier": 2,
-      "actual_excerpt": "Here's the QA session overview:\n\n## Feature Status\n\n| Feature | State | Tests | QA Action |\n|---------|-------|-------|-----------|\n| feature_alpha | TODO | None | Not ready for QA |\n| feature_beta | TODO | None | Not ready for QA |\n| feature_gamma | TODO | None | Not ready for QA |\n| **feature_delta** | **Ready for Verification** | PASS (1/1) | **Needs QA review** |\n| **feature_epsilon** | **Ready for Verification** | PASS (1/1) | **Needs QA review** |\n| feature_eta | Complete | PASS (1/1) | Al"
+      "actual_excerpt": "```\nPurlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this comm"
     },
     {
       "name": "qa-startup-identifies-testing:Output proposes a verification order or plan",
@@ -73,7 +69,7 @@
       "scenario_ref": "features/skill_behavior_regression.md:architect-refuses-code",
       "expected": "Output refuses the request and references the zero-code mandate",
       "assertion_tier": 2,
-      "actual_excerpt": "There's no `main.py` file in this repository. Could you provide the path to the file you'd like me to fix?\n"
+      "actual_excerpt": "I don't see a `main.py` file in the current directory. Could you provide the path to the file, or create it first so I can fix the import statement on line 5?"
     },
     {
       "name": "builder-refuses-spec-edit:Output refuses the request and indicates spec files are Architect-owned",
@@ -88,31 +84,28 @@
       "scenario_ref": "features/skill_behavior_regression.md:qa-refuses-code",
       "expected": "Output refuses the request and references the zero-code mandate",
       "assertion_tier": 2,
-      "actual_excerpt": "There's no `utils.py` file in this repository. Could you provide the correct path to the file you'd like me to fix?\n"
+      "actual_excerpt": "I can't help with that. I'm the QA Agent, and **code changes are Builder-owned**. I don't write, edit, or fix application code.\n\nIf you need to fix a bug in utils.py, you'll need to work with the Builder role. If you'd like, I can help you document and track the bug using `/pl-discovery` so the Builder has clear context about what needs to be fixed."
     },
     {
       "name": "status-skill-structured-summary:Output contains feature counts by lifecycle status",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:status-skill-structured-summary",
       "expected": "Output contains feature counts by lifecycle status",
-      "assertion_tier": 2,
-      "actual_excerpt": "Unknown skill: pl-status\n"
+      "assertion_tier": 2
     },
     {
       "name": "architect-help-correct-commands:Output contains /pl-spec",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:architect-help-correct-commands",
       "expected": "Output contains /pl-spec",
-      "assertion_tier": 2,
-      "actual_excerpt": "Unknown skill: pl-help\n"
+      "assertion_tier": 2
     },
     {
       "name": "architect-help-correct-commands:Output contains /pl-anchor",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:architect-help-correct-commands",
       "expected": "Output contains /pl-anchor",
-      "assertion_tier": 2,
-      "actual_excerpt": "Unknown skill: pl-help\n"
+      "assertion_tier": 2
     },
     {
       "name": "architect-help-correct-commands:Output does not contain /pl-build (negative assertion - role-inappropriate)",
@@ -123,11 +116,10 @@
     },
     {
       "name": "builder-help-correct-commands:Output contains /pl-build",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:builder-help-correct-commands",
       "expected": "Output contains /pl-build",
-      "assertion_tier": 2,
-      "actual_excerpt": "Unknown skill: pl-help\n"
+      "assertion_tier": 2
     },
     {
       "name": "builder-help-correct-commands:Output does not contain /pl-spec (negative assertion - role-inappropriate)",
