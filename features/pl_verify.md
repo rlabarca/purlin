@@ -22,7 +22,7 @@ The primary QA skill that executes interactive feature verification. Operates in
 ### 2.2 Scope Selection
 
 - If an argument is provided, scope verification to that single feature.
-- If no argument is provided, batch ALL TESTING features into a single verification pass.
+- If no argument is provided, batch the union of: (1) ALL TESTING features from `testing_features`, and (2) features from QA action items with `visual_verification` or `regression_run` categories (these are AUTO features that may not be in the TESTING lifecycle but still need automated re-verification). Do NOT limit to `testing_features` alone.
 - Scoped verification modes: `full` (default), `targeted:Scenario A,Scenario B`, `cosmetic` (skip), `dependency-only`.
 
 ### 2.3 Phase A -- Automated Execution

@@ -81,8 +81,13 @@ Extract `find_work` and `auto_start` from the startup briefing's `config` block 
 2. Review `testing_features` for effort-aware target identification. The briefing contains config, git state, feature summary, action items, dependency graph summary, discovery summary, and delivery plan gating.
 
 ### 3.2 Identify Verification Targets
-Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
-*   How many features are in TESTING state.
+Review QA action items in `CRITIC_REPORT.md` under `### QA`. The verification batch includes TWO sources:
+1.  **`testing_features`** from the startup briefing — features in TESTING lifecycle.
+2.  **QA action items** with `visual_verification` or `regression_run` categories — these are features with `qa_status: AUTO` that may not be in the `testing_features` list (e.g., COMPLETE-lifecycle features whose automated tests need re-confirmation). Extract the feature name from each action item and include it in the batch.
+The union of both sources is the full verification batch. Do NOT limit Phase A to `testing_features` alone.
+
+For each feature in the batch, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
+*   How many features are in the verification batch (and how many from each source).
 *   **Per-feature effort:** `"Feature X: Nm manual"` -- only QA-owned manual categories from the `verification_effort` block. Builder-verified features (TestOnly or Skip in Critic) show as `"builder-verified"`. AUTO features (`qa_status: AUTO` in Critic) show as `"auto-only (N @auto, M web_test)"` — these have automated QA work that MUST execute in Phase A before they can be completed. Do NOT conflate AUTO with builder-verified. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
 *   **Total batch size:** Sum all testable items (manual scenarios + visual checklist items) across all TESTING features after scope filtering. Present as: `"Total: N items across M features"`.
 *   **Estimated time:** Compute per-feature estimated verification time from effort data:

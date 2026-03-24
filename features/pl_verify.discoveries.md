@@ -30,3 +30,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Resolution:** Added explicit note after staleness classification in step 2 of the regression suite status table: "PASS results are valid — do NOT flag as 'prior run; re-run needed' or request fresh execution. Only STALE, FAIL, and NOT_RUN require action."
+
+### [BUG] AUTO features from action items excluded from verification batch (Discovered: 2026-03-24)
+- **Scenario:** Scope selection (batch mode)
+- **Observed Behavior:** QA agent only processes `testing_features` from the startup briefing. Features with `qa_status: AUTO` that appear in QA action items (category `visual_verification`) but NOT in `testing_features` are excluded from Phase A. The QA agent sees them as action items but does not include them in the verification workflow, requiring explicit user intervention.
+- **Expected Behavior:** The skill file's Scope section must batch the UNION of: (1) `testing_features` and (2) features from QA action items with `visual_verification` or `regression_run` categories. Change line 16 from "batch ALL TESTING features" to include both sources. This ensures AUTO features are processed during Phase A regardless of lifecycle state.
+- **Action Required:** Builder
+- **Status:** OPEN
