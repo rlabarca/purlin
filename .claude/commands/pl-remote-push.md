@@ -144,6 +144,12 @@ git push <remote> <branch>
 On success: Print "Pushed N commits to `<remote>/<branch>`."
 On failure: Print the git error message. Exit with failure.
 
+## FORBIDDEN
+
+- **MUST NOT** execute `git push --force` (or `--force-with-lease`) to any branch. If push fails due to non-fast-forward, report the error and instruct the user to run `/pl-remote-pull`.
+- **MUST NOT** push to a branch that does not match the resolved collaboration branch. The Collaboration Branch Guard (Step 1) enforces this — do not bypass it.
+- **MUST NOT** pass unchecked user input directly to git commands. Branch names are resolved from `.purlin/runtime/active_branch` or defaulted to `main` — never from raw user input. Remote names come from `.purlin/config.json` with a default of `"origin"`.
+
 ## Notes
 
 - Does NOT merge anything. Use `/pl-remote-pull` first if behind or diverged.

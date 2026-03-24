@@ -596,6 +596,67 @@ fi
 cleanup_sandbox
 
 ###############################################################################
+# FORBIDDEN Enforcement: Skill file contains FORBIDDEN section
+###############################################################################
+echo ""
+echo "[FORBIDDEN] Skill file contains FORBIDDEN enforcement section"
+SKILL_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.claude/commands/pl-remote-push.md"
+if [[ -f "$SKILL_FILE" ]]; then
+    if grep -q "^## FORBIDDEN" "$SKILL_FILE"; then
+        log_pass "Skill file contains ## FORBIDDEN section"
+    else
+        log_fail "Skill file missing ## FORBIDDEN section"
+    fi
+else
+    log_fail "Skill file not found at $SKILL_FILE"
+fi
+
+###############################################################################
+# FORBIDDEN Enforcement: No force push directive
+###############################################################################
+echo ""
+echo "[FORBIDDEN] Skill file prohibits git push --force"
+if [[ -f "$SKILL_FILE" ]]; then
+    if grep -q "git push --force" "$SKILL_FILE" && grep -q "MUST NOT" "$SKILL_FILE"; then
+        log_pass "Skill file contains force push prohibition"
+    else
+        log_fail "Skill file missing force push prohibition"
+    fi
+else
+    log_fail "Skill file not found at $SKILL_FILE"
+fi
+
+###############################################################################
+# FORBIDDEN Enforcement: No push to non-collaboration branch
+###############################################################################
+echo ""
+echo "[FORBIDDEN] Skill file prohibits push to non-collaboration branch"
+if [[ -f "$SKILL_FILE" ]]; then
+    if grep -q "MUST NOT.*push to a branch that does not match" "$SKILL_FILE"; then
+        log_pass "Skill file contains non-collaboration branch push prohibition"
+    else
+        log_fail "Skill file missing non-collaboration branch push prohibition"
+    fi
+else
+    log_fail "Skill file not found at $SKILL_FILE"
+fi
+
+###############################################################################
+# FORBIDDEN Enforcement: No unchecked user input in git commands
+###############################################################################
+echo ""
+echo "[FORBIDDEN] Skill file prohibits unchecked user input in git commands"
+if [[ -f "$SKILL_FILE" ]]; then
+    if grep -q "MUST NOT.*unchecked user input" "$SKILL_FILE"; then
+        log_pass "Skill file contains user input validation prohibition"
+    else
+        log_fail "Skill file missing user input validation prohibition"
+    fi
+else
+    log_fail "Skill file not found at $SKILL_FILE"
+fi
+
+###############################################################################
 # Summary
 ###############################################################################
 TOTAL=$((PASS + FAIL))

@@ -1,8 +1,8 @@
-# User Testing Discoveries: PL Remote Push
+# Discovery Sidecar: pl_remote_push
 
-### [BUG] M23: Skill file missing FORBIDDEN enforcement (Discovered: 2026-03-23)
-- **Observed Behavior:** The skill file has no FORBIDDEN enforcement directives despite spec section 2.8 documenting explicit prohibitions.
-- **Expected Behavior:** Skill file should include FORBIDDEN enforcement matching the prohibitions documented in spec section 2.8.
+## [BUG] M23: Skill file missing FORBIDDEN enforcement
+
+- **Status:** RESOLVED
 - **Action Required:** Builder
-- **Status:** OPEN
-- **Source:** Spec-code audit (deep mode). See pl_remote_push.impl.md for full context.
+- **Description:** The skill file at `.claude/commands/pl-remote-push.md` had no FORBIDDEN enforcement directives despite spec section 2.8 documenting explicit prohibitions (no force push, no push to non-collaboration branch, no unchecked user input).
+- **Resolution:** Added `## FORBIDDEN` section to the skill file with three enforcement directives matching spec section 2.8 and `policy_branch_collab.md` Section 4. Added four tests verifying the FORBIDDEN section and each directive are present.
