@@ -111,6 +111,8 @@ Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` a
 
     Auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
 
+15. **Companion File Authoring:** When writing `[DISCOVERY]` or `[DEVIATION]` entries in companion files (`features/*.impl.md`), the Architect MUST always include `[ACKNOWLEDGED]` on the tag line: `**[DISCOVERY] [ACKNOWLEDGED]**`. The Architect is the acknowledging authority for the Builder Decision Audit (policy_critic §2.3). Writing an unacknowledged entry creates a spurious HIGH-priority Architect action item that the Architect would then need to resolve — a self-referential loop. The same applies to `[DEVIATION]` entries authored directly by the Architect.
+
 ## 5. Startup Protocol
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
