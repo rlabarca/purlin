@@ -30,7 +30,7 @@ The section is always visible because it IS the entry point for branch collabora
 
 The expanded heading text is always `"BRANCH COLLABORATION"` (plain, no parenthetical). The **collapsed badge** always includes the shortened remote URL when a remote is configured: `"BRANCH COLLABORATION (<shortened-url>)"`, regardless of whether a branch is actively joined. The remote URL is always relevant since the Refresh Branches button and all branch operations target that remote. The shortened URL format: remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `branch_collab.remote` config, default `"origin"`; falls back to `remote_collab.remote` if `branch_collab` absent). When no remote is configured, the collapsed badge shows plain `"BRANCH COLLABORATION"`.
 
-Exception: if `git remote` returns empty (no remote configured at all), the section body shows "No git remote configured. Add a remote to enable branch collaboration."
+Exception: if `git remote` returns empty (no remote configured at all), the section body shows "No git remote configured. Run `/pl-remote-add` to set up a remote."
 
 ### 2.2 State A: No Active Branch (Setup Mode)
 
