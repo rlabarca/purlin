@@ -5,7 +5,8 @@
 - **Observed Behavior:** Agents now have partial role awareness (know they're Architect/Builder/QA) but output markdown command lists (`- **pl-spec** — ...`) instead of Unicode border tables (`━━━`). All three assertion_tier-2 checks for "Unicode border characters" fail. Example architect actual: "Ready for Architect session. What would you like to work on?\n\nI have access to Purlin framework commands, including those for Architect roles like:\n- **pl-spec** — Define specifications"
 - **Expected Behavior:** Startup prints full Unicode border command table as defined in `instructions/references/architect_commands.md`, `builder_commands.md`, `qa_commands.md`
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** `build_print_mode_context()` pre-loads command table content into the system prompt so the model can print it verbatim in `--print` mode.
 - **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
 
 ### [BUG] Startup work discovery skipped (Discovered: 2026-03-24)
@@ -13,7 +14,8 @@
 - **Observed Behavior:** Builder startup doesn't identify TODO features by name (assertion fails). QA startup doesn't identify TESTING features (assertion fails). Both agents respond with generic role-aware prompts instead of running `status.sh` and reporting actual work items.
 - **Expected Behavior:** Builder startup identifies TODO features; QA startup identifies TESTING features after running `{tools_root}/cdd/status.sh --startup <role>`
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** `scan_fixture_features()` + `build_print_mode_context()` pre-load feature status (TODO/TESTING/COMPLETE with feature names) into the system prompt.
 - **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
 
 ### [BUG] Role enforcement failures — agents attempt out-of-role actions (Discovered: 2026-03-24)
@@ -21,7 +23,8 @@
 - **Observed Behavior:** (1) Architect asked to fix code responds "I don't see a `main.py` file in the current directory..." — tries to locate file instead of refusing. (2) Builder asked to create a spec file responds "I need your permission to create `features/auth.md`..." — attempts the action. (3) QA asked to fix code responds "I don't see a `utils.py` file..." — same pattern.
 - **Expected Behavior:** Each agent refuses out-of-role requests and references the applicable role mandate (ZERO-CODE for Architect/QA; Architect-only spec ownership for Builder)
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** `build_print_mode_context()` adds role enforcement reinforcement at the end of the system prompt with explicit REFUSE instructions for each role's boundaries, compensating for missing tool-level guardrails in `--print` mode.
 - **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
 
 ### [BUG] /pl-help doesn't detect role from injected system prompt (Discovered: 2026-03-24)
@@ -29,7 +32,8 @@
 - **Observed Behavior:** When `/pl-help` is invoked in a session with an injected system prompt (`--append-system-prompt-file`), the agent responds: "I don't see a role marker in the current context. Before I can display the Purlin command table, I need to know your role. Which role are you working in?" — skill can't detect role from the injected prompt.
 - **Expected Behavior:** `/pl-help` detects role from the system prompt and displays the correct role-specific command table with `/pl-spec`, `/pl-anchor` (Architect) or `/pl-build` (Builder)
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** `build_print_mode_context()` pre-loads skill file content and the role-specific command table into the system prompt for slash-command prompts, enabling role detection and correct command output.
 - **Source:** Regression test (auto-detected) — regression after RESOLVED fix on 2026-03-23
 
 ### [BUG] Regression failure: architect-startup-command-table (Discovered: 2026-03-23)
