@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 7,
+  "passed": 13,
   "failed": 0,
-  "total": 7,
+  "total": 13,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -11,6 +11,30 @@
     },
     {
       "test": "test_detects_coverage_gap (__main__.TestDocConsistencyCoverageGap.test_detects_coverage_gap)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_readme_instruction_drift (__main__.TestDocConsistencyReadmeInstructionClean.test_no_readme_instruction_drift)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_pm_focus_phrase (__main__.TestDocConsistencyReadmeInstructionDrift.test_detects_missing_pm_focus_phrase)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_pm_section (__main__.TestDocConsistencyReadmeInstructionDrift.test_detects_missing_pm_section)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_on_dual_gate (__main__.TestDocConsistencyReadmeInstructionDrift.test_no_false_positive_on_dual_gate)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_on_present_roles (__main__.TestDocConsistencyReadmeInstructionDrift.test_no_false_positive_on_present_roles)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_dual_gate (__main__.TestDocConsistencyReadmeMissingDualGate.test_detects_missing_dual_gate)",
       "status": "PASS"
     },
     {

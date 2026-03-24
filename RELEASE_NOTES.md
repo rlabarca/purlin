@@ -1,24 +1,57 @@
 # Release Notes
 
-### RC0.8.4 — 2026-03-20
+### v0.8.4 — 2026-03-24
 
 **Extended Context Models**
-- Opus 4.6 [1M] available as an agent model -- select it in the CDD Dashboard or launcher scripts
-- Cost warning shown once per model ("Extended context uses additional paid credits on Pro plans"), then auto-acknowledged
-- CDD Dashboard displays a confirmation modal when selecting a model with a warning
+- Agents can now use Opus 4.6 with a 1M token context window -- select it in the CDD Dashboard or launcher scripts
+- A one-time cost warning prevents surprise charges on Pro plans; once acknowledged, it won't ask again
+
+**Parallel Feature Building**
+- Builder implements multiple features at the same time using isolated git worktrees, so large backlogs finish faster
+- Delivery plans group independent features into execution groups that build in parallel and merge automatically
+
+**QA Improvements**
+- Smoke testing gate -- classify features by priority tier (smoke, standard, full-only) and QA verifies the most critical ones first
+- "Just smoke" mode lets you run only the critical checks when you need a fast confidence pass
+- Agent behaviors can now be regression-tested so you know when a change breaks something that used to work
+- Three new commands (`/pl-regression-author`, `/pl-regression-run`, `/pl-regression-evaluate`) cover the full regression author-run-review cycle
+- QA cannot mark a feature complete while regressions are failing -- broken behavior blocks the release
 
 **Builder Escalation Path**
-- Builders can now propose spec or anchor node changes with `[SPEC_PROPOSAL]` tags in companion files
-- The Critic routes unacknowledged proposals to the Architect as HIGH-priority action items
-- `/pl-propose` command for structured escalation of cross-cutting constraints
+- Builders can propose spec or anchor node changes directly with `/pl-propose` instead of waiting for the Architect
+- The Critic automatically surfaces unacknowledged proposals as high-priority Architect action items
+
+**Spec-Code Audit**
+- `/pl-spec-code-audit` now finds code that has no matching spec, not just specs missing code
+- A scope confirmation step lets you choose which features to audit before it starts
+
+**CDD Dashboard**
+- Delivery plan progress shows execution groups and parallel build state at a glance
+
+**Delivery Plans**
+- Phase sizing automatically adjusts based on your model's context window so phases don't exceed capacity
+- Execution groups let you combine phases that can run in parallel, cutting total delivery time
+
+**Documentation**
+- Five new guides ship with the framework: PM Agent, Critic & CDD, Installation, Testing Workflow, and Parallel Execution
+- Docs are auto-refreshed and cross-linked during every release -- no more stale references
+
+**New Commands**
+- `/pl-purlin-issue` -- Report a framework bug or feature request directly from any agent session
+- `/pl-add-remote` -- Set up a git remote for collaboration directly from any agent session
+
+**Test Fixtures**
+- Fixture repos can be pushed to a remote so every team member starts from the same test state
 
 **Config & Infrastructure**
-- Array-aware config merging -- when Purlin adds new models upstream, local config overrides are preserved instead of replaced
-- Nested-project disambiguation -- tools now correctly detect the project root when Purlin is a submodule inside a larger repository
+- Agent launchers register named sessions so Claude Code's remote control can target each role individually
+- Agent launchers automatically update Claude Code if the installed version is below the minimum required
+- When Purlin adds new models upstream, your local config overrides are preserved instead of replaced
+- Tools now correctly detect the project root when Purlin is nested as a submodule inside a larger repository
 
 **Workflow**
-- STALE verdicts from `/pl-web-test` auto-record as PM-routed discovery sidecar entries -- no manual Builder action needed
-- Architect auto-resolves routine Critic items (untracked file triage, straightforward acknowledgments) silently, then summarizes
+- STALE web test verdicts automatically record as PM-routed discoveries -- no manual Builder triage needed
+- The Architect silently resolves routine Critic items (untracked files, straightforward acknowledgments) and summarizes what it did
 
 ### v0.8.3 — 2026-03-19
 

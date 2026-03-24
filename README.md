@@ -25,12 +25,14 @@ The framework is built on four goals:
 
 ## Quick Start
 
-You need **git** and **Claude Code** installed. On macOS:
+You need **git** and **Claude Code 2.1.81+** installed. On macOS:
 
 ```bash
 brew install git node           # node is optional, needed for web testing
 npm install -g @anthropic-ai/claude-code
 ```
+
+Already have Claude Code? Run `claude update` to make sure you're on the latest version.
 
 Then create your project. Copy and paste this block into your terminal:
 
