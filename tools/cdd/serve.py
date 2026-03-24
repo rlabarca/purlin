@@ -1405,12 +1405,36 @@ def generate_startup_briefing(role, cache=None):
 # Web Dashboard (role-based columns, Active/Complete grouping)
 # ===================================================================
 
+def _filter_porcelain(raw_output):
+    """Parse git status --porcelain output and filter noise paths.
+
+    Returns list of (line, path) tuples. Each tuple contains the original
+    porcelain line and the extracted file path (column 3+). Noise paths
+    are excluded using prefix-based matching on the parsed path.
+
+    Noise filters:
+    - .DS_Store (exact match)
+    - .purlin/* (prefix match — only root .purlin/, not tests/.purlin/)
+    - .cache/* (prefix match)
+    """
+    results = []
+    for line in (raw_output or "").splitlines():
+        if len(line) < 4:
+            continue
+        path = line[3:]
+        if ' -> ' in path:
+            path = path.split(' -> ', 1)[1]
+        if path == '.DS_Store' or path.startswith('.purlin/') or path.startswith('.cache/'):
+            continue
+        results.append((line, path))
+    return results
+
+
 def get_git_status():
     """Gets the current git status, using the shared cache."""
     raw = cached_git_status() or ""
-    lines = [l for l in raw.splitlines()
-             if '.DS_Store' not in l and '.cache/' not in l and '.purlin/' not in l]
-    return '\n'.join(lines) if lines else ""
+    entries = _filter_porcelain(raw)
+    return '\n'.join(line for line, _path in entries) if entries else ""
 
 
 def get_last_commit():
@@ -1907,27 +1931,22 @@ def get_remote_contributors(branch_name, max_entries=10):
 
 
 def _get_dirty_files():
-    """Return list of dirty file paths outside .purlin/.
+    """Return list of dirty file paths outside noise directories.
+
+    Uses a fresh subprocess (not cached) for real-time accuracy
+    in branch collaboration operations. Delegates to _filter_porcelain()
+    for consistent prefix-based noise filtering.
 
     Returns an empty list when the tree is clean.
     """
-    dirty = []
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=10)
-        for line in result.stdout.splitlines():
-            if len(line) < 4:
-                continue
-            path = line[3:]
-            if ' -> ' in path:
-                path = path.split(' -> ', 1)[1]
-            if not path.startswith('.purlin/'):
-                dirty.append(path)
+        return [path for _line, path in _filter_porcelain(result.stdout)]
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        pass
-    return dirty
+        return []
 
 
 def _is_working_tree_dirty():

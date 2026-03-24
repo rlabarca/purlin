@@ -33,5 +33,6 @@
 - **Observed Behavior:** `get_workspace_json()` (serve.py ~line 1163) and `get_git_status()` (serve.py ~line 1412) filter `.purlin/` paths using a substring match (`'.purlin/' in line`). This silently hides files like `tests/.purlin/` from the clean/dirty calculation, reporting the workspace as "clean" when untracked files exist outside the project root `.purlin/` directory.
 - **Expected Behavior:** Extract a single shared helper that parses `git status --porcelain` output and filters noise paths (`.DS_Store`, `.purlin/`, `.cache/`). All three call sites — `get_workspace_json()`, `get_git_status()`, and `_get_dirty_files()` — should delegate to this helper instead of each implementing their own filter. The helper should use prefix-based matching on the parsed file path (column 4+ of porcelain output), consistent with `_get_dirty_files()`'s existing `path.startswith('.purlin/')` logic. This eliminates the substring-vs-prefix drift that caused the bug.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Extracted shared `_filter_porcelain()` helper with prefix-based matching. Both `get_git_status()` and `_get_dirty_files()` now delegate to it. 12 unit tests added covering prefix vs substring, renames, mixed input, and edge cases.
 - **Source:** User-reported. Branch join blocked on `tests/.purlin/` while CDD status reported clean.

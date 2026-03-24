@@ -38,6 +38,7 @@ from serve import (
     spec_content_unchanged,
     _only_exempt_commits_since,
     _qa_badge_html,
+    _filter_porcelain,
 )
 
 
@@ -4663,6 +4664,102 @@ class TestAbbreviatedStatusCommitCache(unittest.TestCase):
         self.assertEqual(entry['complete_hash'], 'hhh888')
         self.assertEqual(entry['testing_ts'], 1700000001)
         self.assertEqual(entry['testing_hash'], 'iii999')
+
+
+class TestFilterPorcelain(unittest.TestCase):
+    """Tests for _filter_porcelain() -- shared git status noise filter.
+
+    Verifies prefix-based matching so that paths like tests/.purlin/
+    are NOT filtered (only root .purlin/ is noise).
+    """
+
+    def test_filters_root_purlin_prefix(self):
+        """Root .purlin/ paths are filtered out."""
+        raw = "?? .purlin/runtime/pid\n?? .purlin/cache/data.json\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(result, [])
+
+    def test_preserves_nested_purlin_path(self):
+        """Nested .purlin/ paths (e.g., tests/.purlin/) are NOT filtered."""
+        raw = "?? tests/.purlin/config.json\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][1], "tests/.purlin/config.json")
+
+    def test_filters_ds_store_exact(self):
+        """.DS_Store at root is filtered."""
+        raw = "?? .DS_Store\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(result, [])
+
+    def test_preserves_nested_ds_store(self):
+        """Nested .DS_Store (e.g., src/.DS_Store) is NOT filtered."""
+        raw = "?? src/.DS_Store\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][1], "src/.DS_Store")
+
+    def test_filters_cache_prefix(self):
+        """Root .cache/ paths are filtered."""
+        raw = "?? .cache/status.json\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(result, [])
+
+    def test_preserves_real_files(self):
+        """Normal modified files are preserved with correct path extraction."""
+        raw = " M tools/cdd/serve.py\n M README.md\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0][1], "tools/cdd/serve.py")
+        self.assertEqual(result[1][1], "README.md")
+
+    def test_handles_rename_arrow(self):
+        """Renamed files use the destination path (after ->)."""
+        raw = "R  old_name.py -> new_name.py\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][1], "new_name.py")
+
+    def test_rename_into_purlin_filtered(self):
+        """Rename into .purlin/ is filtered (destination is noise)."""
+        raw = "R  config.json -> .purlin/config.json\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(result, [])
+
+    def test_mixed_input(self):
+        """Mixed real files and noise paths are correctly separated."""
+        raw = (
+            " M tools/cdd/serve.py\n"
+            "?? .purlin/runtime/pid\n"
+            "?? tests/.purlin/config.json\n"
+            "?? .DS_Store\n"
+            " M features/my_feature.md\n"
+        )
+        result = _filter_porcelain(raw)
+        paths = [path for _line, path in result]
+        self.assertEqual(paths, [
+            "tools/cdd/serve.py",
+            "tests/.purlin/config.json",
+            "features/my_feature.md",
+        ])
+
+    def test_empty_input(self):
+        """Empty or None input returns empty list."""
+        self.assertEqual(_filter_porcelain(""), [])
+        self.assertEqual(_filter_porcelain(None), [])
+
+    def test_short_lines_skipped(self):
+        """Lines shorter than 4 chars are skipped (malformed porcelain)."""
+        raw = "??\n M tools/cdd/serve.py\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][1], "tools/cdd/serve.py")
+
+    def test_preserves_original_line(self):
+        """Returned tuples include the original porcelain line."""
+        raw = " M tools/cdd/serve.py\n"
+        result = _filter_porcelain(raw)
+        self.assertEqual(result[0][0], " M tools/cdd/serve.py")
 
 
 # ===================================================================
