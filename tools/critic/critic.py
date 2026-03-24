@@ -1709,6 +1709,43 @@ def generate_action_items(feature_result, cdd_status=None):
             'description': desc,
         })
 
+    # Weak traceability match detection (Section 2.12):
+    # New scenarios from scenario_diff that only have keyword-overlap matches
+    # to pre-existing tests get flagged as HIGH Builder action items.
+    if (_effective_todo and scenario_diff
+            and scenario_diff.get('has_diff')
+            and scenario_diff.get('new')):
+        weak_matches = impl_gate['checks'].get(
+            'traceability', {}).get('_weak_matches', [])
+        if weak_matches:
+            new_scenario_titles = set(scenario_diff['new'])
+            # Map scenario titles to their weak match test names
+            weak_by_scenario = {}
+            for wm in weak_matches:
+                sc_title = wm.get('scenario', '')
+                if sc_title in new_scenario_titles:
+                    weak_by_scenario[sc_title] = wm.get('test', '')
+            if weak_by_scenario:
+                # Get the last status commit hash for temporal check
+                status_hash = _get_last_status_commit_hash(feature_file)
+                for sc_title, test_name in sorted(weak_by_scenario.items()):
+                    # If we have a status commit, check if the test was added
+                    # after it (meaning it's a dedicated new test, not pre-existing)
+                    if status_hash and test_name:
+                        if _test_added_after_commit(
+                                test_name, feature_name, status_hash):
+                            continue  # Test was added after commit -- not a false positive
+                    builder_items.append({
+                        'priority': 'HIGH',
+                        'category': 'weak_traceability',
+                        'feature': feature_name,
+                        'description': (
+                            f"New scenario '{sc_title}' has no dedicated "
+                            f"test -- existing keyword match is likely "
+                            f"a false positive"
+                        ),
+                    })
+
     # Structural completeness FAIL -> HIGH (missing/malformed tests.json)
     # Structural completeness WARN -> HIGH (tests.json exists with status FAIL)
     struct = impl_gate['checks'].get('structural_completeness', {})
@@ -3672,7 +3709,8 @@ def generate_critic_json(feature_path, cdd_status=None):
     result['action_items'] = generate_action_items(result, cdd_status)
 
     # Targeted Scope Completeness audit output (Section 2.15)
-    if lifecycle_state == 'todo' and cdd_status is not None:
+    # Audit runs when builder is DONE (lifecycle testing/complete), NOT todo.
+    if lifecycle_state in ('testing', 'complete') and cdd_status is not None:
         change_scope = _get_feature_change_scope(rel_path, cdd_status)
         if change_scope and change_scope.startswith('targeted:'):
             _sc_path = os.path.join(
@@ -3865,20 +3903,36 @@ def generate_critic_report(results, untracked_items=None, orphan_items=None):
         lines.append('No AUTONOMOUS, DEVIATION, DISCOVERY, or SPEC_PROPOSAL entries found.')
     lines.append('')
 
-    # Policy Violations
+    # Policy Violations (compact grouped format per Section 2.8)
     lines.append('## Policy Violations')
     lines.append('')
-    has_violations = False
+    # Group violations by (feature_file, pattern, file) to produce compact
+    # output: N x pattern in file (lines A,B,C...+K more)
+    from collections import defaultdict
+    violation_groups = defaultdict(list)
     for r in sorted(results, key=lambda x: x['feature_file']):
         pa = r['implementation_gate']['checks'].get('policy_adherence', {})
         violations = pa.get('violations', [])
         for v in violations:
-            has_violations = True
+            key = (r['feature_file'], v['pattern'], v['file'])
+            violation_groups[key].append(v['line'])
+    if violation_groups:
+        for (feat, pattern, vfile), line_nums in sorted(
+                violation_groups.items()):
+            count = len(line_nums)
+            sorted_lines = sorted(line_nums)
+            if len(sorted_lines) <= 3:
+                lines_str = ','.join(str(n) for n in sorted_lines)
+            else:
+                first3 = ','.join(str(n) for n in sorted_lines[:3])
+                remaining = len(sorted_lines) - 3
+                lines_str = f'{first3}...+{remaining} more'
+            feat_stem = os.path.splitext(os.path.basename(feat))[0]
             lines.append(
-                f'- **{r["feature_file"]}**: `{v["pattern"]}` in '
-                f'`{v["file"]}` line {v["line"]}'
+                f'- {feat_stem}: {count}x `{pattern}` in '
+                f'`{vfile}` (lines {lines_str})'
             )
-    if not has_violations:
+    else:
         lines.append('No FORBIDDEN pattern violations detected.')
     lines.append('')
 

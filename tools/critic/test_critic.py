@@ -10132,6 +10132,499 @@ class TestStripMetadataForHash(unittest.TestCase):
 
 
 # ===================================================================
+# Compact Policy Violation Grouping Tests (Section 2.8, BUG H1)
+# ===================================================================
+
+class TestCompactPolicyViolationGrouping(unittest.TestCase):
+    """Scenario: Compact Policy Violation Grouping in Aggregate Report
+
+    Violations grouped by (feature, pattern, file) with count and line numbers.
+    """
+
+    def _make_result(self, feature_file, violations):
+        return {
+            'feature_file': feature_file,
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'FAIL' if violations else 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                    },
+                    'policy_adherence': {
+                        'status': 'FAIL' if violations else 'PASS',
+                        'violations': violations,
+                    },
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                },
+            },
+            'user_testing': {
+                'status': 'CLEAN', 'bugs': 0,
+                'discoveries': 0, 'intent_drifts': 0,
+                'spec_disputes': 0,
+            },
+        }
+
+    def test_grouped_format_multiple_violations_same_pattern_file(self):
+        """Multiple violations for same pattern+file produce one grouped line."""
+        violations = [
+            {'pattern': 'hardcoded_port', 'file': 'tools/cdd/serve.py',
+             'line': 10, 'text': 'x'},
+            {'pattern': 'hardcoded_port', 'file': 'tools/cdd/serve.py',
+             'line': 20, 'text': 'x'},
+            {'pattern': 'hardcoded_port', 'file': 'tools/cdd/serve.py',
+             'line': 30, 'text': 'x'},
+        ]
+        results = [self._make_result('features/my_feature.md', violations)]
+        report = generate_critic_report(results)
+        # Should have exactly one grouped entry, not 3 individual lines
+        violation_section = report.split('## Policy Violations')[1].split('##')[0]
+        lines = [l for l in violation_section.strip().split('\n') if l.startswith('- ')]
+        self.assertEqual(len(lines), 1)
+        self.assertIn('3x', lines[0])
+        self.assertIn('hardcoded_port', lines[0])
+        self.assertIn('lines 10,20,30', lines[0])
+
+    def test_grouped_format_more_than_3_lines_shows_remaining(self):
+        """More than 3 lines shows first 3 + remaining count."""
+        violations = [
+            {'pattern': 'hex_color', 'file': 'tools/cdd/serve.py',
+             'line': n, 'text': 'x'}
+            for n in range(259, 293)  # 34 violations
+        ]
+        results = [self._make_result('features/cdd_agent_configuration.md',
+                                     violations)]
+        report = generate_critic_report(results)
+        violation_section = report.split('## Policy Violations')[1].split('##')[0]
+        lines = [l for l in violation_section.strip().split('\n') if l.startswith('- ')]
+        self.assertEqual(len(lines), 1)
+        self.assertIn('34x', lines[0])
+        self.assertIn('259,260,261...+31 more', lines[0])
+
+    def test_grouped_format_two_files_produce_two_entries(self):
+        """Same pattern in different files produces separate entries."""
+        v1 = [
+            {'pattern': 'hex', 'file': 'tools/cdd/serve.py',
+             'line': n, 'text': 'x'}
+            for n in [259, 262, 265, 268]
+        ]
+        v2 = [
+            {'pattern': 'hex', 'file': 'tools/cdd/dashboard.html',
+             'line': n, 'text': 'x'}
+            for n in [44, 55, 89]
+        ]
+        results = [self._make_result('features/cdd_agent_configuration.md',
+                                     v1 + v2)]
+        report = generate_critic_report(results)
+        violation_section = report.split('## Policy Violations')[1].split('##')[0]
+        lines = [l for l in violation_section.strip().split('\n') if l.startswith('- ')]
+        self.assertEqual(len(lines), 2)
+
+    def test_no_violations_shows_clean_message(self):
+        """No violations reports the clean message."""
+        results = [self._make_result('features/clean.md', [])]
+        report = generate_critic_report(results)
+        self.assertIn('No FORBIDDEN pattern violations detected', report)
+
+    def test_three_or_fewer_lines_no_plus_more(self):
+        """3 or fewer lines listed without ellipsis."""
+        violations = [
+            {'pattern': 'pat', 'file': 'tools/x.py', 'line': 1, 'text': 'x'},
+            {'pattern': 'pat', 'file': 'tools/x.py', 'line': 5, 'text': 'x'},
+        ]
+        results = [self._make_result('features/f.md', violations)]
+        report = generate_critic_report(results)
+        violation_section = report.split('## Policy Violations')[1].split('##')[0]
+        lines = [l for l in violation_section.strip().split('\n') if l.startswith('- ')]
+        self.assertEqual(len(lines), 1)
+        self.assertIn('lines 1,5', lines[0])
+        self.assertNotIn('more', lines[0])
+
+    def test_grouped_format_uses_feature_stem(self):
+        """Grouped format uses feature stem (no features/ or .md)."""
+        violations = [
+            {'pattern': 'bad', 'file': 'tools/x.py', 'line': 1, 'text': 'x'},
+        ]
+        results = [self._make_result('features/my_feature.md', violations)]
+        report = generate_critic_report(results)
+        violation_section = report.split('## Policy Violations')[1].split('##')[0]
+        self.assertIn('my_feature:', violation_section)
+        self.assertNotIn('features/my_feature.md:', violation_section)
+
+
+# ===================================================================
+# Weak Traceability Match Action Item Tests (BUG H2)
+# ===================================================================
+
+class TestWeakTraceabilityMatchActionItem(unittest.TestCase):
+    """Scenario: New Scenario With Only Weak Traceability Match Flagged
+
+    When a new scenario from scenario_diff has only a keyword-overlap
+    match to a pre-existing test, a HIGH Builder action item is generated.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: WeakMatch
+
+> Label: "Tool: WeakMatch"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Convention Path Fixture Repo Used Without Configuration
+    Given X When Y Then Z
+"""
+        with open(os.path.join(
+                self.features_dir, 'weak_match.md'), 'w') as f:
+            f.write(feature_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _make_result(self, weak_matches=None):
+        return {
+            'feature_file': 'features/weak_match.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {
+                        'status': 'PASS', 'coverage': 1.0,
+                        'detail': 'OK',
+                        '_matched': [{'scenario': 'Convention Path Fixture Repo Used Without Configuration',
+                                      'test': 'test_convention'}],
+                        '_weak_matches': weak_matches or [],
+                    },
+                    'policy_adherence': {'status': 'PASS',
+                                         'violations': [],
+                                         'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS',
+                                                'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                        'detail': 'OK',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [],
+                                    'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+            'regression_scope': {
+                'declared': 'full',
+                'scenarios': [],
+                'visual_items': 0,
+                'cross_validation_warnings': [],
+            },
+            'visual_spec': {'present': False, 'items': 0},
+        }
+
+    def _make_cdd_todo(self):
+        return {
+            'features': {
+                'todo': [{
+                    'file': 'features/weak_match.md',
+                    'label': 'WeakMatch',
+                }],
+                'testing': [],
+                'complete': [],
+            },
+        }
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic._get_last_status_commit_hash')
+    @patch('critic._test_added_after_commit')
+    def test_weak_match_generates_action_item(
+            self, mock_added, mock_hash, mock_diff):
+        """New scenario with weak match to pre-existing test is flagged."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            mock_diff.return_value = {
+                'has_diff': True,
+                'new': ['Convention Path Fixture Repo Used Without Configuration'],
+                'modified': [],
+                'removed': [],
+                'old_content': '# old',
+            }
+            mock_hash.return_value = 'abc123'
+            # Test was NOT added after commit -> pre-existing -> flag it
+            mock_added.return_value = False
+
+            weak = [{'scenario': 'Convention Path Fixture Repo Used Without Configuration',
+                      'test': 'test_convention'}]
+            result = self._make_result(weak_matches=weak)
+            cdd = self._make_cdd_todo()
+            items = generate_action_items(result, cdd_status=cdd)
+
+            weak_items = [i for i in items['builder']
+                          if i['category'] == 'weak_traceability']
+            self.assertEqual(len(weak_items), 1)
+            self.assertIn('no dedicated test', weak_items[0]['description'])
+            self.assertIn('false positive', weak_items[0]['description'])
+            self.assertEqual(weak_items[0]['priority'], 'HIGH')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic._get_last_status_commit_hash')
+    @patch('critic._test_added_after_commit')
+    def test_dedicated_test_not_flagged(
+            self, mock_added, mock_hash, mock_diff):
+        """New scenario with test added after commit is NOT flagged."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            mock_diff.return_value = {
+                'has_diff': True,
+                'new': ['Convention Path Fixture Repo Used Without Configuration'],
+                'modified': [],
+                'removed': [],
+                'old_content': '# old',
+            }
+            mock_hash.return_value = 'abc123'
+            # Test WAS added after commit -> dedicated test -> no flag
+            mock_added.return_value = True
+
+            weak = [{'scenario': 'Convention Path Fixture Repo Used Without Configuration',
+                      'test': 'test_convention_path_fixture_repo'}]
+            result = self._make_result(weak_matches=weak)
+            cdd = self._make_cdd_todo()
+            items = generate_action_items(result, cdd_status=cdd)
+
+            weak_items = [i for i in items['builder']
+                          if i['category'] == 'weak_traceability']
+            self.assertEqual(len(weak_items), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @patch('critic._get_scenario_diff')
+    def test_no_weak_matches_no_action_item(self, mock_diff):
+        """No weak matches means no weak_traceability action items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            mock_diff.return_value = {
+                'has_diff': True,
+                'new': ['Convention Path Fixture Repo Used Without Configuration'],
+                'modified': [],
+                'removed': [],
+                'old_content': '# old',
+            }
+            result = self._make_result(weak_matches=[])
+            cdd = self._make_cdd_todo()
+            items = generate_action_items(result, cdd_status=cdd)
+
+            weak_items = [i for i in items['builder']
+                          if i['category'] == 'weak_traceability']
+            self.assertEqual(len(weak_items), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic._get_last_status_commit_hash')
+    def test_no_status_commit_still_flags(self, mock_hash, mock_diff):
+        """Without status commit hash, weak matches are still flagged."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            mock_diff.return_value = {
+                'has_diff': True,
+                'new': ['Convention Path Fixture Repo Used Without Configuration'],
+                'modified': [],
+                'removed': [],
+                'old_content': '# old',
+            }
+            mock_hash.return_value = None  # No status commit
+
+            weak = [{'scenario': 'Convention Path Fixture Repo Used Without Configuration',
+                      'test': 'test_convention'}]
+            result = self._make_result(weak_matches=weak)
+            cdd = self._make_cdd_todo()
+            items = generate_action_items(result, cdd_status=cdd)
+
+            weak_items = [i for i in items['builder']
+                          if i['category'] == 'weak_traceability']
+            self.assertEqual(len(weak_items), 1)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+# ===================================================================
+# Targeted Scope Audit Condition Tests (BUG M1)
+# ===================================================================
+
+class TestTargetedScopeAuditJsonOutput(unittest.TestCase):
+    """Scenario: targeted_scope_audit block in critic.json
+
+    The targeted_scope_audit block should appear when lifecycle is
+    testing/complete (builder DONE), NOT when lifecycle is todo.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: AuditFeature
+
+> Label: "Tool: AuditFeature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Alpha
+    Given X When Y Then Z
+
+#### Scenario: Beta
+    Given A When B Then C
+
+#### Scenario: Gamma
+    Given D When E Then F
+"""
+        with open(os.path.join(
+                self.features_dir, 'audit_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @patch('critic.compute_regression_set')
+    @patch('critic.run_policy_check')
+    @patch('critic._has_testing_phase_commit')
+    @patch('critic._has_verified_complete_commit')
+    @patch('critic._get_last_complete_commit_hash')
+    @patch('critic._validate_allow_empty_complete')
+    def test_audit_block_present_when_testing(
+            self, mock_validate, mock_complete_hash,
+            mock_verified, mock_testing_commit,
+            mock_policy, mock_regression):
+        """targeted_scope_audit block is emitted when lifecycle=testing."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_project_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
+        try:
+            mock_policy.return_value = {
+                'status': 'PASS', 'violations': [],
+                'detail': 'OK',
+            }
+            scope = 'targeted:Alpha'
+            mock_regression.return_value = {
+                'declared': scope,
+                'scenarios': ['Alpha'],
+                'visual_items': 0,
+                'cross_validation_warnings': [],
+            }
+            mock_testing_commit.return_value = True
+            mock_verified.return_value = False
+            mock_complete_hash.return_value = None
+            mock_validate.return_value = None
+
+            # Create tests dir with tests.json
+            tests_dir = os.path.join(self.root, 'tests', 'audit_feature')
+            os.makedirs(tests_dir, exist_ok=True)
+            with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 1, 'failed': 0,
+                           'total': 1, 'test_file': 'test_x.py'}, f)
+            with open(os.path.join(tests_dir, 'test_x.py'), 'w') as f:
+                f.write('def test_alpha(): pass\n')
+
+            cdd = {
+                'features': {
+                    'testing': [{
+                        'file': 'features/audit_feature.md',
+                        'label': 'AuditFeature',
+                        'change_scope': scope,
+                    }],
+                    'todo': [],
+                    'complete': [],
+                },
+            }
+            feature_path = os.path.join(
+                self.features_dir, 'audit_feature.md')
+            result = generate_critic_json(feature_path, cdd_status=cdd)
+
+            self.assertIn('targeted_scope_audit', result)
+            audit = result['targeted_scope_audit']
+            self.assertEqual(audit['scoped_count'], 1)
+            self.assertEqual(audit['total_count'], 3)
+            self.assertIn('Beta', audit['unscoped'])
+            self.assertIn('Gamma', audit['unscoped'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.PROJECT_ROOT = orig_project_root
+
+    @patch('critic.run_policy_check')
+    @patch('critic._get_last_complete_commit_hash')
+    @patch('critic._validate_allow_empty_complete')
+    def test_audit_block_absent_when_todo(
+            self, mock_validate, mock_complete_hash, mock_policy):
+        """targeted_scope_audit block is NOT emitted when lifecycle=todo."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_project_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
+        try:
+            mock_policy.return_value = {
+                'status': 'PASS', 'violations': [],
+                'detail': 'OK',
+            }
+            mock_complete_hash.return_value = None
+            mock_validate.return_value = None
+
+            cdd = {
+                'features': {
+                    'todo': [{
+                        'file': 'features/audit_feature.md',
+                        'label': 'AuditFeature',
+                        'change_scope': 'targeted:Alpha',
+                    }],
+                    'testing': [],
+                    'complete': [],
+                },
+            }
+            feature_path = os.path.join(
+                self.features_dir, 'audit_feature.md')
+            result = generate_critic_json(feature_path, cdd_status=cdd)
+
+            self.assertNotIn('targeted_scope_audit', result)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.PROJECT_ROOT = orig_project_root
+
+
+# ===================================================================
 # Test runner with output to tests/critic_tool/tests.json
 # ===================================================================
 
