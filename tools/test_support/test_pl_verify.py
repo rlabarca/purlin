@@ -225,6 +225,108 @@ class TestAutoPassCreditsBuilderVerifiedFeatures(unittest.TestCase):
             "Must include auto-pass acknowledgment message format"
         )
 
+    def test_auto_features_excluded_from_auto_pass(self):
+        """AUTO features (qa_status: AUTO) must NOT be auto-passed."""
+        content = read_command_file()
+        # Step 1 must contain the AUTO exclusion mandate
+        step1_match = re.search(
+            r"### Step 1.*?### Step 2", content, re.DOTALL
+        )
+        self.assertIsNotNone(step1_match, "Step 1 section must exist")
+        step1_text = step1_match.group(0)
+        self.assertRegex(
+            step1_text,
+            r"AUTO features are NOT auto.passed",
+            "Step 1 must explicitly state AUTO features are NOT auto-passed"
+        )
+
+    def test_auto_features_must_execute_in_steps_2_5(self):
+        """AUTO features must execute automated tests in Steps 2-5."""
+        content = read_command_file()
+        step1_match = re.search(
+            r"### Step 1.*?### Step 2", content, re.DOTALL
+        )
+        self.assertIsNotNone(step1_match, "Step 1 section must exist")
+        step1_text = step1_match.group(0)
+        self.assertRegex(
+            step1_text,
+            r"MUST execute in Steps 2.5",
+            "Step 1 must direct AUTO features to Steps 2-5 for execution"
+        )
+
+    def test_regression_guidance_exclusion(self):
+        """Features with regression harness authoring pending are excluded from auto-pass."""
+        content = read_command_file()
+        step1_match = re.search(
+            r"### Step 1.*?### Step 2", content, re.DOTALL
+        )
+        self.assertIsNotNone(step1_match, "Step 1 section must exist")
+        step1_text = step1_match.group(0)
+        self.assertRegex(
+            step1_text,
+            r"(?i)regression.*guidance.*exclusion|regression.*harness.*authoring.*pending",
+            "Step 1 must exclude features with pending regression harness authoring"
+        )
+
+
+class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
+    """Step 5a Phase A Checkpoint must finalize AUTO features before Phase B.
+
+    Structural test: the command file contains Step 5a with AUTO finalization,
+    CDD update, and zero-manual-items fast path.
+    """
+
+    def test_step_5a_exists(self):
+        """Step 5a Phase A Checkpoint section exists in the command file."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"### Step 5a.*Phase A Checkpoint",
+            "Step 5a -- Phase A Checkpoint section must exist"
+        )
+
+    def test_step_5a_commits_auto_completions(self):
+        """Step 5a commits [Complete] [Verified] status tags for AUTO features."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"\[Complete\].*\[Verified\]",
+            "Step 5a must commit [Complete] [Verified] status tags"
+        )
+
+    def test_step_5a_runs_cdd_status(self):
+        """Step 5a runs CDD status to update the dashboard."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertIn(
+            "cdd/status.sh",
+            step5a_text,
+            "Step 5a must run cdd/status.sh to update CDD"
+        )
+
+    def test_step_5a_zero_manual_items_fast_path(self):
+        """Step 5a skips Phase B when zero manual items remain."""
+        content = read_command_file()
+        step5a_match = re.search(
+            r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
+        )
+        self.assertIsNotNone(step5a_match, "Step 5a section must exist")
+        step5a_text = step5a_match.group(0)
+        self.assertRegex(
+            step5a_text,
+            r"(?i)zero manual items|skip.*Phase B",
+            "Step 5a must provide fast path when no manual items remain"
+        )
+
 
 class TestCompletionCommitsIncludeVerifiedTag(unittest.TestCase):
     """Scenario: Completion commits include Verified tag

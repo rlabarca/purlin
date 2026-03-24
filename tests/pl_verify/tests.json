@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 24,
+  "passed": 31,
   "failed": 0,
-  "total": 24,
+  "total": 31,
   "test_file": "tools/test_support/test_pl_verify.py",
   "details": [
     {
@@ -10,7 +10,19 @@
       "status": "PASS"
     },
     {
+      "test": "test_auto_features_excluded_from_auto_pass (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_auto_features_excluded_from_auto_pass)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_auto_features_must_execute_in_steps_2_5 (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_auto_features_must_execute_in_steps_2_5)",
+      "status": "PASS"
+    },
+    {
       "test": "test_auto_pass_step_present (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_auto_pass_step_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_regression_guidance_exclusion (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_regression_guidance_exclusion)",
       "status": "PASS"
     },
     {
@@ -71,6 +83,22 @@
     },
     {
       "test": "test_observed_behavior_field (__main__.TestFailuresCreateDiscoveryEntries.test_observed_behavior_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_commits_auto_completions (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_commits_auto_completions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_exists (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_runs_cdd_status (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_runs_cdd_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_step_5a_zero_manual_items_fast_path (__main__.TestPhaseACheckpointFinalizesAutoFeatures.test_step_5a_zero_manual_items_fast_path)",
       "status": "PASS"
     },
     {
