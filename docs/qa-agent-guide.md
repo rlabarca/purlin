@@ -139,13 +139,9 @@ Once tagged, a scenario stays tagged. The classification decision is final.
 
 ## 6. Regression Testing
 
-```
-/pl-regression
-```
+Regression testing uses three separate commands, each handling one phase of the workflow:
 
-This command auto-detects the current state and enters the appropriate mode:
-
-### Author Mode
+### Authoring (`/pl-regression-author`)
 
 When features need regression scenario files, QA reads the spec, evaluates fixture needs, and writes scenario JSON to `tests/qa/scenarios/<feature>.json`. Each scenario includes assertions at three confidence tiers:
 
@@ -157,7 +153,7 @@ When features need regression scenario files, QA reads the spec, evaluates fixtu
 
 Suites with over 50% Tier 1 assertions are flagged as `[SHALLOW]`.
 
-### Run Mode
+### Running (`/pl-regression-run`)
 
 When regression scenarios exist but results are stale or failing, QA composes a copy-pasteable command for you to run:
 
@@ -165,9 +161,11 @@ When regression scenarios exist but results are stale or failing, QA composes a 
 ./tests/qa/run_all.sh
 ```
 
-### Process Mode
+The harness runner writes results to `tests/<feature>/regression.json` (separate from the Builder's `tests.json`).
 
-After tests run, QA reads the results, creates BUG discoveries for failures, and reports the assertion tier distribution.
+### Evaluating (`/pl-regression-evaluate`)
+
+After tests run, QA reads the `regression.json` results, creates BUG discoveries for failures, and reports the assertion tier distribution.
 
 ---
 
@@ -232,6 +230,10 @@ Say `DISPUTE` followed by the item number during Phase B verification. QA record
 
 If you need to stop mid-session, respond with `stop` or `partial` during Phase B. QA marks passing features complete and leaves the rest in TESTING for next time.
 
+### Session Cleanup
+
+Before ending a session, QA runs a mandatory workspace cleanup. It resolves all uncommitted changes -- committing `regression.json` results, QA scenario updates, and discovery sidecar files, while restoring any Builder-owned `tests.json` files that were accidentally modified. This ensures a clean git state for the next agent session.
+
 ---
 
 ## 10. Command Reference
@@ -254,4 +256,5 @@ If you need to stop mid-session, respond with `stop` or `partial` during Phase B
 | `/pl-override-edit` | Edit QA_OVERRIDES.md. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore session state. |
+| `/pl-purlin-issue` | Report a Purlin framework issue. |
 | `/pl-update-purlin` | Update the Purlin submodule. |
