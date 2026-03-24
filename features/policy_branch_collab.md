@@ -91,8 +91,9 @@ During active collaboration, remote main is untouched. The release process (gove
 
 When no git remote exists (`git remote -v` returns empty):
 
-- `/pl-remote-push` guides the user through adding a remote: checks for `gh` CLI availability, offers GitHub repo creation or manual URL entry, executes `git remote add`, then proceeds to push.
-- `/pl-remote-pull` prints: "No git remote configured. Run `/pl-remote-push` to set up a remote first." and exits.
+- `/pl-remote-add` is the standalone command for configuring a remote: scans for hosting hints (SSH keys, credential helpers, hosting CLIs), prompts for a git remote URL, executes `git remote add` or `git remote set-url`, and verifies connectivity via `git ls-remote`. It does not push or pull.
+- `/pl-remote-push` prints: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exits with code 1.
+- `/pl-remote-pull` prints: "No git remote configured. Run `/pl-remote-add` to set up a remote first." and exits with code 1.
 
 ### 2.13 First-Push Safety Confirmation
 
