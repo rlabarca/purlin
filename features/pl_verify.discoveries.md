@@ -14,3 +14,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Resolution:** Added AUTO exclusion language and regression guidance exclusion to Step 1; added AUTO feature completion path to Step 5; added Step 5a (Phase A Checkpoint) for AUTO finalization, CDD update, and zero-manual-items fast path; clarified Step 11 excludes Step 5a completions.
+
+### [BUG] Step 5a fires before in-session regression suites — clean features not finalized (Discovered: 2026-03-24)
+- **Scenario:** Phase A Checkpoint timing
+- **Observed Behavior:** QA agent runs in-session regression suites (critic_tool, project_init both PASS), but does not commit [Complete] status tags or update CDD. Features remain as TODO/AUTO in the dashboard. The agent waits for external agent_behavior tests before finalizing anything.
+- **Expected Behavior:** Step 5a must fire at two points: (A) after Steps 1-5 for web-test/visual/auto-verified features, and (B) after in-session regression suites pass — BEFORE the external agent_behavior gate. Features that passed in-session must be finalized immediately. The external test gate must NOT block completion of already-clean features. Applies to both AUTO and TODO features whose automated work is satisfied.
+- **Action Required:** Builder
+- **Status:** OPEN

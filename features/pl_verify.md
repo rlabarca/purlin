@@ -32,7 +32,7 @@ The primary QA skill that executes interactive feature verification. Operates in
 - **Step 3 (Run @auto):** Execute @auto-tagged scenarios via the harness runner. Create BUG discoveries for failures.
 - **Step 4 (Classify untagged):** Propose automation for untagged scenarios. Tag as @auto (author + run regression JSON) or @manual based on feasibility and user approval.
 - **Step 5 (Visual smoke):** For features with visual specs, run web test or request screenshot for verification. For AUTO features where all items are automated/web-test, this step completes their verification.
-- **Step 5a (Phase A Checkpoint, MANDATORY):** After Steps 1-5, immediately finalize AUTO features: commit `[Complete] [Verified]` status tags, commit all regression artifacts from Phase A, run `{tools_root}/cdd/status.sh` to update CDD, and verify clean workspace. If zero manual items remain, skip to Session Conclusion.
+- **Step 5a (Phase A Checkpoint, MANDATORY):** Fires at two points: (A) after Steps 1-5 for features verified by web tests/@auto/visual smoke, and (B) after in-session regression suites pass — BEFORE the external agent_behavior test gate. At each checkpoint: commit `[Complete] [Verified]` status tags for all clean features (both AUTO and TODO), commit regression artifacts, run `{tools_root}/cdd/status.sh` to update CDD, and verify clean workspace. The external test gate does NOT block finalization of already-clean features. If zero manual items remain and no external tests are pending, skip to Session Conclusion.
 - Print Phase A Summary bridging to Phase B.
 
 ### 2.4 Phase B -- Manual Verification Checklist
