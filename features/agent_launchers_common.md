@@ -33,7 +33,17 @@ Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `p
 *   `AGENT_MODEL_WARNING` contains the `warning` field value from the agent's assigned model (empty string if absent). `AGENT_MODEL_WARNING_DISMISSED` is `true` if the model ID appears in the top-level `acknowledged_warnings` array AND the model has `warning_dismissible: true`; `false` otherwise.
 *   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_FIND_WORK="true"`, `AGENT_AUTO_START="false"`, `AGENT_MODEL_WARNING=""`, `AGENT_MODEL_WARNING_DISMISSED="false"`.
 
-### 2.4 Claude Dispatch
+### 2.4 CLI Auto-Update
+
+Before invoking `claude`, every launcher MUST check whether the Claude Code CLI is up to date and update it if needed. This runs after config reading (Section 2.3) and before dispatch (Section 2.5). CLI flags can change between versions, so the update must complete before any `claude` invocation.
+
+*   Run `claude update --check` to test whether an update is available. If the exit code indicates an update is available, run `claude update` to perform the update.
+*   Print a status line to stderr: `Checking for Claude Code updates...` before the check. If an update is performed, print `Claude Code updated successfully.` after it completes. If already up to date, print nothing (silent success).
+*   If `claude` is not found on `PATH`, skip the update check silently and let the dispatch step fail with a clear error.
+*   If `claude update` fails (non-zero exit), print a warning to stderr (`WARNING: Claude Code update failed. Continuing with current version.`) and proceed with the existing version. The launcher MUST NOT exit on update failure.
+*   The update check adds a small latency to every launch. This is acceptable because CLI flag compatibility is a correctness requirement, not a performance optimization.
+
+### 2.5 Claude Dispatch
 ```
 claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permissions | --allowedTools ...] --append-system-prompt-file "$PROMPT_FILE" "<session message>"
 ```
@@ -52,7 +62,7 @@ claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permi
 *   When `AGENT_BYPASS=true`: pass `--dangerously-skip-permissions`.
 *   When `AGENT_BYPASS=false`: pass role-specific `--allowedTools` as defined in the role's launcher feature spec.
 
-### 2.5 Role-Specific Details
+### 2.6 Role-Specific Details
 Each role's launcher feature spec defines:
 *   **Tool restrictions** (`--allowedTools` flags when `bypass_permissions` is `false`).
 *   **Session message** (trailing positional argument to `claude`).
@@ -64,7 +74,7 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Launcher Exports PURLIN_PROJECT_ROOT
     Given a launcher script is invoked from any working directory
@@ -104,5 +114,39 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
     When any launcher script is executed
     Then it uses default values (empty model, empty effort, bypass false)
 
-### Manual Scenarios (Human Verification Required)
-None. All scenarios for this feature are fully automated.
+#### Scenario: Launcher Updates Claude CLI When Out of Date
+
+    Given the claude CLI is installed and on PATH
+    And claude update --check indicates an update is available
+    When any launcher script is executed
+    Then "Checking for Claude Code updates..." is printed to stderr
+    And claude update is run before the claude session command
+    And "Claude Code updated successfully." is printed to stderr after the update
+
+#### Scenario: Launcher Skips Update When Already Current
+
+    Given the claude CLI is installed and on PATH
+    And claude update --check indicates the CLI is up to date
+    When any launcher script is executed
+    Then "Checking for Claude Code updates..." is printed to stderr
+    And claude update is NOT run
+    And no update message is printed
+
+#### Scenario: Launcher Continues When Update Fails
+
+    Given the claude CLI is installed and on PATH
+    And claude update fails with a non-zero exit code
+    When any launcher script is executed
+    Then a warning is printed to stderr: "WARNING: Claude Code update failed. Continuing with current version."
+    And the launcher proceeds to invoke the claude session command
+
+#### Scenario: Launcher Skips Update Check When Claude Not on PATH
+
+    Given the claude command is not found on PATH
+    When any launcher script is executed
+    Then no update check is attempted
+    And the launcher proceeds to the dispatch step
+
+### QA Scenarios
+
+None.
