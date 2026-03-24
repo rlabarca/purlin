@@ -20,3 +20,10 @@
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See cdd_status_monitor.impl.md for context.
+
+### [BUG] Non-behavioral spec edits trigger unnecessary lifecycle resets (Discovered: 2026-03-24)
+- **Scenario:** Lifecycle reset detection
+- **Observed Behavior:** A formatting-only spec edit (`spec(release_record_version_notes): fix scenario format for Critic parsing`) reset the feature lifecycle to TODO, forcing full re-verification despite no behavioral changes. The CDD only exempts `[QA-Tags]` commits from lifecycle reset.
+- **Expected Behavior:** Extend `_only_qa_tag_commits_since()` in `serve.py` to also exempt `[Spec-FMT]` commits. The function should treat `[Spec-FMT]` identically to `[QA-Tags]` — if all commits since the last status commit contain either tag (or a combination), the lifecycle is preserved. Rename the function to reflect the broader scope (e.g., `_only_exempt_commits_since`). Add unit tests mirroring the existing `[QA-Tags]` test cases.
+- **Action Required:** Builder
+- **Status:** OPEN

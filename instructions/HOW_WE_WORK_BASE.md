@@ -99,6 +99,16 @@ Implementation knowledge is stored in **companion files** separate from the feat
 *   **Not a feature file:** Companion files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle.
 *   **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO. Only edits to the feature spec (`<name>.md`) trigger resets. This ensures Builder decisions and tribal knowledge updates do not invalidate completed features.
 
+### 4.4 Lifecycle Reset Exemption Tags
+Certain commits that modify feature spec files are exempt from triggering lifecycle resets. The committing agent signals exemption by including a trailer tag in the commit message. The CDD lifecycle tracker skips these commits when computing reset detection.
+
+| Tag | Meaning | When to Use |
+|-----|---------|-------------|
+| `[QA-Tags]` | Only modifies `@auto`/`@manual` tag suffixes on QA Scenario headings. | QA classifying scenarios. |
+| `[Spec-FMT]` | Only changes spec formatting (indentation, Gherkin keyword casing, whitespace, Critic parsing fixes) without altering behavioral content. | Architect or PM fixing formatting. |
+
+If ALL commits to a feature spec since the last status commit contain one of these tags (or a combination), the lifecycle is preserved. If any commit lacks an exempt tag, the normal reset applies. Do NOT use these tags when behavioral content changes.
+
 ## 5. The Release Protocol
 Releases are synchronization points where the entire project state -- Specs, Architecture, Code, and Process -- is validated and pushed to the remote repository.
 
