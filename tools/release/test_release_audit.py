@@ -1080,6 +1080,97 @@ class TestDocConsistencyTombstone(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Terminology mismatch between instruction files
+# ===================================================================
+
+class TestDocConsistencyTerminologyMismatch(unittest.TestCase):
+    """Scenario: Terminology mismatch detected across base instruction files"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": "# Project\n",
+            "instructions/HOW_WE_WORK_BASE.md": (
+                "# How We Work\n"
+                "## 3. The Lifecycle of a Feature\n"
+                "Features move through TODO -> TESTING -> COMPLETE.\n"
+                "### Unit Tests\n"
+                "Builder writes unit tests.\n"
+            ),
+            "instructions/BUILDER_BASE.md": (
+                "# Builder\n"
+                "### Automated Scenarios\n"
+                "Builder writes automated scenarios.\n"
+            ),
+            "instructions/ARCHITECT_BASE.md": "# Architect\n",
+            "instructions/QA_BASE.md": (
+                "# QA\n"
+                "### QA Scenarios\n"
+                "QA verifies scenarios.\n"
+            ),
+            "features/policy_critic.md": "# Policy: Critic\n",
+            ".purlin/config.json": "{}",
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_deprecated_heading(self):
+        result = doc_consistency_main(self.root)
+        term_findings = [f for f in result["findings"]
+                         if f["category"] == "terminology_mismatch"]
+        self.assertGreater(len(term_findings), 0,
+                           "Should detect 'Automated Scenarios' as deprecated")
+        messages = " ".join(f["message"] for f in term_findings)
+        self.assertIn("Automated Scenarios", messages)
+
+    def test_no_false_positive_on_canonical_term(self):
+        result = doc_consistency_main(self.root)
+        term_findings = [f for f in result["findings"]
+                         if f["category"] == "terminology_mismatch"]
+        # Should not flag canonical terms as deprecated (uses 'Unit Tests' would be wrong)
+        for f in term_findings:
+            self.assertNotIn("uses 'Unit Tests'", f["message"],
+                             "Should not flag canonical 'Unit Tests' as deprecated")
+            self.assertNotIn("uses 'QA Scenarios'", f["message"],
+                             "Should not flag canonical 'QA Scenarios' as deprecated")
+
+
+class TestDocConsistencyTerminologyClean(unittest.TestCase):
+    """Scenario: All instruction files use consistent terminology"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": "# Project\n",
+            "instructions/HOW_WE_WORK_BASE.md": (
+                "# How We Work\n"
+                "### Unit Tests\n"
+                "### QA Scenarios\n"
+            ),
+            "instructions/BUILDER_BASE.md": (
+                "# Builder\n"
+                "### Unit Tests\n"
+            ),
+            "instructions/ARCHITECT_BASE.md": "# Architect\n",
+            "instructions/QA_BASE.md": (
+                "# QA\n"
+                "### QA Scenarios\n"
+            ),
+            "features/policy_critic.md": "# Policy: Critic\n",
+            ".purlin/config.json": "{}",
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_no_terminology_findings(self):
+        result = doc_consistency_main(self.root)
+        term_findings = [f for f in result["findings"]
+                         if f["category"] == "terminology_mismatch"]
+        self.assertEqual(len(term_findings), 0,
+                         "Should not flag any terminology issues when all canonical")
+
+
+# ===================================================================
 # Scenario: All scripts produce valid JSON output
 # ===================================================================
 
@@ -1488,6 +1579,10 @@ CLASS_FEATURE_MAP = {
                                                        "release_framework_doc_consistency"],
     "TestInstructionAuditStructuralDeduplicate": ["instruction_audit",
                                                    "release_framework_doc_consistency"],
+    "TestDocConsistencyTerminologyMismatch": ["release_doc_consistency_check",
+                                              "release_framework_doc_consistency"],
+    "TestDocConsistencyTerminologyClean": ["release_doc_consistency_check",
+                                           "release_framework_doc_consistency"],
 }
 
 # TestAllScriptsValidJSON sub-tests map by method name

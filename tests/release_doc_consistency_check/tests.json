@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 4,
+  "passed": 7,
   "failed": 0,
-  "total": 4,
+  "total": 7,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -15,6 +15,18 @@
     },
     {
       "test": "test_detects_stale_reference (__main__.TestDocConsistencyStaleRef.test_detects_stale_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_terminology_findings (__main__.TestDocConsistencyTerminologyClean.test_no_terminology_findings)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_deprecated_heading (__main__.TestDocConsistencyTerminologyMismatch.test_detects_deprecated_heading)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_on_canonical_term (__main__.TestDocConsistencyTerminologyMismatch.test_no_false_positive_on_canonical_term)",
       "status": "PASS"
     },
     {

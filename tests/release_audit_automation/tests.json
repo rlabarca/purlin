@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 30,
+  "passed": 46,
   "failed": 0,
-  "total": 30,
+  "total": 46,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -34,6 +34,18 @@
       "status": "PASS"
     },
     {
+      "test": "test_phase2_skipped_on_critical (__main__.TestCriticConsistencyPhase2Skipped.test_phase2_skipped_on_critical)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clean_audit_passes (__main__.TestCriticConsistencyReadmeClean.test_clean_audit_passes)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_critic_section (__main__.TestCriticConsistencyReadmeMissing.test_detects_missing_critic_section)",
+      "status": "PASS"
+    },
+    {
       "test": "test_detects_routing_inconsistency (__main__.TestCriticConsistencyRouting.test_detects_routing_inconsistency)",
       "status": "PASS"
     },
@@ -58,6 +70,18 @@
       "status": "PASS"
     },
     {
+      "test": "test_absent_cache_triggers_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_absent_cache_triggers_regeneration)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fresh_cache_skips_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_fresh_cache_skips_regeneration)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_stale_cache_triggers_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_stale_cache_triggers_regeneration)",
+      "status": "PASS"
+    },
+    {
       "test": "test_passes_clean (__main__.TestDocConsistencyClean.test_passes_clean)",
       "status": "PASS"
     },
@@ -70,6 +94,18 @@
       "status": "PASS"
     },
     {
+      "test": "test_no_terminology_findings (__main__.TestDocConsistencyTerminologyClean.test_no_terminology_findings)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_deprecated_heading (__main__.TestDocConsistencyTerminologyMismatch.test_detects_deprecated_heading)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_on_canonical_term (__main__.TestDocConsistencyTerminologyMismatch.test_no_false_positive_on_canonical_term)",
+      "status": "PASS"
+    },
+    {
       "test": "test_detects_tombstone_reference (__main__.TestDocConsistencyTombstone.test_detects_tombstone_reference)",
       "status": "PASS"
     },
@@ -79,6 +115,18 @@
     },
     {
       "test": "test_detects_stale_path (__main__.TestInstructionAuditStalePath.test_detects_stale_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_structural_section_contradiction (__main__.TestInstructionAuditStructuralContradiction.test_structural_section_contradiction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_duplicate_findings (__main__.TestInstructionAuditStructuralDeduplicate.test_no_duplicate_findings)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_across_sections (__main__.TestInstructionAuditStructuralNoFalsePositive.test_no_false_positive_across_sections)",
       "status": "PASS"
     },
     {
@@ -123,6 +171,22 @@
     },
     {
       "test": "test_reports_qa_blocking (__main__.TestZeroQueueQABlocking.test_reports_qa_blocking)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_finding_uses_file_path_from_status (__main__.TestZeroQueueUsesStatusSh.test_finding_uses_file_path_from_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_empty_data (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_empty_data)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_from_status_data (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_from_status_data)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_skips_tombstones (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_skips_tombstones)",
       "status": "PASS"
     }
   ]

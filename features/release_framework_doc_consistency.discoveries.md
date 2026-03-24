@@ -4,7 +4,8 @@
 - **Observed Behavior:** There is no automated detection of terminology mismatches across the 5 base instruction files.
 - **Expected Behavior:** An automated check should detect inconsistent terminology usage across all base instruction files to prevent drift.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Added `check_terminology_consistency()` to `doc_consistency_check.py` with predefined term groups (section headings, role names, lifecycle labels). Tests added in `test_release_audit.py`.
 - **Source:** Spec-code audit (deep mode). See release_framework_doc_consistency.impl.md for full context.
 
 ### [DISCOVERY] H12: README-vs-instruction consistency check absent (Discovered: 2026-03-23)

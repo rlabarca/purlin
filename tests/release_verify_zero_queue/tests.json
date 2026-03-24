@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 5,
+  "passed": 9,
   "failed": 0,
-  "total": 5,
+  "total": 9,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -23,6 +23,22 @@
     },
     {
       "test": "test_reports_qa_blocking (__main__.TestZeroQueueQABlocking.test_reports_qa_blocking)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_finding_uses_file_path_from_status (__main__.TestZeroQueueUsesStatusSh.test_finding_uses_file_path_from_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_empty_data (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_empty_data)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_from_status_data (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_from_status_data)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_load_feature_status_skips_tombstones (__main__.TestZeroQueueUsesStatusSh.test_load_feature_status_skips_tombstones)",
       "status": "PASS"
     }
   ]

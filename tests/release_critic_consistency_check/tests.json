@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 4,
+  "passed": 7,
   "failed": 0,
-  "total": 4,
+  "total": 7,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -11,6 +11,18 @@
     },
     {
       "test": "test_detects_deprecated_term (__main__.TestCriticConsistencyDeprecated.test_detects_deprecated_term)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_phase2_skipped_on_critical (__main__.TestCriticConsistencyPhase2Skipped.test_phase2_skipped_on_critical)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clean_audit_passes (__main__.TestCriticConsistencyReadmeClean.test_clean_audit_passes)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_critic_section (__main__.TestCriticConsistencyReadmeMissing.test_detects_missing_critic_section)",
       "status": "PASS"
     },
     {

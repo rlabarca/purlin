@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 5,
+  "passed": 11,
   "failed": 0,
-  "total": 5,
+  "total": 11,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -18,11 +18,35 @@
       "status": "PASS"
     },
     {
+      "test": "test_no_terminology_findings (__main__.TestDocConsistencyTerminologyClean.test_no_terminology_findings)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_deprecated_heading (__main__.TestDocConsistencyTerminologyMismatch.test_detects_deprecated_heading)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_on_canonical_term (__main__.TestDocConsistencyTerminologyMismatch.test_no_false_positive_on_canonical_term)",
+      "status": "PASS"
+    },
+    {
       "test": "test_detects_contradiction (__main__.TestInstructionAuditContradiction.test_detects_contradiction)",
       "status": "PASS"
     },
     {
       "test": "test_detects_stale_path (__main__.TestInstructionAuditStalePath.test_detects_stale_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_structural_section_contradiction (__main__.TestInstructionAuditStructuralContradiction.test_structural_section_contradiction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_duplicate_findings (__main__.TestInstructionAuditStructuralDeduplicate.test_no_duplicate_findings)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_false_positive_across_sections (__main__.TestInstructionAuditStructuralNoFalsePositive.test_no_false_positive_across_sections)",
       "status": "PASS"
     }
   ]

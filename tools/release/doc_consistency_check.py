@@ -84,6 +84,70 @@ def check_feature_coverage(readme_path, features_dir):
     return findings
 
 
+# Base instruction files for framework doc consistency checks
+BASE_INSTRUCTION_FILES = [
+    "instructions/HOW_WE_WORK_BASE.md",
+    "instructions/ARCHITECT_BASE.md",
+    "instructions/BUILDER_BASE.md",
+    "instructions/QA_BASE.md",
+    "features/policy_critic.md",
+]
+
+# Terminology groups: each tuple is (canonical_term, [deprecated_variants], context_pattern)
+# context_pattern is optional regex that must also match the line for the finding to trigger
+# (prevents false positives on unrelated uses of common words)
+TERMINOLOGY_GROUPS = [
+    # Section heading migration
+    ("Unit Tests", ["Automated Scenarios"], r'###'),
+    ("QA Scenarios", ["Manual Scenarios"], r'###'),
+    # Role names -- only flag when used as a role designation, not in prose
+    ("QA", ["Quality Assurance"], r'(?:role|agent|owned|only|verify)'),
+    ("PM", ["Product Manager", "Project Manager"], r'(?:role|agent|owned|only)'),
+    # Lifecycle status labels
+    ("[Complete]", ["[COMPLETE]", "[DONE]"], None),
+    ("[TODO]", ["[Todo]", "[todo]"], None),
+    ("[TESTING]", ["[Testing]", "[IN_PROGRESS]", "[IN PROGRESS]"], None),
+    # Discovery lifecycle
+    ("SPEC_UPDATED", ["SPEC UPDATED", "spec_updated"], None),
+]
+
+
+def check_terminology_consistency(project_root):
+    """Check base instruction files for deprecated terminology variants.
+
+    Scans all 5 base instruction files for known deprecated term variants
+    and flags mismatches. Each finding identifies the file, the deprecated
+    term found, and the canonical replacement.
+    """
+    findings = []
+
+    for rel_path in BASE_INSTRUCTION_FILES:
+        full_path = os.path.join(project_root, rel_path)
+        if not os.path.exists(full_path):
+            continue
+        try:
+            with open(full_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+        except (IOError, OSError):
+            continue
+
+        for line_no, line in enumerate(lines, 1):
+            for canonical, variants, context_pat in TERMINOLOGY_GROUPS:
+                if context_pat and not re.search(context_pat, line):
+                    continue
+                for variant in variants:
+                    if variant in line:
+                        findings.append(make_finding(
+                            "WARNING", "terminology_mismatch",
+                            rel_path,
+                            f"Line {line_no}: uses '{variant}' "
+                            f"(canonical: '{canonical}')",
+                            line=line_no,
+                        ))
+
+    return findings
+
+
 def check_tombstone_references(readme_path, tombstones_dir, project_root):
     """Check for references to tombstoned features in README."""
     findings = []
@@ -128,6 +192,7 @@ def main(project_root=None):
     findings.extend(check_stale_references(readme_path, project_root))
     findings.extend(check_feature_coverage(readme_path, features_dir))
     findings.extend(check_tombstone_references(readme_path, tombstones_dir, project_root))
+    findings.extend(check_terminology_consistency(project_root))
 
     result = make_output("doc_consistency_check", findings)
     return result

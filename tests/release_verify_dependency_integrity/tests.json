@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 5,
+  "passed": 8,
   "failed": 0,
-  "total": 5,
+  "total": 8,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -23,6 +23,18 @@
     },
     {
       "test": "test_detects_reverse_reference (__main__.TestDepIntegrityReverseRef.test_detects_reverse_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_absent_cache_triggers_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_absent_cache_triggers_regeneration)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fresh_cache_skips_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_fresh_cache_skips_regeneration)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_stale_cache_triggers_regeneration (__main__.TestDepIntegrityStaleCacheRegeneration.test_stale_cache_triggers_regeneration)",
       "status": "PASS"
     }
   ]
