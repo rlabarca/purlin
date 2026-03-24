@@ -197,7 +197,7 @@ Regression suites:
 Run in-session suites? [all / per-feature / skip]
 ```
 
-8. **agent_behavior suites:** QA MUST NOT attempt to run `agent_behavior` suites in-session. Instead, print a copy-pasteable CLI command for the user to run in a separate terminal:
+8. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run `agent_behavior` suites in-session. QA MUST print the CLI commands AND STOP. Do NOT proceed to Phase B until the user responds. This is a blocking prompt — the user must either run the commands and report back, or explicitly skip.
 
 ```
 These suites use agent_behavior (claude --print) and must run
@@ -206,20 +206,18 @@ outside this session:
     python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
     python3 tools/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
 
-Run these in a separate terminal, then tell me when done.
-I'll process the results via /pl-regression-evaluate.
+Run in a separate terminal, then say "done" when finished.
+Or say "skip" to proceed without running them.
 ```
+
+**STOP HERE. Wait for the user to respond.** Do NOT print the Phase B checklist, do NOT present manual scenarios, do NOT continue with any other work until the user says "done" or "skip". This gate applies even when `auto_start` is `true` — agent_behavior external execution always requires a user round-trip.
+
+When the user says "done": run `/pl-regression-evaluate` to process results, then proceed to Phase B.
+When the user says "skip": proceed to Phase B.
 
 9. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session) based on user selection.
 
-10. **User selection handling:**
-   - If the user selects `all` or `per-feature`: run eligible in-session suites via the harness runner.
-   - If the user selects `skip`: proceed to Phase B (or the regression gap table / decision point below). The table served its purpose — the user is now aware.
-
-11. **`auto_start` behavior:** When `auto_start` is `true`:
-   - Run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard).
-   - For `agent_behavior` suites: ALWAYS print the CLI command block — never attempt in-session execution, never silently skip.
-   - For pre-release suites: print the table, then ALWAYS prompt the user `"Run pre-release regression suites? [yes / skip]"` — even under auto_start. Pre-release suites are long-running and require explicit opt-in every time. Do NOT silently skip them.
+10. **`auto_start` behavior:** When `auto_start` is `true`: run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard). For `agent_behavior` suites: the hard gate in step 8 applies unconditionally. For pre-release non-`agent_behavior` suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 
