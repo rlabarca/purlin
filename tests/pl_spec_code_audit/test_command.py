@@ -460,10 +460,11 @@ class TestCrossSessionResumeFromInterruptedDeepModeWave(unittest.TestCase):
 
     def test_state_file_tracks_required_fields(self):
         content = _read_command()
-        for field in ('mode', 'role', 'transitive_map',
-                      'anchor_constraints', 'dispatch_manifest',
-                      'accumulated_gaps', 'scan_failures',
-                      'code_inventory', 'ownership_map_complete'):
+        for field in ('mode', 'role', 'timestamp',
+                      'transitive_map', 'anchor_constraints',
+                      'dispatch_manifest', 'accumulated_gaps',
+                      'scan_failures', 'code_inventory',
+                      'ownership_map_complete'):
             self.assertIn(field, content,
                           f'State file missing field: {field}')
 

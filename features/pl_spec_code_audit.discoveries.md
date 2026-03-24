@@ -4,5 +4,5 @@
 - **Observed Behavior:** The test_support test file omits 3 state fields: timestamp, code_inventory, and ownership_map_complete.
 - **Expected Behavior:** The test file should include assertions for all state fields including timestamp, code_inventory, and ownership_map_complete.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Source:** Spec-code audit (deep mode). See pl_spec_code_audit.impl.md for full context.
