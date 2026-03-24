@@ -16,19 +16,19 @@
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Init, Regression & Pull [IN_PROGRESS]
+## Phase 2 -- Init, Regression & Pull [COMPLETE]
 **Features:** project_init.md, init_preflight_checks.md, regression_testing.md, skill_behavior_regression.md, pl_remote_pull.md
-**Completion Commit:** --
+**Completion Commit:** 82a236f
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Critic Status & CDD Dashboard [PENDING]
+## Phase 3 -- Critic Status & CDD Dashboard [IN_PROGRESS]
 **Features:** qa_verification_effort.md, critic_role_status.md, cdd_status_monitor.md, cdd_qa_effort_display.md, cdd_branch_collab.md
 **Completion Commit:** --
 **Deferred:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Audit & Resume Skills [PENDING]
+## Phase 4 -- Audit & Resume Skills [IN_PROGRESS]
 **Features:** pl_spec_code_audit.md, pl_session_resume.md
 **Completion Commit:** --
 **Deferred:** --
