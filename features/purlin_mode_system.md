@@ -61,7 +61,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 - `/pl-status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
 - Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) MUST delegate work discovery to `/pl-status`, not call `scan.sh` directly or implement their own detection logic.
-- Only `/pl-status` and the startup protocol (PURLIN_BASE.md Section 6) call `scan.sh` directly.
+- Only `/pl-status` and the startup protocol (PURLIN_BASE.md Section 5) call `scan.sh` directly.
+- **Mode-specific routing rules:**
+  - `spec_modified_after_completion: true` → Engineer ONLY. QA MUST NOT treat this as a blocker or show it in QA work items. If the Engineer has re-validated and re-tagged, QA proceeds normally.
+  - `regression_status: FAIL` → Engineer (fix the code). QA blocks completion but does not fix.
+  - `test_status: FAIL` → Engineer.
+  - Features in TESTING with QA scenarios → QA.
+  - Unacknowledged deviations → PM.
+  - Incomplete spec sections → PM.
 - Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `status.sh`, or `tests/<name>/critic.json`.
 - References to "Architect action items" MUST be replaced with "PM action items".
 - References to "Builder action items" MUST be replaced with "Engineer action items".
