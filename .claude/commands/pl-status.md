@@ -33,6 +33,7 @@ Analyze the scan JSON to classify features into mode-specific work items.
 **QA work:**
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING
 - SPEC_UPDATED discoveries awaiting re-verification
+- `spec_modified_after_completion` is NOT a QA concern — it is Engineer-only. Do NOT show it in QA work items or treat it as a completion blocker. If the Engineer has re-validated and re-tagged the feature, QA proceeds normally.
 
 **PM work:**
 - Features where `sections.requirements` is false (incomplete spec)
