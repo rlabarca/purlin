@@ -48,10 +48,10 @@
       "assertion_tier": 2
     },
     {
-      "name": "qa-startup-identifies-testing:Output identifies TESTING features",
+      "name": "qa-startup-identifies-testing:Output identifies TESTING features (accepts CDD keyword or verification listing)",
       "status": "FAIL",
       "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
-      "expected": "Output identifies TESTING features",
+      "expected": "Output identifies TESTING features (accepts CDD keyword or verification listing)",
       "assertion_tier": 2,
       "actual_excerpt": "Purlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this command "
     },
