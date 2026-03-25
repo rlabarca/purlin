@@ -77,18 +77,19 @@ _TAG_MAP = {
 }
 
 # Cached status commit index: built once per scan run.
+# Maps basename -> {"tag": str, "timestamp": int}
 _status_commit_cache = None
 
 
 def _build_status_commit_index():
     """Fetch all status( commits once and index by feature filename.
 
-    Returns a dict mapping basename -> lifecycle tag for the most recent
-    status commit mentioning that feature.
+    Returns a dict mapping basename -> {"tag": lifecycle_tag, "timestamp": unix_epoch}
+    for the most recent status commit mentioning that feature.
     """
     index = {}
     log_output = _run_git(
-        "log", "--all", "--grep=status(", "--format=%s",
+        "log", "--all", "--grep=status(", "--format=%ct %s",
     )
     if not log_output:
         return index
@@ -103,7 +104,15 @@ def _build_status_commit_index():
             basename = os.path.basename(feat_file)
             # Only keep the first (most recent) match per feature.
             if basename not in index:
-                index[basename] = _TAG_MAP.get(tag_str, tag_str.upper())
+                # Extract timestamp from beginning of line
+                try:
+                    ts = int(line.split()[0])
+                except (ValueError, IndexError):
+                    ts = 0
+                index[basename] = {
+                    "tag": _TAG_MAP.get(tag_str, tag_str.upper()),
+                    "timestamp": ts,
+                }
 
     return index
 
@@ -120,7 +129,7 @@ def _extract_lifecycle(feature_file):
 
     basename = os.path.basename(feature_file)
     if basename in _status_commit_cache:
-        return _status_commit_cache[basename]
+        return _status_commit_cache[basename]["tag"]
 
     # Fallback: read inline tag from file content (e.g. [TODO] on its own line).
     try:
@@ -133,6 +142,65 @@ def _extract_lifecycle(feature_file):
         pass
 
     return "TODO"
+
+
+# Cached spec modification timestamps: built once per scan run.
+_spec_mod_cache = None
+
+
+def _build_spec_mod_index():
+    """Batch-fetch last modification timestamps for all feature spec files.
+
+    Returns dict mapping basename -> unix_epoch of last commit touching that file.
+    """
+    index = {}
+    log_output = _run_git(
+        "log", "--all", "--name-only", "--format=%ct", "--diff-filter=M",
+        "--", "features/*.md",
+    )
+    if not log_output:
+        return index
+
+    current_ts = None
+    for line in log_output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            current_ts = int(line)
+            continue
+        except ValueError:
+            pass
+        # It's a filename
+        basename = os.path.basename(line)
+        if basename.endswith('.impl.md') or basename.endswith('.discoveries.md'):
+            continue
+        if basename not in index:
+            index[basename] = current_ts or 0
+
+    return index
+
+
+def _check_spec_modified_after_completion(feature_file):
+    """Check if the spec was modified after the last status commit.
+
+    Returns True if modified after, False if not, None if no status commit exists.
+    """
+    global _status_commit_cache, _spec_mod_cache
+    if _status_commit_cache is None:
+        _status_commit_cache = _build_status_commit_index()
+    if _spec_mod_cache is None:
+        _spec_mod_cache = _build_spec_mod_index()
+
+    basename = os.path.basename(feature_file)
+    status_entry = _status_commit_cache.get(basename)
+    if status_entry is None:
+        return None  # Never completed
+
+    spec_mod_ts = _spec_mod_cache.get(basename, 0)
+    status_ts = status_entry["timestamp"]
+
+    return spec_mod_ts > status_ts
 
 
 def _extract_owner(feature_file):
@@ -257,6 +325,7 @@ def scan_features():
             "prerequisites": _extract_prerequisites(filepath),
             "test_status": test_status,
             "regression_status": regression_status,
+            "spec_modified_after_completion": _check_spec_modified_after_completion(filepath),
             "sections": _check_sections(filepath),
         }
         if regression_failed is not None:
