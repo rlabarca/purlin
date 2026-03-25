@@ -63,11 +63,16 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 **Subcommands:**
 
 - `fixture init [--path <path>]` -- Creates a bare git repo at the convention path (`.purlin/runtime/fixture-repo`). Idempotent: if the repo already exists, prints a message and exits 0. Uses `git init --bare`. The `--path` option overrides the convention path. Prints the repo path to stdout.
-- `fixture add-tag <tag> [--from-dir <path>] [--message <msg>] [--force]` -- Creates a tagged commit in the fixture repo from a source directory. The tag MUST follow the `<ref>/<feature>/<slug>` convention (validated: 3 path segments, lowercase alphanumeric plus hyphens in each segment). `--from-dir` defaults to `$PURLIN_PROJECT_ROOT`. `--message` defaults to `"State for <tag>"`. Errors if the tag already exists unless `--force` is specified. Implementation: temp clone of bare repo, copy source files, commit, tag, push to bare, cleanup temp clone. If the fixture repo does not exist, errors with "Run `fixture init` first."
+- `fixture add-tag <tag> [--from-dir <path>] [--message <msg>] [--force] [--no-push]` -- Creates a tagged commit in the fixture repo from a source directory. The tag MUST follow the `<ref>/<feature>/<slug>` convention (validated: 3 path segments, lowercase alphanumeric plus hyphens in each segment). `--from-dir` defaults to `$PURLIN_PROJECT_ROOT`. `--message` defaults to `"State for <tag>"`. Errors if the tag already exists unless `--force` is specified. Implementation: temp clone of bare repo, copy source files, commit, tag, push to bare, cleanup temp clone. If the fixture repo does not exist, errors with "Run `fixture init` first." **Auto-push:** After successfully creating the tag locally, if `fixture_repo_url` is set in `.purlin/config.json`, automatically pushes the new tag to the remote via `fixture push <url> --tag <tag>`. Prints `"Pushed <tag> to remote."` on success. If the push fails, prints a warning but does NOT fail the command (the local tag is still valid). Use `--no-push` to skip the auto-push.
 - `fixture checkout <repo-url> <tag> [--dir <path>]` -- Shallow clone at the specified tag into a temp directory (or the path specified by `--dir`). Prints the checkout path to stdout. Uses `git clone --depth 1 --branch <tag>` for efficiency.
 - `fixture cleanup <path>` -- Remove the checked-out fixture directory (`rm -rf`). Validates the path is under `/tmp/` or the system temp directory before removing, as a safety guard.
 - `fixture list <repo-url> [--ref <project-ref>]` -- List available fixture tags via `git ls-remote --tags`. Optionally filter by `<project-ref>/` prefix. Output: one tag per line, sorted alphabetically.
 - `fixture verify-url <url>` -- Test read/write access to a fixture repo URL. If the URL is HTTPS and fails, automatically tries the SSH equivalent for GitHub/GitLab. Prints the working URL to stdout on success (exit 0). Prints diagnostic guidance to stderr on failure (exit 1). Agents call this before recording `> Test Fixtures:` metadata.
+- `fixture remote <url>` -- One-time setup that connects the local fixture repo to a shared remote. Stores `<url>` in `.purlin/config.json` under `fixture_repo_url`. Behavior depends on local state:
+  - **Local repo exists** (`.purlin/runtime/fixture-repo`): Verifies the URL via `verify-url`, adds it as the `origin` remote on the local bare repo, pushes all existing tags and branches to the remote, and prints `"Synced N fixture tags to remote."`.
+  - **No local repo**: Clones the remote to `.purlin/runtime/fixture-repo` (bare clone). If the remote is empty (zero refs), initializes a bare repo locally and adds the remote as `origin` instead. Prints `"Fixture repo configured. Remote: <url>"`.
+  - **Already configured**: If `fixture_repo_url` is already set in config, prints the current URL. If a different URL is passed, prompts: `"Remote is already set to <old>. Replace with <new>? [y/n]"`. On confirmation, updates the config and re-adds the remote.
+  - **Access failure**: If `verify-url` fails, prints diagnostic guidance (same as `verify-url`) and exits non-zero without modifying config.
 - `fixture push <remote-url> [--tag <tag>]` -- Push fixture tags from the local convention-path repo to a remote git URL. When `--tag` is specified, pushes only that tag; otherwise pushes all tags. If push fails due to authentication, prints a diagnostic message guiding the user through setting up git push access (SSH key, token, etc.) and exits non-zero. The agent retries after the user confirms access is configured. This command enables the workflow where tags are created locally (via `fixture add-tag`) and then synced to a shared remote repo.
 - `fixture prune <repo-url> [--ref <project-ref>]` -- Cross-reference fixture tags against active feature files in the current project's `features/` directory. List orphan tags (feature no longer exists or has a tombstone). Prompt for confirmation before deleting remote tags.
 
@@ -238,26 +243,25 @@ When a feature spec declares `> Test Fixtures: <remote-url>`, the Critic validat
 
 **Builder push workflow:**
 
-When creating fixtures for a feature with `> Test Fixtures: <remote-url>`:
+When creating fixtures for a feature with a remote configured (via `fixture remote` or `> Test Fixtures:` metadata):
 
-1. Create tags locally via `fixture add-tag` (existing workflow — tags land in `.purlin/runtime/fixture-repo`).
-2. Push tags to the remote via `fixture push <remote-url>` (or `--tag <specific-tag>` for individual tags).
-3. If the push fails (authentication, permissions), the Builder:
+1. Create tags locally via `fixture add-tag` — auto-push handles the rest. Each `add-tag` call automatically pushes the new tag to the configured remote (see Section 2.4).
+2. If auto-push fails (authentication, permissions), the Builder:
    a. Prints a clear diagnostic: what failed, what access is needed.
    b. Guides the user through setting up push access (SSH key, personal access token, repo permissions).
-   c. After the user confirms access is configured, retries the push.
+   c. After the user confirms access is configured, retries via `fixture push <url>`.
    d. Does NOT ask the user to push manually — the Builder pushes once it has access.
-4. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
-5. Re-run `tools/cdd/status.sh` to confirm the Critic clears the fixture validation.
+3. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
+4. Re-run `tools/cdd/status.sh` to confirm the Critic clears the fixture validation.
 
-**Remote repo creation flow:**
+**Remote repo setup flow:**
 
-When a feature needs a fixture repo and no remote URL is declared:
+When a feature needs a fixture repo and no remote URL is configured:
 
 1. The Builder prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, Critic-validated) or local only?"
-2. If the user provides a remote URL, the Builder records it as `> Test Fixtures: <url>` in the feature spec (via DISCOVERY escalation to Architect if the Builder cannot edit specs), or in `.purlin/config.json` under `fixture_repo_url` for project-wide use.
-3. If the user wants to create a new remote repo, the Builder guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL."
-4. Once the URL is known, the Builder runs `fixture push <url>` to sync local tags.
+2. If the user provides a remote URL, the Builder runs `fixture remote <url>` to configure the project-wide remote. This stores the URL in config, connects or clones the repo, and syncs any existing local tags.
+3. If the user wants to create a new remote repo, the Builder guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL." Then runs `fixture remote <url>`.
+4. For per-feature overrides (rare), the Builder records `> Test Fixtures: <url>` in the feature spec instead.
 
 **Checkout from remote:**
 
@@ -457,6 +461,78 @@ When a feature needs a fixture repo and no remote URL is declared:
     Then tests/qa/fixture_usage.json is updated with the feature entry
     And the entry records fixture_type "local" and the tag used
     And last_authored is set to the current timestamp
+
+#### Scenario: Remote setup with existing local repo syncs tags
+
+    Given a fixture repo exists at `.purlin/runtime/fixture-repo` with tags main/feat_a/s1 and main/feat_a/s2
+    And a remote git repo exists at <remote-url> with no tags
+    When `fixture remote <remote-url>` is run
+    Then `fixture_repo_url` is set to <remote-url> in `.purlin/config.json`
+    And the remote is added as origin on the local bare repo
+    And both tags are pushed to the remote
+    And the output includes "Synced 2 fixture tags to remote."
+
+#### Scenario: Remote setup clones when no local repo exists
+
+    Given no fixture repo exists at `.purlin/runtime/fixture-repo`
+    And a remote git repo exists at <remote-url> with tags main/feat_a/s1
+    When `fixture remote <remote-url>` is run
+    Then `fixture_repo_url` is set to <remote-url> in `.purlin/config.json`
+    And `.purlin/runtime/fixture-repo` is created as a bare clone of the remote
+    And the output includes "Fixture repo configured. Remote: <remote-url>"
+
+#### Scenario: Remote setup initializes when remote is empty
+
+    Given no fixture repo exists at `.purlin/runtime/fixture-repo`
+    And a remote git repo exists at <remote-url> with zero refs
+    When `fixture remote <remote-url>` is run
+    Then `fixture_repo_url` is set to <remote-url> in `.purlin/config.json`
+    And a bare repo is initialized at `.purlin/runtime/fixture-repo`
+    And the remote is added as origin
+    And the output includes "Fixture repo configured. Remote: <remote-url>"
+
+#### Scenario: Remote setup rejects inaccessible URL
+
+    Given a URL that fails verify-url (neither HTTPS nor SSH access works)
+    When `fixture remote <url>` is run
+    Then the command exits with a non-zero status
+    And `.purlin/config.json` is not modified
+    And diagnostic guidance is printed
+
+#### Scenario: Remote setup prompts before replacing existing URL
+
+    Given `fixture_repo_url` is already set to <old-url> in `.purlin/config.json`
+    When `fixture remote <new-url>` is run
+    Then the output includes "Remote is already set to <old-url>. Replace with <new-url>?"
+    When the user confirms
+    Then `fixture_repo_url` is updated to <new-url>
+    And the new remote replaces origin on the local bare repo
+
+#### Scenario: Add-tag auto-pushes when remote is configured
+
+    Given a fixture repo exists at the convention path
+    And `fixture_repo_url` is set in `.purlin/config.json`
+    When `fixture add-tag main/test_feature/new-state` is run
+    Then the tag is created locally
+    And the tag is automatically pushed to the remote
+    And the output includes "Pushed main/test_feature/new-state to remote."
+
+#### Scenario: Add-tag auto-push failure does not fail the command
+
+    Given a fixture repo exists at the convention path
+    And `fixture_repo_url` is set but push access is broken
+    When `fixture add-tag main/test_feature/new-state` is run
+    Then the tag is created locally (exit 0)
+    And the output includes a warning about the failed push
+    And the local tag is still valid
+
+#### Scenario: Add-tag skips auto-push with --no-push
+
+    Given a fixture repo exists at the convention path
+    And `fixture_repo_url` is set in `.purlin/config.json`
+    When `fixture add-tag main/test_feature/new-state --no-push` is run
+    Then the tag is created locally
+    And no push to the remote is attempted
 
 ### QA Scenarios
 
