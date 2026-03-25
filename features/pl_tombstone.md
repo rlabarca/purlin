@@ -1,7 +1,7 @@
 # Feature: Feature Retirement
 
-> Label: "/pl-tombstone Feature Retirement"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Engineer: /pl-tombstone Feature Retirement"
+> Category: "Agent Skills: Engineer"
 > Prerequisite: features/policy_critic.md
 
 [TODO]

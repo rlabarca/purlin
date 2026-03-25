@@ -1,7 +1,7 @@
 # Feature: Design Ingest Command
 
-> Label: "/pl-design-ingest Design Ingest"
-> Category: "Agent Skills"
+> Label: "Agent Skills: PM: /pl-design-ingest Design Ingest"
+> Category: "Agent Skills: PM"
 > Prerequisite: features/design_artifact_pipeline.md
 
 [Complete]

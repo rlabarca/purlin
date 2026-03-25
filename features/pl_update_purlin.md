@@ -1,7 +1,7 @@
 # Feature: Intelligent Purlin Update Agent Skill
 
-> Label: "/pl-update-purlin Intelligent Purlin Update"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Common: /pl-update-purlin Intelligent Purlin Update"
+> Category: "Agent Skills: Common"
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/init_preflight_checks.md

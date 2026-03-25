@@ -1,7 +1,7 @@
 # Feature: Anchor Node Authoring
 
-> Label: "/pl-anchor Anchor Node Authoring"
-> Category: "Agent Skills"
+> Label: "Agent Skills: PM: /pl-anchor Anchor Node Authoring"
+> Category: "Agent Skills: PM"
 > Prerequisite: features/policy_critic.md
 
 [TODO]
