@@ -47,6 +47,7 @@ Present:
 - Feature counts by lifecycle (TODO / TESTING / COMPLETE / TOMBSTONE)
 - Work items grouped by mode, highest priority first, with reason annotations
 - Open discoveries or tombstones requiring attention
+- **Worktree summary** (when worktrees exist): scan `git worktree list` for entries under `.purlin/worktrees/`, read `.purlin_session.lock` for PID liveness, display one-line summary: `Worktrees: W1 (Engineer, active), W2 (PM, stale)`. Use `/pl-worktree list` for full detail.
 - Suggest the mode with highest-priority work
 
 **Status values and what they mean:**

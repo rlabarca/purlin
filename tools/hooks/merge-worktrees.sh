@@ -77,20 +77,69 @@ fi
 # Switch to main directory and merge
 cd "$MAIN_DIR"
 
-# Breadcrumb directory for merge failure signaling
+# Breadcrumb and merge lock directories
 MERGE_PENDING_DIR="$MAIN_DIR/.purlin/cache/merge_pending"
+MERGE_LOCK="$MAIN_DIR/.purlin/cache/merge.lock"
+
+# Acquire merge lock (serialize with other worktrees)
+_acquire_merge_lock() {
+    local retries=3
+    while [ "$retries" -gt 0 ]; do
+        # Check for stale lock (PID dead)
+        if [ -f "$MERGE_LOCK" ]; then
+            local lock_pid
+            lock_pid=$(python3 -c "import json; print(json.load(open('$MERGE_LOCK'))['pid'])" 2>/dev/null || echo "")
+            if [ -n "$lock_pid" ] && ! kill -0 "$lock_pid" 2>/dev/null; then
+                rm -f "$MERGE_LOCK" 2>/dev/null || true
+            fi
+        fi
+        # Try to acquire
+        if [ ! -f "$MERGE_LOCK" ]; then
+            mkdir -p "$(dirname "$MERGE_LOCK")" 2>/dev/null || true
+            echo "{\"pid\": $$, \"started\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$MERGE_LOCK" 2>/dev/null
+            return 0
+        fi
+        echo "Merge blocked: another worktree is merging to main. Retrying in 2s..." >&2
+        sleep 2
+        retries=$((retries - 1))
+    done
+    return 1
+}
+
+_release_merge_lock() {
+    rm -f "$MERGE_LOCK" 2>/dev/null || true
+}
+
+if ! _acquire_merge_lock; then
+    echo "Merge lock timeout. Worktree preserved at: $WORKTREE_PATH" >&2
+    # Write breadcrumb for recovery
+    mkdir -p "$MERGE_PENDING_DIR" 2>/dev/null || true
+    cat > "$MERGE_PENDING_DIR/$WORKTREE_BRANCH.json" 2>/dev/null <<BREADCRUMB || true
+{
+  "branch": "$WORKTREE_BRANCH",
+  "worktree_path": "$WORKTREE_PATH",
+  "source_branch": "$SOURCE_BRANCH",
+  "failed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "reason": "merge_lock_timeout"
+}
+BREADCRUMB
+    exit 0
+fi
 
 # Merge the worktree branch into whatever is checked out in the main repo
 if git merge "$WORKTREE_BRANCH" --no-edit 2>/dev/null; then
-    # Success — clean up worktree and branch
+    # Success — delete session lock, clean up worktree and branch
+    rm -f "$WORKTREE_PATH/.purlin_session.lock" 2>/dev/null || true
     git worktree remove "$WORKTREE_PATH" 2>/dev/null || true
     git branch -d "$WORKTREE_BRANCH" 2>/dev/null || true
     # Remove breadcrumb from any prior failed attempt of this branch
     rm -f "$MERGE_PENDING_DIR/$WORKTREE_BRANCH.json" 2>/dev/null || true
+    _release_merge_lock
     echo "Merged $WORKTREE_BRANCH into $(git rev-parse --abbrev-ref HEAD) and cleaned up worktree."
 else
     # Merge conflict — abort, preserve worktree, write breadcrumb
     git merge --abort 2>/dev/null || true
+    _release_merge_lock
 
     # Write breadcrumb so next Purlin session can recover
     mkdir -p "$MERGE_PENDING_DIR" 2>/dev/null || true

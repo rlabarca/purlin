@@ -38,6 +38,7 @@ tools/critic/.cache/
 .purlin/worktrees/
 .claude/worktrees/
 .purlin_worktree_label
+.purlin_session.lock
 
 # Transient planning artifacts
 PURLIN_AGENT_PLAN.md
