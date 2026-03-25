@@ -278,7 +278,13 @@ def _cli_has_agent_config(project_root, role):
 
 
 def _cli_set_agent_config(project_root, role, key, value):
-    """Set agents.<role>.<key> = value in config.local.json."""
+    """Set agents.<role>.<key> = value in config.local.json.
+
+    Boolean config fields (bypass_permissions, find_work, auto_start) are
+    coerced from CLI strings to proper JSON booleans.
+    """
+    _BOOLEAN_FIELDS = {'bypass_permissions', 'find_work', 'auto_start'}
+
     purlin_dir = os.path.join(project_root, '.purlin')
     local_path = os.path.join(purlin_dir, 'config.local.json')
 
@@ -290,6 +296,10 @@ def _cli_set_agent_config(project_root, role, key, value):
                 config = json.load(f)
         except (json.JSONDecodeError, IOError, OSError):
             config = {}
+
+    # Coerce string booleans to proper JSON booleans for known fields
+    if key in _BOOLEAN_FIELDS and isinstance(value, str):
+        value = value.lower() == 'true'
 
     agents = config.setdefault('agents', {})
     agent = agents.setdefault(role, {})

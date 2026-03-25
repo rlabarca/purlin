@@ -22,32 +22,60 @@ PURLIN_EFFORT_OVERRIDE=""
 PURLIN_WORKTREE=""
 PURLIN_FIND_WORK=""
 PURLIN_VERIFY_FEATURE=""
+PURLIN_YOLO=""
+PURLIN_NO_SAVE=""
 
 show_help() {
-    echo "Usage: ./pl-run.sh [OPTIONS]"
-    echo ""
-    echo "Launch a Purlin agent session."
-    echo ""
-    echo "Options:"
-    # Self-parse: extract '# desc:' comments from case patterns in this script
-    sed -n 's/^[[:space:]]*\(--[a-z-]*\)).*# desc: \(.*\)/\1|\2/p' "${BASH_SOURCE[0]}" | while IFS='|' read -r opt desc; do
-        printf "  %-20s %s\n" "$opt" "$desc"
-    done
-    echo ""
-    echo "Examples:"
-    echo "  ./pl-run.sh                     # Interactive session"
-    echo "  ./pl-run.sh --auto-build        # Engineer mode, auto-start"
-    echo "  ./pl-run.sh --model opus        # Use Opus model"
-    echo "  ./pl-run.sh --verify my_feature # QA verify a specific feature"
+    cat <<'HELPTEXT'
+Usage: ./pl-run.sh [OPTIONS]
+
+Launch a Purlin agent session.
+
+Saved preferences (written to .purlin/config.local.json):
+  --model [id]         Set default model (opus, sonnet, haiku, or full ID).
+                       Interactive if no value. Saves to config.
+  --effort <level>     Set default effort level (high, medium). Saves to config.
+  --yolo               Enable YOLO mode (skip all permission prompts). Saves to config.
+  --no-yolo            Disable YOLO mode (restore permission prompts). Saves to config.
+  --find-work <bool>   Set default work discovery (true/false). Saves to config.
+
+  Use --no-save to apply any of the above for THIS SESSION ONLY
+  without changing your saved config.
+  Example: ./pl-run.sh --no-save --model haiku
+
+Session options (this run only, never saved):
+  --mode <mode>        Set starting mode (pm, engineer, qa).
+  --auto-build         Start in Engineer mode with auto-start.
+  --auto-verify        Start in QA mode with auto-start.
+  --pm                 Start in PM mode.
+  --qa                 Start in QA mode.
+  --verify [feature]   Start QA mode. Optional: feature name to verify.
+  --auto-start         With --mode: begin executing immediately.
+                       Example: --mode engineer --auto-start. No effect without --mode.
+  --worktree           Run in an isolated git worktree.
+
+Other:
+  --no-save            Don't save preferences to config (use with flags above).
+  --help               Show this help message and exit.
+
+Examples:
+  ./pl-run.sh                           # Interactive session
+  ./pl-run.sh --auto-build              # Engineer mode, auto-start
+  ./pl-run.sh --model opus              # Use Opus (saved for next time)
+  ./pl-run.sh --no-save --model haiku   # Use Haiku just this once
+  ./pl-run.sh --yolo                    # YOLO mode on (saved)
+  ./pl-run.sh --no-save --yolo          # YOLO just this session
+  ./pl-run.sh --verify my_feature       # QA verify a specific feature
+HELPTEXT
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --help) # desc: Show this help message and exit.
+        --help)
             show_help
             exit 0
             ;;
-        --model) # desc: Set model (opus, sonnet, haiku, or full ID). Interactive if no value.
+        --model)
             if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
                 PURLIN_MODEL_OVERRIDE="$2"
                 shift 2
@@ -56,29 +84,39 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-        --effort) # desc: Set effort level (high, medium).
+        --effort)
             PURLIN_EFFORT_OVERRIDE="$2"
             shift 2
             ;;
-        --mode) # desc: Set starting mode (pm, engineer, qa).
+        --yolo)
+            PURLIN_YOLO="true"; shift ;;
+        --no-yolo)
+            PURLIN_YOLO="false"; shift ;;
+        --find-work)
+            PURLIN_FIND_WORK="$2"
+            shift 2
+            ;;
+        --no-save)
+            PURLIN_NO_SAVE="true"; shift ;;
+        --mode)
             PURLIN_MODE="$2"
             shift 2
             ;;
-        --auto-build) # desc: Start in Engineer mode with auto-start.
+        --auto-build)
             PURLIN_MODE="engineer"
             PURLIN_AUTO_START="true"
             shift
             ;;
-        --auto-verify) # desc: Start in QA mode with auto-start.
+        --auto-verify)
             PURLIN_MODE="qa"
             PURLIN_AUTO_START="true"
             shift
             ;;
-        --pm) # desc: Start in PM mode.
+        --pm)
             PURLIN_MODE="pm"; shift ;;
-        --qa) # desc: Start in QA mode.
+        --qa)
             PURLIN_MODE="qa"; shift ;;
-        --verify) # desc: Start QA mode. Optional: feature name to verify.
+        --verify)
             PURLIN_MODE="qa"
             if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
                 PURLIN_VERIFY_FEATURE="$2"
@@ -87,13 +125,9 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-        --auto-start) # desc: With --mode: begin executing immediately. Example: --mode engineer --auto-start. No effect without --mode.
+        --auto-start)
             PURLIN_AUTO_START="true"; shift ;;
-        --find-work) # desc: Set work discovery (true/false).
-            PURLIN_FIND_WORK="$2"
-            shift 2
-            ;;
-        --worktree) # desc: Run in an isolated git worktree.
+        --worktree)
             PURLIN_WORKTREE="true"; shift ;;
         *) shift ;;
     esac
@@ -154,6 +188,7 @@ if [ -f "$RESOLVER" ]; then
 fi
 
 # --- First-run / interactive model selection ---
+# Always persists (not affected by --no-save — this establishes defaults)
 if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ -z "$AGENT_MODEL" ]]; then
     echo ""
     echo "Select model:"
@@ -185,13 +220,19 @@ if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ -z "$AGENT_MODEL" ]
         *) AGENT_EFFORT="high" ;;
     esac
 
+    # First-run always persists regardless of --no-save
+    if [ -f "$RESOLVER" ]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+    fi
+
     echo ""
-    echo "Stored selection: model=$AGENT_MODEL effort=$AGENT_EFFORT"
+    echo "Saved to config: model=$AGENT_MODEL effort=$AGENT_EFFORT"
     echo "(To change later: ./pl-run.sh --model)"
     echo ""
 fi
 
-# --- CLI overrides ---
+# --- CLI overrides (apply sticky + ephemeral flags) ---
 if [[ -n "$PURLIN_MODEL_OVERRIDE" && "$PURLIN_MODEL_OVERRIDE" != "__interactive__" ]]; then
     case "$PURLIN_MODEL_OVERRIDE" in
         opus|Opus*) AGENT_MODEL="claude-opus-4-6" ;;
@@ -205,12 +246,16 @@ if [[ -n "$PURLIN_EFFORT_OVERRIDE" ]]; then
     AGENT_EFFORT="$PURLIN_EFFORT_OVERRIDE"
 fi
 
-if [[ -n "$PURLIN_AUTO_START" ]]; then
-    AGENT_AUTO_START="true"
+if [[ -n "$PURLIN_YOLO" ]]; then
+    AGENT_BYPASS="$PURLIN_YOLO"
 fi
 
-if [[ "$PURLIN_FIND_WORK" == "false" ]]; then
-    AGENT_FIND_WORK="false"
+if [[ -n "$PURLIN_FIND_WORK" ]]; then
+    AGENT_FIND_WORK="$PURLIN_FIND_WORK"
+fi
+
+if [[ -n "$PURLIN_AUTO_START" ]]; then
+    AGENT_AUTO_START="true"
 fi
 
 # --- Model warning display ---
@@ -228,6 +273,22 @@ fi
 if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
     echo "Error: find_work=false with auto_start=true is not valid. Set auto_start to false or enable find_work." >&2
     exit 1
+fi
+
+# --- Persist sticky flags (after validation, before launch) ---
+if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
+    if [[ -n "$PURLIN_MODEL_OVERRIDE" && "$PURLIN_MODEL_OVERRIDE" != "__interactive__" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_EFFORT_OVERRIDE" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_YOLO" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin bypass_permissions "$PURLIN_YOLO" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_FIND_WORK" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin find_work "$PURLIN_FIND_WORK" 2>/dev/null
+    fi
 fi
 
 # --- CLI auto-update ---
