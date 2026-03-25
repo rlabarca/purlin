@@ -265,8 +265,14 @@ Say "done" when finished, or "skip" to continue.
 
 **STOP HERE. Wait for the user to respond.** Do NOT print the Phase B checklist, do NOT present manual scenarios, do NOT continue with any other work until the user says "done" or "skip". This gate applies even when `auto_start` is `true` — agent_behavior external execution always requires a user round-trip.
 
-When the user says "done": run `/pl-regression-evaluate` to process results, then proceed to Phase B.
-When the user says "skip": proceed to Phase B.
+When the user says "done":
+1. Re-read the regression result files (`regression.json`) for every suite that was FAIL/STALE/NOT_RUN.
+2. If ANY suite is STILL FAIL: re-present the ACTION REQUIRED block with only the remaining failures. Do NOT proceed to Phase B. Wait for the user again.
+3. Only when ALL suites are PASS (or the user says "skip"): proceed to Phase B.
+
+This is a loop — the gate re-fires until everything passes or the user explicitly skips.
+
+When the user says "skip": proceed to Phase B. Record skipped suites in the QA report.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 
