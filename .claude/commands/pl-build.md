@@ -109,6 +109,11 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
 
 ### Step 4 -- Status Tag Commit (SEPARATE COMMIT)
 
+*   **Pre-check -- Clean Working Tree Gate:**
+    *   Run `git status --short`. Check for:
+        *   **Uncommitted tracked changes:** All files modified during this build MUST be committed before the status tag. If uncommitted changes exist, commit them with the appropriate `feat()`/`fix()`/`test()` prefix.
+        *   **Untracked files:** For each untracked file, determine: is it a generated artifact (cache, log, build output) or a file that should be tracked? Generated artifacts → add to `.gitignore` and commit the gitignore change. Trackable files → `git add` and commit. Do NOT leave untracked files behind.
+    *   The status tag commit MUST be on a clean working tree. No dangling changes.
 *   **Pre-check -- Companion File Gate:**
     *   Review all code changes made for this feature during this session (git diff against the pre-build state).
     *   If any change deviates from, extends, or fixes behavior not described in the spec, verify a `[DISCOVERY]` or `[DEVIATION]` entry exists in `features/<name>.impl.md`.

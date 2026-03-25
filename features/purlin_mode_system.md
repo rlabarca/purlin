@@ -72,9 +72,10 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - This is NOT optional. It is how PM discovers what changed. Skipping it creates silent spec drift.
 - The entry MUST include: what changed, why, and whether the spec needs updating.
 - Scan.py surfaces unacknowledged entries to PM via `/pl-status`.
-- **Two enforcement gates:**
-  1. `/pl-build` Step 4 (status tag): BLOCKS the status commit if code deviations exist without companion entries.
-  2. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
+- **Three enforcement gates:**
+  1. `/pl-build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
+  2. `/pl-build` Step 4 — Companion File Gate: BLOCKS the status commit if code deviations exist without companion entries.
+  3. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
 
 ### 2.8c QA Companion File Obligations
 
@@ -130,6 +131,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     When the user invokes /pl-spec (PM mode skill)
     Then the agent prompts to write a companion file entry before switching
     And does NOT switch to PM mode until the entry is written or user says "skip"
+
+#### Scenario: Build status tag blocked by untracked files
+
+    Given the agent completed code changes for feature "scan_engine"
+    And a new file tools/cdd/scan_helper.py exists but is untracked
+    When /pl-build reaches Step 4 (status tag commit)
+    Then the status tag commit is BLOCKED
+    And the agent either adds the file to git or adds it to .gitignore
 
 #### Scenario: Build status tag blocked by missing companion entry
 
