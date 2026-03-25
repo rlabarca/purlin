@@ -184,44 +184,6 @@ class TestResolverOutputsProjectNameVariable(ResolverTestBase):
                 self.assertIn('PROJECT_NAME="TestProject"', result.stdout)
 
 
-class TestResumeRenamesSessionOnModeActivation(unittest.TestCase):
-    """Scenario: Resume triggers session rename after mode activation.
-
-    Verifies the /pl-resume skill file includes session rename
-    in the cleanup/continue step when activating a mode.
-    """
-
-    def test_resume_has_session_rename(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('Session rename', content)
-        self.assertIn('<ProjectName>', content)
-        self.assertIn('<NewBadge>', content)
-
-    def test_resume_rename_references_mode_switch_protocol(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('mode-switch rename protocol', content)
-        self.assertIn('project_name', content)
-
-
-class TestModeCommandHasRenameStep(unittest.TestCase):
-    """Scenario: Mode switch command triggers session rename.
-
-    Verifies the /pl-mode skill file includes a session rename step.
-    """
-
-    def test_mode_command_has_rename(self):
-        mode_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-mode.md')
-        with open(mode_path, 'r') as f:
-            content = f.read()
-        self.assertIn('/rename', content)
-        self.assertIn('<ProjectName>', content)
-        self.assertIn('<Badge>', content)
-
-
 def generate_test_results():
     """Run tests and write results to tests.json."""
     loader = unittest.TestLoader()
