@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-When Purlin is consumed as a git submodule, command files (`.claude/commands/*.md`) reference `tools/cdd/status.sh`, `tools/critic/run.sh`, and similar paths that do not exist at the consumer project root. The correct path is `<tools_root>/cdd/status.sh` where `tools_root` is read from `.purlin/config.json` (default: `tools`). This feature updates all command files to use `{tools_root}/` notation with an explicit resolution step, matching the pattern already established in `pl-spec-code-audit.md` and `pl-cdd.md`.
+When Purlin is consumed as a git submodule, command files (`.claude/commands/*.md`) reference `tools/cdd/scan.sh`, `tools/critic/run.sh`, and similar paths that do not exist at the consumer project root. The correct path is `<tools_root>/cdd/scan.sh` where `tools_root` is read from `.purlin/config.json` (default: `tools`). This feature updates all command files to use `{tools_root}/` notation with an explicit resolution step, matching the pattern already established in `pl-spec-code-audit.md` and `pl-cdd.md`.
 
 ---
 
@@ -30,7 +30,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 ### 2.3 Resume Command Update
 
-- `/pl-resume` Step 5 MUST use `{tools_root}/cdd/status.sh --startup <role>` instead of the hardcoded `tools/cdd/status.sh --startup <role>`. The resolution step reads `tools_root` from `.purlin/config.json` (default: `"tools"`).
+- `/pl-resume` Step 5 MUST use `{tools_root}/cdd/scan.sh --startup <role>` instead of the hardcoded `tools/cdd/scan.sh --startup <role>`. The resolution step reads `tools_root` from `.purlin/config.json` (default: `"tools"`).
 
 ### 2.4 Build Command Web Test Gate
 
@@ -59,7 +59,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
     Given the `/pl-resume` command is invoked in a consumer project with `tools_root: "purlin/tools"`
     When Step 5 runs the startup briefing
-    Then the command resolves to `purlin/tools/cdd/status.sh --startup <role>`
+    Then the command resolves to `purlin/tools/cdd/scan.sh --startup <role>`
     And the startup briefing succeeds
 
 #### Scenario: Build Command Enforces Web Test Gate

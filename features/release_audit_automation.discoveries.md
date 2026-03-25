@@ -2,10 +2,10 @@
 
 ### [BUG] M41: verify_zero_queue reads critic.json directly (Discovered: 2026-03-23)
 - **Observed Behavior:** `verify_zero_queue` reads `critic.json` directly from the filesystem.
-- **Expected Behavior:** Spec requires running `status.sh` to obtain the critic queue state rather than reading the JSON file directly.
+- **Expected Behavior:** Spec requires running `scan.sh` to obtain the critic queue state rather than reading the JSON file directly.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
-- **Resolution:** Replaced `load_feature_status()` to use status.sh JSON output (via `status_data` parameter or by running status.sh / reading cached `.purlin/cache/status.json`) instead of iterating `tests/*/critic.json` files directly.
+- **Resolution:** Replaced `load_feature_status()` to use scan.sh JSON output (via `status_data` parameter or by running scan.sh / reading cached `.purlin/cache/status.json`) instead of iterating `tests/*/critic.json` files directly.
 - **Source:** Spec-code audit (deep mode). See release_audit_automation.impl.md for full context.
 
 ### [BUG] M42: Contradiction detection heuristic-only (Discovered: 2026-03-23)

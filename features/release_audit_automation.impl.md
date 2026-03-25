@@ -4,7 +4,7 @@
 
 | Spec says | Implementation does | Tag | PM status |
 |-----------|-------------------|-----|-----------|
-| (see prose) | [ACKNOWLEDGED]** verify_zero_queue reads critic.json directly instead of status.sh | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** verify_zero_queue reads critic.json directly instead of scan.sh | DISCOVERY | PENDING |
 | (see prose) | [ACKNOWLEDGED]** Instruction audit contradiction detection is heuristic-only | DISCOVERY | PENDING |
 
 **[AUTONOMOUS]** Created `tools/release/audit_common.py` as a shared utility module for project root detection, finding construction, output formatting, and JSON output. This was not specified but the shared output format (Section 2.2) and shared submodule safety pattern (Section 2.3) naturally called for a common module. (Severity: WARN)
@@ -17,11 +17,11 @@
 
 **[CLARIFICATION]** The `submodule_safety_audit.py` implements categories 1, 3, 4, and 5 of the 7 listed in Section 2.6 via direct code analysis. Categories 2 (climbing priority), 6 (hardcoded root assumptions), and 7 (instruction file path references) overlap significantly with categories 1 and 5 and are partially covered by the env var and CWD checks. Full AST-based data flow analysis for climbing priority ordering would require significantly more complexity for marginal additional safety. (Severity: INFO)
 
-**[DISCOVERY] [ACKNOWLEDGED]** verify_zero_queue reads critic.json directly instead of status.sh
+**[DISCOVERY] [ACKNOWLEDGED]** verify_zero_queue reads critic.json directly instead of scan.sh
 **Source:** /pl-spec-code-audit --deep (M41)
 **Severity:** MEDIUM
-**Details:** Spec §2.5 says `verify_zero_queue.py` reuses `tools/cdd/status.sh` JSON output. The implementation reads `tests/<feature>/critic.json` files directly via `load_feature_status()`. If status.sh output shape ever diverges from critic.json, the two approaches would produce different results.
-**Suggested fix:** Change `verify_zero_queue.py` to invoke `status.sh` and parse its JSON output, or call the shared status computation function directly.
+**Details:** Spec §2.5 says `verify_zero_queue.py` reuses `tools/cdd/scan.sh` JSON output. The implementation reads `tests/<feature>/critic.json` files directly via `load_feature_status()`. If scan.sh output shape ever diverges from critic.json, the two approaches would produce different results.
+**Suggested fix:** Change `verify_zero_queue.py` to invoke `scan.sh` and parse its JSON output, or call the shared status computation function directly.
 
 **[DISCOVERY] [ACKNOWLEDGED]** Instruction audit contradiction detection is heuristic-only
 **Source:** /pl-spec-code-audit --deep (M42)

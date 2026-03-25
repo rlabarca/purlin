@@ -19,7 +19,7 @@
 ### [BUG] status-skill-structured-summary permission gate re-regression (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:status-skill-structured-summary
 - **Observed Behavior:** Agent says "I need permission to run the Purlin status script" — asking for approval instead of running. Prior fix addressed skill file copying; this is a new failure mode: the harness does not have bypass_permissions enabled, so the agent halts at the permission prompt.
-- **Expected Behavior:** Output contains feature counts by lifecycle status (agent runs status.sh without a permission gate)
+- **Expected Behavior:** Output contains feature counts by lifecycle status (agent runs scan.sh without a permission gate)
 - **Action Required:** Engineer — harness_runner.py agent_behavior execution needs bypass_permissions / --allowedTools flag to permit shell commands
 - **Status:** RESOLVED
 - **Resolution:** Added "no-tools notice" as the first section in build_print_mode_context(): tells the model it is in --print mode, cannot execute tools/commands, and must use only pre-loaded data. This prevents the model from saying it needs permission and directs it to use the pre-loaded feature status data.
@@ -71,8 +71,8 @@
 
 ### [BUG] Startup work discovery skipped (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:builder-startup-identifies-todo, qa-startup-identifies-testing
-- **Observed Behavior:** Engineer startup doesn't identify TODO features by name (assertion fails). QA startup doesn't identify TESTING features (assertion fails). Both agents respond with generic role-aware prompts instead of running `status.sh` and reporting actual work items.
-- **Expected Behavior:** Engineer startup identifies TODO features; QA startup identifies TESTING features after running `{tools_root}/cdd/status.sh --startup <role>`
+- **Observed Behavior:** Engineer startup doesn't identify TODO features by name (assertion fails). QA startup doesn't identify TESTING features (assertion fails). Both agents respond with generic role-aware prompts instead of running `scan.sh` and reporting actual work items.
+- **Expected Behavior:** Engineer startup identifies TODO features; QA startup identifies TESTING features after running `{tools_root}/cdd/scan.sh --startup <role>`
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** `scan_fixture_features()` + `build_print_mode_context()` pre-load feature status (TODO/TESTING/COMPLETE with feature names) into the system prompt.

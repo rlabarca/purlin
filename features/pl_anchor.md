@@ -43,7 +43,7 @@ The anchor node authoring skill shared by PM and PM roles. Provides a guided wor
 
 ### 2.6 Post-Authoring
 
-- After editing, commit the change and run `status.sh` to update the Critic report and reset dependent features.
+- After editing, commit the change and run `scan.sh` to update the Critic report and reset dependent features.
 
 ---
 

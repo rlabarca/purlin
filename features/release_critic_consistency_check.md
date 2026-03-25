@@ -31,7 +31,7 @@ PM mode checks for:
 2. **Routing rule consistency.** Discovery type routing (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) MUST be consistent across `policy_critic.md`, HOW_WE_WORK_BASE Section 7.5, and `QA_BASE`.
 3. **Role status enumeration consistency.** Status labels used in Critic output MUST match those described in HOW_WE_WORK_BASE and role-specific files. *(Deferred: not yet automated in `critic_consistency_check.py`. Currently agent-verified during the release step.)*
 4. **`critic_gate_blocking` described as no-op.** Every file that references `critic_gate_blocking` MUST describe it as a no-op when `false`. *(Deferred: not yet automated.)*
-5. **Startup mandate.** All three role files MUST mandate `tools/cdd/status.sh` at session start. *(Deferred: not yet automated.)*
+5. **Startup mandate.** All three role files MUST mandate `tools/cdd/scan.sh` at session start. *(Deferred: not yet automated.)*
 6. **CLI-only agent interface.** All files MUST describe the agent interface as CLI-only (never HTTP). *(Deferred: not yet automated.)*
 
 PM mode produces a findings table with severity: CRITICAL, WARNING, or OK. CRITICAL findings halt the step and the release.

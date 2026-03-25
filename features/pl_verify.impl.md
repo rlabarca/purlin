@@ -12,7 +12,7 @@ The `/pl-verify` skill file (`.claude/commands/pl-verify.md`) is a QA agent inst
 
 ## Bug Fixes
 
-**[CLARIFICATION]** Fixed hardcoded `tools/test_support/harness_runner.py` paths at lines 206-207 of the skill file. These were the only two occurrences not using the `${TOOLS_ROOT}` variable established in the Path Resolution section. All other references (e.g., line 86 for Step 3 harness invocation, line 364 for status.sh) already used `${TOOLS_ROOT}` correctly. (Severity: INFO)
+**[CLARIFICATION]** Fixed hardcoded `tools/test_support/harness_runner.py` paths at lines 206-207 of the skill file. These were the only two occurrences not using the `${TOOLS_ROOT}` variable established in the Path Resolution section. All other references (e.g., line 86 for Step 3 harness invocation, line 364 for scan.sh) already used `${TOOLS_ROOT}` correctly. (Severity: INFO)
 
 ## Spec-Implementation Alignment
 

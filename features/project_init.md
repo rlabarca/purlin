@@ -301,10 +301,10 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Full Init Copies Agent Files
 
     Given Purlin is added as a submodule at "purlin/"
-    And the submodule has .claude/agents/builder-worker.md and verification-runner.md
+    And the submodule has .claude/agents/engineer-worker.md and verification-runner.md
     When the user runs "purlin/tools/init.sh"
     Then .claude/agents/ exists at the project root
-    And .claude/agents/builder-worker.md is copied from the submodule
+    And .claude/agents/engineer-worker.md is copied from the submodule
     And .claude/agents/verification-runner.md is copied from the submodule
 
 #### Scenario: Full Init Stages Only Created Files
@@ -459,26 +459,26 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Refresh Mode Copies New Agent Files @auto
 
     Given .purlin/ already exists at the project root
-    And the submodule has a new agent file builder-worker.md in .claude/agents/
+    And the submodule has a new agent file engineer-worker.md in .claude/agents/
     And no .claude/agents/ directory exists at the project root
     When the user runs "purlin/tools/init.sh"
     Then .claude/agents/ is created at the project root
-    And builder-worker.md is copied to .claude/agents/
+    And engineer-worker.md is copied to .claude/agents/
 
 #### Scenario: Refresh Mode Preserves Locally Modified Agent Files @auto
 
     Given .purlin/ already exists at the project root
-    And .claude/agents/builder-worker.md at the project root has been locally modified (newer timestamp)
+    And .claude/agents/engineer-worker.md at the project root has been locally modified (newer timestamp)
     When the user runs "purlin/tools/init.sh"
-    Then builder-worker.md is NOT overwritten
+    Then engineer-worker.md is NOT overwritten
 
 #### Scenario: Refresh Mode Appends New Gitignore Patterns @auto
 
     Given .purlin/ already exists at the project root
-    And .gitignore exists but does not contain "CRITIC_REPORT.md"
-    And purlin-config-sample/gitignore.purlin contains "CRITIC_REPORT.md"
+    And .gitignore exists but does not contain "/pl-status"
+    And purlin-config-sample/gitignore.purlin contains "/pl-status"
     When the user runs "purlin/tools/init.sh"
-    Then .gitignore now contains "CRITIC_REPORT.md"
+    Then .gitignore now contains "/pl-status"
     And all pre-existing .gitignore entries are preserved unchanged
 
 #### Scenario: Refresh Mode Does Not Duplicate Existing Patterns @auto

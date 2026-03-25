@@ -29,7 +29,7 @@ Each check category in this step corresponds to a section of that contract.
 
 **Scripts:**
 - All Python tools under `tools/` (e.g., `tools/critic/critic.py`, `tools/cdd/serve.py`)
-- All shell scripts under `tools/` (e.g., `tools/cdd/status.sh`, `tools/cdd/start.sh`,
+- All shell scripts under `tools/` (e.g., `tools/cdd/scan.sh`, `tools/cdd/start.sh`,
   `tools/critic/run.sh`, `tools/init.sh`)
 
 **Instruction Files:**
@@ -113,13 +113,13 @@ Eight check categories, each grounded in the submodule safety contract:
 - Scan Python tools and shell scripts under `tools/` for file write operations (e.g., `open(..., 'w')`, `json.dump()`, `>`, `>>`, `tee`, redirects to paths).
 - For each write target path, verify it is covered by one of:
   a. A directory-level pattern in `purlin-config-sample/gitignore.purlin` (e.g., path under `.purlin/cache/` or `.purlin/runtime/`)
-  b. An explicit pattern in `purlin-config-sample/gitignore.purlin` (e.g., `CRITIC_REPORT.md`, `tests/*/critic.json`)
+  b. An explicit pattern in `purlin-config-sample/gitignore.purlin` (e.g., `/pl-status`, `tests/*/critic.json`)
   c. A known committed artifact (feature specs, config files, instruction files)
 - **WARNING** if a generated artifact's path is not covered. The developer must either add the pattern to `gitignore.purlin` or document why the artifact should be committed.
 
 ##### 8b. Template file existence and format:
 
-- `purlin-config-sample/gitignore.purlin` MUST exist and contain at least the core patterns (`.purlin/cache/`, `.purlin/runtime/`, `.purlin/config.local.json`, `CRITIC_REPORT.md`, `tests/*/critic.json`).
+- `purlin-config-sample/gitignore.purlin` MUST exist and contain at least the core patterns (`.purlin/cache/`, `.purlin/runtime/`, `.purlin/config.local.json`, `/pl-status`, `tests/*/critic.json`).
 - **CRITICAL** if the template file is missing. **WARNING** if a core pattern is absent.
 
 ##### 8c. Init.sh template integration:
@@ -174,7 +174,7 @@ not this file).
 
 ```
 1. AUDIT SCOPE — Examine all Python tools under tools/ (critic.py, serve.py, and any other
-   .py files), all shell scripts under tools/ (status.sh, start.sh, run.sh, init.sh),
+   .py files), all shell scripts under tools/ (scan.sh, start.sh, run.sh, init.sh),
    and base instruction files (instructions/*.md).
 
 2. CHECK 1 — PURLIN_PROJECT_ROOT env var (contract §2.11): Does each Python tool check

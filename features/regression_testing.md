@@ -84,7 +84,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Behavior:**
 
-1. Read feature status via `tools/cdd/status.sh --role qa`.
+1. Read feature status via `tools/cdd/scan.sh`.
 2. Identify regression-eligible features: features with existing scenario JSON that have STALE, FAIL, or NOT_RUN test results. Sort: STALE first, then FAIL, then NOT_RUN. Optional `--frequency <pre-release|per-feature>` filter (see Section 2.7.1).
 3. Present interactive options to the user: "Found N features eligible for regression. Run all, or select? [all / 1,2,... / skip]".
 4. Compose an external command based on user selection -- a direct harness invocation (single feature) or a sequential `&&` chain (multiple features). The runner (`dev/regression_runner.sh`) is a Purlin-dev convenience and is NOT part of the composed command.
@@ -103,7 +103,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 2. For each feature with failures: create a `[BUG]` discovery sidecar entry in `features/<name>.discoveries.md` with `scenario_ref`, `actual_excerpt`, and `expected` from the enriched results.
 3. Compute and report assertion tier distribution across all detail entries.
 4. Flag `[SHALLOW]` suites where >50% of assertions are Tier 1.
-5. Run `tools/cdd/status.sh` to refresh the Critic report.
+5. Run `tools/cdd/scan.sh` to refresh the Critic report.
 6. Print handoff message if failures were found (see Section 2.12).
 
 #### 2.2.4 Regression Suite Status in `/pl-verify` Phase A Summary

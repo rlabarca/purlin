@@ -38,7 +38,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 ### 2.3 Discovery
 
 - If explicit feature names are provided as arguments, use those.
-- If no arguments, auto-discover web-testable features: run `tools/cdd/status.sh`, read `CRITIC_REPORT.md`, identify TESTING features, read each spec for `> Web Test:` metadata.
+- If no arguments, auto-discover web-testable features: run `tools/cdd/scan.sh`, read `/pl-status`, identify TESTING features, read each spec for `> Web Test:` metadata.
 - Only features with `> Web Test:` are eligible. Skip all others silently.
 - If no web-testable features are found, inform the user and suggest `/pl-verify` instead.
 

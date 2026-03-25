@@ -71,7 +71,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.7 Phase 4 -- Finalization
 
-- The command MUST run `tools/cdd/status.sh` to generate the initial Critic report and dependency graph for the newly created features.
+- The command MUST run `tools/cdd/scan.sh` to generate the initial Critic report and dependency graph for the newly created features.
 - The command MUST summarize the results: total features created, total anchor nodes created, total companion files created, and any immediate Critic findings.
 - The command MUST delete the temporary state and cache files (`.purlin/cache/sfc_state.json`, `.purlin/cache/sfc_inventory.md`, `.purlin/cache/sfc_taxonomy.md`) and commit the cleanup.
 - The command MUST print recommended next steps to the user:
@@ -173,7 +173,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
     Given all categories are generated and committed
     When Phase 4 begins
-    Then tools/cdd/status.sh is executed
+    Then tools/cdd/scan.sh is executed
     And the command prints total features created, anchor nodes created, and companion files created
     And the command prints any immediate Critic findings
 
@@ -216,7 +216,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 #### Scenario: Generated features appear in CDD dashboard as TODO
 
     Given Phase 4 has completed successfully
-    When tools/cdd/status.sh is run
+    When tools/cdd/scan.sh is run
     Then all generated features appear in the CDD dashboard with TODO status
     And all generated anchor nodes appear in the CDD dashboard
 

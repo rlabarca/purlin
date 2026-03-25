@@ -28,9 +28,9 @@
 
 ### Print-Mode Context Augmentation -- 2026-03-24
 
-**[CLARIFICATION]** `claude --print` mode has no tool access (Read, Bash, Glob, etc.). The 4-layer instruction files tell agents to "Read `instructions/references/builder_commands.md`" and "Run `tools/cdd/status.sh`" -- impossible in `--print` mode. The model approximates (markdown lists instead of Unicode tables, file-lookup instead of role refusal). Fix: `build_print_mode_context()` pre-loads data that agents would normally obtain via tool calls -- command tables, feature status, skill content, and role enforcement reinforcement. This is appended after the 4-layer prompt as a supplementary section. (Severity: INFO)
+**[CLARIFICATION]** `claude --print` mode has no tool access (Read, Bash, Glob, etc.). The 4-layer instruction files tell agents to "Read `instructions/references/builder_commands.md`" and "Run `tools/cdd/scan.sh`" -- impossible in `--print` mode. The model approximates (markdown lists instead of Unicode tables, file-lookup instead of role refusal). Fix: `build_print_mode_context()` pre-loads data that agents would normally obtain via tool calls -- command tables, feature status, skill content, and role enforcement reinforcement. This is appended after the 4-layer prompt as a supplementary section. (Severity: INFO)
 
-**[CLARIFICATION]** `scan_fixture_features()` reads the fixture's `features/` directory to extract lifecycle status ([TODO], [TESTING], [COMPLETE]) and feature labels. This provides the feature status data that `status.sh --startup` would normally return. Skips companion files, discovery sidecars, and anchor nodes. (Severity: INFO)
+**[CLARIFICATION]** `scan_fixture_features()` reads the fixture's `features/` directory to extract lifecycle status ([TODO], [TESTING], [COMPLETE]) and feature labels. This provides the feature status data that `scan.sh --startup` would normally return. Skips companion files, discovery sidecars, and anchor nodes. (Severity: INFO)
 
 **[CLARIFICATION]** Role enforcement reinforcement is added because `--print` mode lacks tool-level guardrails. In interactive mode, Claude Code's tool permissions block unauthorized file writes. In `--print` mode, only the system prompt constrains the model. The supplementary section adds explicit REFUSE instructions for each role's boundaries. (Severity: INFO)
 

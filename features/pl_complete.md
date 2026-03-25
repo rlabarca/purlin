@@ -30,7 +30,7 @@ The QA lifecycle completion skill that gates feature completion on verification 
 ### 2.3 Execution
 
 - If all gates pass: create commit with `[Complete features/<name>.md] [Verified]`.
-- Run `status.sh` to confirm the feature transitions to COMPLETE.
+- Run `scan.sh` to confirm the feature transitions to COMPLETE.
 
 ### 2.4 Gate Failure Reporting
 

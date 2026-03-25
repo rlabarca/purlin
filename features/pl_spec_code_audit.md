@@ -34,7 +34,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 - The command MUST read `.purlin/config.json` and extract `tools_root` (default: `"tools"`).
 - Project root MUST be resolved via `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there; otherwise by climbing from the current working directory until `.purlin/` is found.
-- All tool invocations MUST use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/status.sh`). No hardcoded `tools/` paths.
+- All tool invocations MUST use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/scan.sh`). No hardcoded `tools/` paths.
 - Path resolution MUST work in both standalone projects and projects consuming Purlin as a submodule.
 
 ### 2.5 Scope Confirmation
@@ -51,7 +51,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 ### 2.6 Phase 0 -- Project State and Constraint Loading
 
-- The command MUST run `${TOOLS_ROOT}/cdd/status.sh` and read `CRITIC_REPORT.md` and `.purlin/cache/dependency_graph.json`.
+- The command MUST run `${TOOLS_ROOT}/cdd/scan.sh` and read `/pl-status` and `.purlin/cache/dependency_graph.json`.
 - For each feature, the command MUST read `tests/<name>/critic.json` to extract scenario count from traceability detail.
 - The command MUST build a transitive prerequisite map by walking all `> Prerequisite:` chains recursively (BFS) for every feature in the dependency graph. Output: `{feature_name: [list of all ancestor anchor filenames]}`.
 - The command MUST collect anchor constraints from each unique anchor node in the transitive map: all `FORBIDDEN:` patterns (line + pattern text), numbered invariant statements, and named constraints. Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...]}}`.
@@ -165,14 +165,14 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 
 - After user approval, the command MUST execute FIX items first, then ESCALATE items.
 - **PM FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
-- **PM ESCALATE:** Create or update companion files with tagged `[DISCOVERY]` entries including Source, Severity, Details, and Suggested fix. Commit together. Run `${TOOLS_ROOT}/cdd/status.sh` afterward.
+- **PM ESCALATE:** Create or update companion files with tagged `[DISCOVERY]` entries including Source, Severity, Details, and Suggested fix. Commit together. Run `${TOOLS_ROOT}/cdd/scan.sh` afterward.
 - **Engineer FIX:** Fix code to match scenario assertions. Add or update automated tests. Update companion file notes. Commit each logical group.
 - **Engineer ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next PM session.
 - **Dimension 12 (Code ownership) remediation:**
   - **PM FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
   - **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
   - **Engineer ESCALATE to PM:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
-- Post-remediation: run `${TOOLS_ROOT}/cdd/status.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
+- Post-remediation: run `${TOOLS_ROOT}/cdd/scan.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
 ### 2.15 Integration Test Fixture Tags
 
@@ -403,7 +403,7 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     And .purlin/cache/audit_state.json exists
     When post-remediation cleanup runs
     Then the audit state file is deleted
-    And ${TOOLS_ROOT}/cdd/status.sh is executed
+    And ${TOOLS_ROOT}/cdd/scan.sh is executed
 
 #### Scenario: No gaps produces clean report and exits plan mode
 
@@ -432,7 +432,7 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     When PM mode processes the ESCALATE item
     Then a [DISCOVERY] entry is added to the companion file
     And the entry includes Source, Severity, Details, and Suggested fix fields
-    And ${TOOLS_ROOT}/cdd/status.sh is run after committing
+    And ${TOOLS_ROOT}/cdd/scan.sh is run after committing
 
 #### Scenario: Engineer escalates spec-side gap via companion file
 
@@ -515,10 +515,10 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 #### Scenario: Ownership map uses companion Tool Location (H1)
 
-    Given a companion file features/cdd_status_monitor.impl.md contains "Tool Location: tools/cdd/status.sh"
-    And tools/cdd/status.sh exists in the code inventory
+    Given a companion file features/cdd_status_monitor.impl.md contains "Tool Location: tools/cdd/scan.sh"
+    And tools/cdd/scan.sh exists in the code inventory
     When Phase 0.5 Step 0.5.2 runs
-    Then tools/cdd/status.sh is owned by cdd_status_monitor with heuristic H1 and confidence HIGH
+    Then tools/cdd/scan.sh is owned by cdd_status_monitor with heuristic H1 and confidence HIGH
 
 #### Scenario: Ownership map uses spec path reference (H2)
 

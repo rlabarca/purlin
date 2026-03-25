@@ -62,7 +62,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
   - Features in TESTING with QA scenarios → QA.
   - Unacknowledged deviations → PM.
   - Incomplete spec sections → PM.
-- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `status.sh`, or `tests/<name>/critic.json`.
+- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `scan.sh`, or `tests/<name>/critic.json`. These are old Critic system artifacts replaced by `scan.sh` and `/pl-status`.
 - Action items use mode-based naming: "PM action items", "Engineer action items", "QA action items".
 
 ### 2.8 Companion File Mandate (Engineer)
@@ -236,7 +236,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     Then the agent suggests activating Engineer mode first
     And does not write to any file
 
-#### Scenario: No skill references Critic or status.sh @auto
+#### Scenario: No skill references old Critic system @auto
 
     Given the project after scan.sh migration
     When searching all .claude/commands/pl-*.md files

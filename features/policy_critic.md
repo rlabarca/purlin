@@ -297,5 +297,5 @@ Feature files MAY contain a `## Regression Guidance` section with bullet points 
 The Critic tool MUST produce:
 
 *   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, `role_status`, and `verification_effort` sections.
-*   **Aggregate:** `CRITIC_REPORT.md` at the project root summarizing all features.
+*   **Aggregate:** `/pl-status` at the project root summarizing all features.
 

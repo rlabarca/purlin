@@ -25,7 +25,7 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
     - Unix (default): `.venv/bin/python3`
     - MSYS / MinGW / Cygwin (detected via `$OSTYPE`): `.venv/Scripts/python.exe`
 *   **Diagnostic Output:** When a non-system Python is resolved (priority 1, 2, or 3), the helper MUST print a diagnostic message to stderr: `[resolve_python] Using <source> at <path>`. When falling back to system Python, the helper MUST NOT print any output (silent fallback).
-*   **Stderr Only:** All diagnostic output MUST go to stderr (`>&2`). The helper MUST NOT write anything to stdout, as sourcing scripts may capture stdout for JSON output (e.g., `status.sh`).
+*   **Stderr Only:** All diagnostic output MUST go to stderr (`>&2`). The helper MUST NOT write anything to stdout, as sourcing scripts may capture stdout for JSON output (e.g., `scan.sh`).
 *   **Auto-Resolve on Source:** The helper MUST call its resolution function automatically at the end of the file, so that sourcing it is sufficient to set `$PYTHON_EXE`.
 *   **Approximate Size:** ~35 lines. No external dependencies.
 
@@ -35,7 +35,7 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 | Script | Current Python Invocation | Migration Action |
 |--------|--------------------------|------------------|
 | `tools/critic/run.sh` | `exec python3 "$SCRIPT_DIR/critic.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
-| `tools/cdd/status.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
+| `tools/cdd/scan.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
 | `tools/init.sh` | `python3 -c "import json; ..."` (JSON validation) | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
@@ -127,9 +127,9 @@ Example output:
     Then it invokes the Critic using the venv Python interpreter
     And not the system python3
 
-#### Scenario: CDD status.sh Uses Resolved Python
+#### Scenario: CDD scan.sh Uses Resolved Python
     Given a .venv/ exists at the project root with python3
-    When tools/cdd/status.sh is executed
+    When tools/cdd/scan.sh is executed
     Then it invokes serve.py using the venv Python interpreter
 
 #### Scenario: CDD start.sh Replaced Ad-Hoc Detection

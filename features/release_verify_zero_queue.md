@@ -13,7 +13,7 @@ This feature defines the `purlin.verify_zero_queue` release step: a gate check t
 
 ### 2.1 Status Check
 
-PM mode runs `tools/cdd/status.sh` and inspects the JSON output. For each feature in the `features` array, all three conditions MUST be true:
+PM mode runs `tools/cdd/scan.sh` and inspects the JSON output. For each feature in the `features` array, all three conditions MUST be true:
 
 - `architect` is `"DONE"`
 - `builder` is `"DONE"`
@@ -38,7 +38,7 @@ If all features satisfy the conditions, PM mode reports the total feature count 
 | ID | `purlin.verify_zero_queue` |
 | Friendly Name | `Purlin Verify Zero-Queue Status` |
 | Code | null |
-| Agent Instructions | "Run `tools/cdd/status.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready." |
+| Agent Instructions | "Run `tools/cdd/scan.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready." |
 
 ### 2.5 Integration Test Fixture Tags
 
@@ -54,7 +54,7 @@ If all features satisfy the conditions, PM mode reports the total feature count 
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: All features satisfy zero-queue conditions (auto-test-only)
-Given `tools/cdd/status.sh` reports every feature with `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"`,
+Given `tools/cdd/scan.sh` reports every feature with `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"`,
 When PM mode executes the `purlin.verify_zero_queue` step,
 Then PM mode reports the total feature count and confirms the queue is clear,
 And proceeds to the next release step.

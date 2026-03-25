@@ -25,7 +25,7 @@ Engineer mode's phased delivery skill that assesses implementation scope and pro
 
 ### 2.3 New Plan Creation
 
-- Run `status.sh` to get current feature status.
+- Run `scan.sh` to get current feature status.
 - Read `dependency_graph.json` and build a prerequisite map.
 - Resolve the context tier (see 2.4) and assess scope using tier-aware heuristics.
 

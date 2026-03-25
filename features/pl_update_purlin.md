@@ -435,15 +435,15 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And the skill exits without making any changes
 
 #### Scenario: Unmodified Agent Files Auto-Updated
-    Given builder-worker.md changed upstream in .claude/agents/
-    And the consumer's .claude/agents/builder-worker.md matches the old upstream version
+    Given engineer-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/engineer-worker.md matches the old upstream version
     When /pl-update-purlin is invoked and update completes
-    Then init.sh auto-copies builder-worker.md from submodule
+    Then init.sh auto-copies engineer-worker.md from submodule
     And the report includes the updated file count
 
 #### Scenario: Modified Agent File with Upstream Conflict
-    Given builder-worker.md changed upstream in .claude/agents/
-    And the consumer's .claude/agents/builder-worker.md has local modifications
+    Given engineer-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/engineer-worker.md has local modifications
     When /pl-update-purlin is invoked and update completes
     Then the skill shows a three-way diff for the agent file
     And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"

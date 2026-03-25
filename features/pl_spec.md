@@ -50,7 +50,7 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 
 ### 2.7 Post-Authoring
 
-- After editing, commit the change and run `status.sh` to regenerate the Critic report.
+- After editing, commit the change and run `scan.sh` to regenerate the Critic report.
 
 ---
 

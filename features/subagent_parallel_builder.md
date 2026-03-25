@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-Formalizes parallel feature building with dedicated sub-agent definitions, replaces ad-hoc Agent tool calls with structured `builder-worker` and `verification-runner` sub-agents, and consolidates duplicated implementation knowledge from `BUILDER_BASE.md` into skills that sub-agents can preload. Adds a robust rebase-before-merge protocol for parallel branches, server lifecycle management with port tracking. Deprecates `--continuous` mode in favor of interactive multi-phase auto-progression.
+Formalizes parallel feature building with dedicated sub-agent definitions, replaces ad-hoc Agent tool calls with structured `engineer-worker` and `verification-runner` sub-agents, and consolidates duplicated implementation knowledge from `BUILDER_BASE.md` into skills that sub-agents can preload. Adds a robust rebase-before-merge protocol for parallel branches, server lifecycle management with port tracking. Deprecates `--continuous` mode in favor of interactive multi-phase auto-progression.
 
 ---
 
@@ -16,13 +16,13 @@ Formalizes parallel feature building with dedicated sub-agent definitions, repla
 
 Two sub-agent definition files MUST be created in `.claude/agents/`:
 
-#### 2.1.1 `builder-worker.md`
+#### 2.1.1 `engineer-worker.md`
 
 Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
 
 *   **Frontmatter:**
     ```yaml
-    name: builder-worker
+    name: engineer-worker
     description: >
       Parallel feature builder for intra-phase work. Implements a single feature
       in an isolated worktree. Use when building independent features concurrently.
@@ -65,14 +65,14 @@ Runs automated tests in background during B2, keeping test output out of main En
 
 ### 2.2 Parallel B1 Protocol
 
-When a delivery plan exists, Engineer mode MUST use `builder-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
+When a delivery plan exists, Engineer mode MUST use `engineer-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
 
 1.  Read `.purlin/cache/dependency_graph.json` and the delivery plan.
 2.  Compute execution groups: group PENDING phases with no cross-dependencies.
 3.  For the current execution group, collect all features across member phases and check pairwise independence.
 4.  If independent features exist (2+):
     - Announce: "Features X and Y are independent -- building in parallel."
-    - Spawn one `builder-worker` sub-agent per feature.
+    - Spawn one `engineer-worker` sub-agent per feature.
     - Each sub-agent runs Steps 0-2 only.
     - Merge returned branches using the robust merge protocol (Section 2.4).
     - After all groups complete, proceed to B2.
@@ -93,7 +93,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 1.  After all parallel workers complete, process branches in sequence.
 2.  For each branch: `git rebase HEAD <branch>`.
 3.  On rebase conflict: check if ALL conflicting files are in the safe list.
-    *   **Safe files:** `.purlin/delivery_plan.md`, `CRITIC_REPORT.md`, `.purlin/cache/*`.
+    *   **Safe files:** `.purlin/delivery_plan.md`, `/pl-status`, `.purlin/cache/*`.
     *   Safe: auto-resolve by keeping main's version (`git checkout --ours`), then `git add` and `git rebase --continue`.
     *   Unsafe (any non-safe file in conflict): `git rebase --abort`, fall back to sequential for THIS feature only.
 4.  Loop up to 20 rebase iterations for multi-commit branches.
@@ -242,7 +242,7 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
 
 ### 2.12 Sync Invariants
 
-*   `/pl-build` preloading by `builder-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
+*   `/pl-build` preloading by `engineer-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
 *   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
@@ -253,7 +253,7 @@ not only as a standalone section. The rule text:
 
 > **Execution group dispatch is mandatory for multi-feature groups.** When an execution
 > group contains 2+ independent features (across all its member phases), MUST read
-> `dependency_graph.json`, check pairwise independence, and spawn `builder-worker`
+> `dependency_graph.json`, check pairwise independence, and spawn `engineer-worker`
 > sub-agents for independent features BEFORE beginning Step 0 for any feature.
 > Sequential processing of independent features without checking the dependency graph
 > is a protocol violation.
@@ -268,18 +268,18 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 ### Unit Tests
 
-#### Scenario: Parallel features use builder-worker sub-agent
+#### Scenario: Parallel features use engineer-worker sub-agent
 
     Given a delivery plan phase has features A and B
     And the dependency graph shows A and B have no cross-dependencies
     When Engineer mode begins B1 for the phase
-    Then Engineer mode spawns one builder-worker sub-agent per feature
+    Then Engineer mode spawns one engineer-worker sub-agent per feature
     And each sub-agent runs in an isolated worktree
     And each sub-agent runs Steps 0-2 only
 
 #### Scenario: Engineer-worker runs Steps 0-2 only
 
-    Given a builder-worker sub-agent is spawned for feature A
+    Given a engineer-worker sub-agent is spawned for feature A
     When the sub-agent completes its work
     Then it has run Steps 0-2 (pre-flight, plan, implement)
     And it has NOT run Step 3 (verification) or Step 4 (status tags)
@@ -287,14 +287,14 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Engineer-worker cannot spawn nested sub-agents
 
-    Given a builder-worker sub-agent is running
+    Given a engineer-worker sub-agent is running
     When the sub-agent's tool list is inspected
     Then the Agent tool is not available
     And the sub-agent cannot launch nested sub-agents
 
 #### Scenario: Engineer-worker hits maxTurns safety limit
 
-    Given a builder-worker sub-agent is running
+    Given a engineer-worker sub-agent is running
     When the sub-agent reaches 200 turns
     Then the sub-agent stops execution
     And the main session handles the incomplete feature sequentially
@@ -323,14 +323,14 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Safe file conflicts auto-resolve during merge
 
-    Given two builder-worker branches both modified CRITIC_REPORT.md
+    Given two engineer-worker branches both modified /pl-status
     When the robust merge protocol runs rebase-before-merge
-    Then the conflict on CRITIC_REPORT.md is auto-resolved by keeping main's version
+    Then the conflict on /pl-status is auto-resolved by keeping main's version
     And the merge completes successfully
 
 #### Scenario: Unsafe conflict falls back to sequential for that feature only
 
-    Given builder-worker branch A modified src/app.py
+    Given engineer-worker branch A modified src/app.py
     And the main branch also modified src/app.py
     When the robust merge protocol encounters the conflict
     Then it aborts the rebase for branch A
@@ -339,7 +339,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Rebase-before-merge reduces conflicts from parallel branches
 
-    Given three builder-worker branches completed
+    Given three engineer-worker branches completed
     And branches B and C both added lines to the same config file (safe file)
     When the robust merge protocol processes branches sequentially
     Then branch B is rebased onto HEAD and merged
@@ -348,7 +348,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Multi-commit rebase with iterative safe-file resolution
 
-    Given a builder-worker branch has 5 commits
+    Given a engineer-worker branch has 5 commits
     And 2 of those commits touch .purlin/delivery_plan.md
     When the robust merge protocol runs rebase
     Then it iterates through each commit's conflicts
@@ -377,7 +377,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Given auto_start is true
     And Phase 2 has 3 independent features
     When Engineer mode auto-advances to Phase 2
-    Then it spawns builder-worker sub-agents for the independent features
+    Then it spawns engineer-worker sub-agents for the independent features
     And merges results using the robust merge protocol
     And proceeds to B2 verification
 
@@ -416,7 +416,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Sub-agent preloading /pl-build gets all bright-line rules
 
-    Given a builder-worker sub-agent has skills: [pl-build]
+    Given a engineer-worker sub-agent has skills: [pl-build]
     When the sub-agent's preloaded context is inspected
     Then the /pl-build skill content includes all bright-line rules
     And the sub-agent has the complete per-feature protocol
@@ -462,23 +462,23 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: init.sh copies .claude/agents/ to consumer project
 
-    Given Purlin is a submodule with .claude/agents/builder-worker.md
+    Given Purlin is a submodule with .claude/agents/engineer-worker.md
     And .claude/agents/verification-runner.md
     When the user runs tools/init.sh (full init)
-    Then .claude/agents/builder-worker.md is copied to the project root
+    Then .claude/agents/engineer-worker.md is copied to the project root
     And .claude/agents/verification-runner.md is copied to the project root
 
 #### Scenario: pl-update-purlin refreshes agent files with conflict detection
 
-    Given the submodule has updated .claude/agents/builder-worker.md
+    Given the submodule has updated .claude/agents/engineer-worker.md
     And the consumer's copy has not been locally modified
     When /pl-update-purlin runs
-    Then builder-worker.md is updated to the new version
+    Then engineer-worker.md is updated to the new version
 
 #### Scenario: Locally modified agent files preserved during update
 
-    Given the consumer has locally modified .claude/agents/builder-worker.md
-    And the submodule has also updated builder-worker.md
+    Given the consumer has locally modified .claude/agents/engineer-worker.md
+    And the submodule has also updated engineer-worker.md
     When /pl-update-purlin runs
     Then init.sh preserves the local version (newer timestamp)
     And the conflict resolution step offers merge options
@@ -494,7 +494,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Resume with orphaned sub-agent branches
 
-    Given Engineer mode spawned 2 builder-worker sub-agents
+    Given Engineer mode spawned 2 engineer-worker sub-agents
     And context was cleared while sub-agents were running
     When /pl-resume restores the session
     Then Engineer mode detects orphaned worktree branches
@@ -503,7 +503,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Resume after all sub-agents completed before clear
 
-    Given 2 builder-worker sub-agents completed and merged
+    Given 2 engineer-worker sub-agents completed and merged
     And context was cleared after merge but before B2 verification
     When /pl-resume restores the session
     Then the checkpoint shows parallel B1 completed

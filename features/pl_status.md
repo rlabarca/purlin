@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A shared skill available to all roles that wraps `status.sh` to display the current CDD project state. Shows feature counts by lifecycle status (TODO/TESTING/COMPLETE), role-specific action items sorted by priority with explanatory reasons, and open discoveries or tombstones requiring attention. Includes role-filtered shortcut mode and PM-specific uncommitted changes detection.
+A shared skill available to all roles that wraps `scan.sh` to display the current CDD project state. Shows feature counts by lifecycle status (TODO/TESTING/COMPLETE), role-specific action items sorted by priority with explanatory reasons, and open discoveries or tombstones requiring attention. Includes role-filtered shortcut mode and PM-specific uncommitted changes detection.
 
 ---
 
@@ -20,12 +20,12 @@ A shared skill available to all roles that wraps `status.sh` to display the curr
 
 ### 2.2 Core Output
 
-- Run `status.sh` and summarize: feature counts by status, role-specific action items (highest priority first with reasons), and open discoveries or tombstones.
+- Run `scan.sh` and summarize: feature counts by status, role-specific action items (highest priority first with reasons), and open discoveries or tombstones.
 - Tombstone files (features with `tombstone: true` in scan output) MUST be surfaced as Engineer work items with highest priority — tombstones are processed before regular feature work.
 
 ### 2.3 Role-Filtered Shortcut
 
-- If the agent knows its role, use `status.sh --role <role>` for a filtered view.
+- If the agent knows its role, use `scan.sh <role>` for a filtered view.
 
 ### 2.4 Status Value Reference
 

@@ -25,7 +25,7 @@ Engineer mode's escalation skill for halting work on a feature that cannot be im
 - Read `features/<name>.md` to confirm the feature and its current state.
 - Record `[INFEASIBLE]` entry in companion file with detailed rationale.
 - Commit with message including `[INFEASIBLE]` tag and brief reason.
-- Run `status.sh` to surface the entry in the Critic report.
+- Run `scan.sh` to surface the entry in the Critic report.
 
 ### 2.3 Constraints
 
@@ -60,7 +60,7 @@ Engineer mode's escalation skill for halting work on a feature that cannot be im
 #### Scenario: Critic surfaces INFEASIBLE as CRITICAL
 
     Given the INFEASIBLE entry is committed
-    When status.sh runs
+    When scan.sh runs
     Then the Critic report shows a CRITICAL-priority PM action item for feature_a
 
 ### QA Scenarios

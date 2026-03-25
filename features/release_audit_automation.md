@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-Extracts deterministic check logic from release step agent instructions into standalone scripts that can run unattended. Each script reuses existing tool infrastructure (e.g., `graph.py` for cycle/orphan detection, `status.sh` for feature status) and produces structured JSON output. Tests use fixture repo tags with deliberate issues (cycles, broken links, stale paths, safety violations) to verify detection accuracy.
+Extracts deterministic check logic from release step agent instructions into standalone scripts that can run unattended. Each script reuses existing tool infrastructure (e.g., `graph.py` for cycle/orphan detection, `scan.sh` for feature status) and produces structured JSON output. Tests use fixture repo tags with deliberate issues (cycles, broken links, stale paths, safety violations) to verify detection accuracy.
 
 This converts ~26 of ~31 release process manual scenarios from "an agent reads instructions and does it" to "a script runs and reports results." The 5 scenarios that remain manual are interactive user-approval workflows where detection is tested but the decision stays human.
 
@@ -69,7 +69,7 @@ Every script MUST produce structured JSON to stdout:
 **Reuses:** `tools/cdd/graph.py` for graph construction and cycle detection.
 
 **Checks:**
-1. **Graph freshness:** Compare `dependency_graph.json` mtime against most recently modified feature file. If stale, regenerate via `status.sh --graph`.
+1. **Graph freshness:** Compare `dependency_graph.json` mtime against most recently modified feature file. If stale, regenerate via `scan.sh --graph`.
 2. **Cycle detection:** Run graph cycle check. Report cycle path if found.
 3. **Broken links:** For each `> Prerequisite:` link, verify target file exists in `features/`.
 4. **Reverse reference audit:** For each parent-child relationship, scan parent body for child filename references. Report structural reversals (CRITICAL) and example coupling (WARNING).
@@ -78,10 +78,10 @@ Every script MUST produce structured JSON to stdout:
 
 ### 2.5 verify_zero_queue.py
 
-**Reuses:** `tools/cdd/status.sh` JSON output for per-feature role status.
+**Reuses:** `tools/cdd/scan.sh` JSON output for per-feature role status.
 
 **Checks:**
-1. Run `status.sh` and parse JSON output.
+1. Run `scan.sh` and parse JSON output.
 2. For each feature, verify `architect: "DONE"`, `builder: "DONE"`, and `qa` in `["CLEAN", "N/A"]`.
 3. Report blocking features with their specific failing role column.
 

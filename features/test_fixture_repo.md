@@ -252,7 +252,7 @@ When creating fixtures for a feature with a remote configured (via `fixture remo
    c. After the user confirms access is configured, retries via `fixture push <url>`.
    d. Does NOT ask the user to push manually — Engineer mode pushes once it has access.
 3. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
-4. Re-run `tools/cdd/status.sh` to confirm the Critic clears the fixture validation.
+4. Re-run `tools/cdd/scan.sh` to confirm the Critic clears the fixture validation.
 
 **Remote repo setup flow:**
 

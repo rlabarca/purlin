@@ -13,7 +13,7 @@ This feature defines the `purlin.verify_dependency_integrity` release step: a st
 
 ### 2.1 Graph File Check
 
-PM mode reads `.purlin/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, PM mode runs `tools/cdd/status.sh --graph` to regenerate it before proceeding.
+PM mode reads `.purlin/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, PM mode runs `tools/cdd/scan.sh --graph` to regenerate it before proceeding.
 
 ### 2.2 Cycle Detection
 
@@ -34,7 +34,7 @@ The graph is valid when: (1) no cycles are detected, (2) all prerequisite links 
 | ID | `purlin.verify_dependency_integrity` |
 | Friendly Name | `Purlin Verify Dependency Integrity` |
 | Code | null |
-| Agent Instructions | "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Then perform a reverse reference audit: for each feature that other features depend on, search the parent's body text for mentions of its children's filenames. Classify any matches as structural reversal (blocks release), example coupling (warning), or informational pointer (info). Report any cycles, broken links, or structural reversals." |
+| Agent Instructions | "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/scan.sh --graph` to regenerate it. Then perform a reverse reference audit: for each feature that other features depend on, search the parent's body text for mentions of its children's filenames. Classify any matches as structural reversal (blocks release), example coupling (warning), or informational pointer (info). Report any cycles, broken links, or structural reversals." |
 
 ### 2.6 Reverse Reference Audit
 
@@ -70,7 +70,7 @@ And proceeds to the next release step.
 #### Scenario: Graph file is stale or absent (auto-test-only)
 Given `.purlin/cache/dependency_graph.json` is missing or older than the most recently modified feature file,
 When PM mode executes the `purlin.verify_dependency_integrity` step,
-Then PM mode runs `tools/cdd/status.sh --graph` to regenerate the cache file,
+Then PM mode runs `tools/cdd/scan.sh --graph` to regenerate the cache file,
 And proceeds with the freshly generated graph.
 
 #### Scenario: Cycle detected in dependency graph (auto-test-only)

@@ -30,7 +30,7 @@ The report collects:
 - Date, OS, agent role, and `tools_root`
 - Recent git history (`git log --oneline -5`)
 - Working tree state (`git status --short`, max 20 lines)
-- CRITICAL/HIGH items from `CRITIC_REPORT.md` (if present)
+- CRITICAL/HIGH items from `/pl-status` (if present)
 - Agent-composed context summary from conversation memory
 
 ### 2.3 Output Format

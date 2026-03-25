@@ -7,17 +7,17 @@
 | (see prose) | [ACKNOWLEDGED]** Stale cache regeneration not implemented | DISCOVERY | PENDING |
 | (see prose) | Reverse reference classification not implemented as tiered severity — **ACKNOWLEDGED** | DISCOVERY | PENDING |
 
-This step is a structural read-only check. PM mode does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/status.sh --graph` is permissible and does not count as a spec modification.
+This step is a structural read-only check. PM mode does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/scan.sh --graph` is permissible and does not count as a spec modification.
 
-The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Manual graph file edits are not supported; the cache is always regenerated from source feature files.
+The dependency graph is computed and cached by `tools/cdd/scan.sh --graph`. Manual graph file edits are not supported; the cache is always regenerated from source feature files.
 
 ### Audit Finding -- 2026-03-23
 
 **[DISCOVERY] [ACKNOWLEDGED]** Stale cache regeneration not implemented
 **Source:** /pl-spec-code-audit --deep (H10)
 **Severity:** HIGH
-**Details:** Spec §2.1 requires reading `.purlin/cache/dependency_graph.json` and checking its modification time, then running `tools/cdd/status.sh --graph` to regenerate if stale or absent. `verify_dependency_integrity.py:83-107` calls `parse_features()` from `graph.py` directly, bypassing the cache file and staleness check entirely. The cache-regeneration path is never invoked.
-**Suggested fix:** Add cache file mtime check and `status.sh --graph` invocation before `parse_features()`.
+**Details:** Spec §2.1 requires reading `.purlin/cache/dependency_graph.json` and checking its modification time, then running `tools/cdd/scan.sh --graph` to regenerate if stale or absent. `verify_dependency_integrity.py:83-107` calls `parse_features()` from `graph.py` directly, bypassing the cache file and staleness check entirely. The cache-regeneration path is never invoked.
+**Suggested fix:** Add cache file mtime check and `scan.sh --graph` invocation before `parse_features()`.
 
 ### Audit Finding -- 2026-03-16
 
