@@ -9,6 +9,8 @@
 *   **[CLARIFICATION]** The `release_audit_automation.md` fixture tags use different feature slugs (e.g., `release_verify_deps/` instead of `release_audit_automation/`) because those integration tests verify multiple release steps, each with their own namespace. This is intentional per the tag convention. (Severity: INFO)
 *   **[CLARIFICATION]** The `agent_behavior_tests.md` fixture tags reference tags in other features' namespaces (`cdd_startup_controls/`, `pl_session_resume/`, `pl_help/`) rather than `agent_behavior_tests/`. These cross-references are correct — the behavior tests consume project states defined by those features. The setup script creates all referenced tags. (Severity: INFO)
 
+*   **`remote` and Auto-Push Implementation:** `cmd_remote` handles three cases: (1) local repo exists → add/update origin remote + push all tags, (2) no local repo + non-empty remote → bare clone, (3) no local repo + empty remote → init bare + add origin. URL is stored in config via `_write_fixture_repo_url` python3 helper. Auto-push in `cmd_add_tag` reads config after local tag creation and pushes the single tag; push failure warns but exits 0 (local tag is still valid). `--no-push` flag suppresses auto-push.
+
 **[DISCOVERY] [ACKNOWLEDGED]** QA recommendation decision logic untested
 **Source:** /pl-spec-code-audit --deep (M32)
 **Severity:** MEDIUM

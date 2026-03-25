@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 43,
+  "passed": 72,
   "failed": 0,
-  "total": 43,
+  "total": 72,
   "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
@@ -50,6 +50,50 @@
       "status": "PASS"
     },
     {
+      "test": "test_complex_state_no_remote_returns_recommend (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_complex_state_no_remote_returns_recommend)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_complex_state_with_remote_returns_use_remote (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_complex_state_with_remote_returns_use_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_has_fixture_tags_returns_use_existing (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_has_fixture_tags_returns_use_existing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_has_fixture_tags_with_remote_still_use_existing (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_has_fixture_tags_with_remote_still_use_existing)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_malformed_config_file_defaults_no_remote (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_malformed_config_file_defaults_no_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_missing_config_file_defaults_no_remote (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_missing_config_file_defaults_no_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_state_needed_returns_none (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_no_state_needed_returns_none)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_none_config_path_defaults_no_remote (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_none_config_path_defaults_no_remote)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_result_always_has_required_keys (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_result_always_has_required_keys)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_simple_state_returns_inline_setup (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_simple_state_returns_inline_setup)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_unrecognized_complexity_returns_none (__main__.TestEvaluateFixtureNeedsDecisionLogic.test_unrecognized_complexity_returns_none)",
+      "status": "PASS"
+    },
+    {
       "test": "test_builder_can_read_recommendation_file (__main__.TestFixtureRecommendationReadByFutureSessions.test_builder_can_read_recommendation_file)",
       "status": "PASS"
     },
@@ -63,6 +107,22 @@
     },
     {
       "test": "test_pending_entry_has_suggested_tags (__main__.TestFixtureRecommendationReadByFutureSessions.test_pending_entry_has_suggested_tags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_filters_to_pending_only (__main__.TestGetPendingRecommendations.test_filters_to_pending_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_missing_file_returns_empty (__main__.TestGetPendingRecommendations.test_missing_file_returns_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_pending_returns_empty (__main__.TestGetPendingRecommendations.test_no_pending_returns_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_pending_entries_have_suggested_tags (__main__.TestGetPendingRecommendations.test_pending_entries_have_suggested_tags)",
       "status": "PASS"
     },
     {
@@ -87,6 +147,42 @@
     },
     {
       "test": "test_filter_by_ref (__main__.TestListFilter.test_filter_by_ref)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_empty_file_returns_empty (__main__.TestParseRecommendationsEdgeCases.test_empty_file_returns_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_with_missing_fields (__main__.TestParseRecommendationsEdgeCases.test_feature_with_missing_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_with_no_fields (__main__.TestParseRecommendationsEdgeCases.test_feature_with_no_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_header_only_returns_empty (__main__.TestParseRecommendationsEdgeCases.test_header_only_returns_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_many_tags_entry (__main__.TestParseRecommendationsEdgeCases.test_many_tags_entry)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_multiple_statuses (__main__.TestParseRecommendationsEdgeCases.test_multiple_statuses)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_nonexistent_file_returns_empty (__main__.TestParseRecommendationsEdgeCases.test_nonexistent_file_returns_empty)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_tag_entry (__main__.TestParseRecommendationsEdgeCases.test_single_tag_entry)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_whitespace_only_file_returns_empty (__main__.TestParseRecommendationsEdgeCases.test_whitespace_only_file_returns_empty)",
       "status": "PASS"
     },
     {
@@ -175,6 +271,26 @@
     },
     {
       "test": "test_prints_guidance (__main__.TestVerifyUrlNoAccess.test_prints_guidance)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_appends_to_existing_file (__main__.TestWriteRecommendation.test_appends_to_existing_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_creates_new_file_with_header (__main__.TestWriteRecommendation.test_creates_new_file_with_header)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_creates_parent_directories (__main__.TestWriteRecommendation.test_creates_parent_directories)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_returns_absolute_path (__main__.TestWriteRecommendation.test_returns_absolute_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_written_file_is_parseable (__main__.TestWriteRecommendation.test_written_file_is_parseable)",
       "status": "PASS"
     }
   ]

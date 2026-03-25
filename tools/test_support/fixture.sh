@@ -30,18 +30,56 @@ resolve_project_root() {
     return 1
 }
 
+# --- Config helpers (fixture_repo_url in .purlin/config.json) ---
+_read_fixture_repo_url() {
+    local project_root
+    project_root="$(resolve_project_root)"
+    local config="$project_root/.purlin/config.json"
+    if [[ -f "$config" ]]; then
+        python3 -c "
+import json, sys
+with open('$config') as f:
+    d = json.load(f)
+v = d.get('fixture_repo_url', '')
+if v:
+    print(v)
+" 2>/dev/null || true
+    fi
+}
+
+_write_fixture_repo_url() {
+    local url="$1"
+    local project_root
+    project_root="$(resolve_project_root)"
+    local config="$project_root/.purlin/config.json"
+    if [[ ! -f "$config" ]]; then
+        echo "Error: Config file not found at $config" >&2
+        return 1
+    fi
+    python3 -c "
+import json
+with open('$config') as f:
+    d = json.load(f)
+d['fixture_repo_url'] = '$url'
+with open('$config', 'w') as f:
+    json.dump(d, f, indent=4)
+    f.write('\n')
+"
+}
+
 usage() {
     cat <<'USAGE'
 Usage: fixture <subcommand> [args]
 
 Subcommands:
   init [--path <path>]                                Create bare fixture repo
-  add-tag <tag> [--from-dir <path>] [--message <msg>] [--force]
+  add-tag <tag> [--from-dir <path>] [--message <msg>] [--force] [--no-push]
                                                        Create tagged commit
   checkout <repo-url> <tag> [--dir <path>]             Clone fixture at tag
   cleanup <path>                                       Remove fixture directory
   list <repo-url> [--ref <project-ref>]                List fixture tags
   verify-url <url>                                     Test read/write access
+  remote <url>                                         Configure remote fixture repo
   push <remote-url> [--tag <tag>]                      Push tags to remote
   prune <repo-url> [--ref <project-ref>]               Find orphan fixture tags
 USAGE
@@ -100,6 +138,7 @@ cmd_add_tag() {
     local from_dir=""
     local message=""
     local force=false
+    local no_push=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -115,6 +154,10 @@ cmd_add_tag() {
                 ;;
             --force)
                 force=true
+                shift
+                ;;
+            --no-push)
+                no_push=true
                 shift
                 ;;
             *)
@@ -201,6 +244,23 @@ cmd_add_tag() {
     git push origin "$branch" >/dev/null 2>&1 || true
 
     echo "Created tag: $tag"
+
+    # Auto-push to remote if configured and not suppressed
+    if [[ "$no_push" != true ]]; then
+        local remote_url
+        remote_url="$(_read_fixture_repo_url)"
+        if [[ -n "$remote_url" ]]; then
+            local push_output
+            local push_rc=0
+            push_output=$(git -C "$repo_path" push "$remote_url" "refs/tags/$tag:refs/tags/$tag" 2>&1) || push_rc=$?
+            if [[ $push_rc -eq 0 ]]; then
+                echo "Pushed $tag to remote."
+            else
+                echo "Warning: Auto-push to remote failed. Local tag is still valid." >&2
+                echo "  $push_output" >&2
+            fi
+        fi
+    fi
 }
 
 cmd_checkout() {
@@ -495,6 +555,101 @@ cmd_prune() {
     fi
 }
 
+cmd_remote() {
+    if [[ $# -lt 1 ]]; then
+        # No URL: print current remote if set
+        local current
+        current="$(_read_fixture_repo_url)"
+        if [[ -n "$current" ]]; then
+            echo "Current fixture remote: $current"
+        else
+            echo "No fixture remote configured."
+            echo "Usage: fixture remote <url>"
+        fi
+        return 0
+    fi
+
+    local url="$1"
+
+    # Verify URL access (captures the working URL, may convert HTTPS→SSH)
+    local verified_url
+    verified_url="$(cmd_verify_url "$url")" || return 1
+
+    # Check if already configured
+    local current
+    current="$(_read_fixture_repo_url)"
+    if [[ -n "$current" ]]; then
+        if [[ "$current" == "$verified_url" ]]; then
+            echo "Remote is already set to $current"
+            return 0
+        fi
+        echo "Remote is already set to $current. Replace with $verified_url? [y/n]"
+        read -r reply
+        if [[ "$reply" != "y" && "$reply" != "Y" ]]; then
+            echo "Keeping current remote."
+            return 0
+        fi
+    fi
+
+    local project_root
+    project_root="$(resolve_project_root)"
+    local repo_path="$project_root/.purlin/runtime/fixture-repo"
+
+    if [[ -d "$repo_path" ]]; then
+        # Local repo exists — add remote and push
+        local is_bare
+        is_bare="$(git -C "$repo_path" rev-parse --is-bare-repository 2>/dev/null || echo "false")"
+        if [[ "$is_bare" != "true" ]]; then
+            echo "Error: $repo_path exists but is not a bare git repo." >&2
+            return 1
+        fi
+
+        # Add or update the origin remote
+        if git -C "$repo_path" remote get-url origin >/dev/null 2>&1; then
+            git -C "$repo_path" remote set-url origin "$verified_url"
+        else
+            git -C "$repo_path" remote add origin "$verified_url"
+        fi
+
+        # Push all tags and branches
+        local tag_count=0
+        local tags
+        tags="$(git -C "$repo_path" tag -l 2>/dev/null)" || true
+        if [[ -n "$tags" ]]; then
+            tag_count="$(echo "$tags" | wc -l | tr -d ' ')"
+            git -C "$repo_path" push origin --tags 2>/dev/null || {
+                echo "Warning: Failed to push tags to remote." >&2
+            }
+        fi
+
+        # Push branches too
+        git -C "$repo_path" push origin --all 2>/dev/null || true
+
+        # Save to config
+        _write_fixture_repo_url "$verified_url"
+        echo "Synced $tag_count fixture tags to remote."
+    else
+        # No local repo — clone from remote or init if empty
+        local ref_count
+        ref_count="$(git ls-remote "$verified_url" 2>/dev/null | wc -l | tr -d ' ')" || ref_count=0
+
+        mkdir -p "$(dirname "$repo_path")"
+
+        if [[ "$ref_count" -gt 0 ]]; then
+            # Remote has content — bare clone it
+            git clone --bare "$verified_url" "$repo_path" >/dev/null 2>&1
+        else
+            # Remote is empty — init locally and add remote
+            git init --bare "$repo_path" >/dev/null 2>&1
+            git -C "$repo_path" remote add origin "$verified_url"
+        fi
+
+        # Save to config
+        _write_fixture_repo_url "$verified_url"
+        echo "Fixture repo configured. Remote: $verified_url"
+    fi
+}
+
 # --- Main dispatch ---
 if [[ $# -lt 1 ]]; then
     usage
@@ -521,6 +676,9 @@ case "$subcommand" in
         ;;
     verify-url)
         cmd_verify_url "$@"
+        ;;
+    remote)
+        cmd_remote "$@"
         ;;
     push)
         cmd_push "$@"
