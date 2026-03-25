@@ -9,6 +9,14 @@ fi
 
 export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
+# --- Deprecation warning ---
+echo "============================================================" >&2
+echo "DEPRECATED: pl-run-architect.sh is deprecated." >&2
+echo "Use ./pl-run.sh instead. Examples:" >&2
+echo "  ./pl-run.sh                  # Interactive Purlin agent" >&2
+echo "  ./pl-run.sh --mode engineer  # Start in Engineer mode" >&2
+echo "============================================================" >&2
+
 # Source terminal identity helper (no-op if missing)
 if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
     source "$CORE_DIR/tools/terminal/identity.sh"

@@ -3,4 +3,4 @@
 - **Observed Behavior:** `pl-run-builder.sh` launches a full Builder agent session without printing any deprecation warning. No mention of `pl-run.sh` as the replacement.
 - **Expected Behavior:** The launcher prints a deprecation warning mentioning `pl-run.sh` before starting the agent session (per spec section 2.5).
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
