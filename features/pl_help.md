@@ -8,28 +8,19 @@
 
 ## 1. Overview
 
-Agents print their command vocabulary table at startup, but there is no way to re-display it mid-session. After a long work session or context compression, the user loses visibility into available commands. `/pl-help` provides a quick way to re-print the command table and discover user-facing CLI scripts at any time.
+The Purlin agent prints its command table at startup, but after a long work session or context compression, the user loses visibility into available commands. `/pl-help` provides a quick way to re-print the unified command table and discover user-facing CLI scripts at any time.
 
 ---
 
 ## 2. Requirements
 
-### 2.1 Role Detection
+### 2.1 Command Table
 
-- The skill MUST detect the current agent role (architect, builder, qa) from system prompt markers (e.g., "Role Definition: The Architect").
-
-### 2.2 Branch Detection
-
-- The skill MUST detect the current branch via `git rev-parse --abbrev-ref HEAD`.
-- If `.purlin/runtime/active_branch` exists and is non-empty, print the Branch Collaboration Variant.
-- Otherwise, print the Main Branch Variant.
-
-### 2.3 Output
-
-- The skill MUST read the role's command table file (`instructions/references/{role}_commands.md`) and print the appropriate variant verbatim.
+- The skill MUST read `instructions/references/purlin_commands.md` and print the Default Variant verbatim. This single table shows all modes (Engineer, PM, QA) and common commands.
+- No role detection is needed — the Purlin agent uses one unified command table regardless of active mode.
 - No arguments, no side effects. Output only.
 
-### 2.4 Help Output Convention
+### 2.2 Help Output Convention
 
 - Every `pl-*.sh` script in the project root MUST respond to `--help`.
 - The `--help` block MUST print a compact help block to stdout: script name (via `basename "$0"`), one-line description, and options list.
@@ -38,21 +29,20 @@ Agents print their command vocabulary table at startup, but there is no way to r
 - `--help` itself MUST be listed as an option in the help output.
 - Scripts with no functional flags still respond to `--help` (showing only `--help` as an option).
 
-### 2.5 CLI Script Discovery
+### 2.3 CLI Script Discovery
 
 - The skill MUST dynamically discover user-facing scripts by globbing `pl-*.sh` in the project root (`$PURLIN_PROJECT_ROOT` if set, else `git rev-parse --show-toplevel`).
-- For each discovered script, the skill MUST run it with `--help` (stderr suppressed, 3-second timeout).
-- If a script produces no output or exits non-zero, the skill MUST show it with "(no help -- run pl-init.sh to refresh)" instead of help text.
+- For each discovered script, the skill MUST list the script name.
 - The skill MUST NOT hard-code any script names, descriptions, or flags.
 
-### 2.6 Combined Output
+### 2.4 Combined Output
 
 - The skill MUST print two sections in order:
-  1. **Slash Commands** -- the existing role command table (unchanged behavior from 2.3).
-  2. **CLI Scripts** -- discovered script help output, each script's `--help` output displayed sequentially.
+  1. **Slash Commands** -- the unified command table from `purlin_commands.md`.
+  2. **CLI Scripts** -- discovered script names from the project root.
 - If no `pl-*.sh` scripts are found, the CLI Scripts section MUST print "(no CLI scripts found in project root)".
 
-### 2.7 Distribution
+### 2.5 Distribution
 
 - The skill file lives at `.claude/commands/pl-help.md` and is copied to consumer projects by `tools/init.sh` (glob-based copy of all `*.md` files in `.claude/commands/`). No changes to init or update-purlin are required.
 
@@ -60,39 +50,48 @@ Agents print their command vocabulary table at startup, but there is no way to r
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
-#### Scenario: Architect re-displays command table (auto-test-only)
+#### Scenario: Command table file exists and is readable
 
-    Given an Architect session on the main branch
+    Given the project root directory
+    When checking for instructions/references/purlin_commands.md
+    Then the file exists
+    And the file contains "Purlin Agent"
+    And the file contains "Engineer Mode"
+    And the file contains "PM Mode"
+    And the file contains "QA Mode"
+
+#### Scenario: CLI scripts are discoverable in project root
+
+    Given the project root directory
+    When globbing for pl-*.sh files
+    Then at least one pl-*.sh file is found
+    And each found file is executable
+
+#### Scenario: CLI scripts respond to --help
+
+    Given pl-run.sh exists in the project root
+    When pl-run.sh is invoked with --help
+    Then it exits with code 0
+    And the output contains "Usage"
+
+### QA Scenarios
+
+#### Scenario: Full help output displays both sections @auto
+
+    Given a Purlin agent session
     When the user runs /pl-help
-    Then the Main Branch Variant from architect_commands.md is printed verbatim
+    Then the output includes the unified command table from purlin_commands.md
+    And the output includes a "CLI Scripts" section after the command table
+    And the CLI Scripts section lists discovered pl-*.sh files
 
-#### Scenario: QA re-displays command table on collaboration branch (auto-test-only)
+#### Scenario: Help output with no CLI scripts @auto
 
-    Given a QA session with .purlin/runtime/active_branch containing "collab/v2"
+    Given a project root with no pl-*.sh scripts
     When the user runs /pl-help
-    Then the Branch Collaboration Variant from qa_commands.md is printed
-    And the header shows [Branch: collab/v2]
-
-#### Scenario: Skill discovers CLI scripts dynamically (auto-test-only)
-
-    Given the project root contains pl-run-builder.sh and pl-cdd-start.sh with --help support
-    When the user runs /pl-help
-    Then the output includes a "CLI Scripts" section after the slash command table
-    And each script's name, description, and options are shown
-
-#### Scenario: Stale launcher without --help (auto-test-only)
-
-    Given pl-run-architect.sh does not support --help
-    When the user runs /pl-help
-    Then pl-run-architect.sh appears with a refresh note instead of help text
-
-#### Scenario: Agent resolves how-do-I-run question (auto-test-only)
-
-    Given a user asks "how do I start the builder in continuous mode?"
-    When the agent invokes /pl-help
-    Then the output includes pl-run-builder.sh with --continuous documented
+    Then the command table is printed normally
+    And the CLI Scripts section shows "(no CLI scripts found in project root)"
 
 ### Manual Scenarios (Human Verification Required)
 
