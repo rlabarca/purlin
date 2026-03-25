@@ -2,15 +2,17 @@
 
 > Label: "Agent Skills: Common: /pl-resume Session Resume"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/policy_critic.md
+> Prerequisite: features/purlin_mode_system.md
 
 [TODO]
 
 ## 1. Overview
 
-The `/pl-resume` skill provides save and restore for Purlin agent session state across context clears and terminal restarts. When the agent is about to run out of context, it invokes `/pl-resume save` to write a structured checkpoint file capturing the active mode and work state. When a new session starts, the agent invokes `/pl-resume` to read the checkpoint, gather fresh project state, and resume from where the previous session left off.
+The `/pl-resume` skill is the **single implementation** of "gather state, present work, activate mode" for the Purlin agent. Both fresh startup and mid-session context recovery use this skill — the startup protocol (PURLIN_BASE.md §5) delegates to `/pl-resume` after preamble steps (merge recovery, command table, flag reading). This prevents the startup and resume flows from drifting apart.
 
-This skill is shared across all modes (Engineer, PM, QA). The Purlin agent is a single session with mode switching — the checkpoint captures which mode was active and mode-specific context. The delivery plan (`.purlin/delivery_plan.md`) partially addresses multi-phase Engineer work but does not capture per-step state within a feature's implementation protocol. This skill fills that gap.
+When invoked without a checkpoint, `/pl-resume` runs a cold start: scan the project, present work via `/pl-status`, and activate the appropriate mode. When a checkpoint exists, it restores the previous session's state and resumes work. The `/pl-resume save` subcommand captures session state for recovery.
+
+This skill is shared across all modes (Engineer, PM, QA). The checkpoint captures which mode was active and mode-specific context.
 
 ---
 
@@ -89,7 +91,7 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 ## Current Work
 
 **Feature:** features/cdd_status_monitor.md
-**Step:** 3 -- Verify Locally (implementation committed, running tests)
+**Protocol Step:** 3 -- Verify Locally (implementation committed, running tests)
 
 ### Done
 - Read anchor nodes and prerequisites
@@ -163,21 +165,27 @@ When the checkpoint mode is `engineer`, check for orphaned worktree branches (`g
 
 #### 2.3.4 Step 4 -- Gather Fresh Project State
 
-Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state.
+Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-status` to interpret the scan results and present work organized by mode.
+
+**This step is the shared path used by BOTH normal startup and context recovery.** PURLIN_BASE.md §5.3-5.4 delegate here — there is no separate implementation of work discovery in the startup protocol.
 
 **Warm resume (checkpoint exists):**
 - The scan provides fresh project state. The work plan comes from the checkpoint's "Next" list.
 - Re-enter the mode recorded in the checkpoint.
 
 **Cold start (no checkpoint):**
-- Use the scan to generate a full work plan.
+- Use `/pl-status` output to generate a full work plan organized by mode.
+- Suggest the mode with highest-priority work.
 - **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
+- **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS or PENDING phases, highlight it and suggest Engineer mode.
 - Check `find_work` and `auto_start` from the config:
   - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
   - `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
   - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
 
 When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
+
+**Worktree context:** If running inside a worktree (`.purlin_worktree_label` exists), read the label and include it in the recovery summary. If `.purlin_session.lock` exists, read the mode from the lock as a fallback when no checkpoint exists.
 
 #### 2.3.5 Step 5 -- Present Recovery Summary
 
@@ -211,7 +219,7 @@ Uncommitted:    [none | summary]
 
 ### 2.4 Merge Recovery Mode (`/pl-resume merge-recovery`)
 
-Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md 6.0) when breadcrumbs exist, or manually by the user.
+Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md §5.0) when breadcrumbs exist, or manually by the user.
 
 #### Protocol
 
@@ -286,6 +294,24 @@ Resolve pending worktree merge failures. Called automatically by the startup pro
     Then a fresh scan is run
     And the recovery summary displays "Checkpoint: none"
     And the agent presents work organized by mode
+
+#### Scenario: Cold start runs /pl-status for work discovery @auto
+
+    Given no checkpoint file exists
+    When the agent invokes /pl-resume (cold start)
+    Then scan.sh is run
+    And /pl-status interprets the results
+    And work is presented organized by mode
+    And the mode with highest-priority work is suggested
+
+#### Scenario: Cold start with worktree reads session lock for mode @auto
+
+    Given no checkpoint file exists
+    And .purlin_worktree_label contains "W1"
+    And .purlin_session.lock contains mode "engineer"
+    When the agent invokes /pl-resume
+    Then the recovery summary includes "W1" in the badge
+    And the agent enters Engineer mode from the session lock
 
 #### Scenario: Cold start respects find_work false @auto
 
