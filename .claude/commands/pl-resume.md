@@ -8,8 +8,8 @@ Save or restore agent session state across context clears and terminal restarts.
 
 - **No argument:** Restore mode with role auto-detection.
 - **`save`:** Save mode -- write a checkpoint file.
-- **`<role>`** (`architect`, `builder`, `qa`, `pm`): Restore mode with explicit role.
-- **Invalid argument:** Print error listing valid options (`save`, `architect`, `builder`, `qa`, `pm`) and stop.
+- **`<role>`** (`architect`, `builder`, `qa`, `pm`, `purlin`): Restore mode with explicit role.
+- **Invalid argument:** Print error listing valid options (`save`, `architect`, `builder`, `qa`, `pm`, `purlin`) and stop.
 
 ---
 
@@ -118,8 +118,8 @@ Clear any stale session state carried over from the previous session. This inclu
 
 1. **Explicit argument:** If the user invoked `/pl-resume <role>`, use that role.
 2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "Role Definition: The Builder", "Role Definition: The Architect", "Role Definition: The QA", "Role Definition: The PM"). If found, use the detected role.
-3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
-4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`, `pm`.
+3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`, `session_checkpoint_purlin.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
+4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`, `pm`, `purlin`.
 
 ### Step 2 -- Checkpoint Detection
 
@@ -138,7 +138,7 @@ When instruction reload is needed:
    - `instructions/{ROLE}_BASE.md` (where ROLE is ARCHITECT, BUILDER, QA, or PM)
    - `.purlin/HOW_WE_WORK_OVERRIDES.md`
    - `.purlin/{ROLE}_OVERRIDES.md`
-2. Present a condensed "Role Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules.
+2. Present a condensed "Mode Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules.
 
 When the system prompt already contains the role instructions (agent was started via launcher), skip this step silently (no output).
 
@@ -157,17 +157,17 @@ git branch --list 'worktree-*'
 ```
 
 *   **If found:** Attempt to merge them using the Robust Merge Protocol from `/pl-build`. After successful merges, continue with remaining work.
-*   **If not found:** The sub-agents either completed and merged, or never started. The delivery plan + Critic state tells the Builder what remains.
+*   **If not found:** The sub-agents either completed and merged, or never started. The delivery plan + scan results tell the Builder what remains.
 
 Branch names encode the phase: `worktree-phase<N>-<feature_stem>`. This allows attribution of orphaned branches to specific phases within an execution group.
 
 ### Step 5 -- Gather Fresh Project State
 
-Run `${TOOLS_ROOT}/cdd/status.sh --startup <role>` (where `<role>` is the role detected in Step 1).
-This single call runs the Critic and returns the full startup briefing with config, git state,
-feature summary, action items, dependency graph summary, and role-specific extensions
-(Builder: tombstones, anchor constraints, delivery plan state, phasing recommendation;
-QA: testing features, discovery summary; Architect: spec completeness, untracked files).
+Run `${TOOLS_ROOT}/cdd/scan.sh` (the agent filters results by the mode detected in Step 1).
+This single call returns the full startup briefing with config, git state,
+feature summary, action items, dependency graph summary, and mode-specific extensions
+(Engineer: tombstones, anchor constraints, delivery plan state, phasing recommendation;
+QA: testing features, discovery summary; PM: spec completeness, untracked files).
 
 **When a checkpoint exists (warm resume):**
 - The startup briefing provides fresh project state. The work plan comes from the
@@ -212,7 +212,7 @@ Next Steps:
   2. <second thing>
 
 <When checkpoint exists, or find_work is not false:>
-Action Items:   <count> items from Critic report
+Action Items:   <count> items from scan results
 <Builder only>  Delivery plan: Phase X of Y -- next: <feature>
 <QA only>       Verification queue: N features in TESTING
 <PM only>       Figma MCP: <available | not available>
@@ -225,7 +225,7 @@ Session name:   run /rename <ProjectName> | <NewRole> to update
 - The rename suggestion appears ONLY when: (1) the user passed an explicit role argument to `/pl-resume` (tier 1 detection), AND (2) the system prompt contains role identity markers for a *different* role (tier 2 detection succeeded with a different role).
 - When the role is unchanged (tier 1 == tier 2), or when no system prompt role markers exist (tier 2 did not detect a role), the "Session name:" line is omitted entirely.
 - `<ProjectName>` is resolved by reading `project_name` from config (via `${TOOLS_ROOT}/config/resolve_config.py --key project_name`), falling back to the project directory basename when the key is absent or empty.
-- `<NewRole>` uses the display name mapping: `architect` -> `Architect`, `builder` -> `Builder`, `qa` -> `QA`, `pm` -> `PM`.
+- `<NewRole>` uses the display name mapping: `architect` -> `Architect`, `builder` -> `Builder`, `qa` -> `QA`, `pm` -> `PM`, `purlin` -> `Purlin`.
 
 ### Step 7 -- Cleanup and Continue
 

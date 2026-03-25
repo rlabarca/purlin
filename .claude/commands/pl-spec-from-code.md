@@ -127,12 +127,12 @@ For each category:
 
 ## Phase 4 — Finalization
 
-1. Run `${TOOLS_ROOT}/cdd/status.sh` to generate the initial Critic report and dependency graph.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh` to generate the initial scan results and dependency graph.
 2. Summarize the results:
    - Total features created
    - Total anchor nodes created
    - Total companion files created
-   - Any immediate Critic findings
+   - Any immediate scan findings
 3. Delete temporary files:
    - `.purlin/cache/sfc_state.json`
    - `.purlin/cache/sfc_inventory.md`

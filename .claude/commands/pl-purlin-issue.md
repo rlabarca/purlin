@@ -51,7 +51,7 @@ Determine deployment mode and collect version information:
 
 - Recent git history: `git log --oneline -5`
 - Working tree state: `git status --short` (first 20 lines max)
-- If `CRITIC_REPORT.md` exists at project root, extract any CRITICAL or HIGH priority items and summarize them briefly (do not dump the entire file).
+- If `.purlin/cache/scan.json` exists, extract any features with failing tests or open discoveries and summarize them briefly (do not dump the entire file).
 - Compose a brief summary (2-5 sentences) of the conversation context that led to the issue -- what the user was trying to do, what agent was running, and what went wrong. Draw this from your own conversation memory, not a tool.
 
 ### 5. Compose and Present Bug Report
@@ -96,9 +96,9 @@ Assemble all collected information and present between clear dividers. Use the b
 <git status --short output, or "clean">
 ```
 
-### Active Critic Issues
+### Active Issues
 
-<CRITICAL/HIGH items summary, or "None">
+<Failing tests or open discoveries summary, or "None">
 
 -------- END PURLIN ISSUE REPORT ---------
 ```

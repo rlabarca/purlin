@@ -33,7 +33,7 @@ Parse `$ARGUMENTS`:
 2. Resolve project root: use `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there, otherwise climb from the current working directory until `.purlin/` is found.
 3. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
 
-All tool invocations use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/status.sh`).
+All tool invocations use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/scan.sh`).
 
 ---
 
@@ -59,9 +59,9 @@ Parent loads project state, builds the transitive prerequisite constraint map, a
 
 ### Step 0.1 -- Load Project State
 
-1. Run `${TOOLS_ROOT}/cdd/status.sh` and read `CRITIC_REPORT.md`.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh` and read `.purlin/cache/scan.json`.
 2. Read `.purlin/cache/dependency_graph.json` -- note all prerequisite relationships and root anchor nodes.
-3. For each feature, read `tests/<name>/critic.json` to extract scenario count from traceability detail.
+3. For each feature, read the feature spec directly to check section completeness and scenario count.
 
 ### Step 0.2 -- Build Transitive Prerequisite Map
 
@@ -92,7 +92,7 @@ Process ALL features in-agent (no subagents). For each feature:
 
 1. Read the feature file -- check spec completeness across all 12 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth.
-3. Read `tests/<name>/critic.json` -- check gate status, traceability.
+3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
 5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
 6. Skip scenario-by-scenario deep comparison.
@@ -198,7 +198,7 @@ Each subagent receives the following in its prompt, plus the transitive constrai
 For each assigned feature:
 1. **Read spec**: `features/<name>.md` -- extract all `#### Scenario:` entries with Given/When/Then.
 2. **Read companion**: `features/<name>.impl.md` -- note Tool Location, source mappings, decision tags.
-3. **Read critic data**: `tests/<name>/critic.json` -- gate statuses, traceability, action items.
+3. **Read scan data**: `.purlin/cache/scan.json` features data -- gate statuses, traceability, action items.
 4. **Discover source files**: Extract import paths from test files in `tests/<name>/`, fall back to Tool Location in companion file, fall back to directory convention mapping from feature label.
 5. **Read source**: Up to 5 primary implementation files per feature.
 6. **Scenario-by-scenario comparison**: For each automated scenario:
@@ -394,7 +394,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 ```
 
 3. Commit all escalation entries together.
-4. Run `${TOOLS_ROOT}/cdd/status.sh` after committing to update the Critic report (the Critic's Builder Decision Audit will surface these as Builder action items).
+4. Run `${TOOLS_ROOT}/cdd/scan.sh` after committing to refresh project state (the scan will surface these as Engineer action items).
 
 ### If Running as Builder
 
@@ -418,7 +418,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 ```
 
 3. Commit all escalation entries together.
-4. The Critic will surface these as Architect action items at the next Architect session.
+4. The scan will surface these as PM action items at the next PM session.
 
 ### Dimension 12 (Code Ownership) Remediation
 
@@ -429,6 +429,6 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 ### Post-Remediation
 
 After all items are processed:
-1. Run `${TOOLS_ROOT}/cdd/status.sh` to regenerate the Critic report.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh` to refresh project state.
 2. Delete `.purlin/cache/audit_state.json` if it exists.
 3. Summarize what was done: N items fixed, N items escalated, any items deferred with rationale.

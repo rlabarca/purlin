@@ -52,7 +52,7 @@ No automated or manual scenarios. This is a policy anchor node -- its "scenarios
 process invariants enforced by instruction files and tooling.
 ```
 
-**Required section headings** (Critic checks): `purpose` and `invariants` (case-insensitive substring).
+**Required section headings** (scan checks): `purpose` and `invariants` (case-insensitive substring).
 Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 
 ## Protocol
@@ -61,4 +61,4 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 2. If **updating**: read the existing anchor node, identify the constraint to add or revise, apply the change, and identify all dependent features whose status will be reset to TODO.
 3. If **creating**: scaffold using the template above. Replace `Policy:` with `Architecture:` or `Design:` as appropriate.
 4. **Cascade awareness:** Editing an anchor node resets ALL dependent features to TODO. This triggers re-validation across the entire domain. Verify this is intended.
-5. After editing, commit the change and run `${TOOLS_ROOT}/cdd/status.sh`. The status run resets dependents and surfaces them as Builder action items.
+5. After editing, commit the change and run `${TOOLS_ROOT}/cdd/scan.sh`. The scan resets dependents and surfaces them as Engineer action items.
