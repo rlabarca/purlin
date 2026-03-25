@@ -1,1 +1,0 @@
-{"status": "PASS", "passed": 72, "failed": 0, "total": 72, "test_files": ["tests/collab_whats_different/test_extract.py", "tests/collab_whats_different/test_dashboard.py"]}
