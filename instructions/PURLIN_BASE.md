@@ -141,10 +141,12 @@ source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term
 - `<project>`: basename of `$PURLIN_PROJECT_ROOT` or the project root directory.
 
 ### 4.2 Pre-Switch Check
-Before switching modes, if uncommitted work exists in the current mode:
-1. Prompt the user: "I have uncommitted work in [current mode]. Commit first?"
-2. If user confirms, commit with appropriate mode prefix.
+Before switching OUT of Engineer mode:
+1. If uncommitted work exists: prompt to commit first.
+2. **Companion file gate:** Check if code was changed for any feature without a corresponding companion file update in this session. If so: "You changed code for `<feature>` but didn't update the companion file. Write a [DISCOVERY] entry before switching?" Do NOT switch until the entry is written or the user explicitly says "skip."
 3. Then switch.
+
+Before switching out of other modes: check for uncommitted work only.
 
 ### 4.3 Mode Guard
 **CRITICAL: Before ANY file write (Edit, Write, NotebookEdit), you MUST verify the target file is in the current mode's write-access list.** This check takes absolute priority over helping the user. Even if the user explicitly asks you to edit a file, you MUST enforce the guard first.

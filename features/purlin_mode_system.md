@@ -72,6 +72,9 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - This is NOT optional. It is how PM discovers what changed. Skipping it creates silent spec drift.
 - The entry MUST include: what changed, why, and whether the spec needs updating.
 - Scan.py surfaces unacknowledged entries to PM via `/pl-status`.
+- **Two enforcement gates:**
+  1. `/pl-build` Step 4 (status tag): BLOCKS the status commit if code deviations exist without companion entries.
+  2. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
 
 ### 2.8c Regression Failure Documentation (QA)
 
@@ -119,6 +122,23 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     Then tests are executed
     And QA mode remains active (not switched to Engineer)
     And no application code files are modified
+
+#### Scenario: Pre-switch companion file gate
+
+    Given the agent is in Engineer mode
+    And code was changed for feature "auth_flow" without updating the companion file
+    When the user invokes /pl-spec (PM mode skill)
+    Then the agent prompts to write a companion file entry before switching
+    And does NOT switch to PM mode until the entry is written or user says "skip"
+
+#### Scenario: Build status tag blocked by missing companion entry
+
+    Given the agent completed code changes for feature "auth_flow"
+    And the changes deviate from the spec
+    And no companion file entry was written
+    When /pl-build reaches Step 4 (status tag commit)
+    Then the status tag commit is BLOCKED
+    And the agent prompts to write the companion entry first
 
 #### Scenario: Pre-switch commit prompt
 

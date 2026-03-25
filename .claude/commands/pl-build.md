@@ -109,6 +109,11 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
 
 ### Step 4 -- Status Tag Commit (SEPARATE COMMIT)
 
+*   **Pre-check -- Companion File Gate:**
+    *   Review all code changes made for this feature during this session (git diff against the pre-build state).
+    *   If any change deviates from, extends, or fixes behavior not described in the spec, verify a `[DISCOVERY]` or `[DEVIATION]` entry exists in `features/<name>.impl.md`.
+    *   If the companion file was NOT updated and deviations exist: **BLOCK the status tag commit.** Write the companion entry first, then proceed.
+    *   If all changes match the spec exactly: no companion entry required.
 *   **Pre-check -- Web Test Gate:**
     *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `/pl-web-test` first.
     *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.
