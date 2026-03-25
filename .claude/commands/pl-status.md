@@ -13,11 +13,19 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` and interpret the results to present actionable 
 
 ## Work Interpretation Rules
 
-Analyze the scan JSON to classify features into mode-specific work items. **CRITICAL: Do NOT stop at `lifecycle` alone.** A feature can be `lifecycle: COMPLETE` and still need Engineer work if `spec_modified_after_completion: true`.
+Analyze the scan JSON to classify features into mode-specific work items.
+
+> **MANDATORY RULE — spec_modified_after_completion:**
+> When a feature has `spec_modified_after_completion: true`, it IS Engineer work. Period.
+> Do NOT dismiss it as "advisory." Do NOT say "no re-implementation needed."
+> Do NOT skip it because tests pass or lifecycle says COMPLETE.
+> The spec changed — the Engineer MUST re-read the spec, diff it against the implementation,
+> re-run tests, and update code if any spec requirements changed.
+> List every such feature as an Engineer work item with reason "spec modified after completion."
 
 **Engineer work (check ALL of these — a feature matching ANY rule is Engineer work):**
 1. Features with `test_status: FAIL` or `regression_status: FAIL` — fix failures first
-2. **Features with `spec_modified_after_completion: true`** — spec was changed after completion. Even though lifecycle says COMPLETE, the feature needs re-validation: re-read spec, compare to implementation, re-run tests, update code if spec requirements changed. This is the most commonly missed signal.
+2. Features with `spec_modified_after_completion: true` — see mandatory rule above
 3. Features in TODO lifecycle with no open INFEASIBLE — new work
 4. Open BUG discoveries with `action_required: Engineer`
 5. Delivery plan features in current phase
