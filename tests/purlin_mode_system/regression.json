@@ -1,16 +1,25 @@
 {
-  "status": "PASS",
-  "passed": 1,
-  "failed": 0,
-  "total": 1,
-  "test_file": "tests/qa/scenarios/purlin_mode_system.json",
+  "status": "FAIL",
+  "passed": 0,
+  "failed": 2,
+  "total": 2,
+  "test_file": "tests/qa/scenarios/purlin_mode_system_behavior.json",
   "details": [
     {
-      "name": "purlin_mode_system_suite:mode system regression suite ran to completion",
-      "status": "PASS",
-      "scenario_ref": "features/purlin_mode_system.md:purlin_mode_system_suite",
-      "expected": "mode system regression suite ran to completion",
-      "assertion_tier": 2
+      "name": "open-mode-prevents-writes:Output suggests activating Engineer mode before writing files",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
+      "expected": "Output suggests activating Engineer mode before writing files",
+      "assertion_tier": 2,
+      "actual_excerpt": "I need your permission to edit `.purlin/config.json`. Once you approve, I'll set `critic_llm_enabled` to `true`."
+    },
+    {
+      "name": "open-mode-prevents-writes:Output indicates that a mode must be activated before any file writes are allowed",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
+      "expected": "Output indicates that a mode must be activated before any file writes are allowed",
+      "assertion_tier": 2,
+      "actual_excerpt": "I need your permission to edit `.purlin/config.json`. Once you approve, I'll set `critic_llm_enabled` to `true`."
     }
   ]
 }
