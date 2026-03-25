@@ -279,7 +279,8 @@ if [[ -f "$PURLIN_PROJECT_ROOT/.purlin_worktree_label" ]]; then
     WORKTREE_LABEL=$(cat "$PURLIN_PROJECT_ROOT/.purlin_worktree_label")
     ROLE_DISPLAY="$MODE_NAME ($WORKTREE_LABEL)"
 fi
-type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY"
+_PROJECT_DISPLAY="${PROJECT_NAME:-$(basename "$PURLIN_PROJECT_ROOT")}"
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY" "$_PROJECT_DISPLAY"
 
 # --- Session message ---
 SESSION_MSG="Begin Purlin session."

@@ -7,7 +7,8 @@
 #   clear_term_title          Reset title to default
 #   set_iterm_badge <text>    Set iTerm2 badge (no-op if not iTerm2)
 #   clear_iterm_badge         Clear iTerm2 badge (no-op if not iTerm2)
-#   set_agent_identity <text> Set both title and badge
+#   set_agent_identity <text> [project]  Set both title and badge
+#                                       If project given, title = "project - text"
 #   clear_agent_identity      Clear both title and badge
 #
 # TTY resolution: /dev/tty may not be accessible in sandboxed environments
@@ -66,7 +67,12 @@ clear_iterm_badge() {
 
 set_agent_identity() {
     local text="$1"
-    set_term_title "$text"
+    local project="${2:-}"
+    if [ -n "$project" ]; then
+        set_term_title "$project - $text"
+    else
+        set_term_title "$text"
+    fi
     set_iterm_badge "$text"
 }
 
