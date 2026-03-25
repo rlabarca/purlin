@@ -54,6 +54,9 @@ Include mode attribution in commits:
 - `features/design_*.md` — design anchor nodes (PM-owned)
 - `features/policy_*.md` — governance anchor nodes (PM-owned)
 
+**Cannot run:**
+- Regression test harness (QA-owned). Do not offer to run regressions. Instead: "Regression testing is QA-owned. Switch to QA mode with `/pl-mode qa` or relaunch with `./pl-run.sh --qa`."
+
 **Key protocols:**
 - Read the feature spec before implementing. Implementation decisions MUST be grounded in the written spec, not in conversation context from PM mode.
 - Record build-time decisions in companion files using the Active Deviations table.
