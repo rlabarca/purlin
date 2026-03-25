@@ -2,7 +2,7 @@
 # merge-worktrees.sh — SessionEnd hook for Purlin agent
 # Merges current worktree back to source branch on agent exit.
 #
-# This hook is registered by pl-run.sh when --worktree is used.
+# Registered in .claude/settings.json as a SessionEnd hook.
 # It runs on session end (including Ctrl+C).
 #
 # Claude Code hooks receive JSON on stdin with session context.
