@@ -469,8 +469,18 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
                 try:
                     with open(skill_path) as f:
                         skill_content = f.read()
+                    # Override: tell model to skip tool steps and use
+                    # pre-loaded data instead of running commands
+                    override = (
+                        'IMPORTANT: You are in --print mode. Any steps in '
+                        'the skill that say to run shell commands, scripts, '
+                        'or tools (e.g., scan.sh, status.sh, Bash) — SKIP '
+                        'those steps entirely. The data you need is already '
+                        'pre-loaded above. Use the pre-loaded feature status '
+                        'data to produce the output the skill describes.')
                     sections.append(
                         f'# Pre-loaded: Skill Content ({prompt})\n\n'
+                        f'{override}\n\n'
                         f'The user invoked `{prompt}`. Execute the skill '
                         f'instructions below.\n\n' + skill_content)
                 except (IOError, OSError):
