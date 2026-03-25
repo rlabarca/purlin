@@ -81,18 +81,18 @@ When the SessionEnd hook (2.3) or `/pl-merge` encounters a merge conflict that c
 
 On every Purlin agent startup, **before** `scan.sh` and **before** mode activation:
 
-- The startup protocol MUST glob `.purlin/cache/merge_pending/*.json`.
-- If no breadcrumbs exist, proceed with normal startup.
-- If one or more breadcrumbs exist, the agent MUST:
-  1. Display each pending merge with branch name, age, and worktree path.
-  2. For each pending merge, attempt `git merge <branch>`:
-     - If the merge succeeds: clean up worktree, delete branch, remove breadcrumb, report success.
-     - If the merge conflicts: present the conflicts to the user and offer LLM-assisted resolution. The agent can read the conflicting files, understand the intent from both sides, and propose a resolution.
-     - The user may defer resolution ("skip for now") — the breadcrumb stays, and startup continues with a warning banner: "Deferred merge: `<branch>` — unmerged work exists."
-  3. Only after all breadcrumbs are resolved or explicitly deferred, proceed to normal startup (scan.sh, /pl-status, mode activation).
-- This check is **unconditional** — it runs regardless of CLI flags (`--auto-build`, `--mode`, etc.). The user cannot accidentally bypass it.
-- `/pl-resume` MUST also check for merge-pending breadcrumbs as part of its recovery flow (secondary path).
-- PURLIN_BASE.md Section 6 MUST include this check as step 6.1a (before 6.1).
+- PURLIN_BASE.md Section 6 MUST include a **brief gate** as step 6.1a (before 6.1): glob `.purlin/cache/merge_pending/*.json`; if any exist, run `/pl-resume merge-recovery` before continuing. This MUST be 1-2 lines in the instruction file — no inline protocol. The detailed recovery logic lives in `/pl-resume`.
+- This gate is **unconditional** — it runs regardless of CLI flags (`--auto-build`, `--mode`, etc.). The user cannot accidentally bypass it.
+
+The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invocable as an early step in normal `/pl-resume` restore flow):
+
+1. Read all breadcrumbs from `.purlin/cache/merge_pending/*.json`.
+2. Display each pending merge with branch name, age, and worktree path.
+3. For each pending merge, attempt `git merge <branch>`:
+   - If the merge succeeds: clean up worktree, delete branch, remove breadcrumb, report success.
+   - If the merge conflicts: present the conflicts to the user and offer LLM-assisted resolution. The agent can read the conflicting files, understand the intent from both sides, and propose a resolution.
+   - The user may defer resolution ("skip for now") — the breadcrumb stays, and startup continues with a warning banner: "Deferred merge: `<branch>` — unmerged work exists."
+4. Only after all breadcrumbs are resolved or explicitly deferred, return control to the startup protocol.
 
 ---
 
