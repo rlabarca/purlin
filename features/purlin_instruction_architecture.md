@@ -96,6 +96,12 @@ The Purlin agent uses a combined instruction file (`PURLIN_BASE.md`) that replac
     Then it instructs the agent to run scan.sh for project state
     And it instructs the agent to present work organized by mode
 
+#### Scenario: Engineer work includes regression failures
+
+    Given instructions/PURLIN_BASE.md exists
+    When the content is parsed
+    Then the Engineer work criteria include regression_status: FAIL
+
 ### QA Scenarios
 
 #### Scenario: Instruction file size within target @auto

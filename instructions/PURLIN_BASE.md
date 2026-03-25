@@ -214,6 +214,7 @@ Interpret the scan results to identify work by mode:
 **Engineer work:**
 - Features in TODO lifecycle with no open INFEASIBLE
 - Features with test_status: FAIL
+- Features with regression_status: FAIL (regression test failures need fixing)
 - Open BUG discoveries with action_required: Engineer
 - Delivery plan features in current phase
 
