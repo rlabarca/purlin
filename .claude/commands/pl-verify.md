@@ -58,19 +58,26 @@ Credit features where Builder status is DONE and zero QA scenarios exist. These 
 
 ### Step 2 -- Smoke gate
 
-**Conditional:** Only runs if a `## Test Priority Tiers` table exists in `QA_OVERRIDES.md`. If no table exists, skip this step.
+**Always runs.** Read the `## Test Priority Tiers` table from `PURLIN_OVERRIDES.md` or `QA_OVERRIDES.md` (check both; purlin agent uses the former, legacy agents the latter). Also detect smoke regression suites: any `tests/qa/scenarios/<feature>_smoke.json` file with `"tier": "smoke"`.
 
-1.  Identify smoke-tier features in scope that have QA work (TODO or AUTO status). In scoped mode: only applies if the scoped feature is classified as smoke.
-2.  For each smoke-tier feature, run ALL its scenarios:
-    *   `@auto` scenarios: invoke the harness runner (see Step 3 for invocation syntax).
-    *   `@manual` and untagged scenarios: present to the user for manual verification.
-3.  **Halt-on-fail:** If ANY smoke-tier scenario fails (automated or manual):
+1.  Identify smoke-tier features. A feature is smoke-tier if:
+    *   It appears in the tier table with `smoke`, OR
+    *   A `<feature>_smoke.json` regression file exists with `"tier": "smoke"`
+2.  **Run smoke regressions FIRST.** For each smoke-tier feature with a `_smoke.json` file, run the smoke regression via the harness runner. These are designed to be fast (< 30s).
+3.  **Then run smoke QA scenarios.** For each smoke-tier feature in scope with QA work:
+    *   `@auto` scenarios: invoke the harness runner.
+    *   `@manual` and untagged scenarios: present to the user.
+4.  **Halt-on-fail:** If ANY smoke test fails (regression or scenario):
     ```
-    Smoke failure: <feature> — <scenario>.
-    Fix before continuing full verification? [yes to stop / no to continue]
+    ━━━ SMOKE FAILURE ━━━
+    <feature> — <test name>
+    Smoke tests verify critical functionality. This failure blocks all further verification.
+    Fix before continuing? [yes to stop / no to continue anyway]
+    ━━━━━━━━━━━━━━━━━━━━━
     ```
-    *   "yes": Abort the batch. Record the failure as a `[BUG]` discovery. Report which smoke features failed and route to Builder.
+    *   "yes": Abort the batch. Record the failure as a `[BUG]` discovery. Route to Engineer mode.
     *   "no": Continue to Step 3. The failure is still recorded as a discovery.
+5.  **Suggest smoke promotion.** After running smoke, if any non-smoke feature in scope is a prerequisite for 3+ other features and has no smoke classification, suggest: "Consider promoting `<feature>` to smoke tier with `/pl-smoke <feature>`." Do this once per session, not per feature.
 
 ### Step 3 -- Run @auto scenarios
 
