@@ -55,7 +55,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - If any **recommended** tool (claude) is missing: print a note with the install command (`npm install -g @anthropic-ai/claude-code`) and note that MCP servers will not be installed.
    - If any **optional** tool (node/npx) is missing: print a note with the install command and explain that Playwright web testing will be unavailable.
    - If all prerequisites are met: produce no prerequisite output.
-   - Include the prerequisite status in the summary report (step 8).
+   - Include the prerequisite status in the summary report (step 9).
    - Key difference from init.sh's own preflight: during updates, missing required tools produce warnings rather than hard exits, because the submodule is already advanced.
 
 4. **Init Refresh:**
@@ -90,12 +90,20 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - If `config.local.json` doesn't exist, creates it from `config.json`; otherwise adds missing keys with shared defaults
    - Reports new keys added or "Local config is up to date"
 
-7. **Stale Artifact Cleanup:**
+7. **Migration Module (if needed):**
+   - After config sync, check if migration to the Purlin unified agent model is needed:
+     - If `agents.purlin` is absent from config AND `agents.architect` or `agents.builder` exists: migration is needed
+     - If `agents.purlin` already exists: skip
+   - If needed, run: `python3 <submodule>/tools/migration/migrate.py --project-root <project_root>` with any applicable flags passed through (`--dry-run`, `--auto-approve`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--purlin-only`, `--complete-transition`)
+   - Report migration results in the summary
+   - See `features/purlin_migration.md` for the full migration protocol
+
+8. **Stale Artifact Cleanup:**
    - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `purlin_cdd_start.sh`, `purlin_cdd_stop.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
    - In `--dry-run` mode, list stale artifacts but do not delete
 
-8. **Summary:**
+9. **Summary:**
    ```
    Purlin updated: <old_version> -> <new_version>
    * N command files updated, M skipped (locally modified)
@@ -110,7 +118,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - Append: "Restart Claude Code to load MCP changes."
    If no MCP manifest changes were detected, produce no MCP-related output in the summary.
 
-9. **Customization Impact Check (Optional):**
+10. **Customization Impact Check (Optional):**
    - **Skip entirely if `--auto-approve`** -- do not prompt or analyze.
    - Prompt: "Would you like me to check if this update affects your customizations?"
    - If declined, exit. If accepted, run all four sub-steps:

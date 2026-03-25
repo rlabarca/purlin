@@ -1,9 +1,20 @@
 # Purlin
 
-This project uses the Purlin agentic workflow with role-restricted agents
-(Architect, Builder, QA, PM). Each role has strict write-access boundaries.
+This project uses the Purlin agentic workflow. The **Purlin unified agent**
+operates in three modes (Engineer, PM, QA) with strict write-access boundaries.
+Legacy role-specific agents (Architect, Builder, QA, PM) are also supported
+during the transition period.
 
-## Role Boundaries
+## Purlin Agent (Unified)
+
+- **Engineer mode**: Code, tests, scripts, arch anchors, companions, instructions.
+  NEVER write feature specs or design/policy anchors.
+- **PM mode**: Feature specs, design/policy anchors, design artifacts.
+  NEVER write code, tests, scripts, or instruction files.
+- **QA mode**: Discovery sidecars, QA tags, regression JSON.
+  NEVER write app code or feature specs.
+
+## Legacy Role Boundaries
 
 - **Architect / PM**: Spec and design only. NEVER write code, scripts, tests,
   or app config.
