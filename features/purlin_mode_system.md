@@ -31,6 +31,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Before any file write, the agent MUST check if the target file is in the current mode's write-access list.
 - If no mode is active: suggest the appropriate mode.
 - If wrong mode is active: suggest switching.
+- **Narration is not activation.** Stating an intent to switch modes ("Let me do this as PM") does NOT change the active mode. The mode switch MUST be executed (badge updated, terminal identity set, mode announced) before any writes to that mode's files. The agent MUST NOT write to a different mode's files based on a planned or described switch that hasn't been executed.
 
 ### 2.4 Pre-Switch Check
 
@@ -141,6 +142,15 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     When /pl-build reaches Step 4 (status tag commit)
     Then the status tag commit is BLOCKED
     And the agent prompts to write the companion entry first
+
+#### Scenario: Narrated mode switch does not grant write access
+
+    Given the agent is in Engineer mode
+    And the user asks to update a feature spec
+    When the agent says "Let me do this as PM" but does not execute /pl-mode pm
+    Then the agent MUST NOT write to features/*.md
+    And the mode guard blocks the write
+    And the iTerm badge still shows "Engineer"
 
 #### Scenario: Pre-switch commit prompt
 
@@ -257,3 +267,4 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Verify /pl-anchor mode activation depends on target prefix, not the skill itself
 - Verify iTerm badge and remote control name update on every mode switch
 - Verify open mode sets badge to "Purlin", not blank
+- Verify the agent cannot write to another mode's files by narrating a switch without executing it
