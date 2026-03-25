@@ -89,7 +89,7 @@ def _build_status_commit_index():
     """
     index = {}
     log_output = _run_git(
-        "log", "--all", "--grep=status(", "--format=%ct %s",
+        "log", "--grep=status(", "--format=%ct %s",
     )
     if not log_output:
         return index
@@ -155,7 +155,7 @@ def _build_spec_mod_index():
     """
     index = {}
     log_output = _run_git(
-        "log", "--all", "--name-only", "--format=%ct", "--diff-filter=M",
+        "log", "--name-only", "--format=%ct", "--diff-filter=AM",
         "--", "features/*.md",
     )
     if not log_output:
@@ -183,6 +183,56 @@ def _build_spec_mod_index():
 
 _EXEMPT_TAGS = re.compile(r'\[(Migration|Spec-FMT|QA-Tags)\]', re.IGNORECASE)
 
+# Cached exemption check index: maps basename -> list of commit messages since status commit
+_exemption_index = None
+
+
+def _build_exemption_index():
+    """Batch-fetch commit messages for all feature spec files.
+
+    Returns dict mapping basename -> [list of commit message strings]
+    with only commits NEWER than the file's status commit timestamp.
+    """
+    global _status_commit_cache
+    if _status_commit_cache is None:
+        _status_commit_cache = _build_status_commit_index()
+
+    # Find the earliest status commit timestamp to bound the query
+    if not _status_commit_cache:
+        return {}
+
+    min_ts = min(entry["timestamp"] for entry in _status_commit_cache.values())
+
+    # One git call: all commits touching features/*.md since earliest status commit
+    log_output = _run_git(
+        "log", "--name-only", "--format=__COMMIT__%s",
+        f"--since={min_ts}",
+        "--", "features/*.md",
+    )
+    if not log_output:
+        return {}
+
+    index = {}  # basename -> [messages]
+    current_msg = None
+
+    for line in log_output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("__COMMIT__"):
+            current_msg = line[10:]  # Strip prefix
+            continue
+        # It's a filename
+        basename = os.path.basename(line)
+        if basename.endswith('.impl.md') or basename.endswith('.discoveries.md'):
+            continue
+        if current_msg is not None:
+            if basename not in index:
+                index[basename] = []
+            index[basename].append(current_msg)
+
+    return index
+
 
 def _check_spec_modified_after_completion(feature_file):
     """Check if the spec was modified after the last status commit.
@@ -191,7 +241,7 @@ def _check_spec_modified_after_completion(feature_file):
     False if not (or all modifications are exempt), None if no status
     commit exists.
     """
-    global _status_commit_cache, _spec_mod_cache
+    global _status_commit_cache, _spec_mod_cache, _exemption_index
     if _status_commit_cache is None:
         _status_commit_cache = _build_status_commit_index()
     if _spec_mod_cache is None:
@@ -209,19 +259,15 @@ def _check_spec_modified_after_completion(feature_file):
         return False  # Not modified after completion
 
     # Spec was modified after completion — check if ALL intervening commits
-    # have exemption tags. Use git log for commits touching this file since
-    # the status commit timestamp.
-    rel_path = os.path.relpath(feature_file, PROJECT_ROOT)
-    log_output = _run_git(
-        "log", "--format=%s", f"--since={status_ts}", "--", rel_path,
-    )
-    if not log_output:
-        return False  # No commits found (shouldn't happen but safe default)
+    # have exemption tags using the batch index.
+    if _exemption_index is None:
+        _exemption_index = _build_exemption_index()
 
-    for msg in log_output.splitlines():
-        msg = msg.strip()
-        if not msg:
-            continue
+    messages = _exemption_index.get(basename, [])
+    if not messages:
+        return False  # No commits found in index (edge case)
+
+    for msg in messages:
         # Skip the status commit itself
         if msg.startswith("status("):
             continue
@@ -666,61 +712,6 @@ def scan_worktrees():
 
 
 # ---------------------------------------------------------------------------
-# Changes since last scan
-# ---------------------------------------------------------------------------
-
-def scan_changes_since_last(last_scan_time):
-    """Detect files modified since the last scan timestamp.
-
-    Uses git to find files changed after the given ISO timestamp.
-    Returns a dict categorizing changed files.
-    """
-    result = {
-        "specs_modified": [],
-        "code_modified": [],
-        "companions_modified": [],
-        "discoveries_modified": [],
-    }
-
-    if not last_scan_time:
-        return result
-
-    diff_output = _run_git(
-        "diff", "--name-only",
-        "--diff-filter=ACMR",
-        f"--since={last_scan_time}",
-        "HEAD",
-    )
-    # Fallback: use log-based approach.
-    if not diff_output:
-        diff_output = _run_git(
-            "log", f"--since={last_scan_time}",
-            "--name-only", "--format=",
-        )
-
-    if not diff_output:
-        return result
-
-    seen = set()
-    for path in diff_output.splitlines():
-        path = path.strip()
-        if not path or path in seen:
-            continue
-        seen.add(path)
-
-        if path.startswith("features/") and path.endswith(".discoveries.md"):
-            result["discoveries_modified"].append(path)
-        elif path.startswith("features/") and path.endswith(".impl.md"):
-            result["companions_modified"].append(path)
-        elif path.startswith("features/") and path.endswith(".md"):
-            result["specs_modified"].append(path)
-        elif not path.startswith("features/") and not path.startswith(".purlin/"):
-            result["code_modified"].append(path)
-
-    return result
-
-
-# ---------------------------------------------------------------------------
 # Main scan orchestration
 # ---------------------------------------------------------------------------
 
@@ -728,16 +719,11 @@ def run_scan():
     """Execute all scans and return the complete result dict."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # Read previous scan time for change detection.
-    prev_scan = _read_json_safe(CACHE_FILE)
-    last_scan_time = prev_scan.get("scanned_at") if prev_scan else None
-
     git_state = scan_git_state()
 
     result = {
         "scanned_at": now,
         "features": scan_features(),
-        "changes_since_last_scan": scan_changes_since_last(last_scan_time),
         "open_discoveries": [
             d for d in scan_discoveries() if d.get("status") == "OPEN"
         ],

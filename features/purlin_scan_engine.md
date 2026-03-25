@@ -17,6 +17,7 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - Scan all `features/*.md` files, excluding `*.impl.md`, `*.discoveries.md`, and `tombstones/`.
 - For each feature, extract: lifecycle tag (from git log status commits), section headings presence (Requirements, Unit Tests, QA Scenarios, Visual Spec), prerequisite links, and Owner tag.
 - Lifecycle extraction MUST use a single batched git log call, not one call per feature.
+- Git queries MUST use current branch only (no `--all` flag). Status commits and spec modifications from other branches are irrelevant to current project state.
 
 ### 2.2 Test Status
 
@@ -71,6 +72,8 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - If the spec was modified AFTER the last status commit, report `spec_modified_after_completion: true`.
 - If no status commit exists (feature never completed), this field is `null`.
 - This comparison MUST be done via batched git log calls (not one per feature).
+- Both Added and Modified files MUST be detected (not just Modified). A spec file created after the status commit counts as modified.
+- Exemption check MUST use a batched git log call (one call for all features), not per-feature calls.
 - The scan engine reports this as a fact. It does NOT reset the lifecycle or generate action items — that reasoning belongs in the agent's instructions (PURLIN_BASE.md).
 
 ### 2.10 Exemption Tag Awareness
@@ -91,6 +94,7 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 ### 2.12 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
+- Git calls MUST be batched. The scan uses at most 4 git log calls regardless of feature count (status index, spec mod index, exemption index, git state).
 - The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
 
 ---
@@ -206,6 +210,25 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     When scan.py runs
     Then git_state.worktrees contains an entry with the worktree branch
 
+#### Scenario: Scan uses current branch only for status commits
+
+    Given a status commit for "auth_flow" exists on branch "feature/login" but not on "main"
+    And the current branch is "main"
+    When scan.py runs
+    Then "auth_flow" lifecycle is TODO (not COMPLETE from the other branch)
+
+#### Scenario: Scan detects newly created spec as modified
+
+    Given feature "new_feature" was completed, then the spec file was deleted and recreated
+    When scan.py runs
+    Then "new_feature" has spec_modified_after_completion true
+
+#### Scenario: Exemption check uses batched git call
+
+    Given 10 features have spec_modified_after_completion candidates
+    When scan.py runs the exemption check
+    Then at most 1 additional git log call is made (not 10)
+
 ### QA Scenarios
 
 #### Scenario: Full scan under 2 seconds with 100 features @auto
@@ -225,3 +248,6 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - Verify scan.py handles companion files with mixed tag formats (bracket, bold-markdown)
 - Verify atomic cache writes prevent corruption on concurrent access
 - Verify batched git log call scales linearly with feature count
+- Verify scan.py makes at most 4-5 git calls total (not per-feature)
+- Verify --all flag is NOT used in any git log call
+- Verify scan output does NOT contain changes_since_last_scan field
