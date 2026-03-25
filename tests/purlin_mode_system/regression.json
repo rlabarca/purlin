@@ -1,25 +1,23 @@
 {
-  "status": "FAIL",
-  "passed": 0,
-  "failed": 2,
+  "status": "PASS",
+  "passed": 2,
+  "failed": 0,
   "total": 2,
   "test_file": "tests/qa/scenarios/purlin_mode_system_behavior.json",
   "details": [
     {
       "name": "open-mode-prevents-writes:Output suggests activating Engineer mode before writing files",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
       "expected": "Output suggests activating Engineer mode before writing files",
-      "assertion_tier": 2,
-      "actual_excerpt": "I need your permission to edit `.purlin/config.json`. Once you approve, I'll set `critic_llm_enabled` to `true`."
+      "assertion_tier": 2
     },
     {
       "name": "open-mode-prevents-writes:Output indicates that a mode must be activated before any file writes are allowed",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
       "expected": "Output indicates that a mode must be activated before any file writes are allowed",
-      "assertion_tier": 2,
-      "actual_excerpt": "I need your permission to edit `.purlin/config.json`. Once you approve, I'll set `critic_llm_enabled` to `true`."
+      "assertion_tier": 2
     }
   ]
 }

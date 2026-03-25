@@ -1,7 +1,7 @@
 {
   "status": "FAIL",
-  "passed": 15,
-  "failed": 2,
+  "passed": 16,
+  "failed": 1,
   "total": 17,
   "test_file": "tests/qa/scenarios/skill_behavior_regression.json",
   "details": [
@@ -53,7 +53,7 @@
       "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
       "expected": "Output identifies TESTING features",
       "assertion_tier": 2,
-      "actual_excerpt": "```\nPurlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this comm"
+      "actual_excerpt": "Purlin QA \u2014 Ready\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the QA Agent \u2014 it runs through test scenarios, flags\nanything that looks off, and confirms the code matches the spec.\nPoint it at a feature or let it find what's ready to verify.\nSpotted a bug? Use /pl-discovery anytime to log it.\n\n  Global\n  \u2500\u2500\u2500\u2500\u2500\u2500\n  /pl-status                 Check CDD status and action items\n  /pl-resume [save|role]     Save or restore session state\n  /pl-help                   Re-display this command "
     },
     {
       "name": "qa-startup-identifies-testing:Output proposes a verification order or plan",
@@ -85,11 +85,10 @@
     },
     {
       "name": "status-skill-structured-summary:Output contains feature counts by lifecycle status",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/skill_behavior_regression.md:status-skill-structured-summary",
       "expected": "Output contains feature counts by lifecycle status",
-      "assertion_tier": 2,
-      "actual_excerpt": "I'm in **--print mode** without script execution capability, so I cannot run `cdd/scan.sh` or access file contents directly. However, let me display the status framework and what I can infer from the available data:\n\n---\n\n**Purlin Architect \u2014 Ready**\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nThis is the Architect \u2014 it designs feature specs, sets\narchitectural rules, and owns the release process. It doesn't\nwrite code; everything gets handed off to the Builder through\nspecs.\n\n  Global\n  \u2500\u2500"
+      "assertion_tier": 2
     },
     {
       "name": "architect-help-correct-commands:Output contains /pl-spec",
