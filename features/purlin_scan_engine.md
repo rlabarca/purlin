@@ -65,7 +65,22 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - `--cached` flag returns cached result if less than 60 seconds old.
 - Cache writes MUST be atomic (write to temp file, then rename).
 
-### 2.9 Performance
+### 2.9 Spec Modification Detection
+
+- For each feature, compare the timestamp of the last `status()` commit against the timestamp of the most recent commit that modified `features/<name>.md`.
+- If the spec was modified AFTER the last status commit, report `spec_modified_after_completion: true`.
+- If no status commit exists (feature never completed), this field is `null`.
+- This comparison MUST be done via batched git log calls (not one per feature).
+- The scan engine reports this as a fact. It does NOT reset the lifecycle or generate action items — that reasoning belongs in the agent's instructions (PURLIN_BASE.md).
+
+### 2.10 Design Constraint: Facts Only
+
+- scan.py MUST only answer "what IS" — never "what should be DONE."
+- scan.py MUST NOT contain `if/else` logic that decides what an agent should do, routes work to roles/modes, or prioritizes action items. That reasoning belongs in agent instructions and skills.
+- If a proposed change to scan.py requires deciding WHO should act or WHAT they should do, it belongs in PURLIN_BASE.md or a skill file instead.
+- This constraint is what keeps scan.py at ~300 lines instead of 4100.
+
+### 2.11 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
 - The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
@@ -146,6 +161,19 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     When scan.py runs
     Then dependency_graph.total is 0
     And dependency_graph.cycles is empty
+
+#### Scenario: Scan detects spec modified after completion
+
+    Given feature "notifications" with a status commit at time T1
+    And features/notifications.md was modified at time T2 where T2 > T1
+    When scan.py runs
+    Then the feature "notifications" has spec_modified_after_completion true
+
+#### Scenario: Scan reports null modification when never completed
+
+    Given feature "new_feature" with no status commit
+    When scan.py runs
+    Then the feature "new_feature" has spec_modified_after_completion null
 
 #### Scenario: Scan lists git worktrees
 
