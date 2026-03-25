@@ -105,14 +105,14 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 
 ### QA Scenarios
 
-#### Scenario: Smoke regression targets fast execution
+#### Scenario: Smoke regression targets fast execution @manual
 
     Given a smoke regression file was created by /pl-smoke
     When the scenario count is checked
     Then it has 3 or fewer scenarios
     And each scenario is designed for < 30 second execution
 
-#### Scenario: End-to-end smoke promotion and verification
+#### Scenario: End-to-end smoke promotion and verification @manual
 
     Given a feature with no smoke classification
     When /pl-smoke promotes it and creates a smoke regression

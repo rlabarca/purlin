@@ -169,7 +169,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 ### QA Scenarios
 
-#### Scenario: Complete transition removes old artifacts
+#### Scenario: Complete transition removes old artifacts @manual
 
     Given migration has run and old launchers still exist
     When /pl-update-purlin --complete-transition runs
@@ -182,7 +182,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
     And ARCHITECT_OVERRIDES.md is deleted
     And BUILDER_OVERRIDES.md is deleted
 
-#### Scenario: End-to-end migration preserves feature completeness
+#### Scenario: End-to-end migration preserves feature completeness @manual
 
     Given a consumer project with 20 COMPLETE features using old 4-role model
     When full migration runs (config + overrides + specs + companions)
