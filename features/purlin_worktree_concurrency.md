@@ -35,22 +35,58 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - The hook MUST auto-commit pending changes before merge, including both tracked modifications and untracked files (`git ls-files --others --exclude-standard`).
 - The hook MUST NOT use `set -e`. Intermediate failures (e.g., `git add`) must not prevent the merge attempt from being reached. All git commands in the auto-commit block MUST use `|| true` for resilience.
 - The hook MUST only process branches matching `purlin-*` pattern.
-- On merge conflict: abort merge, preserve worktree, and write a merge-pending breadcrumb (see 2.6). Then set the iTerm badge to `MERGE FAILED` so the dead terminal tab visually signals the problem. Print a prominent warning to stderr.
+- On merge conflict: abort merge, preserve worktree, and write a merge-pending breadcrumb (see 2.8). Then set the iTerm badge to `MERGE FAILED` so the dead terminal tab visually signals the problem. Print a prominent warning to stderr.
 - The hook MUST exit 0 in all cases (never block agent exit).
 
-### 2.4 Stale Worktree Detection
+### 2.4 Session Lock
 
-- On init.sh refresh: scan `.purlin/worktrees/` and remove invalid worktrees.
-- On agent startup: if stale worktrees exist (older than 24h with no recent commits), warn the user.
-- `/pl-resume` MUST detect and offer to resume or clean up abandoned worktrees.
+On worktree creation, the launcher MUST write `.purlin_session.lock` in the worktree root:
 
-### 2.5 Concurrent Session Safety
+```json
+{
+  "pid": 12345,
+  "started": "2026-03-25T18:00:00Z",
+  "mode": "engineer",
+  "label": "W1"
+}
+```
 
-- Multiple worktree agents MUST NOT share the same worktree directory.
+- Written by `pl-run.sh` immediately after `git worktree add`.
+- Deleted by the SessionEnd hook after successful merge, or by `/pl-merge` after cleanup.
+- `.purlin_session.lock` MUST be gitignored (per-machine runtime artifact, not committed).
+- One agent per worktree. The lock establishes ownership.
+
+**Liveness check:** `kill -0 $PID`. If the process is not running, the lock is stale (agent crashed or exited without merging).
+
+### 2.5 Stale Worktree Detection
+
+Stale detection uses PID liveness from the session lock (Section 2.4), not commit age:
+
+- **Lock exists + PID alive** → active. Leave alone.
+- **Lock exists + PID dead** → stale. Agent crashed or exited without merging. Offer merge or discard.
+- **No lock file** → orphaned. Old worktree with no session tracking. Offer cleanup.
+
+On agent startup (via `/pl-resume`): report stale and orphaned worktrees with uncommitted work summary.
+On `init.sh --refresh`: remove invalid worktree entries (worktree directory no longer exists).
+
+### 2.6 Merge Serialization
+
+When two worktrees merge back to main concurrently, they can race. Merge operations MUST be serialized:
+
+- Before merging to main, acquire `.purlin/cache/merge.lock` (write PID + timestamp).
+- If lock exists and PID is alive: print `"Merge blocked: another worktree is merging to main. Retrying..."` and retry after 2s, up to 3 times.
+- If retries exhausted: abort merge, write breadcrumb (same as conflict handling in Section 2.8), and exit.
+- Delete merge lock after merge completes (success or failure).
+- Applies to both `/pl-merge` and the SessionEnd hook.
+- Stale merge locks (PID dead) are silently removed before acquiring.
+
+### 2.7 Concurrent Session Safety
+
+- One agent per worktree. Multiple agents MUST NOT share the same worktree directory.
 - Branch names MUST include timestamp for uniqueness.
-- Merge-back is sequential (one at a time to avoid cascading conflicts).
+- Merge-back is serialized via the merge lock (Section 2.6).
 
-### 2.6 Merge Failure Signaling
+### 2.8 Merge Failure Signaling
 
 When the SessionEnd hook (2.3) or `/pl-merge` encounters a merge conflict that cannot be auto-resolved:
 
@@ -77,7 +113,7 @@ When the SessionEnd hook (2.3) or `/pl-merge` encounters a merge conflict that c
   ```
 - On successful merge, the hook MUST NOT write a breadcrumb. If a breadcrumb exists from a previous failed attempt of the same branch, the hook MUST delete it.
 
-### 2.7 Startup Merge Recovery
+### 2.9 Startup Merge Recovery
 
 On every Purlin agent startup, **before** `scan.sh` and **before** mode activation:
 
@@ -179,6 +215,44 @@ The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invoca
     Then the breadcrumb file is preserved
     And a warning banner is displayed for the remainder of the session
     And normal startup continues
+
+#### Scenario: Session lock written on worktree creation
+
+    Given pl-run.sh invoked with --worktree --mode engineer
+    When the worktree is created
+    Then .purlin_session.lock exists in the worktree root
+    And the lock contains the current PID, mode "engineer", and ISO timestamp
+
+#### Scenario: Session lock deleted after successful merge
+
+    Given the agent is in a purlin worktree with .purlin_session.lock
+    When /pl-merge succeeds
+    Then .purlin_session.lock no longer exists in the worktree
+    And the worktree directory is removed
+
+#### Scenario: Stale worktree detected via PID check
+
+    Given .purlin/worktrees/purlin-pm-20260325/ has .purlin_session.lock with PID 99999
+    And PID 99999 is not running
+    When /pl-resume runs on startup
+    Then the worktree is reported as stale
+    And the user is offered to merge or discard
+
+#### Scenario: Merge lock serializes concurrent merges
+
+    Given two worktrees W1 and W2 both attempt /pl-merge simultaneously
+    When W1 acquires .purlin/cache/merge.lock first
+    Then W2 prints "Merge blocked: another worktree is merging to main"
+    And W2 retries after 2 seconds
+    And both merges eventually complete
+
+#### Scenario: Stale merge lock is cleaned up
+
+    Given .purlin/cache/merge.lock exists with PID 99999
+    And PID 99999 is not running
+    When a worktree attempts to merge
+    Then the stale lock is removed
+    And the merge proceeds normally
 
 #### Scenario: Stale worktree cleanup on refresh
 
