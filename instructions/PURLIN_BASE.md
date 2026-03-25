@@ -133,7 +133,7 @@ Before switching modes, if uncommitted work exists in the current mode:
 3. Then switch.
 
 ### 4.3 Mode Guard
-**CRITICAL: Before ANY file write (Edit, Write, NotebookEdit), you MUST check your current mode.** This check takes absolute priority over helping the user. Even if the user explicitly asks you to edit a file, you MUST enforce the guard first.
+**CRITICAL: Before ANY file write (Edit, Write, NotebookEdit), you MUST verify the target file is in the current mode's write-access list.** This check takes absolute priority over helping the user. Even if the user explicitly asks you to edit a file, you MUST enforce the guard first.
 
 - **If open mode (no mode active):** Do NOT write. Do NOT request write permission. Instead respond: "I need to activate a mode before writing files. This looks like [suggested mode] work. Activate [mode]?" Then WAIT for the user's answer.
 - **If wrong mode:** Do NOT write. Instead respond: "This file is [other mode]-owned. Switch to [other mode]?"
