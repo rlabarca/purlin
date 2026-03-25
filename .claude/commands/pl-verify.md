@@ -115,37 +115,38 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
 
 For each QA scenario in scope with NO tag (neither `@auto` nor `@manual`) that was NOT already handled in Step 2 (smoke gate):
 
-> **Auto-start override:** When `auto_start` is `true`, skip the
-> per-scenario user proposal (substeps 2-5 below). Instead: auto-classify
-> each scenario — if automation-feasible, author via `/pl-regression-author`, run
-> via harness, and tag `@auto`; if not feasible, tag `@manual`. Batch-commit
-> all tag changes. Report all classifications in the Phase A Summary.
+1.  **Evaluate automation feasibility for ALL untagged scenarios first** (do NOT prompt one at a time). Criteria: deterministic assertions (no subjective judgment), no physical hardware required, no interactive multi-step human workflow.
 
-1.  **Evaluate automation feasibility:** Can the scenario be automated? Criteria: deterministic assertions (no subjective judgment), no physical hardware required, no interactive multi-step human workflow.
+2.  **Batch-classify obvious cases silently.** If QA determines a scenario is clearly not automatable in-session (agent_behavior test, requires external fixtures, requires human judgment), tag it `@manual` immediately without asking the user. Do NOT prompt for confirmation on obvious classifications.
 
-2.  **Propose to user:**
+3.  **Present a single summary** of all classifications made and any that need user input:
+
     ```
-    Classify: "<Scenario Title>" in <feature>
-    Automatable via <harness_type> — <one-line rationale>.
-    Automate now? [yes / no / skip classification]
+    Classified 4 scenarios:
+
+    Tagged @manual (not automatable in-session):
+      purlin_migration: "Complete transition removes old artifacts" — agent_behavior
+      purlin_migration: "End-to-end migration preserves completeness" — agent_behavior
+      purlin_smoke_testing: "Smoke regression targets fast execution" — agent_behavior
+      purlin_smoke_testing: "End-to-end smoke promotion" — agent_behavior
+
+    Need your input:
+      (none this batch)
     ```
 
-3.  **If user approves ("yes"):**
-    *   Invoke `/pl-regression-author` to create or append to the regression JSON.
-    *   Run the new scenario via the harness runner (same process as Step 3).
-    *   Add `@auto` tag to the scenario heading in the feature file.
-    *   Commit the tag change and regression JSON.
+4.  **Only prompt the user for genuinely ambiguous cases** — scenarios where QA is unsure whether automation is feasible. Present these as a batch, not one at a time:
 
-4.  **If user declines ("no") or scenario is not feasible:**
-    *   Add `@manual` tag to the scenario heading in the feature file.
-    *   Commit the tag change.
-    *   Scenario enters Phase B manual checklist.
+    ```
+    These could go either way — automate or manual?
+      feature_x: "Scenario A" — could be custom_script but setup is complex
+      feature_y: "Scenario B" — deterministic but needs server running
 
-5.  **If user says "skip classification":**
-    *   Leave the scenario untagged for this session.
-    *   Scenario enters Phase B manual checklist as-is.
+    Tag all as @manual? Or specify which to automate: "A=auto, B=manual"
+    ```
 
-6.  **Invariant:** After this step, every scenario has been classified (tagged @auto or @manual) OR explicitly skipped by the user. No scenario silently remains untagged.
+5.  **Commit all tag changes in one batch commit** with `[QA-Tags]` exemption tag.
+
+6.  **Invariant:** After this step, every scenario is tagged `@auto` or `@manual`. No scenario silently remains untagged.
 
 ### Step 5 -- Visual smoke
 
