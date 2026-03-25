@@ -231,6 +231,9 @@ def _cli_role(project_root, role):
     config = resolve_config(project_root)
     agents = config.get('agents', {})
     agent = agents.get(role, {})
+    # Purlin agent falls back to builder config during transition
+    if role == 'purlin' and not agent:
+        agent = agents.get('builder', {})
 
     model = agent.get('model', '')
     effort = agent.get('effort', '')
@@ -320,7 +323,7 @@ def main():
                   file=sys.stderr)
             sys.exit(1)
         _cli_acknowledge_warning(project_root, sys.argv[2])
-    elif arg in ('architect', 'builder', 'qa', 'pm'):
+    elif arg in ('architect', 'builder', 'qa', 'pm', 'purlin'):
         _cli_role(project_root, arg)
     else:
         print(f"Unknown argument: {arg}", file=sys.stderr)
