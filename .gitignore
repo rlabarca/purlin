@@ -37,6 +37,7 @@ tools/critic/.cache/
 # Worktrees (both Purlin agent and Claude Code sub-agent)
 .purlin/worktrees/
 .claude/worktrees/
+.purlin_worktree_label
 
 # Temp
 tmp/
