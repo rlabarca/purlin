@@ -15,13 +15,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 ## Scope
 
 If an argument was provided, implement the named feature from `features/<arg>.md`.
-If no argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output. Identify buildable features and pick the highest-priority one:
-
-1. Features with `test_status: FAIL` or `regression_status: FAIL` (fix failures first)
-2. Features with `spec_modified_after_completion: true` (spec changed since completion — re-read spec, re-run tests, update implementation if spec requirements changed)
-3. Features in TODO lifecycle (new work)
-
-Present all buildable items and start with the highest priority.
+If no argument was provided, run `/pl-status` to get the current work list. Pick the highest-priority Engineer work item and begin implementing it.
 Check `features/tombstones/` first and process any pending tombstones before regular feature work.
 
 If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. When `auto_start` is `false` (default), halt after completing a phase (see Step 4.E). When `auto_start` is `true`, auto-advance to the next PENDING phase (see Step 4.E).
