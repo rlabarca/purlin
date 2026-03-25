@@ -1,22 +1,15 @@
 {
   "status": "PASS",
-  "passed": 2,
+  "passed": 1,
   "failed": 0,
-  "total": 2,
-  "test_file": "tests/qa/scenarios/purlin_mode_system_behavior.json",
+  "total": 1,
+  "test_file": "tests/qa/scenarios/purlin_mode_system.json",
   "details": [
     {
-      "name": "open-mode-prevents-writes:Output suggests activating Engineer mode before writing files",
+      "name": "purlin_mode_system_suite:mode system regression suite ran to completion",
       "status": "PASS",
-      "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
-      "expected": "Output suggests activating Engineer mode before writing files",
-      "assertion_tier": 2
-    },
-    {
-      "name": "open-mode-prevents-writes:Output indicates that a mode must be activated before any file writes are allowed",
-      "status": "PASS",
-      "scenario_ref": "features/purlin_mode_system.md:open-mode-prevents-writes",
-      "expected": "Output indicates that a mode must be activated before any file writes are allowed",
+      "scenario_ref": "features/purlin_mode_system.md:purlin_mode_system_suite",
+      "expected": "mode system regression suite ran to completion",
       "assertion_tier": 2
     }
   ]
