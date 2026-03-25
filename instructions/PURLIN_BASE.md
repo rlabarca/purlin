@@ -280,6 +280,7 @@ Certain commits that modify feature spec files are exempt from triggering lifecy
 |-----|---------|-------------|
 | `[QA-Tags]` | Only modifies `@auto`/`@manual` tag suffixes on QA Scenario headings | QA classifying scenarios |
 | `[Spec-FMT]` | Only changes spec formatting without altering behavioral content | PM fixing formatting |
+| `[Migration]` | Batch role/terminology renames during framework migration (no behavioral change) | pl-update-purlin migration |
 
 If ALL commits to a feature spec since the last status commit contain exempt tags, the lifecycle is preserved.
 

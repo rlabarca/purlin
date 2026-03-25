@@ -73,14 +73,22 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - This comparison MUST be done via batched git log calls (not one per feature).
 - The scan engine reports this as a fact. It does NOT reset the lifecycle or generate action items — that reasoning belongs in the agent's instructions (PURLIN_BASE.md).
 
-### 2.10 Design Constraint: Facts Only
+### 2.10 Exemption Tag Awareness
+
+- When computing `spec_modified_after_completion`, scan.py MUST check if ALL commits to the spec file since the last status commit carry an exemption tag.
+- Recognized exemption tags: `[Spec-FMT]`, `[QA-Tags]`, `[Migration]`.
+- If ALL intervening commits are exempt, report `spec_modified_after_completion: false` (the modifications were non-behavioral).
+- If ANY commit lacks an exemption tag, report `spec_modified_after_completion: true`.
+- This is still a fact ("were the modifications exempt?"), not a decision.
+
+### 2.11 Design Constraint: Facts Only
 
 - scan.py MUST only answer "what IS" — never "what should be DONE."
 - scan.py MUST NOT contain `if/else` logic that decides what an agent should do, routes work to roles/modes, or prioritizes action items. That reasoning belongs in agent instructions and skills.
 - If a proposed change to scan.py requires deciding WHO should act or WHAT they should do, it belongs in PURLIN_BASE.md or a skill file instead.
 - This constraint is what keeps scan.py at ~300 lines instead of 4100.
 
-### 2.11 Performance
+### 2.12 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
 - The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
@@ -168,6 +176,23 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     And features/notifications.md was modified at time T2 where T2 > T1
     When scan.py runs
     Then the feature "notifications" has spec_modified_after_completion true
+
+#### Scenario: Exempt commits do not trigger spec_modified_after_completion
+
+    Given feature "auth_flow" completed at time T1
+    And features/auth_flow.md was modified at time T2 > T1
+    And the commit at T2 has "[Migration]" in its message
+    And no other commits to auth_flow.md exist between T1 and T2
+    When scan.py runs
+    Then the feature "auth_flow" has spec_modified_after_completion false
+
+#### Scenario: Mixed exempt and non-exempt commits trigger modification
+
+    Given feature "auth_flow" completed at time T1
+    And features/auth_flow.md was modified at T2 with "[Spec-FMT]"
+    And features/auth_flow.md was modified at T3 > T2 without any exemption tag
+    When scan.py runs
+    Then the feature "auth_flow" has spec_modified_after_completion true
 
 #### Scenario: Scan reports null modification when never completed
 
