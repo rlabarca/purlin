@@ -323,6 +323,11 @@ if [[ "$PURLIN_WORKTREE" == "true" ]]; then
         WORKTREE_LABEL="W${_next}"
         echo "$WORKTREE_LABEL" > "$WORKTREE_DIR/.purlin_worktree_label"
 
+        # Write session lock
+        cat > "$WORKTREE_DIR/.purlin_session.lock" << LOCKEOF
+{"pid": $$, "started": "$(date -u +%Y-%m-%dT%H:%M:%SZ)", "mode": "${PURLIN_MODE:-open}", "label": "$WORKTREE_LABEL"}
+LOCKEOF
+
         echo "Working in worktree: $WORKTREE_DIR ($WORKTREE_LABEL)"
         echo "Branch: $WORKTREE_BRANCH"
         echo "Run /pl-merge when done to merge back."

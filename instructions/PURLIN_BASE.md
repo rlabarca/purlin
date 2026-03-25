@@ -195,12 +195,13 @@ Large-scope changes may be split into numbered delivery phases. The delivery pla
 
 ## 12. Worktree Concurrency
 
-Agents launched with `--worktree` operate in isolated git worktrees under `.purlin/worktrees/`. Key boundaries:
+Agents launched with `--worktree` operate in isolated git worktrees under `.purlin/worktrees/`. One agent per worktree. Key boundaries:
 
 - **Isolation:** Worktree agents MUST NOT modify the main working directory.
-- **Merge-back:** Use `/pl-merge` to merge back and clean up. Safe files auto-resolve; code/spec conflicts require user resolution.
-- **SessionEnd hook:** `tools/hooks/merge-worktrees.sh` merges worktrees on exit (including Ctrl+C). Processes only `purlin-*` branches. Exits 0 always.
-- **Stale detection:** `/pl-resume` detects orphaned worktree branches on startup.
+- **Session lock:** On creation, the launcher writes `.purlin_session.lock` (PID, mode, label, timestamp) in the worktree root. Deleted on successful merge. Used for liveness detection (`kill -0 $PID`).
+- **Merge-back:** Use `/pl-merge` to merge back and clean up. Merges are serialized via `.purlin/cache/merge.lock` to prevent race conditions between concurrent worktrees. Safe files auto-resolve; code/spec conflicts require user resolution.
+- **SessionEnd hook:** `tools/hooks/merge-worktrees.sh` merges worktrees on exit (including Ctrl+C). Acquires merge lock, processes only `purlin-*` branches, deletes session lock on success. Exits 0 always.
+- **Stale detection:** `/pl-resume` detects stale worktrees via PID liveness (not commit age). Use `/pl-worktree list` to see all worktrees and their status. Use `/pl-worktree cleanup-stale` to remove abandoned worktrees.
 
 ## 13. CLI Launcher Convention
 
