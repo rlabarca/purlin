@@ -229,30 +229,31 @@ Run in-session suites? [all / per-feature / skip]
 
 10. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run `agent_behavior` suites in-session (nested session protection). When any agent_behavior suite has status FAIL, STALE, or NOT_RUN, QA MUST present a prominent action block and STOP.
 
-**Format the action block exactly like this — make FAIL items visually obvious:**
+**Format the action block exactly like this — commands MUST be on their own line with no indentation, no bullet, no prefix, so they copy cleanly from the terminal:**
 
 ```
 ━━━ ACTION REQUIRED ━━━
+These tests must run in a separate terminal.
+Copy and paste each command below:
 
-These tests run outside this session (they invoke claude --print).
-Run each command in a separate terminal:
+✗ FAIL  skill_behavior_regression (15/17)
 
-  ✗ FAIL  skill_behavior_regression (15/17)
-    python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
+python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
 
-  ✗ FAIL  purlin_mode_system_behavior (0/2)
-    python3 tools/test_support/harness_runner.py tests/purlin_mode_system/regression.json
+✗ FAIL  purlin_mode_system_behavior (0/2)
 
-Say "done" when finished, or "skip" to proceed without them.
+python3 tools/test_support/harness_runner.py tests/purlin_mode_system/regression.json
+
+Say "done" when finished, or "skip" to continue.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Rules for this block:**
-- List FAIL items FIRST (with ✗ marker and pass/total counts)
-- Then STALE items (with ~ marker)
-- Then NOT_RUN items (with ? marker)
-- Skip PASS items entirely — they don't need action
-- Show the exact command to run for each item
+**CRITICAL formatting rules:**
+- Each command MUST be on its own line starting at column 0 — NO indentation, NO bullet prefix, NO markdown formatting
+- Put a blank line BEFORE and AFTER each command so it stands alone visually
+- The command must be a single line — never let it wrap by putting extra text on the same line
+- List FAIL items FIRST (with ✗ marker), then STALE (~), then NOT_RUN (?)
+- Skip PASS items — they don't need action
 - If zero items need action (all PASS), skip the block entirely
 
 **STOP HERE. Wait for the user to respond.** Do NOT print the Phase B checklist, do NOT present manual scenarios, do NOT continue with any other work until the user says "done" or "skip". This gate applies even when `auto_start` is `true` — agent_behavior external execution always requires a user round-trip.
