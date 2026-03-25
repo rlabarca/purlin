@@ -23,6 +23,14 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - For each feature, read `tests/<feature_stem>/tests.json`.
 - Report `"PASS"`, `"FAIL"`, or `null` (missing).
 
+### 2.2a Regression Test Status
+
+- For each feature, read `tests/<feature_stem>/regression.json`.
+- Report `"PASS"`, `"FAIL"`, or `null` (missing).
+- If `regression.json` has `status: "FAIL"`, include `passed` and `failed` counts.
+- Regression failures MUST be surfaced as Engineer work items (same priority as test failures).
+- Also scan `tests/qa/scenarios/<feature_stem>.json` for QA-authored regression suites.
+
 ### 2.3 Discovery Scanning
 
 - Scan `features/*.discoveries.md` for entries by type (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) and status (OPEN, SPEC_UPDATED, RESOLVED).
@@ -92,6 +100,19 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     Given no tests/ directory for feature "new_feature"
     When scan.py runs
     Then the feature "new_feature" has test_status null
+
+#### Scenario: Scan detects failing regression test
+
+    Given tests/skill_behavior_regression/regression.json with status "FAIL" and failed 2
+    When scan.py runs
+    Then the feature "skill_behavior_regression" has regression_status "FAIL"
+    And regression_failed count is 2
+
+#### Scenario: Scan reports null regression status when no regression.json
+
+    Given no regression.json for feature "new_feature"
+    When scan.py runs
+    Then the feature "new_feature" has regression_status null
 
 #### Scenario: Scan detects open BUG discovery
 

@@ -231,15 +231,41 @@ def scan_features():
         if test_data is not None:
             test_status = test_data.get("status", None)
 
-        features.append({
+        # Regression test status
+        regression_json_path = os.path.join(TESTS_DIR, stem, "regression.json")
+        regression_data = _read_json_safe(regression_json_path)
+        regression_status = None
+        regression_failed = None
+        regression_passed = None
+        if regression_data is not None:
+            regression_status = regression_data.get("status", None)
+            regression_failed = regression_data.get("failed", None)
+            regression_passed = regression_data.get("passed", None)
+
+        # Also check QA-authored regression suites
+        qa_scenario_path = os.path.join(TESTS_DIR, "qa", "scenarios", f"{stem}.json")
+        qa_regression_data = _read_json_safe(qa_scenario_path)
+        qa_regression_status = None
+        if qa_regression_data is not None:
+            qa_regression_status = qa_regression_data.get("status", None)
+
+        feature_entry = {
             "name": stem,
             "file": _relpath(filepath),
             "lifecycle": _extract_lifecycle(filepath),
             "owner": _extract_owner(filepath),
             "prerequisites": _extract_prerequisites(filepath),
             "test_status": test_status,
+            "regression_status": regression_status,
             "sections": _check_sections(filepath),
-        })
+        }
+        if regression_failed is not None:
+            feature_entry["regression_failed"] = regression_failed
+            feature_entry["regression_passed"] = regression_passed
+        if qa_regression_status is not None:
+            feature_entry["qa_regression_status"] = qa_regression_status
+
+        features.append(feature_entry)
 
     return features
 
