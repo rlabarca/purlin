@@ -12,7 +12,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 ---
 
-Run `${TOOLS_ROOT}/cdd/status.sh --role qa` to get QA-filtered status. Then produce a structured summary:
+Run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output to get feature status. Then produce a QA-focused structured summary:
 
 **Output format:**
 
