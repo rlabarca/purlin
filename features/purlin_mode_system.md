@@ -170,14 +170,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 ### QA Scenarios
 
-#### Scenario: Open mode prevents writes
+#### Scenario: Open mode prevents writes @auto
 
     Given the agent has just started with no mode active
     When the user asks to "edit the config file"
     Then the agent suggests activating Engineer mode first
     And does not write to any file
 
-#### Scenario: Old consolidated skills are deleted
+#### Scenario: Old consolidated skills are deleted @auto
 
     Given the project after skill consolidation
     When checking .claude/commands/

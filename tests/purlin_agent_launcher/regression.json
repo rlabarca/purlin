@@ -1,0 +1,17 @@
+{
+  "status": "FAIL",
+  "passed": 0,
+  "failed": 1,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/purlin_agent_launcher.json",
+  "details": [
+    {
+      "name": "purlin_agent_launcher_suite:agent launcher regression suite ran to completion",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_agent_launcher.md:purlin_agent_launcher_suite",
+      "expected": "agent launcher regression suite ran to completion",
+      "assertion_tier": 2,
+      "actual_excerpt": "=== QA Regression: purlin_agent_launcher ===\n\n--- Pre-checks ---\nPASS: T0a: pl-run-builder.sh exists\nPASS: T0b: pl-run.sh exists\nPASS: T0c: instructions/HOW_WE_WORK_BASE.md exists\nPASS: T0d: instructions/PURLIN_BASE.md exists\n\n--- Scenario A: Deprecation warning on old launcher ---\nFAIL: T1: pl-run-builder.sh does not print deprecation warning (spec 2.5 requires it)\nFAIL: T2: deprecation warning does not mention pl-run.sh\nPASS: T3: agent session started after deprecation warning (claude was invo"
+    }
+  ]
+}

@@ -114,14 +114,14 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
 
 ### QA Scenarios
 
-#### Scenario: Deprecation warning on old launcher
+#### Scenario: Deprecation warning on old launcher @auto
 
     Given pl-run-builder.sh exists and is invoked
     When the launcher starts
     Then it prints a deprecation warning mentioning pl-run.sh
     And the agent session starts after the warning
 
-#### Scenario: First-run interactive model selection
+#### Scenario: First-run interactive model selection @manual
 
     Given no agents.purlin in config.local.json
     When pl-run.sh is invoked without --model
@@ -129,7 +129,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
     And the launcher prompts for effort selection
     And the selection is stored in config.local.json
 
-#### Scenario: Instruction stack assembly
+#### Scenario: Instruction stack assembly @auto
 
     Given PURLIN_BASE.md exists in instructions/
     When pl-run.sh launches the agent

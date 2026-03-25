@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/purlin_mode_system.json",
+  "details": [
+    {
+      "name": "purlin_mode_system_suite:mode system regression suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_mode_system.md:purlin_mode_system_suite",
+      "expected": "mode system regression suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

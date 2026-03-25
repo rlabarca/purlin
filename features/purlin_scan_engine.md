@@ -134,13 +134,13 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 
 ### QA Scenarios
 
-#### Scenario: Full scan under 2 seconds with 100 features
+#### Scenario: Full scan under 2 seconds with 100 features @auto
 
     Given a project with 97 feature files
     When scan.py runs a full scan (no cache)
     Then execution completes in under 2 seconds
 
-#### Scenario: Scan output is valid JSON
+#### Scenario: Scan output is valid JSON @auto
 
     Given a project with features, discoveries, and a delivery plan
     When scan.py runs

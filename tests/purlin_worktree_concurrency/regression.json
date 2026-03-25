@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/purlin_worktree_concurrency.json",
+  "details": [
+    {
+      "name": "purlin_worktree_concurrency_suite:worktree concurrency regression suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_concurrency.md:purlin_worktree_concurrency_suite",
+      "expected": "worktree concurrency regression suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

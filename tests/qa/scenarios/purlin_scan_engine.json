@@ -1,0 +1,17 @@
+{
+  "feature": "purlin_scan_engine",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "purlin_scan_engine_suite",
+      "script_path": "tests/qa/test_purlin_scan_engine_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "scan engine regression suite ran to completion"
+        }
+      ]
+    }
+  ]
+}

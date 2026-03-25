@@ -1,0 +1,17 @@
+{
+  "feature": "purlin_instruction_architecture",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "purlin_instruction_architecture_suite",
+      "script_path": "tests/qa/test_purlin_instruction_architecture_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "instruction architecture regression suite ran to completion"
+        }
+      ]
+    }
+  ]
+}

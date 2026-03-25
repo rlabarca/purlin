@@ -104,7 +104,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 ### QA Scenarios
 
-#### Scenario: Safe file auto-resolution during merge
+#### Scenario: Safe file auto-resolution during merge @auto
 
     Given a worktree with changes to both src/app.py and .purlin/cache/scan.json
     And the source branch also changed .purlin/cache/scan.json
@@ -112,7 +112,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
     Then .purlin/cache/scan.json conflict is auto-resolved (keep main)
     And src/app.py merges cleanly
 
-#### Scenario: Concurrent worktrees do not share directories
+#### Scenario: Concurrent worktrees do not share directories @auto
 
     Given two pl-run.sh processes both invoked with --worktree --mode engineer
     When both create worktrees

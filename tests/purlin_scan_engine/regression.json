@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/purlin_scan_engine.json",
+  "details": [
+    {
+      "name": "purlin_scan_engine_suite:scan engine regression suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_scan_engine.md:purlin_scan_engine_suite",
+      "expected": "scan engine regression suite ran to completion",
+      "assertion_tier": 2
+    }
+  ]
+}

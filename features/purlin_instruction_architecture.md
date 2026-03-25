@@ -98,7 +98,7 @@ The Purlin agent uses a combined instruction file (`PURLIN_BASE.md`) that replac
 
 ### QA Scenarios
 
-#### Scenario: Instruction file size within target
+#### Scenario: Instruction file size within target @auto
 
     Given instructions/PURLIN_BASE.md exists
     When the line count is measured
