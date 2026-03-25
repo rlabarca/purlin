@@ -15,15 +15,10 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 ### 2.1 Instruction File Structure
 
 - `instructions/PURLIN_BASE.md` is the SOLE instruction file. The launcher loads it directly — no separate `HOW_WE_WORK_BASE.md`.
-- The file MUST contain the CDD philosophy ("code is disposable", "design evolves with code").
-- The file MUST define all three modes (Engineer, PM, QA) with activation triggers and write-access lists.
-- The file MUST define open mode (read-only until a mode is activated) with a mandatory write block.
-- The file MUST define the mode-switching protocol (activation, pre-switch commit check, mode guard, iTerm identity).
-- The file MUST define the Active Deviations protocol (companion file table format, decision hierarchy, three Engineer-to-PM flows).
-- The file MUST define the startup protocol (scan.sh invocation, work-by-mode presentation, mode activation).
-- The file MUST define knowledge colocation (anchor taxonomy, cross-cutting standards, companion files, discovery sidecars, lifecycle reset exemptions).
-- The file MUST define testing responsibility split, release protocol, visual spec convention, and phased delivery.
-- Target size: 300-450 lines (detailed protocols deferred to skills).
+- The file MUST contain: CDD philosophy, mode definitions with activation triggers, open mode write block, mode-switching protocol (guard, pre-switch checks, iTerm identity), startup protocol, feature lifecycle, testing split, layered instructions, and shutdown protocol.
+- The file MUST NOT contain detailed definitions that belong in reference files. Instead it references: `references/file_classification.md`, `references/commit_conventions.md`, `references/active_deviations.md`, `references/knowledge_colocation.md`.
+- Mode write-access rules MUST say "All files classified as CODE/SPEC/QA-OWNED in `references/file_classification.md`" — not inline file pattern lists.
+- Target size: 200-300 lines (definitions extracted to references, protocols deferred to skills).
 
 ### 2.2 Override File Structure
 
