@@ -5,6 +5,7 @@
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/init_preflight_checks.md
+> Prerequisite: features/purlin_migration.md
 > Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
 
 [Complete] <!-- re-verified 2026-03-23 after metadata-only spec edits -->
@@ -99,7 +100,7 @@ requirements introduced by the update.
     specified in `init_preflight_checks.md` Section 2.2.
 3.  If any **recommended or optional** tool is missing: print a note with the installation
     command and an explanation of what functionality is unavailable.
-4.  Include the prerequisite status in the summary report (Section 2.11).
+4.  Include the prerequisite status in the summary report (Section 2.12).
 
 The key difference from init.sh's own preflight: during updates, missing required tools
 produce warnings rather than hard exits, because the submodule is already advanced.
@@ -154,7 +155,17 @@ After init refresh, run the config resolver's `sync_config()` function:
 
 This step runs unconditionally after every successful update.
 
-### 2.10 Stale Artifact Cleanup
+### 2.10 Migration Module Integration
+
+After the config sync step (Section 2.9), the skill MUST invoke the Purlin migration module (`tools/migration/migrate.py`) if migration is needed.
+
+1. Run migration detection: check if `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists in config.
+2. If migration is needed: inform the user and run the migration workflow (see `features/purlin_migration.md` for full protocol).
+3. If migration is already complete or not applicable: skip silently.
+4. Migration CLI flags (`--dry-run`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--auto-approve`, `--purlin-only`, `--complete-transition`) are passed through from `/pl-update-purlin` invocation.
+5. The `--dry-run` flag from Section 2.13 applies to migration as well — show what would migrate without modifying files.
+
+### 2.11 Stale Artifact Cleanup
 
 Check for legacy-named scripts at the consumer project root:
 - `run_architect.sh` (renamed to `pl-run-architect.sh`)
@@ -167,7 +178,7 @@ Check for legacy-named scripts at the consumer project root:
 If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
 if none found. In `--dry-run` mode, list but do not delete.
 
-### 2.11 Summary Report
+### 2.12 Summary Report
 
 After successful update, display a brief summary:
 
@@ -180,7 +191,7 @@ Purlin updated: <old_version> -> <new_version>
 
 If conflicts were resolved in Section 2.8, note them. If stale artifacts were cleaned, note them.
 
-### 2.12 Dry Run Mode
+### 2.13 Dry Run Mode
 
 When `--dry-run` is specified:
 - Perform fetch and version check
@@ -188,13 +199,13 @@ When `--dry-run` is specified:
 - Show what would be changed
 - Do NOT modify any files, advance the submodule, or update `.purlin/.upstream_sha`
 
-### 2.13 Project Root Detection
+### 2.14 Project Root Detection
 
 The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with directory-climbing as fallback.
 
-### 2.14 Customization Impact Analysis (Optional)
+### 2.15 Customization Impact Analysis (Optional)
 
-After the summary report (Section 2.11), the skill MUST offer an optional deep analysis of
+After the summary report (Section 2.12), the skill MUST offer an optional deep analysis of
 how the update affects consumer-specific customizations. This step is entirely opt-in and
 runs zero analysis unless accepted.
 
@@ -268,14 +279,14 @@ files need alignment.
 - Omit dimensions that found no issues
 - If all four dimensions are clean: "No customization impacts detected."
 
-### 2.15 Regression Testing
+### 2.16 Regression Testing
 
 Regression tests verify the update agent correctly handles submodule update scenarios.
 - **Approach:** Agent behavior harness (`claude --print` with fixtures against external fixture repo)
 - **Scenarios covered:** Clean update, conflict detection, dry-run mode
 - **Fixture tags:** See Integration Test Fixture Tags section
 
-### 2.16 MCP Manifest Diff
+### 2.17 MCP Manifest Diff
 
 During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 `tools/mcp/manifest.json` changed between the old and new submodule SHA.
@@ -294,7 +305,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     *   **Removed servers:** Present in old manifest but not in new. Print an advisory: `"MCP server '<name>' was removed from Purlin manifest. Remove manually: claude mcp remove <name>"`. Do NOT auto-remove.
     *   **Changed servers:** Present in both but with different `transport`, `command`, `args`, or `url`. Print an advisory with reconfiguration command: `"MCP server '<name>' config changed upstream. Reconfigure: claude mcp remove <name> && <new add command>"`. Where `<new add command>` is the appropriate `claude mcp add` invocation for the new server entry.
 
-**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.11): `"Restart Claude Code to load MCP changes."`
+**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.12): `"Restart Claude Code to load MCP changes."`
 
 ---
 
@@ -628,7 +639,7 @@ The skill MUST minimize agent reasoning on the fast path. On the mandatory path 
 Heavy analysis activates ONLY when the conflict scan (Section 2.4) flags files.
 
 ### 4.4 Go-Deeper Analysis Principle
-Section 2.14 is the only place where override-vs-base comparison, header scanning, config
+Section 2.15 is the only place where override-vs-base comparison, header scanning, config
 semantic analysis, and feature template format diffing occurs. These activities MUST NOT
 appear in the mandatory fast path (Sections 2.3 through 2.11). The go-deeper analysis is
 entirely opt-in and zero-cost when declined.
@@ -648,7 +659,7 @@ Allow pinning to specific Purlin versions to prevent auto-updates.
 
 ### 5.4 Automatic Go-Deeper on Breaking Changes
 When upstream includes a `BREAKING_CHANGES.md` file covering the update range, automatically
-trigger the customization impact analysis (Section 2.14) without prompting. The breaking
+trigger the customization impact analysis (Section 2.15) without prompting. The breaking
 changes file would serve as a signal that the update warrants deeper inspection.
 
 ## Regression Guidance

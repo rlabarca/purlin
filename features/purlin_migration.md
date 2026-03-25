@@ -55,12 +55,20 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 - Parse existing `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`, `[SPEC_PROPOSAL]` tags and populate table rows with PM status `PENDING`.
 - Preserve all existing prose content below the table.
 
-### 2.6 Launcher Generation
+### 2.6 CLAUDE.md Update
+
+- If the consumer project has a `CLAUDE.md` that references the old 4-role model (Architect, Builder, QA, PM) but does not mention the Purlin unified agent:
+  - Add a section describing the Purlin agent alongside existing role boundaries.
+  - Reference: use `purlin-config-sample/CLAUDE.md.purlin` as the canonical template.
+- If `CLAUDE.md` already mentions "Purlin" or "unified agent": skip.
+- If no `CLAUDE.md` exists: skip (init.sh creates it from the sample).
+
+### 2.7 Launcher Generation
 
 - Generate `pl-run.sh` at project root (or trigger init.sh refresh to generate it).
 - Do NOT delete old launchers — they still work during transition.
 
-### 2.7 CLI Restrictions
+### 2.8 CLI Restrictions
 
 - `--dry-run` — Show what would change without modifying any files.
 - `--skip-overrides` — Don't merge override files.
@@ -70,7 +78,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 - `--purlin-only` — Only add purlin config section, skip all other migration.
 - `--complete-transition` — Remove old launchers, deprecated config entries, and old override files.
 
-### 2.8 Idempotency
+### 2.9 Idempotency
 
 - Running migration twice MUST NOT corrupt files.
 - Check for Active Deviations table existence before inserting.
@@ -78,7 +86,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 - Check for PURLIN_OVERRIDES.md existence before creating.
 - `--complete-transition` is safe to run multiple times.
 
-### 2.9 Migration Commit Convention
+### 2.10 Migration Commit Convention
 
 - All commits that modify feature spec files during migration MUST include `[Migration]` in the commit message.
 - This tag signals to scan.py's exemption tag awareness that the modification is non-behavioral.
@@ -141,6 +149,14 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
     Then features/auth_flow.impl.md starts with Active Deviations table
     And the table has a row for the existing deviation
     And existing prose content is preserved below
+
+#### Scenario: CLAUDE.md updated to mention Purlin agent
+
+    Given CLAUDE.md references "Architect, Builder, QA, PM" roles
+    And CLAUDE.md does not mention "Purlin" or "unified agent"
+    When migration runs
+    Then CLAUDE.md is updated to include Purlin unified agent description
+    And old role references are preserved for backward compatibility
 
 #### Scenario: Dry run shows changes without modifying
 
