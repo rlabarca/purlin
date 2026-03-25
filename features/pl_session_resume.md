@@ -183,9 +183,11 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-
   - `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
   - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
 
-When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
+When a checkpoint exists, startup flags are not consulted -- the checkpoint is the authority for both mode and work plan.
 
-**Mode activation priority:** CLI `--mode` (from launcher) > config `default_mode` > checkpoint mode > `.purlin_session.lock` mode > user input. Use the first one that is set.
+**Mode activation priority (context-dependent):**
+- **Warm resume (checkpoint exists):** checkpoint mode wins. This is the save/resume contract — the user gets back where they were regardless of launcher flags or config defaults.
+- **Cold start (no checkpoint):** CLI `--mode` > config `default_mode` > `.purlin_session.lock` mode > user input.
 
 **Worktree context:** If running inside a worktree (`.purlin_worktree_label` exists), read the label and include it in the recovery summary. If `.purlin_session.lock` exists, read the mode from the lock as a fallback when no checkpoint exists.
 

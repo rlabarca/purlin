@@ -138,7 +138,7 @@ Read `instructions/references/purlin_commands.md` and print the appropriate vari
 ### 5.2 Delegate to `/pl-resume`
 Run `/pl-resume`. It handles everything from here: checkpoint detection, scanning, work discovery via `/pl-status`, mode activation, delivery plan resumption, and `find_work`/`auto_start` flag handling. See `features/pl_session_resume.md` for the full protocol.
 
-**Mode activation priority:** CLI `--mode` > config `default_mode` > checkpoint mode > user input.
+**Mode activation priority:** If a checkpoint exists, checkpoint mode wins (save/resume contract). If no checkpoint: CLI `--mode` > config `default_mode` > user input.
 
 ## 6. Feature Lifecycle
 
