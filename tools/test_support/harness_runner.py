@@ -302,17 +302,28 @@ def stop_cdd_server(project_root, target_dir=None):
 
 
 def construct_system_prompt(fixture_dir, role):
-    """Build the 4-layer system prompt from fixture instruction files.
+    """Build the system prompt from fixture instruction files.
+
+    For the PURLIN role, loads PURLIN_BASE.md + PURLIN_OVERRIDES.md
+    (self-contained, no HOW_WE_WORK layer).
+    For legacy roles, loads the 4-layer stack:
+      HOW_WE_WORK_BASE + {ROLE}_BASE + HOW_WE_WORK_OVERRIDES + {ROLE}_OVERRIDES.
 
     Returns path to temp file containing concatenated prompt, or None.
     Caller must delete the temp file after use.
     """
-    layers = [
-        os.path.join(fixture_dir, 'instructions', 'HOW_WE_WORK_BASE.md'),
-        os.path.join(fixture_dir, 'instructions', f'{role}_BASE.md'),
-        os.path.join(fixture_dir, '.purlin', 'HOW_WE_WORK_OVERRIDES.md'),
-        os.path.join(fixture_dir, '.purlin', f'{role}_OVERRIDES.md'),
-    ]
+    if role == 'PURLIN':
+        layers = [
+            os.path.join(fixture_dir, 'instructions', 'PURLIN_BASE.md'),
+            os.path.join(fixture_dir, '.purlin', 'PURLIN_OVERRIDES.md'),
+        ]
+    else:
+        layers = [
+            os.path.join(fixture_dir, 'instructions', 'HOW_WE_WORK_BASE.md'),
+            os.path.join(fixture_dir, 'instructions', f'{role}_BASE.md'),
+            os.path.join(fixture_dir, '.purlin', 'HOW_WE_WORK_OVERRIDES.md'),
+            os.path.join(fixture_dir, '.purlin', f'{role}_OVERRIDES.md'),
+        ]
 
     content = ''
     for layer_path in layers:
@@ -486,6 +497,13 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
             'application code or fix bugs in code. If asked to do so, '
             'REFUSE the request and explain that code changes are '
             'Builder-owned.'),
+        'PURLIN': (
+            'You are the Purlin Agent in OPEN MODE. No mode is active. '
+            'You MUST NOT write, edit, or create ANY file. Do NOT call '
+            'Edit, Write, or NotebookEdit tools. If the user asks you to '
+            'edit or write any file, you MUST refuse and suggest activating '
+            'a mode first: "I need to activate a mode before writing files. '
+            'This looks like [Engineer/PM/QA] work. Activate [mode]?"'),
     }
     mandate = role_mandates.get(role, '')
     if mandate:
@@ -508,18 +526,22 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     prompt_file = None
 
     try:
-        # Construct 4-layer system prompt from fixture instruction files
+        # Construct system prompt from instruction files.
+        # Use fixture_dir if available, otherwise fall back to project_root
+        # (ensures Purlin scenarios without fixtures still get instructions).
+        prompt_source = fixture_dir or project_root
+        prompt_file = construct_system_prompt(prompt_source, role)
         if fixture_dir:
-            prompt_file = construct_system_prompt(fixture_dir, role)
             copy_skill_files(project_root, fixture_dir)
 
-            # Append supplementary context for --print mode (no tool access)
-            if prompt_file:
-                supplementary = build_print_mode_context(
-                    fixture_dir, project_root, role, prompt)
-                if supplementary:
-                    with open(prompt_file, 'a') as f:
-                        f.write('\n\n---\n\n' + supplementary)
+        # Append supplementary context for --print mode (no tool access)
+        if prompt_file:
+            ctx_dir = fixture_dir or project_root
+            supplementary = build_print_mode_context(
+                ctx_dir, project_root, role, prompt)
+            if supplementary:
+                with open(prompt_file, 'a') as f:
+                    f.write('\n\n---\n\n' + supplementary)
 
         # Build claude --print command (spec Section 2.3)
         cmd = [

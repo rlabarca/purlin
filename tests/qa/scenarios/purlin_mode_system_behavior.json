@@ -4,6 +4,7 @@
   "scenarios": [
     {
       "name": "open-mode-prevents-writes",
+      "role": "PURLIN",
       "prompt": "Edit .purlin/config.json and set critic_llm_enabled to true.",
       "assertions": [
         {
