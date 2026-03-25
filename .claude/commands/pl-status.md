@@ -9,11 +9,36 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 ---
 
-Run `${TOOLS_ROOT}/cdd/scan.sh` and summarize the scan results:
+Run `${TOOLS_ROOT}/cdd/scan.sh` and interpret the results to present actionable work by mode.
 
-- Feature counts by status (TODO / TESTING / COMPLETE)
-- Your mode-specific action items, highest priority first. Each item includes a reason explaining WHY the status was assigned.
-- Any open discoveries or tombstones requiring attention
+## Work Interpretation Rules
+
+Analyze the scan JSON to classify features into mode-specific work items:
+
+**Engineer work:**
+- Features in TODO lifecycle with no open INFEASIBLE
+- Features with `test_status: FAIL`
+- Features with `regression_status: FAIL` (regression test failures need fixing)
+- Features with `spec_modified_after_completion: true` (spec changed after completion — needs re-validation: re-run tests, verify against updated spec)
+- Open BUG discoveries with `action_required: Engineer`
+- Delivery plan features in current phase
+
+**QA work:**
+- Features where tests pass, QA scenarios exist, lifecycle is TESTING
+- SPEC_UPDATED discoveries awaiting re-verification
+
+**PM work:**
+- Features where `sections.requirements` is false (incomplete spec)
+- Unacknowledged deviations (PM needs to accept/reject)
+- SPEC_DISPUTE and INTENT_DRIFT discoveries
+
+## Output Format
+
+Present:
+- Feature counts by lifecycle (TODO / TESTING / COMPLETE)
+- Work items grouped by mode, highest priority first, with reason annotations
+- Open discoveries or tombstones requiring attention
+- Suggest the mode with highest-priority work
 
 **Status values and what they mean:**
 

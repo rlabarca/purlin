@@ -50,11 +50,13 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
 ### 2.6 Base Instructions vs. Skill Protocols
 
-- PURLIN_BASE.md MUST contain: philosophy, mode definitions, write-access boundaries, mode switching protocol, ownership model, startup protocol, knowledge colocation, lifecycle, testing split.
-- PURLIN_BASE.md MUST NOT contain: detailed step-by-step workflow protocols for specific operations (these belong in skill files).
-- The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol, not a base instruction.
-- The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol, not a base instruction.
-- Base instructions set BOUNDARIES. Skills carry PROTOCOLS.
+- PURLIN_BASE.md MUST contain: philosophy, mode definitions, write-access boundaries, mode switching protocol, ownership model, knowledge colocation, lifecycle, testing split.
+- PURLIN_BASE.md MUST NOT contain: detailed step-by-step workflow protocols, interpretation logic, or decision trees for specific operations. These belong in skill files.
+- **Skills first:** When deciding where logic belongs, default to putting it in a skill. Only put it in the base file if it needs to be active across ALL states of the agent (e.g., the mode guard must always be on, regardless of which skill is running).
+- The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol (`/pl-verify`).
+- The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol (`/pl-build`).
+- Work interpretation logic (how to classify scan results into mode-specific work items) is a SKILL protocol (`/pl-status`). The startup protocol in PURLIN_BASE.md invokes `/pl-status`, it does not duplicate its logic.
+- Base instructions set BOUNDARIES. Skills carry PROTOCOLS and LOGIC.
 
 ---
 

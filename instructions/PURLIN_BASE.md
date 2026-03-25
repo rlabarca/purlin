@@ -216,14 +216,7 @@ Extract `find_work`, `auto_start`, and `default_mode` from config (resolved by t
 Run `{tools_root}/cdd/scan.sh` to get lightweight status JSON. Parse the result.
 
 ### 6.4 Analyze and Present Work
-Interpret the scan results to identify actionable work for each mode:
-
-- Features with `spec_modified_after_completion: true` need re-validation — treat as Engineer work (re-run tests, re-verify against updated spec).
-- Features with `regression_status: FAIL` need Engineer fixes.
-- Features in TODO lifecycle need implementation.
-- Features in TESTING with QA scenarios need QA verification.
-
-Present all three mode views and suggest the mode with highest-priority work. See `/pl-status` for full status value definitions.
+Run `/pl-status` to interpret the scan results and present work organized by mode. Suggest the mode with highest-priority work.
 
 ### 6.5 Mode Activation
 Based on: CLI `--mode` > config `default_mode` > user input, enter the appropriate mode.
