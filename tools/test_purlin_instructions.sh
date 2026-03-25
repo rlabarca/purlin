@@ -229,23 +229,23 @@ else
         log_fail "PURLIN_BASE.md does not reference scan.sh"
     fi
 
-    # Check that startup presents work organized by mode
-    if grep -q "Engineer work\|Engineer work:" "$BASE_FILE"; then
-        log_pass "Startup protocol identifies Engineer work"
+    # Check that startup delegates work presentation to /pl-status (Sec 2.6)
+    if grep -q "/pl-status" "$BASE_FILE"; then
+        log_pass "Startup protocol delegates to /pl-status"
     else
-        log_fail "Startup protocol does not identify Engineer work"
+        log_fail "Startup protocol does not reference /pl-status"
     fi
 
-    if grep -q "QA work\|QA work:" "$BASE_FILE"; then
-        log_pass "Startup protocol identifies QA work"
+    if grep -q "work organized by mode\|work.*by mode" "$BASE_FILE"; then
+        log_pass "Startup protocol presents work organized by mode"
     else
-        log_fail "Startup protocol does not identify QA work"
+        log_fail "Startup protocol does not mention work organized by mode"
     fi
 
-    if grep -q "PM work\|PM work:" "$BASE_FILE"; then
-        log_pass "Startup protocol identifies PM work"
+    if grep -q "highest-priority work\|highest.priority" "$BASE_FILE"; then
+        log_pass "Startup protocol suggests highest-priority mode"
     else
-        log_fail "Startup protocol does not identify PM work"
+        log_fail "Startup protocol does not suggest highest-priority mode"
     fi
 fi
 

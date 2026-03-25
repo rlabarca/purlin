@@ -134,7 +134,7 @@ if [ -f "$PURLIN_BASE" ]; then
         log_fail "Pre-switch check does not mention uncommitted work"
     fi
 
-    if grep -q 'Commit first' "$PURLIN_BASE" || grep -q 'commit.*mode prefix' "$PURLIN_BASE"; then
+    if grep -qi 'commit first\|prompt to commit\|commit.*mode prefix' "$PURLIN_BASE"; then
         log_pass "Pre-switch prompts user to commit before switching"
     else
         log_fail "Pre-switch does not prompt to commit"
