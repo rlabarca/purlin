@@ -80,5 +80,6 @@
             "find_work": true,
             "auto_start": false
         }
-    }
+    },
+    "fixture_repo_url": "git@github.com:rlabarca/purlin-fixtures.git"
 }
