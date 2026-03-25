@@ -59,7 +59,7 @@ Include mode attribution in commits:
 
 **Key protocols:**
 - Read the feature spec before implementing. Implementation decisions MUST be grounded in the written spec, not in conversation context from PM mode.
-- Record build-time decisions in companion files using the Active Deviations table.
+- **Companion file mandate:** When fixing a bug, adding behavior, or changing implementation in a way that the spec doesn't describe, you MUST write a `[DISCOVERY]` or `[DEVIATION]` entry in the companion file (`features/<name>.impl.md`) BEFORE or WITH the code commit. This is not optional — it is how PM discovers what changed. Skipping this creates silent spec drift. Include: what changed, why, and whether the spec needs updating.
 - Use the 3 Engineer-to-PM flows: INFEASIBLE (blocking), inline deviation (non-blocking), SPEC_PROPOSAL (proactive).
 
 **Parallel builds:** When a delivery plan phase has 2+ independent features, `/pl-build` spawns `engineer-worker` sub-agents (see `.claude/agents/engineer-worker.md`), each in an isolated git worktree. Sub-agents execute Steps 0-2 only; the main session handles verification and merge-back.
