@@ -64,6 +64,15 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - QA commits: `qa()`, `status()` prefixes.
 - All commits MUST include `Purlin-Mode: <mode>` trailer.
 
+### 2.9 iTerm Terminal Identity
+
+- On mode activation, the agent MUST set the iTerm badge to the mode name (e.g., `Engineer`, `PM`, `QA`).
+- On mode activation, the agent MUST set the iTerm remote control name to `<project> - <mode>` (e.g., `purlin - Engineer`).
+- When no mode is active (open mode), the iTerm badge MUST be `Purlin`.
+- When no mode is active (open mode), the iTerm remote control name MUST be `<project> - Purlin`.
+- `<project>` is derived from the working directory name (basename of the project root).
+- The agent MUST use iTerm2 proprietary escape sequences: badge via `\033]1337;SetBadgeFormat=<base64>\a`, remote control name via `\033]1337;SetMark\a` or the appropriate `\033]0;<name>\a` title sequence.
+
 ---
 
 ## 3. Scenarios
@@ -139,6 +148,26 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     Then the commit message starts with "feat(" or "fix(" or "test("
     And the commit body contains "Purlin-Mode: Engineer"
 
+#### Scenario: iTerm badge set on mode activation
+
+    Given the agent is in open mode
+    When the user activates Engineer mode
+    Then the iTerm badge is set to "Engineer"
+    And the iTerm remote control name is set to "<project> - Engineer"
+
+#### Scenario: iTerm badge reset to Purlin in open mode
+
+    Given the agent has just started with no mode active
+    Then the iTerm badge is "Purlin"
+    And the iTerm remote control name is "<project> - Purlin"
+
+#### Scenario: iTerm badge updates on mode switch
+
+    Given the agent is in PM mode with iTerm badge "PM"
+    When the user switches to QA mode
+    Then the iTerm badge changes to "QA"
+    And the iTerm remote control name changes to "<project> - QA"
+
 ### QA Scenarios
 
 #### Scenario: Open mode prevents writes
@@ -168,3 +197,5 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Verify no skill file has ONLY the new header (breaks legacy agents)
 - Verify cross-mode test execution does not leave QA in Engineer mode
 - Verify /pl-anchor mode activation depends on target prefix, not the skill itself
+- Verify iTerm badge and remote control name update on every mode switch
+- Verify open mode sets badge to "Purlin", not blank
