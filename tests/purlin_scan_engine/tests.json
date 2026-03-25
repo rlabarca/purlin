@@ -1,9 +1,9 @@
 {
   "feature": "purlin_scan_engine",
   "status": "PASS",
-  "passed": 11,
+  "passed": 20,
   "failed": 0,
-  "total": 11,
+  "total": 20,
   "test_file": "tools/test_purlin_scan.sh",
   "scenarios": [
     "Scan detects feature lifecycle from git log",
@@ -16,7 +16,16 @@
     "Scan parses delivery plan phases",
     "Cached scan returns quickly",
     "Scan handles missing dependency graph gracefully",
-    "Scan lists git worktrees"
+    "Scan lists git worktrees",
+    "Scan detects failing regression test",
+    "Scan reports null regression status when no regression.json",
+    "Scan detects spec modified after completion",
+    "Exempt commits do not trigger spec_modified_after_completion",
+    "Mixed exempt and non-exempt commits trigger modification",
+    "Scan reports null modification when never completed",
+    "Scan uses current branch only for status commits",
+    "Scan detects newly created spec as modified",
+    "Exemption check uses batched git calls"
   ],
-  "ran_at": "2026-03-25T12:56:18Z"
+  "ran_at": "2026-03-25T14:26:47Z"
 }

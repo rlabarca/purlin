@@ -425,6 +425,57 @@ else
     log_fail "$NEW_ONLY_COUNT skill files have ONLY new header (breaks legacy agents)"
 fi
 
+# --- Scenario: Pre-switch companion file gate ---
+echo ""
+echo "[Scenario] Pre-switch companion file gate"
+
+if [ -f "$PURLIN_BASE" ]; then
+    if grep -qi 'companion file gate\|companion.*before switching\|companion.*entry.*before' "$PURLIN_BASE" 2>/dev/null; then
+        log_pass "PURLIN_BASE.md describes companion file gate before mode switch"
+    else
+        log_fail "PURLIN_BASE.md missing companion file gate before mode switch"
+    fi
+
+    if grep -qi 'skip\|user.*says.*skip\|explicitly.*skip' "$PURLIN_BASE" 2>/dev/null; then
+        log_pass "Companion file gate allows user to skip"
+    else
+        log_fail "Companion file gate missing skip option"
+    fi
+else
+    log_fail "PURLIN_BASE.md missing (needed for companion file gate check)"
+    log_fail "Cannot check skip option"
+fi
+
+# --- Scenario: Build status tag blocked by missing companion entry ---
+echo ""
+echo "[Scenario] Build status tag blocked by missing companion entry"
+
+PL_BUILD="$COMMANDS_DIR/pl-build.md"
+if [ -f "$PL_BUILD" ]; then
+    if grep -qi 'companion.*gate\|companion.*block\|companion.*entry.*first\|BLOCK.*status.*tag.*companion' "$PL_BUILD" 2>/dev/null; then
+        log_pass "pl-build.md blocks status tag on missing companion entry"
+    else
+        log_fail "pl-build.md missing companion file gate at status tag"
+    fi
+else
+    log_fail "pl-build.md not found"
+fi
+
+# --- Scenario: Regression evaluate documents failure in companion file ---
+echo ""
+echo "[Scenario] Regression evaluate documents failure in companion file"
+
+PL_REGRESSION="$COMMANDS_DIR/pl-regression.md"
+if [ -f "$PL_REGRESSION" ]; then
+    if grep -qi 'companion.*DISCOVERY\|impl\.md.*DISCOVERY\|\[DISCOVERY\].*companion' "$PL_REGRESSION" 2>/dev/null; then
+        log_pass "pl-regression.md writes DISCOVERY to companion file on failure"
+    else
+        log_fail "pl-regression.md missing companion file DISCOVERY on regression failure"
+    fi
+else
+    log_fail "pl-regression.md not found"
+fi
+
 ###############################################################################
 # Results
 ###############################################################################

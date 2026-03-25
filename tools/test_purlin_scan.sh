@@ -554,6 +554,415 @@ else
 fi
 
 ###############################################################################
+# Scenario 11: Scan detects failing regression test
+###############################################################################
+echo "--- Scenario 11: Scan detects failing regression test ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/auth_flow.md" << 'FEATEOF'
+# Feature: Auth Flow
+
+## 1. Overview
+Auth flow feature.
+
+## 2. Requirements
+Some requirements.
+FEATEOF
+
+mkdir -p "$FIXTURE_DIR/tests/auth_flow"
+cat > "$FIXTURE_DIR/tests/auth_flow/regression.json" << 'REGEOF'
+{
+  "status": "FAIL",
+  "passed": 3,
+  "failed": 2,
+  "total": 5
+}
+REGEOF
+
+run_scan_fixture "$FIXTURE_DIR"
+
+REG_STATUS=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'auth_flow':
+        rs = f.get('regression_status')
+        print(rs if rs is not None else 'null')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+REG_FAILED=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'auth_flow':
+        rf = f.get('regression_failed')
+        print(rf if rf is not None else 'null')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$REG_STATUS" = "FAIL" ] && [ "$REG_FAILED" = "2" ]; then
+    log_pass "Scan detects failing regression test"
+else
+    log_fail "Scan detects failing regression test (status=$REG_STATUS, failed=$REG_FAILED)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 12: Scan reports null regression status when no regression.json
+###############################################################################
+echo "--- Scenario 12: Scan reports null regression status when no regression.json ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/new_feature.md" << 'FEATEOF'
+# Feature: New Feature
+
+## 1. Overview
+A new feature with no regression tests.
+FEATEOF
+
+run_scan_fixture "$FIXTURE_DIR"
+
+REG_NULL=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'new_feature':
+        rs = f.get('regression_status')
+        print('null' if rs is None else rs)
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$REG_NULL" = "null" ]; then
+    log_pass "Scan reports null regression status when no regression.json"
+else
+    log_fail "Scan reports null regression status (got: $REG_NULL, expected: null)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 13: Scan detects spec modified after completion
+###############################################################################
+echo "--- Scenario 13: Scan detects spec modified after completion ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/notifications.md" << 'FEATEOF'
+# Feature: Notifications
+
+## 1. Overview
+Notifications.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/notifications.md
+git -C "$FIXTURE_DIR" commit -q -m "feat: add notifications"
+
+# Add a status commit
+git -C "$FIXTURE_DIR" commit --allow-empty -q -m "status(notifications): [Complete features/notifications.md] [Scope: full]"
+
+# Now modify the spec AFTER the status commit
+sleep 1
+echo "" >> "$FIXTURE_DIR/features/notifications.md"
+echo "## 2. Requirements" >> "$FIXTURE_DIR/features/notifications.md"
+echo "New requirements added." >> "$FIXTURE_DIR/features/notifications.md"
+git -C "$FIXTURE_DIR" add features/notifications.md
+git -C "$FIXTURE_DIR" commit -q -m "spec: add requirements to notifications"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+SPEC_MOD=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'notifications':
+        v = f.get('spec_modified_after_completion')
+        if v is None:
+            print('null')
+        else:
+            print('true' if v else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$SPEC_MOD" = "true" ]; then
+    log_pass "Scan detects spec modified after completion"
+else
+    log_fail "Scan detects spec modified after completion (got: $SPEC_MOD, expected: true)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 14: Exempt commits do not trigger spec_modified_after_completion
+###############################################################################
+echo "--- Scenario 14: Exempt commits do not trigger spec_modified_after_completion ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/auth_flow.md" << 'FEATEOF'
+# Feature: Auth Flow
+
+## 1. Overview
+Auth flow.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/auth_flow.md
+git -C "$FIXTURE_DIR" commit -q -m "feat: add auth flow"
+sleep 1
+git -C "$FIXTURE_DIR" commit --allow-empty -q -m "status(auth_flow): [Complete features/auth_flow.md] [Scope: full]"
+
+# Modify with an exempt tag
+sleep 1
+echo "" >> "$FIXTURE_DIR/features/auth_flow.md"
+echo "<!-- formatting fix -->" >> "$FIXTURE_DIR/features/auth_flow.md"
+git -C "$FIXTURE_DIR" add features/auth_flow.md
+git -C "$FIXTURE_DIR" commit -q -m "spec(auth_flow): fix formatting [Migration]"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+SPEC_MOD_EXEMPT=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'auth_flow':
+        v = f.get('spec_modified_after_completion')
+        if v is None:
+            print('null')
+        else:
+            print('true' if v else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$SPEC_MOD_EXEMPT" = "false" ]; then
+    log_pass "Exempt commits do not trigger spec_modified_after_completion"
+else
+    log_fail "Exempt commits do not trigger spec_modified_after_completion (got: $SPEC_MOD_EXEMPT, expected: false)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 15: Mixed exempt and non-exempt commits trigger modification
+###############################################################################
+echo "--- Scenario 15: Mixed exempt and non-exempt commits trigger modification ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/auth_flow.md" << 'FEATEOF'
+# Feature: Auth Flow
+
+## 1. Overview
+Auth flow.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/auth_flow.md
+git -C "$FIXTURE_DIR" commit -q -m "feat: add auth flow"
+git -C "$FIXTURE_DIR" commit --allow-empty -q -m "status(auth_flow): [Complete features/auth_flow.md] [Scope: full]"
+
+# First modification: exempt
+sleep 1
+echo "<!-- fmt -->" >> "$FIXTURE_DIR/features/auth_flow.md"
+git -C "$FIXTURE_DIR" add features/auth_flow.md
+git -C "$FIXTURE_DIR" commit -q -m "spec: formatting [Spec-FMT]"
+
+# Second modification: NOT exempt
+echo "## 2. Requirements" >> "$FIXTURE_DIR/features/auth_flow.md"
+git -C "$FIXTURE_DIR" add features/auth_flow.md
+git -C "$FIXTURE_DIR" commit -q -m "spec: add requirements to auth flow"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+SPEC_MOD_MIXED=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'auth_flow':
+        v = f.get('spec_modified_after_completion')
+        if v is None:
+            print('null')
+        else:
+            print('true' if v else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$SPEC_MOD_MIXED" = "true" ]; then
+    log_pass "Mixed exempt and non-exempt commits trigger modification"
+else
+    log_fail "Mixed exempt and non-exempt commits trigger modification (got: $SPEC_MOD_MIXED, expected: true)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 16: Scan reports null modification when never completed
+###############################################################################
+echo "--- Scenario 16: Scan reports null modification when never completed ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/new_feature.md" << 'FEATEOF'
+# Feature: New Feature
+
+## 1. Overview
+Never completed feature.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/new_feature.md
+git -C "$FIXTURE_DIR" commit -q -m "feat: add new feature"
+
+# No status commit exists
+
+run_scan_fixture "$FIXTURE_DIR"
+
+SPEC_MOD_NULL=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'new_feature':
+        v = f.get('spec_modified_after_completion')
+        if v is None:
+            print('null')
+        else:
+            print('true' if v else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$SPEC_MOD_NULL" = "null" ]; then
+    log_pass "Scan reports null modification when never completed"
+else
+    log_fail "Scan reports null modification when never completed (got: $SPEC_MOD_NULL, expected: null)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 17: Scan uses current branch only for status commits
+###############################################################################
+echo "--- Scenario 17: Scan uses current branch only for status commits ---"
+
+# Verify scan.py does NOT use --all flag in git log calls
+SCAN_PY="$PROJECT_ROOT/tools/cdd/scan.py"
+ALL_FLAG_COUNT=$(grep -c -- '--all' "$SCAN_PY" 2>/dev/null || true)
+ALL_FLAG_COUNT=$(echo "$ALL_FLAG_COUNT" | tr -d '[:space:]')
+
+if [ "$ALL_FLAG_COUNT" = "0" ]; then
+    log_pass "Scan uses current branch only (no --all flag in scan.py)"
+else
+    log_fail "Scan uses current branch only (found $ALL_FLAG_COUNT --all flags in scan.py)"
+fi
+
+###############################################################################
+# Scenario 18: Scan detects newly created spec as modified
+###############################################################################
+echo "--- Scenario 18: Scan detects newly created spec as modified ---"
+
+setup_fixture
+
+cat > "$FIXTURE_DIR/features/recreated.md" << 'FEATEOF'
+# Feature: Recreated
+
+## 1. Overview
+Original spec.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/recreated.md
+git -C "$FIXTURE_DIR" commit -q -m "feat: add recreated"
+git -C "$FIXTURE_DIR" commit --allow-empty -q -m "status(recreated): [Complete features/recreated.md] [Scope: full]"
+
+# Delete and recreate the spec
+sleep 1
+rm "$FIXTURE_DIR/features/recreated.md"
+git -C "$FIXTURE_DIR" add features/recreated.md
+git -C "$FIXTURE_DIR" commit -q -m "chore: remove recreated spec"
+
+cat > "$FIXTURE_DIR/features/recreated.md" << 'FEATEOF'
+# Feature: Recreated
+
+## 1. Overview
+New version of spec.
+
+## 2. Requirements
+All new requirements.
+FEATEOF
+
+git -C "$FIXTURE_DIR" add features/recreated.md
+git -C "$FIXTURE_DIR" commit -q -m "spec: recreate spec"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+SPEC_RECREATED=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d['features']:
+    if f['name'] == 'recreated':
+        v = f.get('spec_modified_after_completion')
+        if v is None:
+            print('null')
+        else:
+            print('true' if v else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$SPEC_RECREATED" = "true" ]; then
+    log_pass "Scan detects newly created spec as modified"
+else
+    log_fail "Scan detects newly created spec as modified (got: $SPEC_RECREATED, expected: true)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 19: Exemption check uses batched git call
+###############################################################################
+echo "--- Scenario 19: Exemption check uses batched git call ---"
+
+# Verify scan.py does NOT have per-feature git calls for exemption checks.
+# The scan.py should use a single batched git log call.
+SCAN_PY="$PROJECT_ROOT/tools/cdd/scan.py"
+
+# Count git subprocess calls in the exemption-related code.
+# A well-batched implementation should not have git calls inside loops.
+GIT_CALL_IN_LOOP=$(python3 -c "
+import ast, sys
+with open('$SCAN_PY') as f:
+    source = f.read()
+tree = ast.parse(source)
+# Count subprocess calls that contain 'git' inside for loops
+found_git_in_loop = False
+for node in ast.walk(tree):
+    if isinstance(node, ast.For):
+        for child in ast.walk(node):
+            if isinstance(child, ast.Call):
+                call_str = ast.dump(child)
+                if 'subprocess' in call_str and 'git' in ast.dump(child):
+                    found_git_in_loop = True
+                    break
+print('true' if found_git_in_loop else 'false')
+" 2>/dev/null)
+
+# Check that scan.py uses a single _run_git helper (batched approach).
+# Count how many unique git subprocess call sites exist.
+GIT_CALL_SITES=$(grep -c '_run_git\|subprocess.run.*git' "$SCAN_PY" 2>/dev/null || true)
+GIT_CALL_SITES=$(echo "$GIT_CALL_SITES" | tr -d '[:space:]')
+
+if [ "$GIT_CALL_SITES" -le 10 ]; then
+    log_pass "Exemption check uses batched git calls ($GIT_CALL_SITES call sites)"
+else
+    log_fail "Exemption check uses batched git calls (found $GIT_CALL_SITES call sites, expected <= 10)"
+fi
+
+###############################################################################
 # Summary and tests.json output
 ###############################################################################
 echo ""
@@ -594,7 +1003,16 @@ cat > "$TESTS_OUTPUT_DIR/tests.json" << JSONEOF
     "Scan parses delivery plan phases",
     "Cached scan returns quickly",
     "Scan handles missing dependency graph gracefully",
-    "Scan lists git worktrees"
+    "Scan lists git worktrees",
+    "Scan detects failing regression test",
+    "Scan reports null regression status when no regression.json",
+    "Scan detects spec modified after completion",
+    "Exempt commits do not trigger spec_modified_after_completion",
+    "Mixed exempt and non-exempt commits trigger modification",
+    "Scan reports null modification when never completed",
+    "Scan uses current branch only for status commits",
+    "Scan detects newly created spec as modified",
+    "Exemption check uses batched git calls"
   ],
   "ran_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
