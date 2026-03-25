@@ -45,7 +45,7 @@ This command only works when the agent is running in a worktree (launched with `
    ```
 
    **On conflict:**
-   - Auto-resolve safe files: `.purlin/delivery_plan.md`, `CRITIC_REPORT.md`, `.purlin/cache/*` (keep main's version)
+   - Auto-resolve safe files: `.purlin/delivery_plan.md`, `.purlin/cache/*` (keep main's version)
    - For other conflicts: present the diff to the user and ask for resolution direction
    - Do NOT force-resolve code or spec conflicts automatically
 

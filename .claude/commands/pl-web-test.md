@@ -265,7 +265,7 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
 
 ### Step 8 — Completion Gate
 
-**Detect invoking role** by checking the system prompt for role identity markers ("Role Definition: The Builder" vs "Role Definition: The QA Agent").
+**Detect invoking role** by checking the system prompt for role identity markers ("Role Definition: Engineer mode" vs "Role Definition: The QA Agent").
 
 **QA Agent invocation:**
 - If all scenarios and visual items passed (zero failures, zero inconclusive): prompt "All web verification passed. Run `/pl-complete <name>` to mark done?"

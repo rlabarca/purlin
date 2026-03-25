@@ -15,8 +15,8 @@ Call the `EnterPlanMode` tool immediately before doing anything else. Do not rea
 Bidirectional spec-code audit with role-aware remediation. Two modes: **triage** (default, fast, in-agent) and **deep** (parallel subagent waves with scenario-by-scenario comparison and transitive anchor constraint validation). Both modes produce a prioritized gap table, then remediate gaps within your role's authority and escalate cross-role gaps through established mechanisms.
 
 **Role behavior:**
-- **Architect:** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to the Builder by adding actionable notes in companion files (`features/<name>.impl.md`).
-- **Builder:** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to the Architect by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
+- **Architect:** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to Engineer mode by adding actionable notes in companion files (`features/<name>.impl.md`).
+- **Builder:** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to PM mode by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
 
 ---
 
@@ -382,7 +382,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 2. For acknowledged builder decisions (`[DEVIATION]`, `[DISCOVERY]`): update the spec to reflect the decision, then mark the tag as acknowledged in the companion file.
 3. Commit each logical group of spec fixes.
 
-**ESCALATE (code-side gaps for the Builder):**
+**ESCALATE (code-side gaps for Engineer mode):**
 1. Open (or create) the companion file `features/<feature_name>.impl.md`.
 2. Add a clearly tagged entry under the implementation notes:
 
@@ -392,7 +392,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 **Source:** /pl-spec-code-audit
 **Severity:** <severity>
 **Details:** <what the code does vs what the spec expects, or what code path lacks scenario coverage>
-**Suggested fix:** <concrete suggestion for the Builder>
+**Suggested fix:** <concrete suggestion for Engineer mode>
 ```
 
 3. Commit all escalation entries together.
@@ -406,7 +406,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 3. Update the companion file's implementation notes to document what changed and why.
 4. Commit each logical group of code fixes.
 
-**ESCALATE (spec-side gaps for the Architect):**
+**ESCALATE (spec-side gaps for PM mode):**
 1. Open (or create) the companion file `features/<feature_name>.impl.md`.
 2. Add a `[DISCOVERY]` or `[SPEC_PROPOSAL]` entry:
 
@@ -416,7 +416,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 **Source:** /pl-spec-code-audit
 **Severity:** <severity>
 **Details:** <what is missing or inconsistent in the spec>
-**Suggested spec change:** <concrete proposal for the Architect>
+**Suggested spec change:** <concrete proposal for PM mode>
 ```
 
 3. Commit all escalation entries together.
@@ -426,7 +426,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 
 - **Architect FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
 - **Architect ESCALATE to Builder:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
-- **Builder ESCALATE to Architect:** If the Builder discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
+- **Builder ESCALATE to Architect:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 
 ### Post-Remediation
 

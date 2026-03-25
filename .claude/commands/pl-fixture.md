@@ -31,10 +31,10 @@ Fixtures are needed when a test scenario requires specific, controlled project s
    - Project-level: `fixture_repo_url` in `.purlin/config.json`
    - Convention path: `.purlin/runtime/fixture-repo`
 5. If no fixture repo exists, present options to the user:
-   - **Option A (recommended):** "I'll have the Builder create a local fixture repo at `.purlin/runtime/fixture-repo`. It stays on your machine and is gitignored."
+   - **Option A (recommended):** "I'll have Engineer mode create a local fixture repo at `.purlin/runtime/fixture-repo`. It stays on your machine and is gitignored."
    - **Option B:** "If you have a shared git repo for fixtures, give me the URL and I'll configure it in `.purlin/config.json`."
    - **Option C:** "Skip fixtures for now. These scenarios stay as manual verification until fixtures are set up."
-6. Record the decision in `tests/qa/fixture_recommendations.md` for the Builder.
+6. Record the decision in `tests/qa/fixture_recommendations.md` for Engineer mode.
 
 ## For Architects: Fixture-Aware Feature Design
 
@@ -77,7 +77,7 @@ scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`.
 
 When adding fixtures to a feature for the first time, explain to the user what they are and
 why: "These scenarios need controlled project state. I am adding fixture tags -- immutable
-snapshots that tests check out automatically. The Builder will create a setup script to
+snapshots that tests check out automatically. Engineer mode will create a setup script to
 generate them."
 
 ## For Builders: Fixture Setup Workflow
@@ -121,5 +121,5 @@ the files needed for that scenario's Given preconditions.
 
 If the Critic report for a feature includes a `fixture_repo_unavailable` finding, inform the
 user that the fixture infrastructure has not been created yet. Web-verify and automated test
-results for fixture-backed scenarios will be INCONCLUSIVE until the Builder creates the
+results for fixture-backed scenarios will be INCONCLUSIVE until Engineer mode creates the
 fixture repo. This is Builder-routable, not a QA failure -- do not record as a discovery.

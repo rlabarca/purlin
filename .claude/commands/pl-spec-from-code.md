@@ -143,4 +143,4 @@ For each category:
 5. Print recommended next steps:
    - "Run `/pl-spec-code-audit` to validate the generated specs against the actual code and identify any gaps the import missed."
    - "Review generated features in dependency order (anchor nodes first) and refine the draft scenarios."
-   - "Once specs are refined, have the Builder run `/pl-build` to begin implementation verification."
+   - "Once specs are refined, have Engineer mode run `/pl-build` to begin implementation verification."

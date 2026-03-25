@@ -25,7 +25,7 @@ Read the feature spec to determine the feature type (Python tool, shell script, 
 
 **Grepping or reading source code to verify its presence is NOT testing.**
 
-The Builder MUST NEVER verify a feature by opening source files and checking whether code exists, patterns match, or strings are present. That validates structure, not behavior. A test MUST import, call, or execute the implementation and assert on its outputs.
+Engineer mode MUST NEVER verify a feature by opening source files and checking whether code exists, patterns match, or strings are present. That validates structure, not behavior. A test MUST import, call, or execute the implementation and assert on its outputs.
 
 If your test file contains `open('features/...')` or `open('instructions/...')` and reads file contents as part of the assertion, STOP. You are writing an AP-1 test (see Section 3).
 
@@ -44,7 +44,7 @@ What constitutes behavioral testing depends on the feature category:
 
 ### Test Tier Decision Matrix
 
-Defines what the Builder runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
+Defines what Engineer mode runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
 
 | Feature Type | Step 3 Testing | Regression Tier |
 |---|---|---|
@@ -64,7 +64,7 @@ Fixture-based testing (checkout fixture state, run harness against snapshot) is 
 
 ## Section 3 -- Anti-Pattern Checklist
 
-Five named anti-patterns the Builder MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
+Five named anti-patterns Engineer mode MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
 
 **AP-1: Prose Inspection**
 Test reads a documentation, markdown, or instruction file and asserts string presence instead of importing and calling the implementation code.

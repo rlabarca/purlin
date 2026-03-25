@@ -18,4 +18,4 @@ Given the feature name provided as an argument:
 2. Record an `[INFEASIBLE]` entry in the feature's implementation notes (companion file `features/<name>.impl.md` if it exists, otherwise the `## Implementation Notes` section) with a detailed rationale: what constraint or contradiction makes it unimplementable as specified.
 3. Commit the implementation note: `git commit -m "feat(<scope>): [INFEASIBLE] <name> — <brief reason>"`.
 4. Run `${TOOLS_ROOT}/cdd/scan.sh` to refresh project state and surface the INFEASIBLE entry as a PM action item visible in scan results.
-5. Do NOT implement any code for this feature. The Architect must revise the spec before work can resume.
+5. Do NOT implement any code for this feature. PM mode must revise the spec before work can resume.

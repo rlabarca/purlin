@@ -43,8 +43,8 @@ Determine deployment mode and collect version information:
 - Date: today's date from system context
 - OS: `uname -s -r`
 - Agent role: detect from system prompt markers:
-  - "Role Definition: The Architect" -> `Architect`
-  - "Role Definition: The Builder" -> `Builder`
+  - "Role Definition: PM mode" -> `Architect`
+  - "Role Definition: Engineer mode" -> `Builder`
   - "Role Definition: The QA" -> `QA`
   - "Role Definition: The PM" -> `PM`
   - If no marker found -> `unknown`
