@@ -37,7 +37,48 @@ Uses Explore subagents for parallel scenario authoring when multiple features ar
 
 ### evaluate
 
-Compare regression test results against baselines. Read `tests/<feature>/regression.json` results, compare to expected outcomes, and report:
-- PASS: result matches baseline
-- REGRESSION: result differs from baseline (flag for investigation)
-- NEW: no baseline exists (establish baseline)
+Evaluate regression results — read the result files, report status, and document failures for the Engineer.
+
+#### Protocol
+
+1. **Read results.** For each in-scope feature, read:
+   - `tests/<feature>/regression.json` (per-feature regressions)
+   - `tests/qa/scenarios/<feature>.json` (QA-authored regressions)
+   - Check both `status`, `passed`, `failed`, and per-scenario `results` array.
+
+2. **Classify each suite:**
+   - **PASS**: all scenarios passed. No action needed.
+   - **FAIL**: one or more scenarios failed. Document the failure (see step 3).
+   - **NEW**: no prior baseline exists. Establish baseline from current results.
+
+3. **Document failures in companion file.** For each FAIL suite, append a `[DISCOVERY]` entry to `features/<feature>.impl.md` with:
+   - The scenario name that failed
+   - The assertion pattern that was expected
+   - The actual output that was produced (quote the relevant portion)
+   - How many times this failure has persisted (if re-evaluating after a fix attempt, note "still failing after <N> attempts")
+   - Suggested fix direction (is the assertion too narrow? is the code wrong? is the test environment missing something?)
+
+   Format:
+   ```markdown
+   **[DISCOVERY]** Regression FAIL: <scenario_name> (<passed>/<total>)
+   **Expected:** <assertion pattern or description>
+   **Actual:** "<quoted actual output>"
+   **Attempts:** <N> (first seen <date> / still failing as of <date>)
+   **Suggested fix:** <what the Engineer should investigate>
+   ```
+
+   This gives the Engineer everything they need to fix it without running QA mode themselves.
+
+4. **Report summary.**
+   ```
+   Regression Evaluation
+   ━━━━━━━━━━━━━━━━━━━━━
+   PASS: N suites
+   FAIL: M suites (details written to companion files)
+   NEW:  K suites (baselines established)
+   ━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+5. **Re-evaluation after fix.** When evaluating a suite that previously failed:
+   - If now PASS: update the companion file entry to `[RESOLVED]` with the date.
+   - If still FAIL: update the companion file entry with incremented attempt count and the new actual output (it may have changed).
