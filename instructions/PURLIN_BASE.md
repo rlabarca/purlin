@@ -121,10 +121,20 @@ QA can author regression test JSON directly — this is QA-owned, not app code.
 - The agent updates the terminal identity on mode switch (see 4.1.1).
 
 #### 4.1.1 iTerm Terminal Identity
-On every mode activation (including startup in open mode), update the iTerm badge and terminal title:
+On every mode activation (including startup in open mode), update both badge and title to reflect the new mode.
+
+**Badge format:** The badge is the mode name alone — `Engineer`, `PM`, `QA`, or `Purlin` (open mode). Do NOT prefix with "Purlin:". When running in a worktree, append the worktree label: `Engineer (W1)`, `QA (W2)`, etc. In open mode, badge = `Purlin` (or `Purlin (W1)` in a worktree).
+
+**Title format:** `<project> - <mode>`, extended to `<project> - <mode> (<label>)` in worktrees. In open mode, title = `<project> - Purlin`.
+
+**Worktree label detection:** Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the mode name.
 
 ```bash
-source {tools_root}/terminal/identity.sh && set_iterm_badge "<mode>" && set_term_title "<project> - <mode>"
+# Read worktree label if present
+WT_LABEL=""
+if [ -f ".purlin_worktree_label" ]; then WT_LABEL=" ($(cat .purlin_worktree_label))"; fi
+BADGE="<mode>${WT_LABEL}"
+source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term_title "<project> - $BADGE"
 ```
 
 - `<mode>`: `Engineer`, `PM`, `QA`, or `Purlin` (open mode).

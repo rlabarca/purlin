@@ -550,14 +550,46 @@ fi
 if [[ "$PURLIN_WORKTREE" == "true" ]]; then
     WORKTREE_BRANCH="purlin-${PURLIN_MODE:-open}-$(date +%Y%m%d-%H%M%S)"
     WORKTREE_DIR="$SCRIPT_DIR/.purlin/worktrees/$WORKTREE_BRANCH"
-    git worktree add "$WORKTREE_DIR" -b "$WORKTREE_BRANCH" 2>/dev/null
-    cd "$WORKTREE_DIR"
-    export PURLIN_PROJECT_ROOT="$WORKTREE_DIR"
-    echo "Working in worktree: $WORKTREE_DIR"
-    echo "Branch: $WORKTREE_BRANCH"
-    echo "Run /pl-merge when done to merge back."
-    echo ""
+    mkdir -p "$SCRIPT_DIR/.purlin/worktrees"
+    if git worktree add "$WORKTREE_DIR" -b "$WORKTREE_BRANCH" 2>/dev/null; then
+        # Assign worktree label (W1, W2, ...) — gap-filling
+        _used_nums=()
+        for _lf in "$SCRIPT_DIR/.purlin/worktrees"/*/.purlin_worktree_label; do
+            [ -f "$_lf" ] || continue
+            _n=$(tr -cd '0-9' < "$_lf")
+            [ -n "$_n" ] && _used_nums+=("$_n")
+        done
+        _next=1
+        while printf '%s\n' "${_used_nums[@]}" 2>/dev/null | grep -qx "$_next"; do
+            _next=$((_next + 1))
+        done
+        WORKTREE_LABEL="W${_next}"
+        echo "$WORKTREE_LABEL" > "$WORKTREE_DIR/.purlin_worktree_label"
+
+        echo "Working in worktree: $WORKTREE_DIR ($WORKTREE_LABEL)"
+        echo "Branch: $WORKTREE_BRANCH"
+        echo "Run /pl-merge when done to merge back."
+        echo ""
+        cd "$WORKTREE_DIR"
+        export PURLIN_PROJECT_ROOT="$WORKTREE_DIR"
+    else
+        echo "ERROR: Failed to create worktree. Continuing without isolation." >&2
+    fi
 fi
+
+# --- Compute display identity (mode + optional worktree label) ---
+case "${PURLIN_MODE:-}" in
+    engineer) MODE_NAME="Engineer" ;;
+    qa)       MODE_NAME="QA" ;;
+    pm)       MODE_NAME="PM" ;;
+    *)        MODE_NAME="Purlin" ;;
+esac
+DISPLAY_NAME="$MODE_NAME"
+if [[ -f "$PURLIN_PROJECT_ROOT/.purlin_worktree_label" ]]; then
+    _wt_label=$(cat "$PURLIN_PROJECT_ROOT/.purlin_worktree_label")
+    DISPLAY_NAME="$MODE_NAME ($_wt_label)"
+fi
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$DISPLAY_NAME"
 
 # --- Build CLI args and dispatch ---
 CLI_ARGS=()
@@ -570,12 +602,9 @@ fi
 # Purlin always gets full permissions
 CLI_ARGS+=(--dangerously-skip-permissions)
 
-# Terminal identity
-DISPLAY_NAME="Purlin"
-type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$DISPLAY_NAME"
-
 PROJECT_NAME="$(basename "$SCRIPT_DIR")"
-CLI_ARGS+=(--remote-control "$PROJECT_NAME | Purlin")
+CLI_ARGS+=(--remote-control "$PROJECT_NAME | $DISPLAY_NAME")
+CLI_ARGS+=(--name "$DISPLAY_NAME")
 
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "$SESSION_MSG"
 LAUNCHER_EOF

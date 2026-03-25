@@ -99,14 +99,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# --- Compute role display from mode and set terminal identity early ---
+# --- Compute mode display name (identity set after worktree creation) ---
 case "${PURLIN_MODE:-}" in
-    engineer) ROLE_DISPLAY="Purlin: Engineer" ;;
-    qa)       ROLE_DISPLAY="Purlin: QA" ;;
-    pm)       ROLE_DISPLAY="Purlin: PM" ;;
-    *)        ROLE_DISPLAY="Purlin" ;;
+    engineer) MODE_NAME="Engineer" ;;
+    qa)       MODE_NAME="QA" ;;
+    pm)       MODE_NAME="PM" ;;
+    *)        MODE_NAME="Purlin" ;;
 esac
-type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY"
 
 # --- Prompt assembly ---
 PROMPT_FILE=$(mktemp)
@@ -249,7 +248,21 @@ if [[ "$PURLIN_WORKTREE" == "true" ]]; then
     WORKTREE_DIR="$SCRIPT_DIR/.purlin/worktrees/$WORKTREE_BRANCH"
     mkdir -p "$SCRIPT_DIR/.purlin/worktrees"
     if git worktree add "$WORKTREE_DIR" -b "$WORKTREE_BRANCH" 2>/dev/null; then
-        echo "Working in worktree: $WORKTREE_DIR"
+        # Assign worktree label (W1, W2, ...) — gap-filling
+        _used_nums=()
+        for _lf in "$SCRIPT_DIR/.purlin/worktrees"/*/.purlin_worktree_label; do
+            [ -f "$_lf" ] || continue
+            _n=$(tr -cd '0-9' < "$_lf")
+            [ -n "$_n" ] && _used_nums+=("$_n")
+        done
+        _next=1
+        while printf '%s\n' "${_used_nums[@]}" 2>/dev/null | grep -qx "$_next"; do
+            _next=$((_next + 1))
+        done
+        WORKTREE_LABEL="W${_next}"
+        echo "$WORKTREE_LABEL" > "$WORKTREE_DIR/.purlin_worktree_label"
+
+        echo "Working in worktree: $WORKTREE_DIR ($WORKTREE_LABEL)"
         echo "Branch: $WORKTREE_BRANCH"
         echo "Run /pl-merge when done to merge back."
         echo ""
@@ -259,6 +272,14 @@ if [[ "$PURLIN_WORKTREE" == "true" ]]; then
         echo "ERROR: Failed to create worktree. Continuing without isolation." >&2
     fi
 fi
+
+# --- Set terminal identity (after worktree so label is available) ---
+ROLE_DISPLAY="$MODE_NAME"
+if [[ -f "$PURLIN_PROJECT_ROOT/.purlin_worktree_label" ]]; then
+    WORKTREE_LABEL=$(cat "$PURLIN_PROJECT_ROOT/.purlin_worktree_label")
+    ROLE_DISPLAY="$MODE_NAME ($WORKTREE_LABEL)"
+fi
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY"
 
 # --- Session message ---
 SESSION_MSG="Begin Purlin session."
