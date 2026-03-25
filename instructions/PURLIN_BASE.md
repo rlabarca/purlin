@@ -62,6 +62,8 @@ Include mode attribution in commits:
 - Record build-time decisions in companion files using the Active Deviations table.
 - Use the 3 Engineer-to-PM flows: INFEASIBLE (blocking), inline deviation (non-blocking), SPEC_PROPOSAL (proactive).
 
+**Parallel builds:** When a delivery plan phase has 2+ independent features, `/pl-build` spawns `engineer-worker` sub-agents (see `.claude/agents/engineer-worker.md`), each in an isolated git worktree. Sub-agents execute Steps 0-2 only; the main session handles verification and merge-back.
+
 ### 3.2 PM Mode
 
 **Activated by:** `/pl-spec`, `/pl-anchor design_*`, `/pl-anchor policy_*`, `/pl-design-ingest`, `/pl-design-audit`
@@ -119,17 +121,14 @@ QA can author regression test JSON directly — this is QA-owned, not app code.
 - The agent updates the terminal identity on mode switch (see 4.1.1).
 
 #### 4.1.1 iTerm Terminal Identity
-On every mode activation (including startup in open mode), the agent MUST run a Bash command to update the iTerm badge and terminal title:
+On every mode activation (including startup in open mode), update the iTerm badge and terminal title:
 
 ```bash
 source {tools_root}/terminal/identity.sh && set_iterm_badge "<mode>" && set_term_title "<project> - <mode>"
 ```
 
-- `<mode>` is the mode name: `Engineer`, `PM`, `QA`, or `Purlin` (for open mode).
-- `<project>` is derived from the working directory name (basename of `$PURLIN_PROJECT_ROOT` or the project root).
-- On mode activation: badge = mode name (e.g., `Engineer`), title = `<project> - <mode>` (e.g., `purlin - Engineer`).
-- In open mode (no mode active): badge = `Purlin`, title = `<project> - Purlin`.
-- On mode switch: update both badge and title to the new mode immediately.
+- `<mode>`: `Engineer`, `PM`, `QA`, or `Purlin` (open mode).
+- `<project>`: basename of `$PURLIN_PROJECT_ROOT` or the project root directory.
 
 ### 4.2 Pre-Switch Check
 Before switching modes, if uncommitted work exists in the current mode:
@@ -214,25 +213,7 @@ Extract `find_work`, `auto_start`, and `default_mode` from config (resolved by t
 Run `{tools_root}/cdd/scan.sh` to get lightweight status JSON. Parse the result.
 
 ### 6.4 Analyze and Present Work
-Interpret the scan results to identify work by mode:
-
-**Engineer work:**
-- Features in TODO lifecycle with no open INFEASIBLE
-- Features with test_status: FAIL
-- Features with regression_status: FAIL (regression test failures need fixing)
-- Open BUG discoveries with action_required: Engineer
-- Delivery plan features in current phase
-
-**QA work:**
-- Features where tests pass, QA scenarios exist, lifecycle is TESTING
-- SPEC_UPDATED discoveries awaiting re-verification
-
-**PM work:**
-- Features where sections.requirements is false (incomplete spec)
-- Unacknowledged deviations (PM needs to accept/reject)
-- SPEC_DISPUTE and INTENT_DRIFT discoveries
-
-Present all three views. Suggest the mode with highest-priority work.
+Interpret the scan results to identify actionable work for each mode (Engineer, QA, PM). Present all three views and suggest the mode with highest-priority work. See `/pl-status` for the full status value definitions.
 
 ### 6.5 Mode Activation
 Based on: CLI `--mode` > config `default_mode` > user input, enter the appropriate mode.
@@ -337,7 +318,20 @@ For the full convention, see `instructions/references/visual_spec_convention.md`
 
 Large-scope changes may be split into numbered delivery phases to organize work into testable blocks and enable parallel delivery. The delivery plan artifact lives at `.purlin/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan. Use `/pl-delivery-plan` for the full protocol.
 
-## 14. Shutdown Protocol
+## 14. Worktree Concurrency
+
+Agents launched with `--worktree` operate in isolated git worktrees under `.claude/worktrees/`. Each worktree gets its own branch (`worktree-<id>`) and full working copy. Key boundaries:
+
+- **Isolation:** Worktree agents MUST NOT modify the main working directory. All writes happen within the worktree.
+- **Merge-back:** Use `/pl-merge` to merge the worktree branch back to the source branch and clean up. Safe files (`.purlin/delivery_plan.md`, `.purlin/cache/*`) auto-resolve with `--ours`; code/spec conflicts require user resolution.
+- **SessionEnd hook:** `tools/hooks/merge-worktrees.sh` runs as a Claude Code SessionEnd hook to merge worktrees on exit (including Ctrl+C). The hook auto-commits pending work, processes only `purlin-*` branches, and exits 0 in all cases.
+- **Stale detection:** On startup, `/pl-resume` detects orphaned worktree branches and offers to resume or clean up.
+
+## 15. CLI Launcher Convention
+
+All `pl-*.sh` scripts in the project root MUST respond to `--help` with a compact help block (script name, one-line description, options list). The `--help` check MUST appear before any initialization. `/pl-help` discovers and lists these scripts.
+
+## 16. Shutdown Protocol
 
 Before concluding your session:
 1. Commit any pending work with appropriate mode prefix.
