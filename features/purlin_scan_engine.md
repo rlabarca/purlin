@@ -15,7 +15,9 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 ### 2.1 Feature Scanning
 
 - Scan all `features/*.md` files, excluding `*.impl.md`, `*.discoveries.md`, and `tombstones/`.
-- For each feature, extract: lifecycle tag (from git log status commits), section headings presence (Requirements, Unit Tests, QA Scenarios, Visual Spec), prerequisite links, and Owner tag.
+- For each feature, extract: lifecycle tag (from git log status commits), section headings presence, prerequisite links, and Owner tag.
+- **Section detection for regular features:** Check for `## Requirements`, `### Unit Tests`, `### QA Scenarios`, `## Visual Specification`.
+- **Section detection for anchor nodes** (`arch_*`, `design_*`, `policy_*`): Check for `## Purpose` and `## Invariants` (or variants like `## Design Invariants`, `## Testing Invariants`) instead of `## Requirements`. If either Purpose or any Invariants heading is found, report `sections.requirements: true`.
 - Lifecycle extraction MUST use a single batched git log call, not one call per feature.
 - Git queries MUST use current branch only (no `--all` flag). Status commits and spec modifications from other branches are irrelevant to current project state.
 
@@ -108,6 +110,12 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     Given a feature "notifications.md" with a git commit "status(notifications): [Complete]"
     When scan.py runs
     Then the feature entry has lifecycle "Complete"
+
+#### Scenario: Scan recognizes anchor node headings as requirements
+
+    Given an anchor node "arch_testing.md" with "## Testing Invariants" heading
+    When scan.py runs
+    Then the feature "arch_testing" has sections.requirements = true
 
 #### Scenario: Scan detects missing spec sections
 

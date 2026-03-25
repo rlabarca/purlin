@@ -315,13 +315,28 @@ _RE_UNIT_TESTS = re.compile(r'^###\s+(\d+\.\s*)?unit\s+tests\b', re.IGNORECASE)
 _RE_QA_SCENARIOS = re.compile(r'^###\s+(\d+\.\s*)?qa\s+scenarios\b', re.IGNORECASE)
 _RE_VISUAL_SPEC = re.compile(r'^##\s+(\d+\.\s*)?visual\s+specification\b', re.IGNORECASE)
 
+# Anchor node section headings (arch_*, design_*, policy_* files).
+# These use ## Purpose and ## Invariants instead of ## Requirements.
+_RE_PURPOSE = re.compile(r'^##\s+(\d+\.\s*)?purpose\b', re.IGNORECASE)
+_RE_INVARIANTS = re.compile(r'^##\s+(\d+\.\s*)?\w*\s*invariants\b', re.IGNORECASE)
+
+_ANCHOR_PREFIXES = ('arch_', 'design_', 'policy_')
+
+
+def _is_anchor_node(filename):
+    """Check if a filename is an anchor node (arch_*, design_*, policy_*)."""
+    return any(filename.startswith(p) for p in _ANCHOR_PREFIXES)
+
 
 def _check_sections(feature_file):
     """Check for key section headings in a feature file.
 
-    Handles both numbered headings (## 2. Requirements) and plain headings
-    (## Requirements).
+    For regular features: checks Requirements, Unit Tests, QA Scenarios, Visual Spec.
+    For anchor nodes: checks Purpose and Invariants instead of Requirements.
     """
+    filename = os.path.basename(feature_file)
+    is_anchor = _is_anchor_node(filename)
+
     sections = {
         "requirements": False,
         "unit_tests": False,
@@ -332,14 +347,18 @@ def _check_sections(feature_file):
         with open(feature_file, 'r', encoding='utf-8') as f:
             for line in f:
                 stripped = line.strip()
-                if _RE_REQUIREMENTS.match(stripped):
-                    sections["requirements"] = True
-                elif _RE_UNIT_TESTS.match(stripped):
+                if is_anchor:
+                    # Anchor nodes use Purpose + Invariants instead of Requirements
+                    if _RE_PURPOSE.match(stripped) or _RE_INVARIANTS.match(stripped):
+                        sections["requirements"] = True
+                else:
+                    if _RE_REQUIREMENTS.match(stripped):
+                        sections["requirements"] = True
+                if _RE_UNIT_TESTS.match(stripped):
                     sections["unit_tests"] = True
                 elif _RE_QA_SCENARIOS.match(stripped):
                     sections["qa_scenarios"] = True
                 elif _RE_VISUAL_SPEC.match(stripped):
-
                     sections["visual_spec"] = True
     except Exception:
         pass
