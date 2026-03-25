@@ -1,4 +1,7 @@
+**Purlin command: shared (all roles)**
 **Purlin mode: shared**
+
+Available to all agents and modes.
 
 Display the Purlin slash command table for the current role and list available CLI launcher scripts. Invoke this when the user asks "how do I run...", "what commands are available", or needs help with any Purlin command.
 

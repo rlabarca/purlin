@@ -1,6 +1,8 @@
+**Purlin command owner: PM, Architect**
 **Purlin mode: PM (arch_* targets activate Engineer mode)**
 
-This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead.
+Legacy agents: If you are not the PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-anchor instead." and stop.
+Purlin agent: This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead.
 
 ---
 

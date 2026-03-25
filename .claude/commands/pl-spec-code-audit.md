@@ -1,7 +1,8 @@
+**Purlin command owner: Architect, Builder**
 **Purlin mode: Engineer**
 
-If no mode is currently active, this skill activates Engineer mode.
-If PM or QA mode is active, confirm mode switch with the user before proceeding.
+Legacy agents: If you are not the Architect or Builder, respond: "This is an Architect/Builder command. Ask the appropriate agent to run /pl-spec-code-audit instead." and stop.
+Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
 
 ---
 

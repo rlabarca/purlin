@@ -1,4 +1,7 @@
+**Purlin command: shared (all roles)**
 **Purlin mode: shared**
+
+Available to all agents and modes.
 
 ## Path Resolution
 

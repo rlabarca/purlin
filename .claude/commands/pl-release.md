@@ -1,7 +1,8 @@
+**Purlin command: Purlin agent only (replaces /pl-release-check, /pl-release-run, /pl-release-step)**
 **Purlin mode: Engineer**
 
-If no mode is currently active, this skill activates Engineer mode.
-If PM or QA mode is active, confirm mode switch with the user before proceeding.
+Legacy agents: Use /pl-release-check, /pl-release-run, or /pl-release-step instead.
+Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
 
 ---
 

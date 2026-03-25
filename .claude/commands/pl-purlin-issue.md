@@ -1,4 +1,7 @@
+**Purlin command: shared (all roles)**
 **Purlin mode: shared**
+
+Available to all agents and modes.
 
 Generate a structured, copy-paste-ready issue report for the Purlin framework itself. Collects Purlin version info, environment context, and workflow state. The report can be pasted directly into a Purlin Architect session for triage.
 

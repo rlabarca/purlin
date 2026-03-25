@@ -1,4 +1,7 @@
+**Purlin command: shared (all roles)**
 **Purlin mode: shared**
+
+Available to all agents and modes.
 
 Start, stop, or restart the CDD Dashboard server. Prints the full clickable URL on start. The server persists after the agent session exits.
 

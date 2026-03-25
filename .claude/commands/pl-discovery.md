@@ -1,7 +1,8 @@
+**Purlin command owner: QA**
 **Purlin mode: QA**
 
-If no mode is currently active, this skill activates QA mode.
-If Engineer or PM mode is active, confirm mode switch with the user before proceeding.
+Legacy agents: If you are not the QA, respond: "This is a QA command. Ask your QA agent to run /pl-discovery instead." and stop.
+Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
 
 ---
 

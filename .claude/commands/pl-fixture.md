@@ -1,7 +1,8 @@
+**Purlin command owner: shared**
 **Purlin mode: QA (Engineer cross-mode: setup-only)**
 
-If no mode is currently active, this skill activates QA mode.
-If Engineer mode is active, runs in setup-only cross-mode (can create fixtures but cannot modify QA artifacts).
+Legacy agents: Available to all agents.
+Purlin agent: This skill activates QA mode. If Engineer mode is active, runs in setup-only cross-mode (can create fixtures but cannot modify QA artifacts).
 
 ---
 

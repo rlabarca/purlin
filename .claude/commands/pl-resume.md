@@ -1,4 +1,7 @@
+**Purlin command: shared (all roles)**
 **Purlin mode: shared**
+
+Available to all agents and modes.
 
 Save or restore agent session state across context clears and terminal restarts.
 

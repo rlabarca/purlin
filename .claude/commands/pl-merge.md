@@ -1,6 +1,8 @@
+**Purlin command: Purlin agent only**
 **Purlin mode: shared**
 
-Merge the current worktree branch back to the source branch and clean up.
+Legacy agents: This command is for the Purlin unified agent. It is not available in role-specific agent sessions.
+Purlin agent: Merge the current worktree branch back to the source branch and clean up.
 
 ---
 
