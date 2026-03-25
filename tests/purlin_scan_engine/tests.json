@@ -1,0 +1,22 @@
+{
+  "feature": "purlin_scan_engine",
+  "status": "PASS",
+  "passed": 11,
+  "failed": 0,
+  "total": 11,
+  "test_file": "tools/test_purlin_scan.sh",
+  "scenarios": [
+    "Scan detects feature lifecycle from git log",
+    "Scan detects missing spec sections",
+    "Scan detects numbered section headings (bug fix)",
+    "Scan reads test status from tests.json",
+    "Scan reports null test status when no tests.json",
+    "Scan detects open BUG discovery",
+    "Scan detects unacknowledged deviation",
+    "Scan parses delivery plan phases",
+    "Cached scan returns quickly",
+    "Scan handles missing dependency graph gracefully",
+    "Scan lists git worktrees"
+  ],
+  "ran_at": "2026-03-25T02:32:04Z"
+}
