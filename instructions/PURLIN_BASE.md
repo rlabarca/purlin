@@ -216,6 +216,9 @@ Companion files (`features/*.impl.md`) use a structured Active Deviations table 
 
 ## 6. Startup Protocol
 
+### 6.0 Merge Recovery Gate
+Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run `/pl-resume merge-recovery` and resolve all pending merges before continuing.
+
 ### 6.1 Print Command Table
 Read `instructions/references/purlin_commands.md` and print the appropriate variant.
 

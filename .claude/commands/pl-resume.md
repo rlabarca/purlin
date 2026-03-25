@@ -6,13 +6,48 @@ Available to all agents and modes.
 Save or restore agent session state across context clears and terminal restarts.
 
 ```
-/pl-resume [save | <role>]
+/pl-resume [save | merge-recovery | <role>]
 ```
 
 - **No argument:** Restore mode with role auto-detection.
 - **`save`:** Save mode -- write a checkpoint file.
+- **`merge-recovery`:** Resolve pending worktree merge failures (see below).
 - **`<role>`** (`architect`, `builder`, `qa`, `pm`, `purlin`): Restore mode with explicit role.
-- **Invalid argument:** Print error listing valid options (`save`, `architect`, `builder`, `qa`, `pm`, `purlin`) and stop.
+- **Invalid argument:** Print error listing valid options (`save`, `merge-recovery`, `architect`, `builder`, `qa`, `pm`, `purlin`) and stop.
+
+---
+
+## Merge Recovery Mode (`/pl-resume merge-recovery`)
+
+Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md 6.0) when breadcrumbs exist, or manually by the user.
+
+### Protocol
+
+1. **Read breadcrumbs:** Glob `.purlin/cache/merge_pending/*.json`. Read each file to get `branch`, `worktree_path`, `source_branch`, `failed_at`, and `reason`.
+
+2. **Display pending merges:** For each breadcrumb, show:
+   ```
+   Pending merge: <branch>
+     Age: <time since failed_at>
+     Worktree: <worktree_path>
+     Source: <source_branch>
+   ```
+
+3. **Attempt resolution** for each pending merge:
+   a. Verify the branch still exists (`git rev-parse --verify <branch>`). If not, delete the stale breadcrumb and skip.
+   b. Attempt `git merge <branch> --no-edit`.
+   c. **If merge succeeds:** clean up worktree (`git worktree remove <path>`), delete branch (`git branch -d <branch>`), delete breadcrumb, report success.
+   d. **If merge conflicts:** abort the merge (`git merge --abort`). Show the conflicting files. Offer two options:
+      - **Resolve now:** Read the conflicting files, understand the intent from both sides, and propose a resolution. Apply the resolution, complete the merge, clean up.
+      - **Defer:** Leave the breadcrumb in place. Print warning: `"Deferred merge: <branch> — unmerged work exists."`
+
+4. **Summary:** After processing all breadcrumbs, report how many were resolved vs deferred. If any were deferred, note that the warning will persist until resolved.
+
+5. **Return control** to the caller (startup protocol continues with 6.1).
+
+### Behavior during normal restore flow
+
+When `/pl-resume` runs without arguments (restore mode), it MUST also check for merge-pending breadcrumbs as part of Step 0 (stale state cleanup). If breadcrumbs exist, run the merge recovery protocol above before proceeding to Step 1.
 
 ---
 
