@@ -23,6 +23,7 @@ Purlin agent: This skill switches the Purlin agent's operating mode.
 2. **Activate the new mode.**
    - Print the mode's command subset from `instructions/references/purlin_commands.md`.
    - Update terminal identity per PURLIN_BASE.md section 4.1.1: badge is the mode name (`Engineer`, `PM`, `QA`) with worktree label appended if `.purlin_worktree_label` exists (e.g., `Engineer (W1)`).
+   - Rename the session: run `/rename <ProjectName> | <Badge>` where `ProjectName` is from config `project_name` (fallback: directory basename) and `Badge` is the iTerm badge value just set.
 
 3. **Announce:** "Switched to [Mode] mode."
 

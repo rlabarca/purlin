@@ -447,8 +447,9 @@ if [ "$AGENT_BYPASS" = "true" ]; then
 fi
 
 PROJECT_NAME="$(basename "$SCRIPT_DIR")"
-CLI_ARGS+=(--remote-control "$PROJECT_NAME | $DISPLAY_NAME")
-CLI_ARGS+=(--name "$DISPLAY_NAME")
+SESSION_NAME="$PROJECT_NAME | $DISPLAY_NAME"
+CLI_ARGS+=(--remote-control "$SESSION_NAME")
+CLI_ARGS+=(--name "$SESSION_NAME")
 
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "$SESSION_MSG"
 LAUNCHER_EOF

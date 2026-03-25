@@ -227,4 +227,5 @@ Uncommitted:    <none | summary>
 
 - If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
 - If the checkpoint specified a mode, activate that mode.
+- **Session rename:** After activating the mode, rename the session to `<ProjectName> | <NewBadge>` per the mode-switch rename protocol (PURLIN_BASE.md 4.1.1). Read `project_name` from config with basename fallback. If the session was started without `--remote-control` (e.g., cold start without the launcher), the rename ensures the session name is correct.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.

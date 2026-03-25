@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for remote_session_naming feature.
 
-Covers all 7 unit test scenarios from features/remote_session_naming.md.
+Covers unit test scenarios from features/remote_session_naming.md.
 """
 
 import json
@@ -19,19 +19,9 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from tools.config.resolve_config import resolve_config
 
-LAUNCHERS = {
-    'architect': os.path.join(PROJECT_ROOT, 'pl-run-architect.sh'),
-    'builder': os.path.join(PROJECT_ROOT, 'pl-run-builder.sh'),
-    'qa': os.path.join(PROJECT_ROOT, 'pl-run-qa.sh'),
-    'pm': os.path.join(PROJECT_ROOT, 'pl-run-pm.sh'),
-}
+UNIFIED_LAUNCHER = os.path.join(PROJECT_ROOT, 'pl-run.sh')
 
-ROLE_DISPLAY_MAP = {
-    'architect': 'Architect',
-    'builder': 'Builder',
-    'qa': 'QA',
-    'pm': 'PM',
-}
+CONSUMER_LAUNCHER_TEMPLATE = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
 
 
 class ResolverTestBase(unittest.TestCase):
@@ -56,45 +46,46 @@ class ResolverTestBase(unittest.TestCase):
             json.dump(data, f)
 
 
-class TestLauncherAlwaysPassesRemoteControlFlag(unittest.TestCase):
-    """Scenario: Launcher Always Passes Remote Control Flag
+class TestLauncherPassesRemoteControlAndNameFlags(unittest.TestCase):
+    """Scenario: Launcher Passes Remote Control and Name Flags
 
-    Verifies all 4 launcher scripts contain --remote-control with
-    the "$PROJECT_NAME | $ROLE_DISPLAY" pattern and define ROLE_DISPLAY.
+    Verifies the unified launcher (pl-run.sh) passes both --remote-control
+    and --name with the "<ProjectName> | <Badge>" format via SESSION_NAME.
     """
 
-    def test_all_launchers_have_remote_control(self):
-        for role, path in LAUNCHERS.items():
-            with self.subTest(role=role):
-                with open(path, 'r') as f:
-                    content = f.read()
-                self.assertIn('--remote-control', content,
-                              f"{role} launcher missing --remote-control flag")
-                self.assertIn('$PROJECT_NAME', content,
-                              f"{role} launcher missing $PROJECT_NAME reference")
-                self.assertIn('$ROLE_DISPLAY', content,
-                              f"{role} launcher missing $ROLE_DISPLAY reference")
+    def test_launcher_has_remote_control(self):
+        with open(UNIFIED_LAUNCHER, 'r') as f:
+            content = f.read()
+        self.assertIn('--remote-control', content,
+                      "Unified launcher missing --remote-control flag")
 
-    def test_all_launchers_define_role_display(self):
-        for role, path in LAUNCHERS.items():
-            expected_display = ROLE_DISPLAY_MAP[role]
-            with self.subTest(role=role):
-                with open(path, 'r') as f:
-                    content = f.read()
-                self.assertIn(f'ROLE_DISPLAY="{expected_display}"', content,
-                              f"{role} launcher has wrong ROLE_DISPLAY value")
+    def test_launcher_has_name_with_session_name(self):
+        with open(UNIFIED_LAUNCHER, 'r') as f:
+            content = f.read()
+        self.assertIn('--name "$SESSION_NAME"', content,
+                      "Unified launcher --name should use $SESSION_NAME")
 
-    def test_remote_control_uses_quoted_format(self):
-        for role, path in LAUNCHERS.items():
-            with self.subTest(role=role):
-                with open(path, 'r') as f:
-                    content = f.read()
-                # Verify the --remote-control arg uses the correct quoted format
-                self.assertRegex(
-                    content,
-                    r'--remote-control\s+"\$PROJECT_NAME \| \$ROLE_DISPLAY"',
-                    f"{role} launcher --remote-control not properly quoted"
-                )
+    def test_session_name_computed_from_project_and_badge(self):
+        with open(UNIFIED_LAUNCHER, 'r') as f:
+            content = f.read()
+        self.assertIn('SESSION_NAME="$_PROJECT_DISPLAY | $ROLE_DISPLAY"', content,
+                      "SESSION_NAME should be <ProjectName> | <Badge>")
+
+    def test_remote_control_uses_session_name(self):
+        with open(UNIFIED_LAUNCHER, 'r') as f:
+            content = f.read()
+        self.assertIn('--remote-control "$SESSION_NAME"', content,
+                      "Unified launcher --remote-control should use $SESSION_NAME")
+
+    def test_consumer_template_uses_session_name(self):
+        with open(CONSUMER_LAUNCHER_TEMPLATE, 'r') as f:
+            content = f.read()
+        self.assertIn('SESSION_NAME="$PROJECT_NAME | $DISPLAY_NAME"', content,
+                      "Consumer launcher template SESSION_NAME should be <ProjectName> | <Badge>")
+        self.assertIn('--remote-control "$SESSION_NAME"', content,
+                      "Consumer launcher template --remote-control should use $SESSION_NAME")
+        self.assertIn('--name "$SESSION_NAME"', content,
+                      "Consumer launcher template --name should use $SESSION_NAME")
 
 
 class TestSessionNameUsesProjectNameFromConfig(ResolverTestBase):
@@ -193,66 +184,42 @@ class TestResolverOutputsProjectNameVariable(ResolverTestBase):
                 self.assertIn('PROJECT_NAME="TestProject"', result.stdout)
 
 
-class TestResumeSuggestsRenameWhenRoleChanges(unittest.TestCase):
-    """Scenario: Resume Suggests Rename When Role Changes
+class TestResumeRenamesSessionOnModeActivation(unittest.TestCase):
+    """Scenario: Resume triggers session rename after mode activation.
 
-    Verifies the /pl-resume skill file contains rename suggestion logic
-    for when the explicit role argument differs from the system prompt role.
+    Verifies the /pl-resume skill file includes session rename
+    in the cleanup/continue step when activating a mode.
     """
 
-    def test_resume_has_rename_suggestion(self):
+    def test_resume_has_session_rename(self):
         resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
         with open(resume_path, 'r') as f:
             content = f.read()
-        # Must contain the rename suggestion template
-        self.assertIn('Session name:', content)
+        self.assertIn('Session rename', content)
+        self.assertIn('<ProjectName>', content)
+        self.assertIn('<NewBadge>', content)
+
+    def test_resume_rename_references_mode_switch_protocol(self):
+        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
+        with open(resume_path, 'r') as f:
+            content = f.read()
+        self.assertIn('mode-switch rename protocol', content)
+        self.assertIn('project_name', content)
+
+
+class TestModeCommandHasRenameStep(unittest.TestCase):
+    """Scenario: Mode switch command triggers session rename.
+
+    Verifies the /pl-mode skill file includes a session rename step.
+    """
+
+    def test_mode_command_has_rename(self):
+        mode_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-mode.md')
+        with open(mode_path, 'r') as f:
+            content = f.read()
         self.assertIn('/rename', content)
         self.assertIn('<ProjectName>', content)
-        self.assertIn('<NewRole>', content)
-
-    def test_rename_requires_explicit_role_argument(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('explicit role argument', content)
-        self.assertIn('tier 1', content)
-
-    def test_rename_requires_different_system_prompt_role(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('different role', content)
-        self.assertIn('tier 2', content)
-
-
-class TestResumeOmitsRenameWhenRoleUnchanged(unittest.TestCase):
-    """Scenario: Resume Omits Rename When Role Unchanged
-
-    Verifies the /pl-resume skill file specifies omission when
-    tier 1 role matches tier 2 role.
-    """
-
-    def test_resume_specifies_omission_for_same_role(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('role is unchanged', content)
-        self.assertIn('omitted', content)
-
-
-class TestResumeOmitsRenameWhenNoSystemPromptRoleMarkers(unittest.TestCase):
-    """Scenario: Resume Omits Rename When No System Prompt Role Markers
-
-    Verifies the /pl-resume skill file specifies omission when
-    the system prompt has no role identity markers (fresh session).
-    """
-
-    def test_resume_specifies_omission_for_no_markers(self):
-        resume_path = os.path.join(PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
-        with open(resume_path, 'r') as f:
-            content = f.read()
-        self.assertIn('no system prompt role markers', content)
-        self.assertIn('omitted', content)
+        self.assertIn('<Badge>', content)
 
 
 def generate_test_results():

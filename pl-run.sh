@@ -369,8 +369,10 @@ if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 fi
 
-# Session name: shown in /resume picker and terminal title
-CLI_ARGS+=(--name "$ROLE_DISPLAY")
+# Session name: shown in remote control list and /resume picker
+SESSION_NAME="$_PROJECT_DISPLAY | $ROLE_DISPLAY"
+CLI_ARGS+=(--remote-control "$SESSION_NAME")
+CLI_ARGS+=(--name "$SESSION_NAME")
 
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "$SESSION_MSG"
 exit $?
