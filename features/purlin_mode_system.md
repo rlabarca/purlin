@@ -76,11 +76,11 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
   1. `/pl-build` Step 4 (status tag): BLOCKS the status commit if code deviations exist without companion entries.
   2. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
 
-### 2.8c Regression Failure Documentation (QA)
+### 2.8c QA Companion File Obligations
 
-- When `/pl-regression evaluate` finds a FAIL result, QA MUST write a `[DISCOVERY]` entry to the feature's companion file (`features/<name>.impl.md`) with: scenario name, expected assertion, actual output (quoted), attempt count, and suggested fix direction.
-- This gives the Engineer everything needed to fix the failure without running QA mode.
-- On re-evaluation after a fix: if now PASS, mark the entry `[RESOLVED]`. If still FAIL, update attempt count and actual output.
+- `/pl-regression evaluate`: When a regression FAIL is found, QA MUST write a `[DISCOVERY]` entry to the companion file with: scenario name, expected assertion, actual output, attempt count, and suggested fix direction. On re-evaluation after fix: mark `[RESOLVED]` if PASS, update attempt count if still FAIL.
+- `/pl-complete`: BLOCKS completion if unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries exist in the companion file. PM must review first. Also blocks if `regression_status: FAIL`.
+- `/pl-verify`: Writes BUG discoveries to the SIDECAR (`*.discoveries.md`), not the companion file. Sidecars are QA-owned; companions are Engineer-owned. PM sees both via scan.py.
 
 ### 2.8 Commit Attribution
 
