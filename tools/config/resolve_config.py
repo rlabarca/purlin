@@ -269,6 +269,44 @@ def _cli_role(project_root, role):
     print(f'PROJECT_NAME="{project_name}"')
 
 
+def _cli_has_agent_config(project_root, role):
+    """Print 'true' if agents.<role> exists in resolved config, 'false' otherwise."""
+    config = resolve_config(project_root)
+    agents = config.get('agents', {})
+    agent = agents.get(role, {})
+    print('true' if agent else 'false')
+
+
+def _cli_set_agent_config(project_root, role, key, value):
+    """Set agents.<role>.<key> = value in config.local.json."""
+    purlin_dir = os.path.join(project_root, '.purlin')
+    local_path = os.path.join(purlin_dir, 'config.local.json')
+
+    # Read existing local config (or start fresh)
+    config = {}
+    if os.path.exists(local_path):
+        try:
+            with open(local_path, 'r') as f:
+                config = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            config = {}
+
+    agents = config.setdefault('agents', {})
+    agent = agents.setdefault(role, {})
+    agent[key] = value
+
+    # Write atomically
+    os.makedirs(purlin_dir, exist_ok=True)
+    tmp_path = local_path + '.tmp'
+    try:
+        with open(tmp_path, 'w') as f:
+            json.dump(config, f, indent=4)
+        os.replace(tmp_path, local_path)
+    except (IOError, OSError):
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
 def _cli_acknowledge_warning(project_root, model_id):
     """Add a model ID to acknowledged_warnings in config.local.json."""
     purlin_dir = os.path.join(project_root, '.purlin')
@@ -304,7 +342,7 @@ def main():
     project_root = _find_project_root()
 
     if len(sys.argv) < 2:
-        print("Usage: resolve_config.py [--dump | --key <name> | <role> | acknowledge_warning <model_id>]",
+        print("Usage: resolve_config.py [--dump | --key <name> | <role> | has_agent_config <role> | set_agent_config <role> <key> <value> | acknowledge_warning <model_id>]",
               file=sys.stderr)
         sys.exit(1)
 
@@ -323,11 +361,23 @@ def main():
                   file=sys.stderr)
             sys.exit(1)
         _cli_acknowledge_warning(project_root, sys.argv[2])
+    elif arg == 'has_agent_config':
+        if len(sys.argv) < 3:
+            print("Usage: resolve_config.py has_agent_config <role>",
+                  file=sys.stderr)
+            sys.exit(1)
+        _cli_has_agent_config(project_root, sys.argv[2])
+    elif arg == 'set_agent_config':
+        if len(sys.argv) < 5:
+            print("Usage: resolve_config.py set_agent_config <role> <key> <value>",
+                  file=sys.stderr)
+            sys.exit(1)
+        _cli_set_agent_config(project_root, sys.argv[2], sys.argv[3], sys.argv[4])
     elif arg in ('architect', 'builder', 'qa', 'pm', 'purlin'):
         _cli_role(project_root, arg)
     else:
         print(f"Unknown argument: {arg}", file=sys.stderr)
-        print("Usage: resolve_config.py [--dump | --key <name> | <role> | acknowledge_warning <model_id>]",
+        print("Usage: resolve_config.py [--dump | --key <name> | <role> | has_agent_config <role> | set_agent_config <role> <key> <value> | acknowledge_warning <model_id>]",
               file=sys.stderr)
         sys.exit(1)
 

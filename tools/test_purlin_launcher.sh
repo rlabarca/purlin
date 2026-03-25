@@ -421,6 +421,145 @@ fi
 
 teardown_purlin_sandbox
 
+# ---------------------------------------------------------------------------
+# Scenario 8: has_agent_config returns true when role exists
+# ---------------------------------------------------------------------------
+echo ""
+echo "[Scenario] has_agent_config returns true when role exists"
+
+HAC_SANDBOX="$(mktemp -d)"
+mkdir -p "$HAC_SANDBOX/.purlin"
+cat > "$HAC_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "purlin": {
+            "model": "claude-opus-4-6",
+            "effort": "high"
+        }
+    }
+}
+EOF
+
+HAC_OUTPUT=$(PURLIN_PROJECT_ROOT="$HAC_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" has_agent_config purlin 2>/dev/null)
+if [ "$HAC_OUTPUT" = "true" ]; then
+    log_pass "has_agent_config returns true when agents.purlin exists with values"
+else
+    log_fail "has_agent_config should return true (got: $HAC_OUTPUT)"
+fi
+
+rm -rf "$HAC_SANDBOX"
+
+# ---------------------------------------------------------------------------
+# Scenario 9: has_agent_config returns false when role absent
+# ---------------------------------------------------------------------------
+echo ""
+echo "[Scenario] has_agent_config returns false when role absent"
+
+HAC2_SANDBOX="$(mktemp -d)"
+mkdir -p "$HAC2_SANDBOX/.purlin"
+cat > "$HAC2_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": {
+            "model": "claude-opus-4-6"
+        }
+    }
+}
+EOF
+
+HAC2_OUTPUT=$(PURLIN_PROJECT_ROOT="$HAC2_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" has_agent_config purlin 2>/dev/null)
+if [ "$HAC2_OUTPUT" = "false" ]; then
+    log_pass "has_agent_config returns false when agents.purlin is absent"
+else
+    log_fail "has_agent_config should return false (got: $HAC2_OUTPUT)"
+fi
+
+# Also test with empty agents section
+cat > "$HAC2_SANDBOX/.purlin/config.json" << 'EOF'
+{ "agents": {} }
+EOF
+rm -f "$HAC2_SANDBOX/.purlin/config.local.json"
+HAC2_OUTPUT=$(PURLIN_PROJECT_ROOT="$HAC2_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" has_agent_config purlin 2>/dev/null)
+if [ "$HAC2_OUTPUT" = "false" ]; then
+    log_pass "has_agent_config returns false when agents section is empty"
+else
+    log_fail "has_agent_config should return false for empty agents (got: $HAC2_OUTPUT)"
+fi
+
+rm -rf "$HAC2_SANDBOX"
+
+# ---------------------------------------------------------------------------
+# Scenario 10: set_agent_config creates agent entry
+# ---------------------------------------------------------------------------
+echo ""
+echo "[Scenario] set_agent_config creates and updates agent config"
+
+SAC_SANDBOX="$(mktemp -d)"
+mkdir -p "$SAC_SANDBOX/.purlin"
+cat > "$SAC_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": { "model": "claude-sonnet-4-6" }
+    }
+}
+EOF
+
+# Set model for purlin (should create agents.purlin)
+PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" set_agent_config purlin model "claude-opus-4-6" 2>/dev/null
+
+# Verify it was stored
+SAC_MODEL=$(PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 -c "
+import json
+with open('$SAC_SANDBOX/.purlin/config.local.json') as f:
+    c = json.load(f)
+print(c.get('agents', {}).get('purlin', {}).get('model', ''))
+" 2>/dev/null)
+
+if [ "$SAC_MODEL" = "claude-opus-4-6" ]; then
+    log_pass "set_agent_config stores model in config.local.json"
+else
+    log_fail "set_agent_config model not stored correctly (got: $SAC_MODEL)"
+fi
+
+# Set effort for same role (should add key without removing model)
+PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" set_agent_config purlin effort "high" 2>/dev/null
+
+SAC_EFFORT=$(PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 -c "
+import json
+with open('$SAC_SANDBOX/.purlin/config.local.json') as f:
+    c = json.load(f)
+print(c.get('agents', {}).get('purlin', {}).get('effort', ''))
+" 2>/dev/null)
+
+SAC_MODEL2=$(PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 -c "
+import json
+with open('$SAC_SANDBOX/.purlin/config.local.json') as f:
+    c = json.load(f)
+print(c.get('agents', {}).get('purlin', {}).get('model', ''))
+" 2>/dev/null)
+
+if [ "$SAC_EFFORT" = "high" ]; then
+    log_pass "set_agent_config stores effort alongside existing model"
+else
+    log_fail "set_agent_config effort not stored correctly (got: $SAC_EFFORT)"
+fi
+
+if [ "$SAC_MODEL2" = "claude-opus-4-6" ]; then
+    log_pass "set_agent_config preserves existing model when adding effort"
+else
+    log_fail "set_agent_config overwrote model when adding effort (got: $SAC_MODEL2)"
+fi
+
+# Verify has_agent_config now returns true
+SAC_HAS=$(PURLIN_PROJECT_ROOT="$SAC_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" has_agent_config purlin 2>/dev/null)
+if [ "$SAC_HAS" = "true" ]; then
+    log_pass "has_agent_config returns true after set_agent_config"
+else
+    log_fail "has_agent_config should return true after set (got: $SAC_HAS)"
+fi
+
+rm -rf "$SAC_SANDBOX"
+
 ###############################################################################
 # Results
 ###############################################################################
