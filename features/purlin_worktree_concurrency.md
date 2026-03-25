@@ -35,7 +35,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - The hook MUST auto-commit pending changes before merge, including both tracked modifications and untracked files (`git ls-files --others --exclude-standard`).
 - The hook MUST NOT use `set -e`. Intermediate failures (e.g., `git add`) must not prevent the merge attempt from being reached. All git commands in the auto-commit block MUST use `|| true` for resilience.
 - The hook MUST only process branches matching `purlin-*` pattern.
-- On merge conflict: abort merge and preserve worktree with instructions for manual resolution.
+- On merge conflict: abort merge, preserve worktree, and write a merge-pending breadcrumb (see 2.6). Then set the iTerm badge to `MERGE FAILED` so the dead terminal tab visually signals the problem. Print a prominent warning to stderr.
 - The hook MUST exit 0 in all cases (never block agent exit).
 
 ### 2.4 Stale Worktree Detection
@@ -49,6 +49,50 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - Multiple worktree agents MUST NOT share the same worktree directory.
 - Branch names MUST include timestamp for uniqueness.
 - Merge-back is sequential (one at a time to avoid cascading conflicts).
+
+### 2.6 Merge Failure Signaling
+
+When the SessionEnd hook (2.3) or `/pl-merge` encounters a merge conflict that cannot be auto-resolved:
+
+- The hook MUST write a breadcrumb file to `.purlin/cache/merge_pending/<branch>.json` in the **main working directory** (not the worktree). The directory MUST be created if absent.
+- The breadcrumb MUST contain:
+  ```json
+  {
+    "branch": "purlin-engineer-20260325-143022",
+    "worktree_path": "/path/to/.purlin/worktrees/...",
+    "source_branch": "main",
+    "failed_at": "2026-03-25T14:35:00Z",
+    "reason": "conflict"
+  }
+  ```
+- One file per failed merge. Multiple concurrent failures each leave their own breadcrumb.
+- The hook MUST set the iTerm badge to `MERGE FAILED` after writing the breadcrumb. This persists on the terminal tab after the session ends, providing a visual indicator even if the user doesn't read stderr.
+- The hook MUST print a prominent multi-line warning to stderr:
+  ```
+  ╔══════════════════════════════════════════════════╗
+  ║  MERGE FAILED — worktree preserved              ║
+  ║  Branch: purlin-engineer-20260325-143022         ║
+  ║  Next Purlin session will recover automatically. ║
+  ╚══════════════════════════════════════════════════╝
+  ```
+- On successful merge, the hook MUST NOT write a breadcrumb. If a breadcrumb exists from a previous failed attempt of the same branch, the hook MUST delete it.
+
+### 2.7 Startup Merge Recovery
+
+On every Purlin agent startup, **before** `scan.sh` and **before** mode activation:
+
+- The startup protocol MUST glob `.purlin/cache/merge_pending/*.json`.
+- If no breadcrumbs exist, proceed with normal startup.
+- If one or more breadcrumbs exist, the agent MUST:
+  1. Display each pending merge with branch name, age, and worktree path.
+  2. For each pending merge, attempt `git merge <branch>`:
+     - If the merge succeeds: clean up worktree, delete branch, remove breadcrumb, report success.
+     - If the merge conflicts: present the conflicts to the user and offer LLM-assisted resolution. The agent can read the conflicting files, understand the intent from both sides, and propose a resolution.
+     - The user may defer resolution ("skip for now") — the breadcrumb stays, and startup continues with a warning banner: "Deferred merge: `<branch>` — unmerged work exists."
+  3. Only after all breadcrumbs are resolved or explicitly deferred, proceed to normal startup (scan.sh, /pl-status, mode activation).
+- This check is **unconditional** — it runs regardless of CLI flags (`--auto-build`, `--mode`, etc.). The user cannot accidentally bypass it.
+- `/pl-resume` MUST also check for merge-pending breadcrumbs as part of its recovery flow (secondary path).
+- PURLIN_BASE.md Section 6 MUST include this check as step 6.1a (before 6.1).
 
 ---
 
@@ -87,15 +131,54 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
     When the SessionEnd hook fires
     Then the untracked files are added, committed, and merged to the source branch
 
-#### Scenario: SessionEnd hook handles merge conflict gracefully
+#### Scenario: SessionEnd hook writes breadcrumb on merge conflict
 
-    Given the agent is in a purlin worktree
+    Given the agent is in a purlin worktree on branch "purlin-engineer-20260325-143022"
     And the source branch has diverged with conflicting changes
     When the SessionEnd hook fires
     Then the merge is aborted
     And the worktree is preserved
-    And instructions for manual resolution are printed to stderr
+    And .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists in the main directory
+    And the breadcrumb contains the branch name, worktree path, source branch, timestamp, and reason
+    And the iTerm badge is set to "MERGE FAILED"
+    And a prominent warning is printed to stderr
     And exit code is 0
+
+#### Scenario: Successful merge removes stale breadcrumb
+
+    Given .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists from a prior failure
+    And the conflict has since been resolved
+    When the SessionEnd hook fires for the same branch and merge succeeds
+    Then the breadcrumb file is deleted
+    And the worktree and branch are cleaned up normally
+
+#### Scenario: Startup intercepts pending merge before scan
+
+    Given .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists
+    When pl-run.sh is invoked with --auto-build
+    Then the agent displays the pending merge before running scan.sh
+    And the agent attempts to merge purlin-engineer-20260325-143022
+    And scan.sh does not run until the merge is resolved or deferred
+
+#### Scenario: Startup merge recovery succeeds cleanly
+
+    Given .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists
+    And the worktree branch merges cleanly into main
+    When the startup merge recovery runs
+    Then the merge succeeds
+    And the worktree is removed
+    And the branch is deleted
+    And the breadcrumb file is deleted
+    And normal startup continues
+
+#### Scenario: User defers merge recovery at startup
+
+    Given .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists
+    And the merge has conflicts
+    When the user chooses to defer resolution
+    Then the breadcrumb file is preserved
+    And a warning banner is displayed for the remainder of the session
+    And normal startup continues
 
 #### Scenario: Stale worktree cleanup on refresh
 
@@ -134,8 +217,13 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - Verify merge hook auto-commits both tracked changes and untracked files before merging
 - Verify merge hook is a no-op when not in a worktree (safe to run on every session exit)
 - Verify merge hook skips non-purlin branches (e.g., feature/* branches in sub-agent worktrees)
-- Verify merge hook preserves worktree and aborts cleanly on merge conflict, with resolution instructions
+- Verify merge hook writes breadcrumb to .purlin/cache/merge_pending/ on conflict
+- Verify merge hook sets badge to MERGE FAILED on conflict
+- Verify merge hook deletes stale breadcrumb on successful merge of previously-failed branch
 - Verify .purlin/worktrees/ is in .gitignore
 - Verify worktree creation fails gracefully if .purlin/worktrees/ is not writable
 - Verify merge-back preserves all commits (not squashing)
 - Verify hook does not corrupt main branch on partial merge failure
+- Verify startup merge recovery runs before scan.sh regardless of CLI flags
+- Verify startup merge recovery resolves or defers all pending breadcrumbs before proceeding
+- Verify deferred merges show a warning banner for the session duration
