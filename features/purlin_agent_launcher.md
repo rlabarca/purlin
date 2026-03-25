@@ -35,7 +35,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
 - `--auto-verify` — Alias for `--mode qa --auto-start`.
 - `--pm`, `--qa` — Shorthand for `--mode pm`, `--mode qa`.
 - `--verify [feature]` — `--mode qa`, optionally scoped to one feature.
-- `--auto-start` — Used with `--mode`: enters the mode and begins executing the work plan immediately without waiting for approval (e.g., `--mode engineer --auto-start`). Has no effect without `--mode`.
+- `--auto-start` — Used with `--mode`: enters the mode and begins executing the work plan immediately without waiting for approval (e.g., `--mode engineer --auto-start`). Has no effect without `--mode`. The `--help` text for this flag MUST communicate the `--mode` dependency — e.g., "With --mode: begin executing immediately (no approval prompt). No effect without --mode."
 - `--find-work false` — Disables work discovery.
 - `--worktree` — Runs in an isolated git worktree (see worktree feature).
 
