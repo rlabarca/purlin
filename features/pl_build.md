@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The primary Engineer skill that orchestrates the entire implementation workflow. Reads the Critic report to identify the highest-priority Engineer action item (or accepts a named feature as argument), then executes a multi-step implementation protocol: pre-flight checks, planning, implementation with knowledge colocation, local verification via `/pl-unit-test`, and status tag commits. Supports delivery plan integration with execution group dispatch for parallel multi-feature builds.
+The primary Engineer skill that orchestrates the entire implementation workflow. Uses `/pl-status` to identify the highest-priority Engineer work item (or accepts a named feature as argument), then executes a multi-step implementation protocol: tombstone processing, pre-flight checks, planning, implementation with knowledge colocation, local verification via `/pl-unit-test`, and status tag commits. Supports delivery plan integration with execution group dispatch for parallel multi-feature builds.
 
 ---
 
@@ -27,31 +27,51 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
 ### 2.3 Scope Selection
 
 - If an argument is provided, implement the named feature from `features/<arg>.md`.
-- If no argument is provided, read `CRITIC_REPORT.md` or run `status.sh --role builder` to identify the highest-priority Engineer action item.
-- Tombstones in `features/tombstones/` MUST be processed before regular feature work.
+- If no argument is provided, run `/pl-status` to identify the highest-priority Engineer work item.
+- Tombstones in `features/tombstones/` MUST be processed before regular feature work (see Section 2.4).
 - If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only.
 
-### 2.4 Execution Group Dispatch
+### 2.4 Tombstone Processing Protocol
 
-- When a delivery plan has PENDING phases with 2+ independent features (no mutual dependencies in `dependency_graph.json`), Engineer mode MUST spawn `builder-worker` sub-agents for parallel execution in isolated worktrees.
+When `features/tombstones/` contains tombstone files, process ALL of them before any regular feature work:
+
+1. **Read the tombstone:** Parse `features/tombstones/<name>.md` for the "Files to Delete" and "Dependencies to Check" sections.
+2. **Delete listed files:** Remove every file and directory listed in "Files to Delete":
+   - Implementation code files
+   - `tests/<name>/` directory (unit tests, tests.json, regression.json, critic.json)
+   - `tests/qa/scenarios/<name>.json` (QA regression scenario)
+   - `tests/qa/test_<name>_regression.sh` (QA regression runner)
+   - Any other paths listed in the tombstone
+3. **Check dependencies:** For each entry in "Dependencies to Check", verify the referencing code/spec still works without the deleted feature. Fix import errors, remove dead references, update prerequisite lists.
+4. **Delete the tombstone and its artifacts:** Remove the tombstone file itself and any companion artifacts that were moved alongside it:
+   - `features/tombstones/<name>.md` (the tombstone)
+   - `features/tombstones/<name>.impl.md` (if exists)
+   - `features/tombstones/<name>.discoveries.md` (if exists)
+5. **Regenerate dependency graph:** Run `python3 ${TOOLS_ROOT}/cdd/graph.py` to update `.purlin/cache/dependency_graph.json`.
+6. **Commit:** `git commit -m "chore: process tombstone <name> — delete retired code and tests"`
+7. **Repeat** for each remaining tombstone.
+
+### 2.5 Execution Group Dispatch
+
+- When a delivery plan has PENDING phases with 2+ independent features (no mutual dependencies in `dependency_graph.json`), Engineer mode MUST spawn `engineer-worker` sub-agents for parallel execution in isolated worktrees.
 - Independent features build in parallel; dependent features use the sequential per-feature loop.
 - Merge uses the Robust Merge Protocol: rebase sequentially, auto-resolve conflicts in safe files (delivery plan, Critic report, cache), abort and fall back to sequential for unsafe conflicts.
 
-### 2.5 Per-Feature Implementation Protocol
+### 2.6 Per-Feature Implementation Protocol
 
 - **Step 0 (Pre-Flight):** Re-verification detection (skip re-implementation when tests pass and scenarios unchanged), anchor review, visual design source loading, web test readiness check, companion file reading, prerequisite stability check, new scenario detection.
 - **Step 1 (Plan):** State the feature being implemented and outline the plan referencing companion file notes.
 - **Step 2 (Implement):** Write code and tests. Record discoveries in companion files using Engineer Decision Tags (`[CLARIFICATION]`, `[AUTONOMOUS]`, `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`). Commit implementation work.
 - **Step 3 (Verify):** Invoke `/pl-unit-test` for the complete testing protocol. For features with `> Web Test:` metadata, run `/pl-web-test`.
-- **Step 4 (Status Tag):** Determine tag (`[Complete]` for zero manual scenarios, `[Ready for Verification]` for features with manual scenarios). Declare scope (`full`, `targeted`, `cosmetic`, `dependency-only`). Commit as a SEPARATE commit from implementation. Run `status.sh` to confirm state.
+- **Step 4 (Status Tag):** Determine tag (`[Complete]` for zero manual scenarios, `[Ready for Verification]` for features with manual scenarios). Declare scope (`full`, `targeted`, `cosmetic`, `dependency-only`). Commit as a SEPARATE commit from implementation. Run `scan.sh` to confirm state.
 
-### 2.6 Bright-Line Rules
+### 2.7 Bright-Line Rules
 
 - Status tag MUST be a separate commit from implementation work.
 - `tests.json` MUST be produced by an actual test runner, never hand-written.
 - `[Verified]` tag is QA-only; Engineer MUST NOT include it.
 - Chat is not a communication channel; use `/pl-propose` for findings.
-- Re-verification, not re-implementation, when Critic shows `lifecycle_reset` with passing tests and no scenario diff.
+- Re-verification, not re-implementation, when scan shows `spec_modified_after_completion` with passing tests and no scenario diff.
 - Design alignment verification MUST pass (zero BUG/DRIFT) before status tag for features with `> Web Test:` metadata.
 
 ---
@@ -77,7 +97,7 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
 #### Scenario: No-argument mode selects highest-priority action item
 
     Given an Engineer agent session with no argument
-    And CRITIC_REPORT.md lists feature_a as highest-priority Engineer action
+    And /pl-status lists feature_a as highest-priority Engineer work item
     When /pl-build is invoked
     Then Engineer mode selects feature_a for implementation
 
@@ -87,6 +107,17 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
     And features/new_feature.md is in TODO state
     When /pl-build is invoked without arguments
     Then old_feature tombstone is processed before new_feature implementation begins
+
+#### Scenario: Tombstone processing deletes all listed artifacts
+
+    Given features/tombstones/old_feature.md lists tests/old_feature/ and src/old.py
+    And features/tombstones/old_feature.impl.md exists
+    When /pl-build processes the tombstone
+    Then tests/old_feature/ is deleted
+    And src/old.py is deleted
+    And features/tombstones/old_feature.md is deleted
+    And features/tombstones/old_feature.impl.md is deleted
+    And the dependency graph is regenerated
 
 #### Scenario: Delivery plan scopes to current phase
 
