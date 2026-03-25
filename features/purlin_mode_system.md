@@ -57,6 +57,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Old consolidated skill files MUST be deleted.
 - `/pl-edit-base` MUST be removed (absorbed into Engineer mode).
 
+### 2.8a Skill Internal Protocols Use scan.sh
+
+- All skill files that perform work discovery MUST reference `${TOOLS_ROOT}/cdd/scan.sh`, NOT `status.sh` or the Critic.
+- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, or `tests/<name>/critic.json`.
+- Where skills previously read `critic.json` for feature metadata (gate status, regression scope), they MUST read the feature spec directly instead.
+- References to "Architect action items" MUST be replaced with "PM action items".
+- References to "Builder action items" MUST be replaced with "Engineer action items".
+
 ### 2.8 Commit Attribution
 
 - Engineer commits: `feat()`, `fix()`, `test()` prefixes.
@@ -176,6 +184,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     When the user asks to "edit the config file"
     Then the agent suggests activating Engineer mode first
     And does not write to any file
+
+#### Scenario: No skill references Critic or status.sh @auto
+
+    Given the project after scan.sh migration
+    When searching all .claude/commands/pl-*.md files
+    Then no file contains "status.sh"
+    And no file contains "CRITIC_REPORT.md"
+    And no file contains "critic.json"
 
 #### Scenario: Old consolidated skills are deleted @auto
 

@@ -22,7 +22,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 - `/pl-merge` MUST commit any pending work in the worktree.
 - `/pl-merge` MUST merge the worktree branch back to the source branch.
-- On merge conflict with safe files (`.purlin/delivery_plan.md`, `.purlin/cache/*`, `CRITIC_REPORT.md`): auto-resolve by keeping main's version.
+- On merge conflict with safe files (`.purlin/delivery_plan.md`, `.purlin/cache/*`): auto-resolve by keeping main's version.
 - On merge conflict with code or spec files: present the conflict to the user.
 - After successful merge: remove worktree and delete branch.
 
