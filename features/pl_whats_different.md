@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The `/pl-whats-different` agent command generates a plain-English summary of what's different between local main and the remote collab branch. It is a standalone command usable by any role from the main checkout. The generation pipeline (extraction tool, LLM synthesis, output file) is defined in `features/collab_whats_different.md`; this spec covers only the agent command interface.
+The `/pl-whats-different` agent command generates a plain-English summary of what's different between local main and the remote collab branch. It is a standalone command usable by any role from the main checkout. When invoked with an active Purlin mode (PM, Engineer, or QA), it produces a **role-specific briefing** that answers what the reader specifically needs to care about, followed by the standard file-level digest. The generation pipeline (extraction tool, LLM synthesis, output file) and role-aware briefing requirements are defined in `features/collab_whats_different.md`; this spec covers only the agent command interface.
 
 ---
 
@@ -34,14 +34,36 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 
 ### 2.4 Generation
 
-- The command executes `tools/collab/generate_whats_different.sh <branch>`.
+- The command executes `tools/collab/generate_whats_different.sh <branch>` with an optional `--role <mode>` parameter.
+- When the agent has an active Purlin mode (PM, Engineer, or QA), it passes `--role <mode>` to produce a role-specific briefing prepended to the standard digest.
+- When no mode is active, it runs without `--role` (standard digest only).
 - The script runs the extraction tool and invokes the LLM to produce the digest.
 - Output is written to `features/digests/whats-different.md`.
 
 ### 2.5 Output
 
 - The command reads and displays the contents of `features/digests/whats-different.md` inline.
-- A note is appended: "This summary is also available via the 'What's Different?' button in the CDD dashboard."
+
+### 2.6 Role-Aware Briefing
+
+When `--role` is provided, the output has two sections:
+
+1. **Role briefing** — A plain-language summary of what matters to this role, with numbered IDs on each item (see `collab_whats_different.md` Section 2.17.3 for tone, structure, and content per role).
+2. **Standard digest** — The full file-level digest (Spec Changes / Code Changes / Purlin Changes), unchanged.
+
+A horizontal rule separates the two sections.
+
+The role briefing is LLM-only. If Claude CLI is unavailable, the command produces only the standard digest without a role briefing section.
+
+### 2.7 ID Drill-Down
+
+After displaying the briefing, the agent is prepared for the user to reply with a numeric ID (e.g., "3", "#3", "tell me about 3"). When this happens:
+
+1. The agent identifies the corresponding item from the most recent briefing.
+2. Reads the relevant source files (feature spec, companion file, discovery sidecar, git diff).
+3. Provides a detailed explanation in the same plain-language tone: what the original state was, what changed, the full context, and recommended next steps.
+
+This is conversational — no script or endpoint is needed. The IDs make it easy for the user to request detail without typing file paths or feature names.
 
 ---
 
@@ -91,6 +113,74 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
     Then the generation script is executed with the active branch name as argument
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline
+
+#### Scenario: PM Mode Produces PM Briefing
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the agent is in PM mode
+    When the agent runs /pl-whats-different
+    Then the generation script is executed with --role pm
+    And the output begins with a "What's Different — PM Briefing" section
+    And the briefing contains a "Decisions Waiting for You" section
+    And the briefing contains a "What Was Built" section
+    And each actionable item has a sequential numeric ID
+    And the briefing ends with "Reply with an ID to learn more, or continue with your work."
+    And the standard file-level digest follows below a horizontal rule
+
+#### Scenario: Engineer Mode Produces Engineer Briefing
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the agent is in Engineer mode
+    When the agent runs /pl-whats-different
+    Then the generation script is executed with --role engineer
+    And the output begins with a "What's Different — Engineer Briefing" section
+    And the briefing contains a "Specs Changed After You Finished" section if rework signals exist
+    And the briefing contains a "Decisions Overruled" section if rejected deviations exist
+    And each actionable item has a sequential numeric ID
+    And the briefing ends with "Reply with an ID to learn more, or continue with your work."
+
+#### Scenario: QA Mode Produces QA Briefing
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the agent is in QA mode
+    When the agent runs /pl-whats-different
+    Then the generation script is executed with --role qa
+    And the output begins with a "What's Different — QA Briefing" section
+    And the briefing contains a "Ready for You to Verify" section if testing queue is non-empty
+    And the briefing contains a "What the Engineer Already Tested" section
+    And each actionable item has a sequential numeric ID
+    And the briefing ends with "Reply with an ID to learn more, or continue with your work."
+
+#### Scenario: No Mode Produces Standard Digest Only
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the agent has no active Purlin mode
+    When the agent runs /pl-whats-different
+    Then the generation script is executed without --role
+    And the output contains the standard file-level digest
+    And no role briefing section is present
+
+#### Scenario: Briefing Absent When Claude CLI Unavailable
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the agent is in PM mode
+    And Claude CLI is not available
+    When the agent runs /pl-whats-different
+    Then the output contains only the standard file-level digest
+    And no role briefing section is present
+
+#### Scenario: User Drills Down Into Briefing Item by ID
+
+    Given the agent has displayed a PM briefing with items [1] through [4]
+    When the user replies with "2"
+    Then the agent reads the source files referenced by item [2]
+    And provides a detailed plain-language explanation of that item
+    And includes what changed, the original state, and recommended next steps
 
 ### Manual Scenarios (Human Verification Required)
 

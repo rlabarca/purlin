@@ -8,7 +8,7 @@
 > Web Test: http://localhost:9086
 > Web Start: /pl-cdd
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
@@ -86,20 +86,20 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
   - `category`: tag name (e.g., `[INFEASIBLE]`, `[BUG]`, `[DEVIATION]`)
   - `feature`: feature file name the entry belongs to
   - `summary`: one-line description from the entry text
-  - `role`: routed recipient (`architect` or `builder`)
+  - `role`: routed recipient (`pm` or `engineer`)
 - The extraction JSON output gains a new `decisions` array per direction.
 
 **Decision categories and routing:**
 
 | Category | Source | Routed To |
 |---|---|---|
-| `[INFEASIBLE]` | Companion files (`## Implementation Notes`) | Architect |
-| `[DEVIATION]` | Companion files (`## Implementation Notes`) | Architect |
-| `[DISCOVERY]` (impl) | Companion files (`## Implementation Notes`) | Architect |
-| `[BUG]` | Discovery sidecar files (`<name>.discoveries.md`) | Builder (default) or Architect (if `Action Required: Architect`) |
-| `[INTENT_DRIFT]` | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
-| `[SPEC_DISPUTE]` | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
-| `[DISCOVERY]` (testing) | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
+| `[INFEASIBLE]` | Companion files (`## Implementation Notes`) | PM |
+| `[DEVIATION]` | Companion files (`## Implementation Notes`) | PM |
+| `[DISCOVERY]` (impl) | Companion files (`## Implementation Notes`) | PM |
+| `[BUG]` | Discovery sidecar files (`<name>.discoveries.md`) | Engineer (default) or PM (if `Action Required: PM`) |
+| `[INTENT_DRIFT]` | Discovery sidecar files (`<name>.discoveries.md`) | PM |
+| `[SPEC_DISPUTE]` | Discovery sidecar files (`<name>.discoveries.md`) | PM |
+| `[DISCOVERY]` (testing) | Discovery sidecar files (`<name>.discoveries.md`) | PM |
 
 **Purlin infrastructure file classification:**
 
@@ -226,8 +226,9 @@ After a successful merge in `/pl-remote-pull` (BEHIND fast-forward or DIVERGED m
 - A horizontal rule separates the impact summary from the file-level content below.
 - The impact summary section has its own "Generated:" timestamp (bold label, local timezone AM/PM format per Section 2.8) and its own "Regenerate" button (same styling as the digest Regenerate button).
 - **Role-specific section header colors:**
-  - **Architect Actions** header: `var(--purlin-status-warning)` (amber — attention required)
-  - **Builder Actions** header: `var(--purlin-status-good)` (green — implementation work)
+  - **PM Actions** header: `var(--purlin-status-warning)` (amber — decisions required)
+  - **Engineer Actions** header: `var(--purlin-status-good)` (green — implementation work)
+  - **QA Actions** header: `var(--purlin-accent)` (blue — verification work)
 
 #### 2.14.4 Generation Pipeline
 
@@ -256,8 +257,9 @@ The deep analysis output uses role-routed action sections instead of a flat "Act
 - **Key Changes** (unchanged)
 - **Workflow Impact** (unchanged)
 - **Architecture Notes** (optional, unchanged)
-- **Architect Actions** — role-specific items tagged with decision categories, one line each
-- **Builder Actions** — role-specific items tagged with decision categories, one line each
+- **PM Actions** — decision items requiring PM sign-off, tagged with decision categories, one line each
+- **Engineer Actions** — implementation items (bugs, rework, rejected deviations), one line each
+- **QA Actions** — verification items (features entering testing, scenario gaps), one line each
 
 Each action line follows the format: `[CATEGORY] feature_name — one-line description`
 
@@ -266,7 +268,7 @@ When no actions exist for a role, the section header is still present with "No a
 **LLM prompt requirements:**
 1. Include the sync state directional glossary above before the JSON data.
 2. Read the `decisions` array from the extraction JSON.
-3. Route each entry to the correct role section (Architect Actions or Builder Actions).
+3. Route each entry to the correct role section (PM Actions, Engineer Actions, or QA Actions).
 4. Use the exact `[CATEGORY]` tag syntax so the frontend can apply color styling.
 5. Keep descriptions to one line (no multi-line explanations).
 6. Never suggest "pull" when the state is AHEAD, or "push" when the state is BEHIND.
@@ -322,6 +324,220 @@ The deep analysis is derived from the same extraction data as the standard diges
 | Tag | State Description |
 |-----|-------------------|
 | `main/collab_whats_different/divergent-branches` | Main and collab branches with different file changes for testing diff extraction |
+
+### 2.17 Role-Aware Change Impact Briefing
+
+When collaborators pull changes from a shared branch, each role asks a fundamentally different question:
+
+- **PM:** "What happened to my specs? What decisions need my attention?"
+- **Engineer:** "What spec changes affect code I already wrote? What new work appeared?"
+- **QA:** "What's ready for me to verify? What did Engineer already test?"
+
+The standard file-level digest (Spec Changes / Code Changes / Purlin Changes) answers "what files changed." The role-aware briefing answers "what do **I** need to care about?" — surfacing only the items relevant to the reader's role, in plain language with enough context to act without reading diffs.
+
+#### 2.17.1 Role Vocabulary
+
+The role-aware briefing uses Purlin mode names throughout:
+
+| Legacy term | Mode term |
+|-------------|-----------|
+| Architect | PM |
+| Builder | Engineer |
+| (none) | QA |
+
+Per `purlin_mode_system.md` Section 2.7: all references to "Architect action items" are "PM action items" and "Builder action items" are "Engineer action items." The extraction tool's `_DECISION_ROUTING` map MUST use `pm` and `engineer` as role values (not `architect`/`builder`).
+
+#### 2.17.2 Extraction Tool: `role_briefings` Object
+
+The extraction tool (`tools/collab/extract_whats_different.py`) MUST produce a `role_briefings` top-level object in its JSON output, computed from the existing file categorization and decision routing. This object provides structured data that the LLM synthesis step uses to generate role-specific briefings.
+
+**JSON structure:**
+
+```json
+{
+  "role_briefings": {
+    "pm": {
+      "pending_decisions": [],
+      "spec_impact": [],
+      "lifecycle_transitions": [],
+      "build_summary": {
+        "code_files": 0,
+        "test_files": 0,
+        "features_implemented": 0
+      }
+    },
+    "engineer": {
+      "rework_signals": [],
+      "rejected_deviations": [],
+      "new_work": [],
+      "bugs": []
+    },
+    "qa": {
+      "testing_queue": [],
+      "unit_test_coverage": [],
+      "scenario_changes": [],
+      "open_bugs": [],
+      "completed_features": []
+    }
+  }
+}
+```
+
+**Field definitions:**
+
+**PM briefing:**
+
+- `pending_decisions` — Decision entries from companion files (`.impl.md`) and discovery sidecars (`.discoveries.md`) that require PM action. Includes entries tagged `[DEVIATION]`, `[INFEASIBLE]`, `[DISCOVERY]`, `[INTENT_DRIFT]`, `[SPEC_DISPUTE]` with PM status `PENDING` or newly added in the change range. Each entry includes: `category`, `feature`, `summary`, `source_file`.
+- `spec_impact` — Feature spec files (`features/*.md`) that were added, modified, or deleted in the change range. These are PM-owned files — any change demands PM awareness. Each entry includes: `file`, `change_type` (added/modified/deleted), `has_companion_changes` (boolean).
+- `lifecycle_transitions` — All status transitions detected in the change range (e.g., TODO → TESTING, TESTING → COMPLETE). PM needs full lifecycle visibility. Each entry includes: `feature`, `from_state`, `to_state`.
+- `build_summary` — Aggregate counts: `code_files` changed, `test_files` changed, `features_implemented` (count of features that transitioned to TESTING or beyond).
+
+**Engineer briefing:**
+
+- `rework_signals` — Feature specs modified in the change range where the feature's lifecycle status is TESTING or COMPLETE. The spec changed after Engineer completed work — this is a rework signal. Each entry includes: `feature`, `spec_file`, `current_lifecycle`. Lifecycle is determined from status commit messages in the git range (self-contained, no scan.json dependency).
+- `rejected_deviations` — Deviation entries in companion files where PM status changed to `REJECTED` in the change range. Engineer must revert to spec behavior. Each entry includes: `feature`, `deviation_summary`, `source_file`.
+- `new_work` — Features that transitioned to TODO lifecycle or had new feature spec files created. Each entry includes: `feature`, `spec_file`.
+- `bugs` — `[BUG]` entries from discovery sidecars routed to Engineer. Each entry includes: `feature`, `summary`, `source_file`.
+
+**QA briefing:**
+
+- `testing_queue` — Features that transitioned to TESTING lifecycle in the change range. Each entry includes: `feature`, `unit_test_count` (number of test files in `tests/<feature>/`), `qa_scenario_count` (number of QA scenarios in the feature spec), `qa_scenarios_tagged` (count of scenarios with `@auto`/`@manual` tags).
+- `unit_test_coverage` — Test files (`tests/`) that were added or modified. QA uses this to understand what Engineer already tested and avoid duplicating unit-level verification. Each entry includes: `file`, `change_type`, `feature` (inferred from path).
+- `scenario_changes` — Feature spec files where the `### QA Scenarios` section was modified. Each entry includes: `feature`, `spec_file`.
+- `open_bugs` — Unresolved `[BUG]` entries from discovery sidecars. Each entry includes: `feature`, `summary`, `action_required` (Engineer or PM).
+- `completed_features` — Features that transitioned to COMPLETE in the change range. Each entry includes: `feature`.
+
+**File-to-role relevance mapping:**
+
+| File Category | PM Relevance | Engineer Relevance | QA Relevance |
+|---|---|---|---|
+| `feature_spec` | PRIMARY (PM-owned) | IF lifecycle ≥ TESTING (rework signal) | IF has QA scenarios |
+| `anchor_node` | INFORM (architecture shift) | PRIMARY (affects implementation) | — |
+| `policy_node` | PRIMARY (PM-owned) | INFORM (may affect behavior) | — |
+| `companion` (`.impl.md`) | IF has PENDING decisions | PRIMARY (Engineer-owned) | INFORM |
+| `discovery` (`.discoveries.md`) | IF INTENT_DRIFT/SPEC_DISPUTE | IF BUG routed to Engineer | PRIMARY (QA-owned) |
+| `test` | — | PRIMARY (test coverage) | HIGH (what's already tested) |
+| `code` | — | PRIMARY | INFORM |
+| `visual_spec` | PRIMARY (design change) | IF spec-led (code may need update) | INFORM |
+| `purlin_config` | INFORM | INFORM | INFORM |
+
+#### 2.17.3 Agent Command: Mode-Aware Output
+
+When the agent has an active Purlin mode, the `/pl-whats-different` command passes `--role <mode>` to the generation script.
+
+- **With `--role`:** Output begins with a role-specific briefing section ("What's Different — [Mode] Briefing"), followed by the full file-level digest below a separator.
+- **Without `--role`:** Existing behavior — file-level digest only.
+- The briefing is LLM-only. If Claude CLI is unavailable, the command falls back to the standard file-level digest without a role briefing (no structured fallback for role briefings).
+
+**Briefing tone and language requirements:**
+
+The LLM prompt for role briefings MUST instruct the model to:
+
+1. **Use plain language appropriate to the role.** PM briefings should not use engineering jargon (no "lifecycle status", "companion files", "discovery sidecars"). Engineer briefings should not use spec-process jargon. QA briefings should focus on what to verify and what's already covered.
+2. **Provide context for each item.** Don't just list what changed — explain WHY it matters to this role and WHAT to do about it. Each item should include enough context that the reader can decide whether to act now or defer without having to open files.
+3. **Assign sequential numeric IDs.** Every actionable item in the briefing gets a sequential ID: `[1]`, `[2]`, `[3]`, etc. IDs are used for drill-down interaction (Section 2.17.4).
+4. **Group items by urgency.** Lead with items that block progress or require immediate decisions. Follow with informational items.
+5. **End with a drill-down prompt.** The briefing MUST end with: `"Reply with an ID to learn more, or continue with your work."`
+
+**PM briefing structure:**
+
+```
+# What's Different — PM Briefing
+
+Since you last synced, [summary of who did what].
+
+## Decisions Waiting for You (N)
+[Items where Engineer made choices that need PM sign-off.
+Each item explains the spec expectation, what the Engineer did
+instead, why, and what the PM needs to decide.]
+
+## What Was Built (N features)
+[Features that moved lifecycle state, with plain-English summary
+of progress. Not file lists.]
+
+## Your Specs [Were/Were Not] Changed
+[Whether any PM-owned feature spec files were directly modified,
+and if companion files reference spec gaps or conflicts.]
+```
+
+**Engineer briefing structure:**
+
+```
+# What's Different — Engineer Briefing
+
+Since you last synced, [summary of who did what].
+
+## Specs Changed After You Finished (N)
+[Features where the spec was revised after Engineer marked them
+TESTING or COMPLETE. Each item explains what to do: re-read spec,
+compare to implementation, update or flag infeasible.]
+
+## Decisions Overruled (N)
+[Deviations the PM rejected. Engineer must change code to match
+the spec. Each item explains which deviation and what to revert.]
+
+## New Work (N)
+[New feature specs in TODO lifecycle. Each item names the feature
+and says it's ready to build.]
+
+## Bugs Assigned to You (N)
+[BUG entries from discovery sidecars routed to Engineer.]
+```
+
+**QA briefing structure:**
+
+```
+# What's Different — QA Briefing
+
+Since you last synced, [summary of what's ready].
+
+## Ready for You to Verify (N)
+[Features in TESTING lifecycle. Each item shows: unit test
+coverage (what Engineer tested), QA scenario status (how many
+written, how many tagged), and what QA should focus on.]
+
+## Known Issues (N)
+[Open BUG entries. Each item explains the issue and who owns
+the fix, so QA knows whether to test around it or wait.]
+
+## What the Engineer Already Tested
+[Aggregate summary of test files changed. Guidance that QA
+should focus on scenario-level verification, not re-running
+unit tests.]
+```
+
+#### 2.17.4 ID Drill-Down Interaction
+
+Every item in a role briefing has a numeric ID (`[1]`, `[2]`, etc.). When the user replies with an ID (e.g., "3", "#3", "tell me about 3"), the agent:
+
+1. Identifies the item from the most recent briefing output.
+2. Reads the relevant source files: the feature spec, companion file (`.impl.md`), discovery sidecar (`.discoveries.md`), and/or the git diff for changed files.
+3. Provides a detailed explanation in the same plain-language tone as the briefing: what the original state was, what changed, the full context, and recommended next steps for this role.
+
+This interaction is conversational — no script or endpoint is needed. The agent reads files and explains. The IDs exist to make it easy for the user to say "I want to know more about that one" without typing a feature name or file path.
+
+#### 2.17.5 Generation Script: `--role` Parameter
+
+`tools/collab/generate_whats_different.sh` gains an optional `--role <pm|engineer|qa>` parameter:
+
+- When `--role` is provided, the LLM prompt includes the `role_briefings.<role>` section from the extraction JSON prominently, along with role-specific framing instructions (tone, structure, ID assignment).
+- The output prepends the role briefing markdown section before the standard file-level digest, separated by a horizontal rule.
+- When `--role` is omitted, behavior is unchanged — standard file-level digest only.
+- The extraction JSON always contains the full `role_briefings` object regardless of whether `--role` is specified.
+
+#### 2.17.6 Deep Analysis Vocabulary Update
+
+Section 2.14.4's output format uses the updated role vocabulary:
+
+- **PM Actions** (replaces "Architect Actions") — decision entries routed to PM
+- **Engineer Actions** (replaces "Builder Actions") — bugs, rejected deviations, rework items
+- **QA Actions** (new) — testing queue items, scenario coverage gaps
+
+The `_DECISION_ROUTING` map in the extraction tool and the LLM prompts in both `generate_whats_different.sh` and `generate_whats_different_deep.sh` MUST use `pm`/`engineer` role values. The fallback Python digest code MUST also use the updated section headers.
+
+#### 2.17.7 Staleness
+
+Role briefing data is derived from the same extraction JSON as the standard digest and deep analysis. The existing staleness invalidation rules (Section 2.14.7) apply without modification — when the standard digest is regenerated, any cached deep analysis (which includes role-routed action sections) is also invalidated.
 
 ---
 
@@ -494,21 +710,21 @@ The deep analysis is derived from the same extraction data as the standard diges
     When the extraction tool runs with the branch name
     Then the output JSON contains a decisions array
     And each decision entry has category, feature, summary, and role fields
-    And the [INFEASIBLE] entry has role "architect"
-    And the [DEVIATION] entry has role "architect"
+    And the [INFEASIBLE] entry has role "pm"
+    And the [DEVIATION] entry has role "pm"
 
 #### Scenario: Extraction Tool Routes BUG Entries to Builder by Default
 
     Given a commit range that modifies features/login.discoveries.md containing a [BUG] entry
     And the entry does not contain "Action Required: Architect"
     When the extraction tool runs with the branch name
-    Then the decisions array contains the [BUG] entry with role "builder"
+    Then the decisions array contains the [BUG] entry with role "engineer"
 
 #### Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect
 
     Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
     When the extraction tool runs with the branch name
-    Then the decisions array contains the [INFEASIBLE] entry with role "architect"
+    Then the decisions array contains the [INFEASIBLE] entry with role "pm"
 
 #### Scenario: Standard Digest Generation Deletes Stale Deep Analysis
 
@@ -608,6 +824,90 @@ The deep analysis is derived from the same extraction data as the standard diges
     And the User reopens the What's Different modal
     Then the font size slider position is retained at the previously set value
 
+#### Scenario: Extraction JSON Contains role_briefings Object
+
+    Given a commit range with changed feature specs, companion files, and test files
+    When the extraction tool runs with the branch name
+    Then the output JSON contains a "role_briefings" top-level object
+    And the object contains keys "pm", "engineer", and "qa"
+    And each key contains the fields defined in Section 2.17.2
+
+#### Scenario: PM Briefing Includes Pending Decision Entries
+
+    Given a commit range that adds a [DEVIATION] entry with PM status PENDING to features/login.impl.md
+    And a commit range that adds an [INFEASIBLE] entry with PM status PENDING to features/search.impl.md
+    When the extraction tool runs with the branch name
+    Then role_briefings.pm.pending_decisions contains 2 entries
+    And each entry has category, feature, summary, and source_file fields
+    And the [DEVIATION] entry has category "[DEVIATION]" and feature "login"
+    And the [INFEASIBLE] entry has category "[INFEASIBLE]" and feature "search"
+
+#### Scenario: PM Briefing Includes Spec Impact for Modified Feature Specs
+
+    Given a commit range that modifies features/auth_flow.md
+    And a commit range that adds features/onboarding.md
+    When the extraction tool runs with the branch name
+    Then role_briefings.pm.spec_impact contains 2 entries
+    And the auth_flow entry has change_type "modified"
+    And the onboarding entry has change_type "added"
+
+#### Scenario: Engineer Briefing Flags Rework Signals for Completed Features
+
+    Given a commit range that modifies features/auth_flow.md
+    And auth_flow has a status commit "[Complete features/auth_flow.md]" in the commit history
+    When the extraction tool runs with the branch name
+    Then role_briefings.engineer.rework_signals contains 1 entry
+    And the entry has feature "auth_flow" and current_lifecycle "COMPLETE"
+
+#### Scenario: Engineer Briefing Includes Rejected Deviations
+
+    Given a commit range that modifies features/auth_flow.impl.md
+    And the diff shows a deviation entry PM status changed from PENDING to REJECTED
+    When the extraction tool runs with the branch name
+    Then role_briefings.engineer.rejected_deviations contains 1 entry
+    And the entry has feature "auth_flow"
+
+#### Scenario: QA Briefing Includes Features Entering Testing
+
+    Given a commit range that contains a status commit "[Ready for Verification features/login.md]"
+    When the extraction tool runs with the branch name
+    Then role_briefings.qa.testing_queue contains 1 entry
+    And the entry has feature "login"
+
+#### Scenario: QA Briefing Includes Unit Test Coverage
+
+    Given a commit range that adds tests/login/test_auth.py and modifies tests/login/test_session.py
+    When the extraction tool runs with the branch name
+    Then role_briefings.qa.unit_test_coverage contains 2 entries
+    And one entry has change_type "added" and feature "login"
+    And one entry has change_type "modified" and feature "login"
+
+#### Scenario: Decision Routing Uses PM and Engineer Vocabulary
+
+    Given a commit range that adds an [INFEASIBLE] entry to features/login.impl.md
+    And a commit range that adds a [BUG] entry to features/login.discoveries.md
+    When the extraction tool runs with the branch name
+    Then the decisions array contains the [INFEASIBLE] entry with role "pm"
+    And the decisions array contains the [BUG] entry with role "engineer"
+    And no decision entry has role "architect" or "builder"
+
+#### Scenario: Deep Analysis Uses PM, Engineer, and QA Action Headers
+
+    Given a commit range with decisions routed to pm, engineer, and qa
+    When the deep analysis generation script runs
+    Then the output contains a "## PM Actions" section header
+    And the output contains a "## Engineer Actions" section header
+    And the output contains a "## QA Actions" section header
+    And the output does not contain "Architect Actions" or "Builder Actions"
+
+#### Scenario: Role Briefing Items Have Sequential Numeric IDs
+
+    Given a commit range with 3 pending decisions for PM and 2 rework signals for Engineer
+    When the generation script runs with --role pm
+    Then the PM briefing contains items labeled [1], [2], [3] at minimum
+    And each ID is unique and sequential within the briefing
+    And the briefing ends with "Reply with an ID to learn more, or continue with your work."
+
 ### QA Scenarios
 
 None
@@ -665,8 +965,9 @@ None
 - [ ] Spec Changes section header color: `var(--purlin-accent)`
 - [ ] Code Changes section header color: `var(--purlin-status-good)`
 - [ ] Purlin Changes section header color: `var(--purlin-status-todo)`
-- [ ] "Architect Actions" section header color: `var(--purlin-status-warning)`
-- [ ] "Builder Actions" section header color: `var(--purlin-status-good)`
+- [ ] "PM Actions" section header color: `var(--purlin-status-warning)`
+- [ ] "Engineer Actions" section header color: `var(--purlin-status-good)`
+- [ ] "QA Actions" section header color: `var(--purlin-accent)`
 - [ ] Decision category tags `[INFEASIBLE]` and `[BUG]` rendered in `var(--purlin-status-error)`
 - [ ] Decision category tags `[SPEC_DISPUTE]` and `[INTENT_DRIFT]` rendered in `var(--purlin-status-warning)`
 - [ ] Decision category tag `[DEVIATION]` rendered in `var(--purlin-accent)`
@@ -683,8 +984,9 @@ None
 - [ ] Section header colors: "Spec Changes" in `var(--purlin-accent)`, "Code Changes" in `var(--purlin-status-good)`, "Purlin Changes" in `var(--purlin-status-todo)`
 - [ ] "What's Different?" button visible in active branch panel when sync state is not SAME; "Last generated: `<timestamp>`" shown below when cached
 - [ ] "Summarize Impact" button visible inside modal above digest content when no cached analysis exists; uses `btn-critic` styling
-- [ ] Deep Analysis: "Architect Actions" header in `var(--purlin-status-warning)`, `[INFEASIBLE]` in `var(--purlin-status-error)`, `[INTENT_DRIFT]` in `var(--purlin-status-warning)`
-- [ ] Deep Analysis: "Builder Actions" header in `var(--purlin-status-good)`, `[BUG]` in `var(--purlin-status-error)`
+- [ ] Deep Analysis: "PM Actions" header in `var(--purlin-status-warning)`, `[INFEASIBLE]` in `var(--purlin-status-error)`, `[INTENT_DRIFT]` in `var(--purlin-status-warning)`
+- [ ] Deep Analysis: "Engineer Actions" header in `var(--purlin-status-good)`, `[BUG]` in `var(--purlin-status-error)`
+- [ ] Deep Analysis: "QA Actions" header in `var(--purlin-accent)`
 - [ ] Modal close via Escape key and clicking outside modal (JS behavior)
 - [ ] Font size control (minus, slider, plus) visible in modal header (inherited from cdd_modal_base.md)
 - [ ] Font size slider scales all digest text together (headings, paragraphs, code, tags, impact summary)
