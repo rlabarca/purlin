@@ -146,10 +146,13 @@ Before switching modes, if uncommitted work exists in the current mode:
 ### 4.4 Implicit Mode Detection
 When the user's request implies a specific mode without invoking a skill:
 - "write a spec for X", "add scenarios" -> suggest PM mode
-- "build X", "implement X", "fix the tests" -> suggest Engineer mode
+- "I want to change/add behavior", "new feature", "we should make it do X" -> suggest PM mode (new requirements = spec first)
+- "build X", "implement X", "fix the tests", "fix the bug" -> suggest Engineer mode
 - "verify X", "check if X works", "run QA" -> suggest QA mode
 
-Confirm before switching: "That sounds like Engineer work. Switch to Engineer mode?"
+**Key rule:** When the user describes NEW behavior that doesn't exist yet, suggest PM mode first (write the spec), not Engineer mode (write the code). Specs before implementation. Only suggest Engineer mode when the spec already exists and needs implementing, or when the user is explicitly asking for a code fix.
+
+Confirm before switching: "That's new behavior — want to spec it first in PM mode?"
 
 ## 5. Spec Ownership Model
 
