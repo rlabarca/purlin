@@ -11,3 +11,10 @@
 - **Expected Behavior:** `purlin_agent_launcher.md` line 20 says launcher MUST assemble `HOW_WE_WORK_BASE.md` + `PURLIN_BASE.md`. Regression test T7 and T10 enforce this stale expectation.
 - **Action Required:** PM (update purlin_agent_launcher spec to remove HOW_WE_WORK_BASE.md from instruction stack requirement) + QA (update regression test script `tests/qa/test_purlin_agent_launcher_regression.sh` T7/T10 — regression scripts are QA-owned)
 - **Status:** RESOLVED
+
+### [DISCOVERY] show_help switched from self-parsing to heredoc (Discovered: 2026-03-25)
+- **Scenario:** Help output separates sticky and ephemeral flags
+- **Observed Behavior:** The `show_help()` function previously used `sed` to self-parse `# desc:` comments from case patterns. The new grouped layout (Saved preferences / Session options / Other) cannot be produced by flat self-parsing, so `show_help()` was rewritten as a `cat <<'HELPTEXT'` heredoc with the exact spec-prescribed layout.
+- **Impact:** Help text is no longer dynamically generated from case-statement comments. Adding a new flag requires updating both the case statement and the heredoc.
+- **Action Required:** None — spec §2.2.4 explicitly permits this ("implementation mechanism is left to the Builder").
+- **Status:** ACKNOWLEDGED

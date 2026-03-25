@@ -337,6 +337,8 @@ PURLIN_EFFORT_OVERRIDE=""
 PURLIN_WORKTREE=""
 PURLIN_FIND_WORK=""
 PURLIN_VERIFY_FEATURE=""
+PURLIN_YOLO=""
+PURLIN_NO_SAVE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -354,6 +356,13 @@ while [[ $# -gt 0 ]]; do
             PURLIN_EFFORT_OVERRIDE="$2"
             shift 2
             ;;
+        --yolo) PURLIN_YOLO="true"; shift ;;
+        --no-yolo) PURLIN_YOLO="false"; shift ;;
+        --find-work)
+            PURLIN_FIND_WORK="$2"
+            shift 2
+            ;;
+        --no-save) PURLIN_NO_SAVE="true"; shift ;;
         --mode)
             PURLIN_MODE="$2"
             shift 2
@@ -380,10 +389,6 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --auto-start) PURLIN_AUTO_START="true"; shift ;;
-        --find-work)
-            PURLIN_FIND_WORK="$2"
-            shift 2
-            ;;
         --worktree) PURLIN_WORKTREE="true"; shift ;;
         *) shift ;;
     esac
@@ -485,7 +490,7 @@ if [ -n "$AGENT_MODEL_WARNING" ] && [ "$AGENT_MODEL_WARNING_DISMISSED" != "true"
     fi
 fi
 
-# CLI overrides
+# CLI overrides (apply sticky + ephemeral flags)
 if [[ -n "$PURLIN_MODEL_OVERRIDE" && "$PURLIN_MODEL_OVERRIDE" != "__interactive__" ]]; then
     # Resolve short names
     case "$PURLIN_MODEL_OVERRIDE" in
@@ -498,11 +503,36 @@ fi
 if [[ -n "$PURLIN_EFFORT_OVERRIDE" ]]; then
     AGENT_EFFORT="$PURLIN_EFFORT_OVERRIDE"
 fi
+if [[ -n "$PURLIN_YOLO" ]]; then
+    AGENT_BYPASS="$PURLIN_YOLO"
+fi
+if [[ -n "$PURLIN_FIND_WORK" ]]; then
+    AGENT_FIND_WORK="$PURLIN_FIND_WORK"
+fi
 if [[ -n "$PURLIN_AUTO_START" ]]; then
     AGENT_AUTO_START="true"
 fi
-if [[ "$PURLIN_FIND_WORK" == "false" ]]; then
-    AGENT_FIND_WORK="false"
+
+# --- Validate startup controls ---
+if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
+    echo "Error: find_work=false with auto_start=true is not valid." >&2
+    exit 1
+fi
+
+# --- Persist sticky flags (after validation, before launch) ---
+if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
+    if [[ -n "$PURLIN_MODEL_OVERRIDE" && "$PURLIN_MODEL_OVERRIDE" != "__interactive__" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_EFFORT_OVERRIDE" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_YOLO" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin bypass_permissions "$PURLIN_YOLO" 2>/dev/null
+    fi
+    if [[ -n "$PURLIN_FIND_WORK" ]]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin find_work "$PURLIN_FIND_WORK" 2>/dev/null
+    fi
 fi
 
 # --- Prompt assembly ---
@@ -599,8 +629,10 @@ if [[ -n "$AGENT_EFFORT" && "$AGENT_EFFORT" != "default" ]]; then
     CLI_ARGS+=(--effort "$AGENT_EFFORT")
 fi
 
-# Purlin always gets full permissions
-CLI_ARGS+=(--dangerously-skip-permissions)
+# Pass --dangerously-skip-permissions when bypass is enabled
+if [ "$AGENT_BYPASS" = "true" ]; then
+    CLI_ARGS+=(--dangerously-skip-permissions)
+fi
 
 PROJECT_NAME="$(basename "$SCRIPT_DIR")"
 CLI_ARGS+=(--remote-control "$PROJECT_NAME | $DISPLAY_NAME")
