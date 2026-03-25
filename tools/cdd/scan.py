@@ -181,10 +181,15 @@ def _build_spec_mod_index():
     return index
 
 
+_EXEMPT_TAGS = re.compile(r'\[(Migration|Spec-FMT|QA-Tags)\]', re.IGNORECASE)
+
+
 def _check_spec_modified_after_completion(feature_file):
     """Check if the spec was modified after the last status commit.
 
-    Returns True if modified after, False if not, None if no status commit exists.
+    Returns True if non-exempt modifications exist after completion,
+    False if not (or all modifications are exempt), None if no status
+    commit exists.
     """
     global _status_commit_cache, _spec_mod_cache
     if _status_commit_cache is None:
@@ -200,7 +205,31 @@ def _check_spec_modified_after_completion(feature_file):
     spec_mod_ts = _spec_mod_cache.get(basename, 0)
     status_ts = status_entry["timestamp"]
 
-    return spec_mod_ts > status_ts
+    if spec_mod_ts <= status_ts:
+        return False  # Not modified after completion
+
+    # Spec was modified after completion — check if ALL intervening commits
+    # have exemption tags. Use git log for commits touching this file since
+    # the status commit timestamp.
+    rel_path = os.path.relpath(feature_file, PROJECT_ROOT)
+    log_output = _run_git(
+        "log", "--format=%s", f"--since={status_ts}", "--", rel_path,
+    )
+    if not log_output:
+        return False  # No commits found (shouldn't happen but safe default)
+
+    for msg in log_output.splitlines():
+        msg = msg.strip()
+        if not msg:
+            continue
+        # Skip the status commit itself
+        if msg.startswith("status("):
+            continue
+        # Check for exemption tag
+        if not _EXEMPT_TAGS.search(msg):
+            return True  # Non-exempt commit found
+
+    return False  # All commits were exempt
 
 
 def _extract_owner(feature_file):
