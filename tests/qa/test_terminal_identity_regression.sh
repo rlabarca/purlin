@@ -43,10 +43,11 @@ for fn in set_term_title clear_term_title set_iterm_badge clear_iterm_badge set_
     fi
 done
 
-# T9: set_term_title output goes to /dev/tty, not stdout
-# (safe to test: if /dev/tty is unavailable it falls back to stdout, which is acceptable)
-if [ -e /dev/tty ]; then
-    # Unset TERM_PROGRAM to ensure non-iTerm2 path
+# T9: set_term_title output goes to /dev/tty when writable, falls back to stdout otherwise
+# In sandboxed environments (e.g. Claude Code), /dev/tty may exist but not be writable.
+# The fallback to stdout is acceptable in that case.
+if [ -e /dev/tty ] && (echo -n > /dev/tty) 2>/dev/null; then
+    # /dev/tty is writable — output should go there, not stdout
     OUT=$(TERM_PROGRAM="" set_term_title "regression-test" 2>/dev/null || true)
     if [ -z "$OUT" ]; then
         log_pass "T9: set_term_title writes to /dev/tty (not stdout)"
@@ -54,7 +55,7 @@ if [ -e /dev/tty ]; then
         log_fail "T9: set_term_title leaked to stdout: $OUT"
     fi
 else
-    log_pass "T9: /dev/tty unavailable, fallback to stdout acceptable (skip)"
+    log_pass "T9: /dev/tty unavailable or not writable, stdout fallback acceptable (skip)"
 fi
 
 # T10: Non-iTerm2: set_iterm_badge is a no-op (returns 0, no output)
