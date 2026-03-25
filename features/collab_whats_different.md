@@ -2,9 +2,8 @@
 
 > Label: "CDD: What's Different?"
 > Category: "CDD Dashboard"
-> Prerequisite: features/cdd_branch_collab.md
+> Prerequisite: features/policy_branch_collab.md
 > Prerequisite: features/design_visual_standards.md
-> Prerequisite: features/cdd_modal_base.md
 > Web Test: http://localhost:9086
 > Web Start: /pl-cdd
 
@@ -291,7 +290,7 @@ The dashboard post-processes rendered markdown in the deep analysis modal body t
 | `[INTENT_DRIFT]` | MEDIUM | `--purlin-status-warning` | Literal match, intent missed |
 | `[DEVIATION]` | MEDIUM | `--purlin-accent` | Alternate path, needs acknowledgment |
 | `[DISCOVERY]` | LOW | `--purlin-muted` | New finding, informational |
-| `[AUTONOMOUS]` | LOW | `--purlin-muted` | Builder judgment call, FYI |
+| `[AUTONOMOUS]` | LOW | `--purlin-muted` | Engineer judgment call, FYI |
 
 #### 2.14.7 Staleness Invalidation
 
@@ -713,14 +712,14 @@ Role briefing data is derived from the same extraction JSON as the standard dige
     And the [INFEASIBLE] entry has role "pm"
     And the [DEVIATION] entry has role "pm"
 
-#### Scenario: Extraction Tool Routes BUG Entries to Builder by Default
+#### Scenario: Extraction Tool Routes BUG Entries to Engineer by Default
 
     Given a commit range that modifies features/login.discoveries.md containing a [BUG] entry
-    And the entry does not contain "Action Required: Architect"
+    And the entry does not contain "Action Required: PM"
     When the extraction tool runs with the branch name
     Then the decisions array contains the [BUG] entry with role "engineer"
 
-#### Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect
+#### Scenario: Extraction Tool Routes INFEASIBLE Entries to PM
 
     Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
     When the extraction tool runs with the branch name
