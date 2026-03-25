@@ -8,7 +8,7 @@ Independent features with all prerequisites COMPLETE.
 - `features/purlin_instruction_architecture.md`
 - `features/purlin_scan_engine.md`
 
-## Phase 2 — Mode & Concurrency (IN_PROGRESS)
+## Phase 2 — Mode & Concurrency (COMPLETE)
 
 Depends on Phase 1 (`purlin_agent_launcher`).
 
