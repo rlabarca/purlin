@@ -39,6 +39,9 @@ tools/critic/.cache/
 .claude/worktrees/
 .purlin_worktree_label
 
+# Transient planning artifacts
+PURLIN_AGENT_PLAN.md
+
 # Temp
 tmp/
 dist/
