@@ -6,5 +6,5 @@
   "total": 10,
   "test_file": "tools/test_purlin_migration.sh",
   "scenarios": ["Migration detected when old config present","Migration skipped when already migrated","Config migration creates purlin section","Override files consolidated","Spec role renames use Migration tag","Migration tag preserves lifecycle","Companion file gets Active Deviations table","Dry run shows changes without modifying","Skip flags exclude steps","Idempotent re-run"],
-  "ran_at": "2026-03-25T13:29:33Z"
+  "ran_at": "2026-03-25T13:31:09Z"
 }

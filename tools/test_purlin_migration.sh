@@ -254,18 +254,85 @@ cleanup_fixture
 
 ###############################################################################
 # Scenario 6: Migration tag preserves lifecycle
-# Note: This tests the exemption tag recognition in scan.py.
-# We verify that scan.py already recognizes [Migration] in its pattern.
+# Sets up a git repo with a COMPLETE feature, runs migration to rename roles,
+# commits with [Migration] tag, then verifies scan.py reports
+# spec_modified_after_completion as false.
 ###############################################################################
 echo "--- Scenario 6: Migration tag preserves lifecycle ---"
 
-# Check that scan.py has the [Migration] exemption tag pattern
-scan_py="$PROJECT_ROOT/tools/cdd/scan.py"
-if grep -q 'Migration' "$scan_py" 2>/dev/null; then
+FIXTURE_DIR="$(mktemp -d)"
+(
+    cd "$FIXTURE_DIR"
+    git init -q
+    git config user.email "test@test.com"
+    git config user.name "Test"
+
+    mkdir -p .purlin/cache features
+
+    # Create old-style config
+    cat > .purlin/config.json << 'CFGEOF'
+{
+    "tools_root": "tools",
+    "agents": {
+        "builder": {
+            "model": "claude-opus-4-6",
+            "effort": "high",
+            "bypass_permissions": true
+        }
+    }
+}
+CFGEOF
+
+    # Create feature spec with old role references
+    cat > features/auth_flow.md << 'SPECEOF'
+# Feature: Auth Flow
+
+## Requirements
+The Builder implements the login flow.
+SPECEOF
+
+    git add -A && git commit -q -m "feat(auth): initial spec"
+
+    # Mark feature as COMPLETE via status commit
+    git commit -q --allow-empty -m "status(auth): [Complete features/auth_flow.md] [Scope: full]"
+
+    # Now run migration to rename roles
+    PURLIN_PROJECT_ROOT="$FIXTURE_DIR" python3 "$PROJECT_ROOT/tools/migration/migrate.py" \
+        --auto-approve --skip-overrides --skip-companions 2>/dev/null
+
+    # Commit with [Migration] tag
+    git add -A && git commit -q -m "chore(migration): rename role references [Migration]"
+
+    # Run scan.py and check the result
+    SCAN_JSON=$(PURLIN_PROJECT_ROOT="$FIXTURE_DIR" python3 "$PROJECT_ROOT/tools/cdd/scan.py" 2>/dev/null)
+
+    spec_modified=$(echo "$SCAN_JSON" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d.get('features', []):
+    if f['name'] == 'auth_flow':
+        print('true' if f.get('spec_modified_after_completion') else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+) >/dev/null 2>&1
+scan_result=$(cd "$FIXTURE_DIR" && PURLIN_PROJECT_ROOT="$FIXTURE_DIR" python3 "$PROJECT_ROOT/tools/cdd/scan.py" 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for f in d.get('features', []):
+    if f['name'] == 'auth_flow':
+        print('true' if f.get('spec_modified_after_completion') else 'false')
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+if [ "$scan_result" = "false" ]; then
     log_pass "Migration tag preserves lifecycle"
 else
-    log_fail "Migration tag preserves lifecycle" "[Migration] not found in scan.py exemption tags"
+    log_fail "Migration tag preserves lifecycle" "spec_modified_after_completion=$scan_result (expected false)"
 fi
+rm -rf "$FIXTURE_DIR"
 
 ###############################################################################
 # Scenario 7: Companion file gets Active Deviations table
