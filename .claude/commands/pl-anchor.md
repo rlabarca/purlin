@@ -1,8 +1,6 @@
-**Purlin command owner: PM, Architect**
+**Purlin mode: PM (arch_* targets activate Engineer mode)**
 
-If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-anchor instead." and stop.
-
-**PM prefix restriction:** The PM may only create or modify `design_*` and `policy_*` anchor nodes. If the PM attempts to create or modify an `arch_*` anchor, respond: "Architecture anchors (`arch_*`) are Architect-only. The PM may author `design_*` and `policy_*` anchors." and stop.
+This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead.
 
 ---
 

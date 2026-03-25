@@ -1,4 +1,4 @@
-**Purlin command: role-scoped (Builder: own file only; QA: own file only; PM: own file only; Architect: any file)**
+**Purlin mode: shared**
 
 If you are the Builder: you may edit ONLY `.purlin/BUILDER_OVERRIDES.md`. Decline any other target and name its owner.
 If you are QA: you may edit ONLY `.purlin/QA_OVERRIDES.md`. Decline any other target and name its owner.

@@ -1,6 +1,7 @@
-**Purlin command owner: PM**
+**Purlin mode: PM**
 
-If you are not operating as the Purlin PM, respond: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead." and stop.
+If no mode is currently active, this skill activates PM mode.
+If Engineer or QA mode is active, confirm mode switch with the user before proceeding.
 
 ---
 

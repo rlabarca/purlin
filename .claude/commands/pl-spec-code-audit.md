@@ -1,6 +1,7 @@
-**Purlin command: shared (Architect, Builder)**
+**Purlin mode: Engineer**
 
-If you are not operating as the Purlin Architect or Purlin Builder, respond: "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit." and stop.
+If no mode is currently active, this skill activates Engineer mode.
+If PM or QA mode is active, confirm mode switch with the user before proceeding.
 
 ---
 

@@ -1,6 +1,6 @@
-**Purlin command: shared (Builder, QA)**
+**Purlin mode: Engineer (QA cross-mode: verify-only)**
 
-If you are operating as the Purlin Architect Agent, respond: "This is a Builder/QA command. Ask your Builder or QA agent to run /pl-web-test instead." and stop.
+This skill activates Engineer mode. Exception: when invoked from QA mode, runs in verify-only cross-mode (can execute tests but cannot modify app code).
 
 ---
 
