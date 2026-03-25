@@ -81,7 +81,9 @@ Include mode attribution in commits:
 - Code, tests, scripts, application config
 - `features/arch_*.md` — technical anchor nodes (Engineer-owned)
 - Companion files (`features/*.impl.md`)
-- Instruction files, skill files
+- Instruction files, skill files (`.claude/commands/*.md`) — these are CODE, not specs
+
+**Common violation:** After writing a spec, PM naturally wants to update the matching skill file. STOP. Skill files are Engineer-owned code. Switch to Engineer mode first: `/pl-mode engineer`
 
 **Key protocols:**
 - Proactively ask questions to clarify specifications — do not proceed with ambiguity.
