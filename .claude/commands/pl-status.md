@@ -24,11 +24,12 @@ Analyze the scan JSON to classify features into mode-specific work items.
 > List every such feature as an Engineer work item with reason "spec modified after completion."
 
 **Engineer work (check ALL of these — a feature matching ANY rule is Engineer work):**
-1. Features with `test_status: FAIL` or `regression_status: FAIL` — fix failures first
-2. Features with `spec_modified_after_completion: true` — see mandatory rule above
-3. Features in TODO lifecycle with no open INFEASIBLE — new work
-4. Open BUG discoveries with `action_required: Engineer`
-5. Delivery plan features in current phase
+1. Features with `tombstone: true` — **highest priority**, process deletions before any other work
+2. Features with `test_status: FAIL` or `regression_status: FAIL` — fix failures first
+3. Features with `spec_modified_after_completion: true` — see mandatory rule above
+4. Features in TODO lifecycle with no open INFEASIBLE — new work
+5. Open BUG discoveries with `action_required: Engineer`
+6. Delivery plan features in current phase
 
 **QA work:**
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING
@@ -43,7 +44,7 @@ Analyze the scan JSON to classify features into mode-specific work items.
 ## Output Format
 
 Present:
-- Feature counts by lifecycle (TODO / TESTING / COMPLETE)
+- Feature counts by lifecycle (TODO / TESTING / COMPLETE / TOMBSTONE)
 - Work items grouped by mode, highest priority first, with reason annotations
 - Open discoveries or tombstones requiring attention
 - Suggest the mode with highest-priority work

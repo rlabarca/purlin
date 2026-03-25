@@ -444,6 +444,38 @@ def scan_features():
 
         features.append(feature_entry)
 
+    # Append tombstone entries.
+    tombstones_dir = os.path.join(FEATURES_DIR, "tombstones")
+    if os.path.isdir(tombstones_dir):
+        for filename in sorted(os.listdir(tombstones_dir)):
+            if not filename.endswith(".md"):
+                continue
+            # Skip companion and discovery artifacts alongside tombstones.
+            if filename.endswith(".impl.md") or filename.endswith(
+                    ".discoveries.md"):
+                continue
+            filepath = os.path.join(tombstones_dir, filename)
+            if not os.path.isfile(filepath):
+                continue
+            stem = filename[:-3]  # remove .md
+            features.append({
+                "name": stem,
+                "file": _relpath(filepath),
+                "lifecycle": "TOMBSTONE",
+                "owner": None,
+                "prerequisites": [],
+                "test_status": None,
+                "regression_status": None,
+                "spec_modified_after_completion": None,
+                "sections": {
+                    "requirements": False,
+                    "unit_tests": False,
+                    "qa_scenarios": False,
+                    "visual_spec": False,
+                },
+                "tombstone": True,
+            })
+
     return features
 
 
