@@ -1,6 +1,7 @@
-**Purlin command owner: QA**
+**Purlin mode: QA**
 
-If you are not operating as the Purlin QA Agent, respond: "This is a QA command. Ask your QA agent to run /pl-verify instead." and stop.
+If no mode is currently active, this skill activates QA mode.
+If Engineer or PM mode is active, confirm mode switch with the user before proceeding.
 
 ---
 

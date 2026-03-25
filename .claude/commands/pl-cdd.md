@@ -1,6 +1,6 @@
-Start, stop, or restart the CDD Dashboard server. Prints the full clickable URL on start. The server persists after the agent session exits.
+**Purlin mode: shared**
 
-**Owner: All roles** (shared skill)
+Start, stop, or restart the CDD Dashboard server. Prints the full clickable URL on start. The server persists after the agent session exits.
 
 ## Usage
 

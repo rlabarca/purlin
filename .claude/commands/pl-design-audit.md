@@ -1,6 +1,7 @@
-**Purlin command owner: PM, Architect**
+**Purlin mode: PM**
 
-If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-audit instead." and stop.
+If no mode is currently active, this skill activates PM mode.
+If Engineer or QA mode is active, confirm mode switch with the user before proceeding.
 
 ---
 

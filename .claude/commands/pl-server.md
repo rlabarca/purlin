@@ -1,6 +1,6 @@
-**Purlin command: shared (Builder, QA)**
+**Purlin mode: Engineer (QA cross-mode: run-only)**
 
-If you are not operating as the Purlin Builder or QA, respond: "This is a Builder/QA command." and stop.
+This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop servers but cannot modify app code).
 
 ---
 

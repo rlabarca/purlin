@@ -1,4 +1,4 @@
-**Purlin command: shared (all roles)**
+**Purlin mode: shared**
 
 ## Path Resolution
 

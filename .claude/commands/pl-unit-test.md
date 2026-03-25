@@ -1,6 +1,7 @@
-**Purlin command owner: Builder**
+**Purlin mode: Engineer**
 
-If you are not operating as the Purlin Builder, respond: "This is a Builder command. Ask your Builder agent to run /pl-unit-test instead." and stop.
+If no mode is currently active, this skill activates Engineer mode.
+If PM or QA mode is active, confirm mode switch with the user before proceeding.
 
 ---
 

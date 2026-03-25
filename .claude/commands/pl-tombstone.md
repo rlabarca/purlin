@@ -1,6 +1,7 @@
-**Purlin command owner: Architect**
+**Purlin mode: Engineer**
 
-If you are not operating as the Purlin Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-tombstone instead." and stop.
+If no mode is currently active, this skill activates Engineer mode.
+If PM or QA mode is active, confirm mode switch with the user before proceeding.
 
 ---
 
