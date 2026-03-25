@@ -83,7 +83,7 @@ The file classification reference (`instructions/references/file_classification.
 
 ### QA Scenarios
 
-#### Scenario: Mode guard uses file classification for ownership check
+#### Scenario: Mode guard uses file classification for ownership check @manual
 
     Given the agent is in PM mode
     And references/file_classification.md classifies .claude/commands/*.md as CODE

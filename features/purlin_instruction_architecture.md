@@ -120,7 +120,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
     When the line count is measured
     Then it is between 250 and 500 lines
 
-#### Scenario: Launcher loads only PURLIN_BASE.md
+#### Scenario: Launcher loads only PURLIN_BASE.md @auto
 
     Given pl-run.sh exists
     When the prompt assembly section is examined
