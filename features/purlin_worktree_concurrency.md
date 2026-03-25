@@ -26,6 +26,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - On merge conflict with safe files (`.purlin/delivery_plan.md`, `.purlin/cache/*`): auto-resolve by keeping main's version.
 - On merge conflict with code or spec files: present the conflict to the user.
 - After successful merge: remove worktree and delete branch.
+- `.purlin_worktree_label` MUST NOT be committed into the worktree branch. It MUST be excluded from auto-commit (via `.gitignore`) so it does not propagate to the target branch on merge.
 
 ### 2.3 SessionEnd Hook
 

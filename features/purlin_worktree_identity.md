@@ -22,6 +22,7 @@ This feature also standardizes the badge format: the badge displays the mode nam
 - The next available number MUST be computed by finding the lowest unused positive integer among active purlin worktrees. Active worktrees are those listed by `git worktree list` with branches matching `purlin-*`.
 - Numbers from cleaned-up worktrees MUST be reused (gap-filling), keeping labels small and dense.
 - The label MUST be persisted in a file `.purlin_worktree_label` at the worktree root directory, containing only the label string (e.g., `W1`).
+- `.purlin_worktree_label` MUST be listed in the project's `.gitignore` to prevent it from being committed during auto-commit (e.g., by the SessionEnd merge hook's `git add -A`).
 
 ### 2.2 Label Scope
 

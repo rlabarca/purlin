@@ -66,7 +66,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - References to "Architect action items" MUST be replaced with "PM action items".
 - References to "Builder action items" MUST be replaced with "Engineer action items".
 
-### 2.8b Regression Failure Documentation
+### 2.8b Companion File Mandate (Engineer)
+
+- When Engineer mode fixes a bug, adds behavior, or changes implementation in a way that the spec doesn't describe, the agent MUST write a `[DISCOVERY]` or `[DEVIATION]` entry in the companion file BEFORE or WITH the code commit.
+- This is NOT optional. It is how PM discovers what changed. Skipping it creates silent spec drift.
+- The entry MUST include: what changed, why, and whether the spec needs updating.
+- Scan.py surfaces unacknowledged entries to PM via `/pl-status`.
+
+### 2.8c Regression Failure Documentation (QA)
 
 - When `/pl-regression evaluate` finds a FAIL result, QA MUST write a `[DISCOVERY]` entry to the feature's companion file (`features/<name>.impl.md`) with: scenario name, expected assertion, actual output (quoted), attempt count, and suggested fix direction.
 - This gives the Engineer everything needed to fix the failure without running QA mode.
@@ -81,10 +88,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 ### 2.9 iTerm Terminal Identity
 
-- On mode activation, the agent MUST set the iTerm badge to the mode name (e.g., `Engineer`, `PM`, `QA`).
-- On mode activation, the agent MUST set the iTerm remote control name to `<project> - <mode>` (e.g., `purlin - Engineer`).
-- When no mode is active (open mode), the iTerm badge MUST be `Purlin`.
-- When no mode is active (open mode), the iTerm remote control name MUST be `<project> - Purlin`.
+- On mode activation, the agent MUST set the iTerm badge and terminal title following the format defined in `features/purlin_worktree_identity.md` (sections 2.3–2.4). The badge is the mode name (`Engineer`, `PM`, `QA`, or `Purlin` in open mode), with the worktree label appended when `.purlin_worktree_label` exists (e.g., `Engineer (W1)`).
 - `<project>` is derived from the working directory name (basename of the project root).
 - The agent MUST use iTerm2 proprietary escape sequences: badge via `\033]1337;SetBadgeFormat=<base64>\a`, remote control name via `\033]1337;SetMark\a` or the appropriate `\033]0;<name>\a` title sequence.
 
