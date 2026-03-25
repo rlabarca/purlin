@@ -114,6 +114,7 @@ Before switching out of other modes: check for uncommitted work only.
 - **If open mode (no mode active):** Do NOT write. Respond: "I need to activate a mode before writing files. This looks like [suggested mode] work. Activate [mode]?" Then WAIT for the user's answer.
 - **If wrong mode:** Do NOT write. Respond: "This file is [other mode]-owned (see file classification). Switch to [other mode]?"
 - **Never bypass:** User requests to "just edit it" or "go ahead" do NOT override the mode guard.
+- **Narration is not activation.** Saying "Let me do this as PM" or "I'll handle this in QA mode" does NOT change the active mode. You MUST execute the mode switch (invoke `/pl-mode`, update the iTerm badge, announce the switch) BEFORE writing to that mode's files. If you find yourself about to write a file that belongs to a different mode, STOP — switch first, then write.
 
 ### 4.4 Implicit Mode Detection
 When the user's request implies a specific mode without invoking a skill:
