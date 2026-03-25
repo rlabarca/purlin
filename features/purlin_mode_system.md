@@ -49,15 +49,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Legacy agents match on line 1 (old format). The Purlin agent matches on line 2 (new format).
 - New purlin-only skills MUST have `**Purlin command: Purlin agent only**` on line 1 so legacy agents skip them.
 
-### 2.7 Skill Consolidation
-
-- `/pl-release` consolidates `/pl-release-check`, `/pl-release-run`, `/pl-release-step` with subcommands.
-- `/pl-regression` consolidates `/pl-regression-run`, `/pl-regression-author`, `/pl-regression-evaluate` with subcommands.
-- `/pl-remote` consolidates `/pl-remote-push`, `/pl-remote-pull`, `/pl-remote-add` with subcommands.
-- Old consolidated skill files MUST be deleted.
-- `/pl-edit-base` MUST be removed (absorbed into Engineer mode).
-
-### 2.8a Work Discovery Delegation
+### 2.7 Work Discovery Delegation
 
 - `/pl-status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
 - Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) MUST delegate work discovery to `/pl-status`, not call `scan.sh` directly or implement their own detection logic.
@@ -73,7 +65,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - References to "Architect action items" MUST be replaced with "PM action items".
 - References to "Builder action items" MUST be replaced with "Engineer action items".
 
-### 2.8b Companion File Mandate (Engineer)
+### 2.8 Companion File Mandate (Engineer)
 
 - When Engineer mode fixes a bug, adds behavior, or changes implementation in a way that the spec doesn't describe, the agent MUST write a `[DISCOVERY]` or `[DEVIATION]` entry in the companion file BEFORE or WITH the code commit.
 - This is NOT optional. It is how PM discovers what changed. Skipping it creates silent spec drift.
@@ -84,20 +76,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
   2. `/pl-build` Step 4 — Companion File Gate: BLOCKS the status commit if code deviations exist without companion entries.
   3. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
 
-### 2.8c QA Companion File Obligations
-
-- `/pl-regression evaluate`: When a regression FAIL is found, QA MUST write a `[DISCOVERY]` entry to the companion file with: scenario name, expected assertion, actual output, attempt count, and suggested fix direction. On re-evaluation after fix: mark `[RESOLVED]` if PASS, update attempt count if still FAIL.
-- `/pl-complete`: BLOCKS completion if unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries exist in the companion file. PM must review first. Also blocks if `regression_status: FAIL`.
-- `/pl-verify`: Writes BUG discoveries to the SIDECAR (`*.discoveries.md`), not the companion file. Sidecars are QA-owned; companions are Engineer-owned. PM sees both via scan.py.
-
-### 2.8 Commit Attribution
+### 2.9 Commit Attribution
 
 - Engineer commits: `feat()`, `fix()`, `test()` prefixes.
 - PM commits: `spec()`, `design()` prefixes.
 - QA commits: `qa()`, `status()` prefixes.
 - All commits MUST include `Purlin-Mode: <mode>` trailer.
 
-### 2.9 iTerm Terminal Identity
+### 2.10 iTerm Terminal Identity
 
 - On mode activation, the agent MUST set the iTerm badge and terminal title following the format defined in `features/purlin_worktree_identity.md` (sections 2.3–2.4). The badge is the mode name (`Engineer`, `PM`, `QA`, or `Purlin` in open mode), with the worktree label appended when `.purlin_worktree_label` exists (e.g., `Engineer (W1)`).
 - `<project>` is derived from the working directory name (basename of the project root).
