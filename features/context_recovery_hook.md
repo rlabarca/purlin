@@ -45,7 +45,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 
 ### 2.5 agent_role File Removal
 
-- All four launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
+- All four launcher scripts (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
 - The `generate_launcher()` function in `tools/init.sh` (if it contains agent_role write logic) MUST also be updated to remove the line.
 - The `AGENT_ROLE` environment variable export MUST remain unchanged -- it is actively used by config resolution.
 
@@ -142,7 +142,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 
 #### Scenario: Launcher Scripts No Longer Write agent_role
 
-    Given Purlin launcher scripts exist (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh)
+    Given Purlin launcher scripts exist (pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh)
     When inspecting each launcher script
     Then none of them contain a line writing to .purlin/runtime/agent_role
     And each still exports AGENT_ROLE as an environment variable

@@ -10,7 +10,7 @@
 
 **[CLARIFICATION]** The spec lists 9 unit test scenarios but the implementation has 10. The 10th ("Idempotent re-run") was already in the spec as scenario 9 — the count in the test header comment was simply off by one relative to the actual scenario list.
 
-**[CLARIFICATION]** Architect content splitting in override consolidation uses a keyword heuristic to separate technical vs. spec/design content from `ARCHITECT_OVERRIDES.md`. Headers with architecture/code/testing keywords route to Engineer mode; headers with spec/design/UX keywords route to PM mode. Unlabeled content defaults to Engineer mode. This is a best-effort split since the old Architect role spanned both domains.
+**[CLARIFICATION]** Architect content splitting in override consolidation uses a keyword heuristic to separate technical vs. spec/design content from `PURLIN_OVERRIDES.md`. Headers with architecture/code/testing keywords route to Engineer mode; headers with spec/design/UX keywords route to PM mode. Unlabeled content defaults to Engineer mode. This is a best-effort split since the old Architect role spanned both domains.
 
 **[CLARIFICATION]** The `--complete-transition` flag bypasses the normal detection check and can be run even on already-migrated projects (safe idempotent cleanup).
 

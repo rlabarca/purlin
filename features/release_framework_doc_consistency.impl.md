@@ -24,7 +24,7 @@ This step's scope intentionally excludes `.purlin/` override files — those are
 **Severity:** HIGH
 **Details:** Spec §3 scenario requires automated detection of README content that contradicts current instruction file content. No such check exists. `doc_consistency_check.py` checks stale file path references in README and feature coverage gaps, but does not parse instruction file behavior descriptions and compare them semantically.
 **Suggested fix:** Add a structural check comparing README "The Agents" / "The Critic" sections against the corresponding BASE instruction file declarations.
-**Resolution:** Added `check_readme_instruction_consistency()` to `doc_consistency_check.py` with three structural checks: (1) role focus phrases from HOW_WE_WORK_BASE match README, (2) every role has a README section, (3) dual-gate architecture described in README when defined in instruction files. Tests added: `TestDocConsistencyReadmeInstructionDrift`, `TestDocConsistencyReadmeInstructionClean`, `TestDocConsistencyReadmeMissingDualGate`.
+**Resolution:** Added `check_readme_instruction_consistency()` to `doc_consistency_check.py` with three structural checks: (1) role focus phrases from PURLIN_BASE.md match README, (2) every role has a README section, (3) dual-gate architecture described in README when defined in instruction files. Tests added: `TestDocConsistencyReadmeInstructionDrift`, `TestDocConsistencyReadmeInstructionClean`, `TestDocConsistencyReadmeMissingDualGate`.
 
 ### Test Quality Audit
 - Rubric: 6/6 PASS

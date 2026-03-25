@@ -2,7 +2,7 @@
 
 > Label: "Tool: Project Init"
 > Category: "Install, Update & Scripts"
-> Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 6: Layered Instruction Architecture)
+> Prerequisite: instructions/PURLIN_BASE.md (Section 6: Layered Instruction Architecture)
 
 [TODO]
 
@@ -38,7 +38,7 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 2.  **Config Patching:** Set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `purlin/tools`). MUST use precise `sed` that replaces only the value portion and validate with `python3 json.load()`.
 3.  **Provider Detection:** Run `tools/detect-providers.sh` and merge available providers into config. For each provider reported as `available: true`, merge its `models` array into the installed config under `llm_providers.<provider>`. Non-blocking if the script fails or is missing.
 4.  **Upstream SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha` (40-character SHA, single line).
-5.  **Launcher Script Generation:** Generate `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
+5.  **Launcher Script Generation:** Generate `pl-run.sh`, `pl-run.sh`, `pl-run.sh`, and `pl-run.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
 6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 6b. **Agent File Distribution:** Copy `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. If the destination directory does not exist, create it. If a destination file is newer than the source (local modification), skip it. Same skip logic as command files.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
@@ -65,7 +65,7 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
-5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
+5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
 6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both session-recovery hooks (Section 2.15).
 6b. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root (same marker-based protocol as full init step 13). The refresh path MUST also stage `CLAUDE.md` via `git add`.
 7.  **Gitignore Pattern Sync:** Read `<submodule>/purlin-config-sample/gitignore.purlin`. For each pattern not already present in the consumer's `.gitignore`, append it under a `# Added by Purlin refresh` header. Never remove or modify existing entries.
@@ -274,7 +274,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .purlin/ is created with config.json, all override templates, and .upstream_sha
     And config.json contains the correct tools_root for the submodule path
     And config.json is valid JSON (parseable by python3 json.load)
-    And pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh exist at the project root and are executable
+    And pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh exist at the project root and are executable
     And .claude/commands/ contains pl-*.md files from the submodule (excluding pl-edit-base.md)
     And features/ directory exists at the project root
     And pl-init.sh exists at the project root and is executable
@@ -403,10 +403,10 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 
     Given .purlin/ already exists at the project root
     And .purlin/config.json has been customized by the user
-    And .purlin/ARCHITECT_OVERRIDES.md has custom content
+    And .purlin/PURLIN_OVERRIDES.md has custom content
     When the user runs "purlin/tools/init.sh"
     Then .purlin/config.json is unchanged
-    And .purlin/ARCHITECT_OVERRIDES.md is unchanged
+    And .purlin/PURLIN_OVERRIDES.md is unchanged
     And no file in .purlin/release/ is modified
 
 #### Scenario: CDD Symlinks Created on Refresh if Missing @auto
@@ -428,9 +428,9 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Launchers Always Regenerated on Refresh @auto
 
     Given .purlin/ already exists at the project root
-    And pl-run-architect.sh exists at the project root with outdated content
+    And pl-run.sh exists at the project root with outdated content
     When the user runs "purlin/tools/init.sh"
-    Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh are regenerated with current template content
+    Then pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh are regenerated with current template content
     And all four launchers are executable
 
 #### Scenario: Idempotent Repeated Runs @auto
@@ -447,7 +447,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
     When the user runs "purlin/tools/init.sh"
     Then run_architect.sh, run_builder.sh, run_qa.sh are removed
-    And only pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist as launchers
+    And only pl-run.sh, pl-run.sh, pl-run.sh exist as launchers
 
 #### Scenario: --quiet Flag Suppresses Output @auto
 
@@ -496,7 +496,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     When the collaborator runs "./pl-init.sh" in the re-cloned sandbox
     Then git submodule update --init is triggered for the submodule
     And .purlin/ exists with config.json and override templates
-    And launcher scripts (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh) exist and are executable
+    And launcher scripts (pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh) exist and are executable
     And .claude/commands/ contains pl-*.md files
     And CDD convenience symlinks exist
     And the collaborator environment matches a normal full init

@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with built-in conflict scanning. Each role can only edit their own override file (Engineer: BUILDER_OVERRIDES, QA: QA_OVERRIDES, PM: PM_OVERRIDES) while PM mode can edit any. Performs a three-level conflict scan (CONFLICT, WARNING, INFO) against the corresponding base instruction file before applying changes.
+A role-scoped skill for editing override files (`.purlin/PURLIN_OVERRIDES.md`) with built-in conflict scanning. Each role can only edit their own override file (Engineer: the Engineer Mode section of PURLIN_OVERRIDES, QA: the QA Mode section of PURLIN_OVERRIDES, PM: the PM Mode section of PURLIN_OVERRIDES) while PM mode can edit any. Performs a three-level conflict scan (CONFLICT, WARNING, INFO) against the corresponding base instruction file before applying changes.
 
 ---
 
@@ -16,10 +16,10 @@ A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with b
 
 ### 2.1 Role Scoping
 
-- Engineer: may edit ONLY `BUILDER_OVERRIDES.md`.
-- QA: may edit ONLY `QA_OVERRIDES.md`.
-- PM: may edit ONLY `PM_OVERRIDES.md`.
-- PM: may edit any `*_OVERRIDES.md` file.
+- Engineer: may edit ONLY `PURLIN_OVERRIDES.md`.
+- QA: may edit ONLY `PURLIN_OVERRIDES.md`.
+- PM: may edit ONLY `PURLIN_OVERRIDES.md`.
+- PM: may edit any `PURLIN_OVERRIDES.md` file.
 
 ### 2.2 Conflict Scan
 
@@ -54,12 +54,12 @@ A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with b
 #### Scenario: Engineer cannot edit QA overrides
 
     Given an Engineer agent session
-    When Engineer mode attempts to edit QA_OVERRIDES.md
+    When Engineer mode attempts to edit PURLIN_OVERRIDES.md
     Then the command declines and names the QA role as the owner
 
 #### Scenario: Conflict scan detects contradiction
 
-    Given BUILDER_OVERRIDES.md contains a rule contradicting BUILDER_BASE.md
+    Given PURLIN_OVERRIDES.md contains a rule contradicting PURLIN_BASE.md
     When /pl-override-edit runs the conflict scan
     Then a CONFLICT finding is reported with cited text from both files
 

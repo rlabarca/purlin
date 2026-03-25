@@ -65,7 +65,7 @@ This feature also standardizes the badge format: the badge displays the mode nam
 
 ### 2.8 Legacy Launcher Exemption
 
-- Role-specific launchers (`pl-run-builder.sh`, `pl-run-architect.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) are NOT affected by this feature. They retain their existing badge format (`Engineer`, `PM`, `QA`, `PM`).
+- Role-specific launchers (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) are NOT affected by this feature. They retain their existing badge format (`Engineer`, `PM`, `QA`, `PM`).
 - Only `pl-run.sh` (the unified Purlin launcher) implements worktree labels and the updated badge format.
 
 ---

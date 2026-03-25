@@ -2,7 +2,7 @@
 
 > Label: "Tool: Model Configuration"
 > Category: "Install, Update & Scripts"
-> Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 2: Roles and Responsibilities)
+> Prerequisite: instructions/PURLIN_BASE.md (Section 2: Roles and Responsibilities)
 
 
 ## 1. Overview

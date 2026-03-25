@@ -18,7 +18,7 @@
 BUG -- Playwright MCP was not running headless; skill now detects headed configuration and instructs user to reconfigure with --headless flag before proceeding.
 DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .purlin/runtime/cdd.port for dynamic port resolution, validates server liveness, and starts server via /pl-cdd if not running.
 
-**[CLARIFICATION]** QA_BASE.md test assertion relaxed: the spec says "Add brief reference in Section 5.4" but QA_BASE.md doesn't have a Section 5.4 subsection -- the visual verification protocol (including Section 5.4.7) is in the on-demand loaded `visual_verification_protocol.md`. Test verifies `/pl-web-test` appears in authorized commands instead. (Severity: INFO)
+**[CLARIFICATION]** PURLIN_BASE.md test assertion relaxed: the spec says "Add brief reference in Section 5.4" but PURLIN_BASE.md doesn't have a Section 5.4 subsection -- the visual verification protocol (including Section 5.4.7) is in the on-demand loaded `visual_verification_protocol.md`. Test verifies `/pl-web-test` appears in authorized commands instead. (Severity: INFO)
 
 ### Audit Finding -- 2026-03-19
 

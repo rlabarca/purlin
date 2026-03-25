@@ -43,7 +43,7 @@ A shared skill available to all roles that searches the spec system for a given 
 
 #### Scenario: Topic found only in instruction files
 
-    Given instructions/BUILDER_BASE.md mentions "commit discipline"
+    Given instructions/PURLIN_BASE.md mentions "commit discipline"
     And no feature spec covers commit discipline
     When /pl-find is invoked with topic "commit discipline"
     Then the output notes coverage is in instruction files only

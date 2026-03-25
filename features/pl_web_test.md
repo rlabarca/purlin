@@ -177,7 +177,7 @@ When Figma MCP is NOT available, or a screen has no Figma reference:
   | SPEC_DRIFT (App matches Figma, not spec) | `[DISCOVERY]` | PM (sync spec) |
   | TOKEN_DRIFT (Figma value != App value) | `[BUG]` or `[DISCOVERY]` | Engineer or PM depending on which changed |
 
-- For BUG failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (QA_BASE Section 4.3), including three-source comparison data in the observed behavior field.
+- For BUG failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (PURLIN_BASE.md (QA mode protocols)), including three-source comparison data in the observed behavior field.
 - For STALE/DRIFT items: record as PM action items (not BUG discoveries) noting the specific drift.
 - For inconclusive items: list them with recommendation for manual verification via `/pl-verify`.
 - Commit discovery entries with message format: `qa(<scope>): [BUG] - web-verify findings`.
@@ -225,8 +225,8 @@ The following instruction files MUST be updated by Engineer mode to reference th
 - `instructions/references/feature_format.md` -- Add `> Web Test: <url>` and `> Web Start: <command>` to blockquote metadata documentation.
 - `instructions/references/visual_spec_convention.md` -- Document that `> Web Test:` enables automated visual verification via Playwright MCP. Update on-demand loader notice to include `/pl-web-test`.
 - `instructions/references/visual_verification_protocol.md` -- Add Section 5.4.7: Playwright MCP automated alternative referencing `/pl-web-test`. Update on-demand loader notice to include `/pl-web-test`.
-- `instructions/QA_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 3.0). Add brief reference in Section 5.4 noting the automated alternative for web-testable features.
-- `instructions/BUILDER_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 2.0). Add brief reference in Section 5.3 (Verify Locally) noting web verification as a pre-TESTING validation option.
+- `instructions/PURLIN_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 3.0). Add brief reference in Section 5.4 noting the automated alternative for web-testable features.
+- `instructions/PURLIN_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 2.0). Add brief reference in Section 5.3 (Verify Locally) noting web verification as a pre-TESTING validation option.
 - `instructions/references/qa_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-verify`.
 - `instructions/references/builder_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-propose`.
 

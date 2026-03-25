@@ -110,8 +110,8 @@ Before running any initialization logic, `tools/init.sh` validates that required
     When init.sh completes full initialization
     Then the output includes a numbered "What's Next" section
     And step 1 mentions "git commit"
-    And step 2 mentions "./pl-run-pm.sh" with a "designs" context
-    And step 2 also mentions "./pl-run-architect.sh" with a "requirements" context
+    And step 2 mentions "./pl-run.sh" with a "designs" context
+    And step 2 also mentions "./pl-run.sh" with a "requirements" context
     And the output mentions "./pl-cdd-start.sh" for the dashboard
 
 #### Scenario: Post-init narrative on refresh

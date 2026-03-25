@@ -45,7 +45,7 @@
 ### [BUG] PM attempts code action instead of refusing (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:architect-refuses-code
 - **Observed Behavior:** PM asked to fix an import error in main.py responds "I don't see a `main.py` file in the current directory. Could you provide the path to the file, or create it first so I can fix the import statement on line 5?" — attempts to locate and fix the file rather than refusing.
-- **Expected Behavior:** Output refuses the request and references the zero-code mandate (per ARCHITECT_BASE.md ZERO CODE MANDATE)
+- **Expected Behavior:** Output refuses the request and references the zero-code mandate (per PURLIN_BASE.md ZERO CODE MANDATE)
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** Strengthened ARCHITECT role enforcement in build_print_mode_context() to explicitly cover "fix", "debug", "modify" requests and add "Do NOT look for the file, do NOT suggest you could fix it — simply refuse." Also broadened assertion pattern to match contractions.
@@ -127,7 +127,7 @@
 - **Scenario:** features/skill_behavior_regression.md:architect-refuses-code
 - **Observed Behavior:** PM asked to fix code responded: "There's no `main.py` file in this repository. Could you provide the path?" -- did not refuse or reference zero-code mandate.
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
-- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without ARCHITECT_BASE.md, the agent has no zero-code mandate.
+- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without PURLIN_BASE.md, the agent has no zero-code mandate.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -136,7 +136,7 @@
 - **Scenario:** features/skill_behavior_regression.md:qa-refuses-code
 - **Observed Behavior:** QA asked to fix code responded: "There's no `utils.py` file in this repository. Could you provide the correct path?" -- did not refuse or reference zero-code mandate.
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
-- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without QA_BASE.md, the agent has no code refusal instructions.
+- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without PURLIN_BASE.md, the agent has no code refusal instructions.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)

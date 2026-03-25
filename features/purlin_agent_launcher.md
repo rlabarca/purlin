@@ -17,7 +17,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (PM
 - `pl-run.sh` MUST exist at the project root as an executable shell script.
 - In consumer projects, `tools/init.sh` generates `pl-run.sh` via `generate_purlin_launcher()` during both full init and refresh modes.
 - In the Purlin framework repo, `pl-run.sh` is hand-written (committed to git, not generated).
-- The launcher MUST load `PURLIN_BASE.md` as the sole instruction file (HOW_WE_WORK content is merged in). It MUST NOT load `HOW_WE_WORK_BASE.md` separately. Optional override: `PURLIN_OVERRIDES.md` (if exists).
+- The launcher MUST load `PURLIN_BASE.md` as the sole instruction file (HOW_WE_WORK content is merged in). It MUST NOT load `PURLIN_BASE.md` separately. Optional override: `PURLIN_OVERRIDES.md` (if exists).
 - The launcher MUST export `AGENT_ROLE="purlin"` before invoking Claude.
 - The launcher MUST resolve config via `resolve_config.py purlin` with fallback to `agents.builder` if `agents.purlin` is absent.
 - The launcher MUST check for Claude Code updates before launching (same as legacy launchers).
@@ -130,7 +130,7 @@ Requirements:
 
 ### 2.5 Legacy Launcher Deprecation
 
-- Old launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) MUST print a visible deprecation warning before launching the agent.
+- Old launchers (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) MUST print a visible deprecation warning before launching the agent.
 - The warning MUST suggest `./pl-run.sh` with example flags.
 - Old launchers MUST continue to function (instruction loading, config resolution, skill gates unchanged).
 
@@ -259,7 +259,7 @@ Requirements:
 
 #### Scenario: Deprecation warning on old launcher @auto
 
-    Given pl-run-builder.sh exists and is invoked
+    Given pl-run.sh exists and is invoked
     When the launcher starts
     Then it prints a deprecation warning mentioning pl-run.sh
     And the agent session starts after the warning
@@ -276,7 +276,7 @@ Requirements:
 
     Given PURLIN_BASE.md exists in instructions/
     When pl-run.sh launches the agent
-    Then the system prompt contains HOW_WE_WORK_BASE.md content
+    Then the system prompt contains PURLIN_BASE.md content
     And the system prompt contains PURLIN_BASE.md content
     And the system prompt contains PURLIN_OVERRIDES.md content if file exists
 

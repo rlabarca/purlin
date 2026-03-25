@@ -29,11 +29,11 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 ### 2.3 Override File Consolidation
 
-- If `.purlin/BUILDER_OVERRIDES.md` has content: create `.purlin/PURLIN_OVERRIDES.md` with content under `## Engineer Mode` header.
-- If `.purlin/PM_OVERRIDES.md` has content: append under `## PM Mode`.
-- If `.purlin/QA_OVERRIDES.md` has content: append under `## QA Mode`.
-- If `.purlin/ARCHITECT_OVERRIDES.md` has content: merge into appropriate mode section (technical → Engineer, spec → PM).
-- Add `## General (all modes)` header at top with content from `HOW_WE_WORK_OVERRIDES.md` if it exists.
+- If `PURLIN_OVERRIDES.md` (Engineer Mode section) has content: create `.purlin/PURLIN_OVERRIDES.md` with content under `## Engineer Mode` header.
+- If `PURLIN_OVERRIDES.md` (PM Mode section) has content: append under `## PM Mode`.
+- If `PURLIN_OVERRIDES.md` (QA Mode section) has content: append under `## QA Mode`.
+- If `PURLIN_OVERRIDES.md` (Engineer Mode section) has content: merge into appropriate mode section (technical → Engineer, spec → PM).
+- Add `## General (all modes)` header at top with content from `PURLIN_OVERRIDES.md` if it exists.
 - Do NOT delete old override files — they're needed for old launchers during transition.
 
 ### 2.4 Spec File Role Renames
@@ -121,8 +121,8 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: Override files consolidated
 
-    Given BUILDER_OVERRIDES.md contains "use pytest"
-    And QA_OVERRIDES.md contains "smoke tier table"
+    Given PURLIN_OVERRIDES.md contains "use pytest"
+    And PURLIN_OVERRIDES.md contains "smoke tier table"
     When migration runs override consolidation
     Then PURLIN_OVERRIDES.md exists
     And it contains "## Engineer Mode" with "use pytest"
@@ -189,14 +189,14 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
     Given migration has run and old launchers still exist
     When /pl-update-purlin --complete-transition runs
-    Then pl-run-architect.sh is deleted
-    And pl-run-builder.sh is deleted
-    And pl-run-qa.sh is deleted
-    And pl-run-pm.sh is deleted
+    Then pl-run.sh is deleted
+    And pl-run.sh is deleted
+    And pl-run.sh is deleted
+    And pl-run.sh is deleted
     And agents.architect is removed from config
     And agents.builder is removed from config
-    And ARCHITECT_OVERRIDES.md is deleted
-    And BUILDER_OVERRIDES.md is deleted
+    And PURLIN_OVERRIDES.md is deleted
+    And PURLIN_OVERRIDES.md is deleted
 
 #### Scenario: End-to-end migration preserves feature completeness @auto
 

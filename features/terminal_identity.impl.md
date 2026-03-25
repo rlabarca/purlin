@@ -10,7 +10,7 @@
 
 All four root launchers now implement the three-point identity integration pattern. The gap in PM, QA, and PM launchers was resolved by adding sourcing, set_agent_identity, and cleanup to each.
 
-### Reference Implementation (pl-run-builder.sh)
+### Reference Implementation (pl-run.sh)
 
 **1. Source the helper (after CORE_DIR is set, before any logic):**
 
@@ -26,7 +26,7 @@ Lines 32-34: The `cleanup()` function includes a guarded `clear_agent_identity` 
 
 ### What Each Launcher Needs
 
-Apply the same three-point pattern to `pl-run-architect.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh`:
+Apply the same three-point pattern to `pl-run.sh`, `pl-run.sh`, and `pl-run.sh`:
 
 1. **Source** -- Add the guarded source block after line 10 (`export PURLIN_PROJECT_ROOT`) and before the `PROMPT_FILE` setup.
 2. **Set identity** -- Add a guarded `set_agent_identity "<Role>"` call immediately before the `claude` invocation. Use the correct display name: `PM`, `QA`, `PM`.
@@ -36,10 +36,10 @@ Apply the same three-point pattern to `pl-run-architect.sh`, `pl-run-qa.sh`, and
 
 | Launcher | Display Name |
 |----------|-------------|
-| `pl-run-architect.sh` | `PM` |
-| `pl-run-qa.sh` | `QA` |
-| `pl-run-pm.sh` | `PM` |
-| `pl-run-builder.sh` | `Engineer` (already implemented) |
+| `pl-run.sh` | `PM` |
+| `pl-run.sh` | `QA` |
+| `pl-run.sh` | `PM` |
+| `pl-run.sh` | `Engineer` (already implemented) |
 
 ### Non-Continuous Mode Behavior Note
 

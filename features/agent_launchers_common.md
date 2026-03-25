@@ -9,7 +9,7 @@
 ## 1. Overview
 Defines the shared mechanical requirements for all Purlin agent launcher scripts. Each agent role (PM, Engineer, QA, PM) has its own launcher script that follows this common pattern. Role-specific details (tool restrictions, session messages, instruction files) are defined in each role's own launcher feature spec.
 
-Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh`.
+Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `pl-run.sh`, `pl-run.sh`, `pl-run.sh`, and `pl-run.sh`.
 
 
 ## 2. Requirements
@@ -22,8 +22,8 @@ Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `p
 
 ### 2.2 Prompt Assembly
 1.  Create a temporary file via `mktemp`. Register cleanup with `trap "rm -f '$PROMPT_FILE'" EXIT`.
-2.  Concatenate in order: `<framework>/instructions/HOW_WE_WORK_BASE.md`, `<framework>/instructions/<ROLE>_BASE.md`.
-3.  If `.purlin/HOW_WE_WORK_OVERRIDES.md` exists, append it.
+2.  Concatenate in order: `<framework>/instructions/PURLIN_BASE.md`, `<framework>/instructions/<ROLE>_BASE.md`.
+3.  If `PURLIN_OVERRIDES.md` (General section) exists, append it.
 4.  If `.purlin/<ROLE>_OVERRIDES.md` exists, append it.
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
@@ -78,7 +78,7 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
 
 #### Scenario: Launcher Exports PURLIN_PROJECT_ROOT
     Given a launcher script is invoked from any working directory
-    When any launcher script (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh) is executed
+    When any launcher script (pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh) is executed
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of the project root
 
 #### Scenario: Launcher Exports AGENT_ROLE

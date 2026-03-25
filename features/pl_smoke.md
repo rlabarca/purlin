@@ -14,7 +14,7 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 
 ### 2.1 Smoke Promotion
 
-- `/pl-smoke <feature>` MUST add the feature to the `## Test Priority Tiers` table in `PURLIN_OVERRIDES.md` (or `QA_OVERRIDES.md` for legacy projects) with tier `smoke`.
+- `/pl-smoke <feature>` MUST add the feature to the `## Test Priority Tiers` table in `PURLIN_OVERRIDES.md` (or `PURLIN_OVERRIDES.md` for legacy projects) with tier `smoke`.
 - If the tier table does not exist, the skill MUST create it.
 - The skill MUST show the user what tests exist for the feature before promoting.
 
@@ -35,7 +35,7 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 ### 2.4 Verification Integration
 
 - The `/pl-verify` smoke gate (Step 2) MUST run smoke regressions (`_smoke.json`) BEFORE smoke QA scenarios.
-- The smoke gate MUST read the tier table from BOTH `PURLIN_OVERRIDES.md` and `QA_OVERRIDES.md`.
+- The smoke gate MUST read the tier table from BOTH `PURLIN_OVERRIDES.md` and `PURLIN_OVERRIDES.md`.
 - The smoke gate MUST also detect `_smoke.json` files with `"tier": "smoke"` even if the feature is not in the tier table.
 - A smoke failure MUST block all further verification with a prominent halt message.
 - After smoke passes, the verify skill MUST suggest smoke promotion for high-fan-out features lacking smoke classification (once per session).
@@ -122,6 +122,6 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 
 ## Regression Guidance
 - Verify _smoke.json files are detected even without a tier table entry
-- Verify smoke gate reads from both PURLIN_OVERRIDES.md and QA_OVERRIDES.md
+- Verify smoke gate reads from both PURLIN_OVERRIDES.md and PURLIN_OVERRIDES.md
 - Verify smoke suggestion does not recommend features with no testable scenarios
 - Verify smoke failure halt message is visually prominent and blocks progression

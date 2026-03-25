@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces both `HOW_WE_WORK_BASE.md` and the four role-specific instruction files. It contains the CDD philosophy, mode definitions with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, knowledge colocation rules, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces `HOW_WE_WORK_OVERRIDES.md` and four role-specific overrides, organized by mode sections. The launcher loads only `PURLIN_BASE.md` + `PURLIN_OVERRIDES.md` — no separate HOW_WE_WORK file.
+The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces both `PURLIN_BASE.md` and the four role-specific instruction files. It contains the CDD philosophy, mode definitions with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, knowledge colocation rules, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces `PURLIN_OVERRIDES.md` and four role-specific overrides, organized by mode sections. The launcher loads only `PURLIN_BASE.md` + `PURLIN_OVERRIDES.md` — no separate HOW_WE_WORK file.
 
 ---
 
@@ -14,7 +14,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
 ### 2.1 Instruction File Structure
 
-- `instructions/PURLIN_BASE.md` is the SOLE instruction file. The launcher loads it directly — no separate `HOW_WE_WORK_BASE.md`.
+- `instructions/PURLIN_BASE.md` is the SOLE instruction file. The launcher loads it directly — no separate `PURLIN_BASE.md`.
 - The file MUST contain: CDD philosophy, mode definitions with activation triggers, open mode write block, mode-switching protocol (guard, pre-switch checks, iTerm identity), startup protocol, feature lifecycle, testing split, layered instructions, and shutdown protocol.
 - The file MUST NOT contain detailed definitions that belong in reference files. Instead it references: `references/file_classification.md`, `references/commit_conventions.md`, `references/active_deviations.md`, `references/knowledge_colocation.md`.
 - Mode write-access rules MUST say "All files classified as CODE/SPEC/QA-OWNED in `references/file_classification.md`" — not inline file pattern lists.
@@ -124,11 +124,11 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
     Given pl-run.sh exists
     When the prompt assembly section is examined
-    Then it does NOT concatenate HOW_WE_WORK_BASE.md
+    Then it does NOT concatenate PURLIN_BASE.md
     And it loads PURLIN_BASE.md as the sole base instruction file
 
 ## Regression Guidance
 - Verify PURLIN_BASE.md does not reference old role names (PM, Engineer) except in transition context
 - Verify the instruction file loads correctly when appended via --append-system-prompt-file
 - Verify override file sections are not empty (template should have placeholder comments)
-- Verify HOW_WE_WORK_BASE.md is NOT loaded by pl-run.sh (old agents still load it separately)
+- Verify PURLIN_BASE.md is NOT loaded by pl-run.sh (old agents still load it separately)

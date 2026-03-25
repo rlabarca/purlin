@@ -25,7 +25,7 @@ Consumer project state snapshots stored in the `purlin-fixtures` repo:
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/skill_behavior/mixed-lifecycle` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. All roles configured in config.json. Critic report pre-generated. Includes HOW_WE_WORK_BASE + all role bases + project overrides. |
+| `main/skill_behavior/mixed-lifecycle` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. All roles configured in config.json. Critic report pre-generated. Includes PURLIN_BASE.md + all role bases + project overrides. |
 | `main/skill_behavior/fresh-init` | Freshly initialized consumer project (post project_init). No feature specs yet. Default config with all roles at defaults. |
 | `main/skill_behavior/architect-backlog` | Consumer project with PM action items: spec gate FAILs on 2 features, 1 untracked file in features/, 1 SPEC_PROPOSAL pending in a companion file. |
 
@@ -49,9 +49,9 @@ Each scenario invokes Claude via the `agent_behavior` harness:
 
 1. Check out fixture tag from `purlin-fixtures` repo via `fixture checkout`.
 2. Construct a 4-layer system prompt from the fixture's instruction files:
-   - Layer 1: `instructions/HOW_WE_WORK_BASE.md`
+   - Layer 1: `instructions/PURLIN_BASE.md`
    - Layer 2: `instructions/<ROLE>_BASE.md`
-   - Layer 3: `.purlin/HOW_WE_WORK_OVERRIDES.md`
+   - Layer 3: `PURLIN_OVERRIDES.md` (General section)
    - Layer 4: `.purlin/<ROLE>_OVERRIDES.md`
 3. Run `claude --print --no-session-persistence --model claude-haiku-4-5-20251001 --append-system-prompt-file <prompt-file> --output-format json "<trigger>"` with CWD set to the fixture checkout directory.
 4. Extract `.result` from JSON response via `jq -r '.result'`.

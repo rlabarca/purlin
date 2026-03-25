@@ -69,7 +69,7 @@ full analysis to Section 2.8.
 5. For each `.claude/commands/pl-*.md` or `.claude/agents/*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
    - Compare local file against old upstream version: `git -C <submodule> show <old_sha>:.claude/commands/<file>`
    - If they differ, flag as "locally modified"
-6. For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
+6. For each launcher script (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`):
    - Only check if launcher-relevant paths appeared in the diff-tree output
    - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
 
@@ -168,9 +168,9 @@ After the config sync step (Section 2.9), the skill MUST invoke the Purlin migra
 ### 2.11 Stale Artifact Cleanup
 
 Check for legacy-named scripts at the consumer project root:
-- `run_architect.sh` (renamed to `pl-run-architect.sh`)
-- `run_builder.sh` (renamed to `pl-run-builder.sh`)
-- `run_qa.sh` (renamed to `pl-run-qa.sh`)
+- `run_architect.sh` (renamed to `pl-run.sh`)
+- `run_builder.sh` (renamed to `pl-run.sh`)
+- `run_qa.sh` (renamed to `pl-run.sh`)
 - `purlin_init.sh` (renamed to `pl-init.sh`)
 - `purlin_cdd_start.sh` (renamed to `pl-cdd-start.sh`)
 - `purlin_cdd_stop.sh` (renamed to `pl-cdd-stop.sh`)
@@ -230,11 +230,11 @@ Override-to-base mapping:
 
 | Override file | Upstream base file |
 |---|---|
-| `HOW_WE_WORK_OVERRIDES.md` | `instructions/HOW_WE_WORK_BASE.md` |
-| `ARCHITECT_OVERRIDES.md` | `instructions/ARCHITECT_BASE.md` |
-| `BUILDER_OVERRIDES.md` | `instructions/BUILDER_BASE.md` |
-| `QA_OVERRIDES.md` | `instructions/QA_BASE.md` |
-| `PM_OVERRIDES.md` | `instructions/PM_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
 
 For each mapping:
 1. Retrieve old base: `git -C <submodule> show <old_sha>:instructions/<base_file>`
@@ -266,11 +266,11 @@ new SHA. This is informational only -- no re-merge is offered.
 
 #### D. Feature Template Format Changes
 
-If the feature file format section in `instructions/ARCHITECT_BASE.md` changed between old
+If the feature file format section in `instructions/PURLIN_BASE.md` changed between old
 and new SHA, report what shifted so the user can evaluate whether their existing feature
 files need alignment.
 
-1. Extract Section 10 ("Feature File Format") from old and new `ARCHITECT_BASE.md`
+1. Extract Section 10 ("Feature File Format") from old and new `PURLIN_BASE.md`
 2. If content differs, summarize the changes
 3. If no changes, omit this dimension from the report
 
@@ -367,14 +367,14 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And the skill does NOT directly read, compare, or modify these files
 
 #### Scenario: Top-Level Script Updated Automatically
-    Given pl-run-builder.sh changed upstream
-    And the consumer's pl-run-builder.sh matches the old version
+    Given pl-run.sh changed upstream
+    And the consumer's pl-run.sh matches the old version
     When /pl-update-purlin is invoked
-    Then init.sh regenerates pl-run-builder.sh
+    Then init.sh regenerates pl-run.sh
 
 #### Scenario: Top-Level Script with Local Changes
-    Given pl-run-builder.sh changed upstream
-    And the consumer has modified pl-run-builder.sh locally
+    Given pl-run.sh changed upstream
+    And the consumer has modified pl-run.sh locally
     When /pl-update-purlin is invoked
     Then the skill shows the diff between user changes and upstream changes
     And offers merge strategies
@@ -390,7 +390,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 #### Scenario: Stale Artifacts Detected and Cleaned
     Given the consumer project has run_builder.sh at the project root (legacy naming)
-    And the current Purlin version expects pl-run-builder.sh instead
+    And the current Purlin version expects pl-run.sh instead
     When /pl-update-purlin completes the update
     Then the skill detects run_builder.sh as a stale artifact
     And prompts the user to remove it
@@ -496,10 +496,10 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And no impact analysis is performed
 
 #### Scenario: Go-Deeper Detects Override Header Drift
-    Given upstream renamed "## 7. Strategic Protocols" to "## 7. Operational Protocols" in ARCHITECT_BASE.md
-    And the consumer's ARCHITECT_OVERRIDES.md references "Strategic Protocols"
+    Given upstream renamed "## 7. Strategic Protocols" to "## 7. Operational Protocols" in PURLIN_BASE.md
+    And the consumer's PURLIN_OVERRIDES.md references "Strategic Protocols"
     When the user accepts the go-deeper analysis
-    Then the report includes a stale reference warning for ARCHITECT_OVERRIDES.md
+    Then the report includes a stale reference warning for PURLIN_OVERRIDES.md
     And identifies the renamed heading
 
 #### Scenario: Go-Deeper Detects Orphaned Config Keys

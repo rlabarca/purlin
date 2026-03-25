@@ -104,7 +104,7 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 
 Files installed by the Purlin framework into the consumer project root or `.claude/` directory -- but outside `.purlin/` and the submodule -- MUST be classified as `purlin_config` (not `code`). These files are framework infrastructure, not application code. The extraction tool MUST recognize the following patterns:
 
-- **Bootstrap-installed launchers:** Root-level files matching `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
+- **Bootstrap-installed launchers:** Root-level files matching `pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`.
 - **Purlin command files:** Files under `.claude/commands/` with a `pl-` prefix (e.g., `.claude/commands/pl-status.md`). These are Purlin slash command definitions distributed by bootstrap.
 
 All matched files are classified as `purlin_config`, which rolls up to the `[N Purlin]` tag in the dashboard. This ensures Purlin framework changes are reported in the "Purlin Changes" section, not mixed with application code in "Code Changes".
@@ -587,9 +587,9 @@ Role briefing data is derived from the same extraction JSON as the standard dige
 
 #### Scenario: Purlin Infrastructure Files Classified as purlin_config
 
-    Given a commit range that modifies pl-run-builder.sh, pl-run-feat1-architect.sh, and .claude/commands/pl-status.md
+    Given a commit range that modifies pl-run.sh, pl-run-feat1-architect.sh, and .claude/commands/pl-status.md
     When the extraction tool categorizes the changed files
-    Then pl-run-builder.sh is categorized as purlin_config
+    Then pl-run.sh is categorized as purlin_config
     And pl-run-feat1-architect.sh is categorized as purlin_config
     And .claude/commands/pl-status.md is categorized as purlin_config
     And none of these files appear in the code category

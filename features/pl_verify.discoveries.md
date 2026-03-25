@@ -7,10 +7,10 @@
 - **Status:** RESOLVED
 - **Source:** Spec-code audit (LOW). See pl_verify.impl.md for context.
 
-### [BUG] Skill file does not enforce AUTO feature mandate from QA_BASE (Discovered: 2026-03-24)
+### [BUG] Skill file does not enforce AUTO feature mandate from PURLIN_BASE (Discovered: 2026-03-24)
 - **Scenario:** Phase A Step 1 auto-pass
-- **Observed Behavior:** QA agent auto-passes or skips AUTO features (`qa_status: AUTO`) during Phase A, requiring explicit user intervention to run their automated tests (web tests, @auto scenarios). The skill file lacks the AUTO exclusion language added to QA_BASE Section 3.3.
-- **Expected Behavior:** AUTO features MUST NOT be auto-passed. Their automated tests must execute in Steps 2-5, then Step 5a (Phase A Checkpoint) must commit completions, clean workspace, and update CDD status before any manual work begins. The skill file (`pl-verify.md`) must sync with the updated QA_BASE Section 3.3: add the AUTO feature mandate callout, update Step 1 to exclude AUTO features, add Step 5a (Phase A Checkpoint) between Step 5 and Phase A Summary, and update the Critic-run guidance to "once per phase."
+- **Observed Behavior:** QA agent auto-passes or skips AUTO features (`qa_status: AUTO`) during Phase A, requiring explicit user intervention to run their automated tests (web tests, @auto scenarios). The skill file lacks the AUTO exclusion language added to PURLIN_BASE Section 3.3.
+- **Expected Behavior:** AUTO features MUST NOT be auto-passed. Their automated tests must execute in Steps 2-5, then Step 5a (Phase A Checkpoint) must commit completions, clean workspace, and update CDD status before any manual work begins. The skill file (`pl-verify.md`) must sync with the updated PURLIN_BASE Section 3.3: add the AUTO feature mandate callout, update Step 1 to exclude AUTO features, add Step 5a (Phase A Checkpoint) between Step 5 and Phase A Summary, and update the Critic-run guidance to "once per phase."
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** Added AUTO exclusion language and regression guidance exclusion to Step 1; added AUTO feature completion path to Step 5; added Step 5a (Phase A Checkpoint) for AUTO finalization, CDD update, and zero-manual-items fast path; clarified Step 11 excludes Step 5a completions.
@@ -42,7 +42,7 @@
 ### [BUG] QA agent commits regression artifacts but skips status tag commits in Step 5a (Discovered: 2026-03-24)
 - **Scenario:** Phase A Checkpoint — Step 5a
 - **Observed Behavior:** QA agent runs 5 AUTO web tests (all PASS), commits regression artifacts and scenario JSON files, then moves to the manual checklist. It does NOT commit `[Complete] [Verified]` status tags and does NOT run `scan.sh`. Features remain AUTO in the dashboard because the Critic tracks lifecycle via status commit messages, not file changes.
-- **Expected Behavior:** Step 5a in the skill file must enforce the full sequence: (1) commit artifacts, (2) commit one `--allow-empty` status tag per feature, (3) run `scan.sh` as a HARD GATE before Phase B, (4) verify features cleared from AUTO/TODO in Critic output. Add the "CRITICAL: Committing regression artifacts is NOT finalization" callout from QA_BASE. The CDD update is a hard gate — do NOT present the manual checklist until it completes.
+- **Expected Behavior:** Step 5a in the skill file must enforce the full sequence: (1) commit artifacts, (2) commit one `--allow-empty` status tag per feature, (3) run `scan.sh` as a HARD GATE before Phase B, (4) verify features cleared from AUTO/TODO in Critic output. Add the "CRITICAL: Committing regression artifacts is NOT finalization" callout from PURLIN_BASE. The CDD update is a hard gate — do NOT present the manual checklist until it completes.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** Restructured Step 5a: reordered to artifacts-first then status tags, added CRITICAL callout about artifacts not being finalization, added --allow-empty with ONE COMMIT PER FEATURE mandate, made CDD update a HARD GATE, added verify-finalization step checking AUTO/TODO clearing.

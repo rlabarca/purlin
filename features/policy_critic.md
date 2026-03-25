@@ -122,13 +122,13 @@ The Critic MUST track regression test failure patterns and surface tier promotio
 **Detection logic:**
 
 1. Read `tests/<feature>/regression.json` for each feature with regression scenario JSON (`tests/qa/scenarios/<feature>.json`).
-2. If a feature has `status: "FAIL"` in its most recent regression results AND is not currently classified as `smoke` in `QA_OVERRIDES.md`, generate a LOW-priority PM action item: `"Regression failure on <feature> (not smoke-tier). Consider promoting to smoke if this feature blocks core workflow."`.
-3. Read `QA_OVERRIDES.md` to check the current tier table. Features already classified as `smoke` do not generate promotion recommendations.
+2. If a feature has `status: "FAIL"` in its most recent regression results AND is not currently classified as `smoke` in `PURLIN_OVERRIDES.md`, generate a LOW-priority PM action item: `"Regression failure on <feature> (not smoke-tier). Consider promoting to smoke if this feature blocks core workflow."`.
+3. Read `PURLIN_OVERRIDES.md` to check the current tier table. Features already classified as `smoke` do not generate promotion recommendations.
 4. Features classified as `full-only` that fail are promoted to a MEDIUM recommendation: `"full-only feature <feature> has failing regression. Consider upgrading to standard or smoke."`.
 
 **Constraints:**
 - Promotion recommendations are advisory (LOW/MEDIUM priority). PM mode makes the final tier decision.
-- The Critic does NOT auto-modify `QA_OVERRIDES.md`. It only surfaces recommendations.
+- The Critic does NOT auto-modify `PURLIN_OVERRIDES.md`. It only surfaces recommendations.
 - This check runs as part of the supplementary audits (alongside User Testing Audit and Engineer Decision Audit), not as part of the dual-gate model.
 
 ### 2.11 Targeted Scope Completeness
@@ -275,7 +275,7 @@ The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Comp
 
 **Precedence:** This check slots into the existing QA precedence chain as: `FAIL > DISPUTED > TODO (SPEC_UPDATED) > TODO (TESTING with manual) > TODO (bypassed verification: no TESTING commit) > TODO (bypassed verification: missing [Verified]) > AUTO > CLEAN > N/A`. The existing FAIL and DISPUTED conditions take priority -- a feature with OPEN BUGs or SPEC_DISPUTEs is already surfaced as FAIL/DISPUTED regardless of verification history.
 
-**Rationale:** The workflow (HOW_WE_WORK_BASE Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by Engineer mode. When an Engineer commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
+**Rationale:** The workflow (PURLIN_BASE.md Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by Engineer mode. When an Engineer commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
 
 ### 2.17 Regression Guidance Detection
 

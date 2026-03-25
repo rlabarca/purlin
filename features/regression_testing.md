@@ -114,7 +114,7 @@ After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification)
 
 1. Scan `tests/qa/scenarios/*.json` for all scenario files.
 2. For each, check the corresponding `tests/<feature>/regression.json` for result status (PASS/FAIL/NOT_RUN/STALE).
-3. Read `QA_OVERRIDES.md` tier table (if it exists) to determine each feature's test priority tier.
+3. Read `PURLIN_OVERRIDES.md` tier table (if it exists) to determine each feature's test priority tier.
 4. Group by frequency (`per-feature` vs `pre-release`). Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
 5. Print the table in the Phase A Summary, after the existing summary block:
 

@@ -39,7 +39,7 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 
 ### 2.2 Identity on Agent Start
 
-- All four root launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) and all generated launchers (via `init.sh`) set both title and badge to their display name on startup.
+- All four root launchers (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) and all generated launchers (via `init.sh`) set both title and badge to their display name on startup.
 - The helper script is sourced from `$CORE_DIR/tools/terminal/identity.sh`.
 
 ### 2.3 Identity Cleanup
@@ -154,7 +154,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 #### @manual Scenario: Title and badge appear on start and clear on exit
 
     Given iTerm2 is the active terminal
-    When the user runs ./pl-run-architect.sh and the agent session starts
+    When the user runs ./pl-run.sh and the agent session starts
     Then the terminal tab title shows "PM"
     And the iTerm2 badge overlay shows "PM"
     When the agent session exits normally
@@ -164,7 +164,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 #### @manual Scenario: Title and badge clear on Ctrl+C
 
     Given iTerm2 is the active terminal
-    And an agent session is running via ./pl-run-builder.sh
+    And an agent session is running via ./pl-run.sh
     When the user presses Ctrl+C
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -173,7 +173,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given iTerm2 is the active terminal
     And a delivery plan exists with at least 3 phases
-    When the user runs ./pl-run-builder.sh --continuous
+    When the user runs ./pl-run.sh --continuous
     Then the title and badge show "Engineer" at startup
     And the title and badge show "Engineer: Bootstrap" during the bootstrap phase
     And the title and badge update to "Engineer: Phase N/M" during sequential phase execution

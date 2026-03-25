@@ -43,9 +43,9 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 ### 2.3 System Prompt Construction
 
 - The test runner constructs the system prompt using the same 4-layer concatenation order as the launcher scripts:
-  1. Base HOW_WE_WORK (`instructions/HOW_WE_WORK_BASE.md`)
+  1. Base HOW_WE_WORK (`instructions/PURLIN_BASE.md`)
   2. Role-specific base instructions (`instructions/<ROLE>_BASE.md`)
-  3. HOW_WE_WORK overrides (`.purlin/HOW_WE_WORK_OVERRIDES.md`)
+  3. HOW_WE_WORK overrides (`PURLIN_OVERRIDES.md` (General section))
   4. Role-specific overrides (`.purlin/<ROLE>_OVERRIDES.md`)
 - Instruction files are read from the fixture checkout, not from the current working copy. This ensures tests verify the instruction state captured in the fixture tag.
 - The concatenated prompt is written to a temp file for `--append-system-prompt-file`.

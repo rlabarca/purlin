@@ -15,7 +15,7 @@ As feature files grow, their Implementation Notes sections consume increasing pr
 - Example: `features/critic_tool.md` has companion `features/critic_tool.impl.md`.
 
 ### 2.2 Companion File Resolution
-Companion files are resolved by naming convention: for a feature file `features/<name>.md`, the companion is `features/<name>.impl.md`. Feature files do NOT reference companion files -- companion files are standalone, discovered purely by naming convention. This aligns with HOW_WE_WORK_BASE Section 4.3: "companion files are standalone -- feature files do NOT reference them."
+Companion files are resolved by naming convention: for a feature file `features/<name>.md`, the companion is `features/<name>.impl.md`. Feature files do NOT reference companion files -- companion files are standalone, discovered purely by naming convention. This aligns with PURLIN_BASE.md Section 4.3: "companion files are standalone -- feature files do NOT reference them."
 
 When a companion file exists, the feature file's `## Implementation Notes` section MAY contain a stub or be absent entirely. The Critic resolves the companion by convention, not by parsing links.
 

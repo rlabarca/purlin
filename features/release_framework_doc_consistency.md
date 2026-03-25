@@ -17,10 +17,10 @@ Consumer projects do not own instruction files — those reside inside the Purli
 
 PM mode cross-references all five base instruction files and the framework README:
 
-- `instructions/HOW_WE_WORK_BASE.md`
-- `instructions/ARCHITECT_BASE.md`
-- `instructions/BUILDER_BASE.md`
-- `instructions/QA_BASE.md`
+- `instructions/PURLIN_BASE.md`
+- `instructions/PURLIN_BASE.md`
+- `instructions/PURLIN_BASE.md`
+- `instructions/PURLIN_BASE.md`
 - `features/policy_critic.md`
 - `README.md`
 
@@ -31,7 +31,7 @@ For each pair of files in scope, PM mode verifies:
 1. **No direct contradictions.** A rule stated in one instruction file must not be contradicted by a rule in another.
 2. **No stale file path references.** All `tools/`, `features/`, and `.purlin/` paths referenced in instruction files must exist in the current codebase.
 3. **No terminology mismatches.** Role names, lifecycle status labels, step IDs, and protocol names must be consistent across all files.
-4. **No lifecycle or protocol divergence.** Definitions of the Feature Lifecycle, Discovery lifecycle, Critic routing, and release protocol MUST be consistent between `HOW_WE_WORK_BASE` and the role-specific base files.
+4. **No lifecycle or protocol divergence.** Definitions of the Feature Lifecycle, Discovery lifecycle, Critic routing, and release protocol MUST be consistent between `PURLIN_BASE.md` and the role-specific base files.
 5. **README accuracy.** README.md must accurately describe the framework's current instruction-file-governed behavior.
 
 ### 2.3 Remediation
@@ -46,7 +46,7 @@ Any inconsistency found is corrected using `/pl-edit-base` (for base instruction
 | Friendly Name | `Framework Documentation Consistency` |
 | Scope | Purlin-local (not a global step) |
 | Code | null |
-| Agent Instructions | "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md is consistent with the current instruction file content. Fix any inconsistencies and commit." |
+| Agent Instructions | "Cross-reference `instructions/PURLIN_BASE.md`, `instructions/PURLIN_BASE.md`, `instructions/PURLIN_BASE.md`, `instructions/PURLIN_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md is consistent with the current instruction file content. Fix any inconsistencies and commit." |
 
 ## 3. Scenarios
 

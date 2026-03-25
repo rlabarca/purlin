@@ -125,7 +125,7 @@ Every script MUST produce structured JSON to stdout:
 
 **Checks:**
 1. **Deprecated terminology:** Scan Critic-related files for "quality gate" (should be "coordination engine") and other deprecated terms from the terminology table.
-2. **Routing rule consistency:** Cross-reference routing rules between `policy_critic.md` and `HOW_WE_WORK_BASE.md` Section 7.5. Flag discrepancies.
+2. **Routing rule consistency:** Cross-reference routing rules between `policy_critic.md` and `PURLIN_BASE.md` Section 7.5. Flag discrepancies.
 3. **Missing mandates:** Verify all Critic mandates referenced in instruction files have corresponding implementation.
 4. **README Critic section:** Verify `## The Critic` section in README.md matches current Critic behavior.
 
