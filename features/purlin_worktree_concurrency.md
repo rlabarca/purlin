@@ -17,6 +17,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 - `--worktree` flag MUST create a git worktree under `.purlin/worktrees/` with branch name `purlin-<mode>-<timestamp>`.
 - The agent MUST operate entirely within the worktree directory.
 - `PURLIN_PROJECT_ROOT` MUST be set to the worktree path.
+- `.purlin/worktrees/` MUST be listed in `.gitignore` to prevent worktree contents from being accidentally committed to the main repo.
 
 ### 2.2 Merge-Back Protocol
 
@@ -28,9 +29,10 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 ### 2.3 SessionEnd Hook
 
-- `tools/hooks/merge-worktrees.sh` MUST run as a Claude Code SessionEnd hook.
+- `tools/hooks/merge-worktrees.sh` MUST be registered as a `SessionEnd` hook in `.claude/settings.json`. The hook is always registered (not dynamically added by `pl-run.sh`) — it is a safe no-op when not running in a worktree.
 - The hook MUST fire on all exit types including Ctrl+C (`prompt_input_exit`).
-- The hook MUST auto-commit pending changes before merge.
+- The hook MUST auto-commit pending changes before merge, including both tracked modifications and untracked files (`git ls-files --others --exclude-standard`).
+- The hook MUST NOT use `set -e`. Intermediate failures (e.g., `git add`) must not prevent the merge attempt from being reached. All git commands in the auto-commit block MUST use `|| true` for resilience.
 - The hook MUST only process branches matching `purlin-*` pattern.
 - On merge conflict: abort merge and preserve worktree with instructions for manual resolution.
 - The hook MUST exit 0 in all cases (never block agent exit).
@@ -78,6 +80,12 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
     When the SessionEnd hook fires
     Then changes are committed with message "chore: auto-commit on session exit"
 
+#### Scenario: SessionEnd hook auto-commits untracked files
+
+    Given the agent is in a purlin worktree with new untracked files
+    When the SessionEnd hook fires
+    Then the untracked files are added, committed, and merged to the source branch
+
 #### Scenario: SessionEnd hook handles merge conflict gracefully
 
     Given the agent is in a purlin worktree
@@ -120,7 +128,13 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
     And each operates in a separate directory
 
 ## Regression Guidance
-- Verify SessionEnd hook timeout is sufficient for large merges (default 1.5s may be too short)
+- Verify merge-worktrees.sh is registered as a SessionEnd hook in .claude/settings.json
+- Verify merge hook merges worktree branch back to main and cleans up (branch + directory removed)
+- Verify merge hook auto-commits both tracked changes and untracked files before merging
+- Verify merge hook is a no-op when not in a worktree (safe to run on every session exit)
+- Verify merge hook skips non-purlin branches (e.g., feature/* branches in sub-agent worktrees)
+- Verify merge hook preserves worktree and aborts cleanly on merge conflict, with resolution instructions
+- Verify .purlin/worktrees/ is in .gitignore
 - Verify worktree creation fails gracefully if .purlin/worktrees/ is not writable
 - Verify merge-back preserves all commits (not squashing)
 - Verify hook does not corrupt main branch on partial merge failure
