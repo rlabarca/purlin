@@ -57,11 +57,12 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Old consolidated skill files MUST be deleted.
 - `/pl-edit-base` MUST be removed (absorbed into Engineer mode).
 
-### 2.8a Skill Internal Protocols Use scan.sh
+### 2.8a Work Discovery Delegation
 
-- All skill files that perform work discovery MUST reference `${TOOLS_ROOT}/cdd/scan.sh`, NOT `status.sh` or the Critic.
-- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, or `tests/<name>/critic.json`.
-- Where skills previously read `critic.json` for feature metadata (gate status, regression scope), they MUST read the feature spec directly instead.
+- `/pl-status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
+- Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) MUST delegate work discovery to `/pl-status`, not call `scan.sh` directly or implement their own detection logic.
+- Only `/pl-status` and the startup protocol (PURLIN_BASE.md Section 6) call `scan.sh` directly.
+- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `status.sh`, or `tests/<name>/critic.json`.
 - References to "Architect action items" MUST be replaced with "PM action items".
 - References to "Builder action items" MUST be replaced with "Engineer action items".
 

@@ -56,6 +56,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 - The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol (`/pl-verify`).
 - The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol (`/pl-build`).
 - Work interpretation logic (how to classify scan results into mode-specific work items) is a SKILL protocol (`/pl-status`). The startup protocol in PURLIN_BASE.md invokes `/pl-status`, it does not duplicate its logic.
+- **Work discovery delegation:** `/pl-status` is the single source of "what work exists." Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) delegate to `/pl-status` for their work list — they do not call `scan.sh` directly or re-implement detection logic.
 - Base instructions set BOUNDARIES. Skills carry PROTOCOLS and LOGIC.
 
 ---
