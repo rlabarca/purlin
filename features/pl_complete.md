@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The QA lifecycle completion skill that gates feature completion on verification requirements. Checks that the feature is in TESTING state, all scenarios are verified, zero open discoveries exist, the feature is not phase-gated by a delivery plan, and creates the completion commit with the mandatory `[Verified]` tag that distinguishes QA completions from Builder auto-completions.
+The QA lifecycle completion skill that gates feature completion on verification requirements. Checks that the feature is in TESTING state, all scenarios are verified, zero open discoveries exist, the feature is not phase-gated by a delivery plan, and creates the completion commit with the mandatory `[Verified]` tag that distinguishes QA completions from Engineer auto-completions.
 
 ---
 
@@ -44,7 +44,7 @@ The QA lifecycle completion skill that gates feature completion on verification 
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-complete
     Then the command responds with a redirect message
 

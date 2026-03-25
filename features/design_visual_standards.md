@@ -15,12 +15,12 @@ This anchor is the project's **visual design anchor** -- the single source of tr
 *   **Tagline:** Collaborative Design-Driven Agentic Development Framework
 *   **Logo:** `assets/purlin-logo.svg` -- standalone SVG with dark-theme defaults. When embedded inline in tools, uses CSS classes for theme-responsive fills.
 
-Purlin has two built-in themes: **Blueprint** (dark, default) and **Architect** (light). These names are used throughout this anchor and all dependent features.
+Purlin has two built-in themes: **Blueprint** (dark, default) and **PM** (light). These names are used throughout this anchor and all dependent features.
 
 ### 2.2 Color Token System
 All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors are FORBIDDEN.
 
-**Architect Theme (Light):**
+**PM Theme (Light):**
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -111,7 +111,7 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
     2.  If the key is absent or empty, fall back to the **directory name** of the project root (i.e., the last path component, not the full path). For example, if the project root is `/home/user/my-app`, the displayed name is `my-app`.
 *   **Position:** Displayed on a second line below the tool title in the page header left group, left-justified. The left edge of the project name text MUST align horizontally with the left edge of the "P" in the PURLIN title above it (i.e., the project name sits directly under the title text, not under the logo).
 *   **Font:** `var(--font-body)` (Inter), weight 500 (Medium), same size as body text (14px). No text-transform.
-*   **Color:** `var(--purlin-primary)` -- the same token used for the logo triangle main fill (`.logo-fill`). This ensures the project name color matches the logo and switches correctly between Blueprint (dark) and Architect (light) themes.
+*   **Color:** `var(--purlin-primary)` -- the same token used for the logo triangle main fill (`.logo-fill`). This ensures the project name color matches the logo and switches correctly between Blueprint (dark) and PM (light) themes.
 
 ### 2.7 FORBIDDEN Patterns
 

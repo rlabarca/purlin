@@ -1,8 +1,8 @@
 ### [BUG] Missing deprecation warning in pl-run-builder.sh (Discovered: 2026-03-24)
 - **Scenario:** Deprecation warning on old launcher
-- **Observed Behavior:** `pl-run-builder.sh` launches a full Builder agent session without printing any deprecation warning. No mention of `pl-run.sh` as the replacement.
+- **Observed Behavior:** `pl-run-builder.sh` launches a full Engineer agent session without printing any deprecation warning. No mention of `pl-run.sh` as the replacement.
 - **Expected Behavior:** The launcher prints a deprecation warning mentioning `pl-run.sh` before starting the agent session (per spec section 2.5).
-- **Action Required:** Builder
+- **Action Required:** Engineer
 - **Status:** RESOLVED
 
 ### [INTENT_DRIFT] Stale HOW_WE_WORK_BASE.md reference in spec and regression test (Discovered: 2026-03-25)
@@ -16,5 +16,5 @@
 - **Scenario:** Help output separates sticky and ephemeral flags
 - **Observed Behavior:** The `show_help()` function previously used `sed` to self-parse `# desc:` comments from case patterns. The new grouped layout (Saved preferences / Session options / Other) cannot be produced by flat self-parsing, so `show_help()` was rewritten as a `cat <<'HELPTEXT'` heredoc with the exact spec-prescribed layout.
 - **Impact:** Help text is no longer dynamically generated from case-statement comments. Adding a new flag requires updating both the case statement and the heredoc.
-- **Action Required:** None — spec §2.2.4 explicitly permits this ("implementation mechanism is left to the Builder").
+- **Action Required:** None — spec §2.2.4 explicitly permits this ("implementation mechanism is left to Engineer mode").
 - **Status:** ACKNOWLEDGED

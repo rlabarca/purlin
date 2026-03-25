@@ -7,13 +7,13 @@
 
 ## 1. Overview
 
-This feature defines the `purlin.verify_zero_queue` release step: a gate check that confirms all features in the project have reached a fully satisfied state before a release is cut. No feature may have outstanding Architect, Builder, or QA work. This step operationalizes the Zero-Queue Mandate from `policy_release.md`.
+This feature defines the `purlin.verify_zero_queue` release step: a gate check that confirms all features in the project have reached a fully satisfied state before a release is cut. No feature may have outstanding PM, Engineer, or QA work. This step operationalizes the Zero-Queue Mandate from `policy_release.md`.
 
 ## 2. Requirements
 
 ### 2.1 Status Check
 
-The Architect runs `tools/cdd/status.sh` and inspects the JSON output. For each feature in the `features` array, all three conditions MUST be true:
+PM mode runs `tools/cdd/status.sh` and inspects the JSON output. For each feature in the `features` array, all three conditions MUST be true:
 
 - `architect` is `"DONE"`
 - `builder` is `"DONE"`
@@ -21,7 +21,7 @@ The Architect runs `tools/cdd/status.sh` and inspects the JSON output. For each 
 
 ### 2.2 Halt Condition
 
-If any feature fails the check, the Architect:
+If any feature fails the check, PM mode:
 
 1. Reports the failing feature(s) by label and file path.
 2. Reports which specific role column(s) are not satisfied.
@@ -29,7 +29,7 @@ If any feature fails the check, the Architect:
 
 ### 2.3 Pass Condition
 
-If all features satisfy the conditions, the Architect reports the total feature count and proceeds to the next release step. No files are modified.
+If all features satisfy the conditions, PM mode reports the total feature count and proceeds to the next release step. No files are modified.
 
 ### 2.4 Step Metadata
 
@@ -55,28 +55,28 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: All features satisfy zero-queue conditions (auto-test-only)
 Given `tools/cdd/status.sh` reports every feature with `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"`,
-When the Architect executes the `purlin.verify_zero_queue` step,
-Then the Architect reports the total feature count and confirms the queue is clear,
+When PM mode executes the `purlin.verify_zero_queue` step,
+Then PM mode reports the total feature count and confirms the queue is clear,
 And proceeds to the next release step.
 
-#### Scenario: Feature with outstanding Builder work (auto-test-only)
+#### Scenario: Feature with outstanding Engineer work (auto-test-only)
 Given at least one feature has `builder: "TODO"`,
-When the Architect executes the `purlin.verify_zero_queue` step,
-Then the Architect reports the specific feature(s) blocking the release,
+When PM mode executes the `purlin.verify_zero_queue` step,
+Then PM mode reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
 #### Scenario: Feature with open QA discoveries (auto-test-only)
 Given at least one feature has `qa: "HAS_OPEN_ITEMS"`,
-When the Architect executes the `purlin.verify_zero_queue` step,
-Then the Architect reports the specific feature(s) blocking the release,
+When PM mode executes the `purlin.verify_zero_queue` step,
+Then PM mode reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
-#### Scenario: Feature with outstanding Architect work (auto-test-only)
+#### Scenario: Feature with outstanding PM work (auto-test-only)
 Given at least one feature has `architect: "TODO"`,
-When the Architect executes the `purlin.verify_zero_queue` step,
-Then the Architect reports the specific feature(s) blocking the release,
+When PM mode executes the `purlin.verify_zero_queue` step,
+Then PM mode reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
-### Manual Scenarios (Architect Execution)
+### Manual Scenarios (PM Execution)
 
 None.

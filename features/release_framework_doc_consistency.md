@@ -15,7 +15,7 @@ Consumer projects do not own instruction files — those reside inside the Purli
 
 ### 2.1 Audit Scope
 
-The Architect cross-references all five base instruction files and the framework README:
+PM mode cross-references all five base instruction files and the framework README:
 
 - `instructions/HOW_WE_WORK_BASE.md`
 - `instructions/ARCHITECT_BASE.md`
@@ -26,7 +26,7 @@ The Architect cross-references all five base instruction files and the framework
 
 ### 2.2 Consistency Checks
 
-For each pair of files in scope, the Architect verifies:
+For each pair of files in scope, PM mode verifies:
 
 1. **No direct contradictions.** A rule stated in one instruction file must not be contradicted by a rule in another.
 2. **No stale file path references.** All `tools/`, `features/`, and `.purlin/` paths referenced in instruction files must exist in the current codebase.
@@ -36,7 +36,7 @@ For each pair of files in scope, the Architect verifies:
 
 ### 2.3 Remediation
 
-Any inconsistency found is corrected using `/pl-edit-base` (for base instruction file edits in the Purlin repository). After corrections, the Architect commits with message `fix(instructions): <description>`.
+Any inconsistency found is corrected using `/pl-edit-base` (for base instruction file edits in the Purlin repository). After corrections, PM mode commits with message `fix(instructions): <description>`.
 
 ### 2.4 Step Metadata
 
@@ -56,30 +56,30 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: All instruction files are internally consistent (auto-test-only)
 Given all five instruction files and README.md are mutually consistent,
-When the Architect executes the `doc_consistency_framework` step,
-Then the Architect reports "Framework instruction audit: CLEAN."
+When PM mode executes the `doc_consistency_framework` step,
+Then PM mode reports "Framework instruction audit: CLEAN."
 And no commits are made.
 
 #### Scenario: Terminology mismatch between instruction files (auto-test-only)
 Given one instruction file uses a deprecated role name or lifecycle status label that differs from another,
-When the Architect executes the `doc_consistency_framework` step,
-Then the Architect identifies the specific mismatch (file, section, conflicting term),
+When PM mode executes the `doc_consistency_framework` step,
+Then PM mode identifies the specific mismatch (file, section, conflicting term),
 And corrects the stale file using `/pl-edit-base`,
 And commits with message `fix(instructions): align terminology in <file>`.
 
 #### Scenario: Stale path reference in instruction file (auto-test-only)
 Given an instruction file references a tool path or config path that no longer exists,
-When the Architect executes the `doc_consistency_framework` step,
-Then the Architect updates the reference to the correct current path using `/pl-edit-base`,
+When PM mode executes the `doc_consistency_framework` step,
+Then PM mode updates the reference to the correct current path using `/pl-edit-base`,
 And commits the correction.
 
 #### Scenario: README inconsistent with instruction file content (auto-test-only)
 Given README.md describes framework behavior that no longer matches the current instruction files,
-When the Architect executes the `doc_consistency_framework` step,
-Then the Architect identifies the specific discrepancy,
+When PM mode executes the `doc_consistency_framework` step,
+Then PM mode identifies the specific discrepancy,
 And updates README.md to match the current instruction content,
 And commits the correction.
 
-### Manual Scenarios (Architect Execution)
+### Manual Scenarios (PM Execution)
 
 None.

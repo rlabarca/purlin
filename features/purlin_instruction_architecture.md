@@ -39,7 +39,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
 ### 2.5 Instruction Files Are Code
 
-- `PURLIN_BASE.md` is an implementation artifact owned by the Engineer (Builder in the current model).
+- `PURLIN_BASE.md` is an implementation artifact owned by the Engineer (Engineer in the current model).
 - Changes to the instruction file are driven by feature specs, same as any other code change.
 - The instruction file is NOT a specification — it is an implementation of the spec in this feature file.
 
@@ -128,7 +128,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
     And it loads PURLIN_BASE.md as the sole base instruction file
 
 ## Regression Guidance
-- Verify PURLIN_BASE.md does not reference old role names (Architect, Builder) except in transition context
+- Verify PURLIN_BASE.md does not reference old role names (PM, Engineer) except in transition context
 - Verify the instruction file loads correctly when appended via --append-system-prompt-file
 - Verify override file sections are not empty (template should have placeholder comments)
 - Verify HOW_WE_WORK_BASE.md is NOT loaded by pl-run.sh (old agents still load it separately)

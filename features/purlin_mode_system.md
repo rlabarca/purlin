@@ -63,8 +63,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
   - Unacknowledged deviations → PM.
   - Incomplete spec sections → PM.
 - Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `status.sh`, or `tests/<name>/critic.json`.
-- References to "Architect action items" MUST be replaced with "PM action items".
-- References to "Builder action items" MUST be replaced with "Engineer action items".
+- Action items use mode-based naming: "PM action items", "Engineer action items", "QA action items".
 
 ### 2.8 Companion File Mandate (Engineer)
 

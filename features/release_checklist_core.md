@@ -20,7 +20,7 @@ Each release step (whether global or local) is a JSON object conforming to the f
 | `friendly_name` | string | Yes | Human-readable display name shown in the CDD Dashboard and agent output. |
 | `description` | string | Yes | Prose explanation of what this step does and why it exists in the release process. |
 | `code` | string or null | No | Shell command or script path for automated execution of this step. `null` indicates no automation is available. |
-| `agent_instructions` | string or null | No | Natural language instructions for the Architect agent when executing this step. `null` if no agent-specific guidance is needed. |
+| `agent_instructions` | string or null | No | Natural language instructions for PM mode agent when executing this step. `null` if no agent-specific guidance is needed. |
 
 No additional fields are permitted in the schema at this time. Tooling MUST ignore unrecognized fields with a warning, not an error (forward compatibility).
 
@@ -35,7 +35,7 @@ No additional fields are permitted in the schema at this time. Tooling MUST igno
 
 *   **Path:** `.purlin/release/local_steps.json`
 *   **Format:** `{"steps": [ <step-object>, ... ]}`
-*   **Ownership:** Architect-owned. The Architect agent creates and maintains this file.
+*   **Ownership:** PM-owned. PM mode agent creates and maintains this file.
 *   **Absence:** If the file does not exist, it is treated as an empty steps array (`{"steps": []}`). The system MUST NOT error when this file is absent.
 
 ### 2.4 Local Config (Ordering and Enable/Disable State)
@@ -55,7 +55,7 @@ No additional fields are permitted in the schema at this time. Tooling MUST igno
     }
     ```
 *   **Semantics:** Defines the ordered, authoritative sequence of all steps for this project's release process. Each entry references a step by ID (global or local). Steps not listed here are excluded from the release process (unless auto-discovered; see Section 2.5).
-*   **Ownership:** Architect-owned. The CDD Dashboard MAY write updates to this file when the user reorders or toggles steps via the UI.
+*   **Ownership:** PM-owned. The CDD Dashboard MAY write updates to this file when the user reorders or toggles steps via the UI.
 *   **Absence:** If the file does not exist, the system auto-generates the default config by applying Section 2.5 auto-discovery to all known steps.
 
 ### 2.5 Auto-Discovery of New Global Steps

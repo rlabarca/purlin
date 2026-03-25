@@ -13,8 +13,8 @@ All launcher scripts initialize variables with sensible defaults before attempti
 
 ### Role-Specific Tool Restrictions
 When `bypass_permissions` is false, each role gets a curated `--allowedTools` list:
-- Architect: Read-only + git + scripting (no Write/Edit)
-- Builder: No restrictions (default Claude behavior, user confirms)
+- PM: Read-only + git + scripting (no Write/Edit)
+- Engineer: No restrictions (default Claude behavior, user confirms)
 - QA: Read/Write + git + scripting (can edit files for status commits)
 
 ### Bootstrap Launcher Generation

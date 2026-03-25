@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A shared skill available to all roles that wraps `status.sh` to display the current CDD project state. Shows feature counts by lifecycle status (TODO/TESTING/COMPLETE), role-specific action items sorted by priority with explanatory reasons, and open discoveries or tombstones requiring attention. Includes role-filtered shortcut mode and Architect-specific uncommitted changes detection.
+A shared skill available to all roles that wraps `status.sh` to display the current CDD project state. Shows feature counts by lifecycle status (TODO/TESTING/COMPLETE), role-specific action items sorted by priority with explanatory reasons, and open discoveries or tombstones requiring attention. Includes role-filtered shortcut mode and PM-specific uncommitted changes detection.
 
 ---
 
@@ -16,12 +16,12 @@ A shared skill available to all roles that wraps `status.sh` to display the curr
 
 ### 2.1 Shared Access
 
-- The command is available to all roles (Architect, Builder, QA, PM).
+- The command is available to all roles (PM, Engineer, QA, PM).
 
 ### 2.2 Core Output
 
 - Run `status.sh` and summarize: feature counts by status, role-specific action items (highest priority first with reasons), and open discoveries or tombstones.
-- Tombstone files (features with `tombstone: true` in scan output) MUST be surfaced as Engineer/Builder work items with highest priority — tombstones are processed before regular feature work.
+- Tombstone files (features with `tombstone: true` in scan output) MUST be surfaced as Engineer work items with highest priority — tombstones are processed before regular feature work.
 
 ### 2.3 Role-Filtered Shortcut
 
@@ -29,14 +29,14 @@ A shared skill available to all roles that wraps `status.sh` to display the curr
 
 ### 2.4 Status Value Reference
 
-- Display status meanings per role (Architect: DONE/TODO; Builder: DONE/TODO/FAIL/BLOCKED/INFEASIBLE; QA: CLEAN/TODO/FAIL/DISPUTED/N/A).
+- Display status meanings per role (PM: DONE/TODO; Engineer: DONE/TODO/FAIL/BLOCKED/INFEASIBLE; QA: CLEAN/TODO/FAIL/DISPUTED/N/A).
 
-### 2.5 Architect-Specific: Uncommitted Changes Check
+### 2.5 PM-Specific: Uncommitted Changes Check
 
-- After standard output, if Architect role: check for uncommitted changes in Architect-owned files.
+- After standard output, if PM role: check for uncommitted changes in PM-owned files.
 - Present summary of changes grouped by type (new, modified, deleted).
 - Propose commit message and ask user for confirmation.
-- Non-Architect-owned files are noted but not acted upon.
+- Non-PM-owned files are noted but not acted upon.
 
 ---
 
@@ -58,13 +58,13 @@ A shared skill available to all roles that wraps `status.sh` to display the curr
 
 #### Scenario: Role-filtered view shows only relevant items
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When /pl-status uses --role builder
-    Then only Builder-relevant features and action items are shown
+    Then only Engineer-relevant features and action items are shown
 
-#### Scenario: Architect sees uncommitted changes check
+#### Scenario: PM sees uncommitted changes check
 
-    Given an Architect agent session
+    Given a PM agent session
     And features/new_spec.md has uncommitted changes
     When /pl-status completes
     Then the output includes the uncommitted changes summary

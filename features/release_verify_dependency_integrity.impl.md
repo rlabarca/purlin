@@ -1,6 +1,6 @@
 # Implementation Notes: Verify Dependency Integrity
 
-This step is a structural read-only check. The Architect does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/status.sh --graph` is permissible and does not count as a spec modification.
+This step is a structural read-only check. PM mode does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/status.sh --graph` is permissible and does not count as a spec modification.
 
 The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Manual graph file edits are not supported; the cache is always regenerated from source feature files.
 
@@ -21,4 +21,4 @@ The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Ma
 **Details:** The spec describes tiered severity for reverse references (based on distance, type), but the implementation flags all reverse references at the same severity level.
 **Suggested fix:** Implement tiered severity per spec: direct reverse refs = HIGH, transitive = MEDIUM, informational = LOW.
 
-**Architect Acknowledgment (2026-03-19):** Re-confirmed during deep audit. The flat severity classification is a known simplification. The spec's tiered model (direct=HIGH, transitive=MEDIUM, informational=LOW) remains the target state. Priority: LOW -- the current behavior is conservative (over-flags rather than under-flags), which is safe for release validation.
+**PM Acknowledgment (2026-03-19):** Re-confirmed during deep audit. The flat severity classification is a known simplification. The spec's tiered model (direct=HIGH, transitive=MEDIUM, informational=LOW) remains the target state. Priority: LOW -- the current behavior is conservative (over-flags rather than under-flags), which is safe for release validation.

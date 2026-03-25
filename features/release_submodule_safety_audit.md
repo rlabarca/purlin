@@ -135,7 +135,7 @@ Eight check categories, each grounded in the submodule safety contract:
 
 ### 2.3 Report Output
 
-The Architect produces a structured findings table per check category:
+PM mode produces a structured findings table per check category:
 
 | Category | File | Finding | Severity |
 |----------|------|---------|----------|
@@ -153,11 +153,11 @@ Severity levels:
 
 ### 2.5 Remediation
 
-Code fixes belong to the Builder. The Architect audits and reports; the Builder corrects the
-identified file(s) and commits. The Architect then re-runs the audit to confirm resolution
+Code fixes belong to Engineer mode. PM mode audits and reports; Engineer mode corrects the
+identified file(s) and commits. PM mode then re-runs the audit to confirm resolution
 before marking the step complete.
 
-If a WARNING is user-confirmed as acceptable, the Architect adds an inline note in the
+If a WARNING is user-confirmed as acceptable, PM mode adds an inline note in the
 Implementation Notes of the relevant feature spec (colocated with the affected code's spec,
 not this file).
 
@@ -241,57 +241,57 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: Clean audit — all checks pass (auto-test-only)
 Given all Python tools, shell scripts, instruction files, and the gitignore template comply with the submodule safety contract,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect reports "Submodule Safety Audit: CLEAN — all 8 check categories passed."
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode reports "Submodule Safety Audit: CLEAN — all 8 check categories passed."
 And no commits are made.
 
 #### Scenario: CRITICAL finding — missing PURLIN_PROJECT_ROOT check in Python tool (auto-test-only)
 Given a Python tool performs directory climbing without first checking os.environ.get('PURLIN_PROJECT_ROOT'),
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect identifies the specific tool file and line,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode identifies the specific tool file and line,
 And reports a CRITICAL finding in Check Category 1,
 And halts the release without executing subsequent steps.
 
 #### Scenario: CRITICAL finding — reversed climbing priority (auto-test-only)
 Given a Python tool checks ../../.purlin/config.json (nearer path) before ../../../.purlin/config.json,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect identifies the specific tool and the incorrect path order,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode identifies the specific tool and the incorrect path order,
 And reports a CRITICAL finding in Check Category 2,
 And halts the release.
 
 #### Scenario: CRITICAL finding — artifact written inside tools/ (auto-test-only)
 Given a script writes a .pid or .log file to a path inside the tools/ directory tree,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect identifies the specific script and write target,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode identifies the specific script and write target,
 And reports a CRITICAL finding in Check Category 3,
 And halts the release.
 
 #### Scenario: WARNING finding -- generated artifact not covered by gitignore template (auto-test-only)
 Given a Python tool writes output to a path not covered by any pattern in purlin-config-sample/gitignore.purlin,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect identifies the file, write target, and missing gitignore pattern,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode identifies the file, write target, and missing gitignore pattern,
 And reports a WARNING in Check Category 8a.
 
 #### Scenario: CRITICAL finding -- init.sh uses hardcoded gitignore array (auto-test-only)
 Given tools/init.sh contains a hardcoded RECOMMENDED_IGNORES array instead of reading purlin-config-sample/gitignore.purlin,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect reports a CRITICAL finding in Check Category 8c,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode reports a CRITICAL finding in Check Category 8c,
 And halts the release.
 
 #### Scenario: CRITICAL finding -- refresh mode skips gitignore sync (auto-test-only)
 Given tools/init.sh refresh mode does not perform additive gitignore merging,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect reports a CRITICAL finding in Check Category 8c,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode reports a CRITICAL finding in Check Category 8c,
 And halts the release.
 
 ### QA Scenarios
 
 #### @manual Scenario: WARNING finding — unguarded json.load confirmed by user
 Given a Python tool calls json.load() on a config file without a try/except block,
-When the Architect executes the `submodule_safety_audit` step,
-Then the Architect identifies the file and line number and reports a WARNING in Check Category 4,
+When PM mode executes the `submodule_safety_audit` step,
+Then PM mode identifies the file and line number and reports a WARNING in Check Category 4,
 And presents the warning to the user for explicit confirmation,
-And if the user confirms, the Architect records the known limitation in the affected feature's
+And if the user confirms, PM mode records the known limitation in the affected feature's
 Implementation Notes and proceeds to the next release step.
 ## Regression Guidance
 - All 8 check categories exercised: PURLIN_PROJECT_ROOT, artifact paths, json.load safety, CWD assumptions, sed JSON preservation

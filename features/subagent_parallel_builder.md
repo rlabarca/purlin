@@ -1,6 +1,6 @@
-# Feature: Sub-Agent Parallel Builder
+# Feature: Sub-Agent Parallel Engineer
 
-> Label: "Tool: Sub-Agent Parallel Builder"
+> Label: "Tool: Sub-Agent Parallel Engineer"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/builder_agent_launcher.md
 
@@ -43,7 +43,7 @@ Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
 
 #### 2.1.2 `verification-runner.md`
 
-Runs automated tests in background during B2, keeping test output out of main Builder context.
+Runs automated tests in background during B2, keeping test output out of main Engineer context.
 
 *   **Frontmatter:**
     ```yaml
@@ -65,7 +65,7 @@ Runs automated tests in background during B2, keeping test output out of main Bu
 
 ### 2.2 Parallel B1 Protocol
 
-When a delivery plan exists, the Builder MUST use `builder-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
+When a delivery plan exists, Engineer mode MUST use `builder-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
 
 1.  Read `.purlin/cache/dependency_graph.json` and the delivery plan.
 2.  Compute execution groups: group PENDING phases with no cross-dependencies.
@@ -80,10 +80,10 @@ When a delivery plan exists, the Builder MUST use `builder-worker` sub-agents fo
 
 ### 2.3 B2 Verification with verification-runner
 
-During B2 (Test Sub-Phase), the Builder SHOULD use the `verification-runner` sub-agent for automated test execution:
+During B2 (Test Sub-Phase), Engineer mode SHOULD use the `verification-runner` sub-agent for automated test execution:
 
 *   Spawn `verification-runner` as a background agent for each feature's test suite.
-*   The main Builder session retains MCP access for web tests and Figma checks, running those concurrently.
+*   The main Engineer session retains MCP access for web tests and Figma checks, running those concurrently.
 *   The `verification-runner` writes `tests.json` results that the main session reads after completion.
 
 ### 2.4 Robust Merge Protocol
@@ -181,17 +181,17 @@ A new skill at `.claude/commands/pl-server.md` with the following capabilities:
 
 ### 2.7 Multi-Phase Auto-Progression
 
-When `auto_start: true` in the Builder's config:
+When `auto_start: true` in Engineer mode's config:
 
-*   After completing a delivery plan phase, the Builder auto-advances to the next PENDING phase instead of halting.
+*   After completing a delivery plan phase, Engineer mode auto-advances to the next PENDING phase instead of halting.
 *   The phase halt rule in `/pl-build` Step 4.E becomes conditional: halt only when `auto_start: false` (current default behavior).
-*   When `auto_start: true`, the Builder marks the phase COMPLETE, then immediately begins the next phase within the same session.
-*   The Builder runs all phases end-to-end without bash orchestration.
+*   When `auto_start: true`, Engineer mode marks the phase COMPLETE, then immediately begins the next phase within the same session.
+*   Engineer mode runs all phases end-to-end without bash orchestration.
 
 ### 2.8 Continuous Mode Deprecation
 
 *   `--continuous` flag in `pl-run-builder.sh` prints a deprecation warning and exits.
-*   Warning message: "The --continuous flag is deprecated. Set `auto_start: true` in agent config and relaunch the interactive Builder."
+*   Warning message: "The --continuous flag is deprecated. Set `auto_start: true` in agent config and relaunch the interactive Engineer."
 *   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/tombstones/continuous_phase_builder.md`).
 *   Deprecated config keys: `continuous_evaluator_model`, `inter_phase_critic`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
@@ -200,13 +200,13 @@ When `auto_start: true` in the Builder's config:
 
 #### 2.9.1 Orphaned Sub-Agent Branches
 
-On `/pl-resume`, the Builder MUST check for orphaned worktree branches matching the pattern `worktree-*`:
+On `/pl-resume`, Engineer mode MUST check for orphaned worktree branches matching the pattern `worktree-*`:
 *   If found: attempt to merge them using the robust merge protocol (Section 2.4), then continue.
-*   If not found: the sub-agents either completed and merged, or never started. The delivery plan + Critic state tells the Builder what remains.
+*   If not found: the sub-agents either completed and merged, or never started. The delivery plan + Critic state tells Engineer mode what remains.
 
 #### 2.9.2 Checkpoint Format Extension
 
-Add to the Builder Context section of the checkpoint:
+Add to Engineer mode Context section of the checkpoint:
 ```markdown
 **Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
 **Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
@@ -214,7 +214,7 @@ Add to the Builder Context section of the checkpoint:
 
 #### 2.9.3 Auto-Progression Continuity
 
-On resume, the Builder:
+On resume, Engineer mode:
 1.  Reads delivery plan -- identifies current phase (IN_PROGRESS) and remaining phases (PENDING).
 2.  Reads Critic -- identifies which features in the current phase are done vs TODO.
 3.  Checks for orphaned worktree branches -- merges if found.
@@ -272,12 +272,12 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given a delivery plan phase has features A and B
     And the dependency graph shows A and B have no cross-dependencies
-    When the Builder begins B1 for the phase
-    Then the Builder spawns one builder-worker sub-agent per feature
+    When Engineer mode begins B1 for the phase
+    Then Engineer mode spawns one builder-worker sub-agent per feature
     And each sub-agent runs in an isolated worktree
     And each sub-agent runs Steps 0-2 only
 
-#### Scenario: Builder-worker runs Steps 0-2 only
+#### Scenario: Engineer-worker runs Steps 0-2 only
 
     Given a builder-worker sub-agent is spawned for feature A
     When the sub-agent completes its work
@@ -285,14 +285,14 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And it has NOT run Step 3 (verification) or Step 4 (status tags)
     And it has NOT modified the delivery plan
 
-#### Scenario: Builder-worker cannot spawn nested sub-agents
+#### Scenario: Engineer-worker cannot spawn nested sub-agents
 
     Given a builder-worker sub-agent is running
     When the sub-agent's tool list is inspected
     Then the Agent tool is not available
     And the sub-agent cannot launch nested sub-agents
 
-#### Scenario: Builder-worker hits maxTurns safety limit
+#### Scenario: Engineer-worker hits maxTurns safety limit
 
     Given a builder-worker sub-agent is running
     When the sub-agent reaches 200 turns
@@ -301,8 +301,8 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: verification-runner runs tests in background during B2
 
-    Given the Builder has completed B1 for all features in a phase
-    When the Builder enters B2
+    Given Engineer mode has completed B1 for all features in a phase
+    When Engineer mode enters B2
     Then it spawns verification-runner sub-agents in the background
     And each verification-runner runs /pl-unit-test for its assigned feature
     And the main session runs web tests concurrently with MCP access
@@ -317,7 +317,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 #### Scenario: Main session runs web tests concurrently
 
     Given verification-runner sub-agents are running in background
-    When the main Builder session begins web test verification
+    When the main Engineer session begins web test verification
     Then MCP tools (browser_navigate, browser_snapshot) are available in the main session
     And web tests run concurrently with the background test runners
 
@@ -355,37 +355,37 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And auto-resolves safe file conflicts at each step
     And the rebase completes within 20 iterations
 
-#### Scenario: Builder auto-advances to next phase when auto_start is true
+#### Scenario: Engineer auto-advances to next phase when auto_start is true
 
-    Given auto_start is true in the Builder's config
+    Given auto_start is true in Engineer mode's config
     And a delivery plan has Phase 1 IN_PROGRESS and Phase 2 PENDING
-    When the Builder completes Phase 1
+    When Engineer mode completes Phase 1
     Then Phase 1 is marked COMPLETE in the delivery plan
-    And the Builder immediately begins Phase 2 without halting
+    And Engineer mode immediately begins Phase 2 without halting
 
-#### Scenario: Builder halts after phase when auto_start is false
+#### Scenario: Engineer halts after phase when auto_start is false
 
-    Given auto_start is false in the Builder's config
+    Given auto_start is false in Engineer mode's config
     And a delivery plan has Phase 1 IN_PROGRESS and Phase 2 PENDING
-    When the Builder completes Phase 1
+    When Engineer mode completes Phase 1
     Then Phase 1 is marked COMPLETE in the delivery plan
-    And the Builder halts with a phase completion message
-    And the Builder does NOT begin Phase 2
+    And Engineer mode halts with a phase completion message
+    And Engineer mode does NOT begin Phase 2
 
-#### Scenario: Builder spawns parallel sub-agents for multi-feature phases
+#### Scenario: Engineer spawns parallel sub-agents for multi-feature phases
 
     Given auto_start is true
     And Phase 2 has 3 independent features
-    When the Builder auto-advances to Phase 2
+    When Engineer mode auto-advances to Phase 2
     Then it spawns builder-worker sub-agents for the independent features
     And merges results using the robust merge protocol
     And proceeds to B2 verification
 
-#### Scenario: Builder runs all phases in a single session without bash orchestration
+#### Scenario: Engineer runs all phases in a single session without bash orchestration
 
     Given auto_start is true
     And a delivery plan has 4 phases
-    When the Builder completes all 4 phases
+    When Engineer mode completes all 4 phases
     Then all phases are marked COMPLETE
     And the delivery plan is deleted
     And no external bash orchestrator was involved
@@ -395,8 +395,8 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Given pl-run-builder.sh exists
     When the user invokes pl-run-builder.sh --continuous
     Then a deprecation warning is printed
-    And the warning includes: "Set auto_start: true in agent config and relaunch the interactive Builder"
-    And the script exits without launching a Builder session
+    And the warning includes: "Set auto_start: true in agent config and relaunch the interactive Engineer"
+    And the script exits without launching an Engineer session
 
 #### Scenario: Bright-line rules exist only in /pl-build skill
 
@@ -448,8 +448,8 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given .purlin/runtime/dev_server.json exists from a previous session
     And the tracked PID is still running
-    When a new Builder session starts
-    Then the Builder warns: "Stale dev server detected from previous session (port XXXX, PID YYYY)"
+    When a new Engineer session starts
+    Then Engineer mode warns: "Stale dev server detected from previous session (port XXXX, PID YYYY)"
     And asks the user whether to kill it
 
 #### Scenario: User sees server start and stop messages
@@ -485,19 +485,19 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Resume after clear during multi-phase auto-progression
 
-    Given the Builder was auto-progressing through Phase 4 of 6
+    Given Engineer mode was auto-progressing through Phase 4 of 6
     And context was cleared via /clear
     When /pl-resume restores the session
     Then the delivery plan shows phases 1-3 COMPLETE, phase 4 IN_PROGRESS
     And the Critic identifies remaining TODO features in phase 4
-    And the Builder continues from the current phase
+    And Engineer mode continues from the current phase
 
 #### Scenario: Resume with orphaned sub-agent branches
 
-    Given the Builder spawned 2 builder-worker sub-agents
+    Given Engineer mode spawned 2 builder-worker sub-agents
     And context was cleared while sub-agents were running
     When /pl-resume restores the session
-    Then the Builder detects orphaned worktree branches
+    Then Engineer mode detects orphaned worktree branches
     And merges them using the robust merge protocol
     And continues with remaining work
 
@@ -507,7 +507,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And context was cleared after merge but before B2 verification
     When /pl-resume restores the session
     Then the checkpoint shows parallel B1 completed
-    And the Builder proceeds directly to B2 verification
+    And Engineer mode proceeds directly to B2 verification
 
 #### Scenario: Metadata-only spec edit does not reset lifecycle
 
@@ -515,7 +515,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And its only change is removing a > Prerequisite: line
     When the CDD status computation runs
     Then terminal_identity.md remains in COMPLETE state
-    And no Builder action item is generated for it
+    And no Engineer action item is generated for it
 
 #### Scenario: Execution group dispatch bright-line rule exists in /pl-build
 
@@ -530,7 +530,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 #### @manual Scenario: Sub-agent parallel build end-to-end
 
     Given a delivery plan phase has 3 independent features
-    When the Builder executes the phase with parallel sub-agents
+    When Engineer mode executes the phase with parallel sub-agents
     Then a human verifies all 3 features are correctly implemented
     And the merge produced no regressions
     And the CDD status shows expected states

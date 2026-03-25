@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The Builder's testing skill that enforces a rigorous quality rubric on all automated tests. Defines behavioral test requirements by feature type (Python tool, shell script, Claude skill, web UI), five named anti-patterns to guard against (prose inspection, structural presence, mock-dominated, tautological assertion, representative input neglect), a six-point quality rubric gate, and structured result reporting to `tests.json`.
+Engineer mode's testing skill that enforces a rigorous quality rubric on all automated tests. Defines behavioral test requirements by feature type (Python tool, shell script, Claude skill, web UI), five named anti-patterns to guard against (prose inspection, structural presence, mock-dominated, tautological assertion, representative input neglect), a six-point quality rubric gate, and structured result reporting to `tests.json`.
 
 ---
 
@@ -17,8 +17,8 @@ The Builder's testing skill that enforces a rigorous quality rubric on all autom
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Builder role.
-- Non-Builder agents MUST receive a redirect message.
+- The command MUST only execute when invoked by Engineer mode role.
+- Non-Engineer agents MUST receive a redirect message.
 
 ### 2.2 The Cardinal Rule
 
@@ -66,7 +66,7 @@ All 6 checks MUST pass before `tests.json` is written:
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Builder invocation
+#### Scenario: Role gate rejects non-Engineer invocation
 
     Given a QA agent session
     When the agent invokes /pl-unit-test

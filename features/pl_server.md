@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A shared skill for Builder and QA that manages dev server processes during web test verification. Handles port availability checking, alternate port selection, server state tracking via `.purlin/runtime/dev_server.json`, cleanup guarantees on session end, and stale server detection from previous sessions.
+A shared skill for Engineer and QA that manages dev server processes during web test verification. Handles port availability checking, alternate port selection, server state tracking via `.purlin/runtime/dev_server.json`, cleanup guarantees on session end, and stale server detection from previous sessions.
 
 ---
 
@@ -16,8 +16,8 @@ A shared skill for Builder and QA that manages dev server processes during web t
 
 ### 2.1 Role Gating
 
-- The command is available to Builder and QA roles only.
-- Non-Builder/QA agents MUST receive a redirect message.
+- The command is available to Engineer and QA roles only.
+- Non-Engineer/QA agents MUST receive a redirect message.
 
 ### 2.2 Starting a Dev Server
 
@@ -52,9 +52,9 @@ A shared skill for Builder and QA that manages dev server processes during web t
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Builder/QA invocation
+#### Scenario: Role gate rejects non-Engineer/QA invocation
 
-    Given an Architect agent session
+    Given a PM agent session
     When the agent invokes /pl-server
     Then the command responds with a redirect message
 

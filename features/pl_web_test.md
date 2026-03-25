@@ -31,8 +31,8 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 ### 2.2 Skill File
 
 - The skill file MUST be created at `.claude/commands/pl-web-test.md`.
-- The skill MUST be shared ownership: Builder and QA (both roles may invoke it).
-- The skill MUST include a role guard that rejects invocation by the Architect.
+- The skill MUST be shared ownership: Engineer and QA (both roles may invoke it).
+- The skill MUST include a role guard that rejects invocation by PM mode.
 - Arguments: `[feature_name ...] [url_override]` -- optional feature names and/or a URL override.
 
 ### 2.3 Discovery
@@ -118,8 +118,8 @@ For each measurable checklist item (e.g., `- [ ] Card width 120px`):
 |-------|------|-----|---------|--------|
 | Match | Match | Match | PASS | All three agree |
 | Changed | Stale | Match old | STALE | Figma updated, spec not re-ingested. PM action item. |
-| Match | Match | Differs | BUG | Code doesn't match spec. Builder action item. |
-| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Builder action item. |
+| Match | Match | Differs | BUG | Code doesn't match spec. Engineer action item. |
+| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Engineer action item. |
 | Changed | Stale | Match Figma | SPEC_DRIFT | Code matches Figma but not spec. PM action item. |
 
 **Step 3 -- Token verification:**
@@ -172,10 +172,10 @@ When Figma MCP is NOT available, or a screen has no Figma reference:
 
   | Verdict | Discovery Type | Routes To |
   |---------|---------------|-----------|
-  | BUG (App wrong) | `[BUG]` | Builder |
+  | BUG (App wrong) | `[BUG]` | Engineer |
   | STALE (Figma updated, spec outdated) | Staleness PM action item | PM (re-ingest) |
   | SPEC_DRIFT (App matches Figma, not spec) | `[DISCOVERY]` | PM (sync spec) |
-  | TOKEN_DRIFT (Figma value != App value) | `[BUG]` or `[DISCOVERY]` | Builder or PM depending on which changed |
+  | TOKEN_DRIFT (Figma value != App value) | `[BUG]` or `[DISCOVERY]` | Engineer or PM depending on which changed |
 
 - For BUG failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (QA_BASE Section 4.3), including three-source comparison data in the observed behavior field.
 - For STALE/DRIFT items: record as PM action items (not BUG discoveries) noting the specific drift.
@@ -185,7 +185,7 @@ When Figma MCP is NOT available, or a screen has no Figma reference:
 ### 2.11 Completion Gate
 
 - **QA Agent invocation:** If all scenarios and visual items pass (zero failures, zero inconclusive), prompt: "All web verification passed. Run `/pl-complete <name>` to mark done?" If confirmed, run `/pl-complete`.
-- **Builder invocation:** If all pass, print summary only. Do not mark complete. Suggest the QA agent run `/pl-complete`.
+- **Engineer invocation:** If all pass, print summary only. Do not mark complete. Suggest the QA agent run `/pl-complete`.
 
 ### 2.12 Fixture-Backed Testing
 
@@ -206,7 +206,7 @@ When a feature has `> Web Test:` metadata and the project has a fixture repo (re
 
 ### 2.15 Legacy Cleanup and Migration
 
-The following legacy artifacts from prior naming conventions MUST be removed or updated by the Builder:
+The following legacy artifacts from prior naming conventions MUST be removed or updated by Engineer mode:
 
 1. **Rename** skill file `.claude/commands/pl-aft-web.md` to `.claude/commands/pl-web-test.md`. Update all internal references: `> AFT Web:` to `> Web Test:`, `> AFT Start:` to `> Web Start:`, `/pl-aft-web` to `/pl-web-test`.
 2. **Rename** test directory `tests/pl_aft_web/` to `tests/pl_web_test/`. Update all internal references.
@@ -220,7 +220,7 @@ The following legacy artifacts from prior naming conventions MUST be removed or 
 
 ### 2.13 Instruction Updates
 
-The following instruction files MUST be updated by the Builder to reference the new skill:
+The following instruction files MUST be updated by Engineer mode to reference the new skill:
 
 - `instructions/references/feature_format.md` -- Add `> Web Test: <url>` and `> Web Start: <command>` to blockquote metadata documentation.
 - `instructions/references/visual_spec_convention.md` -- Document that `> Web Test:` enables automated visual verification via Playwright MCP. Update on-demand loader notice to include `/pl-web-test`.
@@ -369,7 +369,7 @@ The following instruction files MUST be updated by the Builder to reference the 
     And Figma reports 48px and spec says 48px but app computes 32px
     When `/pl-web-test` performs triangulated verification
     Then the item is recorded as BUG with three-source attribution
-    And a [BUG] discovery is created routing to Builder
+    And a [BUG] discovery is created routing to Engineer
 
 #### Scenario: Figma-triangulated verification detects STALE spec
 
@@ -419,9 +419,9 @@ The following instruction files MUST be updated by the Builder to reference the 
     When results are presented
     Then the skill prompts to run `/pl-complete <name>`
 
-#### Scenario: Builder completion gate is summary only
+#### Scenario: Engineer completion gate is summary only
 
-    Given the invoking agent is Builder
+    Given the invoking agent is Engineer
     And all scenarios and visual items passed
     When results are presented
     Then only a summary is printed
@@ -431,7 +431,7 @@ The following instruction files MUST be updated by the Builder to reference the 
 
     Given the skill file has been created
     When instruction updates are applied per Section 2.13
-    Then `/pl-web-test` appears in both QA and Builder authorized command lists
+    Then `/pl-web-test` appears in both QA and Engineer authorized command lists
     And `/pl-web-test [name]` appears in all variants of both command tables
     And `> Web Test:` is documented in feature_format.md
     And visual_spec_convention.md references the automated alternative
@@ -481,4 +481,4 @@ None.
 - Auto-discovery respects targeted/cosmetic scope from critic.json
 - Server auto-start via Web Start metadata when server unreachable
 - Old skill name (pl-web-verify) fully renamed -- zero references remain
-- Role guard rejects Architect invocation
+- Role guard rejects PM invocation

@@ -26,10 +26,10 @@ The QA discovery recording skill that provides a guided workflow for classifying
 
 ### 2.3 Discovery Classification
 
-- **[BUG]:** Behavior contradicts an existing scenario. Routes to Builder.
-- **[DISCOVERY]:** Behavior exists but no scenario covers it. Routes to Architect.
-- **[INTENT_DRIFT]:** Behavior matches spec literally but misses actual intent. Routes to Architect.
-- **[SPEC_DISPUTE]:** User disagrees with scenario's expected behavior. Routes to Architect (design disputes triage to PM).
+- **[BUG]:** Behavior contradicts an existing scenario. Routes to Engineer.
+- **[DISCOVERY]:** Behavior exists but no scenario covers it. Routes to PM.
+- **[INTENT_DRIFT]:** Behavior matches spec literally but misses actual intent. Routes to PM.
+- **[SPEC_DISPUTE]:** User disagrees with scenario's expected behavior. Routes to PM (design disputes triage to PM).
 
 ### 2.4 Recording Format
 
@@ -50,21 +50,21 @@ The QA discovery recording skill that provides a guided workflow for classifying
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-discovery
     Then the command responds with a redirect message
 
-#### Scenario: BUG discovery routes to Builder
+#### Scenario: BUG discovery routes to Engineer
 
     Given a verification failure contradicting an existing scenario
     When the QA agent classifies it as BUG
-    Then the discovery entry has Action Required set to Builder
+    Then the discovery entry has Action Required set to Engineer
 
 #### Scenario: SPEC_DISPUTE suspends scenario
 
     Given the user disagrees with a scenario's expected behavior
     When the QA agent classifies it as SPEC_DISPUTE
-    Then the discovery entry has Action Required set to Architect
+    Then the discovery entry has Action Required set to PM
     And the user is informed the scenario is suspended
 
 #### Scenario: Discovery sidecar file created when absent

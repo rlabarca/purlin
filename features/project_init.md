@@ -113,7 +113,7 @@ The symlinks MUST use relative paths (not absolute) so they remain valid after r
 
 ### 2.7 Full Init Output
 
-The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (Architect), (3) what the Builder does, (4) CDD dashboard command. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
+The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (PM), (3) what Engineer mode does, (4) CDD dashboard command. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
 
 ### 2.8 Refresh Output
 
@@ -509,7 +509,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .claude/settings.json contains the Purlin SessionStart clear hook
     And the pre-existing custom hook is unchanged
 
-#### Scenario: Refresh Removes Stale PreToolUse Architect Hook @auto
+#### Scenario: Refresh Removes Stale PreToolUse PM Hook @auto
 
     Given .purlin/ already exists at the project root
     And .claude/settings.json contains a PreToolUse hook with the AGENT_ROLE architect check

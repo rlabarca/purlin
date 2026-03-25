@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The Builder's escalation skill for halting work on a feature that cannot be implemented as specified. Records an `[INFEASIBLE]` entry with detailed rationale in the companion file, commits it, and runs the Critic to surface the escalation as a CRITICAL-priority Architect action item. No code is implemented for infeasible features until the Architect revises the spec.
+Engineer mode's escalation skill for halting work on a feature that cannot be implemented as specified. Records an `[INFEASIBLE]` entry with detailed rationale in the companion file, commits it, and runs the Critic to surface the escalation as a CRITICAL-priority PM action item. No code is implemented for infeasible features until PM mode revises the spec.
 
 ---
 
@@ -17,8 +17,8 @@ The Builder's escalation skill for halting work on a feature that cannot be impl
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Builder role.
-- Non-Builder agents MUST receive a redirect message.
+- The command MUST only execute when invoked by Engineer mode role.
+- Non-Engineer agents MUST receive a redirect message.
 
 ### 2.2 Escalation Workflow
 
@@ -30,7 +30,7 @@ The Builder's escalation skill for halting work on a feature that cannot be impl
 ### 2.3 Constraints
 
 - Do NOT implement any code for the feature.
-- The Architect MUST revise the spec before work can resume.
+- PM mode MUST revise the spec before work can resume.
 
 ---
 
@@ -38,15 +38,15 @@ The Builder's escalation skill for halting work on a feature that cannot be impl
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Builder invocation
+#### Scenario: Role gate rejects non-Engineer invocation
 
-    Given an Architect agent session
+    Given a PM agent session
     When the agent invokes /pl-infeasible
     Then the command responds with a redirect message
 
 #### Scenario: INFEASIBLE entry recorded in companion file
 
-    Given the Builder cannot implement feature_a as specified
+    Given Engineer mode cannot implement feature_a as specified
     When /pl-infeasible is invoked for feature_a
     Then features/feature_a.impl.md contains an [INFEASIBLE] entry
     And the entry includes detailed rationale
@@ -61,7 +61,7 @@ The Builder's escalation skill for halting work on a feature that cannot be impl
 
     Given the INFEASIBLE entry is committed
     When status.sh runs
-    Then the Critic report shows a CRITICAL-priority Architect action item for feature_a
+    Then the Critic report shows a CRITICAL-priority PM action item for feature_a
 
 ### QA Scenarios
 

@@ -17,7 +17,7 @@ This is a Claude skill/command feature. The implementation consists of:
 | `read_design_anchors` | Parses `design_*.md` files to extract token tables |
 | `map_color_to_token` | Reverse-maps hex color to anchor token name |
 | `generate_token_map` | Maps observed Figma values to project tokens |
-| `generate_brief_json` | Writes structured `brief.json` for Builder consumption |
+| `generate_brief_json` | Writes structured `brief.json` for Engineer consumption |
 | `is_figma_mcp_available` | Detects Figma MCP tools in session |
 | `generate_figma_no_mcp_token_map` | Placeholder token map when MCP unavailable |
 | `generate_figma_mcp_token_map` | Full token map from MCP metadata |

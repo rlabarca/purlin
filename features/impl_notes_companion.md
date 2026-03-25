@@ -37,7 +37,7 @@ The companion file contains the extracted implementation notes content. The file
 ### 2.5 Status Reset Exemption
 - Edits to `<name>.impl.md` or `<name>.discoveries.md` do NOT reset the parent feature's lifecycle status to TODO.
 - Only edits to the feature spec file (`<name>.md`) trigger status resets.
-- This ensures Builder decisions, tribal knowledge updates, and QA discovery recording do not invalidate completed features.
+- This ensures Engineer decisions, tribal knowledge updates, and QA discovery recording do not invalidate completed features.
 
 ### 2.6 Companion File Resolution in Critic
 - The Critic's Implementation Gate MUST resolve companion file content when evaluating builder decisions, traceability overrides, and section completeness.

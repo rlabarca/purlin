@@ -15,11 +15,11 @@ This feature defines the `purlin.doc_consistency_check` release step: an audit t
 
 ### 2.1 Documentation Scope
 
-The Architect checks README.md and any additional documentation files in a `docs/` directory (or equivalent). Feature specification files (`features/*.md`) are the ground truth for expected behavior; documentation must agree with them.
+PM mode checks README.md and any additional documentation files in a `docs/` directory (or equivalent). Feature specification files (`features/*.md`) are the ground truth for expected behavior; documentation must agree with them.
 
 ### 2.2 Consistency Checks
 
-For each documentation file in scope, the Architect verifies:
+For each documentation file in scope, PM mode verifies:
 
 1. **No outdated feature descriptions.** Prose descriptions of features must reflect current spec behavior, not prior iterations.
 2. **No references to removed functionality.** Any documentation that describes a feature, command, or behavior that no longer exists in the spec must be updated or removed.
@@ -28,15 +28,15 @@ For each documentation file in scope, the Architect verifies:
 
 ### 2.3 Remediation
 
-The Architect corrects all inconsistencies found within existing sections. Each correction is committed with message `docs(<scope>): <description>`. If corrections are extensive, they may be batched into a single commit.
+PM mode corrects all inconsistencies found within existing sections. Each correction is committed with message `docs(<scope>): <description>`. If corrections are extensive, they may be batched into a single commit.
 
 ### 2.4 No Unsolicited Major Sections
 
-The Architect MUST NOT add a new top-level section (`##` heading) to README.md without explicit user confirmation of the section name and placement. This applies even when a coverage gap clearly indicates missing content. Refinements within existing sections (updating prose, fixing lists, correcting examples) do not require confirmation.
+PM mode MUST NOT add a new top-level section (`##` heading) to README.md without explicit user confirmation of the section name and placement. This applies even when a coverage gap clearly indicates missing content. Refinements within existing sections (updating prose, fixing lists, correcting examples) do not require confirmation.
 
 ### 2.5 Coverage Gap Table
 
-After the consistency pass, the Architect compares the current feature set (`features/*.md`) against the documented sections in README.md. For each feature area, behavior, or concept present in the spec but absent or significantly under-represented in the README, the Architect produces a coverage gap table and presents it to the user before writing anything.
+After the consistency pass, PM mode compares the current feature set (`features/*.md`) against the documented sections in README.md. For each feature area, behavior, or concept present in the spec but absent or significantly under-represented in the README, PM mode produces a coverage gap table and presents it to the user before writing anything.
 
 The table format is:
 
@@ -44,7 +44,7 @@ The table format is:
 |---|---|---|
 | `<name>` | One-line description of what is missing | Add to existing section `"<section>"` / New section `"<proposed name>"` |
 
-The Architect then asks: *"The items above are in the spec but not covered in README.md. Would you like to include any? Indicate which rows and I will add content to the suggested section, or to a new section you specify."*
+PM mode then asks: *"The items above are in the spec but not covered in README.md. Would you like to include any? Indicate which rows and I will add content to the suggested section, or to a new section you specify."*
 
 If the user approves additions:
 - For content going into an **existing section**: add within that section only, without restructuring.
@@ -82,34 +82,34 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: Documentation is fully consistent (auto-test-only)
 Given README.md and all documentation files accurately reflect the current feature set and file layout,
-When the Architect executes the `purlin.doc_consistency_check` step,
-Then the Architect reports "Documentation check: CLEAN — no inconsistencies found."
+When PM mode executes the `purlin.doc_consistency_check` step,
+Then PM mode reports "Documentation check: CLEAN — no inconsistencies found."
 And no commits are made.
 
 #### Scenario: Stale feature description corrected (auto-test-only)
 Given README.md describes a feature behavior that was changed in the current release cycle,
-When the Architect executes the `purlin.doc_consistency_check` step,
-Then the Architect updates the description to match the current spec,
+When PM mode executes the `purlin.doc_consistency_check` step,
+Then PM mode updates the description to match the current spec,
 And commits with message `docs(readme): <description of change>`.
 
 #### Scenario: Reference to removed functionality corrected (auto-test-only)
 Given README.md references a command, config option, or behavior that no longer exists in the spec,
-When the Architect executes the `purlin.doc_consistency_check` step,
-Then the Architect removes or replaces the stale reference,
+When PM mode executes the `purlin.doc_consistency_check` step,
+Then PM mode removes or replaces the stale reference,
 And commits the correction.
 
 #### Scenario: Stale file path corrected (auto-test-only)
 Given documentation references a directory or file path that has been renamed or relocated,
-When the Architect executes the `purlin.doc_consistency_check` step,
-Then the Architect updates the path to its current correct location,
+When PM mode executes the `purlin.doc_consistency_check` step,
+Then PM mode updates the path to its current correct location,
 And commits with message `docs(<scope>): update stale path reference`.
 
 ### QA Scenarios
 
 #### @manual Scenario: Coverage gaps exist and user approves some additions
 Given the feature set contains areas not represented in README.md,
-When the Architect completes the consistency pass,
-Then the Architect presents a coverage gap table listing each undocumented area with a gap summary and suggested action,
+When PM mode completes the consistency pass,
+Then PM mode presents a coverage gap table listing each undocumented area with a gap summary and suggested action,
 And asks the user which items to include,
 And for each approved item targeting an existing section, adds content within that section only,
 And for each approved item requiring a new section, confirms the section name and placement before creating it,
@@ -117,14 +117,14 @@ And commits the additions with message `docs(readme): add coverage for <scope>`.
 
 #### @manual Scenario: Coverage gaps exist and user declines all additions
 Given the feature set contains areas not represented in README.md,
-When the Architect presents the coverage gap table and the user declines all suggestions,
-Then the Architect makes no further changes to README.md,
+When PM mode presents the coverage gap table and the user declines all suggestions,
+Then PM mode makes no further changes to README.md,
 And reports "Documentation check: CLEAN — consistency pass complete, no coverage additions requested."
 
 #### @manual Scenario: New major section added without user confirmation (prohibited)
 Given the consistency pass reveals a documentation gap that seems to warrant a new section,
-When the Architect has not received explicit user confirmation for the section name and placement,
-Then the Architect MUST NOT create the new `##` heading,
+When PM mode has not received explicit user confirmation for the section name and placement,
+Then PM mode MUST NOT create the new `##` heading,
 And MUST present the gap in the coverage table and await user direction.
 ## Regression Guidance
 - Coverage gap table generated and presented before any writes

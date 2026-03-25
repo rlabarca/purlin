@@ -53,7 +53,7 @@ The primary QA skill that executes interactive feature verification. Operates in
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-verify
     Then the command responds with a redirect message
 

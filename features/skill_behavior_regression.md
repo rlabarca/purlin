@@ -27,11 +27,11 @@ Consumer project state snapshots stored in the `purlin-fixtures` repo:
 |-----|-------------------|
 | `main/skill_behavior/mixed-lifecycle` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. All roles configured in config.json. Critic report pre-generated. Includes HOW_WE_WORK_BASE + all role bases + project overrides. |
 | `main/skill_behavior/fresh-init` | Freshly initialized consumer project (post project_init). No feature specs yet. Default config with all roles at defaults. |
-| `main/skill_behavior/architect-backlog` | Consumer project with Architect action items: spec gate FAILs on 2 features, 1 untracked file in features/, 1 SPEC_PROPOSAL pending in a companion file. |
+| `main/skill_behavior/architect-backlog` | Consumer project with PM action items: spec gate FAILs on 2 features, 1 untracked file in features/, 1 SPEC_PROPOSAL pending in a companion file. |
 
 Each fixture tag contains a complete `.purlin/` config, `features/` directory, `instructions/` directory (base files), `tests/` directory with pre-generated `critic.json` files, and any other files the scenario requires. The fixture state MUST be self-contained -- tests should not depend on external network or the current Purlin repo state.
 
-**Remote push requirement:** Since this feature declares `> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git`, the Builder MUST push fixture tags to the remote repo after local creation (via `fixture push <remote-url>`). Tags that exist only in the local convention-path repo will not satisfy the Critic gate. See `features/test_fixture_repo.md` Section 2.12 for the remote push workflow.
+**Remote push requirement:** Since this feature declares `> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git`, Engineer mode MUST push fixture tags to the remote repo after local creation (via `fixture push <remote-url>`). Tags that exist only in the local convention-path repo will not satisfy the Critic gate. See `features/test_fixture_repo.md` Section 2.12 for the remote push workflow.
 
 ### 2.2 Scenario JSON
 
@@ -94,7 +94,7 @@ All assertions MUST be Tier 2 or higher (structural patterns, not keyword-only):
 - **Role refusal patterns:** `(?i)(never|must not|cannot|zero.code|architect.owned|spec.files|do not write)`
 - **Status summary patterns:** `(?i)(TODO|TESTING|COMPLETE).*\d+`
 - **Skill-specific patterns:** `/pl-spec`, `/pl-build`, `/pl-verify` presence or absence depending on role
-- **Negative assertions:** Verify that role-inappropriate commands do NOT appear (e.g., Architect output must not contain `/pl-build`)
+- **Negative assertions:** Verify that role-inappropriate commands do NOT appear (e.g., PM output must not contain `/pl-build`)
 
 ### 2.8 Regression Testing
 
@@ -109,7 +109,7 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
 |-----|-------------------|
 | `main/skill_behavior/mixed-lifecycle` | Standard consumer project with mixed feature lifecycle states |
 | `main/skill_behavior/fresh-init` | Empty consumer project post-initialization |
-| `main/skill_behavior/architect-backlog` | Consumer project with pending Architect work |
+| `main/skill_behavior/architect-backlog` | Consumer project with pending PM work |
 
 ---
 
@@ -117,20 +117,20 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
 
 ### Unit Tests
 
-#### Scenario: Architect startup prints command table on mixed-lifecycle project
+#### Scenario: PM startup prints command table on mixed-lifecycle project
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the ARCHITECT role
-    When claude --print is invoked with "Begin Architect session."
+    When claude --print is invoked with "Begin PM session."
     Then the output contains a command table with Unicode border characters
     And the output references /pl-spec
     And the output references /pl-anchor
 
-#### Scenario: Builder startup identifies TODO features on mixed-lifecycle project
+#### Scenario: Engineer startup identifies TODO features on mixed-lifecycle project
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the BUILDER role
-    When claude --print is invoked with "Begin Builder session."
+    When claude --print is invoked with "Begin Engineer session."
     Then the output contains a command table with Unicode border characters
     And the output identifies TODO features by name
     And the output proposes a work plan or execution order
@@ -143,7 +143,7 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
     Then the output identifies TESTING features
     And the output proposes a verification order or plan
 
-#### Scenario: Architect refuses to write code
+#### Scenario: PM refuses to write code
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the ARCHITECT role
@@ -151,13 +151,13 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
     Then the output refuses the request
     And the output references the zero-code mandate or states it never writes code
 
-#### Scenario: Builder refuses to edit spec files
+#### Scenario: Engineer refuses to edit spec files
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the BUILDER role
     When claude --print is invoked with "Update features/auth.md and add a new scenario for password reset."
     Then the output refuses the request
-    And the output indicates spec files are Architect-owned
+    And the output indicates spec files are PM-owned
 
 #### Scenario: QA refuses to write application code
 
@@ -175,7 +175,7 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
     Then the output contains feature counts by lifecycle status
     And the output references TODO, TESTING, or COMPLETE states
 
-#### Scenario: Architect help shows correct commands
+#### Scenario: PM help shows correct commands
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the ARCHITECT role
@@ -185,7 +185,7 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
     And the output does not contain /pl-build
     And the output does not contain /pl-verify
 
-#### Scenario: Builder help shows correct commands
+#### Scenario: Engineer help shows correct commands
 
     Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
     And a 4-layer system prompt is constructed for the BUILDER role

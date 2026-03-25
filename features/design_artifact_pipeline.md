@@ -55,7 +55,7 @@ Figma annotations are an optional behavioral input source that accelerates the d
 
 ### Design Brief Cache
 
-During ingestion, the PM extracts a compact design brief from Figma and stores it locally at `features/design/<feature_stem>/brief.json`. This provides the Builder with structured, machine-readable design data without requiring Figma MCP access during implementation.
+During ingestion, the PM extracts a compact design brief from Figma and stores it locally at `features/design/<feature_stem>/brief.json`. This provides Engineer mode with structured, machine-readable design data without requiring Figma MCP access during implementation.
 
 **Schema:**
 ```json
@@ -81,7 +81,7 @@ During ingestion, the PM extracts a compact design brief from Figma and stores i
 
 *   `brief.json` is generated once by the PM during ingestion (when the PM is already reading Figma via MCP).
 *   `figma_last_modified` is embedded for staleness detection.
-*   The Builder reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
+*   Engineer mode reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
 *   QA reads Figma MCP directly during verification for the freshest data. `brief.json` is a QA fallback if MCP is unavailable.
 
 ### Code Connect Enhancement (Progressive)
@@ -89,7 +89,7 @@ During ingestion, the PM extracts a compact design brief from Figma and stores i
 Code Connect is an optional enhancement available when Figma Org/Enterprise plans have published Code Connect mappings for their component libraries. When present, Figma MCP responses include component code references alongside existing design data. These references are captured in `brief.json` during ingestion under a `code_connect` key.
 
 *   Code Connect data does NOT replace the Token Map -- both coexist. Token Map bridges design-system tokens (colors, spacing, typography). Code Connect bridges components (which source component to use and how to configure its props).
-*   Code Connect mapping files (`.figma.tsx`, `.figma.swift`, etc.) are Builder-owned implementation artifacts, not spec artifacts.
+*   Code Connect mapping files (`.figma.tsx`, `.figma.swift`, etc.) are Engineer-owned implementation artifacts, not spec artifacts.
 *   Publishing Code Connect to Figma is a CI/CD concern outside Purlin's scope. We capture whatever data the MCP returns; we do not manage the publishing pipeline.
 *   The `code_connect` key in `brief.json` is OPTIONAL -- present only when Code Connect data exists in the MCP response.
 
@@ -110,7 +110,7 @@ Code Connect is an optional enhancement available when Figma Org/Enterprise plan
 
 *   Every referenced artifact MUST have a corresponding `- **Token Map:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the Token Map and checklists are the working documents that agents use.
 *   Unprocessed artifacts (reference exists but no Token Map) are flagged as HIGH-priority PM action items by the Critic.
-*   The Builder reads Figma MCP directly for layout and structure details. The Token Map provides the token bridge; visual acceptance checklists provide measurable criteria. Prose descriptions are NOT used.
+*   Engineer mode reads Figma MCP directly for layout and structure details. The Token Map provides the token bridge; visual acceptance checklists provide measurable criteria. Prose descriptions are NOT used.
 
 ### Design Anchor Declaration
 
@@ -155,7 +155,7 @@ Feature specs may include `> Figma Status: <status>` metadata in the blockquote 
 
 *   **Values:** `Design`, `Ready for Dev`, `Completed` (or omitted entirely for features with no Figma integration).
 *   **Set by:** PM during `/pl-design-ingest` (read from Figma Dev Mode via MCP) or manually when MCP is unavailable.
-*   **Advisory gate:** The Critic generates a LOW-priority PM action item when a feature is in Builder TODO state with `Figma Status: Design`. This is advisory, not blocking -- the human decides whether to wait for design completion.
+*   **Advisory gate:** The Critic generates a LOW-priority PM action item when a feature is in Engineer TODO state with `Figma Status: Design`. This is advisory, not blocking -- the human decides whether to wait for design completion.
 *   **Point-in-time snapshot:** The status is not live-synced. The PM updates it during re-ingestion. This is consistent with "spec is the source of truth."
 
 ### Staleness Detection
@@ -183,9 +183,9 @@ The PM may optionally attach feature spec URLs to Figma nodes via the Dev Resour
 ### Figma MCP Role Access
 
 *   **PM:** Full MCP access (read and write). Reads Figma for ingestion; writes to Figma during design iteration with human approval.
-*   **Builder:** Read-only MCP access. Reads Figma for layout/structure details when `brief.json` is insufficient. Primary design data source is `brief.json` + Token Map (local, no network).
+*   **Engineer:** Read-only MCP access. Reads Figma for layout/structure details when `brief.json` is insufficient. Primary design data source is `brief.json` + Token Map (local, no network).
 *   **QA:** Read-only MCP access. Reads Figma directly during verification for triangulated comparison (Figma vs Spec vs App). Fresh MCP data is preferred over `brief.json` for verification accuracy.
-*   **Architect:** No Figma MCP access. Does not evaluate visual design decisions.
+*   **PM:** No Figma MCP access. Does not evaluate visual design decisions.
 
 ### Figma MCP Auto-Setup
 
@@ -228,8 +228,8 @@ QA verification uses three independent sources to detect discrepancies:
 |-------|------|-----|---------|--------|
 | Match | Match | Match | PASS | All three agree |
 | Changed | Stale | Match old | STALE | Figma updated but spec not re-ingested. PM action item. |
-| Match | Match | Differs | BUG | Code doesn't match spec. Builder action item. |
-| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Builder action item. |
+| Match | Match | Differs | BUG | Code doesn't match spec. Engineer action item. |
+| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Engineer action item. |
 | Changed | Stale | Match Figma | SPEC_DRIFT | Code matches Figma but not spec. PM action item. |
 
 **Token verification:** For each Token Map entry, QA compares the Figma design variable value, the spec's project token mapping, and the app's computed CSS property value. Drift between any pair is flagged.
@@ -239,10 +239,10 @@ QA verification uses three independent sources to detect discrepancies:
 ### Figma Write Policy
 
 *   Only the PM agent MAY use Figma MCP write capabilities (generate designs, modify components, push layouts).
-*   Builder and QA MUST treat Figma as read-only via MCP.
-*   Architect does not access Figma MCP.
+*   Engineer and QA MUST treat Figma as read-only via MCP.
+*   PM does not access Figma MCP.
 *   The PM writes to Figma during design iteration with the human; the human sees all MCP tool calls and can reject them.
-*   The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
+*   Engineer mode MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or PM.
 
 ### Live Web Page Processing
 
@@ -254,7 +254,7 @@ QA verification uses three independent sources to detect discrepancies:
 
 These constraints are behavioral (not grepable by the Critic) but are formalized here for documentation clarity and cross-reference:
 
-*   **Builder MUST NOT write to Figma.** Figma write access is PM-only. Builder and QA read Figma for reference; only the PM writes to it via MCP.
+*   **Engineer MUST NOT write to Figma.** Figma write access is PM-only. Engineer and QA read Figma for reference; only the PM writes to it via MCP.
 *   **Prose descriptions FORBIDDEN in Visual Specification sections.** Visual specs use per-screen checklists with design anchor references, not paragraph-form descriptions. Prose belongs in the Overview or Requirements sections.
 *   **Separate top-level design directories FORBIDDEN.** All design artifacts (images, briefs, token maps) live under `features/design/<feature_stem>/`. No top-level `design/`, `assets/`, or `images/` directories.
 *   **Raw hex colors FORBIDDEN in Token Map values.** Token Map entries MUST use `var(--token-name)` references, not literal hex values. The design anchor's token table is the source of truth for color values.

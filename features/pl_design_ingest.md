@@ -16,7 +16,7 @@ The `/pl-design-ingest` command provides the PM with a structured workflow for i
 
 ### 2.1 Role Guard
 - The command is PM-only. The PM is the sole consumer of design ingestion.
-- All other agents (Architect, Builder, QA) MUST be rejected with: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead."
+- All other agents (PM, Engineer, QA) MUST be rejected with: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead."
 
 ### 2.2 Input Modes
 The command accepts one of the following inputs:
@@ -26,7 +26,7 @@ The command accepts one of the following inputs:
 - **(d) Re-process flag** for an existing artifact that has been updated. The command re-reads the artifact and regenerates the description.
 
 ### 2.3 Target Determination
-- The Architect specifies which feature file and which screen within it the artifact targets.
+- PM mode specifies which feature file and which screen within it the artifact targets.
 - If the target feature has no `## Visual Specification` section, the command creates one.
 - If the target screen subsection (`### Screen: <name>`) does not exist, the command creates it.
 
@@ -53,7 +53,7 @@ After reading the artifact, the command:
 4. For live web pages: additionally maps observable CSS properties and component structure against the anchor's token system.
 
 ### 2.5.1 Design Brief Generation (Figma MCP Only)
-When processing a Figma URL with MCP available, the command MUST also generate a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides the Builder with structured design data without requiring Figma MCP access during implementation.
+When processing a Figma URL with MCP available, the command MUST also generate a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data without requiring Figma MCP access during implementation.
 
 The brief includes:
 - `figma_url`: The source Figma URL.
@@ -66,7 +66,7 @@ The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) o
 ### 2.5.2 Code Connect Data Extraction (Figma MCP Only)
 When the MCP response includes Code Connect data (component code references, property mappings), the PM includes this data in `brief.json` under a `code_connect` key. Each entry maps a component name to its source file path, property configuration, and Figma node ID.
 
-- Report: "Code Connect data found for N components. Included in brief.json for Builder reference."
+- Report: "Code Connect data found for N components. Included in brief.json for Engineer reference."
 - If no Code Connect data is present in the MCP response, the `code_connect` key is omitted from `brief.json` (no error, no warning).
 - Code Connect data supplements the Token Map -- it does not replace it.
 

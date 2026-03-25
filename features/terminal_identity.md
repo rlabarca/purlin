@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent role name, with the Builder showing additional state during continuous-mode phase execution. Both are cleaned up on normal exit and Ctrl+C.
+When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent role name, with Engineer mode showing additional state during continuous-mode phase execution. Both are cleaned up on normal exit and Ctrl+C.
 
 ---
 
@@ -45,30 +45,30 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 ### 2.3 Identity Cleanup
 
 - An EXIT trap calls `clear_agent_identity` to handle normal exit and signals.
-- The Builder's INT trap (`graceful_stop`) clears identity before resetting the trap.
-- The Builder's fallback EXIT trap defensively clears identity.
+- Engineer mode's INT trap (`graceful_stop`) clears identity before resetting the trap.
+- Engineer mode's fallback EXIT trap defensively clears identity.
 - All clear functions are idempotent (multiple calls are safe).
 - Cleanup calls are guarded: `type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity` so that cleanup is safe when the helper was not sourced.
 
-### 2.4 Builder Phase Transitions (Continuous Mode)
+### 2.4 Engineer Phase Transitions (Continuous Mode)
 
 Both title and badge update together via `set_agent_identity` at each phase transition:
 
 | State | Title / Badge Text |
 |-------|-----------|
-| Startup / non-continuous | `Builder` |
-| Bootstrap phase | `Builder: Bootstrap` |
-| Sequential phase execution | `Builder: Phase N/M` |
-| Parallel group execution | `Builder: Phases 2,3,5` |
-| Evaluator running | `Builder: Evaluating` |
-| Between phases | `Builder` |
+| Startup / non-continuous | `Engineer` |
+| Bootstrap phase | `Engineer: Bootstrap` |
+| Sequential phase execution | `Engineer: Phase N/M` |
+| Parallel group execution | `Engineer: Phases 2,3,5` |
+| Evaluator running | `Engineer: Evaluating` |
+| Between phases | `Engineer` |
 | Exit / Ctrl+C | (cleared) |
 
 ### 2.5 Generated Launcher Integration (`tools/init.sh`)
 
 - The `generate_launcher()` function emits code that sources the helper script, sets identity on start, and includes an augmented EXIT trap with `clear_agent_identity`.
 - Consumer projects receive terminal identity support on the next `pl-init.sh` refresh cycle.
-- The role display name is computed from the role parameter: `architect` -> `Architect`, `qa` -> `QA`, `pm` -> `PM`, `builder` -> `Builder`.
+- The role display name is computed from the role parameter: `architect` -> `PM`, `qa` -> `QA`, `pm` -> `PM`, `builder` -> `Engineer`.
 
 ### 2.6 Graceful Degradation
 
@@ -87,15 +87,15 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given the helper script is sourced
     And TERM_PROGRAM is set to any value
-    When set_term_title is called with "Architect"
-    Then the output to /dev/tty contains the escape sequence "\033]0;Architect\007"
+    When set_term_title is called with "PM"
+    Then the output to /dev/tty contains the escape sequence "\033]0;PM\007"
 
 #### Scenario: Badge escape sequence emitted for iTerm2
 
     Given the helper script is sourced
     And TERM_PROGRAM is set to "iTerm.app"
-    When set_iterm_badge is called with "Builder"
-    Then the output to /dev/tty contains the escape sequence "\e]1337;SetBadgeFormat=<base64 of 'Builder'>\a"
+    When set_iterm_badge is called with "Engineer"
+    Then the output to /dev/tty contains the escape sequence "\e]1337;SetBadgeFormat=<base64 of 'Engineer'>\a"
 
 #### Scenario: Badge is no-op when not iTerm2
 
@@ -114,14 +114,14 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 #### Scenario: Base64 encoding round-trips correctly
 
     Given the helper script is sourced
-    When "Builder: Phase 2/5" is base64-encoded using the helper's method
+    When "Engineer: Phase 2/5" is base64-encoded using the helper's method
     Then decoding the result produces the original string
 
 #### Scenario: set_agent_identity calls both title and badge
 
     Given the helper script is sourced
     And TERM_PROGRAM is set to "iTerm.app"
-    When set_agent_identity is called with "Architect"
+    When set_agent_identity is called with "PM"
     Then both the title escape sequence and the badge escape sequence are emitted
 
 #### Scenario: clear_agent_identity calls both clear functions
@@ -135,7 +135,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given a consumer project has been initialized with pl-init.sh
     When the generated launcher for "architect" is inspected
-    Then it contains a call to set_agent_identity with "Architect"
+    Then it contains a call to set_agent_identity with "PM"
 
 #### Scenario: Generated launcher EXIT trap contains clear_agent_identity
 
@@ -147,7 +147,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given a consumer project has been initialized with pl-init.sh
     When launchers are generated for each role
-    Then architect uses "Architect", builder uses "Builder", qa uses "QA", pm uses "PM"
+    Then architect uses "PM", builder uses "Engineer", qa uses "QA", pm uses "PM"
 
 ### QA Scenarios
 
@@ -155,8 +155,8 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given iTerm2 is the active terminal
     When the user runs ./pl-run-architect.sh and the agent session starts
-    Then the terminal tab title shows "Architect"
-    And the iTerm2 badge overlay shows "Architect"
+    Then the terminal tab title shows "PM"
+    And the iTerm2 badge overlay shows "PM"
     When the agent session exits normally
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -169,15 +169,15 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
 
-#### @manual Scenario: Builder title and badge update during continuous mode phase transitions
+#### @manual Scenario: Engineer title and badge update during continuous mode phase transitions
 
     Given iTerm2 is the active terminal
     And a delivery plan exists with at least 3 phases
     When the user runs ./pl-run-builder.sh --continuous
-    Then the title and badge show "Builder" at startup
-    And the title and badge show "Builder: Bootstrap" during the bootstrap phase
-    And the title and badge update to "Builder: Phase N/M" during sequential phase execution
-    And the title and badge show "Builder: Evaluating" when the evaluator runs
+    Then the title and badge show "Engineer" at startup
+    And the title and badge show "Engineer: Bootstrap" during the bootstrap phase
+    And the title and badge update to "Engineer: Phase N/M" during sequential phase execution
+    And the title and badge show "Engineer: Evaluating" when the evaluator runs
     And the title and badge are cleared on exit
 
 ## Regression Guidance

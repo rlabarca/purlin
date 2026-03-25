@@ -18,8 +18,8 @@ Claude Code's remote control feature allows naming sessions visible in claude.ai
 
 - Format: `<ProjectName> | <Role>`
 - Role display name mapping:
-  - `architect` -> `Architect`
-  - `builder` -> `Builder`
+  - `architect` -> `PM`
+  - `builder` -> `Engineer`
   - `qa` -> `QA`
   - `pm` -> `PM`
 - `ProjectName` is read from the `project_name` config key (already used by the CDD dashboard in `serve.py`). Falls back to the project directory basename when the key is absent or empty.
@@ -83,15 +83,15 @@ Claude Code's remote control feature allows naming sessions visible in claude.ai
 
 #### Scenario: Resume Suggests Rename When Role Changes
 
-    Given a Builder session is active (system prompt contains Builder role markers)
+    Given an Engineer session is active (system prompt contains Engineer role markers)
     When the user invokes /pl-resume architect (explicit role argument)
     Then the recovery summary includes a line:
-      Session name:   run /rename <ProjectName> | Architect to update
+      Session name:   run /rename <ProjectName> | PM to update
     And <ProjectName> is resolved from config with basename fallback
 
 #### Scenario: Resume Omits Rename When Role Unchanged
 
-    Given a Builder session is active (system prompt contains Builder role markers)
+    Given an Engineer session is active (system prompt contains Engineer role markers)
     When the user invokes /pl-resume builder (same role as system prompt)
     Then the recovery summary does NOT include a "Session name:" line
 

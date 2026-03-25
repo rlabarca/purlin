@@ -9,15 +9,15 @@
 
 ## 1. Overview
 
-The `/pl-design-audit` command provides the PM and Architect with a comprehensive audit of all design artifacts and visual specifications across the project. It validates reference integrity, detects staleness, checks anchor consistency, and produces a summary report. This command complements the Critic's automated visual spec checks with a deeper, on-demand analysis that the Architect can run during design reviews or before releases.
+The `/pl-design-audit` command provides the PM and PM with a comprehensive audit of all design artifacts and visual specifications across the project. It validates reference integrity, detects staleness, checks anchor consistency, and produces a summary report. This command complements the Critic's automated visual spec checks with a deeper, on-demand analysis that PM mode can run during design reviews or before releases.
 
 ---
 
 ## 2. Requirements
 
 ### 2.1 Role Guard
-- The command is shared between PM and Architect. The PM is the primary consumer; the Architect retains access for release checks and gap analysis.
-- Builder and QA agents MUST be rejected with: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-audit instead."
+- The command is shared between PM and PM. The PM is the primary consumer; PM mode retains access for release checks and gap analysis.
+- Engineer and QA agents MUST be rejected with: "This is a PM command. Ask your PM or PM agent to run /pl-design-audit instead."
 
 ### 2.2 Inventory Scan
 - Scan all `features/*.md` files for `## Visual Specification` sections.
@@ -44,7 +44,7 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 ### 2.5.1 Brief Staleness Detection
 - For features with a Figma reference, check for `brief.json` at `features/design/<feature_stem>/brief.json`.
 - If `brief.json` exists, compare `figma_last_modified` in the brief against the spec's `- **Processed:**` date. If the brief is newer, flag the spec as STALE (the Figma design has been updated since last ingestion).
-- If `brief.json` is missing and the screen has a Figma reference, report as WARNING: "No brief.json found -- Builder has no local design data cache."
+- If `brief.json` is missing and the screen has a Figma reference, report as WARNING: "No brief.json found -- Engineer has no local design data cache."
 
 ### 2.6 Design-Spec Conflict Detection (MCP)
 - When Figma MCP tools are available, extract design variable names and values from the Figma design.
@@ -98,7 +98,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 
     Given three feature files exist with Visual Specification sections
     And one feature file exists without a Visual Specification section
-    When the Architect runs /pl-design-audit
+    When PM mode runs /pl-design-audit
     Then the audit scans all four feature files
     And the report includes entries for the three features with visual specs
     And the feature without a visual spec is not listed
@@ -107,7 +107,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 
     Given a feature has a Visual Specification screen referencing "features/design/my_feature/mockup.png"
     And the file does not exist on disk
-    When the Architect runs /pl-design-audit
+    When PM mode runs /pl-design-audit
     Then the screen is reported with Reference Status MISSING
     And the overall audit reports CRITICAL issues
 
@@ -115,7 +115,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 
     Given a feature has a Visual Specification screen with Processed date 2025-01-15
     And the referenced local artifact was modified on 2025-02-01
-    When the Architect runs /pl-design-audit
+    When PM mode runs /pl-design-audit
     Then the screen is reported as STALE
     And the audit offers to re-ingest the artifact
 
@@ -186,7 +186,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 #### Scenario: Clean Audit Report
 
     Given all features with Visual Specifications have valid references, current descriptions, and no literal values
-    When the Architect runs /pl-design-audit
+    When PM mode runs /pl-design-audit
     Then the audit reports "All design artifacts clean"
     And no CRITICAL or WARNING items are listed
 

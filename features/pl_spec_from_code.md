@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-When Purlin is installed into a project with an existing codebase, there is no systematic way to reverse-engineer the codebase into Purlin's feature spec system. The `/pl-spec-from-code` command automates this onboarding by scanning an existing codebase, categorizing what it finds, interacting with the user to validate the taxonomy, and generating properly-structured feature files (with draft Gherkin scenarios), anchor nodes, and companion files. The command is Architect-only and uses a 5-phase, context-managed approach with durable state artifacts for cross-session continuity.
+When Purlin is installed into a project with an existing codebase, there is no systematic way to reverse-engineer the codebase into Purlin's feature spec system. The `/pl-spec-from-code` command automates this onboarding by scanning an existing codebase, categorizing what it finds, interacting with the user to validate the taxonomy, and generating properly-structured feature files (with draft Gherkin scenarios), anchor nodes, and companion files. The command is PM-only and uses a 5-phase, context-managed approach with durable state artifacts for cross-session continuity.
 
 ---
 
@@ -17,8 +17,8 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Architect role.
-- Non-Architect agents MUST receive a redirect message: "This is an Architect command. Ask your Architect agent to run `/pl-spec-from-code`."
+- The command MUST only execute when invoked by PM mode role.
+- Non-PM agents MUST receive a redirect message: "This is a PM command. Ask your PM agent to run `/pl-spec-from-code`."
 
 ### 2.2 State Management and Cross-Session Resume
 
@@ -77,7 +77,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 - The command MUST print recommended next steps to the user:
   - "Run `/pl-spec-code-audit` to validate the generated specs against the actual code and identify any gaps the import missed."
   - "Review generated features in dependency order (anchor nodes first) and refine the draft scenarios."
-  - "Once specs are refined, have the Builder run `/pl-build` to begin implementation verification."
+  - "Once specs are refined, have Engineer mode run `/pl-build` to begin implementation verification."
 
 ### 2.8 Context Management
 
@@ -96,16 +96,16 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-spec-from-code
-    Then the command responds with "This is an Architect command. Ask your Architect agent to run /pl-spec-from-code."
+    Then the command responds with "This is a PM command. Ask your PM agent to run /pl-spec-from-code."
     And no state file is created
 
 #### Scenario: Phase 0 creates state file and prompts for directories
 
-    Given an Architect agent session with no existing sfc_state.json
+    Given a PM agent session with no existing sfc_state.json
     When the agent invokes /pl-spec-from-code
     Then the command creates .purlin/cache/sfc_state.json with phase 0 and status in_progress
     And the command prompts the user to specify source directories and exclusions
@@ -193,7 +193,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
     Then the command prints three recommended next steps
     And the first recommendation mentions /pl-spec-code-audit
     And the second recommendation mentions reviewing features in dependency order
-    And the third recommendation mentions having the Builder run /pl-build
+    And the third recommendation mentions having Engineer mode run /pl-build
 
 #### Scenario: Cross-session resume from interrupted Phase 3
 
@@ -224,7 +224,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
     Given a consumer project with 10+ source files across multiple directories
     And Purlin is freshly installed (features/ directory is empty or contains only framework features)
-    When the Architect runs /pl-spec-from-code
+    When PM mode runs /pl-spec-from-code
     Then Phase 0 prompts for directory selection and the state file is created
     And Phase 1 produces an inventory with directory map, tech stack, and feature candidates
     And Phase 2 presents categories interactively and allows renaming and reorganization
@@ -237,9 +237,9 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 #### Scenario: Mid-Phase-3 session restart and resume
 
-    Given the Architect is partway through Phase 3 (some categories complete, some not)
+    Given PM mode is partway through Phase 3 (some categories complete, some not)
     And .purlin/cache/sfc_state.json records phase 3 with some completed categories
-    When a new agent session starts and the Architect runs /pl-spec-from-code
+    When a new agent session starts and PM mode runs /pl-spec-from-code
     Then the command detects the existing state file
     And the command resumes from the first incomplete category
     And previously generated features are not regenerated

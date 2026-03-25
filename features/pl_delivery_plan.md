@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The Builder's phased delivery skill that assesses implementation scope and proposes splitting work into numbered phases for large or complex feature sets. Provides scope assessment heuristics, per-phase sizing caps, dependency-aware phase ordering with execution group detection, and a canonical delivery plan format. Supports both plan creation and cross-session plan review/adjustment.
+Engineer mode's phased delivery skill that assesses implementation scope and proposes splitting work into numbered phases for large or complex feature sets. Provides scope assessment heuristics, per-phase sizing caps, dependency-aware phase ordering with execution group detection, and a canonical delivery plan format. Supports both plan creation and cross-session plan review/adjustment.
 
 ---
 
@@ -16,8 +16,8 @@ The Builder's phased delivery skill that assesses implementation scope and propo
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Builder role.
-- Non-Builder agents MUST receive a redirect message.
+- The command MUST only execute when invoked by Engineer mode role.
+- Non-Engineer agents MUST receive a redirect message.
 
 ### 2.2 Existing Plan Review
 
@@ -31,10 +31,10 @@ The Builder's phased delivery skill that assesses implementation scope and propo
 
 ### 2.4 Phase Sizing (Context-Tier-Aware)
 
-Phase sizing caps are derived from the Builder's context tier:
+Phase sizing caps are derived from Engineer mode's context tier:
 
 **Tier Resolution Chain:**
-1. Read the Builder's configured model from the agent config (`agents.builder.model`).
+1. Read Engineer mode's configured model from the agent config (`agents.builder.model`).
 2. Look up that model ID in the `models` array to get `context_window_tokens`.
 3. If `context_window_tokens > 200000`, use **Extended** tier. Otherwise, use **Standard** tier.
 4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
@@ -82,9 +82,9 @@ Only keys present in `phase_sizing` override the tier default; absent keys fall 
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Builder invocation
+#### Scenario: Role gate rejects non-Engineer invocation
 
-    Given an Architect agent session
+    Given a PM agent session
     When the agent invokes /pl-delivery-plan
     Then the command responds with a redirect message
 
@@ -97,7 +97,7 @@ Only keys present in `phase_sizing` override the tier default; absent keys fall 
 
 #### Scenario: Scope assessment recommends phasing for complex work (standard tier)
 
-    Given the Builder's model resolves to context_window_tokens 200000
+    Given Engineer mode's model resolves to context_window_tokens 200000
     And 3 features in TODO state
     When /pl-delivery-plan assesses scope
     Then it recommends phased delivery
@@ -111,14 +111,14 @@ Only keys present in `phase_sizing` override the tier default; absent keys fall 
 
 #### Scenario: Phase sizing cap enforced
 
-    Given the Builder's model resolves to a context tier with max_features_per_phase of N
+    Given Engineer mode's model resolves to a context tier with max_features_per_phase of N
     And N+1 features assigned to a single phase
     When /pl-delivery-plan validates the plan
     Then the phase is split to respect the tier-derived max features per phase
 
 #### Scenario: Extended context tier increases phase capacity
 
-    Given the Builder's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
+    Given Engineer mode's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
     And 5 features in TODO state with no HIGH-complexity features
     When /pl-delivery-plan creates a plan
     Then the plan uses the Extended tier defaults
@@ -126,7 +126,7 @@ Only keys present in `phase_sizing` override the tier default; absent keys fall 
 
 #### Scenario: Phase sizing override takes precedence
 
-    Given the Builder's model resolves to the Extended tier
+    Given Engineer mode's model resolves to the Extended tier
     And the agent config contains phase_sizing with max_features_per_phase of 3
     When /pl-delivery-plan creates a plan with 4 features
     Then the plan splits into phases of at most 3 features each

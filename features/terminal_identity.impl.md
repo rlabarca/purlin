@@ -1,8 +1,8 @@
 # Terminal Identity -- Implementation Notes
 
-## Resolved: Non-Builder Root Launchers (2026-03-18)
+## Resolved: Non-Engineer Root Launchers (2026-03-18)
 
-All four root launchers now implement the three-point identity integration pattern. The gap in Architect, QA, and PM launchers was resolved by adding sourcing, set_agent_identity, and cleanup to each.
+All four root launchers now implement the three-point identity integration pattern. The gap in PM, QA, and PM launchers was resolved by adding sourcing, set_agent_identity, and cleanup to each.
 
 ### Reference Implementation (pl-run-builder.sh)
 
@@ -12,7 +12,7 @@ Lines 12-15: Guarded source of `$CORE_DIR/tools/terminal/identity.sh`.
 
 **2. Set identity (before the `claude` invocation):**
 
-Line 143: `type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"`
+Line 143: `type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Engineer"`
 
 **3. Cleanup in EXIT trap:**
 
@@ -23,18 +23,18 @@ Lines 32-34: The `cleanup()` function includes a guarded `clear_agent_identity` 
 Apply the same three-point pattern to `pl-run-architect.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh`:
 
 1. **Source** -- Add the guarded source block after line 10 (`export PURLIN_PROJECT_ROOT`) and before the `PROMPT_FILE` setup.
-2. **Set identity** -- Add a guarded `set_agent_identity "<Role>"` call immediately before the `claude` invocation. Use the correct display name: `Architect`, `QA`, `PM`.
+2. **Set identity** -- Add a guarded `set_agent_identity "<Role>"` call immediately before the `claude` invocation. Use the correct display name: `PM`, `QA`, `PM`.
 3. **EXIT trap** -- Replace the existing `trap "rm -f '$PROMPT_FILE'" EXIT` with a cleanup function that calls `clear_agent_identity` (guarded) before removing the temp file.
 
 ### Display Name Mapping
 
 | Launcher | Display Name |
 |----------|-------------|
-| `pl-run-architect.sh` | `Architect` |
+| `pl-run-architect.sh` | `PM` |
 | `pl-run-qa.sh` | `QA` |
 | `pl-run-pm.sh` | `PM` |
-| `pl-run-builder.sh` | `Builder` (already implemented) |
+| `pl-run-builder.sh` | `Engineer` (already implemented) |
 
 ### Non-Continuous Mode Behavior Note
 
-For the Architect, QA, and PM launchers (which have no continuous mode), identity is set once before `claude` launches and cleared on exit. There are no phase transitions -- the badge shows the role name for the entire session. This matches the Builder's non-continuous mode behavior.
+For PM mode, QA, and PM launchers (which have no continuous mode), identity is set once before `claude` launches and cleared on exit. There are no phase transitions -- the badge shows the role name for the entire session. This matches Engineer mode's non-continuous mode behavior.

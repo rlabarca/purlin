@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A shared skill available to all roles that generates a structured, copy-paste-ready issue report for the Purlin framework itself. Collects version info, environment context, git state, and active Critic issues into a formatted report that can be pasted into a Purlin Architect session for triage. Distinct from `/pl-discovery`, which records project-level bugs.
+A shared skill available to all roles that generates a structured, copy-paste-ready issue report for the Purlin framework itself. Collects version info, environment context, git state, and active Critic issues into a formatted report that can be pasted into a Purlin PM session for triage. Distinct from `/pl-discovery`, which records project-level bugs.
 
 ---
 
@@ -49,7 +49,7 @@ The skill definition lives at `.claude/commands/pl-purlin-issue.md` and is distr
 
 #### Scenario: Skill is available to all roles
 
-    Given any agent role (Architect, Builder, QA, or PM)
+    Given any agent role (PM, Engineer, QA, or PM)
     When the user invokes /pl-purlin-issue
     Then the skill executes without a role authorization error
 

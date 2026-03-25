@@ -13,19 +13,19 @@ This feature defines the `purlin.verify_dependency_integrity` release step: a st
 
 ### 2.1 Graph File Check
 
-The Architect reads `.purlin/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, the Architect runs `tools/cdd/status.sh --graph` to regenerate it before proceeding.
+PM mode reads `.purlin/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, PM mode runs `tools/cdd/status.sh --graph` to regenerate it before proceeding.
 
 ### 2.2 Cycle Detection
 
-The Architect inspects the dependency graph for cycles. A cycle exists when a chain of `Prerequisite:` links eventually returns to a node already visited. Any cycle found is a CRITICAL error and MUST halt the release.
+PM mode inspects the dependency graph for cycles. A cycle exists when a chain of `Prerequisite:` links eventually returns to a node already visited. Any cycle found is a CRITICAL error and MUST halt the release.
 
 ### 2.3 Broken Link Detection
 
-For each `> Prerequisite:` link in the graph, the Architect confirms the referenced file exists in `features/`. A link to a non-existent file is a broken link. Any broken link MUST be reported and blocks the release until corrected.
+For each `> Prerequisite:` link in the graph, PM mode confirms the referenced file exists in `features/`. A link to a non-existent file is a broken link. Any broken link MUST be reported and blocks the release until corrected.
 
 ### 2.4 Pass Condition
 
-The graph is valid when: (1) no cycles are detected, (2) all prerequisite links resolve, and (3) no structural reversals are detected in the reverse reference audit. The Architect reports the total node count and confirms graph integrity before proceeding to the next step. No files are modified (regenerating the cache file is not a modification to spec state).
+The graph is valid when: (1) no cycles are detected, (2) all prerequisite links resolve, and (3) no structural reversals are detected in the reverse reference audit. PM mode reports the total node count and confirms graph integrity before proceeding to the next step. No files are modified (regenerating the cache file is not a modification to spec state).
 
 ### 2.5 Step Metadata
 
@@ -38,15 +38,15 @@ The graph is valid when: (1) no cycles are detected, (2) all prerequisite links 
 
 ### 2.6 Reverse Reference Audit
 
-The Architect performs a body-text scan of every parent node in the dependency graph. For each feature that is depended on by other features (i.e., appears as a target in at least one `> Prerequisite:` link), the Architect searches the parent's body text (excluding its own `> Prerequisite:` lines) for mentions of its children's filenames. Matches are classified:
+PM mode performs a body-text scan of every parent node in the dependency graph. For each feature that is depended on by other features (i.e., appears as a target in at least one `> Prerequisite:` link), PM mode searches the parent's body text (excluding its own `> Prerequisite:` lines) for mentions of its children's filenames. Matches are classified:
 
 | Classification | Description | Blocks Release? |
 |---|---|---|
 | **Structural reversal** | Parent defines child's behavior as part of its own requirements (e.g., listing child as trigger point, describing child's runtime contract) | YES — the parent must not claim behavioral ownership over a child |
-| **Example coupling** | Parent hardcodes child filename in Gherkin scenarios or examples | WARNING — flagged for Architect awareness, does not block |
+| **Example coupling** | Parent hardcodes child filename in Gherkin scenarios or examples | WARNING — flagged for PM awareness, does not block |
 | **Informational pointer** | Parent contains a "see also" reference to child documentation | INFO — no action required |
 
-The classification is a judgment call by the Architect. The audit reports all matches and the Architect assigns the classification.
+The classification is a judgment call by PM mode. The audit reports all matches and PM mode assigns the classification.
 
 ### 2.7 Integration Test Fixture Tags
 
@@ -63,43 +63,43 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: Graph is current and valid (auto-test-only)
 Given `.purlin/cache/dependency_graph.json` is up to date and contains no cycles or broken links,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports the total node count and confirms graph integrity,
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports the total node count and confirms graph integrity,
 And proceeds to the next release step.
 
 #### Scenario: Graph file is stale or absent (auto-test-only)
 Given `.purlin/cache/dependency_graph.json` is missing or older than the most recently modified feature file,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect runs `tools/cdd/status.sh --graph` to regenerate the cache file,
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode runs `tools/cdd/status.sh --graph` to regenerate the cache file,
 And proceeds with the freshly generated graph.
 
 #### Scenario: Cycle detected in dependency graph (auto-test-only)
 Given a chain of `> Prerequisite:` links forms a cycle in the feature graph,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports the specific cycle path (list of feature files forming the cycle),
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports the specific cycle path (list of feature files forming the cycle),
 And halts the release until the cycle is broken.
 
 #### Scenario: Broken prerequisite link detected (auto-test-only)
 Given a feature file declares a `> Prerequisite:` link to a file that does not exist in `features/`,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports the specific broken link (source file and missing target path),
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports the specific broken link (source file and missing target path),
 And halts the release until the link is corrected.
 
 #### Scenario: Reverse reference audit detects structural reversal (auto-test-only)
 Given a parent feature that lists a child feature as one of its own trigger points or describes the child's runtime behavior,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports the structural reversal and halts the release.
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports the structural reversal and halts the release.
 
 #### Scenario: Reverse reference audit detects example coupling (auto-test-only)
 Given a parent feature that uses a child's filename as a concrete example in Gherkin scenarios,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports it as a warning but does not halt the release.
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports it as a warning but does not halt the release.
 
 #### Scenario: Reverse reference audit finds no issues (auto-test-only)
 Given no parent feature body-references any of its children,
-When the Architect executes the `purlin.verify_dependency_integrity` step,
-Then the Architect reports "reverse reference audit: clean" and proceeds.
+When PM mode executes the `purlin.verify_dependency_integrity` step,
+Then PM mode reports "reverse reference audit: clean" and proceeds.
 
-### Manual Scenarios (Architect Execution)
+### Manual Scenarios (PM Execution)
 
 None.

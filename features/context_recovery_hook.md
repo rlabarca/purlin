@@ -17,7 +17,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 ### 2.1 Compact Hook (This Repository)
 
 - `.claude/settings.json` MUST contain a `SessionStart` hook entry with `"matcher": "compact"` alongside the existing `"matcher": "clear"` entry.
-- The compact hook command MUST echo a message containing: (a) that context was compacted, (b) that this project uses role-restricted Purlin agents, (c) the role boundary summary (Architect/PM never write code, Builder never writes specs, QA never writes app code), and (d) a directive to run `/pl-resume` immediately.
+- The compact hook command MUST echo a message containing: (a) that context was compacted, (b) that this project uses role-restricted Purlin agents, (c) the role boundary summary (PM never write code, Engineer never writes specs, QA never writes app code), and (d) a directive to run `/pl-resume` immediately.
 
 ### 2.2 Compact Hook (Consumer Projects via init.sh)
 
@@ -40,7 +40,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 ### 2.4 CLAUDE.md.purlin Template
 
 - A template file MUST be created at `purlin-config-sample/CLAUDE.md.purlin`.
-- The template MUST contain: project identification (Purlin agentic workflow), role boundary summary for all four roles (Architect, Builder, QA, PM), a context recovery directive (run `/pl-resume` if role instructions are missing), and a pointer to `/pl-help`.
+- The template MUST contain: project identification (Purlin agentic workflow), role boundary summary for all four roles (PM, Engineer, QA, PM), a context recovery directive (run `/pl-resume` if role instructions are missing), and a pointer to `/pl-help`.
 - The template MUST NOT contain the `<!-- purlin:start/end -->` markers (those are added by `install_claude_md()`).
 
 ### 2.5 agent_role File Removal

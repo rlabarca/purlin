@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Defines the testing pattern -- the abstract contract that all automated test tools must satisfy. Test tools script interactions with a target system, observe results, compare against expectations, and report structured pass/fail with evidence. They feed results back into the discovery system when failures are found. This anchor node ensures consistent behavior across all test implementations and establishes the invariants that govern their use by Builder and QA agents.
+Defines the testing pattern -- the abstract contract that all automated test tools must satisfy. Test tools script interactions with a target system, observe results, compare against expectations, and report structured pass/fail with evidence. They feed results back into the discovery system when failures are found. This anchor node ensures consistent behavior across all test implementations and establishes the invariants that govern their use by Engineer and QA agents.
 
 ## Testing Invariants
 
@@ -25,7 +25,7 @@ Tests that target visual systems (web UI, mobile apps) SHOULD compare their outp
 
 - **Reference images** (`features/design/` artifacts) -- fast, local multimodal comparison
 - **Figma MCP** (when available) -- authoritative three-source triangulated verification (design + spec + app)
-- This is the primary mechanism for the Builder to "look at the designs" like a real developer, ensuring what was built matches the intended look and feel
+- This is the primary mechanism for Engineer mode to "look at the designs" like a real developer, ensuring what was built matches the intended look and feel
 
 ### Testing Tiers
 
@@ -33,16 +33,16 @@ Tests operate in three tiers with different triggers, owners, and performance pr
 
 | Tier | When | Who | What Runs | Speed |
 |------|------|-----|-----------|-------|
-| Unit | During build (Step 3) | Builder (auto) | pytest/jest, in-process | Seconds |
-| Spot Check | During build (Step 3) | Builder (selective) | `/pl-web-test` for visual web features only | Minutes |
+| Unit | During build (Step 3) | Engineer (auto) | pytest/jest, in-process | Seconds |
+| Spot Check | During build (Step 3) | Engineer (selective) | `/pl-web-test` for visual web features only | Minutes |
 | Regression | User-chosen intervals | QA (end-to-end) | All regression tests (agent, web, full) | External terminal |
 
 **Tier rules:**
 
-- **Unit:** Always runs during Builder Step 3. Covers import-and-call, exit code, and value assertions. Protocol: `/pl-unit-test`.
-- **Fixture scope:** The Builder does NOT set up fixtures during unit testing (Step 3). Fixture-backed testing is regression-tier (QA-owned).
-- **Spot Check:** Runs during Builder Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features skip spot checks during build.
-- **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `regression.json`. The Builder's only role in regression is consuming results to fix code.
+- **Unit:** Always runs during Engineer Step 3. Covers import-and-call, exit code, and value assertions. Protocol: `/pl-unit-test`.
+- **Fixture scope:** Engineer mode does NOT set up fixtures during unit testing (Step 3). Fixture-backed testing is regression-tier (QA-owned).
+- **Spot Check:** Runs during Engineer Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features skip spot checks during build.
+- **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `regression.json`. Engineer mode's only role in regression is consuming results to fix code.
 
 ### Section Classification Contract
 
@@ -50,13 +50,13 @@ Feature specs use three scenario section types. Each has a strict scope. Mixing 
 
 | Section | Owner | Scope | Characteristics |
 |---------|-------|-------|-----------------|
-| `### Unit Tests` | Builder | Fast, isolated, structural | Single setup, value assertions, exit codes, file existence checks. Completes in seconds. No multi-step state manipulation. No sandbox cloning. No external process lifecycle. |
+| `### Unit Tests` | Engineer | Fast, isolated, structural | Single setup, value assertions, exit codes, file existence checks. Completes in seconds. No multi-step state manipulation. No sandbox cloning. No external process lifecycle. |
 | `### QA Scenarios` | QA | Behavioral, integration, end-to-end | Multi-step workflows, state carried between operations, sandbox environments, process start/stop, environment manipulation, fixture-backed verification. May take minutes. Tagged `@auto` or `@manual`. |
-| `## Visual Specification` | Builder (verify) / PM (author) | Design alignment | Checklist-based visual acceptance criteria. Token maps, design references. Not Gherkin. |
+| `## Visual Specification` | Engineer (verify) / PM (author) | Design alignment | Checklist-based visual acceptance criteria. Token maps, design references. Not Gherkin. |
 
 **Classification test:** If a scenario requires setup-act-modify-act-verify (two or more action phases with state changes between them), it is a QA Scenario, not a Unit Test. If it requires creating a sandbox, cloning a repo, or starting a server, it is a QA Scenario.
 
-**Builder obligation:** When the Builder encounters or creates unit tests that violate this contract (see Test Classification Heuristic below), the Builder MUST propose reclassification via `[SPEC_PROPOSAL]` in the companion file. The Builder does not halt work -- the proposal routes through the normal Critic cycle to the Architect.
+**Engineer obligation:** When Engineer mode encounters or creates unit tests that violate this contract (see Test Classification Heuristic below), Engineer mode MUST propose reclassification via `[SPEC_PROPOSAL]` in the companion file. Engineer mode does not halt work -- the proposal routes through the normal Critic cycle to PM mode.
 
 **Heading migration:** Old headings (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) are accepted by the Critic during transition. Agents rename to the new format when touching a spec. The classification contract applies regardless of heading format.
 
@@ -69,7 +69,7 @@ Feature specs use three scenario section types. Each has a strict scope. Mixing 
 
 ### Regression Testing Convention
 
-Features that require regression testing beyond unit tests declare their regression requirements in a `### Regression Testing` section within the feature's Requirements. This section is the Architect's declaration of what regression tests should exist. The test scripts themselves are the Builder's implementation.
+Features that require regression testing beyond unit tests declare their regression requirements in a `### Regression Testing` section within the feature's Requirements. This section is PM mode's declaration of what regression tests should exist. The test scripts themselves are Engineer mode's implementation.
 
 The `### Regression Testing` section describes:
 - **Approach:** The testing methodology (agent behavior harness, web UI automation, API contract checks, etc.)
@@ -87,7 +87,7 @@ Regression test scripts MUST follow this naming convention to enable automated d
 
 ### Test Classification Heuristic
 
-The Builder MUST evaluate unit test suites for potential reclassification to the regression tier. When a test script under `### Unit Tests` exhibits behavioral/integration characteristics, the Builder proposes reclassification to the Architect via `[SPEC_PROPOSAL]` in the companion file.
+Engineer mode MUST evaluate unit test suites for potential reclassification to the regression tier. When a test script under `### Unit Tests` exhibits behavioral/integration characteristics, Engineer mode proposes reclassification to PM mode via `[SPEC_PROPOSAL]` in the companion file.
 
 **Behavioral signals (2+ present indicate regression-tier work):**
 
@@ -100,7 +100,7 @@ The Builder MUST evaluate unit test suites for potential reclassification to the
 | **Multi-step flows** | Test exercises sequences of operations with state carried between steps (init then modify then verify) |
 | **Environment manipulation** | Test modifies PATH, environment variables, or filesystem state outside the test directory |
 
-**Builder action when 2+ signals are detected:**
+**Engineer action when 2+ signals are detected:**
 
 Record a `[SPEC_PROPOSAL]` entry in the feature's companion file:
 
@@ -112,11 +112,11 @@ Record a `[SPEC_PROPOSAL]` entry in the feature's companion file:
 Proposed anchor: No new anchor (arch_testing.md Section "Test Classification Heuristic")
 ```
 
-The Critic surfaces this as a HIGH-priority Architect action item. The Architect then updates the feature spec's scenario sections accordingly.
+The Critic surfaces this as a HIGH-priority PM action item. PM mode then updates the feature spec's scenario sections accordingly.
 
-**Timing:** The Builder runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- the Builder does not halt work. The proposal routes through the normal Critic cycle.
+**Timing:** Engineer mode runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- Engineer mode does not halt work. The proposal routes through the normal Critic cycle.
 
-**Relationship to Section Classification Contract:** The heuristic is the detection mechanism for violations of the Section Classification Contract (above). The contract defines what belongs where; the heuristic tells the Builder when to flag a mismatch.
+**Relationship to Section Classification Contract:** The heuristic is the detection mechanism for violations of the Section Classification Contract (above). The contract defines what belongs where; the heuristic tells Engineer mode when to flag a mismatch.
 
 ### Backward Compatibility
 

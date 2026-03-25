@@ -7,7 +7,7 @@
 
 
 ## 1. Overview
-Defines the shared mechanical requirements for all Purlin agent launcher scripts. Each agent role (Architect, Builder, QA, PM) has its own launcher script that follows this common pattern. Role-specific details (tool restrictions, session messages, instruction files) are defined in each role's own launcher feature spec.
+Defines the shared mechanical requirements for all Purlin agent launcher scripts. Each agent role (PM, Engineer, QA, PM) has its own launcher script that follows this common pattern. Role-specific details (tool restrictions, session messages, instruction files) are defined in each role's own launcher feature spec.
 
 Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh`.
 

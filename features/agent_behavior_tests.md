@@ -53,7 +53,7 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 ### 2.4 Test Execution
 
 - Each scenario runs: `claude --print --no-session-persistence --append-system-prompt-file <prompt-file> --output-format json "<trigger-message>"`
-- The trigger message simulates a session start (e.g., `"Begin Builder session."`) or a command invocation (e.g., `"/pl-help"`).
+- The trigger message simulates a session start (e.g., `"Begin Engineer session."`) or a command invocation (e.g., `"/pl-help"`).
 - The `--output-format json` flag enables structured parsing of Claude's response.
 - Each test invocation is independent (no session state carries between tests).
 - The test runner uses `jq` for JSON response parsing (extracting the result field from Claude's `--output-format json` output). If `jq` is unavailable, the runner falls back to raw output string matching.
@@ -94,13 +94,13 @@ The following manual scenarios are automated by this harness:
 4. Auto Mode Begins Executing Immediately
 
 **From `pl_session_resume.md`:**
-5. Builder Mid-Feature Resume
+5. Engineer Mid-Feature Resume
 6. QA Mid-Verification Resume
 7. Full Reboot Without Launcher
 
 **From `pl_help.md`:**
-8. Architect Re-displays Command Table
-9. Builder Re-displays Command Table on Collaboration Branch
+8. PM Re-displays Command Table
+9. Engineer Re-displays Command Table on Collaboration Branch
 10. QA Re-displays Command Table on Collaboration Branch
 
 ### 2.9 Scenarios That Remain Manual
@@ -112,7 +112,7 @@ The following scenarios are NOT covered by this harness because they require hum
 
 ### 2.10 Fixture Tags Required
 
-The Builder MUST create these fixture tags in the Purlin fixture repo:
+Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
 | Tag | State Description |
 |-----|-------------------|
@@ -150,7 +150,7 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 #### Scenario: Expert mode outputs correct message
 
     Given the fixture tag "main/cdd_startup_controls/expert-mode" is checked out
-    When claude --print is invoked with "Begin Builder session."
+    When claude --print is invoked with "Begin Engineer session."
     Then the output contains "find_work disabled"
     And the output does NOT contain a work plan or Critic report
 

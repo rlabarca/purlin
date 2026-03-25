@@ -15,7 +15,7 @@ This feature defines the `purlin.instruction_audit` release step: a pre-push aud
 
 ### 2.1 Audit Scope
 
-The Architect executes this step against the four standard override files:
+PM mode executes this step against the four standard override files:
 
 - `.purlin/HOW_WE_WORK_OVERRIDES.md`
 - `.purlin/ARCHITECT_OVERRIDES.md`
@@ -26,7 +26,7 @@ Each override file is cross-referenced against its corresponding base instructio
 
 ### 2.2 Audit Checks
 
-For each override file, the Architect verifies:
+For each override file, PM mode verifies:
 
 1. **No direct contradictions.** An override rule that directly negates or reverses a base-layer rule is a contradiction. A contradiction MUST be resolved by revising the override.
 2. **No stale path references.** File paths, tool commands, and directory names referenced in override rules MUST resolve to existing paths in the current codebase.
@@ -35,9 +35,9 @@ For each override file, the Architect verifies:
 
 ### 2.3 Remediation
 
-Any issue found during the audit MUST be corrected in the override file before the release proceeds. After correction, the Architect commits the fix with message `fix(overrides): <description>`.
+Any issue found during the audit MUST be corrected in the override file before the release proceeds. After correction, PM mode commits the fix with message `fix(overrides): <description>`.
 
-If a contradiction reveals a genuine gap or error in the base layer, the Architect MUST resolve it via the appropriate mechanism:
+If a contradiction reveals a genuine gap or error in the base layer, PM mode MUST resolve it via the appropriate mechanism:
 
 - In a consumer project: use `/pl-override-edit` to refine the override without modifying the base.
 - In the Purlin framework repository: use `/pl-edit-base` to update the base, then re-run the audit.
@@ -68,29 +68,29 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: Clean audit with no issues (auto-test-only)
 Given all four `.purlin/` override files are present and consistent with the base layer,
-When the Architect executes the `purlin.instruction_audit` step,
-Then the Architect reports "Instruction audit: CLEAN — no contradictions, stale paths, or terminology mismatches found."
+When PM mode executes the `purlin.instruction_audit` step,
+Then PM mode reports "Instruction audit: CLEAN — no contradictions, stale paths, or terminology mismatches found."
 And no commits are made.
 
 #### Scenario: Contradiction detected and corrected (auto-test-only)
 Given an override file contains a rule that directly negates a base-layer rule,
-When the Architect executes the `purlin.instruction_audit` step,
-Then the Architect identifies the specific contradiction (file, rule, conflicting base text),
+When PM mode executes the `purlin.instruction_audit` step,
+Then PM mode identifies the specific contradiction (file, rule, conflicting base text),
 And revises the override to remove or reconcile the contradiction,
 And commits with message `fix(overrides): <description>`.
 
 #### Scenario: Stale path reference corrected (auto-test-only)
 Given an override file references a file path that no longer exists in the current codebase,
-When the Architect executes the `purlin.instruction_audit` step,
-Then the Architect updates the path reference to the correct current location,
+When PM mode executes the `purlin.instruction_audit` step,
+Then PM mode updates the path reference to the correct current location,
 And commits with message `fix(overrides): update stale path reference in <file>`.
 
 ### QA Scenarios
 
 #### @manual Scenario: Audit blocked by unresolvable base-layer conflict
 Given an override rule reveals a genuine error in the base layer that cannot be corrected in the override alone,
-When the Architect executes the `purlin.instruction_audit` step,
-Then the Architect halts the step and documents the base-layer conflict,
+When PM mode executes the `purlin.instruction_audit` step,
+Then PM mode halts the step and documents the base-layer conflict,
 And uses `/pl-edit-base` (Purlin repo) or reports to the framework maintainer (consumer project),
 And the release does not proceed until the conflict is resolved.
 ## Regression Guidance

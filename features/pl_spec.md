@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The core spec authoring skill shared by PM and Architect roles. Provides a guided workflow for creating new feature specs or refining existing ones, enforcing template compliance, category/label conventions, prerequisite checklist validation, and Critic parser requirements. Integrates with `/pl-find` for topic discovery before authoring.
+The core spec authoring skill shared by PM and PM roles. Provides a guided workflow for creating new feature specs or refining existing ones, enforcing template compliance, category/label conventions, prerequisite checklist validation, and Critic parser requirements. Integrates with `/pl-find` for topic discovery before authoring.
 
 ---
 
@@ -17,8 +17,8 @@ The core spec authoring skill shared by PM and Architect roles. Provides a guide
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the PM or Architect role.
-- Non-PM/Architect agents MUST receive a redirect message.
+- The command MUST only execute when invoked by the PM or PM role.
+- Non-PM agents MUST receive a redirect message.
 
 ### 2.2 Required Reading
 
@@ -58,9 +58,9 @@ The core spec authoring skill shared by PM and Architect roles. Provides a guide
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-PM/Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-spec
     Then the command responds with a redirect message
     And no spec file is created or modified
@@ -78,7 +78,7 @@ The core spec authoring skill shared by PM and Architect roles. Provides a guide
     When /pl-spec creates a new feature file
     Then the file contains overview, requirements, and scenarios sections
     And scenario headings use four-hash format
-    And the file is ready for Builder implementation
+    And the file is ready for Engineer implementation
 
 #### Scenario: Category scan prevents duplicate categories
 

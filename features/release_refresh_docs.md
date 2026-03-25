@@ -43,7 +43,7 @@ The index page contains:
 
 | Section | Description | Docs |
 |---------|-------------|------|
-| **Agent Use** | How to interact with individual agents | Guides about using specific agents (PM, Builder, etc.) |
+| **Agent Use** | How to interact with individual agents | Guides about using specific agents (PM, Engineer, etc.) |
 | **CDD Dashboard** | Features of the CDD Dashboard UI | Guides about dashboard panels, visualizations, and configuration accessed through the dashboard |
 | **Workflow & Process** | End-to-end workflows spanning multiple agents | Guides about testing, parallel execution, release processes |
 | **Collaboration** | Multi-machine and team coordination | Guides about branch collaboration, remote push/pull |

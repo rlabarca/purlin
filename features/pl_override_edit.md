@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with built-in conflict scanning. Each role can only edit their own override file (Builder: BUILDER_OVERRIDES, QA: QA_OVERRIDES, PM: PM_OVERRIDES) while the Architect can edit any. Performs a three-level conflict scan (CONFLICT, WARNING, INFO) against the corresponding base instruction file before applying changes.
+A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with built-in conflict scanning. Each role can only edit their own override file (Engineer: BUILDER_OVERRIDES, QA: QA_OVERRIDES, PM: PM_OVERRIDES) while PM mode can edit any. Performs a three-level conflict scan (CONFLICT, WARNING, INFO) against the corresponding base instruction file before applying changes.
 
 ---
 
@@ -16,10 +16,10 @@ A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with b
 
 ### 2.1 Role Scoping
 
-- Builder: may edit ONLY `BUILDER_OVERRIDES.md`.
+- Engineer: may edit ONLY `BUILDER_OVERRIDES.md`.
 - QA: may edit ONLY `QA_OVERRIDES.md`.
 - PM: may edit ONLY `PM_OVERRIDES.md`.
-- Architect: may edit any `*_OVERRIDES.md` file.
+- PM: may edit any `*_OVERRIDES.md` file.
 
 ### 2.2 Conflict Scan
 
@@ -51,10 +51,10 @@ A role-scoped skill for editing override files (`.purlin/*_OVERRIDES.md`) with b
 
 ### Unit Tests
 
-#### Scenario: Builder cannot edit QA overrides
+#### Scenario: Engineer cannot edit QA overrides
 
-    Given a Builder agent session
-    When the Builder attempts to edit QA_OVERRIDES.md
+    Given an Engineer agent session
+    When Engineer mode attempts to edit QA_OVERRIDES.md
     Then the command declines and names the QA role as the owner
 
 #### Scenario: Conflict scan detects contradiction

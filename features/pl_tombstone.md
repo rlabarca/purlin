@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The Architect's feature retirement skill that creates tombstone files before deleting retired feature specs. Checks the dependency graph for impact analysis, creates a structured tombstone file listing files to delete and dependencies to check, then deletes the original feature file. The Builder discovers tombstones through the Critic and processes the deletions.
+PM mode's feature retirement skill that creates tombstone files before deleting retired feature specs. Checks the dependency graph for impact analysis, creates a structured tombstone file listing files to delete and dependencies to check, then deletes the original feature file. Engineer mode discovers tombstones through the Critic and processes the deletions.
 
 ---
 
@@ -16,8 +16,8 @@ The Architect's feature retirement skill that creates tombstone files before del
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Architect role.
-- Non-Architect agents MUST receive a redirect message.
+- The command MUST only execute when invoked by PM mode role.
+- Non-PM agents MUST receive a redirect message.
 
 ### 2.2 Impact Analysis
 
@@ -39,7 +39,7 @@ The Architect's feature retirement skill that creates tombstone files before del
 ### 2.5 Special Cases
 
 - Features specced but never implemented (no code exists): delete directly, no tombstone needed.
-- Tombstone files are transient -- they exist only until the Builder processes them.
+- Tombstone files are transient -- they exist only until Engineer mode processes them.
 
 ---
 
@@ -47,9 +47,9 @@ The Architect's feature retirement skill that creates tombstone files before del
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-tombstone
     Then the command responds with a redirect message
 

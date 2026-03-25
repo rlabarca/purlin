@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The Critic computes a per-feature **verification effort** classification that breaks down verification work into Builder-owned auto-verified categories and QA-owned manual categories. Builder-owned categories are computed for status tracking but do not generate QA action items. QA only sees manual items and cross-feature integration work.
+The Critic computes a per-feature **verification effort** classification that breaks down verification work into Engineer-owned auto-verified categories and QA-owned manual categories. Engineer-owned categories are computed for status tracking but do not generate QA action items. QA only sees manual items and cross-feature integration work.
 
 ---
 
@@ -20,14 +20,14 @@ The Critic MUST classify each feature's pending verification work into exactly f
 
 | Category | Key | Owner | Definition | Resolution Method |
 |----------|-----|-------|------------|-------------------|
-| TestOnly | `test_only` | **Builder** | Feature has ONLY Unit Tests (no QA scenarios, no visual spec). Tests pass | Builder marks `[Complete]` directly |
-| Skip | `skip` | **Builder** | Regression scope is `cosmetic` -- skip entirely | Builder marks `[Complete]` with cosmetic scope |
+| TestOnly | `test_only` | **Engineer** | Feature has ONLY Unit Tests (no QA scenarios, no visual spec). Tests pass | Engineer marks `[Complete]` directly |
+| Skip | `skip` | **Engineer** | Regression scope is `cosmetic` -- skip entirely | Engineer marks `[Complete]` with cosmetic scope |
 | Auto | `auto` | **QA** | QA Scenarios with `@auto` tag, or visual spec items on `> Web Test:` features | QA runs directly (servers, Playwright, etc.) |
 | Manual | `manual` | **QA** | QA Scenarios without `@auto` tag, or visual spec items on non-web features | `/pl-verify` with human |
 
 A single feature MAY have BOTH auto and manual items. Counts reflect individual scenarios and visual checklist items, not whole features. When QA determines a manual scenario can be automated, QA adds the `@auto` tag and optionally authors the automation.
 
-Builder-owned categories (TestOnly, Skip) are computed but NOT shown as QA action items. QA's `verification_effort` summary only counts QA-owned categories (auto and manual).
+Engineer-owned categories (TestOnly, Skip) are computed but NOT shown as QA action items. QA's `verification_effort` summary only counts QA-owned categories (auto and manual).
 
 ### 2.2 Classification Rules
 
@@ -55,11 +55,11 @@ The Critic MUST include a `verification_effort` block in each feature's `tests/<
 }
 ```
 
-*   `web_test` counts visual spec checklist items on features with `> Web Test:` metadata. These are Builder-verified via `/pl-web-test` and are tracked separately from `auto`.
+*   `web_test` counts visual spec checklist items on features with `> Web Test:` metadata. These are Engineer-verified via `/pl-web-test` and are tracked separately from `auto`.
 *   `auto` counts @auto-tagged QA scenarios (harness-runner executed).
 *   `summary` is a human-readable string: `"<manual> manual"` when manual items exist, `"<auto> auto"` when only auto items exist, `"<auto> auto, <manual> manual"` when both exist.
 *   When all counts are zero (no QA work pending), `summary` is `"no QA items"`.
-*   When a feature is `[Complete]` via Builder (no `[Verified]`), `summary` is `"builder-verified"`.
+*   When a feature is `[Complete]` vian Engineer (no `[Verified]`), `summary` is `"builder-verified"`.
 
 ### 2.4 Computation Timing
 
@@ -69,9 +69,9 @@ The `verification_effort` block MUST be computed during the same Critic pass tha
 
 The `verification_effort` block is only meaningful for features in TESTING lifecycle state (QA role status is TODO). For features in other states:
 *   **COMPLETE (qa: CLEAN):** All counts are zero, summary is `"no QA items"`.
-*   **COMPLETE via Builder (qa: N/A, zero manual scenarios):** All counts are zero, summary is `"builder-verified"`.
+*   **COMPLETE vian Engineer (qa: N/A, zero manual scenarios):** All counts are zero, summary is `"builder-verified"`.
 *   **Not yet implemented (qa: N/A):** All counts are zero, summary is `"no QA items"`.
-*   **Builder not done (builder: TODO/FAIL):** All counts are zero, summary is `"awaiting builder"`.
+*   **Engineer not done (builder: TODO/FAIL):** All counts are zero, summary is `"awaiting builder"`.
 
 ### 2.6 Integration Test Fixture Tags
 
@@ -146,18 +146,18 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
     Then only 2 scenarios are counted (the targeted ones)
     And the remaining 3 are excluded from all categories
 
-#### Scenario: Builder-incomplete feature shows awaiting builder
+#### Scenario: Engineer-incomplete feature shows awaiting builder
 
     Given a feature has `role_status.builder` of "TODO"
     When the Critic computes verification_effort
     Then all counts are 0
     And `summary` is "awaiting builder"
 
-#### Scenario: Builder-verified feature produces qa N/A
+#### Scenario: Engineer-verified feature produces qa N/A
 
     Given a feature has zero QA scenarios
     And all Unit Tests pass
-    And the Builder marks `[Complete]` (no `[Verified]`)
+    And Engineer mode marks `[Complete]` (no `[Verified]`)
     When the Critic computes verification_effort
     Then `qa` status is `"N/A"`
     And `summary` is "builder-verified"

@@ -40,7 +40,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 - When `/pl-web-test` produces a STALE verdict for a checklist item (Figma design updated after spec extraction), the command MUST automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`.
 - The discovery entry MUST include the STALE checklist item text and the Figma frame reference so the PM knows exactly what to re-ingest.
-- This auto-recording replaces manual Builder action after the fact -- the routing from Builder to PM is handled entirely by the command and the Critic.
+- This auto-recording replaces manual Engineer action after the fact -- the routing from Engineer to PM is handled entirely by the command and the Critic.
 
 ---
 
@@ -65,15 +65,15 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 #### Scenario: Build Command Enforces Web Test Gate
 
     Given a feature with `> Web Test: http://localhost:9086` metadata
-    When the Builder reaches Step 4 (Status Tag Commit) in `/pl-build`
-    Then the Builder verifies `/pl-web-test` passed this session before proceeding
+    When Engineer mode reaches Step 4 (Status Tag Commit) in `/pl-build`
+    Then Engineer mode verifies `/pl-web-test` passed this session before proceeding
     And the status tag commit is blocked if web test has not been run
 
 #### Scenario: Build Command Flags Missing Web Test Metadata
 
     Given a feature with `## Visual Specification` but no `> Web Test:` metadata
-    When the Builder reaches Step 4 (Status Tag Commit) in `/pl-build`
-    Then the Builder verifies a DISCOVERY about missing web test URL has been logged
+    When Engineer mode reaches Step 4 (Status Tag Commit) in `/pl-build`
+    Then Engineer mode verifies a DISCOVERY about missing web test URL has been logged
     And the status tag commit is blocked until the DISCOVERY is recorded
 
 #### Scenario: Web Test STALE Verdict Creates Discovery Sidecar Entry

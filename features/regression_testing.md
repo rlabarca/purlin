@@ -4,17 +4,17 @@
 > Category: "Test Infrastructure"
 > Prerequisite: features/arch_testing.md
 
-[TODO] <!-- Architect reset 2026-03-23: new sections 2.2.4, 2.8.1 not yet implemented by Builder -->
+[TODO] <!-- PM reset 2026-03-23: new sections 2.2.4, 2.8.1 not yet implemented by Engineer -->
 
 ## 1. Overview
 
 Provides infrastructure for running full regression suites outside the build cycle. The system has three tiers:
 
 1. **Declarative scenarios** -- QA authors JSON scenario declarations in `tests/qa/scenarios/`. Each file describes what to test, not how to test it.
-2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Builder never touches it.
+2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Engineer never touches it.
 3. **Meta-runner** -- A shell script in `tools/test_support/` discovers all scenario files, runs each via the harness runner, continues past failures, and prints a summary.
 
-The Builder focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. QA authors the scenario declarations, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
+Engineer mode focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. QA authors the scenario declarations, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so Engineer mode can batch-fix failures without re-running the suite.
 
 For the Purlin framework repo, a dev-specific runner script at `dev/regression_runner.sh` provides watch/once modes as an additional convenience (see Section 2.1). This runner is NOT consumer-facing and is NOT part of the composed commands the QA skill prints.
 
@@ -59,19 +59,19 @@ A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-
 
 Three QA-owned slash commands that replace the former unified `/pl-regression` skill. Each command has a single, clear purpose. QA owns the regression tier end-to-end: authoring scenario declarations, executing regression sets, and evaluating results.
 
-**Harness authorship:** QA writes and maintains the harness scripts that test behavioral scenarios (agent interaction flows, web UI regression, API contract checks). Harness scripts are behavioral verification artifacts, not application code. They live alongside other QA verification scripts. The Builder does NOT write regression harnesses.
+**Harness authorship:** QA writes and maintains the harness scripts that test behavioral scenarios (agent interaction flows, web UI regression, API contract checks). Harness scripts are behavioral verification artifacts, not application code. They live alongside other QA verification scripts. Engineer mode does NOT write regression harnesses.
 
 **UX invariant:** Whenever the QA agent asks the user to run anything in an external terminal -- whether through any regression skill or ad-hoc during triage -- it MUST print the exact, complete command. Never describe what to run; print the literal command. The user should never have to assemble a command from prose.
 
 #### 2.2.1 `/pl-regression-author` (QA-owned)
 
-**Purpose:** Create scenario JSON files from feature specs. Infrequent -- only needed when new features reach Builder DONE status with no scenario file.
+**Purpose:** Create scenario JSON files from feature specs. Infrequent -- only needed when new features reach Engineer DONE status with no scenario file.
 
 **Command file:** `.claude/commands/pl-regression-author.md`
 
 **Behavior:**
 
-1. Discover features needing scenario authoring: feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata, Builder status is DONE, and no corresponding `tests/qa/scenarios/<feature_name>.json` exists.
+1. Discover features needing scenario authoring: feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata, Engineer status is DONE, and no corresponding `tests/qa/scenarios/<feature_name>.json` exists.
 2. Present authoring plan to user with feature count and list.
 3. Per feature (one at a time, sequential): read spec, evaluate fixture needs (see Section 2.10.1), write scenario JSON to `tests/qa/scenarios/<feature_name>.json`, commit.
 4. Print handoff message with next steps (see Section 2.12).
@@ -171,23 +171,23 @@ Enhance `regression.json` detail entries with optional fields (backward-compatib
 - `expected` -- Human-readable expected behavior from the Gherkin Then step.
 - `actual_excerpt` -- First ~500 characters of actual output when the test fails.
 
-These fields give the Builder enough context to batch-fix failures without re-running the regression suite.
+These fields give Engineer mode enough context to batch-fix failures without re-running the regression suite.
 
-### 2.4 Builder Consumption Pattern
+### 2.4 Engineer Consumption Pattern
 
-The Builder does NOT trigger or author regression tests. The Builder's only role in the regression tier is consuming results to fix application code. The user tells the Builder "regression results are ready." The Builder then:
+Engineer mode does NOT trigger or author regression tests. Engineer mode's only role in the regression tier is consuming results to fix application code. The user tells Engineer mode "regression results are ready." Engineer mode then:
 
 1. Reads `regression.json` files for features with updated regression results.
 2. Uses enriched fields (`scenario_ref`, `expected`, `actual_excerpt`) to diagnose and fix application code in one pass.
 3. Re-runs only unit tests (Step 3 tier) to confirm fixes, without re-running the full regression suite.
-4. Does NOT modify the harness scripts or scenario JSON files themselves. If a harness expectation is stale or a scenario assertion is wrong, the Builder flags it for QA via the feedback protocol (Section 2.11).
+4. Does NOT modify the harness scripts or scenario JSON files themselves. If a harness expectation is stale or a scenario assertion is wrong, Engineer mode flags it for QA via the feedback protocol (Section 2.11).
 
 ### 2.5 Staleness Detection
 
 A regression result is stale when ANY of these conditions hold:
 
 1. **Feature source changed:** The feature's source code was modified since the `regression.json` file's mtime.
-2. **Harness infrastructure changed:** `tools/test_support/harness_runner.py` or the scenario JSON file (`tests/qa/scenarios/<feature>.json`) was modified since the `regression.json` file's mtime. This catches cases where the Builder fixes a harness bug — the regression results from before the fix are no longer valid.
+2. **Harness infrastructure changed:** `tools/test_support/harness_runner.py` or the scenario JSON file (`tests/qa/scenarios/<feature>.json`) was modified since the `regression.json` file's mtime. This catches cases where Engineer mode fixes a harness bug — the regression results from before the fix are no longer valid.
 3. **Prior failure:** `regression.json` has `status: "FAIL"`. Failed results are always stale (they need re-running after the fix).
 
 The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
@@ -306,7 +306,7 @@ The `(running)` line is printed before execution starts (flushed immediately so 
    - Per-detail enriched fields: `scenario_ref`, `expected` (from assertion context), `actual_excerpt`, `assertion_tier`.
 4. Exit with 0 if all assertions passed, non-zero otherwise.
 
-**Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Builder-owned (unit test results). Writing regression results to `tests.json` clobbers Builder counts and breaks the Critic's structural completeness gate. The Critic reads both files independently: `tests.json` for the Implementation Gate, `regression.json` for regression status.
+**Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Engineer-owned (unit test results). Writing regression results to `tests.json` clobbers Engineer counts and breaks the Critic's structural completeness gate. The Critic reads both files independently: `tests.json` for the Implementation Gate, `regression.json` for regression status.
 
 #### 2.8.1 Web Test Server Lifecycle
 
@@ -393,7 +393,7 @@ QA authors scenario files one feature at a time during `/pl-regression-author`:
 **Discovery heuristic (which features need authoring):**
 
 - Feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata.
-- Builder status is DONE (implementation exists to test against).
+- Engineer status is DONE (implementation exists to test against).
 - No corresponding `tests/qa/scenarios/<feature_name>.json` exists.
 
 **Context management:**
@@ -412,21 +412,21 @@ Per feature, QA applies this decision logic:
 
 1. **Fixture repo check:** If no fixture repo exists at the convention path and the feature needs controlled state, QA prompts the user to create a local repo (via `fixture init`), configure a remote repo URL, or skip fixtures.
 2. Does the `### Regression Testing` section reference fixture tags?
-   - Yes: Check if tags exist via `fixture list`. Tags exist -> use them in scenario JSON. Tags missing -> QA creates them directly via `fixture add-tag` if the state can be constructed. For complex state requiring Builder expertise, flag for Builder.
+   - Yes: Check if tags exist via `fixture list`. Tags exist -> use them in scenario JSON. Tags missing -> QA creates them directly via `fixture add-tag` if the state can be constructed. For complex state requiring Engineer expertise, flag for Engineer.
 3. No explicit fixture tags, but scenario needs controlled state?
    - Simple state (single config, no git history): Use inline `setup_commands` in the scenario JSON.
    - Moderate state (specific file content, config combinations): QA creates a fixture tag directly via `fixture add-tag`, then references it in the scenario JSON.
-   - Complex state (elaborate git history, build artifacts, database state): Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.13) for the Builder to handle.
+   - Complex state (elaborate git history, build artifacts, database state): Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.13) for Engineer mode to handle.
 
-### 2.11 Builder Feedback Protocol
+### 2.11 Engineer Feedback Protocol
 
-When the Builder encounters regression test failures, it follows this triage:
+When Engineer mode encounters regression test failures, it follows this triage:
 
-**Code bug:** Builder fixes the application code (existing pattern from Section 2.4).
+**Code bug:** Engineer fixes the application code (existing pattern from Section 2.4).
 
-**Broken test scenario:** Builder creates a `[BUG]` discovery on the feature with:
+**Broken test scenario:** Engineer creates a `[BUG]` discovery on the feature with:
 
-- `Action Required: QA` -- routes to QA, not back to Builder.
+- `Action Required: QA` -- routes to QA, not back to Engineer.
 - Title includes `test-scenario` to distinguish from implementation bugs.
 - Body includes `scenario_ref` and `actual_excerpt` from the enriched test results.
 
@@ -443,7 +443,7 @@ When the Builder encounters regression test failures, it follows this triage:
 
 QA picks this up in the next session via Critic action items. QA fixes the scenario JSON and commits.
 
-**Critic routing:** The Critic recognizes `Action Required: QA` on BUG discoveries and routes them to the QA column instead of the Builder column. This prevents the Builder from seeing its own feedback as a new action item.
+**Critic routing:** The Critic recognizes `Action Required: QA` on BUG discoveries and routes them to the QA column instead of Engineer mode column. This prevents Engineer mode from seeing its own feedback as a new action item.
 
 ### 2.12 Agent Handoff Protocol
 
@@ -457,8 +457,8 @@ Regression scenarios authored: N features.
 NEXT STEPS:
   1. Run regression tests:
          ./tests/qa/run_all.sh
-  2. When tests finish, launch Builder to process results and fix failures.
-  3. After Builder fixes, re-run tests:
+  2. When tests finish, launch Engineer to process results and fix failures.
+  3. After Engineer fixes, re-run tests:
          ./tests/qa/run_all.sh
   4. When all tests pass, launch QA to process final results.
 ```
@@ -470,9 +470,9 @@ Cannot author regression scenarios -- the harness runner framework
 has not been built yet.
 
 NEXT STEP:
-  Launch Builder. The Builder will build the harness runner framework
+  Launch Engineer. Engineer mode will build the harness runner framework
   as part of its normal TODO work.
-  After Builder finishes, re-run QA to author scenarios.
+  After Engineer finishes, re-run QA to author scenarios.
 ```
 
 **QA -> Human (fixtures needed but missing):**
@@ -482,12 +482,12 @@ N features need fixture repos before regression scenarios can be authored.
 Recorded recommendations in tests/qa/fixture_recommendations.md.
 
 NEXT STEP:
-  Launch Builder. Tell it: "Create fixture tags for features listed in
+  Launch Engineer. Tell it: "Create fixture tags for features listed in
   tests/qa/fixture_recommendations.md"
-  After Builder finishes, re-run QA to continue authoring.
+  After Engineer finishes, re-run QA to continue authoring.
 ```
 
-**Builder -> Human (after building harness runner framework):**
+**Engineer -> Human (after building harness runner framework):**
 
 ```
 Harness runner framework built:
@@ -500,7 +500,7 @@ NEXT STEP:
   generate tests/qa/run_all.sh for you to execute.
 ```
 
-**Builder -> Human (after processing regression failures):**
+**Engineer -> Human (after processing regression failures):**
 
 ```
 Fixed N code bugs from regression results.
@@ -514,7 +514,7 @@ NEXT STEPS:
      broken scenario files.
 ```
 
-**Builder -> Human (after creating fixture tags):**
+**Engineer -> Human (after creating fixture tags):**
 
 ```
 Created fixture tags for N features in .purlin/runtime/fixture-repo.
@@ -691,11 +691,11 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And the file is committed
     And progress is printed showing authored count vs total
 
-#### Scenario: Builder flags broken scenario via discovery
+#### Scenario: Engineer flags broken scenario via discovery
 
-    Given the Builder processes regression results
+    Given Engineer mode processes regression results
     And a test failure is caused by a stale assertion (not a code bug)
-    When the Builder creates a BUG discovery
+    When Engineer mode creates a BUG discovery
     Then the discovery title includes "test-scenario"
     And Action Required is set to "QA"
     And the discovery body includes scenario_ref and actual_excerpt

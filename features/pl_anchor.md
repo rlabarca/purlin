@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The anchor node authoring skill shared by PM and Architect roles. Provides a guided workflow for creating or updating anchor nodes (arch_*, design_*, policy_*) that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO).
+The anchor node authoring skill shared by PM and PM roles. Provides a guided workflow for creating or updating anchor nodes (arch_*, design_*, policy_*) that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO).
 
 ---
 
@@ -16,9 +16,9 @@ The anchor node authoring skill shared by PM and Architect roles. Provides a gui
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the PM or Architect role.
-- Non-PM/Architect agents MUST receive a redirect message.
-- PM prefix restriction: PM may only create or modify `design_*` and `policy_*` anchors. `arch_*` anchors are Architect-only.
+- The command MUST only execute when invoked by the PM or PM role.
+- Non-PM agents MUST receive a redirect message.
+- PM prefix restriction: PM may only create or modify `design_*` and `policy_*` anchors. `arch_*` anchors are PM-only.
 
 ### 2.2 Required Reading
 
@@ -51,9 +51,9 @@ The anchor node authoring skill shared by PM and Architect roles. Provides a gui
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-PM/Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-anchor
     Then the command responds with a redirect message
 
@@ -61,7 +61,7 @@ The anchor node authoring skill shared by PM and Architect roles. Provides a gui
 
     Given a PM agent session
     When the PM attempts to create an arch_data_layer.md anchor
-    Then the command responds that arch_ anchors are Architect-only
+    Then the command responds that arch_ anchors are PM-only
 
 #### Scenario: New anchor uses template structure
 

@@ -6,7 +6,7 @@
 
 
 ## 1. Overview
-Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that invoke the Claude CLI. This feature makes agent runtime parameters (model, effort, permissions) configurable via `config.json`. Claude is the sole supported LLM provider.
+Purlin agents (PM, Engineer, QA, PM) are launched via shell scripts that invoke the Claude CLI. This feature makes agent runtime parameters (model, effort, permissions) configurable via `config.json`. Claude is the sole supported LLM provider.
 
 
 ## 2. Requirements
@@ -29,7 +29,7 @@ Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that i
     *   `bypass_permissions` (boolean): Whether to skip permission prompts. Only meaningful when the model's `capabilities.permissions` is `true`.
     *   `find_work` (boolean, optional): Whether the agent runs its startup work-finding protocol. Default `true`. See `agent_launchers_common.md` Section 2.3.
     *   `auto_start` (boolean, optional): Whether the agent begins executing its work plan without waiting for user approval. Default `false`. See `agent_launchers_common.md` Section 2.3.
-*   **Canonical Schema:** The following structure is the reference for both `config.json` and `purlin-config-sample/config.json`. The Builder MUST update both files to match, removing the former `llm_providers` wrapper and any `provider` fields from `agents.*` entries:
+*   **Canonical Schema:** The following structure is the reference for both `config.json` and `purlin-config-sample/config.json`. Engineer mode MUST update both files to match, removing the former `llm_providers` wrapper and any `provider` fields from `agents.*` entries:
 
 ```json
 {

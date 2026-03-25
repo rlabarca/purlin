@@ -35,7 +35,7 @@ The QA summary report skill that produces a structured overview of verification 
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given an Engineer agent session
     When the agent invokes /pl-qa-report
     Then the command responds with a redirect message
 

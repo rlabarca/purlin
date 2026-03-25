@@ -27,7 +27,7 @@ A shared skill available to all roles that provides the test fixture convention 
 
 ### 2.3 Fixture Lifecycle
 
-- Architect defines tags in spec -> Builder creates setup script and fixture repo -> QA references tags in regression JSON -> Harness runner checks out tags at test time -> cleanup after each scenario.
+- PM defines tags in spec -> Engineer creates setup script and fixture repo -> QA references tags in regression JSON -> Harness runner checks out tags at test time -> cleanup after each scenario.
 
 ---
 
@@ -49,7 +49,7 @@ A shared skill available to all roles that provides the test fixture convention 
 
 #### Scenario: Role-specific sections presented
 
-    Given a Builder agent invokes /pl-fixture
+    Given an Engineer agent invokes /pl-fixture
     When the output is presented
     Then it includes fixture detection pre-flight and setup workflow guidance
 

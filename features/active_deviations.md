@@ -32,7 +32,7 @@ The Active Deviations reference (`instructions/references/active_deviations.md`)
 - Flow 2 Inline Deviation (non-blocking): build continues, add row to table.
 - Flow 3 SPEC_PROPOSAL (proactive): suggest spec change. Use `/pl-propose`.
 
-### 2.4 Builder Decision Tags
+### 2.4 Engineer Decision Tags
 
 - MUST define: `[CLARIFICATION]` (INFO), `[AUTONOMOUS]` (WARN), `[DEVIATION]` (HIGH), `[DISCOVERY]` (HIGH), `[INFEASIBLE]` (CRITICAL).
 - MUST define format: `**[TAG]** <description> (Severity: <level>)`

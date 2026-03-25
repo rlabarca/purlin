@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The Purlin unified agent replaces four separate role-specific agent sessions (Architect, Builder, QA, PM) with a single session that uses three operating modes (Engineer, PM, QA) activated by skill invocations. The launcher (`pl-run.sh`) provides CLI arguments for model selection, mode entry, auto-start, and worktree isolation. In consumer projects, `init.sh` generates `pl-run.sh` via `generate_purlin_launcher()`. In the Purlin framework repo itself, `pl-run.sh` is hand-written (same pattern as the existing role-specific launchers). Old role-specific launchers continue to function with deprecation warnings during the transition period.
+The Purlin unified agent replaces four separate role-specific agent sessions (PM, Engineer, QA, PM) with a single session that uses three operating modes (Engineer, PM, QA) activated by skill invocations. The launcher (`pl-run.sh`) provides CLI arguments for model selection, mode entry, auto-start, and worktree isolation. In consumer projects, `init.sh` generates `pl-run.sh` via `generate_purlin_launcher()`. In the Purlin framework repo itself, `pl-run.sh` is hand-written (same pattern as the existing role-specific launchers). Old role-specific launchers continue to function with deprecation warnings during the transition period.
 
 ---
 
@@ -113,7 +113,7 @@ Requirements:
 - The `--no-save` callout appears inline immediately after the sticky group with an example — not buried at the bottom.
 - `--no-save` appears both inline (contextual) and in the "Other" section (completeness).
 - Examples include both sticky and `--no-save` variants side by side.
-- The existing `sed`-based `# desc:` self-parsing mechanism MUST be replaced or extended to produce grouped output with headers. The implementation mechanism is left to the Builder.
+- The existing `sed`-based `# desc:` self-parsing mechanism MUST be replaced or extended to produce grouped output with headers. The implementation mechanism is left to Engineer mode.
 
 ### 2.3 First-Run Model Selection
 

@@ -37,7 +37,7 @@ Before running any initialization logic, `tools/init.sh` validates that required
 ### 2.4 Post-Init Narrative Output
 
 - After successful full initialization, the script MUST replace the current flat file list (lines 661-694 of init.sh) with a structured "What's Next" narrative.
-- The narrative MUST include numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (Architect), (3) what the Builder does, (4) CDD dashboard command.
+- The narrative MUST include numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (PM), (3) what Engineer mode does, (4) CDD dashboard command.
 - After successful refresh, the script MUST print an abbreviated refresh summary (not the full numbered narrative) that still includes the CDD dashboard reminder line.
 - The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output.
 

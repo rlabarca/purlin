@@ -17,8 +17,8 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 ### 2.1 Role Gating
 
-- The command is shared between Architect and Builder roles.
-- Non-Architect/Builder agents (QA, PM) MUST receive: "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit."
+- The command is shared between PM and Engineer roles.
+- Non-PM/Engineer agents (QA, PM) MUST receive: "This command is for PM mode or Engineer. Ask the appropriate agent to run /pl-spec-code-audit."
 
 ### 2.2 Plan Mode Entry
 
@@ -127,8 +127,8 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 ### 2.11 Role-Scoped Remediation Plan
 
 - The remediation plan MUST contain role-scoped FIX descriptions:
-  - **Architect FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
-  - **Builder FIX edits** target source code and tests only -- which implementation file to modify, what logic to correct, which test to add or update.
+  - **PM FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
+  - **Engineer FIX edits** target source code and tests only -- which implementation file to modify, what logic to correct, which test to add or update.
 - For each ESCALATE item, the plan MUST describe the companion file entry that will be written.
 - If no gaps are found, the command MUST output "No spec-code gaps detected across all N features." and call `ExitPlanMode`.
 - After writing the audit table and remediation plan, the command MUST call `ExitPlanMode` and wait for user approval.
@@ -142,7 +142,7 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 | 1 | Spec completeness | Missing required sections; vague scenarios; undefined terms; anchor nodes missing Purpose or Invariants |
 | 2 | Policy anchoring | Missing `> Prerequisite:` links to applicable anchor nodes |
 | 3 | Traceability | Automated scenarios with no matching test functions (`coverage < 1.0`) |
-| 4 | Builder decisions | Unacknowledged `[DEVIATION]` or `[DISCOVERY]` tags in companion file |
+| 4 | Engineer decisions | Unacknowledged `[DEVIATION]` or `[DISCOVERY]` tags in companion file |
 | 5 | User testing | OPEN or SPEC_UPDATED discovery entries |
 | 6 | Dependency currency | Prerequisite anchor node has lifecycle status TODO or was recently modified |
 | 7 | Spec-reality alignment | Implementation Notes document decisions that contradict or extend scenarios without spec updates |
@@ -164,14 +164,14 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 ### 2.14 Phase 3 -- Remediation (Post-Approval)
 
 - After user approval, the command MUST execute FIX items first, then ESCALATE items.
-- **Architect FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
-- **Architect ESCALATE:** Create or update companion files with tagged `[DISCOVERY]` entries including Source, Severity, Details, and Suggested fix. Commit together. Run `${TOOLS_ROOT}/cdd/status.sh` afterward.
-- **Builder FIX:** Fix code to match scenario assertions. Add or update automated tests. Update companion file notes. Commit each logical group.
-- **Builder ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next Architect session.
+- **PM FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
+- **PM ESCALATE:** Create or update companion files with tagged `[DISCOVERY]` entries including Source, Severity, Details, and Suggested fix. Commit together. Run `${TOOLS_ROOT}/cdd/status.sh` afterward.
+- **Engineer FIX:** Fix code to match scenario assertions. Add or update automated tests. Update companion file notes. Commit each logical group.
+- **Engineer ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next PM session.
 - **Dimension 12 (Code ownership) remediation:**
-  - **Architect FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
-  - **Architect ESCALATE to Builder:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
-  - **Builder ESCALATE to Architect:** If the Builder discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
+  - **PM FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
+  - **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
+  - **Engineer ESCALATE to PM:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 - Post-remediation: run `${TOOLS_ROOT}/cdd/status.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
 ### 2.15 Integration Test Fixture Tags
@@ -246,23 +246,23 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Architect/Builder invocation
+#### Scenario: Role gate rejects non-PM/Engineer invocation
 
     Given a QA agent session
     When the agent invokes /pl-spec-code-audit
-    Then the command responds with "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit."
+    Then the command responds with "This command is for PM mode or Engineer. Ask the appropriate agent to run /pl-spec-code-audit."
     And no analysis is performed
 
 #### Scenario: Default invocation uses deep mode
 
-    Given an Architect agent session
+    Given a PM agent session
     When the agent invokes /pl-spec-code-audit with no arguments
     Then the command runs in deep mode
     And features are batched for parallel subagent waves
 
 #### Scenario: Invalid argument produces error
 
-    Given an Architect agent session
+    Given a PM agent session
     When the agent invokes /pl-spec-code-audit --invalid
     Then the command responds with "Error: Unknown argument '--invalid'. No flags required -- the audit runs in deep mode by default."
     And no analysis is performed
@@ -376,17 +376,17 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Then the gap row includes the file:line reference in the Evidence column
     And the gap row includes "arch_data.md invariant 2.3" in the Anchor Source column
 
-#### Scenario: Architect remediation plan describes only spec edits
+#### Scenario: PM remediation plan describes only spec edits
 
     Given the /pl-spec-code-audit command file exists
-    When the Architect reads the remediation plan instructions
-    Then the instructions explicitly state that Architect FIX edits target feature specs and anchor nodes only
+    When PM mode reads the remediation plan instructions
+    Then the instructions explicitly state that PM FIX edits target feature specs and anchor nodes only
 
-#### Scenario: Builder remediation plan describes only code edits
+#### Scenario: Engineer remediation plan describes only code edits
 
     Given the /pl-spec-code-audit command file exists
-    When the Builder reads the remediation plan instructions
-    Then the instructions explicitly state that Builder FIX edits target source code and tests only
+    When Engineer mode reads the remediation plan instructions
+    Then the instructions explicitly state that Engineer FIX edits target source code and tests only
 
 #### Scenario: Cross-session resume from interrupted wave
 
@@ -426,18 +426,18 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     Then the gap severity is MEDIUM
     And the gap dimension is "Policy anchoring"
 
-#### Scenario: Architect escalates code-side gap via companion file
+#### Scenario: PM escalates code-side gap via companion file
 
-    Given an Architect runs the audit and finds a code-side gap owned by the Builder
-    When the Architect processes the ESCALATE item
+    Given a PM runs the audit and finds a code-side gap owned by Engineer mode
+    When PM mode processes the ESCALATE item
     Then a [DISCOVERY] entry is added to the companion file
     And the entry includes Source, Severity, Details, and Suggested fix fields
     And ${TOOLS_ROOT}/cdd/status.sh is run after committing
 
-#### Scenario: Builder escalates spec-side gap via companion file
+#### Scenario: Engineer escalates spec-side gap via companion file
 
-    Given a Builder runs the audit and finds a spec-side gap owned by the Architect
-    When the Builder processes the ESCALATE item
+    Given an Engineer runs the audit and finds a spec-side gap owned by PM mode
+    When Engineer mode processes the ESCALATE item
     Then a [DISCOVERY] or [SPEC_PROPOSAL] entry is added to the companion file
     And the entry includes Source, Severity, Details, and Suggested spec change fields
 

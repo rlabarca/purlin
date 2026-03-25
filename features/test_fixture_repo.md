@@ -33,7 +33,7 @@ Fixture states are git tags (not branches). Tags are immutable -- once created, 
 
 - `<project-ref>` is the project branch or version the fixtures target (e.g., `main`, `v2`, `release-1.x`). Most single-branch projects use `main/`.
 - `<feature-name>` matches the feature file name without extension (e.g., `cdd_branch_collab`).
-- `<scenario-slug>` is an Architect-chosen, short descriptive identifier (2-4 words, kebab-case with hyphens). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`. Note: `<feature-name>` uses underscores (matching the feature filename), while `<scenario-slug>` uses hyphens. This distinction is intentional -- filenames follow Python/filesystem conventions, slugs follow URL/kebab-case conventions.
+- `<scenario-slug>` is a PM-chosen, short descriptive identifier (2-4 words, kebab-case with hyphens). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`. Note: `<feature-name>` uses underscores (matching the feature filename), while `<scenario-slug>` uses hyphens. This distinction is intentional -- filenames follow Python/filesystem conventions, slugs follow URL/kebab-case conventions.
 
 **Examples:**
 - `main/cdd_branch_collab/sync-state-ahead`
@@ -86,7 +86,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 **Prune command:** `fixture prune <repo-url>` scans all tags via `git ls-remote --tags`, extracts the `<feature-name>` component from each tag path, and checks whether a matching `features/<feature-name>.md` exists in the current project. Tags whose feature file is missing or has a tombstone (`features/tombstones/<feature-name>.md`) are listed as orphans.
 
-**Tombstone integration:** When the Architect retires a feature via `/pl-tombstone`, and the feature spec has `> Test Fixtures:` metadata, the tombstone protocol gains a reminder step: "Run `fixture prune <repo-url>` to flag this feature's fixture tags for deletion."
+**Tombstone integration:** When PM mode retires a feature via `/pl-tombstone`, and the feature spec has `> Test Fixtures:` metadata, the tombstone protocol gains a reminder step: "Run `fixture prune <repo-url>` to flag this feature's fixture tags for deletion."
 
 ### 2.6 Fixture Trigger Decision Matrix
 
@@ -94,44 +94,44 @@ Fixtures are recommended and created by different agents at different stages. Th
 
 | Role | Trigger | Action |
 |------|---------|--------|
-| **Architect** | Writing a spec where scenarios need controlled project state (multi-feature interactions, specific lifecycle states, config variations) | Declare `### Integration Test Fixture Tags` section with tag table and state descriptions in the feature spec |
-| **Builder** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag |
+| **PM** | Writing a spec where scenarios need controlled project state (multi-feature interactions, specific lifecycle states, config variations) | Declare `### Integration Test Fixture Tags` section with tag table and state descriptions in the feature spec |
+| **Engineer** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag |
 | **QA** (during `/pl-regression-author`) | Scenario needs state beyond inline `setup_commands` | Create fixtures directly via `fixture add-tag`; record in `fixture_usage.json` |
-| **QA** (during `/pl-regression-author`) | Feature has NO Architect-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
+| **QA** (during `/pl-regression-author`) | Feature has NO PM-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
 
-**Key principle:** QA is authorized to create fixtures without Architect pre-declaration. The Architect declares fixture needs when obvious at spec time; QA discovers needs during regression authoring. Both paths are valid. The Architect path provides upfront planning; the QA path captures discoveries made during test design.
+**Key principle:** QA is authorized to create fixtures without PM pre-declaration. PM mode declares fixture needs when obvious at spec time; QA discovers needs during regression authoring. Both paths are valid. PM mode path provides upfront planning; the QA path captures discoveries made during test design.
 
-### 2.6.1 Architect Workflow
+### 2.6.1 PM Workflow
 
-1. While designing a feature, the Architect identifies scenarios that need specific project state (git state, config values, branch topologies, etc.).
-2. The Architect prompts the user: "These scenarios need controlled state. Want to use a fixture repo for automated testing?"
-3. If yes: the user creates an empty git repo for test fixtures. Before recording the URL, the Architect MUST verify access (see Section 2.6.4).
+1. While designing a feature, PM mode identifies scenarios that need specific project state (git state, config values, branch topologies, etc.).
+2. PM mode prompts the user: "These scenarios need controlled state. Want to use a fixture repo for automated testing?"
+3. If yes: the user creates an empty git repo for test fixtures. Before recording the URL, PM mode MUST verify access (see Section 2.6.4).
 4. If no: scenarios stay manual (`@manual-interactive` / `@manual-visual`).
-5. The Architect writes scenarios with Given steps that reference fixture state (e.g., "Given the fixture tag `main/cdd_branch_collab/sync-state-ahead` is checked out").
+5. PM mode writes scenarios with Given steps that reference fixture state (e.g., "Given the fixture tag `main/cdd_branch_collab/sync-state-ahead` is checked out").
 
-### 2.6.2 Builder Workflow
+### 2.6.2 Engineer Workflow
 
-1. The Builder reads the feature spec and identifies fixture tag sections declaring needed states.
-2. The Builder MUST check whether the fixture repo exists at the convention path (or per-feature override). If it does not exist, the Builder runs the setup script (see step 7) or creates one. The Builder MUST prompt the user when the fixture repo is missing and explain what will be created.
-3. The Builder uses `fixture init` to create the bare repo (if not already present) and `fixture add-tag` to create each declared tag from a constructed state directory.
+1. Engineer mode reads the feature spec and identifies fixture tag sections declaring needed states.
+2. Engineer mode MUST check whether the fixture repo exists at the convention path (or per-feature override). If it does not exist, Engineer mode runs the setup script (see step 7) or creates one. Engineer mode MUST prompt the user when the fixture repo is missing and explain what will be created.
+3. Engineer mode uses `fixture init` to create the bare repo (if not already present) and `fixture add-tag` to create each declared tag from a constructed state directory.
 4. Each tag points to a commit containing the project state for that scenario.
 5. Each tagged commit has a clear message describing the state it represents.
-6. **Remote push:** If the feature spec declares `> Test Fixtures: <remote-url>`, the Builder MUST push tags to the remote via `fixture push <remote-url>`. The Critic validates against the remote URL, so tags that exist only locally will not satisfy the Critic gate. If push fails, guide the user through access setup and retry (see Section 2.12).
-7. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
-8. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
+6. **Remote push:** If the feature spec declares `> Test Fixtures: <remote-url>`, Engineer mode MUST push tags to the remote via `fixture push <remote-url>`. The Critic validates against the remote URL, so tags that exist only locally will not satisfy the Critic gate. If push fails, guide the user through access setup and retry (see Section 2.12).
+7. Engineer mode writes the automated test code that checks out the tag, runs the check, and asserts results.
+8. Engineer mode creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
-   - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
+   - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is an Engineer decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
 ### 2.6.3 QA Workflow
 
-QA MAY create and manage fixtures directly during regression authoring (`/pl-regression-author`). This eliminates the handoff delay between QA discovering a fixture need and Builder creating it.
+QA MAY create and manage fixtures directly during regression authoring (`/pl-regression-author`). This eliminates the handoff delay between QA discovering a fixture need and Engineer creating it.
 
 1. During regression authoring, QA evaluates fixture needs per the decision logic in `regression_testing.md` Section 2.10.1.
 2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.
 3. QA uses `fixture add-tag` to create fixture tags from constructed state directories.
 4. QA records fixture usage in `tests/qa/fixture_usage.json`.
 
-**Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). The Builder creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
+**Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). Engineer mode creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
 
 ### 2.6.4 Fixture URL Access Verification
 
@@ -190,7 +190,7 @@ For agent startup/resume scenarios:
 
 ### 2.9 Critic Validation
 
-The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Builder action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
+The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Engineer action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
 
 This validation is also triggered when a feature has `> Test Fixtures:` metadata and a scenario's Given step references a fixture tag by name.
 
@@ -198,8 +198,8 @@ This validation is also triggered when a feature has `> Test Fixtures:` metadata
 
 The Critic handles two distinct states when fixture tags are declared:
 
-1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
-2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
+1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Engineer action items.
+2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Engineer action item (category: `fixture_repo_unavailable`) instructing Engineer mode to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
 **SSH fallback for remote repos:**
 
@@ -241,16 +241,16 @@ QA announces fixture usage during authoring: `"Using fixture tag main/instructio
 
 When a feature spec declares `> Test Fixtures: <remote-url>`, the Critic validates tags against the remote repo (via `git ls-remote --tags`). Tags must exist on the remote for the Critic to clear them. The local convention-path repo is a staging area; the remote is the source of truth for declared fixtures.
 
-**Builder push workflow:**
+**Engineer push workflow:**
 
 When creating fixtures for a feature with a remote configured (via `fixture remote` or `> Test Fixtures:` metadata):
 
 1. Create tags locally via `fixture add-tag` — auto-push handles the rest. Each `add-tag` call automatically pushes the new tag to the configured remote (see Section 2.4).
-2. If auto-push fails (authentication, permissions), the Builder:
+2. If auto-push fails (authentication, permissions), Engineer mode:
    a. Prints a clear diagnostic: what failed, what access is needed.
    b. Guides the user through setting up push access (SSH key, personal access token, repo permissions).
    c. After the user confirms access is configured, retries via `fixture push <url>`.
-   d. Does NOT ask the user to push manually — the Builder pushes once it has access.
+   d. Does NOT ask the user to push manually — Engineer mode pushes once it has access.
 3. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
 4. Re-run `tools/cdd/status.sh` to confirm the Critic clears the fixture validation.
 
@@ -258,10 +258,10 @@ When creating fixtures for a feature with a remote configured (via `fixture remo
 
 When a feature needs a fixture repo and no remote URL is configured:
 
-1. The Builder prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, Critic-validated) or local only?"
-2. If the user provides a remote URL, the Builder runs `fixture remote <url>` to configure the project-wide remote. This stores the URL in config, connects or clones the repo, and syncs any existing local tags.
-3. If the user wants to create a new remote repo, the Builder guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL." Then runs `fixture remote <url>`.
-4. For per-feature overrides (rare), the Builder records `> Test Fixtures: <url>` in the feature spec instead.
+1. Engineer mode prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, Critic-validated) or local only?"
+2. If the user provides a remote URL, Engineer mode runs `fixture remote <url>` to configure the project-wide remote. This stores the URL in config, connects or clones the repo, and syncs any existing local tags.
+3. If the user wants to create a new remote repo, Engineer mode guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL." Then runs `fixture remote <url>`.
+4. For per-feature overrides (rare), Engineer mode records `> Test Fixtures: <url>` in the feature spec instead.
 
 **Checkout from remote:**
 

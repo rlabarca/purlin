@@ -14,7 +14,7 @@ This feature defines the `critic_consistency_check` local release step: a Purlin
 
 ### 2.1 Phase 1: Audit Scope
 
-The Architect reads the following files:
+PM mode reads the following files:
 
 - `features/critic_tool.md`
 - `features/policy_critic.md`
@@ -25,7 +25,7 @@ The Architect reads the following files:
 
 ### 2.2 Phase 1: Audit Checks
 
-The Architect checks for:
+PM mode checks for:
 
 1. **Deprecated terminology.** All files MUST use "coordination engine" — not "quality gate" — when describing the Critic's role.
 2. **Routing rule consistency.** Discovery type routing (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) MUST be consistent across `policy_critic.md`, HOW_WE_WORK_BASE Section 7.5, and `QA_BASE`.
@@ -34,13 +34,13 @@ The Architect checks for:
 5. **Startup mandate.** All three role files MUST mandate `tools/cdd/status.sh` at session start. *(Deferred: not yet automated.)*
 6. **CLI-only agent interface.** All files MUST describe the agent interface as CLI-only (never HTTP). *(Deferred: not yet automated.)*
 
-The Architect produces a findings table with severity: CRITICAL, WARNING, or OK. CRITICAL findings halt the step and the release.
+PM mode produces a findings table with severity: CRITICAL, WARNING, or OK. CRITICAL findings halt the step and the release.
 
 ### 2.3 Phase 2: README Update
 
-After a clean Phase 1 (zero CRITICAL findings), the Architect writes or updates the `## The Critic` section in README.md. The section is placed immediately after `## The Agents` and before `## Setup & Configuration`.
+After a clean Phase 1 (zero CRITICAL findings), PM mode writes or updates the `## The Critic` section in README.md. The section is placed immediately after `## The Agents` and before `## Setup & Configuration`.
 
-The Architect commits with message `docs(readme): update Role of the Critic section`.
+PM mode commits with message `docs(readme): update Role of the Critic section`.
 
 ### 2.4 Step Metadata
 
@@ -67,29 +67,29 @@ Automated detection via release_audit_automation scripts. See release_audit_auto
 
 #### Scenario: Clean audit — README updated (auto-test-only)
 Given all Critic-related files are consistent with no deprecated terminology, routing conflicts, or missing mandates,
-When the Architect executes the `critic_consistency_check` step,
-Then the Architect produces a findings table with all items at OK,
+When PM mode executes the `critic_consistency_check` step,
+Then PM mode produces a findings table with all items at OK,
 And writes or updates the `## The Critic` section in README.md,
 And commits with message `docs(readme): update Role of the Critic section`.
 
 #### Scenario: Deprecated "quality gate" terminology found (auto-test-only)
 Given one or more files still use "quality gate" instead of "coordination engine",
-When the Architect executes Phase 1 of the `critic_consistency_check` step,
-Then the Architect reports the finding as CRITICAL with the specific file and location,
+When PM mode executes Phase 1 of the `critic_consistency_check` step,
+Then PM mode reports the finding as CRITICAL with the specific file and location,
 And halts without proceeding to Phase 2 or the next release step.
 
 #### Scenario: Routing rule inconsistency found (auto-test-only)
 Given the SPEC_DISPUTE routing rule differs between `policy_critic.md` and HOW_WE_WORK_BASE Section 7.5,
-When the Architect executes Phase 1 of the `critic_consistency_check` step,
-Then the Architect reports the specific discrepancy as a CRITICAL finding,
+When PM mode executes Phase 1 of the `critic_consistency_check` step,
+Then PM mode reports the specific discrepancy as a CRITICAL finding,
 And halts until the inconsistency is resolved and the step is re-run.
 
 #### Scenario: WARNING-level finding does not halt (auto-test-only)
 Given a finding is classified as WARNING (non-critical inconsistency),
-When the Architect completes Phase 1,
-Then the Architect proceeds to Phase 2 (README update) after reporting the warning,
+When PM mode completes Phase 1,
+Then PM mode proceeds to Phase 2 (README update) after reporting the warning,
 And notes the warning in the README update commit message.
 
-### Manual Scenarios (Architect Execution)
+### Manual Scenarios (PM Execution)
 
 None.

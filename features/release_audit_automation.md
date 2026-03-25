@@ -133,7 +133,7 @@ Every script MUST produce structured JSON to stdout:
 
 ### 2.10 release_framework_doc_consistency.py (Optional Extension)
 
-**Note:** This overlaps with `doc_consistency_check.py` and `instruction_audit.py`. If the overlap is sufficient, this script MAY be omitted and its checks folded into the other two. The Builder makes this determination during implementation.
+**Note:** This overlaps with `doc_consistency_check.py` and `instruction_audit.py`. If the overlap is sufficient, this script MAY be omitted and its checks folded into the other two. Engineer mode makes this determination during implementation.
 
 **Would automate scenarios from:** `release_framework_doc_consistency.md` (4 of 4 scenarios, all deterministic detection).
 
