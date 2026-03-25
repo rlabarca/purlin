@@ -151,6 +151,17 @@ generate_launcher() {
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
+
+echo ""
+echo "WARNING: This launcher is deprecated. Use ./pl-run.sh instead."
+echo "  ./pl-run.sh              (interactive mode selection)"
+echo "  ./pl-run.sh --auto-build (start building immediately)"
+echo "  ./pl-run.sh --pm         (start in PM mode)"
+echo "  ./pl-run.sh --qa         (start in QA mode)"
+echo ""
+echo "Old launchers will be removed in a future version."
+echo ""
+sleep 2
 LAUNCHER_EOF
 
     # Part 2: CORE_DIR with submodule path (expanded)
@@ -300,6 +311,273 @@ LAUNCHER_EOF
     cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "${DISPLAY_NAME}"
 claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
+LAUNCHER_EOF
+
+    chmod +x "$OUTPUT_FILE"
+}
+
+# Generate the unified Purlin launcher script (pl-run.sh).
+# Usage: generate_purlin_launcher <output_file>
+generate_purlin_launcher() {
+    local OUTPUT_FILE="$1"
+    local FRAMEWORK_VAR="\$SCRIPT_DIR/$SUBMODULE_NAME"
+    local TOOLS_ROOT="$SUBMODULE_NAME/tools"
+
+    # Part 1: Shebang and SCRIPT_DIR (literal)
+    cat > "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
+
+# Parse arguments
+PURLIN_MODE=""
+PURLIN_AUTO_START=""
+PURLIN_MODEL_OVERRIDE=""
+PURLIN_EFFORT_OVERRIDE=""
+PURLIN_WORKTREE=""
+PURLIN_FIND_WORK=""
+PURLIN_VERIFY_FEATURE=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --model)
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                PURLIN_MODEL_OVERRIDE="$2"
+                shift 2
+            else
+                # Bare --model: trigger interactive selection
+                PURLIN_MODEL_OVERRIDE="__interactive__"
+                shift
+            fi
+            ;;
+        --effort)
+            PURLIN_EFFORT_OVERRIDE="$2"
+            shift 2
+            ;;
+        --mode)
+            PURLIN_MODE="$2"
+            shift 2
+            ;;
+        --auto-build)
+            PURLIN_MODE="engineer"
+            PURLIN_AUTO_START="true"
+            shift
+            ;;
+        --auto-verify)
+            PURLIN_MODE="qa"
+            PURLIN_AUTO_START="true"
+            shift
+            ;;
+        --pm) PURLIN_MODE="pm"; shift ;;
+        --qa) PURLIN_MODE="qa"; shift ;;
+        --verify)
+            PURLIN_MODE="qa"
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                PURLIN_VERIFY_FEATURE="$2"
+                shift 2
+            else
+                shift
+            fi
+            ;;
+        --auto-start) PURLIN_AUTO_START="true"; shift ;;
+        --find-work)
+            PURLIN_FIND_WORK="$2"
+            shift 2
+            ;;
+        --worktree) PURLIN_WORKTREE="true"; shift ;;
+        *) shift ;;
+    esac
+done
+LAUNCHER_EOF
+
+    # Part 2: CORE_DIR with submodule path (expanded)
+    cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
+CORE_DIR="$FRAMEWORK_VAR"
+TOOLS_ROOT="$TOOLS_ROOT"
+LAUNCHER_EOF
+
+    # Part 3: CORE_DIR fallback, terminal identity, and first-run detection (literal)
+    cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+
+# Fall back to local instructions/ if not a submodule consumer
+if [ ! -d "$CORE_DIR/instructions" ]; then
+    CORE_DIR="$SCRIPT_DIR"
+fi
+
+# Source terminal identity helper (no-op if missing)
+if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
+    source "$CORE_DIR/tools/terminal/identity.sh"
+fi
+
+# First-run / model selection
+AGENT_ROLE="purlin"
+export AGENT_ROLE
+RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
+
+# Check if purlin config exists
+HAS_CONFIG="false"
+if [ -f "$RESOLVER" ]; then
+    HAS_CONFIG=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" has_agent_config purlin 2>/dev/null || echo "false")
+fi
+
+if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ "$HAS_CONFIG" == "false" ]]; then
+    echo ""
+    echo "Select model:"
+    echo "  1. Opus 4.6         (200K context)"
+    echo "  2. Sonnet 4.6       (200K context, cost-efficient)"
+    echo "  3. Opus 4.6 [1M]    (1M context, extended)"
+    echo ""
+    read -p "Choice [1]: " MODEL_CHOICE
+    MODEL_CHOICE="${MODEL_CHOICE:-1}"
+
+    case "$MODEL_CHOICE" in
+        1) SELECTED_MODEL="claude-opus-4-6" ;;
+        2) SELECTED_MODEL="claude-sonnet-4-6" ;;
+        3) SELECTED_MODEL="claude-opus-4-6[1m]" ;;
+        *) SELECTED_MODEL="claude-opus-4-6" ;;
+    esac
+
+    echo ""
+    echo "Select effort:"
+    echo "  1. high   (thorough)"
+    echo "  2. medium (balanced)"
+    echo ""
+    read -p "Choice [1]: " EFFORT_CHOICE
+    EFFORT_CHOICE="${EFFORT_CHOICE:-1}"
+
+    case "$EFFORT_CHOICE" in
+        1) SELECTED_EFFORT="high" ;;
+        2) SELECTED_EFFORT="medium" ;;
+        *) SELECTED_EFFORT="high" ;;
+    esac
+
+    # Store selection
+    if [ -f "$RESOLVER" ]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$SELECTED_MODEL" 2>/dev/null || true
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$SELECTED_EFFORT" 2>/dev/null || true
+    fi
+    echo ""
+    echo "Stored in .purlin/config.local.json. Override with --model/--effort."
+    echo ""
+fi
+
+# --- Read agent config via resolver ---
+AGENT_MODEL=""
+AGENT_EFFORT=""
+AGENT_BYPASS="false"
+AGENT_FIND_WORK="true"
+AGENT_AUTO_START="false"
+AGENT_MODEL_WARNING=""
+AGENT_MODEL_WARNING_DISMISSED="false"
+
+if [ -f "$RESOLVER" ]; then
+    eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
+fi
+
+# --- Model warning display and auto-acknowledge ---
+if [ -n "$AGENT_MODEL_WARNING" ] && [ "$AGENT_MODEL_WARNING_DISMISSED" != "true" ]; then
+    echo "============================================================" >&2
+    echo "WARNING: $AGENT_MODEL_WARNING" >&2
+    echo "By continuing, you are acknowledging this warning." >&2
+    echo "============================================================" >&2
+    if [ -f "$RESOLVER" ]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" acknowledge_warning "$AGENT_MODEL" 2>/dev/null
+    fi
+fi
+
+# CLI overrides
+if [[ -n "$PURLIN_MODEL_OVERRIDE" && "$PURLIN_MODEL_OVERRIDE" != "__interactive__" ]]; then
+    # Resolve short names
+    case "$PURLIN_MODEL_OVERRIDE" in
+        opus|Opus*) AGENT_MODEL="claude-opus-4-6" ;;
+        sonnet|Sonnet*) AGENT_MODEL="claude-sonnet-4-6" ;;
+        haiku|Haiku*) AGENT_MODEL="claude-haiku-4-5-20251001" ;;
+        *) AGENT_MODEL="$PURLIN_MODEL_OVERRIDE" ;;
+    esac
+fi
+if [[ -n "$PURLIN_EFFORT_OVERRIDE" ]]; then
+    AGENT_EFFORT="$PURLIN_EFFORT_OVERRIDE"
+fi
+if [[ -n "$PURLIN_AUTO_START" ]]; then
+    AGENT_AUTO_START="true"
+fi
+if [[ "$PURLIN_FIND_WORK" == "false" ]]; then
+    AGENT_FIND_WORK="false"
+fi
+
+# --- Prompt assembly ---
+PROMPT_FILE=$(mktemp)
+cleanup() {
+    type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
+    rm -f "$PROMPT_FILE"
+}
+trap cleanup EXIT
+
+cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
+printf "\n\n" >> "$PROMPT_FILE"
+
+if [ -f "$CORE_DIR/instructions/PURLIN_BASE.md" ]; then
+    cat "$CORE_DIR/instructions/PURLIN_BASE.md" >> "$PROMPT_FILE"
+fi
+
+if [ -f "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
+    printf "\n\n" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
+fi
+
+if [ -f "$SCRIPT_DIR/.purlin/PURLIN_OVERRIDES.md" ]; then
+    printf "\n\n" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.purlin/PURLIN_OVERRIDES.md" >> "$PROMPT_FILE"
+fi
+
+# --- Session message construction ---
+SESSION_MSG="Begin Purlin session."
+if [[ -n "$PURLIN_MODE" ]]; then
+    case "$PURLIN_MODE" in
+        engineer) SESSION_MSG="Begin Purlin session. Enter Engineer mode. Run /pl-build." ;;
+        qa)
+            if [[ -n "${PURLIN_VERIFY_FEATURE:-}" ]]; then
+                SESSION_MSG="Begin Purlin session. Enter QA mode. Run /pl-verify $PURLIN_VERIFY_FEATURE."
+            else
+                SESSION_MSG="Begin Purlin session. Enter QA mode. Run /pl-verify."
+            fi
+            ;;
+        pm) SESSION_MSG="Begin Purlin session. Enter PM mode." ;;
+    esac
+fi
+
+# --- Worktree support ---
+if [[ "$PURLIN_WORKTREE" == "true" ]]; then
+    WORKTREE_BRANCH="purlin-${PURLIN_MODE:-open}-$(date +%Y%m%d-%H%M%S)"
+    WORKTREE_DIR="$SCRIPT_DIR/.purlin/worktrees/$WORKTREE_BRANCH"
+    git worktree add "$WORKTREE_DIR" -b "$WORKTREE_BRANCH" 2>/dev/null
+    cd "$WORKTREE_DIR"
+    export PURLIN_PROJECT_ROOT="$WORKTREE_DIR"
+    echo "Working in worktree: $WORKTREE_DIR"
+    echo "Branch: $WORKTREE_BRANCH"
+    echo "Run /pl-merge when done to merge back."
+    echo ""
+fi
+
+# --- Build CLI args and dispatch ---
+CLI_ARGS=()
+CLI_ARGS+=(--model "$AGENT_MODEL")
+
+if [[ -n "$AGENT_EFFORT" && "$AGENT_EFFORT" != "default" ]]; then
+    CLI_ARGS+=(--effort "$AGENT_EFFORT")
+fi
+
+# Purlin always gets full permissions
+CLI_ARGS+=(--dangerously-skip-permissions)
+
+# Terminal identity
+DISPLAY_NAME="Purlin"
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$DISPLAY_NAME"
+
+PROJECT_NAME="$(basename "$SCRIPT_DIR")"
+CLI_ARGS+=(--remote-control "$PROJECT_NAME | Purlin")
+
+claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "$SESSION_MSG"
 LAUNCHER_EOF
 
     chmod +x "$OUTPUT_FILE"
@@ -768,6 +1046,7 @@ else:
     generate_launcher "$PROJECT_ROOT/pl-run-builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
     generate_launcher "$PROJECT_ROOT/pl-run-qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
     generate_launcher "$PROJECT_ROOT/pl-run-pm.sh"       "pm"        "PM_BASE.md"         "PM_OVERRIDES.md"       "Begin PM session."
+    generate_purlin_launcher "$PROJECT_ROOT/pl-run.sh"
 
     # 3.6 Command File Distribution
     copy_command_files
@@ -839,7 +1118,7 @@ else:
     # 3.15 Post-Init Staging (project_init.md §2.3 step 14)
     # Stage exactly the files created by init — never git add -A or git add .
     git -C "$PROJECT_ROOT" add .purlin/ 2>/dev/null || true
-    git -C "$PROJECT_ROOT" add pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh pl-run.sh 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .claude/commands/ 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .claude/agents/ 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .claude/settings.json 2>/dev/null || true
@@ -943,10 +1222,20 @@ else
     generate_launcher "$PROJECT_ROOT/pl-run-builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
     generate_launcher "$PROJECT_ROOT/pl-run-qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
     generate_launcher "$PROJECT_ROOT/pl-run-pm.sh"       "pm"        "PM_BASE.md"         "PM_OVERRIDES.md"       "Begin PM session."
+    generate_purlin_launcher "$PROJECT_ROOT/pl-run.sh"
     # Remove stale launchers from previous naming conventions
     for stale in run_architect.sh run_builder.sh run_qa.sh; do
         rm -f "$PROJECT_ROOT/$stale"
     done
+    # Stale worktrees from previous sessions
+    if [ -d "$PROJECT_ROOT/.purlin/worktrees" ]; then
+        for wt in "$PROJECT_ROOT"/.purlin/worktrees/*/; do
+            if [ -d "$wt" ]; then
+                # Check if worktree is still valid
+                git worktree list 2>/dev/null | grep -q "$(basename "$wt")" || rm -rf "$wt"
+            fi
+        done
+    fi
 
     # 4.6 Claude Code Hook Installation (project_init.md §2.15)
     install_session_hook
