@@ -165,8 +165,20 @@ def _extract_prerequisites(feature_file):
     return prereqs
 
 
+# Pre-compiled regexes for section heading detection.
+# These handle both numbered (## 2. Requirements) and unnumbered (## Requirements) forms.
+_RE_REQUIREMENTS = re.compile(r'^##\s+(\d+\.\s*)?requirements\b', re.IGNORECASE)
+_RE_UNIT_TESTS = re.compile(r'^###\s+(\d+\.\s*)?unit\s+tests\b', re.IGNORECASE)
+_RE_QA_SCENARIOS = re.compile(r'^###\s+(\d+\.\s*)?qa\s+scenarios\b', re.IGNORECASE)
+_RE_VISUAL_SPEC = re.compile(r'^##\s+(\d+\.\s*)?visual\s+specification\b', re.IGNORECASE)
+
+
 def _check_sections(feature_file):
-    """Check for key section headings in a feature file."""
+    """Check for key section headings in a feature file.
+
+    Handles both numbered headings (## 2. Requirements) and plain headings
+    (## Requirements).
+    """
     sections = {
         "requirements": False,
         "unit_tests": False,
@@ -176,14 +188,15 @@ def _check_sections(feature_file):
     try:
         with open(feature_file, 'r', encoding='utf-8') as f:
             for line in f:
-                lower = line.lower().strip()
-                if lower.startswith("## requirements") or lower.startswith("## overview"):
+                stripped = line.strip()
+                if _RE_REQUIREMENTS.match(stripped):
                     sections["requirements"] = True
-                elif lower.startswith("### unit tests"):
+                elif _RE_UNIT_TESTS.match(stripped):
                     sections["unit_tests"] = True
-                elif lower.startswith("### qa scenarios"):
+                elif _RE_QA_SCENARIOS.match(stripped):
                     sections["qa_scenarios"] = True
-                elif lower.startswith("## visual specification"):
+                elif _RE_VISUAL_SPEC.match(stripped):
+
                     sections["visual_spec"] = True
     except Exception:
         pass
