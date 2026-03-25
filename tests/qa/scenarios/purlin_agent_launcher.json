@@ -1,0 +1,17 @@
+{
+  "feature": "purlin_agent_launcher",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "purlin_agent_launcher_suite",
+      "script_path": "tests/qa/test_purlin_agent_launcher_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "agent launcher regression suite ran to completion"
+        }
+      ]
+    }
+  ]
+}
