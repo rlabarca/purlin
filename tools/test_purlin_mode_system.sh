@@ -1,6 +1,6 @@
 #!/bin/bash
 # test_purlin_mode_system.sh -- Unit tests for the Purlin Mode System feature.
-# Covers the 10 unit test scenarios from features/purlin_mode_system.md plus
+# Covers all 13 unit test scenarios from features/purlin_mode_system.md plus
 # additional structural checks (dual headers on all skills, no new-only headers).
 # Produces tests/purlin_mode_system/tests.json at project root.
 set -uo pipefail
@@ -280,6 +280,77 @@ else
     log_fail "Cannot check PM prefix (PURLIN_BASE.md missing)"
     log_fail "Cannot check QA prefix (PURLIN_BASE.md missing)"
     log_fail "Cannot check Purlin-Mode trailer (PURLIN_BASE.md missing)"
+fi
+
+# --- Scenario 11: iTerm badge set on mode activation ---
+echo ""
+echo "[Scenario] iTerm badge set on mode activation"
+
+if [ -f "$PURLIN_BASE" ]; then
+    if grep -q 'set_iterm_badge' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md references set_iterm_badge for mode activation"
+    else
+        log_fail "PURLIN_BASE.md missing set_iterm_badge reference"
+    fi
+
+    if grep -q 'set_term_title' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md references set_term_title for mode activation"
+    else
+        log_fail "PURLIN_BASE.md missing set_term_title reference"
+    fi
+
+    if grep -q '<project> - <mode>' "$PURLIN_BASE" || grep -q '<project>.*<mode>' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md specifies title format <project> - <mode>"
+    else
+        log_fail "PURLIN_BASE.md missing title format <project> - <mode>"
+    fi
+else
+    log_fail "PURLIN_BASE.md does not exist (needed for iTerm badge check)"
+    log_fail "Cannot check set_term_title (PURLIN_BASE.md missing)"
+    log_fail "Cannot check title format (PURLIN_BASE.md missing)"
+fi
+
+# --- Scenario 12: iTerm badge reset to Purlin in open mode ---
+echo ""
+echo "[Scenario] iTerm badge reset to Purlin in open mode"
+
+if [ -f "$PURLIN_BASE" ]; then
+    if grep -q 'badge.*=.*Purlin' "$PURLIN_BASE" || grep -q 'badge = `Purlin`' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md specifies open mode badge = Purlin"
+    else
+        log_fail "PURLIN_BASE.md missing open mode badge = Purlin"
+    fi
+
+    if grep -q 'title.*=.*<project> - Purlin' "$PURLIN_BASE" || grep -q '<project> - Purlin' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md specifies open mode title = <project> - Purlin"
+    else
+        log_fail "PURLIN_BASE.md missing open mode title = <project> - Purlin"
+    fi
+else
+    log_fail "PURLIN_BASE.md does not exist (needed for open mode badge check)"
+    log_fail "Cannot check open mode title (PURLIN_BASE.md missing)"
+fi
+
+# --- Scenario 13: iTerm badge updates on mode switch ---
+echo ""
+echo "[Scenario] iTerm badge updates on mode switch"
+
+if [ -f "$PURLIN_BASE" ]; then
+    if grep -q 'mode switch.*update' "$PURLIN_BASE" || grep -q 'update both badge and title.*new mode' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md specifies badge+title update on mode switch"
+    else
+        log_fail "PURLIN_BASE.md missing badge+title update on mode switch"
+    fi
+
+    # Verify identity.sh helper is referenced for agent use
+    if grep -q 'terminal/identity.sh' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md references terminal/identity.sh helper"
+    else
+        log_fail "PURLIN_BASE.md missing terminal/identity.sh reference"
+    fi
+else
+    log_fail "PURLIN_BASE.md does not exist (needed for mode switch badge check)"
+    log_fail "Cannot check identity.sh reference (PURLIN_BASE.md missing)"
 fi
 
 # --- Additional: All skill files have dual headers ---

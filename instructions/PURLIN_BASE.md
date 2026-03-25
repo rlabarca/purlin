@@ -111,7 +111,20 @@ QA can author regression test JSON directly — this is QA-owned, not app code.
 ### 4.1 Activation
 - Invoking a mode-activating skill activates that skill's declared mode.
 - `/pl-mode <pm|engineer|qa>` explicitly switches mode.
-- The agent updates the terminal identity on mode switch (e.g., "Purlin: Engineer").
+- The agent updates the terminal identity on mode switch (see 4.1.1).
+
+#### 4.1.1 iTerm Terminal Identity
+On every mode activation (including startup in open mode), the agent MUST run a Bash command to update the iTerm badge and terminal title:
+
+```bash
+source {tools_root}/terminal/identity.sh && set_iterm_badge "<mode>" && set_term_title "<project> - <mode>"
+```
+
+- `<mode>` is the mode name: `Engineer`, `PM`, `QA`, or `Purlin` (for open mode).
+- `<project>` is derived from the working directory name (basename of `$PURLIN_PROJECT_ROOT` or the project root).
+- On mode activation: badge = mode name (e.g., `Engineer`), title = `<project> - <mode>` (e.g., `purlin - Engineer`).
+- In open mode (no mode active): badge = `Purlin`, title = `<project> - Purlin`.
+- On mode switch: update both badge and title to the new mode immediately.
 
 ### 4.2 Pre-Switch Check
 Before switching modes, if uncommitted work exists in the current mode:
