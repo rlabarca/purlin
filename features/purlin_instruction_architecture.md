@@ -48,6 +48,14 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 - Changes to the instruction file are driven by feature specs, same as any other code change.
 - The instruction file is NOT a specification — it is an implementation of the spec in this feature file.
 
+### 2.6 Base Instructions vs. Skill Protocols
+
+- PURLIN_BASE.md MUST contain: philosophy, mode definitions, write-access boundaries, mode switching protocol, ownership model, startup protocol, knowledge colocation, lifecycle, testing split.
+- PURLIN_BASE.md MUST NOT contain: detailed step-by-step workflow protocols for specific operations (these belong in skill files).
+- The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol, not a base instruction.
+- The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol, not a base instruction.
+- Base instructions set BOUNDARIES. Skills carry PROTOCOLS.
+
 ---
 
 ## 3. Scenarios

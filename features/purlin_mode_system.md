@@ -65,6 +65,12 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - References to "Architect action items" MUST be replaced with "PM action items".
 - References to "Builder action items" MUST be replaced with "Engineer action items".
 
+### 2.8b Regression Failure Documentation
+
+- When `/pl-regression evaluate` finds a FAIL result, QA MUST write a `[DISCOVERY]` entry to the feature's companion file (`features/<name>.impl.md`) with: scenario name, expected assertion, actual output (quoted), attempt count, and suggested fix direction.
+- This gives the Engineer everything needed to fix the failure without running QA mode.
+- On re-evaluation after a fix: if now PASS, mark the entry `[RESOLVED]`. If still FAIL, update attempt count and actual output.
+
 ### 2.8 Commit Attribution
 
 - Engineer commits: `feat()`, `fix()`, `test()` prefixes.
@@ -175,6 +181,15 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     When the user switches to QA mode
     Then the iTerm badge changes to "QA"
     And the iTerm remote control name changes to "<project> - QA"
+
+#### Scenario: Regression evaluate documents failure in companion file
+
+    Given feature "skill_behavior_regression" has regression_status FAIL
+    When /pl-regression evaluate is invoked
+    Then features/skill_behavior_regression.impl.md contains a [DISCOVERY] entry
+    And the entry includes the scenario name that failed
+    And the entry includes the expected assertion pattern
+    And the entry includes the actual output
 
 ### QA Scenarios
 
