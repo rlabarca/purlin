@@ -32,6 +32,7 @@
         }
     ],
     "agents": {
+        "purlin":    { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": false, "default_mode": null },
         "pm":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true, "find_work": true, "auto_start": false },
         "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": true },
         "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": true },
