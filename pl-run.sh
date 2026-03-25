@@ -87,7 +87,7 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-        --auto-start) # desc: Enable auto-start (begin executing immediately).
+        --auto-start) # desc: With --mode: begin executing immediately (no approval prompt). No effect without --mode.
             PURLIN_AUTO_START="true"; shift ;;
         --find-work) # desc: Set work discovery (true/false).
             PURLIN_FIND_WORK="$2"
