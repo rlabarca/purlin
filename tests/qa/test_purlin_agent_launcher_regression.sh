@@ -182,12 +182,13 @@ else
     exit 0
 fi
 
-# T7: Prompt contains HOW_WE_WORK_BASE.md content
-# Distinctive string: "Continuously Design-Driven" from line 9
+# T7: Prompt does NOT contain HOW_WE_WORK_BASE.md content
+# Per purlin_instruction_architecture spec: launcher loads only PURLIN_BASE.md
+# Distinctive string: "Continuously Design-Driven" from HOW_WE_WORK_BASE.md
 if grep -q "Continuously Design-Driven" "$PROMPT_CONTENT_FILE"; then
-    log_pass "T7: prompt contains HOW_WE_WORK_BASE.md content (found 'Continuously Design-Driven')"
+    log_fail "T7: prompt contains HOW_WE_WORK_BASE.md content (should not be loaded)"
 else
-    log_fail "T7: prompt missing HOW_WE_WORK_BASE.md content (expected 'Continuously Design-Driven')"
+    log_pass "T7: prompt correctly excludes HOW_WE_WORK_BASE.md content"
 fi
 
 # T8: Prompt contains PURLIN_BASE.md content
@@ -213,17 +214,16 @@ else
     log_pass "T9: PURLIN_OVERRIDES.md does not exist (optional, correctly skipped)"
 fi
 
-# T10: Verify instruction ordering -- HOW_WE_WORK_BASE.md appears before PURLIN_BASE.md
-HWW_LINE=$(grep -n "Continuously Design-Driven" "$PROMPT_CONTENT_FILE" | head -1 | cut -d: -f1)
+# T10: Verify PURLIN_BASE.md is the sole base instruction file
+# HOW_WE_WORK_BASE.md must not appear; PURLIN_BASE.md must be present
 PB_LINE=$(grep -n "Role Definition: The Purlin Agent" "$PROMPT_CONTENT_FILE" | head -1 | cut -d: -f1)
-if [ -n "$HWW_LINE" ] && [ -n "$PB_LINE" ]; then
-    if [ "$HWW_LINE" -lt "$PB_LINE" ]; then
-        log_pass "T10: instruction ordering correct (HOW_WE_WORK_BASE before PURLIN_BASE)"
-    else
-        log_fail "T10: instruction ordering wrong (PURLIN_BASE appears before HOW_WE_WORK_BASE)"
-    fi
+HWW_LINE=$(grep -n "Continuously Design-Driven" "$PROMPT_CONTENT_FILE" | head -1 | cut -d: -f1)
+if [ -n "$PB_LINE" ] && [ -z "$HWW_LINE" ]; then
+    log_pass "T10: PURLIN_BASE.md is sole base instruction (no HOW_WE_WORK_BASE.md)"
+elif [ -n "$PB_LINE" ] && [ -n "$HWW_LINE" ]; then
+    log_fail "T10: both PURLIN_BASE.md and HOW_WE_WORK_BASE.md found (only PURLIN_BASE expected)"
 else
-    log_fail "T10: could not determine instruction ordering (markers not found)"
+    log_fail "T10: PURLIN_BASE.md marker not found in prompt"
 fi
 
 # T11: Verify AGENT_ROLE is set to "purlin" (check args for model override confirmation)
