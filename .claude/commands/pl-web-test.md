@@ -30,7 +30,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 3. Extract the base URL from the metadata (or use the URL override argument if provided).
 
 **If no arguments were provided:**
-1. Run `${TOOLS_ROOT}/cdd/status.sh` and read `CRITIC_REPORT.md`.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output.
 2. Identify features in TESTING state.
 3. For each TESTING feature, read the spec and check for `> Web Test: <url>` metadata.
 4. Only features with `> Web Test:` are eligible. Skip all others silently.
@@ -76,7 +76,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 For each eligible feature:
 
-1. Read `tests/<feature_name>/critic.json` for `regression_scope`.
+1. Read the feature spec directly (`features/<feature_name>.md`) for regression scope metadata.
 2. **Scope filtering:**
    - `cosmetic` -> Skip with note: "Feature `<name>`: QA skip (cosmetic change)."
    - `dependency-only` with empty scenarios -> Skip with note: "Feature `<name>`: QA skip (dependency-only, no scenarios in scope)."

@@ -14,11 +14,11 @@ Given the feature name provided as an argument, gate completion on all requireme
 
 ## Completion Gates
 
-1.  **TESTING state:** Confirm the feature is in TESTING state (run `${TOOLS_ROOT}/cdd/status.sh` if needed).
+1.  **TESTING state:** Confirm the feature is in TESTING state (run `${TOOLS_ROOT}/cdd/scan.sh` if needed).
 2.  **All scenarios verified:** Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
 3.  **Zero open discoveries:** Confirm there are zero OPEN or SPEC_UPDATED discoveries in `features/<name>.discoveries.md`. If the file is absent or empty, the gate passes.
 4.  **Delivery plan check:** Check `.purlin/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete -- inform the user: "Feature X is deferred until all phases are delivered (appears in Phase N)."
-5.  **[Verified] tag required:** QA completions MUST include the `[Verified]` tag. This distinguishes QA completions from Builder auto-completions and is checked by the Critic.
+5.  **[Verified] tag required:** QA completions MUST include the `[Verified]` tag. This distinguishes QA completions from Builder auto-completions and is checked by scan results.
 
 ## Execution
 
@@ -28,7 +28,7 @@ If all gates pass:
 git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"
 ```
 
-Run `${TOOLS_ROOT}/cdd/status.sh` to confirm the feature transitions to COMPLETE.
+Run `${TOOLS_ROOT}/cdd/scan.sh` to confirm the feature transitions to COMPLETE.
 
 ## Gate Failures
 

@@ -13,7 +13,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 ## Scope
 
 If an argument was provided, scope verification to `features/<arg>.md` only.
-If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch the union of: (1) ALL TESTING features from `testing_features`, and (2) features from QA action items with `visual_verification` or `regression_run` categories (these are AUTO features that may not be in the TESTING lifecycle but still need automated re-verification). Do NOT limit to `testing_features` alone. Phase A executes @auto scenarios; Phase B presents remaining manual items.
+If no argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
 
@@ -35,20 +35,20 @@ Execute these steps IN ORDER before assembling the manual checklist. Do NOT skip
 
 ### Step 0 -- Scoped Verification Modes
 
-Before any execution, check each in-scope feature's regression scope from `tests/<feature_name>/critic.json`:
+Before any execution, check each in-scope feature's regression scope by reading the feature spec directly (`features/<feature_name>.md`):
 
 *   **`full`** (or missing/default) -- Verify all scenarios and all visual checklist items.
 *   **`targeted:Scenario A,Scenario B`** -- Verify ONLY the named scenarios. Skip all other scenarios and visual items unless explicitly named.
 *   **`cosmetic`** -- Skip the feature entirely. Output: "Feature X: QA skip (cosmetic change). No scenarios queued."
-*   **`dependency-only`** -- Verify only scenarios listed in `regression_scope.scenarios`. If the list is empty, skip: "Feature X: QA skip (dependency-only, no scenarios in scope)."
+*   **`dependency-only`** -- Verify only scenarios explicitly listed in the feature spec's scope metadata. If none are listed, skip: "Feature X: QA skip (dependency-only, no scenarios in scope)."
 
-If the Critic emitted a cross-validation WARNING (e.g., `cosmetic` scope but modified files touch scenarios), present the warning and ask whether to proceed with declared scope or escalate to `full`.
+If a cross-validation concern is detected (e.g., `cosmetic` scope but modified files touch scenarios), present the warning and ask whether to proceed with declared scope or escalate to `full`.
 
 ### Step 1 -- Auto-pass builder-verified features
 
-Credit features where Builder status is DONE and zero QA scenarios exist (TestOnly or Skip in Critic). These require no QA action.
+Credit features where Builder status is DONE and zero QA scenarios exist. These require no QA action.
 
-**AUTO features are NOT auto-passed.** Features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that MUST execute in Steps 2–5. Do NOT credit, skip, or auto-complete them here — they require test execution even though they need zero human time. **Regression guidance exclusion:** Features where the Critic reports `qa_reason` = `"regression harness authoring pending"` MUST be excluded from auto-pass. Do NOT mark them `[Complete]`, do NOT commit status tags for them, do NOT edit their lifecycle tags. Acknowledge them silently in the Phase A summary and route them to Step 3 for regression authoring.
+**AUTO features are NOT auto-passed.** Features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that MUST execute in Steps 2–5. Do NOT credit, skip, or auto-complete them here — they require test execution even though they need zero human time. **Regression guidance exclusion:** Features where scan results show `qa_reason` = `"regression harness authoring pending"` MUST be excluded from auto-pass. Do NOT mark them `[Complete]`, do NOT commit status tags for them, do NOT edit their lifecycle tags. Acknowledge them silently in the Phase A summary and route them to Step 3 for regression authoring.
 
 *   When `find_work` is `true`: execute acknowledgments silently.
 *   When `find_work` is `false`: present the list and wait for user confirmation.
@@ -163,8 +163,8 @@ At each checkpoint, execute this sequence IN ORDER for all newly-clean features 
 
 1.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
 2.  **Commit status tags:** For each feature where all automated QA work passed, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit.
-3.  **Update CDD (HARD GATE):** Run `${TOOLS_ROOT}/cdd/status.sh` once to update the dashboard. Do NOT proceed to Phase B until this completes.
-4.  **Verify finalization:** Check Critic output — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
+3.  **Update CDD (HARD GATE):** Run `${TOOLS_ROOT}/cdd/scan.sh` once to refresh project state. Do NOT proceed to Phase B until this completes.
+4.  **Verify finalization:** Check scan results — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
 5.  **Verify clean workspace:** Confirm no uncommitted changes remain.
 6.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
 
@@ -291,7 +291,7 @@ Collect remaining testable items (those NOT handled in Phase A) across in-scope 
 8.  **Tier labels:** If tier classification exists in `QA_OVERRIDES.md`, prefix each feature group with its tier: `[SMOKE]`, `[STD]`, or `[FULL]`.
 9.  **Condensing rule:** For each functional scenario, produce a two-line entry: line 1 = **what to do** (setup + action, imperative voice), line 2 = **what to verify** (expected outcome). Strip Gherkin boilerplate but keep essential setup context. Visual items use `[V]` prefix with verbatim checklist text (single line).
 10. Cross-validation warnings: insert an advisory line before affected feature's items.
-11. Fixture awareness: if Critic report includes `fixture_repo_unavailable` for a feature, append `[fixture N/A]` to affected scenarios.
+11. Fixture awareness: if scan results indicate `fixture_repo_unavailable` for a feature, append `[fixture N/A]` to affected scenarios.
 12. Large visual batches (50+ visual items for one feature): offer grouped sub-prompt by screen.
 
 ### Step 7 -- Checklist Presentation
@@ -385,7 +385,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 3.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 4.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 5.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.
-6.  **Run Critic once:** `${TOOLS_ROOT}/cdd/status.sh` after all status commits. Do NOT run per-feature.
+6.  **Run scan.sh once:** `${TOOLS_ROOT}/cdd/scan.sh` after all status commits to refresh project state. Do NOT run per-feature.
 7.  **Present batch summary:**
     *   Automated: N @auto executed, M passed, K failed.
     *   Manual: N passed, M failed, K disputed.
