@@ -78,10 +78,10 @@ if [ -f "$PURLIN_BASE" ]; then
         log_fail "Mode guard does not describe blocking wrong-mode writes"
     fi
 
-    if grep -q "write-access list" "$PURLIN_BASE"; then
-        log_pass "Mode guard references write-access list verification"
+    if grep -q "file_classification.md" "$PURLIN_BASE"; then
+        log_pass "Mode guard references file_classification.md for write-access"
     else
-        log_fail "Mode guard does not reference write-access list"
+        log_fail "Mode guard does not reference file_classification.md"
     fi
 else
     log_fail "PURLIN_BASE.md does not exist (needed for mode guard)"
@@ -251,23 +251,25 @@ echo ""
 echo "[Scenario] Commit attribution with mode trailer"
 
 if [ -f "$PURLIN_BASE" ]; then
-    # Check for commit prefix conventions
-    if grep -q 'feat(scope)' "$PURLIN_BASE" || grep -q 'feat(' "$PURLIN_BASE"; then
-        log_pass "PURLIN_BASE.md defines Engineer commit prefix feat()"
+    # Commit prefixes are now in references/commit_conventions.md; PURLIN_BASE.md references it
+    if grep -q 'commit_conventions.md' "$PURLIN_BASE"; then
+        log_pass "PURLIN_BASE.md references commit_conventions.md for commit format"
     else
-        log_fail "PURLIN_BASE.md missing Engineer commit prefix convention"
+        log_fail "PURLIN_BASE.md missing reference to commit_conventions.md"
     fi
 
-    if grep -q 'spec(scope)' "$PURLIN_BASE" || grep -q 'spec(' "$PURLIN_BASE"; then
-        log_pass "PURLIN_BASE.md defines PM commit prefix spec()"
+    # Verify commit_conventions.md defines the actual prefixes
+    CC_FILE="$PROJECT_ROOT/instructions/references/commit_conventions.md"
+    if [ -f "$CC_FILE" ] && grep -q 'feat(' "$CC_FILE"; then
+        log_pass "commit_conventions.md defines Engineer commit prefix feat()"
     else
-        log_fail "PURLIN_BASE.md missing PM commit prefix convention"
+        log_fail "commit_conventions.md missing Engineer commit prefix"
     fi
 
-    if grep -q 'qa(scope)' "$PURLIN_BASE" || grep -q 'qa(' "$PURLIN_BASE"; then
-        log_pass "PURLIN_BASE.md defines QA commit prefix qa()"
+    if [ -f "$CC_FILE" ] && grep -q 'spec(' "$CC_FILE"; then
+        log_pass "commit_conventions.md defines PM commit prefix spec()"
     else
-        log_fail "PURLIN_BASE.md missing QA commit prefix convention"
+        log_fail "commit_conventions.md missing PM commit prefix"
     fi
 
     if grep -q 'Purlin-Mode:' "$PURLIN_BASE"; then
@@ -444,6 +446,28 @@ if [ -f "$PURLIN_BASE" ]; then
 else
     log_fail "PURLIN_BASE.md missing (needed for companion file gate check)"
     log_fail "Cannot check skip option"
+fi
+
+# --- Scenario: Build status tag blocked by untracked files ---
+echo ""
+echo "[Scenario] Build status tag blocked by untracked files"
+
+PL_BUILD="$COMMANDS_DIR/pl-build.md"
+if [ -f "$PL_BUILD" ]; then
+    if grep -qi 'Clean Working Tree Gate\|clean working tree' "$PL_BUILD" 2>/dev/null; then
+        log_pass "pl-build.md defines Clean Working Tree Gate"
+    else
+        log_fail "pl-build.md missing Clean Working Tree Gate"
+    fi
+
+    if grep -qi 'Untracked files.*git add\|untracked.*gitignore\|Untracked.*add to.*gitignore' "$PL_BUILD" 2>/dev/null; then
+        log_pass "Clean Working Tree Gate handles untracked files (add or gitignore)"
+    else
+        log_fail "Clean Working Tree Gate does not address untracked files"
+    fi
+else
+    log_fail "pl-build.md not found (needed for clean working tree gate check)"
+    log_fail "Cannot check untracked file handling"
 fi
 
 # --- Scenario: Build status tag blocked by missing companion entry ---

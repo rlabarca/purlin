@@ -189,11 +189,11 @@ else
         log_fail "PURLIN_BASE.md missing Active Deviations protocol"
     fi
 
-    # Check for the table format (headers: Spec says | Implementation does | Tag | PM status)
-    if grep -q "Spec says.*Implementation does.*Tag.*PM status" "$BASE_FILE"; then
-        log_pass "Active Deviations table format is present (column headers)"
+    # PURLIN_BASE.md references active_deviations.md for detailed format
+    if grep -q "references/active_deviations.md" "$BASE_FILE"; then
+        log_pass "PURLIN_BASE.md references active_deviations.md for detailed protocol"
     else
-        log_fail "Active Deviations table format missing (expected Spec says | Implementation does | Tag | PM status)"
+        log_fail "PURLIN_BASE.md missing reference to active_deviations.md"
     fi
 
     # Check for the 3 flows: INFEASIBLE, inline deviation, SPEC_PROPOSAL

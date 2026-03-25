@@ -6,5 +6,5 @@
   "total": 7,
   "test_file": "tools/test_purlin_smoke.sh",
   "scenarios": ["Promote feature to smoke tier","Create tier table when missing","Offer simplified smoke regression","Smoke suggestion identifies high-fan-out features","Smoke suggestion skips already-classified features","Verify smoke gate runs smoke regressions first","Verify smoke failure blocks further verification"],
-  "ran_at": "2026-03-25T13:35:32Z"
+  "ran_at": "2026-03-25T16:13:52Z"
 }
