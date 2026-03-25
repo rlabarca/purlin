@@ -1,5 +1,11 @@
 # Implementation Notes: Spec-Code Audit
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** test_support test file missing 3 state fields | DISCOVERY | PENDING |
+
 *   **Tool Location:** `.claude/commands/pl-spec-code-audit.md` (agent skill command file)
 *   **Test Location:** `tests/pl_spec_code_audit/test_command.py`
 *   The command is an agent instruction file, not executable code. Tests verify that the command file contains the correct instructions, keywords, structural elements, and referenced infrastructure for all 54 automated scenarios.

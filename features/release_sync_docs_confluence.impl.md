@@ -1,5 +1,11 @@
 # Implementation Notes: Sync Docs to Confluence
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ### Test Quality Audit
 - Rubric: 6/6 PASS
 - Tests: 40 total, 40 passed

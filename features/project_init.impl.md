@@ -1,5 +1,11 @@
 # Implementation Notes: Unified Project Init
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | (acknowledged) The spec's original detection method (checking for `.purlin/` in `$SUBMODULE_DIR`) does not work because `.purlin/` is tracked in the Purlin repo and appears in any submodule clone. The `$PROJECT_ROOT` git repo check achieves the same intent reliably. Spec Section 2.13 updated to reflect the correct detection method. | DISCOVERY | PENDING |
+
 *   **History:** The init.sh script originally absorbed all logic from the retired `tools/bootstrap.sh`. The full init path produces identical artifacts to what bootstrap.sh produced.
 *   **Mode Detection:** The mode check is a single `[ -d "$PROJECT_ROOT/.purlin" ]` test at the top of the script. Full init is the `else` branch; refresh is the `then` branch.
 *   **Shim Generation:** The shim is a heredoc written by init.sh. Use `git -C "$SUBMODULE_DIR" remote get-url origin` for the remote URL, `git -C "$SUBMODULE_DIR" rev-parse HEAD` for the SHA, and `git -C "$SUBMODULE_DIR" describe --tags --abbrev=0 HEAD 2>/dev/null || echo "untagged"` for the version. Embed these as comments in the shim header.

@@ -1,5 +1,11 @@
 # Implementation Notes: Config Layering
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | CLI role mode shell variable outputs use stale names — Acknowledged | DISCOVERY | PENDING |
+
 ## Consumer Inventory
 
 ### Python Consumers (import `resolve_config`)

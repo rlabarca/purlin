@@ -1,5 +1,12 @@
 # Implementation Notes: Web Test Command
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | No unit tests for port resolution, auto-start, or Playwright detection logic — Acknowledged | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** STALE verdict discovery format test too shallow | DISCOVERY | PENDING |
+
 *   **No Manual Scenarios (Intentional):** This feature automates the execution of Manual Scenarios and Visual Spec checks via Playwright MCP. It has no manual scenarios of its own because the feature's behavior is fully testable through automated scenarios exercising the skill's logic.
 *   **Playwright MCP Dependency:** The skill depends on the `@playwright/mcp` npm package being available via `npx`. Auto-setup creates an MCP server entry via `claude mcp add`. A session restart is required after MCP server addition since Claude Code loads MCP servers at startup.
 *   **Skill File Ownership:** Shared between Engineer and QA. PM mode role guard in the skill file prevents accidental invocation by PM mode.

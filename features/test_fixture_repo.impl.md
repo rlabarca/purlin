@@ -1,5 +1,11 @@
 # Implementation Notes: Test Fixture Repo
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** QA recommendation decision logic untested | DISCOVERY | PENDING |
+
 *   **Setup Script Location:** `dev/setup_fixture_repo.sh` — Purlin-dev-specific, not distributed to consumers. Creates the convention-path fixture repo at `.purlin/runtime/fixture-repo` with all 74 tags across 29 features.
 *   **Convention Path:** `.purlin/runtime/fixture-repo` (bare git repo). Gitignored via `.purlin/runtime/` pattern. Deterministically regenerable from the setup script.
 *   **Fixture Tool Location:** `tools/test_support/fixture.sh` — consumer-facing, submodule-safe. Implements checkout, cleanup, list, prune subcommands.

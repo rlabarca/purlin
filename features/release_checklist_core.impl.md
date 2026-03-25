@@ -1,5 +1,11 @@
 # Implementation Notes: Release Checklist — Core Data Model
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 *   The auto-discovery algorithm in Section 2.5 is designed to be idempotent: running it multiple times against the same inputs produces the same result.
 *   Engineer mode MUST update `tools/release/global_steps.json` to contain the 6 step definitions from Section 2.7. Remove the `purlin.mark_release_complete` entry. The exact JSON structure follows the schema in Section 2.1.
 *   Engineer mode MUST update `.purlin/release/config.json` to remove the `{"id": "purlin.mark_release_complete", "enabled": true}` entry from the steps array.

@@ -1,5 +1,11 @@
 # Implementation Notes: Model Configuration
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Architecture Decisions
 
 ### Claude-Only Design

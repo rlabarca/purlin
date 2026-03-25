@@ -1,5 +1,12 @@
 # Implementation Notes: Release Audit Automation
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** verify_zero_queue reads critic.json directly instead of status.sh | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Instruction audit contradiction detection is heuristic-only | DISCOVERY | PENDING |
+
 **[AUTONOMOUS]** Created `tools/release/audit_common.py` as a shared utility module for project root detection, finding construction, output formatting, and JSON output. This was not specified but the shared output format (Section 2.2) and shared submodule safety pattern (Section 2.3) naturally called for a common module. (Severity: WARN)
 **PM Acknowledgment (2026-03-19):** Approved. Extracting shared infrastructure into a common module is consistent with the DRY principle and the spec's shared output format requirement. No spec change needed.
 

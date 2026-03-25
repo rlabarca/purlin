@@ -1,5 +1,11 @@
 # Implementation Notes: Agent Launchers
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ### Launcher Config Reading
 Launchers call `resolve_config.py <role>` via `eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"` to read agent settings from the resolved config. The resolver handles config.local.json / config.json resolution and outputs shell variable assignments. No `provider` field is read — Claude is implicit.
 

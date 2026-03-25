@@ -1,5 +1,12 @@
 # Implementation Notes: Verify Dependency Integrity
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** Stale cache regeneration not implemented | DISCOVERY | PENDING |
+| (see prose) | Reverse reference classification not implemented as tiered severity — **ACKNOWLEDGED** | DISCOVERY | PENDING |
+
 This step is a structural read-only check. PM mode does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/status.sh --graph` is permissible and does not count as a spec modification.
 
 The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Manual graph file edits are not supported; the cache is always regenerated from source feature files.

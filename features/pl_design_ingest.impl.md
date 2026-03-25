@@ -1,5 +1,11 @@
 # Implementation Notes: /pl-design-ingest
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Architecture
 
 This is a Claude skill/command feature. The implementation consists of:

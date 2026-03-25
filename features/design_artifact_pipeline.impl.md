@@ -1,5 +1,11 @@
 # Implementation Notes: Design Artifact Pipeline
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Review: Spec Revision f383f70 (2026-03-16)
 
 Two additions to the anchor:

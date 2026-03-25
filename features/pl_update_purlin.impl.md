@@ -1,5 +1,12 @@
 # Implementation Notes: Intelligent Purlin Update Agent Skill
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | MCP manifest diff reporting incomplete in command file — Acknowledged | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Skill file missing PURLIN_PROJECT_ROOT reference | DISCOVERY | PENDING |
+
 *   **Agent Skill Architecture:** This feature is implemented as a Claude Code slash command (`.claude/commands/pl-update-purlin.md`), not as a shell script or Python tool. The command file is a prompt that instructs the agent to perform the update workflow interactively. Tests verify command file structure, referenced infrastructure, and behavioral invariants.
 *   **Test Approach:** `tests/pl_update_purlin/test_command.py` validates the command file contains required references for each automated scenario (structural change detection keywords, merge strategy labels, stale artifact names, infrastructure file existence, etc.). This follows the same pattern as other agent skill tests (e.g., `tests/pl_session_resume/test_command.py`).
 *   **[CLARIFICATION]** The "Structural Change Migration Plan" scenario describes agent behavior (detecting renamed section headers in instruction files and scanning override files for stale references). Tests verify the command file contains the necessary structural change detection instructions, section header comparison references, override file scanning instructions, and migration plan generation format. (Severity: INFO)

@@ -1,5 +1,11 @@
 # Implementation Notes: Purlin Submodule Safety Audit
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 This feature has no automated test coverage. Verification is performed by PM mode
 during the release process per the scenarios above. The QA column will always be `N/A`.
 

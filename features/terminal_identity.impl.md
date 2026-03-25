@@ -1,5 +1,11 @@
 # Terminal Identity -- Implementation Notes
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Resolved: Non-Engineer Root Launchers (2026-03-18)
 
 All four root launchers now implement the three-point identity integration pattern. The gap in PM, QA, and PM launchers was resolved by adding sourcing, set_agent_identity, and cleanup to each.

@@ -1,5 +1,11 @@
 # Implementation Notes: Python Environment
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | **Climbing priority reversal in resolve_python.sh (2026-03-05 audit):** Lines 40-51 checked standalone path (`../../.venv`, 2 levels) BEFORE submodule path (`../../../.venv`, 3 levels). This violated the submodule safety contract §2.11 which requires further-first climbing. **Fixed:** swapped the two `if` blocks in Priority 3 so `../../../.venv` (submodule/further) is tried before `../../.venv` (standalone/nearer). Acknowledged. | DEVIATION | PENDING |
+
 *   **`cdd/stop.sh` exclusion:** `stop.sh` does not invoke Python -- it only reads a PID file and sends a signal. No migration needed.
 *   **`BASH_SOURCE[1]` for climbing:** When `resolve_python.sh` is sourced, `${BASH_SOURCE[0]}` is the helper itself and `${BASH_SOURCE[1]}` is the sourcing script. Climbing paths must be relative to the sourcing script's directory, not the helper's. This ensures correct venv detection regardless of where the helper lives.
 *   **No `set -e` in helper:** The helper is sourced into scripts that may or may not use `set -e`. Using `set -e` in the helper would impose error behavior on the caller. Use explicit `if/elif` instead of relying on exit codes.

@@ -1,5 +1,11 @@
 # Implementation Notes: Record Version & Release Notes
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** The inline copy of agent_instructions in `features/release_checklist_core.md` Section 2.7 originally used the old "Insert" wording. That file is PM-owned. PM mode has since updated it to "Prepend" — both the authoritative source (`tools/release/global_steps.json`) and the inline spec copy are now consistent. (Severity: HIGH — resolved) | DISCOVERY | PENDING |
+
 This step is positioned last in Purlin's release checklist. Recording version notes after all verification steps ensures the notes reflect the actual final state of the release.
 
 The `## Releases` section is a running log. New entries are prepended (most recent at top). PM mode does not delete or modify previous entries.

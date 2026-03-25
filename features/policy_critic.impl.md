@@ -1,5 +1,11 @@
 # Implementation Notes: Critic Coordination Engine
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 *   This policy governs buildable tooling constraints (the Critic tool itself), not process rules. It is valid under the Feature Scope Restriction mandate.
 *   The `critic_gate_blocking` flag is deprecated as a no-op. The coordination engine model replaces blocking gates with advisory action items per role. The config key is retained for backward compatibility with existing `.purlin/config.json` files.
 *   FORBIDDEN patterns are optional. Not all anchor nodes need to define them.

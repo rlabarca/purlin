@@ -1,5 +1,11 @@
 # Implementation Notes: Bootstrap Module
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Design Decisions
 
 **[CLARIFICATION]** The spec says "try the further path (3 levels up from script_dir) before the nearer path (2 levels up)." The implementation uses hardcoded relative depths (`../../../` and `../../`) matching the existing inline patterns exactly. A general walk-up approach was considered but rejected because it could find `.purlin/` directories from unrelated projects higher in the filesystem tree (e.g., Claude Code's `~/.claude/projects/*/memory/` creates `.purlin/` in the user's home directory). (Severity: INFO)

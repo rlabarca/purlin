@@ -1,5 +1,12 @@
 # Implementation Notes: Critic Consistency Check & README Update
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** Phase 2 (README update) not automated | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Routing rule severity should be CRITICAL not WARNING | DISCOVERY | PENDING |
+
 This step is positioned immediately after `doc_consistency_framework` in Purlin's release config. The broader instruction-file consistency check runs first; this step then focuses narrowly on the Critic subsystem.
 
 Phase 2 (README update) runs only after Phase 1 produces zero CRITICAL findings. A clean audit is a prerequisite for README publication.

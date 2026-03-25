@@ -1,5 +1,11 @@
 # Implementation Notes: pl_infeasible
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Summary
 
 The `/pl-infeasible` skill is an agent instruction file (`.claude/commands/pl-infeasible.md`) that guides Engineer mode through the INFEASIBLE escalation workflow. Since it is a Markdown skill (not executable code), tests verify structural properties of the file content.

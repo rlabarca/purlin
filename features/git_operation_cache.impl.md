@@ -1,5 +1,13 @@
 # Implementation Notes: Git Operation Cache
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** cached_git_status() is dead code | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Hash hit test doesn't verify file I/O path | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Single batch test missing subprocess call count assertion | DISCOVERY | PENDING |
+
 *   **Section 2.1 (Persistent Status Commit Cache):** Cache stored at `.purlin/cache/status_commit_cache.json` with `git_head` metadata for invalidation. Uses atomic writes (tempfile + os.replace) for crash safety. Cache entries include `spec_content_hash` (SHA-256) for Section 2.2 hash-based comparison. The `_best_hash` internal field tracks commit hash for deterministic tiebreaking (cleaned before return, same pattern as `_best_ts`).
 *   **Section 2.2 (Hash-Based Content Comparison):** `_compute_spec_hash()` strips the Discoveries section before hashing using the existing `strip_discoveries_section()` function. When the persistent cache contains a `spec_content_hash` for a feature, `spec_content_unchanged()` compares against the current file hash — avoiding `git show` entirely on cache hit. Falls back to the original `git show` path when cache has no hash entry or on any error.
 *   **Section 2.3 (Batched Diff Extraction):** Added `_DIFF_BATCH_SIZE = 50` constant and `_batched_diff()` helper to `extract_whats_different.py`. Splits batched diff output by `diff --git` header lines. Binary files are detected and skipped gracefully. The existing `_extract_decisions_from_diff()` was refactored to collect file paths by category, then issue one batched diff call per category instead of N per-file calls.

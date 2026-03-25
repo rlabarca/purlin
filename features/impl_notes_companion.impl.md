@@ -1,5 +1,11 @@
 ## Implementation Notes
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ### Companion File Resolution
 The Critic resolves companion files by stripping the `.md` extension from the feature filename and appending `.impl.md`. For example, `features/critic_tool.md` resolves to `features/critic_tool.impl.md`.
 

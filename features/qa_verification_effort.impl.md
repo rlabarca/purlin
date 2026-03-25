@@ -1,5 +1,11 @@
 # Implementation Notes: QA Verification Effort Classification
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 *   **[CLARIFICATION]** `verification_effort` is a top-level key in `critic.json` (sibling to `role_status`), not nested inside `role_status`. This keeps the output contract clean -- `role_status` contains only string values for each role, while `verification_effort` is a complex object. The CDD dashboard's `get_feature_role_status()` merges `verification_effort` from the top-level data into the returned dict for convenience. (Severity: INFO)
 *   **[CLARIFICATION]** Hardware keyword detection uses a simple regex matching `hardware|serial|GPIO|USB|device|physical` against scenario body text. This is a coarse heuristic that may produce false positives (e.g., "the device settings panel"). If this proves too aggressive, it can be refined with negation patterns or a more targeted keyword list. (Severity: INFO)
 *   **[CLARIFICATION]** The "mixed feature splits" scenario (INCONCLUSIVE handling from prior `/pl-aft-web` runs) is deferred. The current implementation does not read prior web-verify results to determine INCONCLUSIVE scenarios. All manual scenarios on AFT-web features are classified as `aft_web`. INCONCLUSIVE re-routing would require a persistent web-verify result store, which does not yet exist. (Severity: INFO)

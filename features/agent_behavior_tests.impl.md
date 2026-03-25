@@ -1,5 +1,11 @@
 # Implementation Notes: Agent Behavior Tests
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 **[CLARIFICATION]** The test harness uses `--output-format json` as specified, with `jq` for extracting the `result` field from Claude's JSON response. Falls back to raw output if JSON parsing fails. (Severity: INFO)
 
 **[CLARIFICATION]** The fixture setup script (`dev/setup_behavior_fixtures.sh`) creates a LOCAL bare git repo rather than a remote repo. The fixture repo path is passed to the test runner via `--fixture-repo`. This is consistent with the fixture.sh `checkout` command which accepts both local paths and remote URLs. (Severity: INFO)

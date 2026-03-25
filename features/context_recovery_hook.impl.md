@@ -1,5 +1,12 @@
 # Implementation Notes: Context Recovery Hook
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | [ACKNOWLEDGED]** CLAUDE.md installation scenarios absent from test_init.sh | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED]** Refresh path missing git add CLAUDE.md | DISCOVERY | PENDING |
+
 **[DISCOVERY] [ACKNOWLEDGED]** CLAUDE.md installation scenarios absent from test_init.sh
 **Source:** /pl-spec-code-audit --deep (M47)
 **Severity:** MEDIUM

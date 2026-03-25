@@ -1,5 +1,11 @@
 # Implementation Notes: Spec From Code
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 *   **Command file location:** `.claude/commands/pl-spec-from-code.md` — a markdown command file that instructs PM mode agent through a 5-phase workflow (Phase 0: Initialization, Phase 1: Codebase Survey, Phase 2: Taxonomy Review, Phase 3: Feature Generation, Phase 4: Finalization).
 *   **Role gating:** First two lines: `**Purlin command owner: PM**` + redirect message. Matches the pattern used by `/pl-spec`, `/pl-anchor`, and other PM-owned commands.
 *   **State management:** Cross-session resume via `.purlin/cache/sfc_state.json`. State tracks current phase, status, directory choices, and `completed_categories` array for Phase 3 resume. State file is committed to git for durability.

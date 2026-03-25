@@ -1,5 +1,11 @@
 # Implementation Notes: Release Checklist — Dashboard Section
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+| (see prose) | Visual spec says "8pt larger" for step detail modal title but design_modal_standards anchor says 4pt — **ACKNOWLEDGED** | DISCOVERY | PENDING |
+
 *   The drag-to-reorder implementation MUST be consistent with any drag/drop library or pattern already used in the CDD Dashboard. If none exists, the HTML5 Drag and Drop API is the default. Do not introduce a new dependency without confirming with PM mode.
 *   The `POST /release-checklist/config` endpoint writes directly to `.purlin/release/config.json`. The server MUST handle concurrent writes gracefully (e.g., the user rapidly toggling checkboxes); debouncing on the frontend is preferred over server-side locking for this use case.
 *   The `purlin-section-states` localStorage key already exists (per `cdd_status_monitor.md`). The RELEASE CHECKLIST section's key within that object SHOULD be `release-checklist`.

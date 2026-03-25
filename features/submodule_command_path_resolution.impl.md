@@ -1,5 +1,11 @@
 # Implementation Notes: Submodule Command Path Resolution
 
+## Active Deviations
+
+| Spec says | Implementation does | Tag | PM status |
+|-----------|-------------------|-----|-----------|
+
+
 ## Tool Location
 
 - Command files: `.claude/commands/pl-*.md`
