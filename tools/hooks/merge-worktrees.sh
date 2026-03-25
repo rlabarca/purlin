@@ -8,9 +8,9 @@
 # Claude Code hooks receive JSON on stdin with session context.
 # Exit 0 = success, exit 2 = blocking error.
 
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Do NOT use set -e here. This hook must always reach exit 0 —
+# intermediate failures (e.g., git add) must not prevent the merge attempt.
+set -uo pipefail
 
 # Detect project root
 if [[ -n "${PURLIN_PROJECT_ROOT:-}" ]]; then
@@ -44,19 +44,27 @@ fi
 
 WORKTREE_PATH="$(pwd)"
 
-# Commit any uncommitted changes
+# Commit any uncommitted changes (tracked modifications, staged changes, OR untracked files)
+HAS_TRACKED_CHANGES=false
+HAS_UNTRACKED=false
 if ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet HEAD 2>/dev/null; then
-    git add -A
+    HAS_TRACKED_CHANGES=true
+fi
+if [[ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]]; then
+    HAS_UNTRACKED=true
+fi
+
+if [[ "$HAS_TRACKED_CHANGES" == "true" ]] || [[ "$HAS_UNTRACKED" == "true" ]]; then
+    git add -A 2>/dev/null || true
     git commit -m "chore: auto-commit on session exit (worktree merge-back)
 
 Purlin-Mode: auto" 2>/dev/null || true
 fi
 
-# Find the main working directory (parent of .purlin/worktrees/)
+# Find the main working directory (parent of .git common dir)
 MAIN_DIR="$(cd "$GIT_COMMON_DIR/.." && pwd)"
 
-# Resolve source branch (the branch the worktree was created from)
-# Default to main, but check for other common defaults
+# Resolve source branch name (for display only — merge targets whatever is checked out)
 SOURCE_BRANCH="main"
 if ! git rev-parse --verify "$SOURCE_BRANCH" &>/dev/null; then
     SOURCE_BRANCH="master"
@@ -69,12 +77,12 @@ fi
 # Switch to main directory and merge
 cd "$MAIN_DIR"
 
-# Merge the worktree branch
+# Merge the worktree branch into whatever is checked out in the main repo
 if git merge "$WORKTREE_BRANCH" --no-edit 2>/dev/null; then
-    # Success — clean up worktree
+    # Success — clean up worktree and branch
     git worktree remove "$WORKTREE_PATH" 2>/dev/null || true
     git branch -d "$WORKTREE_BRANCH" 2>/dev/null || true
-    echo "Merged $WORKTREE_BRANCH into $SOURCE_BRANCH and cleaned up worktree."
+    echo "Merged $WORKTREE_BRANCH into $(git rev-parse --abbrev-ref HEAD) and cleaned up worktree."
 else
     # Merge conflict — abort and preserve worktree for manual resolution
     git merge --abort 2>/dev/null || true

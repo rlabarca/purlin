@@ -308,6 +308,53 @@ fi
 rm -rf "$TEMP_REPO5"
 
 # ──────────────────────────────────────────────
+# MOE7: Merge hook auto-commits UNTRACKED files (not just staged/modified)
+# ──────────────────────────────────────────────
+TEMP_REPO6=$(mktemp -d)
+MOE7_RESULT=1
+
+(
+    set -e
+    cd "$TEMP_REPO6"
+    git init --quiet
+    git checkout -b main --quiet 2>/dev/null
+    echo "initial" > app.txt
+    git add app.txt
+    git commit -m "initial" --quiet
+
+    BRANCH="purlin-engineer-20260401-120000"
+    WORKTREE_DIR="$TEMP_REPO6/.purlin/worktrees/$BRANCH"
+    mkdir -p "$TEMP_REPO6/.purlin/worktrees"
+    git worktree add "$WORKTREE_DIR" -b "$BRANCH" --quiet 2>/dev/null
+
+    # Create a new file but do NOT stage or commit it (purely untracked)
+    cd "$WORKTREE_DIR"
+    echo "brand new file" > untracked.txt
+    # Intentionally no git add or commit
+
+    # Run the merge hook — it should detect the untracked file, add and commit it
+    bash "$MERGE_HOOK" </dev/null 2>&1
+
+    # Verify on main
+    cd "$TEMP_REPO6"
+    if [ -f "untracked.txt" ] && grep -q "brand new file" untracked.txt; then
+        echo "UNTRACKED_COMMIT_VERIFIED"
+    else
+        echo "UNTRACKED_COMMIT_FAILED"
+        exit 1
+    fi
+)
+MOE7_RESULT=$?
+
+if [ $MOE7_RESULT -eq 0 ]; then
+    log_pass "MOE7: merge hook auto-commits untracked files before merging"
+else
+    log_fail "MOE7: merge hook failed to auto-commit untracked files"
+fi
+
+rm -rf "$TEMP_REPO6"
+
+# ──────────────────────────────────────────────
 echo ""
 echo "────────────────────────────────"
 TOTAL=$((PASS + FAIL))

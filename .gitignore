@@ -34,7 +34,8 @@ tools/critic/.cache/
 !docs/images/*.png
 *.jpeg
 
-# Claude Code
+# Worktrees (both Purlin agent and Claude Code sub-agent)
+.purlin/worktrees/
 .claude/worktrees/
 
 # Temp
