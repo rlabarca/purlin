@@ -2,11 +2,9 @@
 
 > Label: "CDD Release Checklist"
 > Category: "CDD Dashboard"
-> Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/test_fixture_repo.md
-> Prerequisite: features/cdd_modal_base.md
 > Web Test: http://localhost:9086
 > Web Start: /pl-cdd
 

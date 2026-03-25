@@ -2,7 +2,7 @@
 
 > Label: "Tool: Sub-Agent Parallel Engineer"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/builder_agent_launcher.md
+> Prerequisite: features/purlin_agent_launcher.md
 
 ## 1. Overview
 
