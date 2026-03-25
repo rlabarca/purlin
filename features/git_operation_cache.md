@@ -2,8 +2,6 @@
 
 > Label: "CDD: Git Operation Cache"
 > Category: "CDD Dashboard"
-> Prerequisite: features/cdd_status_monitor.md
-> Prerequisite: features/critic_tool.md
 
 [TODO]
 

@@ -2,7 +2,6 @@
 
 > Label: "/pl-cdd CDD Dashboard"
 > Category: "Agent Skills"
-> Prerequisite: features/cdd_lifecycle.md
 
 [TODO]
 
