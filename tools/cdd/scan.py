@@ -188,10 +188,12 @@ _exemption_index = None
 
 
 def _build_exemption_index():
-    """Batch-fetch commit messages for all feature spec files.
+    """Batch-fetch commit timestamps and messages for all feature spec files.
 
-    Returns dict mapping basename -> [list of commit message strings]
-    with only commits NEWER than the file's status commit timestamp.
+    Returns dict mapping basename -> [(timestamp, message), ...] for all
+    commits touching that file since the earliest status commit globally.
+    The per-feature timestamp filtering happens at query time in
+    _check_spec_modified_after_completion.
     """
     global _status_commit_cache
     if _status_commit_cache is None:
@@ -205,14 +207,15 @@ def _build_exemption_index():
 
     # One git call: all commits touching features/*.md since earliest status commit
     log_output = _run_git(
-        "log", "--name-only", "--format=__COMMIT__%s",
+        "log", "--name-only", "--format=__COMMIT__%ct %s",
         f"--since={min_ts}",
         "--", "features/*.md",
     )
     if not log_output:
         return {}
 
-    index = {}  # basename -> [messages]
+    index = {}  # basename -> [(timestamp, message)]
+    current_ts = 0
     current_msg = None
 
     for line in log_output.splitlines():
@@ -220,7 +223,15 @@ def _build_exemption_index():
         if not line:
             continue
         if line.startswith("__COMMIT__"):
-            current_msg = line[10:]  # Strip prefix
+            payload = line[10:]  # Strip prefix
+            # Parse "timestamp message"
+            parts = payload.split(" ", 1)
+            try:
+                current_ts = int(parts[0])
+                current_msg = parts[1] if len(parts) > 1 else ""
+            except (ValueError, IndexError):
+                current_ts = 0
+                current_msg = payload
             continue
         # It's a filename
         basename = os.path.basename(line)
@@ -229,7 +240,7 @@ def _build_exemption_index():
         if current_msg is not None:
             if basename not in index:
                 index[basename] = []
-            index[basename].append(current_msg)
+            index[basename].append((current_ts, current_msg))
 
     return index
 
@@ -263,11 +274,14 @@ def _check_spec_modified_after_completion(feature_file):
     if _exemption_index is None:
         _exemption_index = _build_exemption_index()
 
-    messages = _exemption_index.get(basename, [])
-    if not messages:
+    entries = _exemption_index.get(basename, [])
+    if not entries:
         return False  # No commits found in index (edge case)
 
-    for msg in messages:
+    for ts, msg in entries:
+        # Only check commits AFTER this feature's status commit
+        if ts <= status_ts:
+            continue
         # Skip the status commit itself
         if msg.startswith("status("):
             continue
