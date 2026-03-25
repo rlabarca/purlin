@@ -19,7 +19,7 @@ Given the feature name provided as an argument:
 3. After user confirmation, create `features/tombstones/<name>.md` using the canonical tombstone format below.
 4. Delete `features/<name>.md`.
 5. Commit both changes: `git commit -m "retire(<scope>): retire <name> + tombstone for Builder"`.
-6. Run `${TOOLS_ROOT}/cdd/status.sh` to update the Critic report.
+6. Run `${TOOLS_ROOT}/cdd/scan.sh` to refresh project state.
 
 **Canonical tombstone format:**
 
@@ -52,5 +52,5 @@ List any other features or code that may reference the retired code and will nee
 **Rules:**
 *   Tombstones MUST be created before the feature file is deleted. Never delete a feature file without a tombstone if implementation code exists.
 *   If the feature was specced but never implemented (no code exists), a tombstone is unnecessary -- delete the feature file directly and note "not implemented" in the commit message.
-*   Tombstone files are NOT feature files. They do not appear in the dependency graph or CDD lifecycle. The Critic detects tombstones and surfaces them as HIGH-priority Builder action items.
+*   Tombstone files are NOT feature files. They do not appear in the dependency graph or CDD lifecycle. The scan detects tombstones and surfaces them as HIGH-priority Engineer action items.
 *   Once the Builder processes a tombstone and deletes the code, the Builder commits and deletes the tombstone file. The tombstone is transient -- it exists only until the Builder acts.

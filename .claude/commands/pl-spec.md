@@ -23,7 +23,7 @@ Given the topic provided as an argument:
 1. Run `/pl-find <topic>` logic first to determine if a spec already exists or needs updating.
 2. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
 3. If creating: follow the template and format rules below.
-4. After editing, commit the change and run `${TOOLS_ROOT}/cdd/status.sh` to regenerate the Critic report.
+4. After editing, commit the change and run `${TOOLS_ROOT}/cdd/scan.sh` to refresh project state.
 
 ---
 
@@ -73,7 +73,7 @@ None.
 
 ---
 
-## Format Rules (Critic Parser Requirements)
+## Format Rules (Scan Parser Requirements)
 
 **Required section headings** (case-insensitive substring match):
 - A heading containing `overview`
