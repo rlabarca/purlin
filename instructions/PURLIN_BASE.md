@@ -140,20 +140,18 @@ Extract `find_work`, `auto_start`, and `default_mode` from config (resolved by t
 - If `find_work: false` → "Awaiting instruction." Stop.
 - If CLI passed `--mode`, note the target mode.
 
-### 5.3 Gather Project State
-Run `{tools_root}/cdd/scan.sh` to get lightweight status JSON. Parse the result.
+### 5.3 Delegate to `/pl-resume`
+Run `/pl-resume` to handle the remainder of startup. `/pl-resume` is the **single implementation** of "gather state, present work, activate mode" — both fresh startup and context recovery use it. This prevents drift between the two flows.
 
-### 5.4 Analyze and Present Work
-Run `/pl-status` to interpret the scan results and present work organized by mode. Suggest the mode with highest-priority work.
+`/pl-resume` will:
+- Check for a checkpoint file (warm resume) or run a fresh scan (cold start)
+- Run `{tools_root}/cdd/scan.sh` and `/pl-status` to present work organized by mode
+- Suggest the mode with highest-priority work
+- Activate mode based on: CLI `--mode` > config `default_mode` > checkpoint mode > user input
+- Resume delivery plan if one exists with IN_PROGRESS/PENDING phases
+- If `auto_start: true` → begin executing immediately
 
-### 5.5 Mode Activation
-Based on: CLI `--mode` > config `default_mode` > user input, enter the appropriate mode.
-If `auto_start: true` → begin executing immediately, no approval prompt.
-
-### 5.6 Delivery Plan Resumption
-If a delivery plan exists with IN_PROGRESS/PENDING phases:
-- Highlight: "Active delivery plan: Phase X of Y. Resume building?"
-- If launched with `--auto-build` → enter Engineer mode and resume immediately.
+See `features/pl_session_resume.md` for the full protocol.
 
 ## 6. Feature Lifecycle
 

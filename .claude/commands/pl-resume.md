@@ -18,7 +18,7 @@ Save or restore Purlin agent session state across context clears and terminal re
 
 ## Merge Recovery Mode (`/pl-resume merge-recovery`)
 
-Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md 6.0) when breadcrumbs exist, or manually by the user.
+Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md §5.0) when breadcrumbs exist, or manually by the user.
 
 ### Protocol
 
@@ -42,7 +42,7 @@ Resolve pending worktree merge failures. Called automatically by the startup pro
 
 4. **Summary:** After processing all breadcrumbs, report how many were resolved vs deferred. If any were deferred, note that the warning will persist until resolved.
 
-5. **Return control** to the caller (startup protocol continues with 6.1).
+5. **Return control** to the caller (startup protocol continues with §5.1).
 
 ### Behavior during normal restore flow
 
@@ -182,14 +182,18 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 ### Step 4 -- Gather Fresh Project State
 
-Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state.
+Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-status` to interpret the results and present work organized by mode.
+
+**This step is the shared path for BOTH normal startup (PURLIN_BASE.md §5.3) and context recovery.** There is no separate implementation — `/pl-resume` is the canonical flow.
 
 **When a checkpoint exists (warm resume):**
 - The scan provides fresh project state. The work plan comes from the checkpoint's "Next" list.
 - Re-enter the mode recorded in the checkpoint.
 
 **When no checkpoint exists (cold start):**
-- Use the scan to generate a full work plan.
+- Use `/pl-status` output to generate a full work plan organized by mode.
+- Suggest the mode with highest-priority work.
+- **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS/PENDING phases, highlight it and suggest Engineer mode. If launched with `--auto-build`, enter Engineer mode and resume immediately.
 - **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
 
 **Startup flag handling (cold start only):**
@@ -198,6 +202,8 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state.
 - `find_work: true, auto_start: true` -- generate work plan and begin executing immediately.
 
 When a checkpoint exists, startup flags are not consulted.
+
+**Worktree context:** If `.purlin_worktree_label` exists, read the label and include it in the recovery summary badge. If `.purlin_session.lock` exists and no checkpoint is found, read the mode from the lock as a fallback for mode activation.
 
 ### Step 5 -- Present Recovery Summary
 
