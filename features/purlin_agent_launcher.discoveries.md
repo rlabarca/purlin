@@ -9,5 +9,5 @@
 - **Scenario:** Instruction stack assembly (regression T7, T10)
 - **Observed Behavior:** `pl-run.sh` does NOT load `HOW_WE_WORK_BASE.md` — only `PURLIN_BASE.md`. Code aligns with `purlin_instruction_architecture.md` which explicitly says "does NOT concatenate HOW_WE_WORK_BASE.md."
 - **Expected Behavior:** `purlin_agent_launcher.md` line 20 says launcher MUST assemble `HOW_WE_WORK_BASE.md` + `PURLIN_BASE.md`. Regression test T7 and T10 enforce this stale expectation.
-- **Action Required:** PM (update purlin_agent_launcher spec to remove HOW_WE_WORK_BASE.md from instruction stack requirement) + Builder (update regression test script `tests/qa/test_purlin_agent_launcher_regression.sh` T7/T10)
+- **Action Required:** PM (update purlin_agent_launcher spec to remove HOW_WE_WORK_BASE.md from instruction stack requirement) + QA (update regression test script `tests/qa/test_purlin_agent_launcher_regression.sh` T7/T10 — regression scripts are QA-owned)
 - **Status:** OPEN
