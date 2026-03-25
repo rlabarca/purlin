@@ -21,6 +21,7 @@ A shared skill available to all roles that wraps `status.sh` to display the curr
 ### 2.2 Core Output
 
 - Run `status.sh` and summarize: feature counts by status, role-specific action items (highest priority first with reasons), and open discoveries or tombstones.
+- Tombstone files (features with `tombstone: true` in scan output) MUST be surfaced as Engineer/Builder work items with highest priority — tombstones are processed before regular feature work.
 
 ### 2.3 Role-Filtered Shortcut
 

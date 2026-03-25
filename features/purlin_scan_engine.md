@@ -86,14 +86,22 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - If ANY commit lacks an exemption tag, report `spec_modified_after_completion: true`.
 - This is still a fact ("were the modifications exempt?"), not a decision.
 
-### 2.11 Design Constraint: Facts Only
+### 2.11 Tombstone Scanning
+
+- Scan `features/tombstones/*.md` for tombstone files (features queued for deletion by Engineer).
+- Exclude companion artifacts (`*.impl.md`, `*.discoveries.md`) that may exist alongside tombstone files.
+- For each tombstone, emit a feature entry with `tombstone: true` and a hardcoded lifecycle of `"TOMBSTONE"`.
+- Tombstone entries do NOT need test_status, regression_status, sections, or spec_modified_after_completion — these fields should be `null`/`false` as appropriate.
+- The scan reports the existence and count of tombstones as facts. It does NOT decide priority or routing — that belongs in agent instructions and skills.
+
+### 2.12 Design Constraint: Facts Only
 
 - scan.py MUST only answer "what IS" — never "what should be DONE."
 - scan.py MUST NOT contain `if/else` logic that decides what an agent should do, routes work to roles/modes, or prioritizes action items. That reasoning belongs in agent instructions and skills.
 - If a proposed change to scan.py requires deciding WHO should act or WHAT they should do, it belongs in PURLIN_BASE.md or a skill file instead.
 - This constraint is what keeps scan.py at ~300 lines instead of 4100.
 
-### 2.12 Performance
+### 2.13 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
 - Git calls MUST be batched. The scan uses at most 4 git log calls regardless of feature count (status index, spec mod index, exemption index, git state).
@@ -236,6 +244,26 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     Given 10 features have spec_modified_after_completion candidates
     When scan.py runs the exemption check
     Then at most 1 additional git log call is made (not 10)
+
+#### Scenario: Scan includes tombstone files
+
+    Given features/tombstones/old_feature.md exists
+    When scan.py runs
+    Then the features array contains an entry with name "old_feature" and tombstone true
+    And the entry has lifecycle "TOMBSTONE"
+
+#### Scenario: Tombstone companion artifacts are excluded
+
+    Given features/tombstones/old_feature.md exists
+    And features/tombstones/old_feature.impl.md exists
+    When scan.py runs
+    Then only one entry for "old_feature" appears (the tombstone, not the companion)
+
+#### Scenario: No tombstones directory returns no tombstone entries
+
+    Given features/tombstones/ does not exist
+    When scan.py runs
+    Then no feature entries have tombstone true
 
 ### QA Scenarios
 
