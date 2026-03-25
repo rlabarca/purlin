@@ -1,7 +1,7 @@
 # Feature: Delivery Plan
 
-> Label: "/pl-delivery-plan Delivery Plan"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Engineer: /pl-delivery-plan Delivery Plan"
+> Category: "Agent Skills: Engineer"
 > Prerequisite: features/policy_critic.md
 
 [Complete]

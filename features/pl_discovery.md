@@ -1,7 +1,7 @@
 # Feature: Discovery Recording
 
-> Label: "/pl-discovery Discovery Recording"
-> Category: "Agent Skills"
+> Label: "Agent Skills: QA: /pl-discovery Discovery Recording"
+> Category: "Agent Skills: QA"
 > Prerequisite: features/policy_critic.md
 
 [TODO]

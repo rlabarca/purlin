@@ -1,7 +1,7 @@
 # Feature: Test Fixture Reference
 
-> Label: "/pl-fixture Test Fixture Reference"
-> Category: "Agent Skills"
+> Label: "Agent Skills: QA: /pl-fixture Test Fixture Reference"
+> Category: "Agent Skills: QA"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/test_fixture_repo.md
 

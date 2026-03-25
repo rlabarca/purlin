@@ -1,7 +1,7 @@
 # Feature: QA Completion
 
-> Label: "/pl-complete QA Completion"
-> Category: "Agent Skills"
+> Label: "Agent Skills: QA: /pl-complete QA Completion"
+> Category: "Agent Skills: QA"
 > Prerequisite: features/policy_critic.md
 
 [TODO]

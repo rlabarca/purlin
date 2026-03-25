@@ -1,7 +1,7 @@
 # Feature: Dev Server Management
 
-> Label: "/pl-server Dev Server Management"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Engineer: /pl-server Dev Server Management"
+> Category: "Agent Skills: Engineer"
 > Prerequisite: features/policy_critic.md
 
 [TODO]

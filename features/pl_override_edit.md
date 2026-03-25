@@ -1,7 +1,7 @@
 # Feature: Override Edit
 
-> Label: "/pl-override-edit Override Edit"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Common: /pl-override-edit Override Edit"
+> Category: "Agent Skills: Common"
 > Prerequisite: features/policy_critic.md
 
 [TODO]

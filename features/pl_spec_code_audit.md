@@ -1,7 +1,7 @@
 # Feature: Spec-Code Audit
 
-> Label: "/pl-spec-code-audit Spec-Code Audit"
-> Category: "Agent Skills"
+> Label: "Agent Skills: Engineer: /pl-spec-code-audit Spec-Code Audit"
+> Category: "Agent Skills: Engineer"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/impl_notes_companion.md
 

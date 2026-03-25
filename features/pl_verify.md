@@ -1,7 +1,7 @@
 # Feature: Verification
 
-> Label: "/pl-verify Verification"
-> Category: "Agent Skills"
+> Label: "Agent Skills: QA: /pl-verify Verification"
+> Category: "Agent Skills: QA"
 > Prerequisite: features/policy_critic.md
 
 [TODO]
