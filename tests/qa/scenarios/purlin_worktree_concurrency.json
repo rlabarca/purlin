@@ -1,0 +1,17 @@
+{
+  "feature": "purlin_worktree_concurrency",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "purlin_worktree_concurrency_suite",
+      "script_path": "tests/qa/test_purlin_worktree_concurrency_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "worktree concurrency regression suite ran to completion"
+        }
+      ]
+    }
+  ]
+}
