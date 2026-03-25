@@ -140,7 +140,7 @@ Execute this 7-step sequence:
 
 Clear any stale session state carried over from the previous session. If no such state exists, this step is a no-op and may be skipped silently.
 
-Also check for merge-pending breadcrumbs (`.purlin/cache/merge_pending/*.json`). If any exist, run the merge recovery protocol (below) before proceeding.
+**Note:** Merge-pending breadcrumbs are handled by the startup protocol (PURLIN_BASE.md §5.0) BEFORE `/pl-resume` is called. Do NOT re-check breadcrumbs here — they are already resolved or deferred by the time this step runs.
 
 ### Step 1 -- Checkpoint Detection
 
@@ -202,6 +202,8 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-
 - `find_work: true, auto_start: true` -- generate work plan and begin executing immediately.
 
 When a checkpoint exists, startup flags are not consulted.
+
+**Mode activation priority:** CLI `--mode` (from launcher) > config `default_mode` > checkpoint mode > `.purlin_session.lock` mode > user input. Use the first one that is set.
 
 **Worktree context:** If `.purlin_worktree_label` exists, read the label and include it in the recovery summary badge. If `.purlin_session.lock` exists and no checkpoint is found, read the mode from the lock as a fallback for mode activation.
 

@@ -135,23 +135,10 @@ Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run `/pl-re
 ### 5.1 Print Command Table
 Read `instructions/references/purlin_commands.md` and print the appropriate variant.
 
-### 5.2 Read Startup Flags
-Extract `find_work`, `auto_start`, and `default_mode` from config (resolved by the launcher).
-- If `find_work: false` → "Awaiting instruction." Stop.
-- If CLI passed `--mode`, note the target mode.
+### 5.2 Delegate to `/pl-resume`
+Run `/pl-resume`. It handles everything from here: checkpoint detection, scanning, work discovery via `/pl-status`, mode activation, delivery plan resumption, and `find_work`/`auto_start` flag handling. See `features/pl_session_resume.md` for the full protocol.
 
-### 5.3 Delegate to `/pl-resume`
-Run `/pl-resume` to handle the remainder of startup. `/pl-resume` is the **single implementation** of "gather state, present work, activate mode" — both fresh startup and context recovery use it. This prevents drift between the two flows.
-
-`/pl-resume` will:
-- Check for a checkpoint file (warm resume) or run a fresh scan (cold start)
-- Run `{tools_root}/cdd/scan.sh` and `/pl-status` to present work organized by mode
-- Suggest the mode with highest-priority work
-- Activate mode based on: CLI `--mode` > config `default_mode` > checkpoint mode > user input
-- Resume delivery plan if one exists with IN_PROGRESS/PENDING phases
-- If `auto_start: true` → begin executing immediately
-
-See `features/pl_session_resume.md` for the full protocol.
+**Mode activation priority:** CLI `--mode` > config `default_mode` > checkpoint mode > user input.
 
 ## 6. Feature Lifecycle
 

@@ -133,7 +133,7 @@ Restore mode follows a 7-step sequence. Each step is mandatory unless noted othe
 
 Clear any stale session state carried over from the previous session. This includes resetting internal turn counters or budget trackers if the agent runtime maintains them. If no such state exists in the current runtime, this step is a no-op and may be skipped silently.
 
-Also check for merge-pending breadcrumbs (`.purlin/cache/merge_pending/*.json`). If any exist, run the merge recovery protocol (Section 2.4) before proceeding.
+Merge-pending breadcrumbs are handled by the startup protocol (PURLIN_BASE.md §5.0) BEFORE `/pl-resume` is called. Do NOT re-check breadcrumbs here.
 
 #### 2.3.1 Step 1 -- Checkpoint Detection
 
@@ -184,6 +184,8 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-
   - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
 
 When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
+
+**Mode activation priority:** CLI `--mode` (from launcher) > config `default_mode` > checkpoint mode > `.purlin_session.lock` mode > user input. Use the first one that is set.
 
 **Worktree context:** If running inside a worktree (`.purlin_worktree_label` exists), read the label and include it in the recovery summary. If `.purlin_session.lock` exists, read the mode from the lock as a fallback when no checkpoint exists.
 
