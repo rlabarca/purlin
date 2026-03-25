@@ -28,22 +28,98 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
 
 ### 2.2 CLI Arguments
 
-- `--model [id]` — Bare `--model` triggers interactive model+effort selection. With argument (e.g., `--model opus`), selects that model. Short names resolve: `opus` -> `claude-opus-4-6`, `sonnet` -> `claude-sonnet-4-6`, `haiku` -> `claude-haiku-4-5-20251001`.
-- `--effort <level>` — Overrides effort level (low, medium, high).
+CLI flags fall into two categories: **sticky** flags that persist preferences to `config.local.json` for future runs, and **ephemeral** flags that affect only the current session.
+
+#### 2.2.1 Sticky Flags (Saved Preferences)
+
+Sticky flags write their resolved value to `config.local.json` via `resolve_config.py set_agent_config purlin <key> <value>`. The write happens after name resolution and validation, before launching Claude. When `--no-save` is present, sticky flags still apply to the current session but do NOT write to config.
+
+| Flag | Config key | Description |
+|------|-----------|-------------|
+| `--model [id]` | `agents.purlin.model` | Set default model. Bare `--model` triggers interactive model+effort selection. With argument (e.g., `--model opus`), selects that model. Short names resolve: `opus` -> `claude-opus-4-6`, `sonnet` -> `claude-sonnet-4-6`, `haiku` -> `claude-haiku-4-5-20251001`. Persists the resolved full model ID. |
+| `--effort <level>` | `agents.purlin.effort` | Set default effort level (high, medium). Persists the selected level. |
+| `--yolo` | `agents.purlin.bypass_permissions` → `true` | Enable YOLO mode: passes `--dangerously-skip-permissions` to Claude, skipping all permission prompts. Persists to config. |
+| `--no-yolo` | `agents.purlin.bypass_permissions` → `false` | Disable YOLO mode: restores normal permission prompts. Persists to config. |
+| `--find-work <bool>` | `agents.purlin.find_work` | Set default work discovery (true/false). Persists the value. |
+
+- Sticky flags MUST persist proper JSON types: booleans for `bypass_permissions` and `find_work`, strings for `model` and `effort`. The resolver's `set_agent_config` MUST coerce `"true"`/`"false"` CLI strings to Python booleans for boolean config fields.
+- The launcher MUST validate flag combinations (e.g., `find_work=false` + `auto_start=true`) BEFORE persisting sticky values. Invalid combinations MUST fail without modifying config.
+
+#### 2.2.2 Ephemeral Flags (Session-Only)
+
+Ephemeral flags affect only the current session and are never written to config.
+
 - `--mode <pm|engineer|qa>` — Enters a specific mode on startup.
 - `--auto-build` — Alias for `--mode engineer --auto-start`.
 - `--auto-verify` — Alias for `--mode qa --auto-start`.
 - `--pm`, `--qa` — Shorthand for `--mode pm`, `--mode qa`.
 - `--verify [feature]` — `--mode qa`, optionally scoped to one feature.
 - `--auto-start` — Used with `--mode`: enters the mode and begins executing the work plan immediately without waiting for approval (e.g., `--mode engineer --auto-start`). Has no effect without `--mode`. The `--help` text for this flag MUST communicate the `--mode` dependency and include an example — e.g., "With --mode: begin executing immediately. Example: --mode engineer --auto-start. No effect without --mode."
-- `--find-work false` — Disables work discovery.
 - `--worktree` — Runs in an isolated git worktree (see worktree feature).
+
+#### 2.2.3 Meta Flags
+
+- `--help` — Show help and exit.
+- `--no-save` — Suppresses persistence for all sticky flags in this invocation. The flag values still apply to the current session but are NOT written to `config.local.json`. Has no effect on ephemeral flags. Has no effect on first-run interactive selection (which always persists). Example: `--no-save --model haiku` uses Haiku this session without changing the stored default.
+
+#### 2.2.4 Help Text Layout
+
+The `--help` output MUST visually separate sticky and ephemeral flags so users understand persistence at a glance. Required layout:
+
+```
+Usage: ./pl-run.sh [OPTIONS]
+
+Launch a Purlin agent session.
+
+Saved preferences (written to .purlin/config.local.json):
+  --model [id]         Set default model (opus, sonnet, haiku, or full ID).
+                       Interactive if no value. Saves to config.
+  --effort <level>     Set default effort level (high, medium). Saves to config.
+  --yolo               Enable YOLO mode (skip all permission prompts). Saves to config.
+  --no-yolo            Disable YOLO mode (restore permission prompts). Saves to config.
+  --find-work <bool>   Set default work discovery (true/false). Saves to config.
+
+  Use --no-save to apply any of the above for THIS SESSION ONLY
+  without changing your saved config.
+  Example: ./pl-run.sh --no-save --model haiku
+
+Session options (this run only, never saved):
+  --mode <mode>        Set starting mode (pm, engineer, qa).
+  --auto-build         Start in Engineer mode with auto-start.
+  --auto-verify        Start in QA mode with auto-start.
+  --pm                 Start in PM mode.
+  --qa                 Start in QA mode.
+  --verify [feature]   Start QA mode. Optional: feature name to verify.
+  --auto-start         With --mode: begin executing immediately.
+  --worktree           Run in an isolated git worktree.
+
+Other:
+  --no-save            Don't save preferences to config (use with flags above).
+  --help               Show this help message and exit.
+
+Examples:
+  ./pl-run.sh                           # Interactive session
+  ./pl-run.sh --auto-build              # Engineer mode, auto-start
+  ./pl-run.sh --model opus              # Use Opus (saved for next time)
+  ./pl-run.sh --no-save --model haiku   # Use Haiku just this once
+  ./pl-run.sh --yolo                    # YOLO mode on (saved)
+  ./pl-run.sh --no-save --yolo          # YOLO just this session
+  ./pl-run.sh --verify my_feature       # QA verify a specific feature
+```
+
+Requirements:
+- Two visually distinct groups with headers: "Saved preferences" and "Session options."
+- Every sticky flag description ends with "Saves to config."
+- The `--no-save` callout appears inline immediately after the sticky group with an example — not buried at the bottom.
+- `--no-save` appears both inline (contextual) and in the "Other" section (completeness).
+- Examples include both sticky and `--no-save` variants side by side.
+- The existing `sed`-based `# desc:` self-parsing mechanism MUST be replaced or extended to produce grouped output with headers. The implementation mechanism is left to the Builder.
 
 ### 2.3 First-Run Model Selection
 
 - If `agents.purlin` is absent from `config.local.json`, the launcher MUST prompt interactively for model and effort level.
-- The selection MUST be stored in `config.local.json` under `agents.purlin`.
-- CLI arguments MUST always override stored config.
+- The selection MUST be stored in `config.local.json` under `agents.purlin` via `resolve_config.py set_agent_config`. This persistence is NOT affected by `--no-save` — first-run interactive selection is explicitly establishing defaults, not overriding them.
+- CLI sticky flags MUST always override stored config (and persist the override, unless `--no-save`).
 
 ### 2.4 Session Message Encoding
 
@@ -63,6 +139,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
 - `.purlin/config.json` and `purlin-config-sample/config.json` MUST include an `agents.purlin` section with fields: `model`, `effort`, `bypass_permissions`, `find_work`, `auto_start`, `default_mode`.
 - `tools/config/resolve_config.py` MUST accept `"purlin"` as a valid role name.
 - When resolving `purlin` config, if `agents.purlin` is absent, fall back to `agents.builder`.
+- `--yolo`/`--no-yolo` map to the existing `bypass_permissions` field. The CDD dashboard also exposes this field as the "YOLO" checkbox — both interfaces write to the same config key.
 
 ---
 
@@ -84,12 +161,15 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
     Then pl-run.sh is generated at the project root
     And pl-run.sh is executable
 
-#### Scenario: Help flag lists all options dynamically
+#### Scenario: Help output separates sticky and ephemeral flags
 
     Given pl-run.sh exists
     When invoked with --help
-    Then all CLI options are listed with descriptions
-    And the help text is generated from the script itself (not hardcoded)
+    Then the output contains a "Saved preferences" section with --model, --effort, --yolo, --no-yolo, --find-work
+    And the output contains a "Session options" section with --mode, --auto-build, --auto-verify, --pm, --qa, --verify, --auto-start, --worktree
+    And the output contains --no-save with an inline explanation after the sticky group
+    And every sticky flag description includes "Saves to config"
+    And the Examples section shows both sticky and --no-save variants
 
 #### Scenario: Config resolver accepts purlin role
 
@@ -104,11 +184,61 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
     When resolve_config.py is called with "purlin" as role argument
     Then it outputs AGENT_MODEL from agents.builder
 
-#### Scenario: CLI model short name resolution
+#### Scenario: CLI model short name resolution and persistence
 
     Given pl-run.sh is invoked with --model opus
     When the launcher resolves the model name
     Then AGENT_MODEL is set to "claude-opus-4-6"
+    And config.local.json contains agents.purlin.model = "claude-opus-4-6"
+
+#### Scenario: --yolo sets bypass_permissions true in config
+
+    Given config.local.json has agents.purlin.bypass_permissions = false
+    When pl-run.sh is invoked with --yolo
+    Then --dangerously-skip-permissions is passed to Claude
+    And config.local.json contains agents.purlin.bypass_permissions = true (boolean, not string)
+
+#### Scenario: --no-yolo sets bypass_permissions false in config
+
+    Given config.local.json has agents.purlin.bypass_permissions = true
+    When pl-run.sh is invoked with --no-yolo
+    Then --dangerously-skip-permissions is NOT passed to Claude
+    And config.local.json contains agents.purlin.bypass_permissions = false (boolean, not string)
+
+#### Scenario: --no-save prevents sticky flag persistence
+
+    Given config.local.json has agents.purlin.model = "claude-opus-4-6"
+    When pl-run.sh is invoked with --no-save --model haiku
+    Then the session uses model "claude-haiku-4-5-20251001"
+    And config.local.json still contains agents.purlin.model = "claude-opus-4-6"
+
+#### Scenario: --no-save with --yolo does not persist bypass_permissions
+
+    Given config.local.json has agents.purlin.bypass_permissions = false
+    When pl-run.sh is invoked with --no-save --yolo
+    Then --dangerously-skip-permissions is passed to Claude for this session
+    And config.local.json still contains agents.purlin.bypass_permissions = false
+
+#### Scenario: --find-work persists to config
+
+    Given pl-run.sh is invoked with --find-work false
+    When the launcher processes arguments
+    Then config.local.json contains agents.purlin.find_work = false (boolean)
+
+#### Scenario: Multiple sticky flags persist together
+
+    Given pl-run.sh is invoked with --model sonnet --effort medium --yolo
+    When the launcher processes arguments
+    Then config.local.json contains agents.purlin.model = "claude-sonnet-4-6"
+    And config.local.json contains agents.purlin.effort = "medium"
+    And config.local.json contains agents.purlin.bypass_permissions = true
+
+#### Scenario: Validation before persistence
+
+    Given config.local.json has agents.purlin.find_work = true
+    When pl-run.sh is invoked with --find-work false --auto-start --mode engineer
+    Then the launcher exits with an error (find_work=false + auto_start=true is invalid)
+    And config.local.json still contains agents.purlin.find_work = true (not modified)
 
 #### Scenario: CLI auto-build alias
 
@@ -150,8 +280,25 @@ The Purlin unified agent replaces four separate role-specific agent sessions (Ar
     And the system prompt contains PURLIN_BASE.md content
     And the system prompt contains PURLIN_OVERRIDES.md content if file exists
 
+#### Scenario: Help output includes yolo and no-save flags @auto
+
+    Given pl-run.sh exists
+    When invoked with --help
+    Then the output contains "--yolo" and "--no-yolo" in the "Saved preferences" section
+    And the output contains "--no-save" in the "Other" section
+    And the output contains at least one --no-save example
+
+#### Scenario: CDD dashboard reflects CLI-set bypass_permissions @manual
+
+    Given pl-run.sh has been invoked with --yolo (persisting bypass_permissions=true)
+    When the CDD dashboard is loaded
+    Then the YOLO checkbox for the purlin agent shows as checked
+
 ## Regression Guidance
 - Verify init.sh refresh does not delete old role-specific launchers
 - Verify pl-run.sh handles missing PURLIN_BASE.md gracefully (during partial setup)
 - Verify config.local.json is not corrupted by concurrent model selection writes
 - Verify --worktree flag creates worktree directory under .purlin/worktrees/
+- Verify sticky flag persistence uses correct JSON types (booleans for bypass_permissions/find_work, not strings)
+- Verify --no-save does not suppress first-run interactive persistence
+- Verify CDD dashboard picks up CLI-written bypass_permissions on next auto-refresh
