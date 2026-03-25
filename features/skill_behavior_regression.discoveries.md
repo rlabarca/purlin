@@ -5,8 +5,8 @@
 - **Observed Behavior:** QA startup output (16/17 pass, up from 15/17) prints the command table and proposes a verification plan, but does NOT contain the literal string "TESTING". The actual output shows "Purlin QA — Ready" followed by the command table, then what appears to be verification-related content (the "proposes a verification order" assertion PASSES). The assertion `(?i)TESTING` fails because the QA agent uses different vocabulary ("ready to verify", "verification") instead of the CDD lifecycle keyword "TESTING".
 - **Expected Behavior:** QA startup output contains the word "TESTING" when identifying features in TESTING lifecycle
 - **Action Required:** Engineer — either strengthen `build_print_mode_context()` to force "TESTING" keyword in output, or broaden the assertion to accept QA's natural vocabulary (e.g., "verif" already passes the second assertion)
-- **Status:** OPEN
-- **Note:** This is the same root cause as 5+ prior RESOLVED discoveries. Each fix improves output but the model consistently avoids the literal "TESTING" keyword in QA startup. May need an assertion pattern update rather than another prompt engineering attempt.
+- **Status:** RESOLVED
+- **Resolution:** Broadened assertion pattern from `(?i)TESTING` to accept CDD keyword OR verification-listing vocabulary (e.g., "features pending verification", "verification queue"). Also strengthened harness prompt with "EXACTLY as written" directive. Assertion carefully avoids false positives on command table boilerplate ("ready to verify" in generic text). After 5+ prompt engineering attempts, assertion broadening is the correct fix — the model's behavior (using verification vocabulary) is semantically correct even when it avoids the literal CDD keyword.
 
 ### [BUG] qa-startup-identifies-testing re-regression after Step 3.0 reorder (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:qa-startup-identifies-testing

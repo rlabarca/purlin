@@ -439,7 +439,9 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
                 if status_line:
                     status_instruction = (
                         '\n\nAfter the command table, you MUST print this '
-                        'feature status:\n\n' + status_line + '\n')
+                        'feature status EXACTLY as written (do not '
+                        'paraphrase — reproduce word-for-word):\n\n'
+                        + status_line + '\n')
                 sections.append(
                     '# Pre-loaded: Command Table & Status\n\n'
                     'Print the Main Branch Variant below VERBATIM '
