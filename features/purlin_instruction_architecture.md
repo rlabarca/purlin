@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The Purlin agent uses a combined instruction file (`PURLIN_BASE.md`) that replaces the four role-specific instruction files. It defines three operating modes with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces four role-specific overrides, organized by mode sections.
+The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces both `HOW_WE_WORK_BASE.md` and the four role-specific instruction files. It contains the CDD philosophy, mode definitions with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, knowledge colocation rules, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces `HOW_WE_WORK_OVERRIDES.md` and four role-specific overrides, organized by mode sections. The launcher loads only `PURLIN_BASE.md` + `PURLIN_OVERRIDES.md` — no separate HOW_WE_WORK file.
 
 ---
 
@@ -14,12 +14,16 @@ The Purlin agent uses a combined instruction file (`PURLIN_BASE.md`) that replac
 
 ### 2.1 Instruction File Structure
 
-- `instructions/PURLIN_BASE.md` MUST define all three modes (Engineer, PM, QA) with activation triggers and write-access lists.
-- The file MUST define open mode (read-only until a mode is activated).
-- The file MUST define the mode-switching protocol (activation, pre-switch commit check, mode guard).
+- `instructions/PURLIN_BASE.md` is the SOLE instruction file. The launcher loads it directly — no separate `HOW_WE_WORK_BASE.md`.
+- The file MUST contain the CDD philosophy ("code is disposable", "design evolves with code").
+- The file MUST define all three modes (Engineer, PM, QA) with activation triggers and write-access lists.
+- The file MUST define open mode (read-only until a mode is activated) with a mandatory write block.
+- The file MUST define the mode-switching protocol (activation, pre-switch commit check, mode guard, iTerm identity).
 - The file MUST define the Active Deviations protocol (companion file table format, decision hierarchy, three Engineer-to-PM flows).
 - The file MUST define the startup protocol (scan.sh invocation, work-by-mode presentation, mode activation).
-- Target size: 500-600 lines (detailed protocols deferred to skills).
+- The file MUST define knowledge colocation (anchor taxonomy, cross-cutting standards, companion files, discovery sidecars, lifecycle reset exemptions).
+- The file MUST define testing responsibility split, release protocol, visual spec convention, and phased delivery.
+- Target size: 300-450 lines (detailed protocols deferred to skills).
 
 ### 2.2 Override File Structure
 
@@ -108,9 +112,17 @@ The Purlin agent uses a combined instruction file (`PURLIN_BASE.md`) that replac
 
     Given instructions/PURLIN_BASE.md exists
     When the line count is measured
-    Then it is between 200 and 700 lines
+    Then it is between 250 and 500 lines
+
+#### Scenario: Launcher loads only PURLIN_BASE.md
+
+    Given pl-run.sh exists
+    When the prompt assembly section is examined
+    Then it does NOT concatenate HOW_WE_WORK_BASE.md
+    And it loads PURLIN_BASE.md as the sole base instruction file
 
 ## Regression Guidance
 - Verify PURLIN_BASE.md does not reference old role names (Architect, Builder) except in transition context
 - Verify the instruction file loads correctly when appended via --append-system-prompt-file
 - Verify override file sections are not empty (template should have placeholder comments)
+- Verify HOW_WE_WORK_BASE.md is NOT loaded by pl-run.sh (old agents still load it separately)

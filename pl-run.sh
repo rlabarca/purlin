@@ -23,9 +23,31 @@ PURLIN_WORKTREE=""
 PURLIN_FIND_WORK=""
 PURLIN_VERIFY_FEATURE=""
 
+show_help() {
+    echo "Usage: ./pl-run.sh [OPTIONS]"
+    echo ""
+    echo "Launch a Purlin agent session."
+    echo ""
+    echo "Options:"
+    # Self-parse: extract '# desc:' comments from case patterns in this script
+    sed -n 's/^[[:space:]]*\(--[a-z-]*\)).*# desc: \(.*\)/\1|\2/p' "${BASH_SOURCE[0]}" | while IFS='|' read -r opt desc; do
+        printf "  %-20s %s\n" "$opt" "$desc"
+    done
+    echo ""
+    echo "Examples:"
+    echo "  ./pl-run.sh                     # Interactive session"
+    echo "  ./pl-run.sh --auto-build        # Engineer mode, auto-start"
+    echo "  ./pl-run.sh --model opus        # Use Opus model"
+    echo "  ./pl-run.sh --verify my_feature # QA verify a specific feature"
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --model)
+        --help) # desc: Show this help message and exit.
+            show_help
+            exit 0
+            ;;
+        --model) # desc: Set model (opus, sonnet, haiku, or full ID). Interactive if no value.
             if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
                 PURLIN_MODEL_OVERRIDE="$2"
                 shift 2
@@ -34,27 +56,29 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-        --effort)
+        --effort) # desc: Set effort level (high, medium).
             PURLIN_EFFORT_OVERRIDE="$2"
             shift 2
             ;;
-        --mode)
+        --mode) # desc: Set starting mode (pm, engineer, qa).
             PURLIN_MODE="$2"
             shift 2
             ;;
-        --auto-build)
+        --auto-build) # desc: Start in Engineer mode with auto-start.
             PURLIN_MODE="engineer"
             PURLIN_AUTO_START="true"
             shift
             ;;
-        --auto-verify)
+        --auto-verify) # desc: Start in QA mode with auto-start.
             PURLIN_MODE="qa"
             PURLIN_AUTO_START="true"
             shift
             ;;
-        --pm) PURLIN_MODE="pm"; shift ;;
-        --qa) PURLIN_MODE="qa"; shift ;;
-        --verify)
+        --pm) # desc: Start in PM mode.
+            PURLIN_MODE="pm"; shift ;;
+        --qa) # desc: Start in QA mode.
+            PURLIN_MODE="qa"; shift ;;
+        --verify) # desc: Start QA mode. Optional: feature name to verify.
             PURLIN_MODE="qa"
             if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
                 PURLIN_VERIFY_FEATURE="$2"
@@ -63,15 +87,26 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-        --auto-start) PURLIN_AUTO_START="true"; shift ;;
-        --find-work)
+        --auto-start) # desc: Enable auto-start (begin executing immediately).
+            PURLIN_AUTO_START="true"; shift ;;
+        --find-work) # desc: Set work discovery (true/false).
             PURLIN_FIND_WORK="$2"
             shift 2
             ;;
-        --worktree) PURLIN_WORKTREE="true"; shift ;;
+        --worktree) # desc: Run in an isolated git worktree.
+            PURLIN_WORKTREE="true"; shift ;;
         *) shift ;;
     esac
 done
+
+# --- Compute role display from mode and set terminal identity early ---
+case "${PURLIN_MODE:-}" in
+    engineer) ROLE_DISPLAY="Purlin: Engineer" ;;
+    qa)       ROLE_DISPLAY="Purlin: QA" ;;
+    pm)       ROLE_DISPLAY="Purlin: PM" ;;
+    *)        ROLE_DISPLAY="Purlin" ;;
+esac
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY"
 
 # --- Prompt assembly ---
 PROMPT_FILE=$(mktemp)
@@ -88,19 +123,12 @@ graceful_stop() {
 }
 trap graceful_stop INT
 
-cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
-printf "\n\n" >> "$PROMPT_FILE"
-
+# PURLIN_BASE.md is the single instruction file (HOW_WE_WORK content merged in)
 if [ -f "$CORE_DIR/instructions/PURLIN_BASE.md" ]; then
-    cat "$CORE_DIR/instructions/PURLIN_BASE.md" >> "$PROMPT_FILE"
+    cat "$CORE_DIR/instructions/PURLIN_BASE.md" > "$PROMPT_FILE"
 else
     echo "ERROR: instructions/PURLIN_BASE.md not found at $CORE_DIR/instructions/" >&2
     exit 1
-fi
-
-if [ -f "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
 if [ -f "$SCRIPT_DIR/.purlin/PURLIN_OVERRIDES.md" ]; then
@@ -249,7 +277,6 @@ if [[ -n "$PURLIN_MODE" ]]; then
 fi
 
 # --- Build CLI args and launch ---
-ROLE_DISPLAY="Purlin"
 CLI_ARGS=()
 [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
 [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
@@ -259,8 +286,8 @@ if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 fi
 
-[ -n "$PROJECT_NAME" ] && CLI_ARGS+=(--remote-control "$PROJECT_NAME | $ROLE_DISPLAY")
+# Session name: shown in /resume picker and terminal title
+CLI_ARGS+=(--name "$ROLE_DISPLAY")
 
-type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY"
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "$SESSION_MSG"
 exit $?
