@@ -13,15 +13,14 @@ Run `${TOOLS_ROOT}/cdd/scan.sh` and interpret the results to present actionable 
 
 ## Work Interpretation Rules
 
-Analyze the scan JSON to classify features into mode-specific work items:
+Analyze the scan JSON to classify features into mode-specific work items. **CRITICAL: Do NOT stop at `lifecycle` alone.** A feature can be `lifecycle: COMPLETE` and still need Engineer work if `spec_modified_after_completion: true`.
 
-**Engineer work:**
-- Features in TODO lifecycle with no open INFEASIBLE
-- Features with `test_status: FAIL`
-- Features with `regression_status: FAIL` (regression test failures need fixing)
-- Features with `spec_modified_after_completion: true` (spec changed after completion — needs re-validation: re-run tests, verify against updated spec)
-- Open BUG discoveries with `action_required: Engineer`
-- Delivery plan features in current phase
+**Engineer work (check ALL of these — a feature matching ANY rule is Engineer work):**
+1. Features with `test_status: FAIL` or `regression_status: FAIL` — fix failures first
+2. **Features with `spec_modified_after_completion: true`** — spec was changed after completion. Even though lifecycle says COMPLETE, the feature needs re-validation: re-read spec, compare to implementation, re-run tests, update code if spec requirements changed. This is the most commonly missed signal.
+3. Features in TODO lifecycle with no open INFEASIBLE — new work
+4. Open BUG discoveries with `action_required: Engineer`
+5. Delivery plan features in current phase
 
 **QA work:**
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING
