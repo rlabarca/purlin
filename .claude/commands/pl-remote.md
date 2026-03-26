@@ -86,7 +86,7 @@ Pull remote collaboration branch into local via merge.
 
 **Sync state** (after `git fetch <remote>`):
 - **SAME:** `"Already in sync with remote."` Exit 0.
-- **AHEAD:** `"AHEAD by N commits. Nothing to pull."` Exit 0.
+- **AHEAD:** `"AHEAD by N commits. Nothing to pull — run /pl-remote push when ready."` Exit 0.
 - **BEHIND:** `git merge --ff-only <remote>/<branch>`. Report count.
 - **DIVERGED:** Show `git log <branch>..<remote>/<branch> --stat --oneline`. Run `git merge <remote>/<branch>`. On conflict: print per-file context, resolution instructions, exit 1.
 
@@ -107,7 +107,17 @@ Configure a git remote. No branch guard, no dirty check — configuration only.
 6. Verify connectivity via `git ls-remote`.
 7. On SSH auth failure: auto-setup SSH key (check existing → generate if needed → keyscan host → display pubkey with hosting-provider URL → wait for user → re-verify).
 8. On failure + decline: rollback (`git remote remove` if new, restore old URL if set-url).
-9. Print success. Suggest next step: `/pl-remote branch create <name>` for collaboration.
+9. Print success with next steps:
+```
+Remote configured:
+  Name:   <name>
+  URL:    <url>
+  Status: Connected
+
+Next steps:
+  /pl-remote branch create <name>   Start a collaboration branch
+  /pl-remote push                   Push current branch to remote
+```
 
 **Remotes exist:** Show current remotes. Offer change URL or add additional. Same verification and rollback.
 
@@ -147,6 +157,7 @@ Created collaboration branch: <name>
 ```
 Joined collaboration branch: <name>
   Tracking: <remote>/<name>
+  Local branch is up to date.
   Use /pl-remote push and /pl-remote pull to sync.
 ```
 
@@ -177,6 +188,8 @@ Left collaboration branch: <name>
 Collaboration branches on <remote>:
   * feature/collab  (active)
     feature/auth
+
+Use /pl-remote branch join <name> to switch branches.
 ```
 
 No branches: `"No collaboration branches on <remote>. Use /pl-remote branch create <name> to start one."`
