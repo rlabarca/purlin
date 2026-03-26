@@ -41,10 +41,6 @@ setup_sandbox() {
     # Overlay uncommitted scripts so tests exercise latest code
     cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
-    # Copy CDD scripts for symlink targets
-    cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/purlin/tools/cdd/start.sh"
-    cp "$SUBMODULE_SRC/tools/cdd/stop.sh" "$PROJECT/purlin/tools/cdd/stop.sh"
-
     INIT_SH="$PROJECT/purlin/tools/init.sh"
 }
 
@@ -387,12 +383,6 @@ else
     log_fail "Step 2 missing requirements context"
 fi
 
-if echo "$OUTPUT" | grep -q "pl-cdd-start.sh"; then
-    log_pass "Narrative mentions ./pl-cdd-start.sh for dashboard"
-else
-    log_fail "Narrative missing ./pl-cdd-start.sh mention"
-fi
-
 cleanup_sandbox
 
 ###############################################################################
@@ -426,13 +416,6 @@ if echo "$OUTPUT" | grep -q "What's Next"; then
     log_fail "Refresh should not include full narrative"
 else
     log_pass "Refresh does not include full narrative"
-fi
-
-# Should still mention CDD dashboard
-if echo "$OUTPUT" | grep -q "pl-cdd-start.sh"; then
-    log_pass "Refresh summary includes CDD dashboard reminder"
-else
-    log_fail "Refresh summary missing CDD dashboard reminder"
 fi
 
 cleanup_sandbox
