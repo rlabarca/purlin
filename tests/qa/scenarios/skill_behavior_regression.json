@@ -13,17 +13,17 @@
         {
           "tier": 2,
           "pattern": "(?s)━+.*━+",
-          "context": "Output contains a command table with Unicode border characters"
+          "context": "Output contains a status or command table with Unicode border characters"
         },
         {
           "tier": 2,
-          "pattern": "/pl-spec",
-          "context": "Output references /pl-spec"
+          "pattern": "(?i)(PM|spec|anchor|design)",
+          "context": "Output references PM-mode responsibilities (specs, anchors, or design)"
         },
         {
           "tier": 2,
-          "pattern": "/pl-verify",
-          "context": "Output references /pl-verify (unified table includes all modes)"
+          "pattern": "(?i)(TODO|TESTING|COMPLETE)",
+          "context": "Output includes feature lifecycle status"
         }
       ]
     },

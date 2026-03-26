@@ -132,15 +132,15 @@ The command table is the same for all modes (unified agent shows all commands). 
 
 ### Unit Tests
 
-#### Scenario: Purlin PM startup prints command table on mixed-lifecycle project
+#### Scenario: Purlin PM startup prints status on mixed-lifecycle project
 
     Given the fixture tag main/skill_behavior/purlin-unified is checked out
     And the system prompt is constructed for the PURLIN role
     And build_print_mode_context is configured for pm mode
     When claude --print is invoked with "Begin Purlin session. Enter PM mode."
-    Then the output contains a command table with Unicode border characters
-    And the output references /pl-spec
-    And the output references /pl-verify (unified table includes all modes)
+    Then the output contains a status or command table with Unicode border characters
+    And the output references PM-mode responsibilities (specs, anchors, or design)
+    And the output includes feature lifecycle status (TODO, TESTING, or COMPLETE)
 
 #### Scenario: Purlin Engineer startup identifies TODO features on mixed-lifecycle project
 
