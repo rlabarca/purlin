@@ -33,7 +33,26 @@ The `/pl-remote` skill is the single entry point for branch collaboration operat
 - Old skill files (`pl-remote-push.md`, `pl-remote-pull.md`, `pl-remote-add.md`) have been tombstoned.
 - The consolidated skill MUST handle all four subcommands.
 
-### 2.3 Config Reading
+### 2.3 Contextual Next-Step Guidance
+
+Every subcommand exit point — success, error, or no-op — MUST suggest the logical next action. Users should never hit a dead end. The guidance chain forms a discoverable onboarding path:
+
+| Exit Point | Suggested Next Step |
+|------------|-------------------|
+| `add` success | `/pl-remote branch create <name>` or `/pl-remote push` |
+| `branch create` success | `/pl-remote push` and `/pl-remote pull` to sync |
+| `branch join` success | `/pl-remote push` and `/pl-remote pull` to sync |
+| `branch leave` success | `/pl-remote branch join <name>` to rejoin |
+| `branch list` (no branches) | `/pl-remote branch create <name>` to start one |
+| `push` / `pull` — no remote | `/pl-remote add` to configure a remote |
+| `push` / `pull` — no active branch, wrong branch | `/pl-remote branch create <name>` or switch to main |
+| `push` — BEHIND/DIVERGED | `/pl-remote pull` before pushing |
+| `pull` — AHEAD | `/pl-remote push` when ready |
+| No subcommand / invalid | Print full usage with all four subcommands |
+
+This table is normative — each message MUST include the suggested command. The user should be able to go from zero (no remote, no branch) to collaborating by following the suggestions.
+
+### 2.4 Config Reading
 
 Read remote name from `.purlin/config.json`:
 
@@ -43,7 +62,7 @@ Read remote name from `.purlin/config.json`:
 
 This resolution order applies to ALL subcommands and to the extraction tool (`tools/collab/extract_whats_different.py`).
 
-### 2.4 Collaboration Branch Resolution
+### 2.5 Collaboration Branch Resolution
 
 Per `policy_branch_collab.md` Section 2.4:
 
@@ -53,7 +72,7 @@ Per `policy_branch_collab.md` Section 2.4:
 
 Push and pull (no-argument mode) both resolve the collaboration branch this way.
 
-### 2.5 Collaboration Branch Guard (push and pull no-argument mode)
+### 2.6 Collaboration Branch Guard (push and pull no-argument mode)
 
 ```
 git rev-parse --abbrev-ref HEAD
@@ -64,7 +83,7 @@ If the current branch does not match the resolved collaboration branch:
 - **Active branch exists:** Abort: `"This command must be run from the collaboration branch (<branch>). Current branch: <current>."`
 - **No active branch (direct mode):** Abort: `"No active collaboration branch. On main, /pl-remote <push|pull> operates on main directly. Current branch: <current>. Switch to main or create a collaboration branch with /pl-remote branch create <name>."`
 
-### 2.6 Remote Guard (all subcommands except add)
+### 2.7 Remote Guard (all subcommands except add)
 
 ```
 git remote -v
@@ -72,7 +91,7 @@ git remote -v
 
 If no remotes exist: `"No git remote configured. Run /pl-remote add to set up a remote first."` Exit 1.
 
-### 2.7 Working Tree Check (push and pull)
+### 2.8 Working Tree Check (push and pull)
 
 Run `git status --porcelain`. If any staged or unstaged modifications exist to tracked files outside `.purlin/`:
 
@@ -89,7 +108,7 @@ Push the local collaboration branch to the remote.
 
 #### 2.10.1 Preconditions
 
-Execute in order: Collaboration Branch Resolution (2.4) → Branch Guard (2.5) → Remote Guard (2.6) → Working Tree Check (2.7) → Config Reading (2.3).
+Execute in order: Collaboration Branch Resolution (2.5) → Branch Guard (2.6) → Remote Guard (2.7) → Working Tree Check (2.8) → Config Reading (2.4).
 
 #### 2.10.2 First-Push Safety Confirmation
 
@@ -133,8 +152,8 @@ Pull the remote collaboration branch into the local branch via merge.
 
 #### 2.20.1 Modes
 
-- **No-argument mode:** Resolve collaboration branch per Section 2.4. Execute Branch Guard (2.5) → Remote Guard (2.6) → Working Tree Check (2.7) → Config Reading (2.3).
-- **Explicit-branch mode** (`/pl-remote pull RC0.8.0`): Use the argument as `<branch>` directly. Skip Branch Resolution and Branch Guard. Execute Remote Guard (2.6) → Working Tree Check (2.7) → Config Reading (2.3). Runs from any branch (typically `main`).
+- **No-argument mode:** Resolve collaboration branch per Section 2.5. Execute Branch Guard (2.6) → Remote Guard (2.7) → Working Tree Check (2.8) → Config Reading (2.4).
+- **Explicit-branch mode** (`/pl-remote pull RC0.8.0`): Use the argument as `<branch>` directly. Skip Branch Resolution and Branch Guard. Execute Remote Guard (2.7) → Working Tree Check (2.8) → Config Reading (2.4). Runs from any branch (typically `main`).
 
 #### 2.20.2 First-Pull Safety Confirmation
 
@@ -323,12 +342,14 @@ Remote configured:
   URL:    <url>
   Status: Connected
 
-You can now use /pl-remote push and /pl-remote pull to collaborate.
+Next steps:
+  /pl-remote branch create <name>   Start a collaboration branch
+  /pl-remote push                   Push current branch to remote
 ```
 
 #### 2.30.10 Config Sync
 
-After a successful add or set-url, check whether the remote name matches `branch_collab.remote` in config (per Section 2.3 resolution order).
+After a successful add or set-url, check whether the remote name matches `branch_collab.remote` in config (per Section 2.4 resolution order).
 
 - Name matches config (or is `"origin"` and no config override): no action.
 - Name does NOT match and is the **only** remote: Prompt: `"Remote <name> is not the default (origin). Should /pl-remote push and /pl-remote pull use <name> as the default remote? [Y/n]"` If yes, write `branch_collab.remote` to `.purlin/config.json`.
@@ -1026,6 +1047,34 @@ If no collaboration branches exist: `"No collaboration branches on <remote>. Use
     And .purlin/config.json also contains remote_collab.remote = "origin"
     When any /pl-remote subcommand resolves the remote name
     Then "upstream" is used (branch_collab takes precedence)
+
+<!-- onboarding / next-step guidance scenarios -->
+
+#### Scenario: add Success Suggests Next Steps
+
+    Given no git remotes are configured
+    When /pl-remote add completes successfully
+    Then the success output includes "/pl-remote branch create" as a suggested next step
+    And the success output includes "/pl-remote push" as a suggested next step
+
+#### Scenario: push No Remote Suggests add
+
+    Given no git remotes are configured
+    When /pl-remote push is invoked
+    Then the error message includes "/pl-remote add"
+
+#### Scenario: branch create Success Suggests push and pull
+
+    Given /pl-remote branch create completes successfully
+    When the success output is displayed
+    Then it includes "/pl-remote push" and "/pl-remote pull" as next steps
+    And it includes "/pl-remote branch leave" to return to main
+
+#### Scenario: branch list Empty Suggests create
+
+    Given no collaboration branches exist on the remote
+    When /pl-remote branch list is invoked
+    Then the output includes "/pl-remote branch create <name>" as a suggestion
 
 ### Manual Scenarios (Human Verification Required)
 
