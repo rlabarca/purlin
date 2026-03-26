@@ -31,7 +31,7 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 
 ### The Architect Agent
 *   **Focus:** "The What and The Why".
-*   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and process configuration (`.purlin/release/*.json`, `.purlin/config.json`).
+*   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and process configuration (`.purlin/toolbox/*.json`, `.purlin/config.json`).
 *   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of implementation files.
 *   **Key Duty:** Designing rigorous, unambiguous specifications and enforcing architectural invariants.
 

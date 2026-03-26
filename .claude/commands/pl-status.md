@@ -72,7 +72,7 @@ Present:
 After completing the standard output above, if you are the PM, check for uncommitted changes:
 
 1.  Run `git status` and `git diff` to identify staged changes, unstaged modifications, and untracked files.
-2.  **PM-owned files** (`features/*.md`, `features/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json`):
+2.  **PM-owned files** (`features/*.md`, `features/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/toolbox/*.json`, `.purlin/config.json`):
     *   Present a summary of changed files grouped by change type (new, modified, deleted).
     *   Read the diffs to understand the substance of each change.
     *   Propose a commit message following the project's commit convention (e.g., `spec(feature_name): add edge-case scenarios`, `docs(readme): update release history`). The message must reflect the "why" not just the "what."
