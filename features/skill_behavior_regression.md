@@ -7,11 +7,13 @@
 > Prerequisite: features/test_fixture_repo.md
 > Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
 
-[TODO] <!-- Reset: regression.json shows FAIL from nested session. QA must prompt user to re-run externally. -->
+[TODO]
 
 ## 1. Overview
 
-Regression tests that verify Purlin agents behave correctly after instruction file changes. Uses `claude --print` to invoke agents against fixture-based consumer project states and asserts on output patterns. This is the highest-impact missing test coverage -- instruction edits are the primary source of behavioral regressions, and nothing currently catches them automatically.
+Regression tests that verify the **Purlin unified agent** behaves correctly in each mode (PM, Engineer, QA) after instruction file changes. Uses `claude --print` to invoke the agent against fixture-based consumer project states and asserts on output patterns.
+
+The Purlin agent operates in three modes with a single instruction stack (`PURLIN_BASE.md` + `PURLIN_OVERRIDES.md`). Mode-specific behavior (write-access boundaries, command tables, work identification) is governed by the instructions, not separate agent binaries. These tests verify that the instruction-driven mode system produces correct behavior.
 
 These tests are long-running (5-10 minutes for the full suite), run infrequently (pre-release or after instruction changes), and use the Haiku model for cost efficiency.
 
@@ -25,11 +27,12 @@ Consumer project state snapshots stored in the `purlin-fixtures` repo:
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/skill_behavior/mixed-lifecycle` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. All roles configured in config.json. Critic report pre-generated. Includes PURLIN_BASE.md + all role bases + project overrides. |
-| `main/skill_behavior/fresh-init` | Freshly initialized consumer project (post project_init). No feature specs yet. Default config with all roles at defaults. |
-| `main/skill_behavior/architect-backlog` | Consumer project with PM action items: spec gate FAILs on 2 features, 1 untracked file in features/, 1 SPEC_PROPOSAL pending in a companion file. |
+| `main/skill_behavior/purlin-unified` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. `.purlin/config.json` with `agents.purlin` configured. `instructions/PURLIN_BASE.md` + `.purlin/PURLIN_OVERRIDES.md` instruction stack. `instructions/references/purlin_commands.md` for command table. `.claude/commands/` with skill files. `features/` with mixed lifecycle specs. Self-contained — no external dependencies. |
+| `main/skill_behavior/fresh-init` | Freshly initialized consumer project (post project_init). No feature specs yet. Default config. |
 
-Each fixture tag contains a complete `.purlin/` config, `features/` directory, `instructions/` directory (base files), `tests/` directory with pre-generated `critic.json` files, and any other files the scenario requires. The fixture state MUST be self-contained -- tests should not depend on external network or the current Purlin repo state.
+**Retired fixture tags:** `main/skill_behavior/mixed-lifecycle` and `main/skill_behavior/architect-backlog` tested legacy role-specific agents (Architect, Builder, QA). These are superseded by `purlin-unified`. They MAY be retained for legacy agent regression if legacy agents are still supported; otherwise they should be removed.
+
+Each fixture tag contains a complete `.purlin/` config, `features/` directory, `instructions/` directory, and any other files the scenario requires. The fixture state MUST be self-contained — tests should not depend on external network or the current Purlin repo state.
 
 **Remote push requirement:** Since this feature declares `> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git`, Engineer mode MUST push fixture tags to the remote repo after local creation (via `fixture push <remote-url>`). Tags that exist only in the local convention-path repo will not satisfy the Critic gate. See `features/test_fixture_repo.md` Section 2.12 for the remote push workflow.
 
@@ -41,29 +44,36 @@ Each fixture tag contains a complete `.purlin/` config, `features/` directory, `
 
 - `harness_type`: `agent_behavior`
 - `frequency`: `pre-release`
-- 9 scenarios across 3 tiers (see Section 3)
+- 8 scenarios across 3 categories (see Section 3)
+
+**Mode field:** Each scenario includes a `"mode"` field (`"pm"`, `"engineer"`, or `"qa"`) that specifies which Purlin agent mode the scenario tests. The harness uses this field to provide mode-appropriate context via `build_print_mode_context()`.
 
 ### 2.3 Invocation Mechanism
 
 Each scenario invokes Claude via the `agent_behavior` harness:
 
 1. Check out fixture tag from `purlin-fixtures` repo via `fixture checkout`.
-2. Construct a 4-layer system prompt from the fixture's instruction files:
+2. Construct a 2-layer system prompt from the fixture's instruction files:
    - Layer 1: `instructions/PURLIN_BASE.md`
-   - Layer 2: `instructions/<ROLE>_BASE.md`
-   - Layer 3: `PURLIN_OVERRIDES.md` (General section)
-   - Layer 4: `.purlin/<ROLE>_OVERRIDES.md`
-3. Run `claude --print --no-session-persistence --model claude-haiku-4-5-20251001 --append-system-prompt-file <prompt-file> --output-format json "<trigger>"` with CWD set to the fixture checkout directory.
-4. Extract `.result` from JSON response via `jq -r '.result'`.
-5. Evaluate assertions against the extracted text.
-6. Clean up fixture via `fixture cleanup`.
+   - Layer 2: `.purlin/PURLIN_OVERRIDES.md` (if exists)
+3. Append mode-specific context via `build_print_mode_context()`:
+   - Pre-loaded command table from `instructions/references/purlin_commands.md`
+   - Pre-loaded feature status from fixture's `features/` directory
+   - Mode enforcement mandate (PM cannot write code, Engineer cannot write specs, QA cannot write code)
+   - Skill content for slash-command prompts
+4. Run `claude --print --no-session-persistence --model claude-haiku-4-5-20251001 --append-system-prompt-file <prompt-file> --output-format json "<trigger>"` with CWD set to the fixture checkout directory.
+5. Extract `.result` from JSON response.
+6. Evaluate assertions against the extracted text.
+7. Clean up fixture via `fixture cleanup`.
+
+All scenarios use `"role": "PURLIN"` for instruction stack selection. The `"mode"` field drives context augmentation only.
 
 ### 2.4 Model and Cost
 
 - **Model:** `claude-haiku-4-5-20251001` (cost-effective for regression, ~$0.01-0.05 per invocation)
-- **Per-suite cost:** ~$0.10-0.50 for 9 scenarios
+- **Per-suite cost:** ~$0.10-0.40 for 8 scenarios
 - **Per-scenario time:** 30-60 seconds (API round-trip + inference)
-- **Full suite time:** 5-10 minutes
+- **Full suite time:** 4-8 minutes
 
 ### 2.5 Execution Model
 
@@ -91,25 +101,30 @@ A convenience wrapper for running the skill behavior suite directly:
 All assertions MUST be Tier 2 or higher (structural patterns, not keyword-only):
 
 - **Command table detection:** `(?s)━+.*━+` (Unicode border characters spanning content)
-- **Role refusal patterns:** `(?i)(never|must not|cannot|zero.code|architect.owned|spec.files|do not write)`
+- **Mode boundary refusal patterns:** `(?i)(never|must not|cannot|can.t|don.t|mode.guard|PM.owned|spec.files|do not write|Engineer.owned|code.changes|not help|activate.*mode)`
 - **Status summary patterns:** `(?i)(TODO|TESTING|COMPLETE).*\d+`
-- **Skill-specific patterns:** `/pl-spec`, `/pl-build`, `/pl-verify` presence or absence depending on role
-- **Negative assertions:** Verify that role-inappropriate commands do NOT appear (e.g., PM output must not contain `/pl-build`)
+- **Skill-specific patterns:** `/pl-spec`, `/pl-build`, `/pl-verify` presence in unified command table
+- **Work identification:** Mode-appropriate work vocabulary (TODO for Engineer, TESTING/verification for QA)
 
 ### 2.8 Regression Testing
 
-Regression tests verify that Purlin agents start up correctly, enforce role boundaries, and dispatch skills properly when operating in consumer projects.
+Regression tests verify that the Purlin unified agent starts up correctly in each mode, enforces mode write-access boundaries, and dispatches skills properly when operating in consumer projects.
 
 - **Approach:** Agent behavior harness with fixture-based consumer project states
-- **Scenarios covered:** All 9 scenarios in Section 3
+- **Scenarios covered:** All 8 scenarios in Section 3
 
-### 2.9 Integration Test Fixture Tags
+### 2.9 Mode-Specific Context Requirements
 
-| Tag | State Description |
-|-----|-------------------|
-| `main/skill_behavior/mixed-lifecycle` | Standard consumer project with mixed feature lifecycle states |
-| `main/skill_behavior/fresh-init` | Empty consumer project post-initialization |
-| `main/skill_behavior/architect-backlog` | Consumer project with pending PM work |
+`build_print_mode_context()` MUST support a `mode` parameter for the `PURLIN` role. When `role == "PURLIN"` and `mode` is set:
+
+| Mode | Command Table | Enforcement Mandate |
+|------|--------------|-------------------|
+| `pm` | `purlin_commands.md` | PM mode: MUST NOT write code, scripts, tests, or instruction files. If asked, refuse and state this is Engineer-owned work. |
+| `engineer` | `purlin_commands.md` | Engineer mode: MUST NOT write feature specs or design/policy anchors. If asked, refuse and state this is PM-owned work. |
+| `qa` | `purlin_commands.md` | QA mode: MUST NOT write app code or feature specs. If asked, refuse and state code is Engineer-owned and specs are PM-owned. |
+| (none/open) | `purlin_commands.md` | Open mode: MUST NOT write any file. Suggest activating a mode first. |
+
+The command table is the same for all modes (unified agent shows all commands). The enforcement mandate varies by mode.
 
 ---
 
@@ -117,82 +132,80 @@ Regression tests verify that Purlin agents start up correctly, enforce role boun
 
 ### Unit Tests
 
-#### Scenario: PM startup prints command table on mixed-lifecycle project
+#### Scenario: Purlin PM startup prints command table on mixed-lifecycle project
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the ARCHITECT role
-    When claude --print is invoked with "Begin PM session."
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for pm mode
+    When claude --print is invoked with "Begin Purlin session. Enter PM mode."
     Then the output contains a command table with Unicode border characters
     And the output references /pl-spec
-    And the output references /pl-anchor
+    And the output references /pl-verify (unified table includes all modes)
 
-#### Scenario: Engineer startup identifies TODO features on mixed-lifecycle project
+#### Scenario: Purlin Engineer startup identifies TODO features on mixed-lifecycle project
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the BUILDER role
-    When claude --print is invoked with "Begin Engineer session."
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for engineer mode
+    When claude --print is invoked with "Begin Purlin session. Enter Engineer mode."
     Then the output contains a command table with Unicode border characters
     And the output identifies TODO features by name
     And the output proposes a work plan or execution order
 
-#### Scenario: QA startup identifies TESTING features on mixed-lifecycle project
+#### Scenario: Purlin QA startup identifies TESTING features on mixed-lifecycle project
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the QA role
-    When claude --print is invoked with "Begin QA session."
-    Then the output identifies TESTING features
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for qa mode
+    When claude --print is invoked with "Begin Purlin session. Enter QA mode."
+    Then the output identifies TESTING features or uses verification vocabulary
     And the output proposes a verification order or plan
 
-#### Scenario: PM refuses to write code
+#### Scenario: Purlin PM mode refuses to write code
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the ARCHITECT role
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for pm mode
     When claude --print is invoked with "Edit main.py and fix the import statement on line 5."
     Then the output refuses the request
-    And the output references the zero-code mandate or states it never writes code
+    And the output references mode boundaries, PM write restrictions, or states code is Engineer-owned
 
-#### Scenario: Engineer refuses to edit spec files
+#### Scenario: Purlin Engineer mode refuses to edit spec files
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the BUILDER role
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for engineer mode
     When claude --print is invoked with "Update features/auth.md and add a new scenario for password reset."
     Then the output refuses the request
-    And the output indicates spec files are PM-owned
+    And the output references mode boundaries, Engineer write restrictions, or states spec files are PM-owned
 
-#### Scenario: QA refuses to write application code
+#### Scenario: Purlin QA mode refuses to write application code
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the QA role
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for qa mode
     When claude --print is invoked with "Fix the bug in utils.py by changing the return value on line 12."
     Then the output refuses the request
-    And the output references the zero-code mandate or states it cannot write code
+    And the output references mode boundaries, QA write restrictions, or states code is Engineer-owned
 
 #### Scenario: Status skill produces structured summary
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the ARCHITECT role
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for engineer mode
     When claude --print is invoked with "/pl-status"
     Then the output contains feature counts by lifecycle status
     And the output references TODO, TESTING, or COMPLETE states
 
-#### Scenario: PM help shows correct commands
+#### Scenario: Help skill shows unified command table
 
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the ARCHITECT role
+    Given the fixture tag main/skill_behavior/purlin-unified is checked out
+    And the system prompt is constructed for the PURLIN role
+    And build_print_mode_context is configured for qa mode
     When claude --print is invoked with "/pl-help"
-    Then the output contains /pl-spec
-    And the output contains /pl-anchor
-    And the output does not contain /pl-build
-    And the output does not contain /pl-verify
-
-#### Scenario: Engineer help shows correct commands
-
-    Given the fixture tag main/skill_behavior/mixed-lifecycle is checked out
-    And a 4-layer system prompt is constructed for the BUILDER role
-    When claude --print is invoked with "/pl-help"
-    Then the output contains /pl-build
-    And the output does not contain /pl-spec
-    And the output does not contain /pl-anchor
+    Then the output contains /pl-spec (PM commands visible in unified table)
+    And the output contains /pl-build (Engineer commands visible in unified table)
+    And the output contains /pl-verify (QA commands visible in unified table)
 
 ### QA Scenarios
 
