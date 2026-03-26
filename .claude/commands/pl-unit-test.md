@@ -1,6 +1,5 @@
 **Purlin mode: Engineer (QA cross-mode: verify-only)**
 
-Legacy agents: If you are not the Builder, respond: "This is a Builder command. Ask your Builder agent to run /pl-unit-test instead." and stop.
 Purlin agent: This skill activates Engineer mode. If QA mode is active, runs in verify-only cross-mode (can run tests and read results but cannot modify application code).
 
 ---

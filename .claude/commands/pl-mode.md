@@ -1,7 +1,6 @@
 **Purlin command: Purlin agent only**
 **Purlin mode: shared**
 
-Legacy agents: This command is for the Purlin unified agent. It is not available in role-specific agent sessions.
 Purlin agent: This skill switches the Purlin agent's operating mode.
 
 ---

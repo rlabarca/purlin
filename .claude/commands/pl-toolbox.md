@@ -1,7 +1,6 @@
 **Purlin command: Purlin agent only**
 **Purlin mode: shared**
 
-Legacy agents: This command is not available in role-specific agent sessions.
 Purlin agent: This skill is shared across all modes. List and run are available in any mode. Write operations (create, edit, copy, delete, add, pull, push) activate Engineer mode.
 
 ---

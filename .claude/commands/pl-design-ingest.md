@@ -1,6 +1,5 @@
 **Purlin mode: PM**
 
-Legacy agents: If you are not the PM, respond: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead." and stop.
 Purlin agent: This skill activates PM mode. If another mode is active, confirm switch first.
 
 ---

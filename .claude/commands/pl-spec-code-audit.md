@@ -1,6 +1,5 @@
 **Purlin mode: Engineer**
 
-Legacy agents: If you are not the Architect or Builder, respond: "This is an Architect/Builder command. Ask the appropriate agent to run /pl-spec-code-audit instead." and stop.
 Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
 
 ---

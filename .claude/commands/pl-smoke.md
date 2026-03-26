@@ -1,6 +1,5 @@
 **Purlin mode: QA**
 
-Legacy agents: If you are not the QA agent, this is not your command.
 Purlin agent: This skill activates QA mode.
 
 ---

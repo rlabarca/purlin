@@ -1,6 +1,5 @@
 **Purlin mode: QA**
 
-Legacy agents: If you are not the QA, respond: "This is a QA command. Ask your QA agent to run /pl-complete instead." and stop.
 Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
 
 ---

@@ -1,6 +1,5 @@
 **Purlin mode: Engineer**
 
-Legacy agents: If you are not the Builder, respond: "This is a Builder command. Ask your Builder agent to run /pl-build instead." and stop.
 Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
 
 ---

@@ -1,7 +1,6 @@
 **Purlin command: Purlin agent only (replaces /pl-regression-run, /pl-regression-author, /pl-regression-evaluate)**
 **Purlin mode: QA**
 
-Legacy agents: Use /pl-regression-run, /pl-regression-author, or /pl-regression-evaluate instead.
 Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
 
 ---

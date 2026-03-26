@@ -1,6 +1,5 @@
 **Purlin mode: shared (QA cross-mode: setup-only)**
 
-Legacy agents: Available to all agents.
 Purlin agent: Available in any mode. Does not switch modes. When invoked from QA mode, runs in setup-only cross-mode (can create/manage fixtures but cannot modify application code).
 
 ---

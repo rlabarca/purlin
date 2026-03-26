@@ -1,6 +1,5 @@
 **Purlin mode: Engineer (QA cross-mode: run-only)**
 
-Legacy agents: If you are not the Builder or QA, respond: "This is a Builder/QA command. Ask your Builder or QA agent to run /pl-server instead." and stop.
 Purlin agent: This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop servers but cannot modify app code).
 
 ---

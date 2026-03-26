@@ -1,7 +1,6 @@
 **Purlin command: Purlin agent only**
 **Purlin mode: shared**
 
-Legacy agents: This command is for the Purlin unified agent. It is not available in role-specific agent sessions.
 Purlin agent: Worktree management. Available in any mode without switching.
 
 ---

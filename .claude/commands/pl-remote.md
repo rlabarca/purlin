@@ -1,7 +1,6 @@
 **Purlin command: Purlin agent only (replaces /pl-remote-push, /pl-remote-pull, /pl-remote-add)**
 **Purlin mode: shared**
 
-Legacy agents: Use /pl-remote-push, /pl-remote-pull, or /pl-remote-add instead.
 Purlin agent: Branch collaboration — remote config, branch lifecycle, push/pull sync.
 
 ---
