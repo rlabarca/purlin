@@ -106,7 +106,30 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 5. Run `tools/cdd/scan.sh` to refresh the Critic report.
 6. Print handoff message if failures were found (see Section 2.12).
 
-#### 2.2.4 Regression Suite Status in `/pl-verify` Phase A Summary
+#### 2.2.4 First-Time Orientation
+
+When `/pl-verify` runs on a project with **zero regression scenario files** in `tests/qa/scenarios/`, display a one-time orientation block before proceeding to Phase B:
+
+```
+━━━ Regression Testing ━━━
+No regression scenarios found.
+Regression tests protect completed features from breaking.
+
+How it works:
+  /pl-regression           — auto-detects the next step
+  /pl-regression author    — write test scenarios
+  /pl-regression run       — execute tests
+  /pl-regression evaluate  — check results
+
+Start with: /pl-regression
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**One-time rule:** Display this block only when zero scenario files exist. Once any scenario file has been authored, never show it again — the user has been introduced to the system.
+
+**Placement:** After Phase A summary, before the regression status table (or in place of it when no scenarios exist).
+
+#### 2.2.5 Regression Suite Status in `/pl-verify` Phase A Summary
 
 After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification), `/pl-verify` MUST scan for existing regression scenario JSON files and present a status table showing outstanding regression suites. This ensures the user is aware of regression tests that exist but haven't been run (or have stale results).
 

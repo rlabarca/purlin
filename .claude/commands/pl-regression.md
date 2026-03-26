@@ -9,9 +9,25 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 ## Usage
 
 ```
+/pl-regression                    — Auto-detect and run the next step
+/pl-regression [feature]          — Auto-detect next step for one feature
 /pl-regression run [feature]      — Execute regression test suite
 /pl-regression author [feature]   — Author regression test scenarios
 /pl-regression evaluate [feature] — Evaluate regression results against baselines
+```
+
+## Auto-Detect (Bare Invocation)
+
+When invoked without a subcommand, scan project state and execute the first matching rule:
+
+1. **Author needed:** Features with `## Regression Guidance` or `### QA Scenarios` but no `tests/qa/scenarios/<feature>.json` → run `author`.
+2. **Run needed:** Scenario files exist with STALE, FAIL, or NOT_RUN results → run `run`.
+3. **Evaluate needed:** Fresh results exist that haven't been documented (FAIL with no companion file entry, or results newer than last evaluation) → run `evaluate`.
+4. **All green:** Print summary and stop.
+
+After completing the detected step, print:
+```
+Next: /pl-regression    (auto-detects next step)
 ```
 
 ## Path Resolution
@@ -22,9 +38,21 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 ### run
 
-Execute regression test suites. Invokes `${TOOLS_ROOT}/test_support/run_regression.sh` or `${TOOLS_ROOT}/test_support/harness_runner.py`.
+Execute regression test suites. Invokes `${TOOLS_ROOT}/test_support/harness_runner.py` directly.
 
-If a feature argument is provided, scope to that feature. Otherwise, run all suites with `@auto` scenarios.
+If a feature argument is provided, scope to that feature. Otherwise, discover all suites with STALE, FAIL, or NOT_RUN results and run them (smoke tier first).
+
+#### Protocol
+
+1. **Discover suites.** Scan `tests/qa/scenarios/*.json`. For each, check `tests/<feature>/regression.json` for status. Sort: STALE first, then FAIL, then NOT_RUN. Within each group, smoke tier first.
+
+2. **Present plan.** Show the user which suites will run, their harness types, and estimated duration. Wait for confirmation (unless `auto_start` is `true`).
+
+3. **Execute suites.** All harness types run in-session — including `agent_behavior`. The `claude --print` invocations within `agent_behavior` suites are non-interactive subprocesses and do not conflict with the active session.
+   - **Fast suites** (`web_test`, `custom_script`, or single-scenario `agent_behavior`): run synchronously for immediate feedback.
+   - **Slow suites** (multi-scenario `agent_behavior`, estimated >30s): run via `run_in_background` so QA is not blocked. QA may continue other work and will be notified on completion.
+
+4. **Auto-evaluate.** When a suite completes (foreground or background notification), immediately read the `regression.json` results and run the evaluate protocol (see below). Do not wait for the user to invoke `/pl-regression evaluate` separately.
 
 ### author
 
