@@ -291,6 +291,15 @@ if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
     fi
 fi
 
+# --- Write session overrides for the agent ---
+# /pl-resume reads this file to get the launcher's resolved startup flags.
+# This bridges ephemeral CLI overrides (--no-save, --auto-start) that
+# aren't persisted to config.local.json.
+mkdir -p "$PURLIN_PROJECT_ROOT/.purlin/cache"
+cat > "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides.json" << OVERRIDES_EOF
+{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START}
+OVERRIDES_EOF
+
 # --- CLI auto-update ---
 if command -v claude >/dev/null 2>&1; then
     echo "Checking for Claude Code updates..." >&2
