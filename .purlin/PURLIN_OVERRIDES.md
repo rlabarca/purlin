@@ -63,7 +63,7 @@ When modifying ANY file inside `.purlin/` (instructions, configs, or other artif
 
 ## Pre-Push Documentation Consistency Check
 Before any push to GitHub, you MUST run a cross-reference consistency check across all instruction and documentation files. Specifically:
-*   Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/PURLIN_BASE.md`, `instructions/QA_BASE.md`, and `README.md`.
+*   Cross-reference `instructions/PURLIN_BASE.md` and `README.md`.
 *   Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state.
 *   If inconsistencies are found, fix them before pushing.
 
@@ -81,7 +81,7 @@ Although PM/Engineer write access includes `instructions/*.md`, base files MUST 
 
 When designing features that require implementation scripts, you MUST classify each script before delegating to Engineer mode:
 
-*   **Consumer-facing → `tools/`**: The script is useful to or runnable by consumer projects. Submodule safety compliance is mandatory (see HOW_WE_WORK_OVERRIDES Submodule Compatibility Mandate). Reference must work when `tools/` is at `<project_root>/<submodule>/tools/`.
+*   **Consumer-facing → `tools/`**: The script is useful to or runnable by consumer projects. Submodule safety compliance is mandatory (see Submodule Compatibility Mandate above). Reference must work when `tools/` is at `<project_root>/<submodule>/tools/`.
 *   **Purlin-dev-specific → `dev/`**: The script is for maintaining, building, or releasing the Purlin framework itself. No submodule safety mandate applies. Path references use `dev/` directly (no `tools_root` indirection).
 
 When updating a feature spec, the `Ownership` section and all scenario invocations MUST reflect the correct folder. Do NOT place Purlin-dev scripts in `tools/`.

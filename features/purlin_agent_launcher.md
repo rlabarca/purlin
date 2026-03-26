@@ -17,7 +17,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (PM
 - `pl-run.sh` MUST exist at the project root as an executable shell script.
 - In consumer projects, `tools/init.sh` generates `pl-run.sh` via `generate_purlin_launcher()` during both full init and refresh modes.
 - In the Purlin framework repo, `pl-run.sh` is hand-written (committed to git, not generated).
-- The launcher MUST load `PURLIN_BASE.md` as the sole instruction file (HOW_WE_WORK content is merged in). It MUST NOT load `PURLIN_BASE.md` separately. Optional override: `PURLIN_OVERRIDES.md` (if exists).
+- The launcher MUST load `PURLIN_BASE.md` as the sole base instruction file. Optional override: `PURLIN_OVERRIDES.md` (if exists).
 - The launcher MUST export `AGENT_ROLE="purlin"` before invoking Claude.
 - The launcher MUST resolve config via `resolve_config.py purlin` with fallback to `agents.builder` if `agents.purlin` is absent.
 - The launcher MUST check for Claude Code updates before launching (same as legacy launchers).
