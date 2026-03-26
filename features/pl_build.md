@@ -30,6 +30,17 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
 - Tombstones in `features/tombstones/` MUST be processed before regular feature work (see Section 2.4).
 - If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only.
 
+### 2.3.1 Missing Spec Redirect
+
+When a feature name is provided but `features/<arg>.md` does not exist, the skill MUST NOT proceed with implementation. Instead:
+
+1. Inform the user: "No spec exists for `<name>`. In Purlin, specs come before code."
+2. Offer to switch: "Switch to PM mode to create the spec? (`/pl-spec <name>`)"
+3. If the user confirms, switch to PM mode and invoke `/pl-spec <name>`.
+4. If the user declines, stop. Do not implement without a spec.
+
+This creates the natural first-feature workflow: user tries `/pl-build my-feature` → gets redirected to PM mode → writes the spec → returns to Engineer mode → builds from the spec.
+
 ### 2.4 Tombstone Processing Protocol
 
 When `features/tombstones/` contains tombstone files, process ALL of them before any regular feature work:
@@ -92,6 +103,15 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
     When /pl-build is invoked with argument "my_feature"
     Then Engineer mode reads features/my_feature.md
     And implementation targets only that feature
+
+#### Scenario: Missing spec redirects to PM mode
+
+    Given an Engineer agent session
+    When /pl-build is invoked with argument "new_feature"
+    And features/new_feature.md does not exist
+    Then the agent informs the user no spec exists
+    And offers to switch to PM mode to create it
+    And does not proceed with implementation
 
 #### Scenario: No-argument mode selects highest-priority action item
 
