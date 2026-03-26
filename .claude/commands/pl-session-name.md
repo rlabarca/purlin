@@ -16,7 +16,7 @@ Update the terminal session display name. Available in all modes.
 ## No-Argument: Refresh from Current Mode
 
 1. Determine the current mode: `Engineer`, `PM`, `QA`, or `Purlin` if no mode is active.
-2. Determine the project name from `basename` of the project root.
+2. Determine the project name: read `project_name` from `.purlin/config.json` (via `${TOOLS_ROOT}/config/resolve_config.py --key project_name`). If absent or empty, fall back to `basename` of the project root.
 3. Run:
    ```bash
    source ${TOOLS_ROOT}/terminal/identity.sh && update_session_identity "<mode>" "<project>"
@@ -32,7 +32,7 @@ Updated: terminal title, iTerm badge
 ## With Argument: Custom Label
 
 1. Use the provided argument as the label (replacing the mode name).
-2. Determine the project name from `basename` of the project root.
+2. Determine the project name: read `project_name` from `.purlin/config.json` (via `${TOOLS_ROOT}/config/resolve_config.py --key project_name`). If absent or empty, fall back to `basename` of the project root.
 3. Run:
    ```bash
    source ${TOOLS_ROOT}/terminal/identity.sh && update_session_identity "<label>" "<project>"
