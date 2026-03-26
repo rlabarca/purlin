@@ -4,11 +4,11 @@
 
 | Spec says | Implementation does | Tag | PM status |
 |-----------|-------------------|-----|-----------|
-| (silent on per-feature timestamp filtering) | Exemption index stores (timestamp, message) tuples and filters per-feature by status_ts | DISCOVERY | PENDING |
-| `--only` sections skip computation | `run_scan(only=set)` conditionally calls each scan function; `smoke` implicitly computes features | DISCOVERY | PENDING |
-| Tombstones excluded by default | `_filter_tombstones()` applied to output; cache always includes tombstones | DISCOVERY | PENDING |
+| (silent on per-feature timestamp filtering) | Exemption index stores (timestamp, message) tuples and filters per-feature by status_ts | DISCOVERY | ACKNOWLEDGED |
+| `--only` sections skip computation | `run_scan(only=set)` conditionally calls each scan function; `smoke` implicitly computes features | DISCOVERY | ACKNOWLEDGED |
+| Tombstones excluded by default | `_filter_tombstones()` applied to output; cache always includes tombstones | DISCOVERY | ACKNOWLEDGED |
 
-## [DISCOVERY] Per-feature exemption timestamp filtering (2026-03-25)
+## [DISCOVERY] [ACKNOWLEDGED] Per-feature exemption timestamp filtering (2026-03-25)
 
 The exemption index (`_build_exemption_index`) originally stored only commit
 messages and used `--since={min_ts}` where `min_ts` was the **global** earliest
@@ -22,7 +22,7 @@ positives on 30 features.
 entries to only those with `ts > status_ts` for the specific feature, so commits
 before completion are correctly ignored.
 
-## [DISCOVERY] Smoke candidate detection added to scan output (2026-03-26)
+## [DISCOVERY] [ACKNOWLEDGED] Smoke candidate detection added to scan output (2026-03-26)
 
 The scan now includes a `smoke_candidates` field that surfaces completed features
 with 3+ dependents that aren't already smoke-classified. Implementation reuses
@@ -30,7 +30,7 @@ with 3+ dependents that aren't already smoke-classified. Implementation reuses
 filters: lifecycle must be COMPLETE, and dependents must be >= 3. This is the
 scan-level signal described in `features/pl_smoke.md` Section 2.7.
 
-## [DISCOVERY] Focused output and tombstone exclusion flags (2026-03-26)
+## [DISCOVERY] [ACKNOWLEDGED] Focused output and tombstone exclusion flags (2026-03-26)
 
 **`--only <sections>`:** Accepts comma-separated section names mapped via
 `SECTION_MAP` dict. `run_scan(only=set)` conditionally calls each scan function.

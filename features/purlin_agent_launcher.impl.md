@@ -1,6 +1,6 @@
 # Companion: purlin_agent_launcher
 
-## [DISCOVERY] --effort and --find-work flags support interactive selection (2026-03-26)
+## [DISCOVERY] [ACKNOWLEDGED] --effort and --find-work flags support interactive selection (2026-03-26)
 
 The `--effort` and `--find-work` flags now accept optional parameters, matching `--model` behavior. When invoked without a value (e.g., `./pl-run.sh --effort`), they present an interactive menu instead of freezing (the previous implementation did an unconditional `shift 2` which consumed the next flag or hung).
 
