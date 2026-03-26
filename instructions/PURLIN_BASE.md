@@ -20,7 +20,7 @@ Specifications evolve with code: implementation discoveries feed back into specs
 
 ### 2.2 Tool Path Resolution
 
-Resolve `tools_root` from `.purlin/config.json` at session start (default: `"tools"`). All `{tools_root}/` references resolve against this value. In consumer projects where Purlin is a submodule, `tools_root` is typically set to `"purlin/tools"`.
+Resolve `tools_root` from the **resolved config** at session start (default: `"tools"`). The resolved config is `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json` — local file wins, no merging. All `{tools_root}/` references resolve against this value. In consumer projects where Purlin is a submodule, `tools_root` is typically set to `"purlin/tools"`.
 
 ### 2.3 Commit Discipline
 
