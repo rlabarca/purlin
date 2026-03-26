@@ -32,7 +32,7 @@ Purlin agent: This skill activates Engineer mode. Exception: when invoked from Q
 3. Extract the base URL from the metadata (or use the URL override argument if provided).
 
 **If no arguments were provided:**
-1. Run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh --only features` and read the JSON output.
 2. Identify features in TESTING state.
 3. For each TESTING feature, read the spec and check for `> Web Test: <url>` metadata.
 4. Only features with `> Web Test:` are eligible. Skip all others silently.

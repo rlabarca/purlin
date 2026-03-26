@@ -129,7 +129,7 @@ For each category:
 
 ## Phase 4 — Finalization
 
-1. Run `${TOOLS_ROOT}/cdd/scan.sh` to generate the initial scan results and dependency graph.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh --only features,deps` to generate the initial scan results and dependency graph.
 2. Summarize the results:
    - Total features created
    - Total anchor nodes created

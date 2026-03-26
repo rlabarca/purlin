@@ -28,7 +28,7 @@ Given the feature name provided as an argument:
    - `git mv features/<name>.impl.md features/tombstones/<name>.impl.md` (if exists)
    - `git mv features/<name>.discoveries.md features/tombstones/<name>.discoveries.md` (if exists)
 6. Commit all changes: `git commit -m "retire(<scope>): tombstone <name>"`.
-7. Run `${TOOLS_ROOT}/cdd/scan.sh` to refresh project state.
+7. Run `${TOOLS_ROOT}/cdd/scan.sh --only features --tombstones` to verify tombstone state.
 
 **Canonical tombstone format:**
 

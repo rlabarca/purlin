@@ -10,11 +10,20 @@ Available to all agents and modes.
 
 ---
 
-Run `${TOOLS_ROOT}/cdd/scan.sh` and interpret the results to present actionable work by mode.
+## Mode-Scoped Scan
+
+Run `${TOOLS_ROOT}/cdd/scan.sh` with flags based on the current mode:
+
+- **PM mode:** `${TOOLS_ROOT}/cdd/scan.sh --only features,discoveries,deviations,git`
+- **Engineer mode:** `${TOOLS_ROOT}/cdd/scan.sh --only features,discoveries,plan,git --tombstones`
+- **QA mode:** `${TOOLS_ROOT}/cdd/scan.sh --only features,discoveries,git,smoke`
+- **Open mode (no mode active):** `${TOOLS_ROOT}/cdd/scan.sh --tombstones`
+
+Interpret the scan results to present actionable work for the **current mode only**. In open mode, show work for all modes.
 
 ## Work Interpretation Rules
 
-Analyze the scan JSON to classify features into mode-specific work items.
+Analyze the scan JSON to classify features into mode-specific work items. **Only show the work items for the active mode.** In open mode, show all.
 
 > **MANDATORY RULE — spec_modified_after_completion:**
 > When a feature has `spec_modified_after_completion: true`, it IS Engineer work. Period.
@@ -49,14 +58,30 @@ Analyze the scan JSON to classify features into mode-specific work items.
 - Unacknowledged deviations (PM needs to accept/reject)
 - SPEC_DISPUTE and INTENT_DRIFT discoveries
 
+## Work Item Priority Ranking
+
+Action items within each mode MUST be sorted in this order (highest priority first):
+
+1. **Tombstones** — Engineer processes tombstones before any regular work
+2. **FAIL** — Test failures or regression failures require immediate attention
+3. **TESTING** — Features in verification (QA) or features blocked by spec issues (PM)
+4. **TODO** — Features not yet started
+5. **Informational** — Smoke candidates, cosmetic notes
+
 ## Output Format
 
-Present:
-- Feature counts by lifecycle (TODO / TESTING / COMPLETE / TOMBSTONE)
-- Work items grouped by mode, highest priority first, with reason annotations
-- Open discoveries or tombstones requiring attention
+**Always shown (all modes):**
+- Feature counts by lifecycle (TODO / TESTING / COMPLETE)
 - **Worktree summary** (when worktrees exist): scan `git worktree list` for entries under `.purlin/worktrees/`, read `.purlin_session.lock` for PID liveness, display one-line summary: `Worktrees: W1 (Engineer, active), W2 (PM, stale)`. Use `/pl-worktree list` for full detail.
-- Suggest the mode with highest-priority work
+
+**Mode-scoped:**
+- Work items for the **current mode only**, sorted by priority, with reason annotations
+- Open discoveries relevant to the current mode
+- In open mode: work items grouped by all modes, plus mode suggestion
+
+**Never shown in scoped mode:**
+- Work items belonging to other modes
+- The "suggest which mode" prompt (only in open mode)
 
 **Status values and what they mean:**
 

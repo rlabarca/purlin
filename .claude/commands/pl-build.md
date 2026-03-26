@@ -141,7 +141,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     | `dependency-only` | Prerequisite update, no direct code changes. |
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
-*   **D. Verify:** Run `${TOOLS_ROOT}/cdd/scan.sh` and confirm expected state.
+*   **D. Verify:** Run `${TOOLS_ROOT}/cdd/scan.sh --only features,plan` and confirm expected state.
 *   **E. Group check:** If a delivery plan exists, check phase completion status:
     *   **Phase fully complete** (all features done): Mark phase COMPLETE, record commit hash, commit plan update.
     *   **Phase complete with deferrals** (all non-blocked features done, only role-blocked features remain): Apply the Phase Deferral Protocol -- mark phase COMPLETE with `**Deferred:**` annotation, re-queue blocked features to a later phase, announce the deferral. See `instructions/references/phased_delivery.md` Section 10.14.

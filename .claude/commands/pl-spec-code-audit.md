@@ -56,7 +56,7 @@ Parent loads project state, builds the transitive prerequisite constraint map, a
 
 ### Step 0.1 -- Load Project State
 
-1. Run `${TOOLS_ROOT}/cdd/scan.sh` and read `.purlin/cache/scan.json`.
+1. Run `${TOOLS_ROOT}/cdd/scan.sh --only features,deps` and read the JSON output.
 2. Read `.purlin/cache/dependency_graph.json` -- note all prerequisite relationships and root anchor nodes.
 3. For each feature, read the feature spec directly to check section completeness and scenario count.
 

@@ -87,7 +87,7 @@ Analyze the project and suggest features that should be smoke tier.
 
 ### Protocol
 
-1. **Run scan.** Execute `${TOOLS_ROOT}/cdd/scan.sh` and parse the JSON output.
+1. **Run scan.** Execute `${TOOLS_ROOT}/cdd/scan.sh --only features,smoke,deps` and parse the JSON output.
 
 2. **Identify smoke candidates.** A feature is a strong smoke candidate if:
    - It is a prerequisite for 3+ other features (high fan-out in dependency graph)

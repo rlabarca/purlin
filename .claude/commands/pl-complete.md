@@ -17,7 +17,7 @@ Given the feature name provided as an argument, gate completion on all requireme
 
 ## Completion Gates
 
-1.  **TESTING state:** Confirm the feature is in TESTING state (run `${TOOLS_ROOT}/cdd/scan.sh` if needed).
+1.  **TESTING state:** Confirm the feature is in TESTING state (run `${TOOLS_ROOT}/cdd/scan.sh --only features` if needed).
 2.  **All scenarios verified:** Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
 3.  **Zero open discoveries:** Confirm there are zero OPEN or SPEC_UPDATED discoveries in `features/<name>.discoveries.md`. If the file is absent or empty, the gate passes.
 4.  **Regression gate:** Check `regression_status` from scan results. If FAIL or STALE, do NOT mark complete. FAIL means tests are broken; STALE means source changed since results were generated. Both require `/pl-regression` to resolve.
@@ -33,7 +33,7 @@ If all gates pass:
 git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"
 ```
 
-Run `${TOOLS_ROOT}/cdd/scan.sh` to confirm the feature transitions to COMPLETE.
+Run `${TOOLS_ROOT}/cdd/scan.sh --only features` to confirm the feature transitions to COMPLETE.
 
 ## Gate Failures
 

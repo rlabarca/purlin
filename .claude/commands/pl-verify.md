@@ -40,7 +40,7 @@ Execution modes do NOT change what gets committed — a mode that skips steps si
 ## Scope
 
 If a feature argument was provided, scope verification to `features/<arg>.md` only.
-If no feature argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
+If no feature argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh --only features` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
 
