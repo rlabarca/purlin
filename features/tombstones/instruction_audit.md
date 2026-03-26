@@ -3,7 +3,7 @@
 > Label: "Release Step: Purlin Agent Instruction Audit"
 > Category: "Release Process"
 
-[Complete]
+[Tombstoned] — Absorbed into `/pl-override-edit` (see `features/pl_override_edit.md`). The conflict and consistency scan now covers contradictions, stale path references, and terminology mismatches as part of the override editing workflow.
 
 ## 1. Overview
 
