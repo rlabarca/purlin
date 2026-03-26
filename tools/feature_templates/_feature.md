@@ -2,7 +2,7 @@
 
 > Label: "<Category>: <Label>"
 > Category: "<Category>"
-> Owner: <PM or PM — omit line if PM (default)>
+> Owner: <role, e.g., PM — omit line if PM (default)>
 > Prerequisite: features/<anchor_node>.md
 
 ## 1. Overview
@@ -29,7 +29,7 @@ Regression tests verify <describe what is tested>.
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: <Title>
 
@@ -38,7 +38,7 @@ Regression tests verify <describe what is tested>.
     Then <expected outcome>
     And <additional assertion>
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.
 

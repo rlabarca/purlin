@@ -29,11 +29,7 @@ Parse `$ARGUMENTS`:
 
 ## Path Resolution
 
-1. Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`).
-2. Resolve project root: use `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there, otherwise climb from the current working directory until `.purlin/` is found.
-3. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
-
-All tool invocations use `${TOOLS_ROOT}/...` (e.g., `${TOOLS_ROOT}/cdd/scan.sh`).
+> See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
 
 ---
 

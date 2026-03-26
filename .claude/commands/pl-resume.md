@@ -129,9 +129,7 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 ## Path Resolution
 
-Read the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json` (local file wins; no merging). Extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
-
-> **Why `config.local.json` first?** The launcher persists CLI overrides (e.g., `--find-work false`) to `config.local.json`. Reading only `config.json` ignores user preferences.
+> See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`. This skill reads `config.local.json` first (launcher persists CLI overrides there).
 
 ---
 

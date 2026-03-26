@@ -5,7 +5,7 @@ Available to all agents and modes.
 
 ## Path Resolution
 
-Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+> See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
 
 ---
 
