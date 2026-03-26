@@ -64,9 +64,10 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 ### 2.8 Output and Caching
 
 - Output structured JSON to stdout.
-- Write cache to `.purlin/cache/scan.json` with timestamp.
-- `--cached` flag returns cached result if less than 60 seconds old.
+- Write cache to `.purlin/cache/scan.json` with timestamp. Cache always stores the full result (including tombstones).
+- `--cached` flag returns cached result if less than 60 seconds old. Can be combined with `--only` and `--tombstones` to filter cached output.
 - Cache writes MUST be atomic (write to temp file, then rename).
+- `--only` scans do NOT write to cache (partial results must not overwrite a complete cache).
 
 ### 2.9 Spec Modification Detection
 
@@ -94,17 +95,69 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 - Tombstone entries do NOT need test_status, regression_status, sections, or spec_modified_after_completion — these fields should be `null`/`false` as appropriate.
 - The scan reports the existence and count of tombstones as facts. It does NOT decide priority or routing — that belongs in agent instructions and skills.
 
-### 2.12 Design Constraint: Facts Only
+### 2.12 Focused Output (`--only`)
+
+- scan.py accepts `--only <sections>` where `<sections>` is a comma-separated list of output sections.
+- Valid section names: `features`, `discoveries`, `deviations`, `plan`, `deps`, `git`, `smoke`.
+- Section-to-output mapping:
+  - `features` → `features` array
+  - `discoveries` → `open_discoveries` array
+  - `deviations` → `unacknowledged_deviations` array
+  - `plan` → `delivery_plan` object
+  - `deps` → `dependency_graph` object
+  - `git` → `git_state` object
+  - `smoke` → `smoke_candidates` array (depends on `features` — if `smoke` is requested without `features`, scan.py implicitly computes features internally but does not include them in output)
+- `scanned_at` is always included in output regardless of `--only`.
+- When `--only` is specified without `--cached`: only compute the requested sections, output them, do NOT write to cache (partial results must not overwrite a complete cache).
+- When `--only` is combined with `--cached`: read the full cache, filter output to the requested sections.
+- When `--only` is NOT specified: full scan (current behavior), write to cache.
+
+### 2.13 Tombstone Exclusion (Default)
+
+- By default, tombstone entries are EXCLUDED from the `features` array in stdout output.
+- `--tombstones` flag includes tombstone entries in the `features` array.
+- The cache always stores the full result including tombstones (so `--cached --tombstones` works without re-scanning).
+- When `--only features --tombstones` is used, tombstones appear in the features array.
+- When neither `--only` nor `--tombstones` is specified, tombstones are excluded from stdout but written to cache.
+- Skills that need tombstones (e.g., `/pl-tombstone`, `/pl-status` in Engineer mode for tombstone priority) must pass `--tombstones` explicitly.
+
+### 2.14 Design Constraint: Facts Only
 
 - scan.py MUST only answer "what IS" — never "what should be DONE."
 - scan.py MUST NOT contain `if/else` logic that decides what an agent should do, routes work to roles/modes, or prioritizes action items. That reasoning belongs in agent instructions and skills.
 - If a proposed change to scan.py requires deciding WHO should act or WHAT they should do, it belongs in PURLIN_BASE.md or a skill file instead.
 - This constraint is what keeps scan.py at ~300 lines instead of 4100.
 
-### 2.13 Performance
+### 2.15 Skill Optimization Guide
+
+Skills that call scan.sh SHOULD use `--only` to request only the data they need. This reduces output size and skip unnecessary computation.
+
+**Recommended flags per skill:**
+
+| Skill | Flags | Rationale |
+|-------|-------|-----------|
+| `/pl-status` (PM) | `--only features,discoveries,deviations,git` | PM needs specs, deviations, disputes |
+| `/pl-status` (Engineer) | `--only features,discoveries,plan,git --tombstones` | Engineer needs failures, TODO, tombstones, delivery plan |
+| `/pl-status` (QA) | `--only features,discoveries,git,smoke` | QA needs TESTING features, regression, smoke |
+| `/pl-status` (open) | `--tombstones` | Full scan for cross-mode overview |
+| `/pl-build` (verify step) | `--only features,plan` | Verify lifecycle + phase status |
+| `/pl-verify` | `--only features` | Identify TESTING features |
+| `/pl-smoke` | `--only features,smoke,deps` | Smoke candidates + dependency data |
+| `/pl-web-test` | `--only features` | Identify TESTING features |
+| `/pl-tombstone` | `--only features --tombstones` | Process tombstone entries |
+| `/pl-qa-report` | `--only features,discoveries,plan` | QA-focused summary |
+| `/pl-delivery-plan` | `--only features,deps` | Feature status + dependency graph |
+| `/pl-complete` | `--only features` | Verify TESTING state |
+| `/pl-spec-code-audit` (initial) | `--only features,deps` | Feature list + dependencies |
+| `/pl-spec-from-code` (final) | `--only features,deps` | Feature list + dependencies |
+
+Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl-infeasible, pl-spec-code-audit final step) SHOULD use a full scan (no `--only`) to populate the cache.
+
+### 2.16 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
 - Git calls MUST be batched. The scan uses at most 4 git log calls regardless of feature count (status index, spec mod index, exemption index, git state).
+- Focused scan (`--only`) MUST skip computation for sections not requested — e.g., `--only features` does not run discovery or deviation scanning.
 - The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
 
 ---
@@ -264,6 +317,65 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
     Given features/tombstones/ does not exist
     When scan.py runs
     Then no feature entries have tombstone true
+
+#### Scenario: Tombstones excluded from default output
+
+    Given features/tombstones/old_feature.md exists
+    When scan.py runs without --tombstones
+    Then the features array does NOT contain entries with tombstone true
+
+#### Scenario: Tombstones included with --tombstones flag
+
+    Given features/tombstones/old_feature.md exists
+    When scan.py runs with --tombstones
+    Then the features array contains an entry with name "old_feature" and tombstone true
+
+#### Scenario: Focused output with --only features
+
+    Given a project with features, discoveries, and a delivery plan
+    When scan.py runs with --only features
+    Then stdout contains scanned_at and features
+    And stdout does NOT contain open_discoveries, unacknowledged_deviations, delivery_plan, dependency_graph, git_state, or smoke_candidates
+
+#### Scenario: Focused output with multiple sections
+
+    Given a project with features and a delivery plan
+    When scan.py runs with --only features,plan
+    Then stdout contains scanned_at, features, and delivery_plan
+    And stdout does NOT contain open_discoveries, unacknowledged_deviations, dependency_graph, git_state, or smoke_candidates
+
+#### Scenario: --only skips computation for unrequested sections
+
+    Given a project with features and discoveries
+    When scan.py runs with --only features
+    Then discovery scanning is NOT performed
+    And deviation scanning is NOT performed
+    And delivery plan parsing is NOT performed
+
+#### Scenario: --only does not write to cache
+
+    Given a stale or missing scan.json cache
+    When scan.py runs with --only features
+    Then scan.json cache is NOT written or updated
+
+#### Scenario: --cached combined with --only filters output
+
+    Given a fresh scan.json cache with all sections
+    When scan.py runs with --cached --only features,git
+    Then stdout contains only scanned_at, features, and git_state
+
+#### Scenario: --cached combined with --tombstones includes tombstones
+
+    Given a fresh scan.json cache with tombstone entries
+    When scan.py runs with --cached --tombstones
+    Then the features array includes tombstone entries
+
+#### Scenario: smoke without features computes features internally
+
+    Given a project with features and smoke candidates
+    When scan.py runs with --only smoke
+    Then stdout contains scanned_at and smoke_candidates
+    And stdout does NOT contain a features key
 
 ### QA Scenarios
 
