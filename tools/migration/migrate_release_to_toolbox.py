@@ -99,7 +99,6 @@ def migrate(project_root, dry_run=False):
             "description": step.get("description", ""),
             "code": step.get("code"),
             "agent_instructions": step.get("agent_instructions"),
-            "tags": ["release"],
             "metadata": {
                 "last_updated": today,
             },

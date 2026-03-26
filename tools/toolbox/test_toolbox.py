@@ -183,15 +183,15 @@ class TestResolveToolbox(unittest.TestCase):
         self.purlin_path = os.path.join(self.tmpdir, "purlin_tools.json")
         with open(self.purlin_path, 'w') as f:
             json.dump({"schema_version": "2.0", "tools": [
-                {"id": "purlin.audit", "friendly_name": "Audit", "description": "d", "tags": ["release"]},
-                {"id": "purlin.push", "friendly_name": "Push", "description": "d", "tags": ["deploy"]},
+                {"id": "purlin.audit", "friendly_name": "Audit", "description": "d"},
+                {"id": "purlin.push", "friendly_name": "Push", "description": "d"},
             ]}, f)
 
         # Project tools
         self.project_path = os.path.join(self.tmpdir, "project_tools.json")
         with open(self.project_path, 'w') as f:
             json.dump({"schema_version": "2.0", "tools": [
-                {"id": "my_check", "friendly_name": "My Check", "description": "d", "tags": ["audit"]},
+                {"id": "my_check", "friendly_name": "My Check", "description": "d"},
             ]}, f)
 
         # Community setup

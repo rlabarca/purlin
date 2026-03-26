@@ -105,15 +105,12 @@ def cmd_create(args):
         )
         return 1
 
-    tags = [t.strip() for t in args.tags.split(",")] if args.tags else []
-
     new_tool = {
         "id": tool_id,
         "friendly_name": friendly_name,
         "description": description,
         "code": args.code if args.code else None,
         "agent_instructions": args.agent_instructions if args.agent_instructions else None,
-        "tags": tags,
         "metadata": {
             "last_updated": date.today().isoformat(),
         },
@@ -139,7 +136,6 @@ def cmd_modify(args):
         args.desc is not None,
         args.code is not None,
         args.agent_instructions is not None,
-        args.tags is not None,
         args.clear_code,
         args.clear_agent_instructions,
     ])
@@ -183,9 +179,6 @@ def cmd_modify(args):
         tool["agent_instructions"] = None
     elif args.agent_instructions is not None:
         tool["agent_instructions"] = args.agent_instructions
-    if args.tags is not None:
-        tool["tags"] = [t.strip() for t in args.tags.split(",")]
-
     tool.setdefault("metadata", {})
     tool["metadata"]["last_updated"] = date.today().isoformat()
 
@@ -235,7 +228,6 @@ def main():
     p_create.add_argument("--name", required=True, help="Friendly name")
     p_create.add_argument("--desc", required=True, help="Description")
     p_create.add_argument("--code", default=None, help="Shell command")
-    p_create.add_argument("--tags", default=None, help="Comma-separated tags")
     p_create.add_argument(
         "--agent-instructions", default=None, help="Agent instructions"
     )
@@ -249,7 +241,6 @@ def main():
     p_modify.add_argument("--name", default=None, help="New friendly name")
     p_modify.add_argument("--desc", default=None, help="New description")
     p_modify.add_argument("--code", default=None, help="New shell command")
-    p_modify.add_argument("--tags", default=None, help="New comma-separated tags")
     p_modify.add_argument(
         "--agent-instructions", default=None, help="New agent instructions"
     )

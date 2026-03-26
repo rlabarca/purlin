@@ -64,14 +64,13 @@ def _make_resolved_entry(tool_def, category):
         "description": tool_def.get("description", ""),
         "code": tool_def.get("code"),
         "agent_instructions": tool_def.get("agent_instructions"),
-        "tags": tool_def.get("tags", []),
         "version": tool_def.get("version"),
         "metadata": tool_def.get("metadata"),
         "category": category,
     }
     # Preserve any unrecognized fields
     known_keys = {"id", "friendly_name", "description", "code",
-                  "agent_instructions", "tags", "version", "metadata"}
+                  "agent_instructions", "version", "metadata"}
     for key, value in tool_def.items():
         if key not in known_keys:
             entry[key] = value

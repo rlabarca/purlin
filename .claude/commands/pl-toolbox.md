@@ -9,7 +9,7 @@ Purlin agent: This skill is shared across all modes. List and run are available 
 
 ```
 /pl-toolbox                     — Guided interactive menu
-/pl-toolbox list [--tag <tag>]  — Show all tools grouped by category
+/pl-toolbox list                — Show all tools grouped by category
 /pl-toolbox run <tool> [...]    — Execute one or more tools
 /pl-toolbox create              — Create a new project tool
 /pl-toolbox edit <tool>         — Edit a project or community tool
@@ -61,9 +61,7 @@ Wait for user input, then execute the corresponding subcommand.
 
 ### list
 
-Show all tools grouped by category (Purlin, Project, Community). Each tool shows id, friendly_name, and tags. Community tools show author and repo on indented lines. Omit categories with zero tools.
-
-With `--tag <tag>`: filter to tools whose `tags` array contains the tag (case-insensitive). Header shows: `Agentic Toolbox — <N> tools matching tag "<tag>"`.
+Show all tools grouped by category (Purlin, Project, Community). Each tool shows id and friendly_name. Community tools show author and repo on indented lines. Omit categories with zero tools.
 
 ### run
 
@@ -81,9 +79,8 @@ Interactive flow (Engineer mode required):
 1. Prompt for tool ID (validate: non-empty, no `purlin.` or `community.` prefix, no collision)
 2. Prompt for friendly name
 3. Prompt for description
-4. Prompt for tags (comma-separated, optional)
-5. Ask for `code` (shell command, optional)
-6. Ask for `agent_instructions` (natural language, optional)
+4. Ask for `code` (shell command, optional)
+5. Ask for `agent_instructions` (natural language, optional)
 7. Write to `project_tools.json` via `${TOOLS_ROOT}/toolbox/manage.py`
 8. Confirm: `"Created tool '<id>' in project_tools.json."`
 

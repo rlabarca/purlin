@@ -78,7 +78,7 @@ class TestMigration(unittest.TestCase):
         self.assertEqual(marker["tools_migrated"], 0)
 
     def test_custom_local_tools(self):
-        """local_steps.json with 3 tools → 3 project tools with tags."""
+        """local_steps.json with 3 tools → 3 project tools with metadata."""
         self._write_release_file("config.json", {"steps": []})
         self._write_release_file("local_steps.json", {
             "steps": [
@@ -99,7 +99,6 @@ class TestMigration(unittest.TestCase):
         self.assertEqual(len(project["tools"]), 3)
 
         for tool in project["tools"]:
-            self.assertEqual(tool["tags"], ["release"])
             self.assertIn("metadata", tool)
             self.assertIn("last_updated", tool["metadata"])
 
