@@ -103,7 +103,7 @@ These define organizational, legal, regulatory, and process requirements. They e
 | **Licensing** | Dependency license constraints | "No GPL in commercial builds", "Apache-2.0 compatible only" |
 | **Versioning & Compatibility** | SemVer commitments, deprecation windows | "Public API backward-compatible for 2 major versions" |
 | **Release Process** | Quality gates, sign-off requirements, deploy rules | "Zero open BUGs before release", "Staging deploy precedes prod" |
-| **Coordination Rules** | Agent handoff protocols, status tracking | See `policy_critic.md` for the canonical example |
+| **Coordination Rules** | Agent handoff protocols, status tracking | Agent role boundaries, handoff checklists |
 | **Documentation** | Required docs, changelog discipline | "All public APIs documented", "Changelog entry per PR" |
 | **Incident Response** | Escalation paths, SLA commitments | "P1 acknowledged within 15 minutes", "Post-mortem within 48 hours" |
 
