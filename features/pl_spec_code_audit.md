@@ -3,12 +3,15 @@
 > Label: "Agent Skills: Engineer: /pl-spec-code-audit Spec-Code Audit"
 > Category: "Agent Skills: Engineer"
 > Prerequisite: features/impl_notes_companion.md
+> Prerequisite: features/policy_spec_code_sync.md
 
 [TODO]
 
 ## 1. Overview
 
 The `/pl-spec-code-audit` command performs a bidirectional audit between feature specifications and implementation code, detecting gaps in both directions: spec-side deficiencies (missing sections, broken anchors, stale notes) and code-side deviations (undocumented behaviors, scenario-code contradictions, anchor invariant violations). The audit also performs a **reverse code-to-spec scan** (Phase 0.5): it enumerates all code files in the project, builds a code-to-feature ownership map, and surfaces orphaned code with no corresponding specification -- closing the blind spot where code exists outside any feature's purview. The audit uses parallel subagent waves with scenario-by-scenario comparison, transitive anchor constraint validation, and reverse code inventory. It produces a prioritized gap table with role-scoped remediation, then executes fixes within the acting role's authority and escalates cross-role gaps through companion files.
+
+Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IMPL]` entries as a structured index of implementation work. `[IMPL]` entries provide an engineer-authored code map that traces what was built back to spec requirements, enabling faster and more accurate spec-code comparison. The audit also detects **companion debt** (code commits without companion entries) and **stale companion notes** (code modified after the last companion update).
 
 ---
 
@@ -85,14 +88,15 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - Subagent type MUST be `Explore` (read-only).
 - **Code-comparison subagents** MUST, for each assigned feature:
   - Read the feature spec and extract all `#### Scenario:` entries with Given/When/Then.
-  - Read the companion file and note Tool Location, source mappings, and decision tags.
+  - Read the companion file and note Tool Location, source mappings, and decision tags. **Extract `[IMPL]` entries as an implementation index** — these map what the engineer built to which spec requirements they addressed. Use this index to accelerate scenario-by-scenario comparison by knowing which code paths correspond to which requirements before reading source.
   - Read `tests/<name>/tests.json` for test results and traceability.
   - Discover source files via test imports, companion file Tool Location, or directory convention mapping.
   - Read up to 5 primary implementation files per feature.
-  - Perform scenario-by-scenario comparison: find the corresponding test function, trace to the code path, verify assertions match actual code logic, and flag contradictions, missing logic, extra behavior, or hardcoded values.
+  - Perform scenario-by-scenario comparison: find the corresponding test function, trace to the code path, verify assertions match actual code logic, and flag contradictions, missing logic, extra behavior, or hardcoded values. **When `[IMPL]` entries reference specific spec sections, use those references to guide the trace** rather than relying solely on code-path heuristics.
   - Perform transitive anchor constraint validation: grep all source files for each FORBIDDEN pattern from ancestor anchors, check invariant coverage, and check constraint compliance.
   - Scan for undocumented behavior (error handlers, config branches, edge cases with no scenario coverage).
-  - Check spec completeness across all 12 gap dimensions.
+  - **Companion coverage check (dimension 13):** Compare the companion file's `[IMPL]`/deviation entries against the git log of code changes. Flag companion debt (code commits with no companion entries) as HIGH. Flag stale notes (companion entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note this as a positive signal of spec conformance.
+  - Check spec completeness across all 13 gap dimensions.
 - **Spec-only subagents** MUST:
   - Read the feature file and companion.
   - Check spec completeness, policy anchoring, builder decisions, and notes depth.
@@ -134,7 +138,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 ### 2.12 Gap Dimensions
 
-The command MUST assess each feature against these 12 dimensions (dimensions 1-10 are per-feature; dimensions 11-12 are cross-feature/project-wide):
+The command MUST assess each feature against these 13 dimensions (dimensions 1-10 are per-feature; dimensions 11-13 are cross-feature/project-wide or structural):
 
 | # | Dimension | Description |
 |---|---|---|
@@ -150,14 +154,15 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 | 10 | Anchor invariant drift | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | 11 | Requirement hygiene | Cross-feature analysis: **Duplicate** -- two or more features define scenarios or requirements that specify the same behavior for the same component (identical or near-identical Given/When/Then targeting the same endpoint, function, or UI element). **Conflicting** -- two features specify contradictory behavior for the same component (e.g., feature A says endpoint returns 200, feature B says it returns 404; or two anchors define incompatible invariants for the same domain). **Unused** -- a feature or scenario that has no implementation code, no test, and is not a prerequisite of any other feature (orphaned spec with no path to implementation). |
 | 12 | Code ownership | **Orphaned code** -- code files in audit scope not referenced by any feature spec, companion file, or test import chain. **Orphaned skills** -- `.claude/commands/pl-*.md` command files with no corresponding `features/pl_*.md` feature spec. **Shared infrastructure** -- heavily-imported code (3+ feature importers) with no dedicated spec. **Dead code candidates** -- zero imports from any file AND zero feature owners. Per-file analysis with classification and nearest-feature suggestions. This is the symmetric complement of Dimension 11's "unused spec" detection: Dimension 11 finds specs without code; Dimension 12 finds code without specs. |
+| 13 | Companion coverage | Per `features/policy_spec_code_sync.md`. **Companion debt** -- features with code commits more recent than the last companion file update (HIGH severity). **Stale notes** -- companion file exists but its most recent entries predate significant code changes (MEDIUM severity). **Impl-to-spec tracing** -- `[IMPL]` entries that reference spec sections provide a mapping from code to requirements; the audit uses these to accelerate scenario-by-scenario comparison. A feature with only `[IMPL]` entries (no deviation tags) signals spec-conformant implementation — the audit MAY deprioritize deep code comparison for these features in triage mode. |
 
 ### 2.13 Severity Classification
 
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions for the same component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec) |
-| MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places); orphaned executable code with significant behavior (entry points, state mutation, I/O operations) |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions for the same component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec); **companion debt** (code commits without any companion file entries — per policy_spec_code_sync.md) |
+| MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places); orphaned executable code with significant behavior (entry points, state mutation, I/O operations); **stale companion notes** (companion file exists but most recent entries predate significant code changes) |
 | LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec) |
 
 ### 2.14 Phase 3 -- Remediation (Post-Approval)
@@ -598,6 +603,44 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     When wave 1 is dispatched
     Then all 5 subagent slots are filled
     And the remaining batch is queued for wave 2
+
+#### Scenario: Companion debt detected as HIGH severity (dimension 13)
+
+    Given feature "webhook_delivery" has code commits at 2026-03-26T10:00:00
+    And features/webhook_delivery.impl.md does not exist or has no entries
+    When the audit evaluates dimension 13 (Companion coverage)
+    Then a gap is recorded with dimension "Companion coverage" and severity HIGH
+    And the gap description identifies companion debt
+
+#### Scenario: Stale companion notes detected as MEDIUM severity (dimension 13)
+
+    Given feature "webhook_delivery" has code commits at 2026-03-26T10:00:00
+    And features/webhook_delivery.impl.md was last updated at 2026-03-20T15:00:00
+    When the audit evaluates dimension 13 (Companion coverage)
+    Then a gap is recorded with dimension "Companion coverage" and severity MEDIUM
+    And the gap description identifies stale companion notes
+
+#### Scenario: [IMPL] entries used as code map for scenario comparison
+
+    Given features/webhook_delivery.impl.md contains [IMPL] entries referencing spec §3.2 and §3.4
+    When a code-comparison subagent processes "webhook_delivery"
+    Then the subagent uses [IMPL] references to map code to spec requirements
+    And scenario-by-scenario comparison is guided by the impl-to-spec mapping
+
+#### Scenario: Feature with only [IMPL] entries signals spec conformance
+
+    Given features/webhook_delivery.impl.md contains 5 [IMPL] entries and zero deviation tags
+    When a code-comparison subagent processes "webhook_delivery"
+    Then the subagent notes spec-conformant implementation as a positive signal
+    And deep code comparison MAY be deprioritized in triage mode
+
+#### Scenario: Companion debt remediation by Engineer
+
+    Given the audit finds companion debt for feature "rate_limiting"
+    And the audit is running as Engineer
+    When Phase 3 remediation processes the FIX item
+    Then the engineer creates features/rate_limiting.impl.md with [IMPL] entries for recent code changes
+    And the companion file documents what was implemented
 
 ### QA Scenarios
 

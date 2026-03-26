@@ -3,6 +3,7 @@
 > Label: "Shared Agent Definitions: Active Deviations Protocol"
 > Category: "Shared Agent Definitions"
 > Prerequisite: features/purlin_mode_system.md
+> Prerequisite: features/policy_spec_code_sync.md
 
 ## 1. Overview
 
@@ -34,8 +35,9 @@ The Active Deviations reference (`instructions/references/active_deviations.md`)
 
 ### 2.4 Engineer Decision Tags
 
-- MUST define: `[CLARIFICATION]` (INFO), `[AUTONOMOUS]` (WARN), `[DEVIATION]` (HIGH), `[DISCOVERY]` (HIGH), `[INFEASIBLE]` (CRITICAL).
-- MUST define format: `**[TAG]** <description> (Severity: <level>)`
+- MUST define: `[IMPL]` (NONE), `[CLARIFICATION]` (INFO), `[AUTONOMOUS]` (WARN), `[DEVIATION]` (HIGH), `[DISCOVERY]` (HIGH), `[INFEASIBLE]` (CRITICAL).
+- `[IMPL]` is the low-friction tag for work that matches the spec. It does NOT require PM acknowledgment, does NOT appear in the Active Deviations table, and is NOT surfaced by the scan as a PM action item. See `features/policy_spec_code_sync.md` for the Companion File Commit Covenant that mandates its use.
+- MUST define format: `**[TAG]** <description> (Severity: <level>)` (severity line omitted for `[IMPL]` since severity is NONE).
 - Cross-feature discoveries go in the target feature's companion file.
 
 ### 2.5 PM Review Protocol
@@ -73,8 +75,15 @@ The Active Deviations reference (`instructions/references/active_deviations.md`)
 
     Given references/active_deviations.md exists
     When the tags section is parsed
-    Then CLARIFICATION, AUTONOMOUS, DEVIATION, DISCOVERY, INFEASIBLE are defined
-    And each has a severity level
+    Then IMPL, CLARIFICATION, AUTONOMOUS, DEVIATION, DISCOVERY, INFEASIBLE are defined
+    And each has a severity level (IMPL has severity NONE)
+
+#### Scenario: [IMPL] tag excluded from PM review surface
+
+    Given references/active_deviations.md defines the [IMPL] tag
+    When the PM review protocol is applied
+    Then [IMPL] entries are NOT surfaced as unacknowledged deviations
+    And only AUTONOMOUS, DEVIATION, DISCOVERY, INFEASIBLE trigger PM review
 
 ## Regression Guidance
 - Verify companion file gate in /pl-build references this tag format

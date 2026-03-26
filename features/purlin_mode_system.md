@@ -66,16 +66,18 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `scan.sh`, or `tests/<name>/critic.json`. These are old Critic system artifacts replaced by `scan.sh` and `/pl-status`.
 - Action items use mode-based naming: "PM action items", "Engineer action items", "QA action items".
 
-### 2.8 Companion File Mandate (Engineer)
+### 2.8 Companion File Commit Covenant (Engineer)
 
-- When Engineer mode fixes a bug, adds behavior, or changes implementation in a way that the spec doesn't describe, the agent MUST write a `[DISCOVERY]` or `[DEVIATION]` entry in the companion file BEFORE or WITH the code commit.
-- This is NOT optional. It is how PM discovers what changed. Skipping it creates silent spec drift.
-- The entry MUST include: what changed, why, and whether the spec needs updating.
-- Scan.py surfaces unacknowledged entries to PM via `/pl-status`.
-- **Three enforcement gates:**
+Per `features/policy_spec_code_sync.md`, every engineer code commit for a feature MUST include a companion file update. This applies to ALL code changes — not just deviations from the spec. The minimum entry is a single `[IMPL]` line.
+
+- This is NOT optional. It is how PM discovers what was built. Skipping it creates silent spec drift.
+- For deviations, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, `[INFEASIBLE]`) instead of or in addition to `[IMPL]`.
+- Scan.py surfaces unacknowledged deviation entries to PM via `/pl-status`. `[IMPL]` entries are informational and are not surfaced to PM.
+- **Four mechanical enforcement gates:**
   1. `/pl-build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
-  2. `/pl-build` Step 4 — Companion File Gate: BLOCKS the status commit if code deviations exist without companion entries.
-  3. Mode switch out of Engineer: prompts to write companion entries before switching. Does NOT switch until entries are written or user says "skip."
+  2. `/pl-build` Step 4 — Companion File Gate: Mechanical check — did the companion file get new entries this session? If code was committed for a feature and the companion file has no new entries: **BLOCK.** No judgment call about whether the change "matches the spec."
+  3. Mode switch out of Engineer: Mechanical check — does companion debt exist for any feature? If yes: **BLOCK.** No skip escape. The engineer writes entries (at minimum `[IMPL]` lines) or the switch does not proceed.
+  4. Scan — `scan_companion_debt()`: Compares code commit timestamps against companion file modification timestamps. Surfaces debt missed by Gates 1-3 (session crashes, manual git commits).
 
 ### 2.9 Commit Attribution
 
@@ -118,13 +120,15 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     And QA mode remains active (not switched to Engineer)
     And no application code files are modified
 
-#### Scenario: Pre-switch companion file gate
+#### Scenario: Pre-switch companion file gate blocks without skip
 
     Given the agent is in Engineer mode
-    And code was changed for feature "auth_flow" without updating the companion file
+    And code was committed for feature "auth_flow" without updating the companion file
     When the user invokes /pl-spec (PM mode skill)
-    Then the agent prompts to write a companion file entry before switching
-    And does NOT switch to PM mode until the entry is written or user says "skip"
+    Then the mode switch is BLOCKED
+    And the agent lists "auth_flow" as having companion debt
+    And no "skip" option is offered
+    And the agent does NOT switch to PM mode until companion entries are written
 
 #### Scenario: Build status tag blocked by untracked files
 
@@ -134,14 +138,13 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     Then the status tag commit is BLOCKED
     And the agent either adds the file to git or adds it to .gitignore
 
-#### Scenario: Build status tag blocked by missing companion entry
+#### Scenario: Build status tag blocked by missing companion entry (mechanical)
 
     Given the agent completed code changes for feature "auth_flow"
-    And the changes deviate from the spec
-    And no companion file entry was written
+    And no companion file entry was written (regardless of whether changes deviate from spec)
     When /pl-build reaches Step 4 (status tag commit)
     Then the status tag commit is BLOCKED
-    And the agent prompts to write the companion entry first
+    And the agent requires at least [IMPL] entries before proceeding
 
 #### Scenario: Narrated mode switch does not grant write access
 

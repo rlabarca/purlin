@@ -2,6 +2,7 @@
 
 > Label: "Shared Agent Definitions: Impl Notes Companion"
 > Category: "Shared Agent Definitions"
+> Prerequisite: features/policy_spec_code_sync.md
 
 ## Overview
 
@@ -48,7 +49,16 @@ The companion file contains the extracted implementation notes content. The file
 - If `<name>.md` is flagged as orphaned, `<name>.impl.md` and `<name>.discoveries.md` MUST also be flagged.
 - If `<name>.impl.md` or `<name>.discoveries.md` exists but `<name>.md` does not, it MUST be flagged as orphaned by the orphan cleanup tool.
 
-### 2.8 Integration Test Fixture Tags
+### 2.8 Companion File Commit Covenant
+
+Per `features/policy_spec_code_sync.md`, every engineer code commit for a feature MUST include a companion file update.
+
+- The minimum entry is a `[IMPL]` line describing what was implemented. See `features/active_deviations.md` §2.4 for tag definitions.
+- The old exemption ("if all changes match the spec exactly: no companion entry required") is removed. Every code change gets documented.
+- Multiple rapid commits for the same feature MAY batch their entries into a single companion update committed with the last commit in the batch.
+- The companion file gate in `/pl-build` Step 4 enforces this mechanically: it checks whether the companion file has new entries from the current session, not whether deviations exist.
+
+### 2.9 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -84,6 +94,28 @@ Then the section is NOT flagged as "Implementation Notes empty"
 Given a companion file `features/old_feature.impl.md` without a corresponding `features/old_feature.md`
 When the orphan cleanup tool scans `features/*.impl.md` files and no corresponding `features/<name>.md` parent exists
 Then `old_feature.impl.md` is flagged as orphaned
+
+#### Scenario: Companion commit covenant blocks status tag without entry
+
+    Given Engineer mode has committed code for feature "project_init"
+    And features/project_init.impl.md has no new entries from this session
+    When /pl-build Step 4 runs the Companion File Gate
+    Then the status tag commit is BLOCKED
+    And the message requires companion file entries before proceeding
+
+#### Scenario: [IMPL] entry satisfies companion commit covenant
+
+    Given Engineer mode has committed code for feature "project_init"
+    And features/project_init.impl.md contains a new [IMPL] entry
+    When /pl-build Step 4 runs the Companion File Gate
+    Then the gate passes and the status tag commit proceeds
+
+#### Scenario: Batched companion update across rapid commits
+
+    Given Engineer makes 3 commits for feature "project_init" in quick succession
+    And writes all companion entries in one update with the third commit
+    When /pl-build Step 4 runs
+    Then the gate passes (companion file was updated during the session)
 
 ### Manual Scenarios
 
