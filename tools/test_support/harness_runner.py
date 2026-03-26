@@ -225,8 +225,8 @@ def poll_server_ready(port, attempts=10, interval=1):
 
 
 def read_port_file(root_dir):
-    """Read the CDD port file. Returns port number or None."""
-    port_file = os.path.join(root_dir, '.purlin', 'runtime', 'cdd.port')
+    """Read the dev server port file. Returns port number or None."""
+    port_file = os.path.join(root_dir, '.purlin', 'runtime', 'server.port')
     try:
         with open(port_file) as f:
             return int(f.read().strip())
@@ -234,8 +234,8 @@ def read_port_file(root_dir):
         return None
 
 
-def start_cdd_server(project_root, port=None, target_dir=None):
-    """Start a CDD server via start.sh.
+def start_dev_server(project_root, port=None, target_dir=None):
+    """Start a dev server for web testing.
 
     Args:
         project_root: The actual project root (where tools/ lives).
@@ -247,58 +247,18 @@ def start_cdd_server(project_root, port=None, target_dir=None):
         The port the server started on, or None if failed.
     """
     target = target_dir or project_root
-    start_sh = os.path.join(project_root, 'tools', 'cdd', 'start.sh')
 
-    if not os.path.isfile(start_sh):
-        return None
+    # Check for server.port — if already running, just use it
+    existing_port = read_port_file(target)
+    if existing_port and check_server_responsive(existing_port):
+        return existing_port
 
-    # Ensure .purlin/ exists in target dir (needed for start.sh root detection)
-    os.makedirs(os.path.join(target, '.purlin'), exist_ok=True)
-
-    cmd = ['bash', start_sh]
-    if port:
-        cmd.extend(['-p', str(port)])
-
-    env = {**os.environ, 'PURLIN_PROJECT_ROOT': target}
-
-    try:
-        subprocess.run(
-            cmd, capture_output=True, text=True, timeout=30,
-            cwd=project_root, env=env,
-        )
-    except (subprocess.TimeoutExpired, OSError):
-        return None
-
-    # Read the actual port from the port file
-    actual_port = read_port_file(target)
-    if actual_port is None:
-        return None
-
-    # Poll for readiness (Section 2.8.1: 10 attempts, 1 second apart)
-    if not poll_server_ready(actual_port):
-        return None
-
-    return actual_port
+    return None
 
 
-def stop_cdd_server(project_root, target_dir=None):
-    """Stop the CDD server for a target directory."""
-    target = target_dir or project_root
-    stop_sh = os.path.join(project_root, 'tools', 'cdd', 'stop.sh')
-
-    if not os.path.isfile(stop_sh):
-        return
-
-    env = {**os.environ, 'PURLIN_PROJECT_ROOT': target}
-
-    try:
-        subprocess.run(
-            ['bash', stop_sh],
-            capture_output=True, text=True, timeout=15,
-            cwd=project_root, env=env,
-        )
-    except (subprocess.TimeoutExpired, OSError):
-        pass
+def stop_dev_server(project_root, target_dir=None):
+    """Stop the dev server for a target directory (no-op until /pl-server implemented)."""
+    pass
 
 
 def construct_system_prompt(fixture_dir, role):
@@ -725,7 +685,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                             desired_port = parse_port_from_url(
                                 s.get('web_test_url', ''))
                             break
-                    actual = start_cdd_server(
+                    actual = start_dev_server(
                         project_root, port=desired_port)
                     if actual:
                         base_server_started = True
@@ -776,7 +736,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                         else:
                             fixture_port = url_port
 
-                        started_port = start_cdd_server(
+                        started_port = start_dev_server(
                             project_root, port=fixture_port,
                             target_dir=fixture_dir)
                         if started_port:
@@ -791,7 +751,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                                 url_override = \
                                     f"http://localhost:{started_port}/"
                         else:
-                            output = ("Error: CDD server did not become "
+                            output = ("Error: Dev server did not become "
                                       "ready within 10 seconds")
                             exec_success = False
                     elif base_server_port:
@@ -808,7 +768,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                     else:
                         # No server available for non-fixture scenario
                         if not fixture_dir:
-                            output = ("Error: CDD server did not become "
+                            output = ("Error: Dev server did not become "
                                       "ready within 10 seconds")
                             exec_success = False
 
@@ -890,14 +850,14 @@ def process_scenario_file(scenario_path, project_root, progress=None):
             finally:
                 # Step e: Cleanup (try/finally for cleanup mandate)
                 if fixture_server_started:
-                    stop_cdd_server(project_root, target_dir=fixture_dir)
+                    stop_dev_server(project_root, target_dir=fixture_dir)
                 if fixture_dir:
                     run_fixture_cleanup(project_root, fixture_dir)
 
     finally:
         # File-level cleanup: stop base server if we started it
         if base_server_started:
-            stop_cdd_server(project_root)
+            stop_dev_server(project_root)
 
     return feature_name, details, total_passed, total_failed
 

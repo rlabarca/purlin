@@ -117,7 +117,7 @@ For each QA scenario in scope with NO tag (neither `@auto` nor `@manual`) that w
 
 1.  **Evaluate automation feasibility for ALL untagged scenarios first** (do NOT prompt one at a time). Criteria: deterministic assertions (no subjective judgment), no physical hardware required, no interactive multi-step human workflow.
 
-2.  **Batch-classify obvious cases silently.** If QA determines a scenario is clearly not automatable in-session (agent_behavior test, requires external fixtures, requires human judgment), tag it `@manual` immediately without asking the user. Do NOT prompt for confirmation on obvious classifications.
+2.  **Batch-classify obvious cases silently.** If QA determines a scenario is clearly not automatable (requires human judgment, requires physical hardware, requires interactive multi-step human workflow), tag it `@manual` immediately without asking the user. Do NOT prompt for confirmation on obvious classifications. Note: `agent_behavior` tests ARE automatable — they run in-session via background execution.
 
 3.  **Present a single summary** of all classifications made and any that need user input:
 
@@ -165,15 +165,15 @@ This checkpoint fires at **two** points during Phase A:
 
 **Checkpoint (A) — after Steps 1–5:** Finalize features verified by web tests, @auto scenarios, and visual smoke. This fires immediately after Step 5 completes.
 
-**Checkpoint (B) — after in-session regression suites pass:** Finalize features whose in-session (non-agent_behavior) regression suites passed. This fires BEFORE the external agent_behavior gate. The external test gate MUST NOT block completion of features that are already clean from in-session work.
+**Checkpoint (B) — after all regression suites complete:** Finalize features whose regression suites passed (all harness types, including `agent_behavior`). This fires after evaluation of all suite results.
 
 At each checkpoint, execute this sequence IN ORDER for all newly-clean features (both AUTO and TODO):
 
-> **CRITICAL: Committing regression artifacts is NOT finalization.** The CDD lifecycle tracks status via commit messages containing `[Complete]`. Committing regression JSON files, scenario tags, or test results does NOT change lifecycle status. You MUST commit the explicit `[Complete] [Verified]` status tag commits (step 2 below) or the features remain TODO/AUTO in the dashboard.
+> **CRITICAL: Committing regression artifacts is NOT finalization.** The lifecycle tracks status via commit messages containing `[Complete]`. Committing regression JSON files, scenario tags, or test results does NOT change lifecycle status. You MUST commit the explicit `[Complete] [Verified]` status tag commits (step 2 below) or the features remain in TODO/AUTO state.
 
 1.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
 2.  **Commit status tags:** For each feature where all automated QA work passed, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit.
-3.  **Update CDD (HARD GATE):** Run `${TOOLS_ROOT}/cdd/scan.sh` once to refresh project state. Do NOT proceed to Phase B until this completes.
+3.  **Update scan (HARD GATE):** Run `${TOOLS_ROOT}/cdd/scan.sh` once to refresh project state. Do NOT proceed to Phase B until this completes.
 4.  **Verify finalization:** Check scan results — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
 5.  **Verify clean workspace:** Confirm no uncommitted changes remain.
 6.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
@@ -207,72 +207,37 @@ Proceeding to Phase B.
    PASS results are valid — do NOT flag as "prior run; re-run needed" or request fresh execution. Only STALE, FAIL, and NOT_RUN require action.
 3. Read `QA_OVERRIDES.md` `## Test Priority Tiers` table (if it exists) to determine each feature's test priority tier (smoke, standard, full-only).
 4. Read each scenario file's `frequency` field (`per-feature` default, or `pre-release`).
-5. **Harness type detection:** Read each scenario file's `harness_type`. Suites with `harness_type: "agent_behavior"` CANNOT run inside an active Claude Code session (nested session protection). These must be run externally by the user.
-6. Group suites into three display categories based on frequency and harness type:
-   - **`per-feature (run in-session)`**: `per-feature` frequency with non-`agent_behavior` harness type. QA runs these directly.
-   - **`per-feature (agent_behavior — run externally)`**: `per-feature` frequency with `agent_behavior` harness type. User runs externally.
-   - **`pre-release (agent_behavior — run externally)`**: `pre-release` frequency (typically `agent_behavior`). User runs externally.
-   Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
+5. **Harness type detection:** Read each scenario file's `harness_type`. Note `agent_behavior` suites (these invoke `claude --print` as a non-interactive subprocess and may take longer).
+6. Group suites by frequency (`per-feature` vs `pre-release`). Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator. Annotate `agent_behavior` suites so the user knows which are slow.
 7. Print the table:
 
 ```
 Regression suites:
-  per-feature (run in-session):
+  per-feature:
+    [STALE]   config_layering (3/3, source modified) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
     [NOT_RUN] terminal_identity
+    [NOT_RUN] release_record_version_notes (agent_behavior, 3 scenarios)
 
-  per-feature (agent_behavior — run externally):
-    [NOT_RUN] release_record_version_notes (3 scenarios)
+  pre-release:
+    [NOT_RUN] skill_behavior_regression (agent_behavior, 9 scenarios)
 
-  pre-release (agent_behavior — run externally):
-    [NOT_RUN] skill_behavior_regression (9 scenarios)
-
-Run in-session suites? [all / per-feature / skip]
+Run regression suites? [all / per-feature / skip]
 ```
 
-8. **Non-agent_behavior suites (run first):** QA runs these directly via the harness runner (in-session) based on user selection. When `auto_start` is `true`: run STALE and NOT_RUN non-`agent_behavior` suites automatically (smoke first, then standard). For pre-release non-`agent_behavior` suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
+8. **Execute all suites in-session.** All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
+   - **Fast suites** (`web_test`, `custom_script`, single-scenario `agent_behavior`): run synchronously for immediate feedback.
+   - **Slow suites** (multi-scenario `agent_behavior`, estimated >30s): run via `run_in_background`. QA continues with other Phase A work (visual smoke, scenario classification) and is notified on completion.
+   - When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). For pre-release suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
 
-9. **Step 5a(B) — In-session checkpoint:** After all in-session regression suites complete, execute Step 5a checkpoint (B). Finalize features whose in-session automated work is now satisfied — commit `[Complete] [Verified]` status tags, commit regression artifacts, update CDD. This MUST happen BEFORE the agent_behavior gate so already-clean features are not blocked by external tests.
+9. **Auto-evaluate on completion.** When each suite finishes (foreground or background notification), immediately read `regression.json` and evaluate:
+   - PASS: record pass, no action needed.
+   - FAIL: create `[BUG]` discovery in companion file with `scenario_ref`, `expected`, and `actual_excerpt`.
+   - Report a summary after all suites complete.
 
-10. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run `agent_behavior` suites in-session (nested session protection). When any agent_behavior suite has status FAIL, STALE, or NOT_RUN, QA MUST present a prominent action block and STOP.
+10. **Step 5a(B) — Regression checkpoint:** After all regression suites complete and are evaluated, execute Step 5a checkpoint (B). Finalize features whose regression suites passed — commit `[Complete] [Verified]` status tags, commit regression artifacts, run scan.sh. Then proceed to Phase B.
 
-**Format the action block exactly like this — commands MUST be on their own line with no indentation, no bullet, no prefix, so they copy cleanly from the terminal:**
-
-```
-━━━ ACTION REQUIRED ━━━
-These tests must run in a separate terminal.
-Copy and paste each command below:
-
-✗ FAIL  skill_behavior_regression (15/17)
-
-python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
-
-✗ FAIL  purlin_mode_system_behavior (0/2)
-
-python3 tools/test_support/harness_runner.py tests/purlin_mode_system/regression.json
-
-Say "done" when finished, or "skip" to continue.
-━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**CRITICAL formatting rules:**
-- Each command MUST be on its own line starting at column 0 — NO indentation, NO bullet prefix, NO markdown formatting
-- Put a blank line BEFORE and AFTER each command so it stands alone visually
-- The command must be a single line — never let it wrap by putting extra text on the same line
-- List FAIL items FIRST (with ✗ marker), then STALE (~), then NOT_RUN (?)
-- Skip PASS items — they don't need action
-- If zero items need action (all PASS), skip the block entirely
-
-**STOP HERE. Wait for the user to respond.** Do NOT print the Phase B checklist, do NOT present manual scenarios, do NOT continue with any other work until the user says "done" or "skip". This gate applies even when `auto_start` is `true` — agent_behavior external execution always requires a user round-trip.
-
-When the user says "done":
-1. Re-read the regression result files (`regression.json`) for every suite that was FAIL/STALE/NOT_RUN.
-2. If ANY suite is STILL FAIL: re-present the ACTION REQUIRED block with only the remaining failures. Do NOT proceed to Phase B. Wait for the user again.
-3. Only when ALL suites are PASS (or the user says "skip"): proceed to Phase B.
-
-This is a loop — the gate re-fires until everything passes or the user explicitly skips.
-
-When the user says "skip": proceed to Phase B. Record skipped suites in the QA report.
+If the user says "skip" at the prompt in step 7: skip regression execution, proceed to Phase B, and record skipped suites in the QA report.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 

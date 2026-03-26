@@ -12,7 +12,7 @@ Given the topic provided as an argument, surface a structured spec change sugges
 2. Describe the gap, inconsistency, or improvement you encountered during implementation.
 3. Draft a concrete proposal: what should change in the spec (section, scenario, or constraint).
 4. Record the proposal as an `[AUTONOMOUS]` or `[DISCOVERY]` entry in the feature's implementation notes with the tag `[SPEC_PROPOSAL]`, including your rationale.
-5. Commit the entry so PM mode sees it in the Critic report at their next session.
+5. Commit the entry so PM mode sees it in the scan results at their next session.
 
 **Anchor node proposals:** When the proposal is for a new anchor node, use tag `[SPEC_PROPOSAL: NEW_ANCHOR]` with the proposed type (`arch_*`, `design_*`, or `policy_*`), a name suggestion, and the proposed invariants.
 

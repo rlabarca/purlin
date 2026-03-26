@@ -9,7 +9,7 @@
 *   **History:** The init.sh script originally absorbed all logic from the retired `tools/bootstrap.sh`. The full init path produces identical artifacts to what bootstrap.sh produced.
 *   **Mode Detection:** The mode check is a single `[ -d "$PROJECT_ROOT/.purlin" ]` test at the top of the script. Full init is the `else` branch; refresh is the `then` branch.
 *   **Shim Generation:** The shim is a heredoc written by init.sh. Use `git -C "$SUBMODULE_DIR" remote get-url origin` for the remote URL, `git -C "$SUBMODULE_DIR" rev-parse HEAD` for the SHA, and `git -C "$SUBMODULE_DIR" describe --tags --abbrev=0 HEAD 2>/dev/null || echo "untagged"` for the version. Embed these as comments in the shim header.
-*   **CDD Symlinks:** Use `ln -sf` with relative paths. The target should be relative from the project root to the submodule's tools directory (e.g., `purlin/tools/cdd/start.sh`). Test with `readlink` to verify relative.
+*   **Launcher Scripts:** Use heredoc-generated shell scripts at the project root. The scripts delegate to the submodule's tools directory for execution.
 *   **Command File Timestamp Logic:** Use `-nt` (newer than) test in bash: `if [ "$dest_file" -nt "$src_file" ]; then skip; fi`.
 *   **`--quiet` Implementation:** Gate all `echo` statements behind a `$QUIET` flag variable. Set `QUIET=true` when `--quiet` is in `$@`. Errors should still go to stderr regardless.
 *   **`--regenerate-launchers` Implementation:** Set a `REGEN_LAUNCHERS=true` flag. In refresh mode, the launcher generation block only runs when this flag is set. In full init mode, launchers are always generated regardless.

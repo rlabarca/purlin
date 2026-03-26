@@ -153,13 +153,13 @@ class TestProposalCommittedToGit(unittest.TestCase):
             "Must describe committing the companion file entry to git",
         )
 
-    def test_architect_visibility_via_critic(self):
-        """Command file must describe that the Architect sees it via the Critic report."""
+    def test_pm_visibility_via_scan(self):
+        """Command file must describe that PM mode sees it via scan results."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)architect.*sees.*critic|critic.*report",
-            "Must describe Architect visibility through the Critic report",
+            r"(?i)PM mode sees|scan results",
+            "Must describe PM visibility through scan results",
         )
 
     def test_committed_entry_is_only_valid_output(self):

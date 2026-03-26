@@ -335,21 +335,21 @@ class TestPhase3CategoryConfirmation(unittest.TestCase):
 # ===================================================================
 
 
-class TestPhase4CDDStatusAndSummary(unittest.TestCase):
-    """Scenario: Phase 4 runs CDD status and summarizes results
+class TestPhase4ScanAndSummary(unittest.TestCase):
+    """Scenario: Phase 4 runs scan and summarizes results
 
     Given all categories are generated and committed
     When Phase 4 begins
-    Then tools/cdd/status.sh is executed
+    Then tools/cdd/scan.sh is executed
     And totals are printed (features, anchor nodes, companion files)
 
-    Structural test: the command file references status.sh and
+    Structural test: the command file references scan.sh and
     lists the summary items to print.
     """
 
-    def test_cdd_status_sh_referenced(self):
+    def test_scan_sh_referenced(self):
         content = read_command_file()
-        self.assertIn("status.sh", content)
+        self.assertIn("scan.sh", content)
 
     def test_summary_includes_total_features(self):
         content = read_command_file()
@@ -531,31 +531,31 @@ class TestResumeFromCompletedPhase1(unittest.TestCase):
 
 
 # ===================================================================
-# Scenario 14: Generated features appear in CDD dashboard as TODO
+# Scenario 14: Generated features appear as TODO in scan
 # ===================================================================
 
 
 class TestGeneratedFeaturesAppearAsTODO(unittest.TestCase):
-    """Scenario: Generated features appear in CDD dashboard as TODO
+    """Scenario: Generated features appear as TODO in scan
 
     Given Phase 4 has completed successfully
-    When tools/cdd/status.sh is run
+    When tools/cdd/scan.sh is run
     Then all generated features appear with TODO status
 
     Structural test: the command file sets TODO status on all features
-    and runs status.sh in Phase 4.
+    and runs scan.sh in Phase 4.
     """
 
     def test_todo_status_set_on_features(self):
         content = read_command_file()
         self.assertIn("[TODO]", content)
 
-    def test_status_sh_run_in_phase_4(self):
+    def test_scan_sh_run_in_phase_4(self):
         content = read_command_file()
         phase4_start = content.find("Phase 4")
         self.assertGreater(phase4_start, -1)
         phase4_section = content[phase4_start:]
-        self.assertIn("status.sh", phase4_section)
+        self.assertIn("scan.sh", phase4_section)
 
 
 # ===================================================================

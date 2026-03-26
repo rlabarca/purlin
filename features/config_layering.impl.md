@@ -12,13 +12,9 @@
 
 | File | Current Pattern | Migration |
 |------|----------------|-----------|
-| `tools/cdd/serve.py` | `json.load(open(...config.json...))` | `from tools.config.resolve_config import resolve_config; config = resolve_config(project_root)` |
-| `tools/critic/critic.py` | `json.load()` with try/except fallback | Replace with `resolve_config()` import |
 | `tools/release/resolve.py` | `json.load()` with try/except fallback | Replace with `resolve_config()` import |
 | `tools/release/manage_step.py` | `json.load()` on config path | Replace with `resolve_config()` import |
 | `tools/collab/extract_whats_different.py` | `json.load()` on config path | Replace with `resolve_config()` import |
-
-**[CLARIFICATION]** PM mode's inventory listed `tools/critic/resolve.py` as a consumer, but this file does not exist. The actual consumer in the release module is `tools/release/resolve.py`. Updated inventory above. (Severity: INFO)
 
 All Python consumers follow the Section 2.13 safe-read pattern (`try/except` with fallback defaults). The resolver centralizes this -- individual consumers no longer need their own error handling for config reads.
 
@@ -29,16 +25,13 @@ All Python consumers follow the Section 2.13 safe-read pattern (`try/except` wit
 | `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py architect)` |
 | `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py builder)` |
 | `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py qa)` |
-| `tools/cdd/start.sh` | `python3 -c "import json; ..."` for port | `CDD_PORT=$(python3 tools/config/resolve_config.py --key cdd_port)` |
-| `tools/cdd/context_guard.sh` | `python3 -c "import json; ..."` | Replace with `resolve_config.py --key` calls |
+| `tools/cdd/scan.sh` | Inline `python3 -c "import json; ..."` for config | Replace with `resolve_config.py --key` calls |
 
 ### Writers
 
 | Component | Current Target | New Target | Notes |
 |-----------|---------------|------------|-------|
 | `/pl-agent-config` skill | `config.json` + git commit | `config.local.json`, no commit | Commit step removed (gitignored file) |
-| `POST /config/agents` (serve.py) | `config.json` | `config.local.json` | Propagation targets local in worktrees too |
-| `GET /config.json` (serve.py) | Reads `config.json` | Reads via resolver (local priority) | Transparent to dashboard frontend |
 | `bootstrap.sh` | Creates `config.json` | Creates `config.json` only (unchanged) | Adds `config.local.json` to gitignore |
 
 ## Phased Implementation Order
@@ -54,10 +47,7 @@ All Python consumers follow the Section 2.13 safe-read pattern (`try/except` wit
 6. Verify all readers produce identical behavior to before (same config values returned).
 
 ### Phase 3: Writer Updates
-7. Update `serve.py` `POST /config/agents` to write to `config.local.json`.
-8. Update `serve.py` `GET /config.json` to serve via resolver.
-9. Update `/pl-agent-config` command file to target `config.local.json` and remove commit step.
-10. Update worktree propagation in `serve.py` to target `config.local.json`.
+7. Update `/pl-agent-config` command file to target `config.local.json` and remove commit step.
 
 ### Phase 4: Bootstrap and Gitignore
 11. Update `bootstrap.sh` to add `.purlin/config.local.json` to consumer `.gitignore`.
@@ -106,7 +96,6 @@ eval $(python3 "$TOOLS_ROOT/config/resolve_config.py" "$ROLE")
 Existing tests that reference `config.json` directly may need updates:
 
 - `tools/test_bootstrap.sh` -- Verify it checks `config.json` creation (shared template) but NOT `config.local.json` creation.
-- `tests/cdd_agent_configuration/` -- Tests that verify config writes must target `config.local.json`.
 - `tests/pl_agent_config/` -- Tests must verify writes to `config.local.json` and absence of git commits.
 
 New test directory: `tests/config_layering/` for resolver unit tests covering all 24 scenarios.

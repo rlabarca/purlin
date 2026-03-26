@@ -169,10 +169,10 @@ class TestCascadeWarningShowsDependentFeatures(unittest.TestCase):
             r"(?i)(verify.*intended|identify.*dependent|impact.*list|intended)",
         )
 
-    def test_status_run_after_edit(self):
-        """After editing, the command runs status.sh to propagate resets."""
+    def test_scan_run_after_edit(self):
+        """After editing, the command runs scan.sh to propagate resets."""
         content = read_command_file()
-        self.assertIn("status.sh", content)
+        self.assertIn("scan.sh", content)
 
 
 # ===================================================================

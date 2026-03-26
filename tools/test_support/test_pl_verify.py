@@ -316,8 +316,8 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
             "Step 5a must commit [Complete] [Verified] status tags"
         )
 
-    def test_step_5a_runs_cdd_status(self):
-        """Step 5a runs CDD status to update the dashboard."""
+    def test_step_5a_runs_scan(self):
+        """Step 5a runs scan.sh to refresh project state."""
         content = read_command_file()
         step5a_match = re.search(
             r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
@@ -325,9 +325,9 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
         self.assertIsNotNone(step5a_match, "Step 5a section must exist")
         step5a_text = step5a_match.group(0)
         self.assertIn(
-            "cdd/status.sh",
+            "scan.sh",
             step5a_text,
-            "Step 5a must run cdd/status.sh to update CDD"
+            "Step 5a must run scan.sh to refresh project state"
         )
 
     def test_step_5a_zero_manual_items_fast_path(self):
@@ -437,8 +437,8 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
             "Step 5a must enforce ONE COMMIT PER FEATURE"
         )
 
-    def test_step_5a_hard_gate_on_cdd_update(self):
-        """CDD update in Step 5a must be a HARD GATE blocking Phase B."""
+    def test_step_5a_hard_gate_on_scan_update(self):
+        """Scan update in Step 5a must be a HARD GATE blocking Phase B."""
         content = read_command_file()
         step5a_match = re.search(
             r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
@@ -447,8 +447,8 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
         step5a_text = step5a_match.group(0)
         self.assertRegex(
             step5a_text,
-            r"HARD GATE.*cdd/status\.sh|Update CDD.*HARD GATE",
-            "CDD update must be a HARD GATE"
+            r"HARD GATE.*scan\.sh|Update scan.*HARD GATE",
+            "Scan update must be a HARD GATE"
         )
 
     def test_step_5a_verify_finalization_clears_auto_todo(self):

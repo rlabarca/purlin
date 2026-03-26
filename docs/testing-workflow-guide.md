@@ -109,7 +109,7 @@ If a tier table exists in `QA_OVERRIDES.md`, QA identifies smoke-tier features f
 
 If any smoke scenario **fails**, QA halts and asks:
 ```
-Smoke failure: policy_critic -- "Spec Gate validates prerequisites"
+Smoke failure: config_layering -- "Resolver returns correct defaults"
 Fix before continuing full verification? [yes to stop / no to continue]
 ```
 
@@ -201,9 +201,9 @@ Choice? [1 / 2 <url> / 3]
 ```
 .purlin/runtime/fixture-repo/        <-- bare git repo
   tags:
-    main/cdd_branch_collab/sync-ahead
-    main/cdd_branch_collab/sync-diverged
-    main/cdd_startup/expert-mode
+    main/config_layering/resolver-defaults
+    main/config_layering/local-override
+    main/agent_behavior_tests/expert-mode
 ```
 
 **Naming:** `main/<feature-name>/<scenario-slug>`
@@ -248,7 +248,7 @@ This discovers all scenario JSON files in `tests/qa/scenarios/`, runs each one v
 Regression Summary:
   PASS  instruction_audit (5/5)
   FAIL  branch_collab (3/5)
-  PASS  cdd_startup (8/8)
+  PASS  config_layering (8/8)
 
 Total: 16/18 passed (3 features, 1 failure)
 ```

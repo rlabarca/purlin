@@ -148,11 +148,11 @@ class TestCriticSurfacesInfeasibleAsCritical(unittest.TestCase):
         self.assertIn("status.sh", content,
                        "Must instruct running status.sh")
 
-    def test_critic_report_surfacing(self):
-        """Command file must describe surfacing the entry in the Critic report."""
+    def test_scan_results_surfacing(self):
+        """Command file must describe surfacing the entry in scan results."""
         content = read_command_file().lower()
-        self.assertIn("critic", content,
-                       "Must reference the Critic report")
+        self.assertIn("scan", content,
+                       "Must reference scan results")
 
     def test_critical_priority_designation(self):
         """Command file must designate INFEASIBLE as CRITICAL priority."""
