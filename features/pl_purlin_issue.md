@@ -21,7 +21,7 @@ The skill collects the debugging essentials through structured prompts:
 
 1. **What happened** — description of the issue (from `$ARGUMENTS` or interactive prompt)
 2. **What command/skill was running** — the `/pl-*` command or user action that triggered the issue
-3. **What was the error** — the agent asks the user to paste or describe the error output (traceback, unexpected result, or wrong behavior). If the error is visible in the current conversation, the agent extracts it directly.
+3. **What was the error** — the agent asks the user to paste or describe the error output (traceback, unexpected result, or wrong behavior). If the error is visible in the current conversation context, the agent extracts it automatically and asks for confirmation before including it in the report.
 4. **What was expected** — what should have happened instead
 
 ### 2.2 Automatic Context Gathering

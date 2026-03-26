@@ -4,7 +4,7 @@
 > Category: "Agent Skills: Engineer"
 > Prerequisite: features/arch_testing.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 

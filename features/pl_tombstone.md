@@ -44,7 +44,8 @@ Engineer mode's feature retirement skill that creates tombstone files before del
   - `tests/<name>/regression.json` (if it exists) — regression test results
   - `tests/qa/scenarios/<name>.json` (if it exists) — QA regression scenario
   - `tests/qa/test_<name>_regression.sh` (if it exists) — QA regression runner
-- These are listed in the tombstone for the Engineer to delete when processing. They are NOT auto-deleted at tombstone creation time — the Engineer reviews and deletes during processing.
+- These are listed in the tombstone for the Engineer to delete when processing. They are NOT auto-deleted at tombstone creation time.
+- **Tombstone processing** (by Engineer via `/pl-build`): Read the tombstone, delete all listed files and companion artifacts in `features/tombstones/`, then delete the tombstone file itself. Commit as a single cleanup commit.
 
 ### 2.6 Feature File Handling
 

@@ -15,7 +15,7 @@ A shared skill for Engineer and QA that manages dev server processes during web 
 
 ### 2.1 Role Gating
 
-- The command is available to Engineer and QA roles only.
+- Engineer mode owns the command. QA mode can invoke `/pl-server` to start/stop servers for verification (cross-mode: run-only) but cannot modify application code.
 - Non-Engineer/QA agents MUST receive a redirect message.
 
 ### 2.2 Starting a Dev Server

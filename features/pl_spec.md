@@ -3,6 +3,7 @@
 > Label: "Agent Skills: PM: /pl-spec Spec Authoring"
 > Category: "Agent Skills: PM"
 > Prerequisite: features/impl_notes_companion.md
+> Prerequisite: features/pl_find.md
 
 [TODO]
 

@@ -16,8 +16,7 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by PM mode role.
-- Non-PM agents MUST receive a redirect message: "This is a PM command. Ask your PM agent to run `/pl-spec-from-code`."
+- The command MUST only execute when invoked in PM mode. Non-PM agents (Engineer, QA, or open mode) MUST receive a redirect message: `"This is a PM command. Switch to PM mode with /pl-mode pm."`
 
 ### 2.2 State Management and Cross-Session Resume
 
