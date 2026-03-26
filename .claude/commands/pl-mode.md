@@ -31,7 +31,7 @@ When invoked with no arguments, display current mode status. No mode change, no 
 
 2. **Activate the new mode.**
    - Print the mode's command subset from `instructions/references/purlin_commands.md`.
-   - Update terminal identity per PURLIN_BASE.md section 4.1.1: badge is `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. If `.purlin_worktree_label` exists, the worktree label replaces the branch (e.g., `Engineer (W1)`). The branch context is never dropped on mode switch.
+   - Update terminal identity: `source ${TOOLS_ROOT}/terminal/identity.sh && update_session_identity "<mode>" "<project>"`. This sets badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. Worktree label replaces branch when present (e.g., `Engineer (W1)`). Branch context is never dropped.
 
 3. **Announce:** "Switched to [Mode] mode."
 

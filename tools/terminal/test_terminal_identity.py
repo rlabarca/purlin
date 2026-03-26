@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Tests for terminal identity helper (title + badge).
+"""Tests for terminal identity helper (title + badge + Warp tab).
 
 Tests validate:
 1. The identity.sh helper script functions
-2. Integration into tools/init.sh generate_launcher()
-3. Integration into pl-run-builder.sh continuous mode
+2. Environment detection and Warp support
+3. Centralized update_session_identity function
+4. Integration into tools/init.sh generate_launcher()
+5. Integration into pl-run-builder.sh continuous mode
 """
 
 import json
@@ -199,6 +201,237 @@ echo "$CALLS"
     record(
         "clear_agent_identity calls both clear functions",
         rc == 0 and "clear_title" in stdout and "clear_badge" in stdout,
+        f"rc={rc}, calls={repr(stdout.strip())}"
+    )
+
+
+# ============================================================
+# Environment Detection Tests
+# ============================================================
+
+def test_environment_detection_iterm():
+    """Scenario: Environment detection identifies iTerm2"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+echo "iterm=$_PURLIN_ENV_ITERM warp=$_PURLIN_ENV_WARP title=$_PURLIN_ENV_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
+    record(
+        "Environment detection identifies iTerm2",
+        rc == 0 and "iterm=true" in stdout and "warp=false" in stdout and "title=true" in stdout,
+        f"rc={rc}, stdout={repr(stdout.strip())}"
+    )
+
+
+def test_environment_detection_warp():
+    """Scenario: Environment detection identifies Warp"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+echo "iterm=$_PURLIN_ENV_ITERM warp=$_PURLIN_ENV_WARP title=$_PURLIN_ENV_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "WarpTerminal"})
+    record(
+        "Environment detection identifies Warp",
+        rc == 0 and "warp=true" in stdout and "iterm=false" in stdout,
+        f"rc={rc}, stdout={repr(stdout.strip())}"
+    )
+
+
+def test_environment_detection_generic():
+    """Scenario: Environment detection for unknown terminal"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+echo "iterm=$_PURLIN_ENV_ITERM warp=$_PURLIN_ENV_WARP title=$_PURLIN_ENV_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "xterm"})
+    record(
+        "Environment detection for unknown terminal",
+        rc == 0 and "iterm=false" in stdout and "warp=false" in stdout and "title=true" in stdout,
+        f"rc={rc}, stdout={repr(stdout.strip())}"
+    )
+
+
+def test_purlin_detect_env_output():
+    """Scenario: purlin_detect_env returns expected format"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+purlin_detect_env
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
+    record(
+        "purlin_detect_env returns expected format",
+        rc == 0 and stdout.strip() == "title:true iterm:true warp:false",
+        f"rc={rc}, stdout={repr(stdout.strip())}"
+    )
+
+
+# ============================================================
+# Warp Tab Name Tests
+# ============================================================
+
+def test_warp_tab_name_emits_osc0():
+    """Scenario: Warp tab name emits OSC 0"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+# Override to capture output
+set_warp_tab_name() {{
+    [ "$_PURLIN_ENV_WARP" = true ] || return 0
+    local text="$1"
+    printf '\\033]0;%s\\007' "$text"
+}}
+set_warp_tab_name "PM (main)"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "WarpTerminal"})
+    record(
+        "Warp tab name emits OSC 0",
+        rc == 0 and "\033]0;PM (main)\007" in stdout,
+        f"rc={rc}, stdout repr={repr(stdout)}"
+    )
+
+
+def test_warp_tab_name_noop_not_warp():
+    """Scenario: Warp tab name is no-op when not Warp"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+set_warp_tab_name "QA" 2>/dev/null
+echo "DONE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
+    record(
+        "Warp tab name is no-op when not Warp",
+        rc == 0 and stdout.strip() == "DONE",
+        f"rc={rc}, stdout={repr(stdout)}"
+    )
+
+
+# ============================================================
+# Centralized Session Identity Tests
+# ============================================================
+
+def test_update_session_identity_with_branch():
+    """Scenario: update_session_identity computes badge with branch"""
+    script = f"""
+cd "$(mktemp -d)"
+git init -q -b main
+git commit -q --allow-empty -m "init"
+source "{IDENTITY_SCRIPT}"
+# Override dispatchers to capture calls
+set_term_title() {{ :; }}
+set_iterm_badge() {{ :; }}
+set_warp_tab_name() {{ :; }}
+update_session_identity "Engineer" "purlin"
+echo "badge=$_PURLIN_LAST_BADGE"
+echo "title=$_PURLIN_LAST_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "xterm"})
+    record(
+        "update_session_identity computes badge with branch",
+        rc == 0 and "badge=Engineer (main)" in stdout and "title=purlin - Engineer (main)" in stdout,
+        f"rc={rc}, stdout={repr(stdout)}"
+    )
+
+
+def test_update_session_identity_with_worktree_label():
+    """Scenario: update_session_identity uses worktree label over branch"""
+    script = f"""
+cd "$(mktemp -d)"
+git init -q -b main
+git commit -q --allow-empty -m "init"
+echo "W2" > .purlin_worktree_label
+source "{IDENTITY_SCRIPT}"
+set_term_title() {{ :; }}
+set_iterm_badge() {{ :; }}
+set_warp_tab_name() {{ :; }}
+update_session_identity "QA" "myproject"
+echo "badge=$_PURLIN_LAST_BADGE"
+echo "title=$_PURLIN_LAST_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "xterm"})
+    record(
+        "update_session_identity uses worktree label over branch",
+        rc == 0 and "badge=QA (W2)" in stdout and "title=myproject - QA (W2)" in stdout,
+        f"rc={rc}, stdout={repr(stdout)}"
+    )
+
+
+def test_update_session_identity_sets_output_vars():
+    """Scenario: update_session_identity stores results in output vars"""
+    script = f"""
+cd "$(mktemp -d)"
+git init -q -b develop
+git commit -q --allow-empty -m "init"
+source "{IDENTITY_SCRIPT}"
+set_term_title() {{ :; }}
+set_iterm_badge() {{ :; }}
+set_warp_tab_name() {{ :; }}
+update_session_identity "PM"
+echo "badge=$_PURLIN_LAST_BADGE"
+echo "title=$_PURLIN_LAST_TITLE"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "xterm"})
+    record(
+        "update_session_identity sets output vars",
+        rc == 0 and "badge=PM (develop)" in stdout and "title=PM (develop)" in stdout,
+        f"rc={rc}, stdout={repr(stdout)}"
+    )
+
+
+def test_update_session_identity_dispatches_all():
+    """Scenario: update_session_identity dispatches to all environments"""
+    script = f"""
+cd "$(mktemp -d)"
+git init -q -b main
+git commit -q --allow-empty -m "init"
+source "{IDENTITY_SCRIPT}"
+CALLS=""
+set_term_title() {{ CALLS="$CALLS title"; }}
+set_iterm_badge() {{ CALLS="$CALLS badge"; }}
+set_warp_tab_name() {{ CALLS="$CALLS warp"; }}
+update_session_identity "PM" "purlin"
+echo "$CALLS"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
+    record(
+        "update_session_identity dispatches to all environments",
+        rc == 0 and "title" in stdout and "badge" in stdout and "warp" in stdout,
+        f"rc={rc}, calls={repr(stdout.strip())}"
+    )
+
+
+def test_set_agent_identity_includes_warp():
+    """Scenario: set_agent_identity includes Warp dispatch"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+CALLS=""
+set_term_title() {{ CALLS="$CALLS title:$1"; }}
+set_iterm_badge() {{ CALLS="$CALLS badge:$1"; }}
+set_warp_tab_name() {{ CALLS="$CALLS warp:$1"; }}
+set_agent_identity "Engineer (main)"
+echo "$CALLS"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "WarpTerminal"})
+    record(
+        "set_agent_identity includes Warp dispatch",
+        rc == 0 and "warp:Engineer (main)" in stdout,
+        f"rc={rc}, calls={repr(stdout.strip())}"
+    )
+
+
+def test_clear_agent_identity_includes_warp():
+    """Scenario: clear_agent_identity includes Warp cleanup"""
+    script = f"""
+source "{IDENTITY_SCRIPT}"
+CALLS=""
+clear_term_title() {{ CALLS="$CALLS clear_title"; }}
+clear_iterm_badge() {{ CALLS="$CALLS clear_badge"; }}
+clear_warp_tab_name() {{ CALLS="$CALLS clear_warp"; }}
+clear_agent_identity
+echo "$CALLS"
+"""
+    stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "WarpTerminal"})
+    record(
+        "clear_agent_identity includes Warp cleanup",
+        rc == 0 and "clear_title" in stdout and "clear_warp" in stdout,
         f"rc={rc}, calls={repr(stdout.strip())}"
     )
 
@@ -417,6 +650,27 @@ if __name__ == '__main__':
     test_base64_round_trip()
     test_set_agent_identity_calls_both()
     test_clear_agent_identity_calls_both()
+
+    # Environment detection
+    print("\n--- Environment Detection ---")
+    test_environment_detection_iterm()
+    test_environment_detection_warp()
+    test_environment_detection_generic()
+    test_purlin_detect_env_output()
+
+    # Warp tab name
+    print("\n--- Warp Tab Name ---")
+    test_warp_tab_name_emits_osc0()
+    test_warp_tab_name_noop_not_warp()
+
+    # Centralized session identity
+    print("\n--- Centralized Session Identity ---")
+    test_update_session_identity_with_branch()
+    test_update_session_identity_with_worktree_label()
+    test_update_session_identity_sets_output_vars()
+    test_update_session_identity_dispatches_all()
+    test_set_agent_identity_includes_warp()
+    test_clear_agent_identity_includes_warp()
 
     # Generated launcher integration
     print("\n--- Generated Launcher Integration ---")

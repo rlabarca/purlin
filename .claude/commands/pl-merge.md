@@ -57,10 +57,9 @@ This command only works when the agent is running in a worktree (launched with `
    ```
    If any cleanup step fails, the remaining steps still execute (use `;` instead of `&&` for non-critical steps like lock removal). The `cd "$MAIN_ROOT"` MUST be first — it is what keeps the shell alive after the worktree directory is gone.
 
-7. **Update terminal identity.** The agent is no longer in a worktree. Update the iTerm badge and title to reflect the current mode on the source branch:
+7. **Update terminal identity.** The agent is no longer in a worktree. Update all terminal environments to reflect the current mode on the source branch:
    ```bash
-   BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-   source {tools_root}/terminal/identity.sh && set_iterm_badge "<mode> ($BRANCH)" && set_term_title "<project> - <mode> ($BRANCH)"
+   source {tools_root}/terminal/identity.sh && update_session_identity "<mode>" "<project>"
    ```
    Replace `<mode>` with the current active mode (Engineer, PM, QA) and `<project>` with the project name.
 

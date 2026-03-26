@@ -93,17 +93,10 @@ The launcher sets the initial badge with branch context (e.g., `Purlin (main)`) 
 
 **Session name:** Set at launch only via `--name` and `--remote-control` flags in the format `<project> | <badge>`. The launcher handles this. Mid-session mode switches update the iTerm badge and terminal title but cannot update the remote session name (no programmatic rename API).
 
-**Branch/worktree detection:** Check for `.purlin_worktree_label` first — if present, use the worktree label. Otherwise, detect the branch via `git rev-parse --abbrev-ref HEAD`.
+**Branch/worktree detection:** Check for `.purlin_worktree_label` first — if present, use the worktree label. Otherwise, detect the branch via `git rev-parse --abbrev-ref HEAD`. The `update_session_identity` function handles this automatically and dispatches to all terminal environments (iTerm badge, Warp tab name, terminal title).
 
 ```bash
-CONTEXT=""
-if [ -f ".purlin_worktree_label" ]; then
-    CONTEXT="$(cat .purlin_worktree_label)"
-else
-    CONTEXT="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-fi
-BADGE="<mode> ($CONTEXT)"
-source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term_title "<project> - $BADGE"
+source {tools_root}/terminal/identity.sh && update_session_identity "<mode>" "<project>"
 ```
 
 ### 4.2 Pre-Switch Check

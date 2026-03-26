@@ -22,6 +22,7 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-override-edit          Edit PURLIN_OVERRIDES.md
   /pl-update-purlin          Update Purlin submodule
   /pl-whats-different        Compare branches
+  /pl-session-name [label]   Update terminal session display name
   /pl-worktree <cmd>         Worktree management (list | cleanup-stale)
   /pl-merge                  Merge worktree back to source branch
   /pl-purlin-issue           Report a Purlin framework bug
