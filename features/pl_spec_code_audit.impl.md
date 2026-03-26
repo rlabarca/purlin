@@ -9,7 +9,7 @@
 *   **Tool Location:** `.claude/commands/pl-spec-code-audit.md` (agent skill command file)
 *   **Test Location:** `tests/pl_spec_code_audit/test_command.py`
 *   The command is an agent instruction file, not executable code. Tests verify that the command file contains the correct instructions, keywords, structural elements, and referenced infrastructure for all 54 automated scenarios.
-*   The command file previously referenced "9 gap dimensions" in two places; corrected to "10" to match the spec's Section 2.12 and the command file's own Gap Dimensions Table which lists all 10 dimensions. Now updated to 12 dimensions with the addition of Dimension 12 (Code ownership).
+*   The command file originally referenced "9 gap dimensions" in two places; corrected to "10", then extended to "12" with the addition of Requirement Hygiene (dimension 11) and Code Ownership (dimension 12). The spec's Gap Dimensions Table and all command file references now list 12 dimensions. Now updated to 12 dimensions with the addition of Dimension 12 (Code ownership).
 
 ### Test Quality Audit
 - Rubric: 6/6 PASS
@@ -35,7 +35,7 @@ Three independent mechanisms layer to reduce noise:
 2.  **Import fan-in threshold** (3+ features) prevents shared utility modules from being flagged as orphaned. The threshold of 3 was chosen because a module imported by only 1-2 features should be co-owned by those features; a module imported by 3+ is genuinely cross-cutting infrastructure.
 3.  **Confidence-weighted ownership** ensures that weak heuristic matches (H5/H6) suppress the gap finding but still surface in the audit table as review items. This avoids both false positives (marking genuinely owned code as orphaned) and false negatives (silently accepting a weak match without human verification).
 *   The command is an agent instruction file, not executable code. Tests verify that the command file contains the correct instructions, keywords, structural elements, and referenced infrastructure for all 33 automated scenarios.
-*   The command file previously referenced "9 gap dimensions" in two places; corrected to "10" to match the spec's Section 2.12 and the command file's own Gap Dimensions Table which lists all 10 dimensions.
+*   The command file originally referenced "9 gap dimensions" in two places; corrected to "10", then extended to "12" with the addition of Requirement Hygiene (dimension 11) and Code Ownership (dimension 12). The spec's Gap Dimensions Table and all command file references now list 12 dimensions.
 
 **[DISCOVERY] [ACKNOWLEDGED]** test_support test file missing 3 state fields
 **Source:** /pl-spec-code-audit --deep (M15)
