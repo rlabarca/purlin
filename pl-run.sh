@@ -353,7 +353,20 @@ if [ -n "$AGENT_MODEL_WARNING" ] && [ "$AGENT_MODEL_WARNING_DISMISSED" != "true"
     fi
 fi
 
-# --- Validate startup controls ---
+# --- Resolve startup control dependencies ---
+# CLI auto-start implies find_work=true when the user didn't explicitly set --find-work
+if [[ -n "$PURLIN_AUTO_START" ]]; then
+    if [[ "$PURLIN_FIND_WORK" = "false" ]]; then
+        # Explicit contradiction: user passed both --find-work false and --auto-start
+        echo "Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery." >&2
+        exit 1
+    elif [[ -z "$PURLIN_FIND_WORK" && "$AGENT_FIND_WORK" = "false" ]]; then
+        # Implied dependency: auto-start from CLI, find_work=false from saved config
+        AGENT_FIND_WORK="true"
+    fi
+fi
+
+# --- Validate startup controls (catches config-only conflicts) ---
 if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
     echo "Error: find_work=false with auto_start=true is not valid. Set auto_start to false or enable find_work." >&2
     exit 1
