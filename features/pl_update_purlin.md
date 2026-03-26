@@ -48,7 +48,9 @@ The skill MUST:
 2. Compare local submodule HEAD against remote tracking branch (e.g., `origin/main`)
 3. Determine how many commits behind the local submodule is
 4. If already current with remote AND `.purlin/.upstream_sha` matches HEAD:
-   - Print "Already up to date." and exit
+   - Run migration detection (see `features/purlin_migration.md` §2.1)
+   - If migration state is `needed` or `partial`: print "Already at latest version. Running pending migration..." and skip to Section 2.9 (Config Sync). This handles the v0.8.4 upgrade gap where the old skill advanced the submodule but lacked the migration step.
+   - Otherwise: print "Already up to date." and exit
 5. If behind:
    - Detect current version: `git -C <submodule_dir> describe --tags --abbrev=0 HEAD`
    - Detect target version: `git -C <submodule_dir> describe --tags --abbrev=0 origin/main`
@@ -153,9 +155,13 @@ This step runs unconditionally after every successful update.
 
 After the config sync step (Section 2.9), the skill MUST invoke the Purlin migration module (`tools/migration/migrate.py`) if migration is needed.
 
-1. Run migration detection: check if `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists in config.
-2. If migration is needed: inform the user and run the migration workflow (see `features/purlin_migration.md` for full protocol).
-3. If migration is already complete or not applicable: skip silently.
+1. Run migration detection per `features/purlin_migration.md` §2.1:
+   - **Fast path:** `_migration_version` present in config → `complete`, skip silently.
+   - **`needed`:** Old agents exist, no `agents.purlin` → run full migration.
+   - **`partial`:** `agents.purlin` exists but incomplete (v0.8.4 upgrade gap) → run repair pass (enrichment + deprecation + marker).
+   - **`fresh` or `complete`:** Skip silently.
+2. If migration is `needed` or `partial`: inform the user and run the migration workflow.
+3. Report migration results in the summary (Section 2.12).
 4. Migration CLI flags (`--dry-run`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--auto-approve`, `--purlin-only`, `--complete-transition`) are passed through from `/pl-update-purlin` invocation.
 5. The `--dry-run` flag from Section 2.13 applies to migration as well — show what would migrate without modifying files.
 
@@ -320,12 +326,14 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 #### Scenario: Already Up to Date
     Given the submodule's local HEAD matches the remote tracking branch
     And .purlin/.upstream_sha matches current HEAD
+    And migration state is "complete" or "fresh"
     When /pl-update-purlin is invoked
     Then "Already up to date." is printed
     And the skill exits successfully
 
 #### Scenario: No Changes Since Last Sync
     Given .purlin/.upstream_sha matches the current submodule HEAD
+    And migration state is "complete" or "fresh"
     When /pl-update-purlin is invoked
     Then "Already up to date." is printed
     And the skill exits successfully
@@ -572,6 +580,20 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     Then the summary includes an advisory that "playwright" config changed upstream
     And the advisory includes the reconfiguration command
     And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Already at Latest but Migration Pending
+
+    Given the submodule is already current with remote
+    And .purlin/.upstream_sha matches current HEAD
+    And config.local.json has agents.purlin with only model and effort keys
+    And no _migration_version key exists
+    When /pl-update-purlin is invoked
+    Then the skill prints "Already at latest version. Running pending migration..."
+    And does NOT exit early
+    And config sync runs (Section 2.9)
+    And migration detection returns "partial" (Section 2.10)
+    And the migration repair pass runs
+    And the summary reports migration results
 
 #### Scenario: No MCP Output When Manifest Unchanged
 
