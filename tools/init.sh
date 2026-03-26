@@ -347,19 +347,16 @@ if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
     fi
 fi
 
-# --- Write session overrides for the agent ---
+# Session overrides are written after worktree setup (see below),
+# because worktree setup changes PURLIN_PROJECT_ROOT.
 export PURLIN_SESSION_ID=$$
-mkdir -p "$SCRIPT_DIR/.purlin/cache"
-cat > "$SCRIPT_DIR/.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json" << OVERRIDES_EOF
-{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
-OVERRIDES_EOF
 
 # --- Prompt assembly ---
 PROMPT_FILE=$(mktemp)
 cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
-    rm -f "$SCRIPT_DIR/.purlin/cache/session_overrides_$$.json"
+    rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"
 }
 trap cleanup EXIT
 
@@ -447,6 +444,14 @@ else
     fi
 fi
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$DISPLAY_NAME"
+
+# --- Write session overrides for the agent ---
+# Written AFTER worktree setup so PURLIN_PROJECT_ROOT has its final value.
+# PID-scoped so concurrent agents don't clobber each other.
+mkdir -p "$PURLIN_PROJECT_ROOT/.purlin/cache"
+cat > "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json" << OVERRIDES_EOF
+{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
+OVERRIDES_EOF
 
 # --- Build CLI args and dispatch ---
 CLI_ARGS=()
