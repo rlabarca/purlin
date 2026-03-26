@@ -19,6 +19,13 @@
 - **Action Required:** None — spec §2.2.4 explicitly permits this ("implementation mechanism is left to Engineer mode").
 - **Status:** ACKNOWLEDGED
 
+### [INTENT_DRIFT] Deprecation warning scenario tests removed legacy launchers (Discovered: 2026-03-25)
+- **Scenario:** Deprecation warning on old launcher @auto
+- **Observed Behavior:** Scenario and regression tests (T0a-T3) expect `pl-run-builder.sh` to exist and print a deprecation warning. The legacy role-specific launchers (`pl-run-builder.sh`, `pl-run-architect.sh`, etc.) were removed as part of the Purlin unified agent transition. The `project_init` regression (S10) also fails expecting these launchers to be regenerated on refresh. The spec (section 2.5) still requires deprecation wrappers but the system has moved past needing them.
+- **Expected Behavior:** Either (a) the spec should be updated to remove the deprecation warning requirement since legacy launchers are fully retired, or (b) init.sh should generate thin wrapper scripts that print a deprecation message and exit.
+- **Action Required:** PM (decide whether deprecation wrappers are still needed; if not, remove from spec)
+- **Status:** OPEN
+
 ### [BUG] Legacy launcher pl-run-builder.sh does not exist (Discovered: 2026-03-25)
 - **Scenario:** Deprecation warning on old launcher @auto
 - **Observed Behavior:** `pl-run-builder.sh` does not exist at project root. Regression tests T0a, T1, T2, T3 all fail. The spec (section 2.5) requires that old role-specific launchers exist and print a deprecation warning directing users to `pl-run.sh`. Without the file, the deprecation path is untestable.

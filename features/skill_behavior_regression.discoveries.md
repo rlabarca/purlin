@@ -1,5 +1,12 @@
 # User Testing Discoveries: Skill Behavior Regression
 
+### [INTENT_DRIFT] Entire suite tests legacy role-specific agents, not Purlin unified agent (Discovered: 2026-03-25)
+- **Scenario:** ALL 9 scenarios (architect-startup-command-table, builder-startup-identifies-todo, qa-startup-identifies-testing, architect-refuses-code, builder-refuses-spec-edit, qa-refuses-code, status-skill-structured-summary, architect-help-correct-commands, builder-help-correct-commands)
+- **Observed Behavior:** All scenarios construct 4-layer system prompts for legacy roles (ARCHITECT, BUILDER, QA) using `instructions/<ROLE>_BASE.md`. These role-specific agents have been replaced by the Purlin unified agent with modes (PM, Engineer, QA). Fixtures use the old instruction stack (`HOW_WE_WORK_BASE.md` + `<ROLE>_BASE.md` + overrides). 4 scenarios now fail because legacy instruction files no longer produce correct behavior; 5 pass by coincidence (QA role overlap, refusal patterns are similar, pre-loaded context compensates).
+- **Expected Behavior:** Suite should test the Purlin unified agent in PM mode (replaces Architect), Engineer mode (replaces Builder), and QA mode. Fixtures should use `PURLIN_BASE.md` + `PURLIN_OVERRIDES.md` instruction stack. Prompts should be "Begin Purlin session" with mode activation, not "Begin Architect session."
+- **Action Required:** PM (re-spec entire feature around Purlin unified agent modes) + Engineer (update fixtures, scenario JSON, and harness `construct_system_prompt()` for unified agent)
+- **Status:** OPEN
+
 ### [BUG] qa-startup-identifies-testing persistent failure (Discovered: 2026-03-25)
 - **Scenario:** features/skill_behavior_regression.md:qa-startup-identifies-testing
 - **Observed Behavior:** QA startup output (16/17 pass, up from 15/17) prints the command table and proposes a verification plan, but does NOT contain the literal string "TESTING". The actual output shows "Purlin QA — Ready" followed by the command table, then what appears to be verification-related content (the "proposes a verification order" assertion PASSES). The assertion `(?i)TESTING` fails because the QA agent uses different vocabulary ("ready to verify", "verification") instead of the CDD lifecycle keyword "TESTING".
