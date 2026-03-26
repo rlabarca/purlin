@@ -255,7 +255,7 @@ class TestCommandTableAssertion(unittest.TestCase):
             "\n"
             "  Global\n"
             "  ──────\n"
-            "  /pl-status                 Check CDD status\n"
+            "  /pl-status                 Check project status\n"
             "\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         )
@@ -309,7 +309,7 @@ class TestExpertModeOutput(unittest.TestCase):
     And the config has find_work: false
     When claude --print is invoked with "Begin Builder session."
     Then the output contains "find_work disabled"
-    And the output does NOT contain a work plan or Critic report
+    And the output does NOT contain a work plan
 
     Note: This tests the assertion logic against expected output patterns.
     The actual claude --print invocation is tested by running the harness
@@ -717,7 +717,7 @@ class TestAutoCreateFixtures(unittest.TestCase):
 class TestCLIScriptDiscovery(unittest.TestCase):
     """Scenario: Skill discovers CLI scripts dynamically
 
-    Given the project root contains pl-run-builder.sh and pl-cdd-start.sh with --help support
+    Given the project root contains pl-run-builder.sh and pl-run-qa.sh with --help support
     When the user runs /pl-help
     Then the output includes a "CLI Scripts" section after the slash command table
     And each script's name, description, and options are shown
@@ -744,14 +744,14 @@ class TestCLIScriptDiscovery(unittest.TestCase):
             f.write('echo "running"\n')
         os.chmod(cls.script_with_help, 0o755)
 
-        cls.script_with_help_2 = os.path.join(cls.tmpdir, "pl-cdd-start.sh")
+        cls.script_with_help_2 = os.path.join(cls.tmpdir, "pl-run-qa.sh")
         with open(cls.script_with_help_2, "w") as f:
             f.write('#!/bin/bash\n')
             f.write('if [[ "$1" == "--help" ]]; then\n')
-            f.write('  echo "$(basename "$0") — Start CDD Dashboard"\n')
+            f.write('  echo "$(basename "$0") — Launch the QA agent"\n')
             f.write('  echo ""\n')
             f.write('  echo "Options:"\n')
-            f.write('  echo "  --port PORT    Port number"\n')
+            f.write('  echo "  --feature NAME Feature to verify"\n')
             f.write('  echo "  --help         Show this help"\n')
             f.write('  exit 0\n')
             f.write('fi\n')
@@ -786,7 +786,7 @@ class TestCLIScriptDiscovery(unittest.TestCase):
         scripts = sorted(glob.glob(os.path.join(self.tmpdir, "pl-*.sh")))
         basenames = [os.path.basename(s) for s in scripts]
         self.assertIn("pl-run-builder.sh", basenames)
-        self.assertIn("pl-cdd-start.sh", basenames)
+        self.assertIn("pl-run-qa.sh", basenames)
         self.assertIn("pl-run-architect.sh", basenames)
         self.assertEqual(len(basenames), 3)
 
