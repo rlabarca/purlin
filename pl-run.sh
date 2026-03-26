@@ -147,6 +147,17 @@ cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
     rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"
+    # Clean up empty worktrees (no new commits + clean working tree)
+    if [[ -n "${WORKTREE_DIR:-}" && -d "$WORKTREE_DIR" ]]; then
+        local _new_commits _dirty
+        _new_commits=$(git -C "$SCRIPT_DIR" log --oneline "main..${WORKTREE_BRANCH}" 2>/dev/null)
+        _dirty=$(git -C "$WORKTREE_DIR" status --porcelain 2>/dev/null)
+        if [[ -z "$_new_commits" && -z "$_dirty" ]]; then
+            cd "$SCRIPT_DIR"
+            git worktree remove "$WORKTREE_DIR" --force 2>/dev/null
+            git branch -D "$WORKTREE_BRANCH" 2>/dev/null
+        fi
+    fi
 }
 trap cleanup EXIT
 
