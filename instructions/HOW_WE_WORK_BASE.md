@@ -8,7 +8,7 @@
 
 Purlin is **Continuously Design-Driven**: designs evolve in sync with code, never ahead of it and never behind it. Specifications are living documents that are refined as implementation reveals new constraints, discoveries, and insights. The design is never "done" -- it is continuously updated to reflect the current truth of the system.
 
-When code teaches us something new, we update the design first. When requirements shift, the design shifts first, and changes cascade to code. The CDD Monitor exists to make this continuous sync visible and measurable.
+When code teaches us something new, we update the design first. When requirements shift, the design shifts first, and changes cascade to code.
 
 This philosophy rests on two principles:
 
@@ -59,7 +59,7 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 *   **Duty:** Providing high-level goals, performing final verification (e.g., Hardware-in-the-Loop), and managing the Agentic Evolution.
 
 ### Commit Discipline (All Roles)
-Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream Critic regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/status.sh`. When in doubt, commit.
+Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream status regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/status.sh`. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
 1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
@@ -72,13 +72,13 @@ Agents MUST commit at logical milestones -- never deferring all commits until se
 We do not use a global implementation log. Tribal knowledge, technical "gotchas," and lessons learned are stored in **companion files** (`features/<name>.impl.md`) alongside each feature specification. Feature files themselves do not contain implementation notes.
 
 ### 4.1 Anchor Node Taxonomy
-The dependency graph uses three types of anchor nodes, distinguished by filename prefix. All three function identically in the dependency system -- they cascade status resets to dependent features and are detected by the Critic for missing prerequisite links. The distinction is semantic, helping agents and humans quickly identify the domain a constraint belongs to.
+The dependency graph uses three types of anchor nodes, distinguished by filename prefix. All three function identically in the dependency system -- they cascade status resets to dependent features and are checked for missing prerequisite links. The distinction is semantic, helping agents and humans quickly identify the domain a constraint belongs to.
 
 | Prefix | Domain | Examples |
 |--------|--------|----------|
 | `arch_*.md` | Technical constraints -- system architecture, data flow, dependency rules, code patterns | `arch_data_layer.md`, `arch_api_contract.md` |
 | `design_*.md` | Design constraints -- visual language, typography, spacing, interaction patterns, accessibility | `design_visual_standards.md`, `design_accessibility.md` |
-| `policy_*.md` | Governance rules -- process policies, security baselines, compliance requirements, coordination rules | `policy_critic.md`, `policy_security.md` |
+| `policy_*.md` | Governance rules -- process policies, security baselines, compliance requirements, coordination rules | `policy_security.md` |
 
 Every feature MUST anchor itself to the relevant anchor node(s) via `> Prerequisite:` links.
 
@@ -89,7 +89,7 @@ When a project has cross-cutting standards that constrain multiple features (vis
 2.  **Foundation Feature** -- Implements the shared infrastructure that enforces the anchor node's constraints (e.g., CSS custom properties and design tokens, API middleware, security libraries). This feature has a `> Prerequisite:` link to its anchor node.
 3.  **Consumer Features** -- Any feature that operates within the standard's domain declares `> Prerequisite:` links to both the anchor node and the foundation feature.
 
-This structure ensures that constraint changes cascade correctly: editing an anchor node file resets all dependent features to `[TODO]`, triggering re-validation across the entire domain. The Critic detects missing prerequisite links, so consumer features that omit the dependency get flagged.
+This structure ensures that constraint changes cascade correctly: editing an anchor node file resets all dependent features to `[TODO]`, triggering re-validation across the entire domain. The scan detects missing prerequisite links, so consumer features that omit the dependency get flagged.
 
 ### 4.3 Companion File Convention
 Implementation knowledge is stored in **companion files** separate from the feature specification.
@@ -105,7 +105,7 @@ Certain commits that modify feature spec files are exempt from triggering lifecy
 | Tag | Meaning | When to Use |
 |-----|---------|-------------|
 | `[QA-Tags]` | Only modifies `@auto`/`@manual` tag suffixes on QA Scenario headings. | QA classifying scenarios. |
-| `[Spec-FMT]` | Only changes spec formatting (indentation, Gherkin keyword casing, whitespace, Critic parsing fixes) without altering behavioral content. | Architect or PM fixing formatting. |
+| `[Spec-FMT]` | Only changes spec formatting (indentation, Gherkin keyword casing, whitespace, parsing fixes) without altering behavioral content. | Architect or PM fixing formatting. |
 
 If ALL commits to a feature spec since the last status commit contain one of these tags (or a combination), the lifecycle is preserved. If any commit lacks an exempt tag, the normal reset applies. Do NOT use these tags when behavioral content changes.
 
@@ -154,7 +154,7 @@ The Builder and QA Agent have non-overlapping testing domains. No test is verifi
 | When you need to... | Do this |
 |---------------------|---------|
 | Implement a feature | Invoke `/pl-build` |
-| Understand Critic status | Run `{tools_root}/cdd/status.sh --role <role>` or invoke `/pl-status` |
+| Understand project status | Run `{tools_root}/cdd/status.sh --role <role>` or invoke `/pl-status` |
 | Create/refine a spec | Invoke `/pl-spec` |
 | Create/update an anchor node | Invoke `/pl-anchor` |
 | Record a QA discovery | Invoke `/pl-discovery` |
@@ -165,60 +165,15 @@ The Builder and QA Agent have non-overlapping testing domains. No test is verifi
 
 Skills carry the complete workflow protocol. Invoke the skill before executing the workflow.
 
-## 9. Critic-Driven Coordination
-The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `{tools_root}/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
-
-*   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA, PM columns).
-*   **Critic** shows what SHOULD BE DONE (role-specific action items).
-*   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
-*   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
-*   **Agent Interface:** Agents access tool data via CLI commands (`{tools_root}/cdd/status.sh`, `{tools_root}/cdd/status.sh --graph`, `{tools_root}/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
-
-### 9.1 What the Critic Validates
-The Critic applies a **dual-gate model** to every feature:
-
-*   **Spec Gate (pre-implementation):** Validates that required spec sections are present, scenarios are well-formed, and prerequisite anchor nodes are declared. This gate runs regardless of feature lifecycle status and is the primary signal for Architect action items.
-*   **Implementation Gate (post-implementation):** Validates that code does not violate FORBIDDEN patterns from anchor nodes (policy adherence), and optionally checks for LLM-detected logic drift (disabled by default, configurable via `config.json`). Note: scenario-to-test traceability is not enforced (see `policy_critic.md` Section 2.2).
-
-In addition to the dual-gate, the Critic runs these supplementary audits on every pass:
-
-*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries in discovery sidecar files (`features/*.discoveries.md`). Each entry is routed to the responsible role's action items.
-*   **Builder Decision Audit:** Scans companion files (`features/*.impl.md`) for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags. These are flagged as HIGH-priority Architect action items.
-*   **Visual Specification Detection:** Detects `## Visual Specification` sections. Visual checklist items are Builder-verified (via `/pl-web-test` for web features, manual inspection for non-web features) and do NOT generate QA action items. The Critic tracks visual specs for completeness auditing only.
-*   **Untracked File Audit:** Checks git status for untracked files in Architect-owned directories and flags them as MEDIUM-priority Architect triage items.
-
-### 9.2 Role-Specific Action Items
-Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggregate results across all features are written to `CRITIC_REPORT.md`, organized by role.
-
-**Priority levels:**
-*   **CRITICAL:** INFEASIBLE escalation; the release is blocked until resolved.
-*   **HIGH:** Gate FAIL, open BUG entries, unacknowledged builder decisions, SPEC_DISPUTE.
-*   **MEDIUM:** Gate warnings, untracked files.
-*   **LOW:** Informational warnings that do not block release.
-
-**Role routing:**
-*   **Architect:** Spec gaps (Spec Gate FAIL), INFEASIBLE escalations from Builder, unacknowledged builder decisions, untracked files, SPEC_DISPUTEs on Architect-owned features.
-*   **Builder:** Features in TODO lifecycle, failing automated tests, traceability gaps, open BUG entries.
-*   **QA:** Features in TESTING lifecycle, SPEC_UPDATED discoveries awaiting re-verification, visual verification passes.
-*   **PM:** SPEC_DISPUTEs on PM-owned features or Visual Specification screens, stale/missing/unprocessed design artifacts.
-
-Automated test status is embedded in role columns: Builder `DONE` implies tests passed; QA `CLEAN` requires `tests.json` with `status: "PASS"`; QA `N/A` means no test coverage exists.
-
-### 9.3 Work Discovery Authority
-When users ask about pending work, action items, tasks, or next steps — phrasing like "what do I have to do?", "what tasks are available?", "what's next?", "what needs work?" — the agent MUST interpret this as a request for the Critic report, not Claude Code's built-in task system. All work items are discovered exclusively through `{tools_root}/cdd/status.sh`, which generates `CRITIC_REPORT.md` with role-specific action items.
-
-**Guardrail:** Do NOT use Claude Code's built-in TaskList, TaskGet, TaskCreate, or TaskUpdate tools for Purlin work discovery. Route all "what work do I have" queries through `/pl-status` or the role's startup protocol (`{tools_root}/cdd/status.sh --startup <role>`).
-
 ## 9. Visual Specification Convention
 
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI
 components. This section uses per-screen checklists (not Gherkin) with design anchor
 references. It is exempt from Gherkin traceability. The PM agent is the primary author of
 Visual Specification sections. When a PM is active, the Architect defers visual spec
-authoring to the PM and focuses on structural validation. The Critic detects visual spec
-sections. Visual checklist items are Builder-verified (via `/pl-web-test` for web features,
-manual inspection for non-web features) and do NOT generate QA action items. The Critic
-tracks visual specs for completeness auditing only.
+authoring to the PM and focuses on structural validation. Visual checklist items are
+Builder-verified (via `/pl-web-test` for web features, manual inspection for non-web
+features) and do NOT generate QA action items.
 
 For the full convention (format, inheritance, design pipeline, verification methods), see
 `instructions/references/visual_spec_convention.md`. Use `/pl-verify` for the complete visual verification protocol.

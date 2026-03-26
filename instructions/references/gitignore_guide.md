@@ -17,7 +17,6 @@
 | `tests/*/tests.json` | AFT test definitions |
 | `pl-init.sh` | Submodule bootstrap shim |
 | `pl-run-*.sh` | Agent launcher scripts (regenerated on refresh) |
-| `pl-cdd-start.sh`, `pl-cdd-stop.sh` | CDD symlinks |
 | `.claude/commands/pl-*.md` | Purlin slash commands |
 | `.claude/settings.json` | Claude Code hooks/settings |
 
@@ -28,8 +27,6 @@
 | `.purlin/cache/` | Generated artifacts: dependency graph, feature status, status cache, mermaid diagrams |
 | `.purlin/runtime/` | Per-machine state: agent role, logs, PIDs, active branch, session metadata |
 | `.purlin/config.local.json` | Per-developer config overrides |
-| `CRITIC_REPORT.md` | Regenerated on every `status.sh` run |
-| `tests/*/critic.json` | Per-feature critic output, regenerated |
 | `features/digests/` | Per-machine generated digests |
 | `.playwright-mcp/` | Web verification screenshots |
 | `*.log` | Server and tool logs |
@@ -41,7 +38,7 @@ The delivery plan is a coordination artifact read by all agents (Builder, QA, Ar
 sessions. It lives at `.purlin/delivery_plan.md` -- outside the gitignored `.purlin/cache/`
 directory -- because it must survive `git clone` and be visible to collaborators.
 
-Generated cache artifacts (dependency graph, feature status, critic output) are regenerated on
+Generated cache artifacts (dependency graph, feature status) are regenerated on
 every `status.sh` run and are truly ephemeral. The delivery plan is authored by the Builder,
 reviewed by the user, and consumed by QA -- it is not regenerable.
 

@@ -3,7 +3,7 @@
 > This file is loaded on-demand by `/pl-verify` and `/pl-web-test` when a feature has a `## Visual Specification` section.
 
 ## 5.4.1 Present Checklist and Offer Screenshot Input
-1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references. For each screen, also present the `- **Processed:**` date. If the processed date is older than the artifact's modification time (or the Critic has flagged it as STALE), note the staleness to the user: "Warning: design artifact for Screen X was updated after the description was last processed. The description may not reflect the latest design."
+1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references. For each screen, also present the `- **Processed:**` date. If the processed date is older than the artifact's modification time, note the staleness to the user: "Warning: design artifact for Screen X was updated after the description was last processed. The description may not reflect the latest design."
 2.  **Present the full checklist** for the screen (all visual acceptance criteria).
 3.  **Offer screenshot input:** After presenting the checklist, prompt the user: "Would you like to provide one or more screenshots of this screen? I can analyze them to auto-verify many of the checklist items, reducing the number of items you need to confirm manually."
 4.  If the user declines or provides no screenshots, fall back to manual verification (Section 5.4.4).

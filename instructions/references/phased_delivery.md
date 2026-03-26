@@ -11,7 +11,7 @@ When the Architect introduces large-scale changes (multiple new feature files, m
 *   **Created by:** Builder, when user approves phased delivery.
 *   **Committed to git:** Yes -- lives outside `.purlin/cache/` (which is gitignored) because it is a coordination artifact read by all agents across sessions, not a regenerable cache file.
 *   **Deleted by:** Builder, when the final phase completes.
-*   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. When execution groups are in use (Section 10.13), all phases in the active group are marked IN_PROGRESS simultaneously. Only one execution group may be active at a time. COMPLETE phases are immutable historical record.
+*   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. When execution groups are in use (Section 10.12), all phases in the active group are marked IN_PROGRESS simultaneously. Only one execution group may be active at a time. COMPLETE phases are immutable historical record.
 *   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
 
 ## 10.3 Cross-Session Resumption
@@ -43,10 +43,7 @@ Phased delivery is never automatic unless the user has opted into autonomous exe
 ## 10.6 Architect Awareness
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
 
-## 10.7 CDD Dashboard Integration
-When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays phase progress as an inline annotation: `ACTIVE (<count>) [<completed>/<total> DONE | <in_progress> IN PROGRESS]`. The label "IN PROGRESS" reflects that these phases are dispatched as an execution group -- they may be processed sequentially within one Builder session or in parallel via sub-agents. The `/status.json` API and CLI tool include an optional `delivery_phase` field with aggregate status counts and a per-phase array. When all phases are COMPLETE/REMOVED or no delivery plan exists, the phase annotation and API field are omitted.
-
-## 10.8 Phase Sizing Guidance
+## 10.7 Phase Sizing Guidance
 
 Phase sizing is driven by **testability**, **parallelism**, **interaction density**, and **context tier**, with tier-derived caps as guardrails. The Builder uses judgment within those caps to create phases that:
 
@@ -70,7 +67,7 @@ Phase caps are derived from the Builder's context tier. The tier is resolved fro
 
 An optional `phase_sizing` block in the Builder's agent config overrides individual tier defaults. Only keys present in `phase_sizing` override; absent keys fall through to the tier table.
 
-## 10.9 Context Budget Awareness
+## 10.8 Context Budget Awareness
 
 The Builder SHOULD consider context consumption when sizing phases. Different work items consume context at different rates:
 
@@ -80,13 +77,13 @@ The Builder SHOULD consider context consumption when sizing phases. Different wo
 
 When the cumulative scope of a phase (specs to read + files to modify + tests to run) is large, prefer splitting into smaller phases. The goal is to complete each phase with sufficient context remaining for quality verification.
 
-This factor is **subordinate** to testability (Section 10.8) and dependency order. A phase must still produce a testable state and respect dependency constraints, even if that means a larger context footprint. Context budget is a tiebreaker when multiple valid phase breakdowns exist.
+This factor is **subordinate** to testability (Section 10.7) and dependency order. A phase must still produce a testable state and respect dependency constraints, even if that means a larger context footprint. Context budget is a tiebreaker when multiple valid phase breakdowns exist.
 
 No hard token counting is required. This is qualitative judgment based on scope signals: number of features, spec length, estimated file count, and test complexity.
 
 B2 (Test Sub-Phase) re-runs all tests and web tests for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. This percentage applies to all context tiers -- a 1M-token window still needs 20-30% reserve for B2/B3, even though the absolute budget is larger. When a phase contains features with known interaction complexity, budget more generously.
 
-## 10.10 Phase Internal Structure (B1/B2/B3)
+## 10.9 Phase Internal Structure (B1/B2/B3)
 
 Each delivery phase has an internal three-step structure that separates implementation from verification.
 
@@ -134,11 +131,11 @@ When B2 finds failures, the Builder does NOT blindly attempt a fix. Instead:
 - Add approach guidance to the companion file (Builder reads it next session)
 - Acknowledge the Builder's workaround (unblocks `[Complete]`)
 
-## 10.11 Continuous Phase Mode (REMOVED)
+## 10.10 Continuous Phase Mode (REMOVED)
 
 The `--continuous` flag has been removed from `pl-run-builder.sh`. Use `auto_start: true` in agent config instead. The interactive Builder supports multi-phase auto-progression with `builder-worker` sub-agents. See `features/subagent_parallel_builder.md`. Invoking `--continuous` prints a deprecation warning and exits.
 
-## 10.12 Plan Validation
+## 10.11 Plan Validation
 
 Every delivery plan MUST be validated before being committed. The Builder reads `.purlin/cache/dependency_graph.json` and checks that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
 
@@ -146,7 +143,7 @@ Every delivery plan MUST be validated before being committed. The Builder reads 
 
 **Common cycle cause:** A feature placed in Phase N that depends on a feature in Phase M (where M > N). The fix is to move the dependent feature to Phase M or later.
 
-## 10.13 Execution Groups
+## 10.12 Execution Groups
 
 Execution groups combine phasing and parallelization into a single scheduling model. Phases remain the authoring unit (how work is organized in the delivery plan). Execution groups are the scheduling unit (how phases are dispatched for building).
 
@@ -164,7 +161,7 @@ For the complete dispatch protocol, see `/pl-build` (Execution Group Dispatch se
 - Sub-agent spec: `features/subagent_parallel_builder.md`
 - Builder launcher spec: `features/builder_agent_launcher.md`
 
-## 10.14 Phase Deferral Protocol
+## 10.13 Phase Deferral Protocol
 
 A phase feature is **role-blocked** when the Builder cannot make progress because another role must act first. Specifically:
 
@@ -193,4 +190,4 @@ This line is added after `**Completion Commit:**`. It is a historical record -- 
 
 **Re-activation:** When the blocking role resolves the issue (e.g., Architect fixes the spec), the feature returns to `builder: TODO` status. The Builder picks it up in the phase it was re-queued to, following the normal per-feature loop.
 
-**Dashboard impact:** Because deferred phases are marked COMPLETE (not stuck IN_PROGRESS), the dashboard accurately reflects progress. The deferred features appear as Builder TODO items in their new phase, and the Critic routes the blocking issue to the responsible role.
+**Dashboard impact:** Because deferred phases are marked COMPLETE (not stuck IN_PROGRESS), the dashboard accurately reflects progress. The deferred features appear as Builder TODO items in their new phase, and the scan routes the blocking issue to the responsible role.

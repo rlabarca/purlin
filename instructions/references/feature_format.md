@@ -1,9 +1,9 @@
 # Feature File Format Reference
 
 > This file is loaded on-demand by `/pl-spec` and `/pl-anchor` commands.
-> It contains heading format rules and Critic parser requirements.
+> It contains heading format rules and parser requirements.
 
-The Critic's parser enforces specific Markdown heading formats. Wrong heading levels or
+The scan parser enforces specific Markdown heading formats. Wrong heading levels or
 section names cause Spec Gate failures that are not obvious from the error message.
 
 ## Template Files
@@ -24,9 +24,9 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Category: "Category Name"` -- grouping for CDD dashboard.
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
 - `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `/pl-web-test`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
-- `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-cdd`. Legacy `> AFT Start:` is accepted for backward compatibility.
-- `> Owner: PM` or `> Owner: Architect` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: Architect. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always Architect-owned; the tag is ignored if present on an anchor. The Owner tag is sticky -- it persists through edits by any agent. Architect can edit PM-owned features (spec gate fixes, prerequisite additions) without changing ownership. The Critic uses this tag to route SPEC_DISPUTEs: disputes on `> Owner: PM` features or referencing Visual Specification screens route to PM; all others route to Architect.
-- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Builder work queue: the Critic generates a LOW-priority PM action item when a feature is in Builder TODO state with `Figma Status: Design`.
+- `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-server`. Legacy `> AFT Start:` is accepted for backward compatibility.
+- `> Owner: PM` or `> Owner: Architect` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: Architect. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always Architect-owned; the tag is ignored if present on an anchor. The Owner tag is sticky -- it persists through edits by any agent. Architect can edit PM-owned features (spec gate fixes, prerequisite additions) without changing ownership. This tag is used to route SPEC_DISPUTEs: disputes on `> Owner: PM` features or referencing Visual Specification screens route to PM; all others route to Architect.
+- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Builder work queue: a LOW-priority PM action item is generated when a feature is in Builder TODO state with `Figma Status: Design`.
 - `> Test Fixtures: <url>` -- non-default fixture repo URL (local path or remote URL). Most features use the convention path (`.purlin/runtime/fixture-repo`) and do not need this field. Only add when the feature's fixtures live in a different repo.
 
 ## Category and Label Consistency
@@ -44,8 +44,8 @@ to the best-fitting category.
 | Category | Label Pattern | Example |
 |---|---|---|
 | Agent Skills | `/pl-<command> Descriptive Name` | `/pl-help Purlin Help` |
-| CDD Dashboard | `CDD <Feature Name>` or `CDD: <Feature Name>` | `CDD Monitor`, `CDD: QA Effort Breakdown` |
-| Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Policy: Critic Coordination Engine`, `Handoff Checklist System` |
+| CDD Dashboard | `CDD <Feature Name>` or `CDD: <Feature Name>` | `CDD: QA Effort Breakdown` |
+| Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Handoff Checklist System` |
 | Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
 | Install, Update & Scripts | `Tool: <Name>` | `Tool: Agent Launchers`, `Tool: Config Layering` |
 | Process | `Process: <Name>` | `Process: Spec-Code Audit Role Clarity` |
@@ -60,7 +60,7 @@ to the best-fitting category.
 
 ## Regular Feature Files
 
-**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+**Required section headings** (the scan checks for these words, case-insensitive, substring match):
 - A heading containing `overview`
 - A heading containing `requirements`
 - A heading containing `scenarios`
@@ -102,22 +102,22 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 
 **Architects and PMs MUST NOT add `@auto` or `@manual` tags.** These are QA-authored classification outputs, not spec inputs. Write scenarios untagged; QA classifies them.
 
-**Gradual migration:** The Critic accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
+**Gradual migration:** The scan accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 
 ## Test Priority Tier Classification
 
 **MANDATE:** When creating or refining a feature spec, the Architect MUST evaluate whether the feature warrants a non-default tier classification in `QA_OVERRIDES.md` under `## Test Priority Tiers`.
 
 **Tier decision prompt (ask yourself):**
-1. **If this feature breaks, is the app unusable?** Can agents start up? Can the Critic run? Can projects initialize? If yes → `smoke`.
+1. **If this feature breaks, is the app unusable?** Can agents start up? Can the scan run? Can projects initialize? If yes → `smoke`.
 2. **Is this an edge case, polish, or rarely-used path?** If yes → `full-only`.
 3. **Neither extreme?** Leave unclassified (defaults to `standard`).
 
-Features that are prerequisites for many others, or that gate the entire workflow (Critic, config, init, launchers), are strong smoke candidates. Features not listed in the tier table default to `standard` — only add entries for `smoke` or `full-only`.
+Features that are prerequisites for many others, or that gate the entire workflow (scan, config, init, launchers), are strong smoke candidates. Features not listed in the tier table default to `standard` — only add entries for `smoke` or `full-only`.
 
 ## Anchor Nodes (arch_*, design_*, policy_*)
 
-**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+**Required section headings** (the scan checks for these words, case-insensitive, substring match):
 - A heading containing `purpose`
 - A heading containing `invariants`
 
@@ -148,14 +148,14 @@ as the last content section before end-of-file.
     - CDD symlink repair after manual deletion
     - Config and overrides untouched during refresh mode
 
-**Critic interaction:** The Critic detects this section and, when the feature reaches
+**Scan interaction:** The scan detects this section and, when the feature reaches
 `builder: "DONE"`, generates MEDIUM-priority QA action items with category
 `regression_guidance_pending`. The Builder ignores this section entirely.
 
 ## Fixture Tag Section Format
 
 Features that use test fixtures declare their fixture tags in a dedicated subsection within
-Requirements. The Critic parses this section to validate that declared tags exist in the
+Requirements. The scan parses this section to validate that declared tags exist in the
 fixture repo.
 
 **Heading convention:** Use a three-hash heading with a numbered subsection:
@@ -181,4 +181,4 @@ before the `---` separator that precedes the Scenarios section.
 
 **Cross-feature tag references:** When a scenario in feature A needs a fixture tag declared
 in feature B, the scenario's Given step references the full tag path. No duplication of the
-tag table is needed -- the Critic resolves tags across all feature files in the project.
+tag table is needed -- the scan resolves tags across all feature files in the project.
