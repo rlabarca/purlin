@@ -90,7 +90,7 @@ BASE_INSTRUCTION_FILES = [
     "instructions/ARCHITECT_BASE.md",
     "instructions/BUILDER_BASE.md",
     "instructions/QA_BASE.md",
-    "features/policy_critic.md",
+    "instructions/PURLIN_BASE.md",
 ]
 
 # Terminology groups: each tuple is (canonical_term, [deprecated_variants], context_pattern)

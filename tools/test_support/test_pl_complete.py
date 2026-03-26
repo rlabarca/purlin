@@ -73,7 +73,7 @@ class TestAllGatesPassCreatesCompletionCommit(unittest.TestCase):
     Then a commit is created with "[Complete features/feature_a.md] [Verified]"
 
     Structural test: the command file contains the commit template with
-    [Complete] and [Verified] tags and references status.sh for confirmation.
+    [Complete] and [Verified] tags and references scan.sh for confirmation.
     """
 
     def test_commit_template_includes_complete_tag(self):
@@ -93,10 +93,10 @@ class TestAllGatesPassCreatesCompletionCommit(unittest.TestCase):
         commit_match = re.search(r"git commit.*\[Complete.*\].*\[Verified\]", content)
         self.assertIsNotNone(commit_match, "git commit command must include both [Complete] and [Verified] tags")
 
-    def test_status_sh_confirmation_after_commit(self):
-        """After the commit, status.sh is invoked to confirm transition."""
+    def test_scan_sh_confirmation_after_commit(self):
+        """After the commit, scan.sh is invoked to confirm transition."""
         content = read_command_file()
-        self.assertIn("status.sh", content)
+        self.assertIn("scan.sh", content)
 
 
 class TestOpenDiscoveriesBlockCompletion(unittest.TestCase):

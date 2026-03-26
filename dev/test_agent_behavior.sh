@@ -227,7 +227,7 @@ scenario_startup_print_sequence() {
     echo "--- Scenario 1: Startup Print Sequence Appears First ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/startup-print-sequence")
+    fixture_dir=$(checkout_fixture "main/agent_behavior_tests/startup-print-sequence")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 
@@ -254,7 +254,7 @@ scenario_expert_mode() {
     echo "--- Scenario 2: Expert Mode Bypasses Orientation ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/expert-mode")
+    fixture_dir=$(checkout_fixture "main/agent_behavior_tests/expert-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 
@@ -281,7 +281,7 @@ scenario_guided_mode() {
     echo "--- Scenario 3: Guided Mode Presents Work Plan ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/guided-mode")
+    fixture_dir=$(checkout_fixture "main/agent_behavior_tests/guided-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 
@@ -309,7 +309,7 @@ scenario_auto_mode() {
     echo "--- Scenario 4: Auto Mode Begins Executing Immediately ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/auto-mode")
+    fixture_dir=$(checkout_fixture "main/agent_behavior_tests/auto-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 

@@ -84,20 +84,20 @@ EOF
         echo "# $f" > ".purlin/$f"
     done
 
-    # Minimal anchor
-    cat > features/policy_critic.md <<'EOF'
-# Policy: Critic Coordination Engine
+    # Minimal anchor (used as a prerequisite target by fixture features)
+    cat > features/arch_testing.md <<'EOF'
+# Architecture: Testing Standards
 
-> Label: "Policy: Critic Coordination Engine"
+> Label: "Architecture: Testing Standards"
 > Category: "Coordination & Lifecycle"
 
 ## 1. Purpose
-Defines the Critic's role as the coordination engine.
+Defines testing standards and conventions for the project.
 
 ## 2. Invariants
 
-### 2.1 Dual-Gate Principle
-Spec Gate and Implementation Gate.
+### 2.1 Test Colocation
+Tests colocate with their implementation.
 EOF
 }
 
@@ -240,7 +240,7 @@ create_web_feature() {
         echo ""
         echo "#### Scenario: Basic rendering"
         echo ""
-        echo "    Given the CDD server is running"
+        echo "    Given the dev server is running"
         echo "    When the page loads"
         echo "    Then the content renders correctly"
         echo ""
@@ -249,7 +249,7 @@ create_web_feature() {
         for scenario in "${scenarios[@]}"; do
             echo "#### Scenario: $scenario"
             echo ""
-            echo "    Given the CDD dashboard is open"
+            echo "    Given the web app is open"
             echo "    When the user views the page"
             echo "    Then the display is correct"
             echo ""
@@ -304,8 +304,8 @@ echo "--- collab_whats_different ---"
 
 reset_workdir
 create_base_project
-create_feature "feature_changed.md" "Changed Feature" "Test" "policy_critic.md" "TESTING"
-create_feature "feature_same.md" "Same Feature" "Test" "policy_critic.md" "COMPLETE"
+create_feature "feature_changed.md" "Changed Feature" "Test" "arch_testing.md" "TESTING"
+create_feature "feature_same.md" "Same Feature" "Test" "arch_testing.md" "COMPLETE"
 echo "collab/testbranch" > .purlin/runtime/active_branch
 create_tests_json_pass "feature_changed"
 create_tests_json_pass "feature_same"
@@ -336,7 +336,7 @@ cat > .purlin/config.local.json <<'EOF'
     }
 }
 EOF
-create_feature "config_layering.md" "Config Layering" "Install" "policy_critic.md" "TESTING"
+create_feature "config_layering.md" "Config Layering" "Install" "arch_testing.md" "TESTING"
 create_tests_json_pass "config_layering"
 
 commit_and_tag "main/config_layering/local-override-present" \
@@ -354,7 +354,7 @@ echo "--- impl_notes_companion ---"
 
 reset_workdir
 create_base_project
-create_feature "noted_feature.md" "Noted Feature" "Test" "policy_critic.md" "TESTING"
+create_feature "noted_feature.md" "Noted Feature" "Test" "arch_testing.md" "TESTING"
 create_tests_json_pass "noted_feature"
 
 cat > features/noted_feature.impl.md <<'IMPL'
@@ -386,7 +386,7 @@ cat > .purlin/config.json <<'EOF'
 }
 EOF
 
-create_feature "pl_context_guard.md" "Context Guard" "Agent Skills" "policy_critic.md" "TESTING"
+create_feature "pl_context_guard.md" "Context Guard" "Agent Skills" "arch_testing.md" "TESTING"
 create_tests_json_pass "pl_context_guard"
 
 commit_and_tag "main/pl_context_guard/mixed-thresholds" \
@@ -489,7 +489,7 @@ All prerequisites are satisfied.
 **Pending Decisions:** None
 CHECKPOINT
 
-create_feature "sample_feature.md" "Sample Feature" "Test" "policy_critic.md" "TODO"
+create_feature "sample_feature.md" "Sample Feature" "Test" "arch_testing.md" "TODO"
 
 commit_and_tag "main/pl_session_resume/builder-mid-feature" \
     "Checkpoint file showing builder at protocol step 2 for a feature"
@@ -543,7 +543,7 @@ reset_workdir
 create_base_project
 
 # Feature with known spec-code divergence
-create_feature "divergent_feature.md" "Divergent Feature" "Test" "policy_critic.md" "TESTING" \
+create_feature "divergent_feature.md" "Divergent Feature" "Test" "arch_testing.md" "TESTING" \
     "### 2.2 Advanced
 - Must support batch processing of up to 1000 items.
 - Must validate input against JSON schema before processing."
@@ -568,9 +568,9 @@ echo "--- pl_web_test ---"
 reset_workdir
 create_base_project
 
-create_web_feature "web_feat_a.md" "Web Feature A" "CDD Dashboard" "policy_critic.md" "TESTING" "Dashboard Layout" "Theme Toggle"
-create_web_feature "web_feat_b.md" "Web Feature B" "CDD Dashboard" "policy_critic.md" "TESTING" "Data Table"
-create_feature "non_web_feat.md" "Non-Web Feature" "Process" "policy_critic.md" "TESTING"
+create_web_feature "web_feat_a.md" "Web Feature A" "Web Features" "arch_testing.md" "TESTING" "Dashboard Layout" "Theme Toggle"
+create_web_feature "web_feat_b.md" "Web Feature B" "Web Features" "arch_testing.md" "TESTING" "Data Table"
+create_feature "non_web_feat.md" "Non-Web Feature" "Process" "arch_testing.md" "TESTING"
 
 create_tests_json_pass "web_feat_a"
 create_tests_json_pass "web_feat_b"
@@ -612,9 +612,9 @@ reset_workdir
 create_base_project
 
 # auto-only feature
-create_feature "auto_only_feat.md" "Auto Only" "Test" "policy_critic.md" "TESTING"
+create_feature "auto_only_feat.md" "Auto Only" "Test" "arch_testing.md" "TESTING"
 mkdir -p tests/auto_only_feat
-cat > tests/auto_only_feat/critic.json <<'EOF'
+cat > tests/auto_only_feat/tests.json <<'EOF'
 {
     "spec_gate": {"status": "PASS", "details": []},
     "implementation_gate": {"status": "PASS", "details": []},
@@ -632,9 +632,9 @@ EOF
 create_tests_json_pass "auto_only_feat"
 
 # manual feature
-create_feature_with_manual "manual_feat.md" "Manual Feature" "Process" "policy_critic.md" "TESTING" "Hardware Check" "Visual Inspect"
+create_feature_with_manual "manual_feat.md" "Manual Feature" "Process" "arch_testing.md" "TESTING" "Hardware Check" "Visual Inspect"
 mkdir -p tests/manual_feat
-cat > tests/manual_feat/critic.json <<'EOF'
+cat > tests/manual_feat/tests.json <<'EOF'
 {
     "spec_gate": {"status": "PASS", "details": []},
     "implementation_gate": {"status": "PASS", "details": []},
@@ -652,9 +652,9 @@ EOF
 create_tests_json_pass "manual_feat"
 
 # mixed feature (web-testable with manual)
-create_web_feature "mixed_feat.md" "Mixed Feature" "CDD Dashboard" "policy_critic.md" "TESTING" "Web Dashboard"
+create_web_feature "mixed_feat.md" "Mixed Feature" "Web Features" "arch_testing.md" "TESTING" "Web Dashboard"
 mkdir -p tests/mixed_feat
-cat > tests/mixed_feat/critic.json <<'EOF'
+cat > tests/mixed_feat/tests.json <<'EOF'
 {
     "spec_gate": {"status": "PASS", "details": []},
     "implementation_gate": {"status": "PASS", "details": []},
@@ -682,14 +682,14 @@ echo "  (tags use release step namespaces)"
 # release_verify_deps/clean-graph
 reset_workdir
 create_base_project
-create_feature "feat_a.md" "Feature A" "Test" "policy_critic.md" "COMPLETE"
+create_feature "feat_a.md" "Feature A" "Test" "arch_testing.md" "COMPLETE"
 create_feature "feat_b.md" "Feature B" "Test" "feat_a.md" "COMPLETE"
 create_tests_json_pass "feat_a"
 create_tests_json_pass "feat_b"
 create_dep_graph '{
     "cycles": [],
     "features": [
-        {"file": "features/feat_a.md", "label": "Feature A", "prerequisites": ["policy_critic.md"]},
+        {"file": "features/feat_a.md", "label": "Feature A", "prerequisites": ["arch_testing.md"]},
         {"file": "features/feat_b.md", "label": "Feature B", "prerequisites": ["feat_a.md"]}
     ],
     "orphans": []
@@ -733,7 +733,7 @@ commit_and_tag "main/release_verify_deps/broken-link" \
 # release_verify_deps/reverse-reference
 reset_workdir
 create_base_project
-create_feature "parent_feat.md" "Parent Feature" "Test" "policy_critic.md" "COMPLETE" \
+create_feature "parent_feat.md" "Parent Feature" "Test" "arch_testing.md" "COMPLETE" \
     "See also features/child_feat.md for implementation details."
 create_feature "child_feat.md" "Child Feature" "Test" "parent_feat.md" "TESTING"
 create_tests_json_pass "parent_feat"
@@ -745,8 +745,8 @@ commit_and_tag "main/release_verify_deps/reverse-reference" \
 # release_zero_queue/all-clean
 reset_workdir
 create_base_project
-create_feature "clean_a.md" "Clean A" "Test" "policy_critic.md" "COMPLETE"
-create_feature "clean_b.md" "Clean B" "Test" "policy_critic.md" "COMPLETE"
+create_feature "clean_a.md" "Clean A" "Test" "arch_testing.md" "COMPLETE"
+create_feature "clean_b.md" "Clean B" "Test" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "clean_a"
 create_tests_json_pass "clean_b"
 
@@ -756,7 +756,7 @@ commit_and_tag "main/release_zero_queue/all-clean" \
 # release_zero_queue/builder-todo
 reset_workdir
 create_base_project
-create_feature "todo_feat.md" "TODO Feature" "Test" "policy_critic.md" "TODO"
+create_feature "todo_feat.md" "TODO Feature" "Test" "arch_testing.md" "TODO"
 
 commit_and_tag "main/release_zero_queue/builder-todo" \
     "Feature with builder: TODO"
@@ -769,7 +769,7 @@ cat > features/qa_open_feat.md <<'FEAT'
 
 > Label: "QA Open Feature"
 > Category: "Test"
-> Prerequisite: features/policy_critic.md
+> Prerequisite: features/arch_testing.md
 
 [TESTING]
 
@@ -877,7 +877,7 @@ commit_and_tag "main/release_submodule_safety/unguarded-json-load" \
 # release_doc_consistency/clean-docs
 reset_workdir
 create_base_project
-create_feature "feat_alpha.md" "Feature Alpha" "Test" "policy_critic.md" "COMPLETE"
+create_feature "feat_alpha.md" "Feature Alpha" "Test" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_alpha"
 cat > README.md <<'EOF'
 # Test Project
@@ -892,7 +892,7 @@ commit_and_tag "main/release_doc_consistency/clean-docs" \
 # release_doc_consistency/stale-reference
 reset_workdir
 create_base_project
-create_feature "feat_current.md" "Current Feature" "Test" "policy_critic.md" "COMPLETE"
+create_feature "feat_current.md" "Current Feature" "Test" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_current"
 cat > README.md <<'EOF'
 # Test Project
@@ -1131,9 +1131,9 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
-create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
-create_feature "feat_monitoring.md" "Monitoring" "Observability" "policy_critic.md" "COMPLETE"
+create_feature "feat_dashboard.md" "Dashboard" "UI" "arch_testing.md" "COMPLETE"
+create_feature "feat_api.md" "API Gateway" "Backend" "arch_testing.md" "COMPLETE"
+create_feature "feat_monitoring.md" "Monitoring" "Observability" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_dashboard"
 create_tests_json_pass "feat_api"
 create_tests_json_pass "feat_monitoring"
@@ -1167,8 +1167,8 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "COMPLETE"
-create_feature "feat_monitoring.md" "System Monitoring" "Observability" "policy_critic.md" "COMPLETE"
+create_feature "feat_auth.md" "Authentication" "Security" "arch_testing.md" "COMPLETE"
+create_feature "feat_monitoring.md" "System Monitoring" "Observability" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_auth"
 create_tests_json_pass "feat_monitoring"
 
@@ -1201,8 +1201,8 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
-create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
+create_feature "feat_dashboard.md" "Dashboard" "UI" "arch_testing.md" "COMPLETE"
+create_feature "feat_api.md" "API Gateway" "Backend" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_dashboard"
 create_tests_json_pass "feat_api"
 
@@ -1234,7 +1234,7 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_init.md" "Project Init" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feat_init.md" "Project Init" "Core" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_init"
 
 cat > README.md <<'EOF'
@@ -1259,8 +1259,8 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
-create_feature "feat_new.md" "New Feature" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feat_core.md" "Core System" "Core" "arch_testing.md" "COMPLETE"
+create_feature "feat_new.md" "New Feature" "Core" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_core"
 create_tests_json_pass "feat_new"
 
@@ -1288,7 +1288,7 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_basic.md" "Basic Feature" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feat_basic.md" "Basic Feature" "Core" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_basic"
 
 # README without ## Releases section
@@ -1314,7 +1314,7 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
     cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
 fi
 
-create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feat_core.md" "Core System" "Core" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_core"
 
 cat > README.md <<'EOF'
@@ -1488,7 +1488,7 @@ echo "--- release_verify_dependency_integrity ---"
 # acyclic-graph
 reset_workdir
 create_base_project
-create_feature "layer1.md" "Layer 1" "Test" "policy_critic.md" "COMPLETE"
+create_feature "layer1.md" "Layer 1" "Test" "arch_testing.md" "COMPLETE"
 create_feature "layer2.md" "Layer 2" "Test" "layer1.md" "COMPLETE"
 create_feature "layer3.md" "Layer 3" "Test" "layer2.md" "COMPLETE"
 create_tests_json_pass "layer1"
@@ -1497,7 +1497,7 @@ create_tests_json_pass "layer3"
 create_dep_graph '{
     "cycles": [],
     "features": [
-        {"file": "features/layer1.md", "label": "Layer 1", "prerequisites": ["policy_critic.md"]},
+        {"file": "features/layer1.md", "label": "Layer 1", "prerequisites": ["arch_testing.md"]},
         {"file": "features/layer2.md", "label": "Layer 2", "prerequisites": ["layer1.md"]},
         {"file": "features/layer3.md", "label": "Layer 3", "prerequisites": ["layer2.md"]}
     ],
@@ -1533,8 +1533,8 @@ echo "--- release_verify_zero_queue ---"
 # all-clean
 reset_workdir
 create_base_project
-create_feature "done_a.md" "Done A" "Test" "policy_critic.md" "COMPLETE"
-create_feature "done_b.md" "Done B" "Test" "policy_critic.md" "COMPLETE"
+create_feature "done_a.md" "Done A" "Test" "arch_testing.md" "COMPLETE"
+create_feature "done_b.md" "Done B" "Test" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "done_a"
 create_tests_json_pass "done_b"
 
@@ -1544,8 +1544,8 @@ commit_and_tag "main/release_verify_zero_queue/all-clean" \
 # features-with-open-items
 reset_workdir
 create_base_project
-create_feature "open_feat.md" "Open Feature" "Test" "policy_critic.md" "TODO"
-create_feature "done_feat.md" "Done Feature" "Test" "policy_critic.md" "COMPLETE"
+create_feature "open_feat.md" "Open Feature" "Test" "arch_testing.md" "TODO"
+create_feature "done_feat.md" "Done Feature" "Test" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "done_feat"
 
 commit_and_tag "main/release_verify_zero_queue/features-with-open-items" \
@@ -1558,7 +1558,7 @@ echo "--- spec_code_audit_role_clarity ---"
 reset_workdir
 create_base_project
 
-create_feature "audit_target.md" "Audit Target" "Test" "policy_critic.md" "TESTING" \
+create_feature "audit_target.md" "Audit Target" "Test" "arch_testing.md" "TESTING" \
     "### 2.2 Role Gating
 - Only Architect may invoke /pl-spec.
 - Only Builder may invoke /pl-build.
@@ -1622,7 +1622,7 @@ mkdir -p .purlin/runtime
 cp -r "$NESTED_BARE" .purlin/runtime/nested-fixture-repo
 rm -rf "$NESTED_BARE" "$NESTED_WORK"
 
-create_feature "test_fixture_repo.md" "Test Fixture Repo" "Test Infrastructure" "policy_critic.md" "TESTING"
+create_feature "test_fixture_repo.md" "Test Fixture Repo" "Test Infrastructure" "arch_testing.md" "TESTING"
 
 commit_and_tag "main/test_fixture_repo/repo-with-tags" \
     "Bare git fixture repo with 3 example tags at known commits"
@@ -1662,7 +1662,7 @@ cd "$WORK_DIR"
 cp -r "$DUP_BARE" .purlin/runtime/nested-fixture-repo-duplicate
 rm -rf "$DUP_BARE" "$DUP_WORK"
 
-create_feature "test_fixture_repo.md" "Test Fixture Repo" "Test Infrastructure" "policy_critic.md" "TESTING"
+create_feature "test_fixture_repo.md" "Test Fixture Repo" "Test Infrastructure" "arch_testing.md" "TESTING"
 
 commit_and_tag "main/test_fixture_repo/repo-with-duplicate-tag" \
     "Bare git fixture repo with a pre-existing tag for overwrite testing"
@@ -1701,11 +1701,11 @@ reset_workdir
 create_base_project
 
 # 5 features: 2 Complete, 1 Testing, 2 TODO
-create_feature "alpha.md" "Alpha" "Core" "policy_critic.md" "COMPLETE"
-create_feature "beta.md" "Beta" "Core" "policy_critic.md" "COMPLETE"
-create_feature "gamma.md" "Gamma" "Core" "policy_critic.md" "TESTING"
-create_feature "delta.md" "Delta" "Core" "policy_critic.md" "TODO"
-create_feature "epsilon.md" "Epsilon" "Core" "policy_critic.md" "TODO"
+create_feature "alpha.md" "Alpha" "Core" "arch_testing.md" "COMPLETE"
+create_feature "beta.md" "Beta" "Core" "arch_testing.md" "COMPLETE"
+create_feature "gamma.md" "Gamma" "Core" "arch_testing.md" "TESTING"
+create_feature "delta.md" "Delta" "Core" "arch_testing.md" "TODO"
+create_feature "epsilon.md" "Epsilon" "Core" "arch_testing.md" "TODO"
 
 # Status commits for Complete/Testing features
 git add -A >/dev/null 2>&1
@@ -1783,7 +1783,7 @@ create_base_project
 # Create 60+ companion files on main
 for i in $(seq 1 65); do
     fname="$(printf 'feature_%03d' "$i")"
-    create_feature "${fname}.md" "Feature $i" "Core" "policy_critic.md" "COMPLETE"
+    create_feature "${fname}.md" "Feature $i" "Core" "arch_testing.md" "COMPLETE"
     cat > "features/${fname}.impl.md" <<IEOF
 ---
 name: Feature $i Implementation
@@ -1820,9 +1820,9 @@ git checkout main >/dev/null 2>&1 || git checkout master >/dev/null 2>&1
 reset_workdir
 create_base_project
 
-create_feature "existing_a.md" "Existing A" "Core" "policy_critic.md" "COMPLETE"
-create_feature "existing_b.md" "Existing B" "Core" "policy_critic.md" "COMPLETE"
-create_feature "to_delete.md" "To Delete" "Core" "policy_critic.md" "TODO"
+create_feature "existing_a.md" "Existing A" "Core" "arch_testing.md" "COMPLETE"
+create_feature "existing_b.md" "Existing B" "Core" "arch_testing.md" "COMPLETE"
+create_feature "to_delete.md" "To Delete" "Core" "arch_testing.md" "TODO"
 cat > "features/existing_a.impl.md" <<'IEOF'
 ## Implementation Notes
 Original companion for A.
@@ -1839,7 +1839,7 @@ echo "Modified content." >> features/existing_a.md
 echo "Updated companion." >> features/existing_a.impl.md
 
 # Add new
-create_feature "new_feature.md" "New Feature" "Core" "policy_critic.md" "TODO"
+create_feature "new_feature.md" "New Feature" "Core" "arch_testing.md" "TODO"
 
 # Delete
 git rm features/to_delete.md >/dev/null 2>&1
@@ -1861,8 +1861,8 @@ echo "--- git_timestamp_resilience ---"
 reset_workdir
 create_base_project
 
-create_feature "ts_alpha.md" "TS Alpha" "Core" "policy_critic.md" "TODO"
-create_feature "ts_beta.md" "TS Beta" "Core" "policy_critic.md" "TODO"
+create_feature "ts_alpha.md" "TS Alpha" "Core" "arch_testing.md" "TODO"
+create_feature "ts_beta.md" "TS Beta" "Core" "arch_testing.md" "TODO"
 
 git add -A >/dev/null 2>&1
 git commit -m "feat: add timestamp test features" >/dev/null 2>&1
@@ -1880,8 +1880,8 @@ commit_and_tag "main/git_timestamp_resilience/same-second-commits" \
 reset_workdir
 create_base_project
 
-create_feature "ord_alpha.md" "Ord Alpha" "Core" "policy_critic.md" "TODO"
-create_feature "ord_beta.md" "Ord Beta" "Core" "policy_critic.md" "TODO"
+create_feature "ord_alpha.md" "Ord Alpha" "Core" "arch_testing.md" "TODO"
+create_feature "ord_beta.md" "Ord Beta" "Core" "arch_testing.md" "TODO"
 
 git add -A >/dev/null 2>&1
 git commit -m "feat: add ordering test features" >/dev/null 2>&1
@@ -1908,8 +1908,8 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
     fi
 done
 
-create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "TODO"
-create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
+create_feature "feat_auth.md" "Authentication" "Security" "arch_testing.md" "TODO"
+create_feature "feat_api.md" "API Gateway" "Backend" "arch_testing.md" "COMPLETE"
 create_tests_json_pass "feat_api"
 
 cat > README.md <<'EOF'
@@ -1937,7 +1937,7 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
     fi
 done
 
-create_feature_with_manual "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "TESTING" \
+create_feature_with_manual "feat_dashboard.md" "Dashboard" "UI" "arch_testing.md" "TESTING" \
     "Visual rendering check" "Responsive layout verification"
 create_tests_json_pass "feat_dashboard"
 

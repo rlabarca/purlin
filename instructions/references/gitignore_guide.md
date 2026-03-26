@@ -39,7 +39,7 @@ sessions. It lives at `.purlin/delivery_plan.md` -- outside the gitignored `.pur
 directory -- because it must survive `git clone` and be visible to collaborators.
 
 Generated cache artifacts (dependency graph, feature status) are regenerated on
-every `status.sh` run and are truly ephemeral. The delivery plan is authored by the Builder,
+every `scan.sh` run and are truly ephemeral. The delivery plan is authored by the Builder,
 reviewed by the user, and consumed by QA -- it is not regenerable.
 
 ## Template-Driven Gitignore Management
@@ -68,4 +68,4 @@ git commit -m "fix: move delivery_plan.md out of gitignored cache directory"
 ## Safe to Delete
 
 `.purlin/cache/` and `.purlin/runtime/` are always safe to delete. All contents are regenerated
-on next `status.sh` run or agent session start.
+on next `scan.sh` run or agent session start.

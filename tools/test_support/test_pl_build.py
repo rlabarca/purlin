@@ -97,13 +97,13 @@ class TestNoArgumentSelectsHighestPriority(unittest.TestCase):
     When /pl-build is invoked
     Then the Builder selects feature_a for implementation
 
-    Structural test: the command file references status.sh or /pl-status
+    Structural test: the command file references scan.sh or /pl-status
     for finding the highest-priority work item.
     """
 
-    def test_references_status_sh(self):
+    def test_references_scan_sh(self):
         content = read_command_file()
-        self.assertIn("status.sh", content)
+        self.assertIn("scan.sh", content)
 
     def test_highest_priority_selection(self):
         """Command mentions selecting the highest-priority item."""

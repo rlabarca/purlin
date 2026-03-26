@@ -131,22 +131,22 @@ class TestNoCodeImplemented(unittest.TestCase):
         self.assertGreater(revise_pos, -1, "Must contain 'revise'")
 
 
-class TestCriticSurfacesInfeasibleAsCritical(unittest.TestCase):
-    """Scenario: Critic surfaces INFEASIBLE as CRITICAL
+class TestScanSurfacesInfeasibleAsActionItem(unittest.TestCase):
+    """Scenario: Scan surfaces INFEASIBLE as action item
 
     Given the INFEASIBLE entry is committed
-    When status.sh runs
-    Then the Critic report shows a CRITICAL-priority Architect action item
+    When scan.sh runs
+    Then the scan results show a PM action item
 
-    Structural test: the command file instructs running status.sh to surface
-    the INFEASIBLE entry in the Critic report.
+    Structural test: the command file instructs running scan.sh to surface
+    the INFEASIBLE entry in scan results.
     """
 
-    def test_status_sh_invocation(self):
-        """Command file must instruct running status.sh."""
+    def test_scan_sh_invocation(self):
+        """Command file must instruct running scan.sh."""
         content = read_command_file()
-        self.assertIn("status.sh", content,
-                       "Must instruct running status.sh")
+        self.assertIn("scan.sh", content,
+                       "Must instruct running scan.sh")
 
     def test_scan_results_surfacing(self):
         """Command file must describe surfacing the entry in scan results."""

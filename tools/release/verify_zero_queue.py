@@ -5,7 +5,7 @@ Checks that all features have architect: DONE, builder: DONE,
 and qa in [CLEAN, N/A].
 See features/release_audit_automation.md Section 2.5.
 
-Uses tools/cdd/status.sh JSON output for per-feature role status.
+Uses tools/cdd/scan.sh JSON output for per-feature role status.
 """
 import json
 import os
@@ -23,17 +23,17 @@ from tools.release.audit_common import (
 )
 
 
-def _run_status_sh(project_root):
-    """Run status.sh and return parsed JSON output.
+def _run_scan_sh(project_root):
+    """Run scan.sh and return parsed JSON output.
 
     Returns the parsed JSON dict on success, or None on failure.
     """
-    status_sh = os.path.join(project_root, "tools", "cdd", "status.sh")
-    if not os.path.isfile(status_sh):
+    scan_sh = os.path.join(project_root, "tools", "cdd", "scan.sh")
+    if not os.path.isfile(scan_sh):
         return None
     try:
         result = subprocess.run(
-            [status_sh],
+            [scan_sh],
             capture_output=True,
             text=True,
             timeout=60,
@@ -46,31 +46,31 @@ def _run_status_sh(project_root):
         return None
 
 
-def _load_cached_status(project_root):
-    """Load the cached status.json written by status.sh.
+def _load_cached_scan(project_root):
+    """Load the cached scan.json written by scan.sh.
 
-    Falls back to running status.sh if the cache file does not exist.
+    Falls back to running scan.sh if the cache file does not exist.
     """
-    cache_path = os.path.join(project_root, ".purlin", "cache", "status.json")
+    cache_path = os.path.join(project_root, ".purlin", "cache", "scan.json")
     data = load_json_safe(cache_path)
     if data is not None:
         return data
-    return _run_status_sh(project_root)
+    return _run_scan_sh(project_root)
 
 
 def load_feature_status(project_root, status_data=None):
-    """Load per-feature role status by running status.sh.
+    """Load per-feature role status by running scan.sh.
 
-    Parses the flat features array from status.sh JSON output.
+    Parses the flat features array from scan.sh JSON output.
     Each feature entry has: file, label, architect, builder, qa fields.
 
     Args:
         project_root: Project root path.
         status_data: Pre-loaded status JSON dict (for testing). If None,
-            runs status.sh or reads cached status.json.
+            runs scan.sh or reads cached scan.json.
     """
     if status_data is None:
-        status_data = _load_cached_status(project_root)
+        status_data = _load_cached_scan(project_root)
 
     statuses = []
     if status_data is None:

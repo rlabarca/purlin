@@ -120,7 +120,7 @@ Purlin's tools live. For a submodule at `purlin/`, this is set to
 need to change it.
 
 All agent instructions use `{tools_root}/` as a prefix for tool paths. For
-example, `{tools_root}/cdd/status.sh` resolves to `purlin/tools/cdd/status.sh`
+example, `{tools_root}/cdd/scan.sh` resolves to `purlin/tools/cdd/scan.sh`
 in a consumer project.
 
 ---

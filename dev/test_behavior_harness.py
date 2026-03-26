@@ -118,7 +118,7 @@ def run_fixture(*args):
 class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
     """Scenario: Test runner checks out fixture and constructs prompt
 
-    Given the fixture repo has tag "main/cdd_startup_controls/expert-mode"
+    Given the fixture repo has tag "main/agent_behavior_tests/expert-mode"
     When the test runner executes the expert-mode test
     Then the fixture is checked out to a temp directory
     And the system prompt is constructed from the fixture's instruction files
@@ -129,7 +129,7 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
     def setUpClass(cls):
         # Create a fixture repo with instruction files
         cls.repo = create_fixture_repo({
-            "main/cdd_startup_controls/expert-mode": {
+            "main/agent_behavior_tests/expert-mode": {
                 "instructions/HOW_WE_WORK_BASE.md": "# How We Work Base\nLayer 1 content.\n",
                 "instructions/BUILDER_BASE.md": "# Builder Base\nLayer 2 content.\n",
                 ".purlin/HOW_WE_WORK_OVERRIDES.md": "# HWW Overrides\nLayer 3 content.\n",
@@ -153,7 +153,7 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
     def test_fixture_checkout_creates_directory(self):
         """Fixture is checked out to a temp directory."""
         rc, checkout_path, stderr = run_fixture(
-            "checkout", self.repo, "main/cdd_startup_controls/expert-mode",
+            "checkout", self.repo, "main/agent_behavior_tests/expert-mode",
         )
         self.assertEqual(rc, 0, f"checkout failed: {stderr}")
         self.assertTrue(os.path.isdir(checkout_path))
@@ -165,7 +165,7 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
     def test_prompt_construction_contains_all_layers(self):
         """System prompt contains all 4 layers in correct order."""
         rc, checkout_path, _ = run_fixture(
-            "checkout", self.repo, "main/cdd_startup_controls/expert-mode",
+            "checkout", self.repo, "main/agent_behavior_tests/expert-mode",
         )
         self.assertEqual(rc, 0)
 
@@ -305,7 +305,7 @@ class TestCommandTableAssertion(unittest.TestCase):
 class TestExpertModeOutput(unittest.TestCase):
     """Scenario: Expert mode outputs correct message
 
-    Given the fixture tag "main/cdd_startup_controls/expert-mode" is checked out
+    Given the fixture tag "main/agent_behavior_tests/expert-mode" is checked out
     And the config has find_work: false
     When claude --print is invoked with "Begin Builder session."
     Then the output contains "find_work disabled"
@@ -586,7 +586,7 @@ class TestAutoCreateFixtures(unittest.TestCase):
 
         # Check for required tags from the spec
         required_prefixes = [
-            "main/cdd_startup_controls/",
+            "main/agent_behavior_tests/",
             "main/pl_session_resume/",
             "main/pl_help/",
         ]

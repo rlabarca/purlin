@@ -1,1 +1,7 @@
-{"status": "PASS", "passed": 23, "failed": 0, "total": 23, "test_file": "tests/config_layering/test_resolve_config.py"}
+{
+  "status": "PASS",
+  "passed": 23,
+  "failed": 0,
+  "total": 23,
+  "details": []
+}

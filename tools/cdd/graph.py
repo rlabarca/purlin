@@ -1,10 +1,8 @@
-"""Graph generation for the CDD Spec Map view.
+"""Dependency graph generation for the Purlin feature system.
 
 Provides dependency graph generation, cycle detection, orphan detection,
-Mermaid export, and JSON output for the CDD Dashboard. Ported from
-tools/software_map/generate_tree.py.
-
-This module is importable by serve.py and can also be run standalone.
+Mermaid export, and JSON output. Used by the toolbox audit
+(purlin.verify_dependency_integrity) and can also be run standalone.
 """
 import os
 import re

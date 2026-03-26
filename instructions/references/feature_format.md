@@ -145,7 +145,7 @@ as the last content section before end-of-file.
 
     ## Regression Guidance
     - Idempotent repeated runs: verify no file changes on second init
-    - CDD symlink repair after manual deletion
+    - Launcher script repair after manual deletion
     - Config and overrides untouched during refresh mode
 
 **Scan interaction:** The scan detects this section and, when the feature reaches

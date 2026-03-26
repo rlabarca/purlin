@@ -38,7 +38,8 @@ Saved preferences (written to .purlin/config.local.json):
                        Interactive if no value. Saves to config.
   --yolo               Enable YOLO mode (skip all permission prompts). Saves to config.
   --no-yolo            Disable YOLO mode (restore permission prompts). Saves to config.
-  --find-work <bool>   Set default work discovery (true/false). Saves to config.
+  --find-work [bool]   Set default work discovery (true/false).
+                       Interactive if no value. Saves to config.
 
   Use --no-save to apply any of the above for THIS SESSION ONLY
   without changing your saved config.
@@ -99,8 +100,13 @@ while [[ $# -gt 0 ]]; do
         --no-yolo)
             PURLIN_YOLO="false"; shift ;;
         --find-work)
-            PURLIN_FIND_WORK="$2"
-            shift 2
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                PURLIN_FIND_WORK="$2"
+                shift 2
+            else
+                PURLIN_FIND_WORK="__interactive__"
+                shift
+            fi
             ;;
         --no-save)
             PURLIN_NO_SAVE="true"; shift ;;
@@ -205,9 +211,10 @@ if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
 fi
 
-# --- First-run / interactive model & effort selection ---
+# --- First-run / interactive selection ---
 SHOW_MODEL_MENU=false
 SHOW_EFFORT_MENU=false
+SHOW_FIND_WORK_MENU=false
 FIRST_RUN=false
 
 # First run: no model in config and user didn't pass --model
@@ -231,6 +238,11 @@ fi
 # --effort with no param: show effort menu only
 if [[ "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]]; then
     SHOW_EFFORT_MENU=true
+fi
+
+# --find-work with no param: show find-work menu
+if [[ "$PURLIN_FIND_WORK" == "__interactive__" ]]; then
+    SHOW_FIND_WORK_MENU=true
 fi
 
 if $SHOW_MODEL_MENU; then
@@ -265,18 +277,34 @@ if $SHOW_EFFORT_MENU; then
     esac
 fi
 
-if $SHOW_MODEL_MENU || $SHOW_EFFORT_MENU; then
+if $SHOW_FIND_WORK_MENU; then
+    echo ""
+    echo "Work discovery:"
+    echo "  1. true   (find work on startup)"
+    echo "  2. false  (await instruction)"
+    echo ""
+    read -p "Choice [1]: " FW_CHOICE
+    FW_CHOICE="${FW_CHOICE:-1}"
+    case "$FW_CHOICE" in
+        1) AGENT_FIND_WORK="true" ;;
+        2) AGENT_FIND_WORK="false" ;;
+        *) AGENT_FIND_WORK="true" ;;
+    esac
+fi
+
+if $SHOW_MODEL_MENU || $SHOW_EFFORT_MENU || $SHOW_FIND_WORK_MENU; then
     # First-run always persists; otherwise respect --no-save
     if $FIRST_RUN || [[ "$PURLIN_NO_SAVE" != "true" ]]; then
         if [ -f "$RESOLVER" ]; then
             $SHOW_MODEL_MENU && PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
             $SHOW_EFFORT_MENU && PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+            $SHOW_FIND_WORK_MENU && PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin find_work "$AGENT_FIND_WORK" 2>/dev/null
         fi
         echo ""
-        echo "Saved to config: model=$AGENT_MODEL effort=$AGENT_EFFORT"
+        echo "Saved to config: model=$AGENT_MODEL effort=$AGENT_EFFORT find_work=$AGENT_FIND_WORK"
     else
         echo ""
-        echo "Session only (--no-save): model=$AGENT_MODEL effort=$AGENT_EFFORT"
+        echo "Session only (--no-save): model=$AGENT_MODEL effort=$AGENT_EFFORT find_work=$AGENT_FIND_WORK"
     fi
     echo "(To change later: ./pl-run.sh --model)"
     echo ""
@@ -284,6 +312,7 @@ if $SHOW_MODEL_MENU || $SHOW_EFFORT_MENU; then
     # Clear interactive flags so CLI override and persist blocks don't re-process
     [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] && PURLIN_MODEL_OVERRIDE=""
     [[ "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]] && PURLIN_EFFORT_OVERRIDE=""
+    [[ "$PURLIN_FIND_WORK" == "__interactive__" ]] && PURLIN_FIND_WORK=""
 fi
 
 # --- CLI overrides (apply sticky + ephemeral flags) ---

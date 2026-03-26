@@ -125,17 +125,17 @@ def test_preamble_includes_default():
 
 # --- Scenario 2: Resume Command Resolves tools_root ---
 def test_resume_uses_tools_root():
-    """pl-resume.md Step 5 must use ${TOOLS_ROOT}/cdd/status.sh."""
+    """pl-resume.md must use ${TOOLS_ROOT}/cdd/scan.sh."""
     resume_file = COMMANDS_DIR / "pl-resume.md"
     content = resume_file.read_text()
-    has_resolved = "${TOOLS_ROOT}/cdd/status.sh --startup" in content
-    has_hardcoded = "tools/cdd/status.sh --startup" in content
+    has_resolved = "${TOOLS_ROOT}/cdd/scan.sh" in content
+    has_hardcoded = "tools/cdd/scan.sh" in content and "${TOOLS_ROOT}" not in content
     passed = has_resolved and not has_hardcoded
     detail = ""
     if not has_resolved:
-        detail = "Missing ${TOOLS_ROOT}/cdd/status.sh --startup"
+        detail = "Missing ${TOOLS_ROOT}/cdd/scan.sh"
     elif has_hardcoded:
-        detail = "Still has hardcoded tools/cdd/status.sh --startup"
+        detail = "Still has hardcoded tools/cdd/scan.sh"
     record("resume_uses_tools_root", passed, detail)
 
 

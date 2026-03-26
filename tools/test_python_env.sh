@@ -185,49 +185,19 @@ echo ""
 echo "=== Shell Script Migration Tests (Code Inspection) ==="
 ###############################################################################
 
-# --- Scenario: Critic run.sh Uses Resolved Python ---
+# --- Scenario: CDD scan.sh Uses Resolved Python ---
 echo ""
-echo "[Scenario] Critic run.sh Uses Resolved Python"
-CRITIC_RUN="$SCRIPT_DIR/critic/run.sh"
-if grep -q 'source.*resolve_python\.sh' "$CRITIC_RUN"; then
-    log_pass "critic/run.sh sources resolve_python.sh"
+echo "[Scenario] CDD scan.sh Uses Resolved Python"
+CDD_SCAN="$SCRIPT_DIR/cdd/scan.sh"
+if grep -q 'source.*resolve_python\.sh' "$CDD_SCAN"; then
+    log_pass "cdd/scan.sh sources resolve_python.sh"
 else
-    log_fail "critic/run.sh does not source resolve_python.sh"
+    log_fail "cdd/scan.sh does not source resolve_python.sh"
 fi
-if grep -q 'PYTHON_EXE.*critic\.py' "$CRITIC_RUN"; then
-    log_pass "critic/run.sh uses \$PYTHON_EXE"
+if grep -q 'PYTHON_EXE.*scan\.py' "$CDD_SCAN"; then
+    log_pass "cdd/scan.sh uses \$PYTHON_EXE"
 else
-    log_fail "critic/run.sh does not use \$PYTHON_EXE"
-fi
-
-# --- Scenario: CDD status.sh Uses Resolved Python ---
-echo ""
-echo "[Scenario] CDD status.sh Uses Resolved Python"
-CDD_STATUS="$SCRIPT_DIR/cdd/status.sh"
-if grep -q 'source.*resolve_python\.sh' "$CDD_STATUS"; then
-    log_pass "cdd/status.sh sources resolve_python.sh"
-else
-    log_fail "cdd/status.sh does not source resolve_python.sh"
-fi
-if grep -q 'PYTHON_EXE.*serve\.py' "$CDD_STATUS"; then
-    log_pass "cdd/status.sh uses \$PYTHON_EXE"
-else
-    log_fail "cdd/status.sh does not use \$PYTHON_EXE"
-fi
-
-# --- Scenario: CDD start.sh Replaced Ad-Hoc Detection ---
-echo ""
-echo "[Scenario] CDD start.sh Replaced Ad-Hoc Detection"
-CDD_START="$SCRIPT_DIR/cdd/start.sh"
-if grep -q 'if \[ -d "\$DIR/../../\.venv" \]' "$CDD_START"; then
-    log_fail "cdd/start.sh still contains ad-hoc venv detection"
-else
-    log_pass "cdd/start.sh ad-hoc venv detection removed"
-fi
-if grep -q 'source.*resolve_python\.sh' "$CDD_START"; then
-    log_pass "cdd/start.sh sources resolve_python.sh"
-else
-    log_fail "cdd/start.sh does not source resolve_python.sh"
+    log_fail "cdd/scan.sh does not use \$PYTHON_EXE"
 fi
 
 # --- Scenario: Init Uses Resolved Python for JSON Validation ---

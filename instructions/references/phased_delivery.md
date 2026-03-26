@@ -171,7 +171,7 @@ A phase feature is **role-blocked** when the Builder cannot make progress becaus
 
 When all remaining features in a phase are role-blocked:
 
-1.  **Detect:** During the per-feature loop, the Builder checks each feature's CDD status before starting Step 0. If the feature is role-blocked, the Builder skips it with a log message: `"Skipping <feature> -- <role> <status> (role-blocked)"`.
+1.  **Detect:** During the per-feature loop, the Builder checks each feature's scan status before starting Step 0. If the feature is role-blocked, the Builder skips it with a log message: `"Skipping <feature> -- <role> <status> (role-blocked)"`.
 2.  **Defer:** When all non-blocked features in the phase are complete and only role-blocked features remain, the Builder records the phase as COMPLETE with a `**Deferred:**` annotation listing the blocked features and their blocking reason.
 3.  **Re-queue:** Deferred features are appended to the next suitable PENDING phase in the delivery plan (one that does not create a dependency cycle). If no suitable phase exists, the Builder creates a new final phase labeled `Deferred Cleanup`. The re-queued features are added to the target phase's `**Features:**` line.
 4.  **Announce:** The Builder prints a clear deferral message:

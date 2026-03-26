@@ -63,13 +63,13 @@ class TestOutputIncludesFeatureCountsByStatus(unittest.TestCase):
     When /pl-status is invoked
     Then the output includes a summary of feature counts grouped by status
 
-    Structural test: the command file instructs running status.sh and
+    Structural test: the command file instructs running scan.sh and
     summarizing feature counts (TODO / TESTING / COMPLETE).
     """
 
-    def test_references_status_sh(self):
+    def test_references_scan_sh(self):
         content = read_command_file()
-        self.assertIn("status.sh", content)
+        self.assertIn("scan.sh", content)
 
     def test_mentions_todo_status(self):
         content = read_command_file()
@@ -92,35 +92,29 @@ class TestOutputIncludesFeatureCountsByStatus(unittest.TestCase):
         )
 
 
-class TestRoleFilteredView(unittest.TestCase):
-    """Scenario: Role-filtered view shows only relevant items
+class TestModeGroupedView(unittest.TestCase):
+    """Scenario: Mode-grouped view shows work by mode
 
-    Given a user knows their role
-    When they invoke /pl-status with a role filter
-    Then only items relevant to that role are displayed
+    Given a project with features in various states
+    When /pl-status is invoked
+    Then work items are grouped by mode (Engineer, QA, PM)
 
-    Structural test: the command file references the --role flag for
-    filtered views.
+    Structural test: the command file organizes work by mode.
     """
 
-    def test_role_flag_present(self):
+    def test_mode_grouping_present(self):
         content = read_command_file()
-        self.assertIn("--role", content)
+        self.assertIn("mode", content.lower())
 
-    def test_role_flag_used_with_status_sh(self):
-        """The --role flag is used in the context of status.sh invocation."""
+    def test_engineer_work_section(self):
+        """Command file defines Engineer work items."""
         content = read_command_file()
-        # Both --role and status.sh should be present, and --role should
-        # appear in a line that relates to status.sh usage
-        self.assertIn("status.sh --role", content)
+        self.assertIn("Engineer work", content)
 
-    def test_filtered_view_documented(self):
-        """Command file explains the filtered view concept."""
+    def test_qa_work_section(self):
+        """Command file defines QA work items."""
         content = read_command_file()
-        self.assertRegex(
-            content,
-            r"(?i)filter",
-        )
+        self.assertIn("QA work", content)
 
 
 class TestArchitectSeesUncommittedChangesCheck(unittest.TestCase):

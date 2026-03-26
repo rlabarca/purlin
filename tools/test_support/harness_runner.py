@@ -371,7 +371,7 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
         'your response. Do NOT say you need permission or that you '
         'cannot access something — just use the data provided.')
 
-    # 1. Feature status (normally obtained via status.sh)
+    # 1. Feature status (normally obtained via scan.sh)
     status = scan_fixture_features(fixture_dir)
     total = sum(len(v) for v in status.values())
 
@@ -438,7 +438,7 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
                     override = (
                         'IMPORTANT: You are in --print mode. Any steps in '
                         'the skill that say to run shell commands, scripts, '
-                        'or tools (e.g., scan.sh, status.sh, Bash) — SKIP '
+                        'or tools (e.g., scan.sh, Bash) — SKIP '
                         'those steps entirely. The data you need is already '
                         'pre-loaded above. Use the pre-loaded feature status '
                         'data to produce the output the skill describes.')

@@ -51,7 +51,7 @@ Each terminal sets `PURLIN_PROJECT_ROOT` to its worktree and starts a Claude ses
 
 ```bash
 # From the project root (not a worktree)
-claude   # then run /pl-dashboard
+claude   # then run /pl-status
 ```
 
 ---

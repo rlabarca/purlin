@@ -33,7 +33,7 @@ Editing an anchor node file resets all dependent features to `[TODO]`, triggerin
 Implementation knowledge in `features/<name>.impl.md`. Separate from feature specs.
 
 - **Standalone:** Companion files are standalone — feature files do NOT reference or link to them. The naming convention provides discoverability.
-- **Not a feature file:** Companion files do not appear in the dependency graph and are not tracked by the CDD lifecycle.
+- **Not a feature file:** Companion files do not appear in the dependency graph and are not tracked by the feature lifecycle.
 - **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status.
 - **Owner:** Engineer (see `references/file_classification.md`)
 

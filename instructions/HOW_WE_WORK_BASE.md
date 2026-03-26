@@ -59,7 +59,7 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 *   **Duty:** Providing high-level goals, performing final verification (e.g., Hardware-in-the-Loop), and managing the Agentic Evolution.
 
 ### Commit Discipline (All Roles)
-Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream status regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/status.sh`. When in doubt, commit.
+Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream status regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/scan.sh`. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
 1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
@@ -154,7 +154,7 @@ The Builder and QA Agent have non-overlapping testing domains. No test is verifi
 | When you need to... | Do this |
 |---------------------|---------|
 | Implement a feature | Invoke `/pl-build` |
-| Understand project status | Run `{tools_root}/cdd/status.sh --role <role>` or invoke `/pl-status` |
+| Understand project status | Run `{tools_root}/cdd/scan.sh --role <role>` or invoke `/pl-status` |
 | Create/refine a spec | Invoke `/pl-spec` |
 | Create/update an anchor node | Invoke `/pl-anchor` |
 | Record a QA discovery | Invoke `/pl-discovery` |

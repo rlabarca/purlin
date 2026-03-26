@@ -261,10 +261,10 @@ else
     log_fail "Phase 4 section missing"
 fi
 
-if grep -q "cdd/status.sh" "$COMMAND_FILE"; then
-    log_pass "CDD status tool referenced for finalization"
+if grep -q "cdd/scan.sh" "$COMMAND_FILE"; then
+    log_pass "CDD scan tool referenced for finalization"
 else
-    log_fail "CDD status tool not referenced"
+    log_fail "CDD scan tool not referenced"
 fi
 
 ###############################################################################
@@ -338,7 +338,7 @@ else
 fi
 
 # Verify the command covers all end-to-end outputs: inventory, taxonomy, features, anchors, companion files, CDD status
-E2E_KEYWORDS=("sfc_inventory.md" "sfc_taxonomy.md" "_feature.md" "_anchor.md" "impl.md" "cdd/status.sh" "TODO")
+E2E_KEYWORDS=("sfc_inventory.md" "sfc_taxonomy.md" "_feature.md" "_anchor.md" "impl.md" "cdd/scan.sh" "TODO")
 E2E_PASS=true
 for kw in "${E2E_KEYWORDS[@]}"; do
     if ! grep -q "$kw" "$COMMAND_FILE"; then

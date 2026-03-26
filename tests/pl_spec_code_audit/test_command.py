@@ -487,9 +487,9 @@ class TestAuditStateFileDeletedAfterRemediation(unittest.TestCase):
         self.assertIn('Delete', content)
         self.assertIn('audit_state.json', content)
 
-    def test_status_run_after_remediation(self):
+    def test_scan_run_after_remediation(self):
         content = _read_command()
-        self.assertIn('${TOOLS_ROOT}/cdd/status.sh', content)
+        self.assertIn('${TOOLS_ROOT}/cdd/scan.sh', content)
 
 
 class TestNoGapsProducesCleanReportAndExitsPlanMode(unittest.TestCase):

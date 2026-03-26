@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 106, "failed": 0, "total": 106, "test_file": "tests/pl_update_purlin/test_command.py"}
+{"status": "FAIL", "passed": 104, "failed": 2, "total": 106}

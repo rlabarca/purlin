@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Project root detection (same pattern as status.sh)
+# Project root detection
 if [ -z "${PURLIN_PROJECT_ROOT:-}" ]; then
     if [ -d "$SCRIPT_DIR/../../../.purlin" ]; then
         export PURLIN_PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
