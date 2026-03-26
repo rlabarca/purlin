@@ -130,35 +130,49 @@ The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanne
 
 ### 2.15 Skill Optimization Guide
 
-Skills that call scan.sh SHOULD use `--only` to request only the data they need. This reduces output size and skip unnecessary computation.
+Skills that call scan.sh SHOULD use `--only` to request only the sections they need and `--skip-fields` to skip expensive per-feature computations they don't consume. This reduces both computation time and output size.
 
 **Recommended flags per skill:**
 
-| Skill | Flags | Rationale |
-|-------|-------|-----------|
-| `/pl-status` (PM) | `--only features,discoveries,deviations,git` | PM needs specs, deviations, disputes |
-| `/pl-status` (Engineer) | `--only features,discoveries,plan,git --tombstones` | Engineer needs failures, TODO, tombstones, delivery plan |
-| `/pl-status` (QA) | `--only features,discoveries,git,smoke` | QA needs TESTING features, regression, smoke |
-| `/pl-status` (open) | `--tombstones` | Full scan for cross-mode overview |
-| `/pl-build` (verify step) | `--only features,plan` | Verify lifecycle + phase status |
-| `/pl-verify` | `--only features` | Identify TESTING features |
-| `/pl-smoke` | `--only features,smoke,deps` | Smoke candidates + dependency data |
-| `/pl-web-test` | `--only features` | Identify TESTING features |
-| `/pl-tombstone` | `--only features --tombstones` | Process tombstone entries |
-| `/pl-qa-report` | `--only features,discoveries,plan` | QA-focused summary |
-| `/pl-delivery-plan` | `--only features,deps` | Feature status + dependency graph |
-| `/pl-complete` | `--only features` | Verify TESTING state |
-| `/pl-spec-code-audit` (initial) | `--only features,deps` | Feature list + dependencies |
-| `/pl-spec-from-code` (final) | `--only features,deps` | Feature list + dependencies |
+| Skill | `--only` | `--skip-fields` | Rationale |
+|-------|----------|-----------------|-----------|
+| `/pl-status` (PM) | `features,discoveries,deviations,git` | `spec_modified,test_status,regression_status` | PM work items don't use any of these fields |
+| `/pl-status` (Engineer) | `features,discoveries,plan,git --tombstones` | *(none)* | Engineer needs all fields |
+| `/pl-status` (QA) | `features,discoveries,git,smoke` | `spec_modified` | spec_modified is Engineer-only concern |
+| `/pl-status` (open) | `--tombstones` | *(none)* | Full scan for cross-mode overview |
+| `/pl-build` (verify) | `features,plan` | `spec_modified` | Verifying lifecycle + phase, not spec drift |
+| `/pl-verify` | `features` | `spec_modified` | Just identifying TESTING features |
+| `/pl-smoke` | `features,smoke,deps` | `spec_modified` | Smoke is about dependency fan-out |
+| `/pl-web-test` | `features` | `spec_modified` | Finding TESTING features with web test metadata |
+| `/pl-tombstone` | `features --tombstones` | `spec_modified,test_status,regression_status` | Tombstones don't need computed fields |
+| `/pl-qa-report` | `features,discoveries,plan` | `spec_modified` | QA report doesn't use spec_modified |
+| `/pl-delivery-plan` | `features,deps` | `spec_modified` | Phase planning uses lifecycle + deps |
+| `/pl-complete` | `features` | `spec_modified` | Just verifying lifecycle state |
+| `/pl-spec-code-audit` (initial) | `features,deps` | `spec_modified` | Audit needs feature list + deps |
+| `/pl-spec-from-code` (final) | `features,deps` | `spec_modified` | Feature list + deps |
 
-Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl-infeasible, pl-spec-code-audit final step) SHOULD use a full scan (no `--only`) to populate the cache.
+Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl-infeasible, pl-spec-code-audit final step) SHOULD use a full scan (no `--only`, no `--skip-fields`) to populate the cache with complete data.
 
 ### 2.16 Performance
 
 - Full scan MUST complete in under 2 seconds for 100 features.
 - Git calls MUST be batched. The scan uses at most 4 git log calls regardless of feature count (status index, spec mod index, exemption index, git state).
 - Focused scan (`--only`) MUST skip computation for sections not requested — e.g., `--only features` does not run discovery or deviation scanning.
+- `--skip-fields` MUST skip the underlying computation, not just strip output — e.g., `--skip-fields spec_modified` skips the spec modification index and exemption index git log calls entirely.
 - The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
+
+### 2.17 Feature Field Filtering (`--skip-fields`)
+
+- scan.py accepts `--skip-fields <fields>` where `<fields>` is a comma-separated list of per-feature computations to skip.
+- Valid field names: `spec_modified`, `test_status`, `regression_status`.
+- Field-to-computation mapping:
+  - `spec_modified` → Skip spec modification index and exemption index git log calls. Report `spec_modified_after_completion: null` for all features.
+  - `test_status` → Skip `tests/<stem>/tests.json` reads. Report `test_status: null` for all features.
+  - `regression_status` → Skip `tests/<stem>/regression.json` reads. Report `regression_status: null` for all features. Also omit `regression_failed`/`regression_passed` counts.
+- `--skip-fields` only affects the `features` section. If `features` is not being computed (e.g., `--only git`), the flag is a no-op.
+- `--skip-fields` scans do NOT write to cache (partial feature data must not overwrite complete data).
+- When combined with `--cached`, `--skip-fields` filters the cached feature entries by stripping the skipped fields from output. The cache retains full data.
+- Unknown field names in `--skip-fields` MUST produce a warning on stderr but not abort the scan.
 
 ---
 
@@ -377,6 +391,54 @@ Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl
     Then stdout contains scanned_at and smoke_candidates
     And stdout does NOT contain a features key
 
+#### Scenario: --skip-fields skips spec modification computation
+
+    Given a project with features that have spec_modified_after_completion candidates
+    When scan.py runs with --skip-fields spec_modified
+    Then no spec modification index or exemption index git log calls are made
+    And all features have spec_modified_after_completion null
+
+#### Scenario: --skip-fields skips test status reads
+
+    Given a project with features and tests/<stem>/tests.json files
+    When scan.py runs with --skip-fields test_status
+    Then no tests.json files are read
+    And all features have test_status null
+
+#### Scenario: --skip-fields skips regression status reads
+
+    Given a project with features and tests/<stem>/regression.json files
+    When scan.py runs with --skip-fields regression_status
+    Then no regression.json files are read
+    And all features have regression_status null
+    And no features have regression_failed or regression_passed fields
+
+#### Scenario: --skip-fields combined with --cached filters output
+
+    Given a fresh scan.json cache with full feature data
+    When scan.py runs with --cached --skip-fields spec_modified,test_status
+    Then cached features are returned with spec_modified_after_completion and test_status set to null
+
+#### Scenario: --skip-fields does not write to cache
+
+    Given a stale or missing scan.json cache
+    When scan.py runs with --skip-fields spec_modified
+    Then scan.json cache is NOT written or updated
+
+#### Scenario: Multiple --skip-fields values skip all specified computations
+
+    Given a project with features
+    When scan.py runs with --skip-fields spec_modified,test_status,regression_status
+    Then the spec modification index, test reads, and regression reads are all skipped
+    And lifecycle tag extraction still runs normally
+
+#### Scenario: Unknown --skip-fields value produces warning
+
+    Given a project with features
+    When scan.py runs with --skip-fields spec_modified,nonexistent_field
+    Then stderr contains a warning about "nonexistent_field"
+    And the scan completes normally with spec_modified skipped
+
 ### QA Scenarios
 
 #### Scenario: Full scan under 2 seconds with 100 features @auto
@@ -399,3 +461,5 @@ Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl
 - Verify scan.py makes at most 4-5 git calls total (not per-feature)
 - Verify --all flag is NOT used in any git log call
 - Verify scan output does NOT contain changes_since_last_scan field
+- Verify --skip-fields actually skips computation (not just output filtering) — measure git call count with and without the flag
+- Verify --skip-fields does not write partial data to cache

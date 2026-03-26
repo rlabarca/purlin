@@ -49,9 +49,9 @@ When a mode is active, `/pl-status` MUST limit output to that mode's work items 
 
 **Scoping rules by active mode:**
 
-- **PM mode:** Show only PM work items (incomplete specs, unacknowledged deviations, SPEC_DISPUTE/INTENT_DRIFT discoveries). Use `scan.sh --only features,discoveries,deviations,git`. Do NOT show Engineer or QA work items.
+- **PM mode:** Show only PM work items (incomplete specs, unacknowledged deviations, SPEC_DISPUTE/INTENT_DRIFT discoveries). Use `scan.sh --only features,discoveries,deviations,git --skip-fields spec_modified,test_status,regression_status`. Do NOT show Engineer or QA work items.
 - **Engineer mode:** Show only Engineer work items (tombstones, test failures, spec_modified_after_completion, TODO features, open BUGs with Engineer action, delivery plan features). Use `scan.sh --only features,discoveries,plan,git --tombstones`. Do NOT show PM or QA work items.
-- **QA mode:** Show only QA work items (TESTING features with QA scenarios, regression status, smoke candidates). Use `scan.sh --only features,discoveries,git,smoke`. Do NOT show PM or Engineer work items.
+- **QA mode:** Show only QA work items (TESTING features with QA scenarios, regression status, smoke candidates). Use `scan.sh --only features,discoveries,git,smoke --skip-fields spec_modified`. Do NOT show PM or Engineer work items.
 - **Open mode (no mode active):** Show all work items grouped by mode. Use `scan.sh --tombstones` (full scan). Suggest the mode with highest-priority work.
 
 **Always shown regardless of mode:**
@@ -140,8 +140,15 @@ When a mode is active, `/pl-status` MUST limit output to that mode's work items 
 
     Given an active PM mode session
     When /pl-status invokes scan.sh
-    Then scan.sh is called with --only features,discoveries,deviations,git
+    Then scan.sh is called with --only features,discoveries,deviations,git --skip-fields spec_modified,test_status,regression_status
     And tombstones are NOT included in the scan output
+
+#### Scenario: QA mode skips spec_modified field
+
+    Given an active QA mode session
+    When /pl-status invokes scan.sh
+    Then scan.sh is called with --skip-fields spec_modified
+    And features in the output have spec_modified_after_completion null
 
 #### Scenario: Lifecycle counts shown in all modes
 
