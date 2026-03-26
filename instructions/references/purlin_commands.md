@@ -18,7 +18,6 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-resume [save]          Save or restore session state
   /pl-help                   Full command reference
   /pl-find <topic>           Search feature specs
-  /pl-cdd                    Start/stop CDD Dashboard
   /pl-remote <cmd>           Branch collaboration (push | pull | add | branch)
   /pl-override-edit          Edit PURLIN_OVERRIDES.md
   /pl-update-purlin          Update Purlin submodule

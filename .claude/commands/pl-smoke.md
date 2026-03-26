@@ -94,7 +94,7 @@ Analyze the project and suggest features that should be smoke tier.
    - It is a prerequisite for 3+ other features (high fan-out in dependency graph)
    - It has `arch_*` or `policy_*` as a prefix (foundational constraint)
    - It is in the "Install, Update & Scripts" or "Coordination & Lifecycle" category
-   - Its name contains: `launcher`, `init`, `config`, `critic`, `cdd`, `status`
+   - Its name contains: `launcher`, `init`, `config`, `status`
    - It has existing regression tests that PASS (proven testable)
 
 3. **Filter out already-classified.** Read the tier table and exclude features already marked smoke.

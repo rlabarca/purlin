@@ -129,7 +129,6 @@ tools/toolbox/
   instruction_audit.py
   doc_consistency_check.py
   submodule_safety_audit.py
-  critic_consistency_check.py
   test_toolbox.py             # Tests (colocated per project convention)
   test_manage.py
   test_toolbox_audit.py
