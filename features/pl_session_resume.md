@@ -140,16 +140,6 @@ Restore mode follows a 7-step sequence. Each step is mandatory unless noted othe
 
 **Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
 
-#### 2.3.0b Step 0b -- Set Terminal Identity (Open Mode)
-
-Set the iTerm badge and terminal title to open mode. This gives the user immediate visual feedback that the agent is initializing.
-
-Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the badge.
-
-Badge: `Purlin` (or `Purlin (W1)` in a worktree). Title: `<project> - Purlin` (or `<project> - Purlin (W1)`).
-
-If a mode is activated later in Step 6, the badge and title are updated to reflect the active mode.
-
 #### 2.3.1 Step 1 -- Checkpoint Detection
 
 - Use Bash `test -f .purlin/cache/session_checkpoint_purlin.md && echo EXISTS || echo MISSING` to detect the checkpoint file. Do NOT use the Read tool for existence detection — it errors on missing files and cancels sibling parallel tool calls.
@@ -242,8 +232,9 @@ Action Items:   [count] items from scan results
 Uncommitted:    [none | summary]
 ```
 
-#### 2.3.6 Step 6 -- Cleanup and Continue
+#### 2.3.6 Step 6 -- Set Terminal Identity, Cleanup, and Continue
 
+- **Set iTerm badge and title** based on the determined mode. If a mode was resolved (from checkpoint, `default_mode`, or session message), set the badge to that mode name (`Engineer`, `PM`, `QA`). If no mode was resolved, set badge to `Purlin` (open mode). Check `.purlin_worktree_label` for worktree suffix. This is the single point where the badge is set during startup — do not set it earlier in the flow. The launcher may have already set the badge, but Step 6 confirms or corrects it.
 - If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.
@@ -325,12 +316,19 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
     Then merge recovery runs before checkpoint detection
     And the breadcrumb is processed before proceeding to Step 1
 
-#### Scenario: Restore sets open mode badge in Step 0b @auto
+#### Scenario: Badge set once in Step 6 based on determined mode @auto
 
-    Given a fresh session with no checkpoint
-    When the agent invokes /pl-resume
-    Then the iTerm badge is set to "Purlin" before scanning
-    And the terminal title is set to "<project> - Purlin"
+    Given a cold start with no checkpoint and default_mode null
+    When the agent completes /pl-resume
+    Then the iTerm badge is set to "Purlin" in Step 6
+    And the badge was NOT set earlier in the flow
+
+#### Scenario: Badge reflects checkpoint mode without flash @auto
+
+    Given a checkpoint exists with mode "engineer"
+    When the agent completes /pl-resume
+    Then the iTerm badge is set to "Engineer" in Step 6
+    And the badge was NOT temporarily set to "Purlin" before Step 6
 
 #### Scenario: Restore prints command hint not full table @auto
 
