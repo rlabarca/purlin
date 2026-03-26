@@ -17,7 +17,7 @@ Purlin agent: This skill activates Engineer mode. If another mode is active, con
 
 If an argument was provided, implement the named feature from `features/<arg>.md`.
 If no argument was provided, run `/pl-status` to get the current work list. Pick the highest-priority Engineer work item and begin implementing it.
-Check `features/tombstones/` first and process any pending tombstones before regular feature work.
+Check `features/tombstones/` first and process any pending tombstones before regular feature work. Processing a tombstone: read it, delete all listed files (test directories, regression JSON, QA scenarios), delete the companion artifacts alongside it (`features/tombstones/<name>.impl.md`, `features/tombstones/<name>.discoveries.md`), delete the tombstone file itself, regenerate the dependency graph, and commit.
 
 If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. When `auto_start` is `false` (default), halt after completing a phase (see Step 4.E). When `auto_start` is `true`, auto-advance to the next PENDING phase (see Step 4.E).
 

@@ -48,4 +48,5 @@ Implementation changes:
 - Rubric: 6/6 PASS
 - Tests: 41 total, 41 passed
 - AP scan: clean
-- Date: 2026-03-24
+- Assertion tier breakdown: 8 regression scenarios, all Tier 2+ (regex structural patterns). Negative assertions (role refusal checks) are Tier 3 (semantic — verify absence of role-inappropriate commands).
+- Date: 2026-03-24 (updated 2026-03-26)
