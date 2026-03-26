@@ -31,7 +31,7 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-unit-test              Run/author unit tests
   /pl-web-test               Visual verification via Playwright
   /pl-delivery-plan          Create phased delivery plan
-  /pl-release <cmd>          Release checklist (check | run | step)
+  /pl-toolbox <cmd>          Agentic Toolbox (list | run | create | edit | ...)
   /pl-server                 Dev server lifecycle
   /pl-infeasible             Escalate INFEASIBLE to PM
   /pl-propose                Propose spec changes to PM

@@ -1,4 +1,4 @@
-"""Shared utilities for release audit scripts.
+"""Shared utilities for toolbox audit scripts.
 
 Provides project root detection, JSON output formatting, and common helpers.
 """

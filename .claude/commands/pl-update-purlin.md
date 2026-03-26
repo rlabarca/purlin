@@ -98,6 +98,14 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - Report migration results in the summary
    - See `features/purlin_migration.md` for the full migration protocol
 
+7c. **Toolbox Migration (if needed):**
+   - After config sync and agent migration, check if migration from the old release steps system to the Agentic Toolbox is needed:
+     - Detection: `.purlin/release/config.json` or `.purlin/release/local_steps.json` exists AND `.purlin/toolbox/.migrated_from_release` does NOT exist
+     - If detected, run: `python3 <submodule>/tools/migration/migrate_release_to_toolbox.py --project-root <project_root>`
+     - Report migration results (tools migrated count)
+     - The old `.purlin/release/` directory is preserved for one cycle (safety net)
+   - If neither condition is met, skip silently
+
 8. **Stale Artifact Cleanup:**
    - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `purlin_cdd_start.sh`, `purlin_cdd_stop.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."

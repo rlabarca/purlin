@@ -1,0 +1,17 @@
+{
+    "schema_version": "2.0",
+    "tools": [
+        {
+            "_comment": "EXAMPLE TOOL — remove _comment and replace all fields with your own. Required fields: id (must NOT start with 'purlin.' or 'community.'), friendly_name, description. Optional: code, agent_instructions, tags. See tools/toolbox/purlin_tools.json for format examples.",
+            "id": "my_project_tool",
+            "friendly_name": "My Project Tool",
+            "description": "Describe what this tool does.",
+            "code": null,
+            "agent_instructions": "Natural language instructions for the agent when executing this tool. Set to null if no agent-specific guidance is needed.",
+            "tags": [],
+            "metadata": {
+                "last_updated": "2026-01-01"
+            }
+        }
+    ]
+}
