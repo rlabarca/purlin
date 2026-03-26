@@ -16,7 +16,7 @@ The PM agent:
 - **Asks structured questions** to refine vague ideas into precise, testable specs.
 - **Never writes code.** The PM owns specs and design artifacts. Code is the Builder's job.
 
-By default, the PM agent uses Claude Sonnet 4.6 for fast, conversational iteration. You can change this in your project's [CDD Dashboard](status-grid-guide.md) configuration.
+By default, the PM agent uses Claude Sonnet 4.6 for fast, conversational iteration. You can change this in your project's configuration.
 
 ---
 
@@ -39,7 +39,7 @@ If your project has zero feature specs (a brand-new project), the PM enters **Gu
 1. The PM greets you and explains that this is a new project.
 2. It asks what you are building. A single sentence is enough -- the PM will probe for details.
 3. It asks if you have Figma designs. If you do, paste a URL. If not, the PM works from your text description.
-4. The PM creates your first feature spec and at least one [anchor node](critic-and-cdd-guide.md) (a shared design standard document).
+4. The PM creates your first feature spec and at least one anchor node (a shared design standard document).
 5. It commits the files and tells you what to do next.
 
 After onboarding, you will see something like:
@@ -47,13 +47,12 @@ After onboarding, you will see something like:
 ```
 Your first spec is ready at features/dashboard_overview.md.
 Run ./pl-run-builder.sh in another terminal to start building from the spec.
-Run ./pl-cdd-start.sh to see the status dashboard.
 The Builder reads your spec and writes the code and tests to match it.
 ```
 
 ### Returning to an Existing Project
 
-When features already exist, the PM shows a command table and any Critic action items waiting for your attention:
+When features already exist, the PM shows a command table and any action items waiting for your attention:
 
 ```
 Purlin PM -- Ready
@@ -68,7 +67,7 @@ Purlin PM -- Ready
   Navigation
   ------
   /pl-find <topic>           Discover where a topic lives in specs
-  /pl-status                 Check CDD status
+  /pl-status                 Check feature status
   /pl-help                   Re-display this command list
 ```
 
@@ -271,7 +270,7 @@ Here is a summary of every artifact the PM agent can produce.
 | Artifact | Location | Description |
 |---|---|---|
 | Feature spec | `features/<name>.md` | The primary specification: overview, requirements, Unit Tests, QA Scenarios, and optional visual specification. This is what the Builder implements against. |
-| [Anchor node](critic-and-cdd-guide.md) | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
+| Anchor node | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
 | Design brief | `features/design/<feature_stem>/brief.json` | Machine-readable Figma data (tokens, screens, components) that the Builder reads instead of accessing Figma. |
 | Design artifacts | `features/design/<feature_stem>/` | Local copies of design assets (images, exported screens) stored alongside the brief. |
 | Token Map | Inside the feature spec's Visual Specification section | Mapping from Figma design variable names (or observed CSS values) to the project's CSS custom properties. |
@@ -329,7 +328,7 @@ Use the "reprocess" keyword to re-ingest a specific screen:
 
 When the Builder or QA flags a discrepancy between the spec and the implementation, entries tagged `SPEC_DISPUTE` are routed to the PM. You own the resolution:
 
-1. Check [the Critic](critic-and-cdd-guide.md) report (`/pl-status`) for any SPEC_DISPUTE items.
+1. Check the status report (`/pl-status`) for any SPEC_DISPUTE items.
 2. Review the disputed section of the spec.
 3. Update the spec if the design intent was misunderstood, or confirm the spec is correct and the implementation needs to change.
 
@@ -355,7 +354,7 @@ This checks that design artifacts, Token Maps, and visual specifications are con
 /pl-status
 ```
 
-This runs the CDD status tool and shows the current state of all features -- which are in TODO, which are being built, which are complete, and what [the Critic](critic-and-cdd-guide.md) has flagged.
+This shows the current state of all features -- which are in TODO, which are being built, which are complete, and what has been flagged.
 
 ---
 
@@ -367,7 +366,7 @@ This runs the CDD status tool and shows the current state of all features -- whi
 | `/pl-design-ingest <source>` | Ingest a Figma URL, live web page (prefix with `live:`), or local image/PDF into a feature's visual specification. Generates Token Map and `brief.json`. |
 | `/pl-design-audit` | Audit design artifacts for consistency with specs and design anchors. |
 | `/pl-find <topic>` | Search across all specs to discover where a topic is discussed. |
-| `/pl-status` | Check CDD status: feature states, Critic action items, and overall project health. |
+| `/pl-status` | Check feature states, action items, and overall project health. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore PM session state. |
 | `/pl-agent-config` | Modify PM [agent configuration](agent-configuration-guide.md) (model, effort, permissions). |

@@ -15,9 +15,9 @@ The Builder agent:
 - **Runs web tests** via Playwright for features with visual specifications.
 - **Documents decisions** in companion files when it deviates from or extends a spec.
 - **Manages phased delivery** for large-scope work across multiple features.
-- **Never writes specs.** Feature files, [anchor nodes](critic-and-cdd-guide.md), and instruction files belong to the Architect and PM. If the Builder finds a spec gap, it records a discovery -- it does not edit the spec.
+- **Never writes specs.** Feature files, anchor nodes, and instruction files belong to the Architect and PM. If the Builder finds a spec gap, it records a discovery -- it does not edit the spec.
 
-The Builder discovers its own work. At startup, it reads [the Critic](critic-and-cdd-guide.md) report, identifies features in TODO state, and proposes an implementation plan. You approve, and it begins.
+The Builder discovers its own work. At startup, it identifies features in TODO state and proposes an implementation plan. You approve, and it begins.
 
 ---
 
@@ -48,7 +48,7 @@ When the Builder implements a feature, it follows a four-step protocol.
 Before writing any code, the Builder:
 
 1. Reads the companion file (`features/<name>.impl.md`) if one exists, to understand prior implementation decisions.
-2. Checks [anchor node](critic-and-cdd-guide.md) constraints (FORBIDDEN patterns and invariants).
+2. Checks anchor node constraints (FORBIDDEN patterns and invariants).
 3. Reads visual design sources: Token Map from the spec, then `brief.json`, then Figma MCP as a last resort.
 4. Checks Playwright MCP availability for features with web test metadata.
 5. Detects whether this is new work or re-verification of existing code.
@@ -244,11 +244,10 @@ When QA records a `[BUG]` discovery, it appears as a Builder action item. Fix th
 | `/pl-infeasible <name>` | Escalate a feature as unimplementable. |
 | `/pl-propose <topic>` | Suggest a spec change to the Architect. |
 | `/pl-spec-code-audit` | Bidirectional spec-code consistency audit. |
-| `/pl-status` | Check CDD status and action items. |
+| `/pl-status` | Check feature status and action items. |
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
 | `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
 | `/pl-server` | Dev server lifecycle management. |
-| `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-agent-config` | View or modify agent model and startup settings. |
 | `/pl-override-edit` | Edit `BUILDER_OVERRIDES.md`. |
 | `/pl-whats-different` | Compare branches (main checkout only). |

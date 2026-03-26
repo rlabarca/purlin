@@ -4,8 +4,8 @@
 
 Purlin is added to your project as a git submodule. A single init script
 sets up the entire scaffold: config files, agent launchers, slash commands,
-CDD symlinks, and git hooks. When a new version of Purlin is released, you
-update the submodule and re-run init to refresh everything.
+and git hooks. When a new version of Purlin is released, you update the
+submodule and re-run init to refresh everything.
 
 This guide covers three scenarios:
 
@@ -20,9 +20,9 @@ This guide covers three scenarios:
 ### Prerequisites
 
 - Git (any recent version)
-- Python 3.8+ (used by [Critic](critic-and-cdd-guide.md) and CDD tooling)
+- Python 3.8+ (used by tooling scripts)
 - Claude Code CLI (`claude`) **2.1.81 or later**, installed and authenticated
-- Node.js (optional, for the [CDD Dashboard](status-grid-guide.md) web UI and web testing via Playwright)
+- Node.js (optional, for web testing via Playwright)
 
 > **Note:** Agent launchers (`pl-run-*.sh`) automatically check for Claude Code
 > updates at startup and will update the CLI if a newer version is available.
@@ -63,7 +63,6 @@ them), then runs **Full Init Mode**, which:
 - Generates agent launcher scripts (`pl-run-architect.sh`,
   `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`).
 - Distributes slash commands to `.claude/commands/`.
-- Creates CDD convenience symlinks (`pl-cdd-start.sh`, `pl-cdd-stop.sh`).
 - Sets up the `features/` directory.
 - Updates `.gitignore` with Purlin-specific patterns.
 - Installs Claude Code hooks for session recovery.
@@ -110,9 +109,7 @@ my-project/
 ├── pl-run-architect.sh          # Architect launcher
 ├── pl-run-builder.sh            # Builder launcher
 ├── pl-run-qa.sh                 # QA launcher
-├── pl-run-pm.sh                 # PM launcher
-├── pl-cdd-start.sh              # CDD Dashboard start (symlink)
-└── pl-cdd-stop.sh               # CDD Dashboard stop (symlink)
+└── pl-run-pm.sh                 # PM launcher
 ```
 
 ### Key Config: `tools_root`
@@ -178,7 +175,6 @@ In Refresh Mode, init will:
 
 - Update slash commands (skip any you have locally modified).
 - Regenerate agent launchers.
-- Repair CDD symlinks if needed.
 - Update `.purlin/.upstream_sha` to the new version.
 - Sync `.gitignore` patterns (additive only -- never removes patterns).
 - Install any new MCP servers.
@@ -241,7 +237,6 @@ overwriting your customizations:
 | `.purlin/release/` | Copied from template | **Never modified** |
 | Slash commands | Copied | Updated (skip if locally newer) |
 | Agent launchers | Generated | Regenerated |
-| CDD symlinks | Created | Repaired if broken |
 | `pl-init.sh` shim | Generated | Regenerated if SHA changed |
 | `.gitignore` patterns | Merged | Merged (additive only) |
 | MCP servers | Installed | New servers added |
@@ -252,8 +247,7 @@ overwriting your customizations:
 
 ### Agent Configuration
 
-Edit `.purlin/config.json` (or use the [CDD Dashboard](status-grid-guide.md)'s Agent Config panel)
-to change:
+Edit `.purlin/config.json` to change:
 
 - Which Claude model each agent uses.
 - Reasoning effort level (low, medium, high).
@@ -297,11 +291,6 @@ source versions in the submodule. If you have locally modified a command
 (the destination file is newer than the source), init skips it to protect
 your changes. Delete the local copy to force a refresh.
 
-### CDD symlinks are broken
-
-Re-run `./pl-init.sh`. Refresh Mode detects broken symlinks and recreates
-them with the correct relative paths.
-
 ### Agent says "tools_root not found"
 
 Verify `.purlin/config.json` exists and contains a `"tools_root"` key.
@@ -310,8 +299,7 @@ remove the `.purlin/` directory first to trigger it).
 
 ### Python venv not set up
 
-If [Critic](critic-and-cdd-guide.md) or CDD tools fail with import errors, create a virtual
-environment:
+If tools fail with import errors, create a virtual environment:
 
 ```bash
 python3 -m venv .venv

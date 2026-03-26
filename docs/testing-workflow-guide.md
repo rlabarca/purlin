@@ -64,7 +64,7 @@ The Architect runs automatically after specs exist. It:
    - `smoke` -- core functionality. If broken, the app is unusable. Verified first.
    - `standard` -- important but not app-breaking. Default.
    - `full-only` -- polish and edge cases. Verified last or skipped in quick passes.
-3. **Commits and regenerates [the Critic](critic-and-cdd-guide.md) report** so the Builder knows what to build.
+3. **Commits changes** so the Builder knows what to build.
 
 **Your role:** Approve the work plan. Answer architectural questions.
 
@@ -76,7 +76,7 @@ The Architect runs automatically after specs exist. It:
 
 Launch: `./pl-run-builder.sh`
 
-The Builder discovers TODO features from [the Critic](critic-and-cdd-guide.md) report and for each one:
+The Builder discovers TODO features and for each one:
 
 1. **Implements** -- application code, scripts, config files.
 2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`. Unit tests must be fast, isolated, and structural -- single setup, value assertions, exit codes, file existence checks. If a test requires multi-step state manipulation, sandbox cloning, or process lifecycle management, it belongs under QA Scenarios instead.
@@ -146,7 +146,7 @@ Before any manual work begins, QA finalizes every feature that passed automated 
 - **Checkpoint A** -- after Steps 1-5: finalize AUTO features verified by web tests, @auto scenarios, and visual smoke.
 - **Checkpoint B** -- after in-session regression suites pass: finalize features whose regression suites ran and passed this session, before the external agent_behavior test gate.
 
-At each checkpoint, QA commits status tags (`[Complete] [Verified]`, one per feature) and updates the CDD dashboard. QA does not proceed to Phase B until the dashboard reflects completions.
+At each checkpoint, QA commits status tags (`[Complete] [Verified]`, one per feature). QA does not proceed to Phase B until completions are recorded.
 
 #### Step 6 -- LLM Delegation
 
@@ -226,7 +226,7 @@ Each tag is an immutable snapshot. The harness runner checks out the tag into a 
 
 ## 6. Build Test Infrastructure
 
-Test Infrastructure features (fixture setup, regression harness, test tooling) appear alongside all other features in the Builder's TODO list. The Builder discovers and implements them through the normal Critic-driven workflow -- no special mode or flag needed.
+Test Infrastructure features (fixture setup, regression harness, test tooling) appear alongside all other features in the Builder's TODO list. The Builder discovers and implements them through the normal workflow -- no special mode or flag needed.
 
 For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Builder to pick up.
 
@@ -337,4 +337,4 @@ Tags are QA outputs. Architects and PMs write scenarios without tags.
 | `/pl-regression-run` | QA | Execute existing regression scenarios |
 | `/pl-regression-evaluate` | QA | Process results, create BUG discoveries |
 | `/pl-web-test` | Builder | Visual verification via Playwright |
-| `/pl-status` | Any agent | Show [Critic](critic-and-cdd-guide.md) report and feature status |
+| `/pl-status` | Any agent | Show feature status |

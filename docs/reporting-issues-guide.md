@@ -17,8 +17,6 @@ the report.
 
 Use `/pl-purlin-issue` when the problem is with Purlin's tooling:
 
-- The [Critic](critic-and-cdd-guide.md) produces incorrect action items or crashes.
-- The [CDD Dashboard](status-grid-guide.md) shows wrong data or fails to start.
 - A slash command (`/pl-build`, `/pl-verify`, etc.) behaves incorrectly.
 - The init script fails or produces a broken scaffold.
 - Agent startup hangs, crashes, or loads the wrong instructions.
@@ -43,7 +41,7 @@ discovery sidecar files and routes it to the appropriate role.
 Run the command with a description of the problem:
 
 ```
-/pl-purlin-issue The Critic reports Spec Gate FAIL for a feature that has all required sections
+/pl-purlin-issue Spec Gate reports FAIL for a feature that has all required sections
 ```
 
 Or run it without arguments and the agent will ask you to describe the
@@ -66,8 +64,6 @@ The command automatically gathers:
 - **Environment** -- OS, agent role, current branch, tools_root path.
 - **Recent git history** -- Last 5 commits for context.
 - **Working tree state** -- Uncommitted changes that might be relevant.
-- **Active Critic issues** -- Any CRITICAL or HIGH priority items from the
-  Critic report.
 - **Conversation context** -- A brief summary of what you were doing when
   the issue occurred.
 
@@ -93,13 +89,13 @@ The command outputs a formatted report between clear dividers:
 
 ### Issue Description
 
-The Critic reports Spec Gate FAIL for a feature that has all
-required sections present and correctly formatted.
+Spec Gate reports FAIL for a feature that has all required
+sections present and correctly formatted.
 
 ### Context
 
-The Builder was running startup orientation when the Critic
-flagged feature_x.md with a Spec Gate FAIL...
+The Builder was running startup orientation when feature_x.md
+was flagged with a Spec Gate FAIL...
 
 ### Recent Git Activity
 
@@ -108,10 +104,6 @@ flagged feature_x.md with a Spec Gate FAIL...
 ### Working Tree State
 
 (uncommitted changes or "clean")
-
-### Active Critic Issues
-
-(CRITICAL/HIGH items or "None")
 
 -------- END PURLIN ISSUE REPORT ---------
 ```
@@ -146,6 +138,6 @@ questions about your environment or version -- it is all in the table.
 - **Include reproduction steps in your description.** The command collects
   environment data, but only you know the exact sequence of actions that
   triggered the bug.
-- **Check for known issues first.** Run `/pl-status` to see if [the Critic](critic-and-cdd-guide.md)
-  has already flagged something relevant. The issue may be a known gap
-  rather than a bug.
+- **Check for known issues first.** Run `/pl-status` to see if something
+  relevant has already been flagged. The issue may be a known gap rather
+  than a bug.

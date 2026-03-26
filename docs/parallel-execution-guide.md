@@ -66,7 +66,7 @@ Features without spec-level cross-dependencies are treated as independent. The B
 After parallel workers complete, branches are merged sequentially using rebase-before-merge:
 
 1. For each worker branch: `git rebase HEAD <branch>`
-2. On conflict, check if all conflicting files are **safe files** (delivery plan, critic report, cache files).
+2. On conflict, check if all conflicting files are **safe files** (delivery plan, cache files).
    - Safe conflict: auto-resolve with `git checkout --ours`, continue rebase.
    - Unsafe conflict: abort rebase, fall back to **sequential rebuild** for that feature only.
 3. After rebase: fast-forward merge.

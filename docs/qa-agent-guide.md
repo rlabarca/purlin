@@ -17,7 +17,7 @@ The QA agent:
 - **Marks features complete** after clean verification with zero open discoveries.
 - **Never writes application code.** QA writes verification scripts, discovery files, and scenario tags -- not implementation.
 
-QA discovers its own work. At startup, it reads [the Critic](critic-and-cdd-guide.md) report, finds features in TESTING state, and presents a verification plan.
+QA discovers its own work. At startup, it finds features in TESTING state and presents a verification plan.
 
 ---
 
@@ -63,7 +63,7 @@ QA verification has two phases: Phase A (automated, runs first) and Phase B (man
 - **Checkpoint A** -- after Steps 1-5: finalize AUTO features verified by web tests, @auto scenarios, and visual smoke.
 - **Checkpoint B** -- after in-session regression suites pass: finalize features whose regression suites ran and passed this session.
 
-At each checkpoint, QA commits regression artifacts, commits one `[Complete] [Verified]` status tag per eligible feature, runs CDD status to update the dashboard, and verifies the finalized features no longer show as AUTO/TODO. QA does not proceed to Phase B until the CDD update completes.
+At each checkpoint, QA commits regression artifacts, commits one `[Complete] [Verified]` status tag per eligible feature, and verifies the finalized features no longer show as AUTO/TODO.
 
 **Step 6 -- LLM Delegation.** For scenarios needing Claude to analyze output, QA composes a command for you to run externally.
 
@@ -254,11 +254,10 @@ Before ending a session, QA runs a mandatory workspace cleanup. It resolves all 
 | `/pl-regression-evaluate` | Process regression results, create BUG discoveries. |
 | `/pl-web-test [name]` | Run Playwright visual verification. |
 | `/pl-qa-report` | Summary of open discoveries and QA status. |
-| `/pl-status` | Check CDD status and action items. |
+| `/pl-status` | Check feature status and action items. |
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
 | `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
 | `/pl-server` | Dev server lifecycle management. |
-| `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-override-edit` | Edit `QA_OVERRIDES.md`. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore session state. |
