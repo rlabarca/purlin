@@ -137,7 +137,36 @@ if git merge "$WORKTREE_BRANCH" --no-edit 2>/dev/null; then
     _release_merge_lock
     echo "Merged $WORKTREE_BRANCH into $(git rev-parse --abbrev-ref HEAD) and cleaned up worktree."
 else
-    # Merge conflict — abort, preserve worktree, write breadcrumb
+    # Merge conflict — check if all conflicts are in safe files
+    CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null)
+    SAFE_ONLY=true
+    if [ -n "$CONFLICT_FILES" ]; then
+        while IFS= read -r _cf; do
+            case "$_cf" in
+                .purlin/delivery_plan.md|.purlin/cache/*) ;;
+                *) SAFE_ONLY=false; break ;;
+            esac
+        done <<< "$CONFLICT_FILES"
+    fi
+
+    if [ "$SAFE_ONLY" = true ] && [ -n "$CONFLICT_FILES" ]; then
+        # Auto-resolve safe files by keeping main's version
+        while IFS= read -r _cf; do
+            git checkout --ours "$_cf" 2>/dev/null || true
+            git add "$_cf" 2>/dev/null || true
+        done <<< "$CONFLICT_FILES"
+        if git commit --no-edit 2>/dev/null; then
+            rm -f "$WORKTREE_PATH/.purlin_session.lock" 2>/dev/null || true
+            git worktree remove "$WORKTREE_PATH" 2>/dev/null || true
+            git branch -d "$WORKTREE_BRANCH" 2>/dev/null || true
+            rm -f "$MERGE_PENDING_DIR/$WORKTREE_BRANCH.json" 2>/dev/null || true
+            _release_merge_lock
+            echo "Merged $WORKTREE_BRANCH (auto-resolved safe-file conflicts in .purlin/)."
+            exit 0
+        fi
+    fi
+
+    # Real conflicts or safe-file resolution failed — abort, preserve worktree, write breadcrumb
     git merge --abort 2>/dev/null || true
     _release_merge_lock
 
