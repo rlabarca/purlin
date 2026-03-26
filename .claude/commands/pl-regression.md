@@ -18,12 +18,20 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 
 ## Auto-Detect (Bare Invocation)
 
-When invoked without a subcommand, scan project state and execute the first matching rule:
+When invoked without a subcommand, first print a health summary, then auto-detect and execute the next step.
+
+**Health summary** (always print first):
+```
+Regression Health: 8 PASS, 2 STALE, 1 FAIL, 1 NOT_RUN (12 total)
+```
+Scan `tests/qa/scenarios/*.json` and check each feature's `tests/<feature>/regression.json`. Count results by status. If zero scenario files exist, print `"No regression scenarios authored yet."` instead.
+
+**Auto-detect** — execute the first matching rule:
 
 1. **Author needed:** Features with `## Regression Guidance` or `### QA Scenarios` but no `tests/qa/scenarios/<feature>.json` → run `author`.
 2. **Run needed:** Scenario files exist with STALE, FAIL, or NOT_RUN results → run `run`.
 3. **Evaluate needed:** Fresh results exist that haven't been documented (FAIL with no companion file entry, or results newer than last evaluation) → run `evaluate`.
-4. **All green:** Print summary and stop.
+4. **All green:** Health summary is sufficient. Stop.
 
 After completing the detected step, print:
 ```

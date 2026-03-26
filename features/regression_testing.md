@@ -156,9 +156,9 @@ Run regression suites? [all / per-feature / skip]
 ```
 
 6. **Run all suites in-session.** All harness types — including `agent_behavior` — run directly via the harness runner. The `agent_behavior` harness invokes `claude --print` as a non-interactive subprocess; this is safe because `claude --print` is stateless and does not conflict with the parent Claude Code session.
-7. **Background execution for slow suites.** When a suite is expected to take >30 seconds (e.g., `agent_behavior` with multiple scenarios), run it via `run_in_background` so QA can continue with other Phase A work (visual smoke, scenario classification) while tests execute. When the background process completes, QA is notified and auto-evaluates the results.
-8. **Foreground execution for fast suites.** `web_test` and `custom_script` suites typically complete in seconds. Run these synchronously (foreground) for immediate feedback.
-9. When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). For pre-release suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
+7. **Early background launch in `/pl-verify`.** During `/pl-verify`, slow regression suites (multi-scenario `agent_behavior`, estimated >30s) are launched in background at the START of Phase A (Step 0b), before auto-pass/smoke/classification. This overlaps test execution with other Phase A work so results are ready by the regression checkpoint. Smoke-tier suites are excluded from early launch (they run synchronously in the smoke gate).
+8. **Foreground execution for fast suites.** `web_test`, `custom_script`, and single-scenario `agent_behavior` suites run synchronously for immediate feedback.
+9. **`auto_start` behavior:** Run STALE and NOT_RUN suites automatically (smoke first, then standard). Skip pre-release suites silently — log `"Skipped N pre-release suites (run manually before release)."` Pre-release suites are for release time, not every verify pass. Under `auto_start: false`, prompt for pre-release suites.
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 

@@ -14,7 +14,7 @@ The `/pl-regression` skill consolidates regression test operations (run, author,
 
 ### 2.1 Auto-Detect (Bare Invocation)
 
-Bare `/pl-regression` (no subcommand) MUST auto-detect the natural next step and execute it. The detection logic scans project state and picks the first matching rule:
+Bare `/pl-regression` (no subcommand) MUST first print a **health summary** showing regression status counts (N PASS, N STALE, N FAIL, N NOT_RUN, total), then auto-detect the natural next step and execute it. If zero scenario files exist, print `"No regression scenarios authored yet."` instead of counts. The detection logic scans project state and picks the first matching rule:
 
 1. **No scenario files exist** for any feature with regression guidance → run `author`.
 2. **Scenario files exist with STALE, FAIL, or NOT_RUN results** → run `run`.

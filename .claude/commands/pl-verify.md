@@ -45,6 +45,20 @@ Before any execution, check each in-scope feature's regression scope by reading 
 
 If a cross-validation concern is detected (e.g., `cosmetic` scope but modified files touch scenarios), present the warning and ask whether to proceed with declared scope or escalate to `full`.
 
+### Step 0b -- Early regression launch (background)
+
+Before any other Phase A work, scan for slow regression suites that can run in background while Steps 1-5 execute:
+
+1. Scan `tests/qa/scenarios/*.json` for scenario files with `harness_type: "agent_behavior"` and 2+ scenarios (estimated >30s).
+2. Check their `tests/<feature>/regression.json` status. Only launch suites that are STALE, FAIL, or NOT_RUN.
+3. **Skip smoke-tier suites** — these run synchronously in Step 2 (smoke gate must block).
+4. Launch eligible suites via `run_in_background`. QA is notified on completion.
+5. Track which suites were launched (to avoid re-running in the regression step later).
+
+This step is silent — no output, no user prompt. The goal is to overlap slow test execution with Phase A classification/visual work so results are ready by the regression checkpoint.
+
+Under `auto_start: false`, still launch background suites — they're non-destructive and save time regardless.
+
 ### Step 1 -- Auto-pass builder-verified features
 
 Credit features where Builder status is DONE and zero QA scenarios exist. These require no QA action.
@@ -224,10 +238,11 @@ Regression suites:
 Run regression suites? [all / per-feature / skip]
 ```
 
-8. **Execute all suites in-session.** All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
+8. **Execute remaining suites in-session.** Skip suites already launched in Step 0b (background). All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
    - **Fast suites** (`web_test`, `custom_script`, single-scenario `agent_behavior`): run synchronously for immediate feedback.
-   - **Slow suites** (multi-scenario `agent_behavior`, estimated >30s): run via `run_in_background`. QA continues with other Phase A work (visual smoke, scenario classification) and is notified on completion.
-   - When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). For pre-release suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
+   - **Already-launched suites** (from Step 0b): check if background results have arrived. If yes, evaluate immediately. If not, note "waiting for N background suites" and proceed — they'll be evaluated at the regression checkpoint.
+   - When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). Skip pre-release suites silently — log `"Skipped N pre-release suites (run manually before release)."` Pre-release suites are for release time, not every verify pass.
+   - When `auto_start` is `false`: prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
 
 9. **Auto-evaluate on completion.** When each suite finishes (foreground or background notification), immediately read `regression.json` and evaluate:
    - PASS: record pass, no action needed.

@@ -35,6 +35,13 @@ Analyze the scan JSON to classify features into mode-specific work items.
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING
 - SPEC_UPDATED discoveries awaiting re-verification
 - `spec_modified_after_completion` is NOT a QA concern — it is Engineer-only. Do NOT show it in QA work items or treat it as a completion blocker. If the Engineer has re-validated and re-tagged the feature, QA proceeds normally.
+- **Regression status:** Features with STALE or FAIL `regression_status` in scan results — show as QA work items with reason `"regression STALE"` or `"regression FAIL"`. Include hint: `"Run /pl-regression to update."`
+- **Smoke candidates:** Read `smoke_candidates` from scan results. If non-empty, show after QA work items:
+  ```
+  Smoke candidates (unclassified):
+    feature_name — N dependents
+  ```
+  This is informational — no action required. QA can promote via `/pl-smoke`.
 
 **PM work:**
 - Features where `sections.requirements` is false (incomplete spec)
