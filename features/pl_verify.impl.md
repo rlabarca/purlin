@@ -4,7 +4,7 @@
 
 | Spec says | Implementation does | Tag | PM status |
 |-----------|-------------------|-----|-----------|
-| (see prose) | [ACKNOWLEDGED]** The QA agent was not automatically executing automated tests for features with `qa_status: AUTO` during Phase A. Root cause: PURLIN_BASE Section 3.3 and the skill file did not explicitly distinguish AUTO features from builder-verified. The QA agent conflated "zero manual work" with "no QA action needed." Fix applied to PURLIN_BASE (authoritative source): added AUTO feature mandate callout, excluded AUTO from Step 1 auto-pass, clarified Step 5 completes AUTO feature verification. Skill file update routed to Engineer via discovery sidecar. (2026-03-24) | DISCOVERY | PENDING |
+| (see prose) | [ACKNOWLEDGED] The QA agent was not automatically executing automated tests for features with `qa_status: AUTO` during Phase A. Root cause: PURLIN_BASE Section 3.3 and the skill file did not explicitly distinguish AUTO features from builder-verified. The QA agent conflated "zero manual work" with "no QA action needed." Fix applied to PURLIN_BASE (authoritative source): added AUTO feature mandate callout, excluded AUTO from Step 1 auto-pass, clarified Step 5 completes AUTO feature verification. Skill file update routed to Engineer via discovery sidecar. Spec §2.3 Step 1 now has explicit AUTO exclusion. (2026-03-24, resolved 2026-03-26) | DISCOVERY | RESOLVED |
 
 ## Implementation Summary
 
