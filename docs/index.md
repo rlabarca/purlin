@@ -14,6 +14,7 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 ## Workflows
 
 * [Testing Workflow Guide](testing-workflow-guide.md) — The complete journey from idea through spec, implementation, verification, and regression coverage.
+* [Testing Lifecycle Reference](../instructions/references/testing_lifecycle.md) — Who defines, implements, runs, and verifies each test type across PM, Engineer, and QA modes. Includes the auto-fix iteration loop and failure routing.
 * [Parallel Execution Guide](parallel-execution-guide.md) — How the agent builds independent features in parallel using git worktrees.
 
 ## Setup & Maintenance
