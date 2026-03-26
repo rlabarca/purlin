@@ -208,7 +208,6 @@ Proceeding to Phase B.
 ```
 Regression suites:
   per-feature (run in-session):
-    [STALE]   critic_tool (3/3, but source modified since) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
     [NOT_RUN] terminal_identity
 

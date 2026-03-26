@@ -24,10 +24,6 @@ features/digests/
 *.log
 *.pid
 *.mmd
-tests/*/critic.json
-CRITIC_REPORT.md
-tools/critic/.cache/
-
 # Web-verify screenshots
 *.png
 !assets/*.png

@@ -68,7 +68,6 @@ Audit all design artifacts and visual specifications across the project for inte
    ```
    Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Dev Status | Annotations
    ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------|------------
-   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN           | N/A        | N/A
    my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A        | N/A
    figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | DRIFT      | 3
    ```

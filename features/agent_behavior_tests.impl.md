@@ -12,7 +12,7 @@
 
 **[CLARIFICATION]** The setup script was updated to fulfill the 2.2.1 contract: idempotent (checks for existing tags, skips them), outputs created tag names to stdout (one per line), sends progress messages to stderr, exits 1 on failure via `set -euo pipefail`. (Severity: INFO)
 
-**[CLARIFICATION]** A symlink `tests/agent_behavior_tests/test_behavior_harness.py -> ../../dev/test_behavior_harness.py` was added to make the test file discoverable by the Critic's traceability checker, which only scans `tests/<feature>/` and `tools/` directories. This resolved weak traceability warnings for two scenarios by making the full function bodies available for keyword matching. (Severity: INFO)
+**[CLARIFICATION]** A symlink `tests/agent_behavior_tests/test_behavior_harness.py -> ../../dev/test_behavior_harness.py` was added to make the test file discoverable by the traceability checker, which only scans `tests/<feature>/` and `tools/` directories. This resolved weak traceability warnings for two scenarios by making the full function bodies available for keyword matching. (Severity: INFO)
 
 ## Architecture Decisions
 
