@@ -75,7 +75,7 @@ If Phase A had zero failures and zero gaps, the menu is skipped — proceed dire
 - **Step 3 (Run @auto):** Execute @auto-tagged scenarios via the harness runner. Create BUG discoveries for failures. These failures feed into Phase A.5 (not just deferred to a future session).
 - **Step 4 (Classify untagged):** Propose automation for untagged scenarios. Tag as @auto (author + run regression JSON) or @manual based on feasibility and user approval.
 - **Step 5 (Visual smoke):** For features with visual specs, run web test or request screenshot for verification. For AUTO features where all items are automated/web-test, this step completes their verification.
-- **Step 5a (Phase A Checkpoint, MANDATORY HARD GATE):** Fires at three points: (A) after Steps 1-5, (B) after in-session regression suites pass, and (C) after Phase A.5 auto-fix loop completes. At each checkpoint, IN ORDER: (1) commit regression artifacts, (2) commit `[Complete] [Verified]` status tags — ONE `--allow-empty` COMMIT PER FEATURE (this is what changes lifecycle, not the artifact commits), (3) run `{tools_root}/cdd/scan.sh` as a hard gate — do NOT proceed to Phase B until it completes, (4) verify finalized features no longer show AUTO/TODO in scan output — if they do, a status tag was missed. The external test gate does NOT block finalization. If zero manual items remain, skip to Session Conclusion.
+- **Step 5a (Phase A Checkpoint, MANDATORY HARD GATE):** Fires at three points: (A) after Steps 1-5, (B) after in-session regression suites pass, and (C) after Phase A.5 auto-fix loop completes. At each checkpoint, IN ORDER: (1) commit regression artifacts, (2) commit `[Complete] [Verified]` status tags — ONE `--allow-empty` COMMIT PER FEATURE — for features where all automated work passed (unit tests in `tests.json`, regression suites, @auto scenarios) AND zero @manual scenarios remain unverified. Features with passing automated work but pending @manual scenarios are NOT finalized here — they proceed to Phase B. (3) run `{tools_root}/cdd/scan.sh` as a hard gate — do NOT proceed to Phase B until it completes, (4) verify finalized features no longer show AUTO/TODO in scan output — if they do, a status tag was missed. The external test gate does NOT block finalization. If zero manual items remain, skip to Session Conclusion.
 - Print Phase A Summary bridging to Phase A.5 or Phase B.
 - **Regression result validity:** A `regression.json` with `status: "PASS"` where source files are NOT modified since the result mtime is a valid pass. Do NOT re-run, do NOT flag as "prior run; re-run needed." Only STALE, FAIL, and NOT_RUN require action.
 
@@ -97,12 +97,12 @@ Activates when: `--auto-verify` flag is present, OR `auto_start: true`, OR user 
 
 Each iteration consists of two fix phases and a re-run:
 
-1. **Collect failures.** Read all `regression.json` files for in-scope features. Gather `[BUG]` discoveries recorded during Phase A. Skip tests with status PASS or ESCALATED.
+1. **Collect failures.** Read all `regression.json` AND `tests.json` files for in-scope features. Gather `[BUG]` discoveries recorded during Phase A. Skip tests with status PASS or ESCALATED. Unit test failures (`tests.json` with `status: "FAIL"`) are included because the internal mode switch to Engineer (step 4) provides the write access needed to fix Engineer-owned test code.
 2. **If zero failures remain**, exit the loop.
 3. **Group failures by feature** with scenario details (expected, actual_excerpt, scenario_ref).
 4. **Engineer fix phase.** Internal mode switch to Engineer (Section 2.3.3). For each feature with failures:
-   - Read regression.json details and source code referenced by scenario_ref.
-   - Read the test scenario assertions.
+   - For regression failures: read regression.json details and source code referenced by scenario_ref. Read the test scenario assertions.
+   - For unit test failures (`tests.json` FAIL): re-run the feature's unit test suite to capture detailed failure output, then read the failing test source code.
    - Diagnose: code bug vs stale test assertion vs spec-level issue.
    - **Code bug** → fix source code, commit with `fix(scope):` prefix.
    - **Stale test** → flag for QA fix in step 5 (record `[BUG] test-scenario:` with `Action Required: QA`). Do NOT modify QA-owned scenario JSON.
@@ -110,7 +110,7 @@ Each iteration consists of two fix phases and a re-run:
    - Update companion file with `[CLARIFICATION]` auto-fix entry.
    - Engineer scope is minimal: fix ONLY the specific failure. No refactoring, no extras.
 5. **QA fix phase.** Internal mode switch to QA. Fix any test scenarios flagged as stale by Engineer (update assertion patterns, remove brittle checks). Commit scenario fixes.
-6. **Re-run failed tests only.** Run harness on scenario files that had at least one failure. Do NOT re-run scenario files that were all-PASS. Update the failure tracker.
+6. **Re-run failed tests only.** Run harness on scenario files that had at least one failure. For features with unit test failures, re-run the unit test suite via `/pl-unit-test`. Do NOT re-run scenario files or test suites that were all-PASS. Update the failure tracker.
 7. **Check escalation conditions.** For each re-run result:
    - New PASS → mark test as resolved.
    - Same failure (identical signature: `hash(expected + actual_excerpt[:200])`) → if this is the second identical failure, ESCALATE that test. Do not attempt a third fix on the same failure.
@@ -270,6 +270,20 @@ This protocol is defined within `/pl-verify` only. It does NOT modify `/pl-mode`
     And switches back to QA mode
     And re-runs only the failed scenario
     And the scenario now passes
+
+#### Scenario: Auto-fix loop resolves a unit test failure
+
+    Given feature_a has tests.json with status FAIL
+    And /pl-verify is invoked with --auto-verify
+    When Phase A.5 collects failures
+    Then the tests.json FAIL status is included in the failure set
+    When the Engineer fix phase runs
+    Then the agent re-runs the unit tests to capture failure details
+    And diagnoses and fixes the failing test or source code
+    And commits with a fix() prefix
+    When the re-run phase executes
+    Then the unit tests are re-run via /pl-unit-test
+    And tests.json now shows PASS
 
 #### Scenario: Auto-fix loop handles stale test assertion
 
