@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The core spec authoring skill shared by PM and PM roles. Provides a guided workflow for creating new feature specs or refining existing ones, enforcing template compliance, category/label conventions, prerequisite checklist validation, and Critic parser requirements. Integrates with `/pl-find` for topic discovery before authoring.
+The core spec authoring skill shared by PM and PM roles. Provides a guided workflow for creating new feature specs or refining existing ones, enforcing template compliance, category/label conventions, prerequisite checklist validation, and scan parser requirements. Integrates with `/pl-find` for topic discovery before authoring.
 
 ---
 
@@ -32,7 +32,7 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 ### 2.4 Template Compliance
 
 - New feature files MUST use the canonical template structure from `tools/feature_templates/_feature.md`.
-- Required section headings (Critic checks): a heading containing `overview`, `requirements`, and `scenarios`.
+- Required section headings (scan checks): a heading containing `overview`, `requirements`, and `scenarios`.
 - Scenario headings MUST use four-hash `####` format.
 
 ### 2.5 Category and Label Conventions
@@ -49,7 +49,7 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 
 ### 2.7 Post-Authoring
 
-- After editing, commit the change and run `scan.sh` to regenerate the Critic report.
+- After editing, commit the change and run `scan.sh` to refresh scan results.
 
 ---
 

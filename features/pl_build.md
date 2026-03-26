@@ -54,7 +54,7 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
 
 - When a delivery plan has PENDING phases with 2+ independent features (no mutual dependencies in `dependency_graph.json`), Engineer mode MUST spawn `engineer-worker` sub-agents for parallel execution in isolated worktrees.
 - Independent features build in parallel; dependent features use the sequential per-feature loop.
-- Merge uses the Robust Merge Protocol: rebase sequentially, auto-resolve conflicts in safe files (delivery plan, Critic report, cache), abort and fall back to sequential for unsafe conflicts.
+- Merge uses the Robust Merge Protocol: rebase sequentially, auto-resolve conflicts in safe files (delivery plan, cache), abort and fall back to sequential for unsafe conflicts.
 
 ### 2.6 Per-Feature Implementation Protocol
 

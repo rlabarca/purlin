@@ -32,7 +32,7 @@ The anchor node authoring skill shared by PM and PM roles. Provides a guided wor
 ### 2.4 Template Compliance
 
 - Anchor nodes MUST use the canonical template from `tools/feature_templates/_anchor.md`.
-- Required section headings (Critic checks): `purpose` and `invariants` (case-insensitive substring).
+- Required section headings (scan checks): `purpose` and `invariants` (case-insensitive substring).
 - Heading `## 1. Overview` does NOT satisfy the `purpose` check.
 
 ### 2.5 Cascade Awareness
@@ -42,7 +42,7 @@ The anchor node authoring skill shared by PM and PM roles. Provides a guided wor
 
 ### 2.6 Post-Authoring
 
-- After editing, commit the change and run `scan.sh` to update the Critic report and reset dependent features.
+- After editing, commit the change and run `scan.sh` to refresh scan results and reset dependent features.
 
 ---
 

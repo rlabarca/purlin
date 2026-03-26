@@ -132,7 +132,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 
 ```
 1. Executive Summary (role identity)
-2. Startup Protocol (Critic, work discovery, plan proposal)
+2. Startup Protocol (scan, work discovery, plan proposal)
 3. Feature Status Lifecycle
 4. Tombstone Processing
 5. Per-Feature Implementation Protocol (pointer to /pl-build)
@@ -202,7 +202,7 @@ When `auto_start: true` in Engineer mode's config:
 
 On `/pl-resume`, Engineer mode MUST check for orphaned worktree branches matching the pattern `worktree-*`:
 *   If found: attempt to merge them using the robust merge protocol (Section 2.4), then continue.
-*   If not found: the sub-agents either completed and merged, or never started. The delivery plan + Critic state tells Engineer mode what remains.
+*   If not found: the sub-agents either completed and merged, or never started. The delivery plan + scan state tells Engineer mode what remains.
 
 #### 2.9.2 Checkpoint Format Extension
 
@@ -216,7 +216,7 @@ Add to Engineer mode Context section of the checkpoint:
 
 On resume, Engineer mode:
 1.  Reads delivery plan -- identifies current phase (IN_PROGRESS) and remaining phases (PENDING).
-2.  Reads Critic -- identifies which features in the current phase are done vs TODO.
+2.  Reads scan results -- identifies which features in the current phase are done vs TODO.
 3.  Checks for orphaned worktree branches -- merges if found.
 4.  Continues with remaining features in the current phase.
 5.  Auto-progresses to next phases (if `auto_start: true`).
@@ -489,7 +489,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And context was cleared via /clear
     When /pl-resume restores the session
     Then the delivery plan shows phases 1-3 COMPLETE, phase 4 IN_PROGRESS
-    And the Critic identifies remaining TODO features in phase 4
+    And /pl-status identifies remaining TODO features in phase 4
     And Engineer mode continues from the current phase
 
 #### Scenario: Resume with orphaned sub-agent branches

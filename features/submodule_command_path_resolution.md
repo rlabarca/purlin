@@ -38,7 +38,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 - When `/pl-web-test` produces a STALE verdict for a checklist item (Figma design updated after spec extraction), the command MUST automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`.
 - The discovery entry MUST include the STALE checklist item text and the Figma frame reference so the PM knows exactly what to re-ingest.
-- This auto-recording replaces manual Engineer action after the fact -- the routing from Engineer to PM is handled entirely by the command and the Critic.
+- This auto-recording replaces manual Engineer action after the fact -- the routing from Engineer to PM is handled entirely by the command and the scan.
 
 ---
 

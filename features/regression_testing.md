@@ -99,11 +99,11 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Behavior:**
 
-1. Read `regression.json` files for features with recently updated regression results (mtime newer than last Critic run).
+1. Read `regression.json` files for features with recently updated regression results (mtime newer than last scan run).
 2. For each feature with failures: create a `[BUG]` discovery sidecar entry in `features/<name>.discoveries.md` with `scenario_ref`, `actual_excerpt`, and `expected` from the enriched results.
 3. Compute and report assertion tier distribution across all detail entries.
 4. Flag `[SHALLOW]` suites where >50% of assertions are Tier 1.
-5. Run `tools/cdd/scan.sh` to refresh the Critic report.
+5. Run `tools/cdd/scan.sh` to refresh scan results.
 6. Print handoff message if failures were found (see Section 2.12).
 
 #### 2.2.4 First-Time Orientation
@@ -444,9 +444,9 @@ When Engineer mode encounters regression test failures, it follows this triage:
 - **Status:** OPEN
 ```
 
-QA picks this up in the next session via Critic action items. QA fixes the scenario JSON and commits.
+QA picks this up in the next session via `/pl-status` action items. QA fixes the scenario JSON and commits.
 
-**Critic routing:** The Critic recognizes `Action Required: QA` on BUG discoveries and routes them to the QA column instead of Engineer mode column. This prevents Engineer mode from seeing its own feedback as a new action item.
+**Scan routing:** The scan recognizes `Action Required: QA` on BUG discoveries and routes them to the QA work items instead of Engineer work items. This prevents Engineer mode from seeing its own feedback as a new action item.
 
 ### 2.12 Agent Handoff Protocol
 
@@ -702,7 +702,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     Then the discovery title includes "test-scenario"
     And Action Required is set to "QA"
     And the discovery body includes scenario_ref and actual_excerpt
-    And the Critic routes this to the QA column
+    And /pl-status routes this to the QA work items
 
 #### Scenario: Harness runner writes enriched regression.json
 

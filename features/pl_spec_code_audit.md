@@ -166,7 +166,7 @@ The command MUST assess each feature against these 12 dimensions (dimensions 1-1
 - **PM FIX:** Edit feature files directly (add missing sections, refine scenarios, add prerequisite links). For acknowledged builder decisions: update the spec and mark the tag as acknowledged in the companion file. Commit each logical group.
 - **PM ESCALATE:** Create or update companion files with tagged `[DISCOVERY]` entries including Source, Severity, Details, and Suggested fix. Commit together. Run `${TOOLS_ROOT}/cdd/scan.sh` afterward.
 - **Engineer FIX:** Fix code to match scenario assertions. Add or update automated tests. Update companion file notes. Commit each logical group.
-- **Engineer ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next PM session.
+- **Engineer ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. `/pl-status` surfaces these at next PM session.
 - **Dimension 12 (Code ownership) remediation:**
   - **PM FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
   - **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.

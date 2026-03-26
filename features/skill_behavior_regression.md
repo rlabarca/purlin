@@ -34,7 +34,7 @@ Consumer project state snapshots stored in the `purlin-fixtures` repo:
 
 Each fixture tag contains a complete `.purlin/` config, `features/` directory, `instructions/` directory, and any other files the scenario requires. The fixture state MUST be self-contained — tests should not depend on external network or the current Purlin repo state.
 
-**Remote push requirement:** Since this feature declares `> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git`, Engineer mode MUST push fixture tags to the remote repo after local creation (via `fixture push <remote-url>`). Tags that exist only in the local convention-path repo will not satisfy the Critic gate. See `features/test_fixture_repo.md` Section 2.12 for the remote push workflow.
+**Remote push requirement:** Since this feature declares `> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git`, Engineer mode MUST push fixture tags to the remote repo after local creation (via `fixture push <remote-url>`). Tags that exist only in the local convention-path repo will not satisfy the scan gate. See `features/test_fixture_repo.md` Section 2.12 for the remote push workflow.
 
 ### 2.2 Scenario JSON
 

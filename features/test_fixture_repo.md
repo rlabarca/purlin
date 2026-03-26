@@ -19,9 +19,9 @@ The fixture repo eliminates the "complex setup" problem: scenarios that require 
 
 - **Convention path:** The fixture repo lives at `.purlin/runtime/fixture-repo` (a local bare git repo). This is the default location — no configuration is needed. Setup scripts in `dev/` generate this repo deterministically from the project's own files.
 - The expected pattern is **one fixture repo per project**. Tags are namespaced by feature name (`<project-ref>/<feature-name>/<scenario-slug>`), so a single repo holds fixtures for all features.
-- When the fixture repo exists at the convention path, automated test tools and the Critic can look up fixture tags by feature name and scenario slug without any per-feature metadata.
+- When the fixture repo exists at the convention path, automated test tools and the scanner can look up fixture tags by feature name and scenario slug without any per-feature metadata.
 - **Optional overrides:** Feature files MAY include a `> Test Fixtures: <repo-url>` blockquote metadata line to point at a different repo (e.g., a remote URL or alternate local path). `.purlin/config.json` MAY include a `fixture_repo_url` key to override the convention path project-wide. These are for unusual cases only — most projects use the convention path exclusively.
-- **Resolution order:** The Critic and fixture tools resolve the fixture repo in this order: (1) per-feature `> Test Fixtures:` metadata, (2) project-level `fixture_repo_url` config, (3) convention path `.purlin/runtime/fixture-repo`. The first one that exists wins.
+- **Resolution order:** The scanner and fixture tools resolve the fixture repo in this order: (1) per-feature `> Test Fixtures:` metadata, (2) project-level `fixture_repo_url` config, (3) convention path `.purlin/runtime/fixture-repo`. The first one that exists wins.
 - Relative paths (in any source) are resolved against `PURLIN_PROJECT_ROOT`.
 
 ### 2.2 Tag Convention (Immutable Fixture States)
@@ -119,7 +119,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 7. Engineer mode writes the automated test code that checks out the tag, runs the check, and asserts results.
 8. Engineer mode creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
-   - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is an Engineer decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
+   - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is an Engineer decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the scanner and test tools can find it without configuration.
 
 ### 2.6.3 QA Workflow
 
@@ -248,7 +248,7 @@ When creating fixtures for a feature with a remote configured (via `fixture remo
 
 When a feature needs a fixture repo and no remote URL is configured:
 
-1. Engineer mode prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, Critic-validated) or local only?"
+1. Engineer mode prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, scan-validated) or local only?"
 2. If the user provides a remote URL, Engineer mode runs `fixture remote <url>` to configure the project-wide remote. This stores the URL in config, connects or clones the repo, and syncs any existing local tags.
 3. If the user wants to create a new remote repo, Engineer mode guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL." Then runs `fixture remote <url>`.
 4. For per-feature overrides (rare), Engineer mode records `> Test Fixtures: <url>` in the feature spec instead.

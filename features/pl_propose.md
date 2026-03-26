@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Engineer mode's structured spec change proposal skill for surfacing gaps, inconsistencies, or improvements discovered during implementation. Records proposals as `[SPEC_PROPOSAL]` entries in the feature's companion file so PM mode discovers them through the Critic report. Supports anchor node proposals via `[SPEC_PROPOSAL: NEW_ANCHOR]` tag. Enforces the "chat is not a durable channel" principle.
+Engineer mode's structured spec change proposal skill for surfacing gaps, inconsistencies, or improvements discovered during implementation. Records proposals as `[SPEC_PROPOSAL]` entries in the feature's companion file so PM mode discovers them through `/pl-status` output. Supports anchor node proposals via `[SPEC_PROPOSAL: NEW_ANCHOR]` tag. Enforces the "chat is not a durable channel" principle.
 
 ---
 
@@ -25,7 +25,7 @@ Engineer mode's structured spec change proposal skill for surfacing gaps, incons
 - Describe the gap, inconsistency, or improvement encountered during implementation.
 - Draft a concrete proposal: what should change in the spec.
 - Record as `[AUTONOMOUS]` or `[DISCOVERY]` entry with `[SPEC_PROPOSAL]` tag in the companion file.
-- Commit so PM mode sees it in the Critic report.
+- Commit so PM mode sees it in `/pl-status` output.
 
 ### 2.3 Anchor Node Proposals
 
@@ -67,7 +67,7 @@ Engineer mode's structured spec change proposal skill for surfacing gaps, incons
     Given a proposal entry is written to the companion file
     When the proposal workflow completes
     Then the companion file change is committed
-    And the Critic report will surface it at PM mode's next session
+    And /pl-status will surface it at PM mode's next session
 
 ### QA Scenarios
 
