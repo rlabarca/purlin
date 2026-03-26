@@ -388,12 +388,16 @@ def scan_fixture_features(fixture_dir):
     return result
 
 
-def build_print_mode_context(fixture_dir, project_root, role, prompt):
+def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None):
     """Build supplementary context for claude --print mode.
 
     In --print mode the model cannot use tools (Read, Bash, etc.).
     This pre-loads data that agents normally obtain via tool calls:
     command tables, feature status, and skill content.
+
+    Args:
+        mode: For PURLIN role, the active mode ('pm', 'engineer', 'qa').
+              Drives mode-specific enforcement mandates.
     """
     sections = []
     role_lower = role.lower()
@@ -489,6 +493,27 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
 
     # 4. Role enforcement reinforcement (compensates for missing
     #    tool-level guardrails in --print mode)
+    purlin_mode_mandates = {
+        'pm': (
+            'You are the Purlin Agent in PM mode. You MUST NEVER write, '
+            'edit, fix, debug, or modify code files, scripts, tests, or '
+            'instruction files. This includes fixing imports, changing '
+            'return values, updating variable names, or any other code '
+            'change no matter how small. If the user asks you to fix, edit, '
+            'or change ANY code file, you MUST REFUSE the request and '
+            'explain that code changes are Engineer-owned. Do NOT look for '
+            'the file, do NOT suggest you could fix it — simply refuse.'),
+        'engineer': (
+            'You are the Purlin Agent in Engineer mode. You MUST NEVER '
+            'write, edit, or create feature spec files (features/*.md) or '
+            'design/policy anchors. If asked to do so, REFUSE the request '
+            'and explain that spec files are PM-owned.'),
+        'qa': (
+            'You are the Purlin Agent in QA mode. You MUST NEVER write, '
+            'edit, or create application code or fix bugs in code. If asked '
+            'to do so, REFUSE the request and explain that code changes are '
+            'Engineer-owned and specs are PM-owned.'),
+    }
     role_mandates = {
         'ARCHITECT': (
             'You are the Architect. You have a ZERO CODE MANDATE: you MUST '
@@ -517,7 +542,11 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
             'a mode first: "I need to activate a mode before writing files. '
             'This looks like [Engineer/PM/QA] work. Activate [mode]?"'),
     }
-    mandate = role_mandates.get(role, '')
+    # For PURLIN role with a mode, use mode-specific mandate
+    if role == 'PURLIN' and mode and mode.lower() in purlin_mode_mandates:
+        mandate = purlin_mode_mandates[mode.lower()]
+    else:
+        mandate = role_mandates.get(role, '')
     if mandate:
         sections.append(f'# CRITICAL: Role Enforcement\n\n{mandate}')
 
@@ -529,6 +558,7 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt):
 def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     """Execute an agent_behavior scenario. Returns (output, success)."""
     role = scenario.get('role', 'BUILDER')
+    mode = scenario.get('mode', None)
     prompt = scenario.get('prompt', '')
 
     if not prompt:
@@ -550,7 +580,7 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
         if prompt_file:
             ctx_dir = fixture_dir or project_root
             supplementary = build_print_mode_context(
-                ctx_dir, project_root, role, prompt)
+                ctx_dir, project_root, role, prompt, mode=mode)
             if supplementary:
                 with open(prompt_file, 'a') as f:
                     f.write('\n\n---\n\n' + supplementary)

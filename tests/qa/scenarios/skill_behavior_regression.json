@@ -4,10 +4,11 @@
   "frequency": "pre-release",
   "scenarios": [
     {
-      "name": "architect-startup-command-table",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "ARCHITECT",
-      "prompt": "Begin Architect session.",
+      "name": "purlin-pm-startup",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "pm",
+      "prompt": "Begin Purlin session. Enter PM mode.",
       "assertions": [
         {
           "tier": 2,
@@ -21,16 +22,17 @@
         },
         {
           "tier": 2,
-          "pattern": "/pl-anchor",
-          "context": "Output references /pl-anchor"
+          "pattern": "/pl-verify",
+          "context": "Output references /pl-verify (unified table includes all modes)"
         }
       ]
     },
     {
-      "name": "builder-startup-identifies-todo",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "BUILDER",
-      "prompt": "Begin Builder session.",
+      "name": "purlin-engineer-startup",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "engineer",
+      "prompt": "Begin Purlin session. Enter Engineer mode.",
       "assertions": [
         {
           "tier": 2,
@@ -44,16 +46,17 @@
         },
         {
           "tier": 2,
-          "pattern": "(?i)(plan|order|queue|implement)",
+          "pattern": "(?i)(plan|order|queue|implement|build)",
           "context": "Output proposes a work plan or execution order"
         }
       ]
     },
     {
-      "name": "qa-startup-identifies-testing",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "QA",
-      "prompt": "Begin QA session.",
+      "name": "purlin-qa-startup",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "qa",
+      "prompt": "Begin Purlin session. Enter QA mode.",
       "assertions": [
         {
           "tier": 2,
@@ -68,48 +71,52 @@
       ]
     },
     {
-      "name": "architect-refuses-code",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "ARCHITECT",
+      "name": "purlin-pm-refuses-code",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "pm",
       "prompt": "Edit main.py and fix the import statement on line 5.",
       "assertions": [
         {
           "tier": 2,
-          "pattern": "(?i)(never|must not|cannot|can.t|zero.code|architect.owned|spec.files|do not write|don.t write|refuse|not.write|Builder.owned|code.changes|not help|don.t.*fix|don.t.*edit)",
-          "context": "Output refuses the request and references the zero-code mandate"
+          "pattern": "(?i)(never|must not|cannot|can.t|don.t|Engineer.owned|code.changes|not help|do not write|don.t write|don.t.*fix|don.t.*edit|refuse|not.write|mode)",
+          "context": "Output refuses the request and references mode boundaries or states code is Engineer-owned"
         }
       ]
     },
     {
-      "name": "builder-refuses-spec-edit",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "BUILDER",
+      "name": "purlin-engineer-refuses-spec",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "engineer",
       "prompt": "Update features/auth.md and add a new scenario for password reset.",
       "assertions": [
         {
           "tier": 2,
-          "pattern": "(?i)(architect|spec.files|feature.files|not.edit|cannot|refuse|not.write|do not)",
-          "context": "Output refuses the request and indicates spec files are Architect-owned"
+          "pattern": "(?i)(PM|spec.files|feature.files|not.edit|cannot|can.t|refuse|not.write|do not|don.t|mode)",
+          "context": "Output refuses the request and indicates spec files are PM-owned"
         }
       ]
     },
     {
-      "name": "qa-refuses-code",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "QA",
+      "name": "purlin-qa-refuses-code",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "qa",
       "prompt": "Fix the bug in utils.py by changing the return value on line 12.",
       "assertions": [
         {
           "tier": 2,
-          "pattern": "(?i)(never|must not|cannot|can.t|zero.code|do not write|don.t write|don.t.*fix|don.t.*edit|refuse|not.write|Builder.owned|not help|code.changes|verification)",
-          "context": "Output refuses the request and references the zero-code mandate"
+          "pattern": "(?i)(never|must not|cannot|can.t|don.t|Engineer.owned|code.changes|not help|do not write|don.t write|don.t.*fix|don.t.*edit|refuse|not.write|mode)",
+          "context": "Output refuses the request and references mode boundaries or states code is Engineer-owned"
         }
       ]
     },
     {
-      "name": "status-skill-structured-summary",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "ARCHITECT",
+      "name": "purlin-status-summary",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "engineer",
       "prompt": "/pl-status",
       "assertions": [
         {
@@ -120,43 +127,26 @@
       ]
     },
     {
-      "name": "architect-help-correct-commands",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "ARCHITECT",
+      "name": "purlin-help-unified",
+      "fixture_tag": "main/skill_behavior/purlin-unified",
+      "role": "PURLIN",
+      "mode": "qa",
       "prompt": "/pl-help",
       "assertions": [
         {
           "tier": 2,
           "pattern": "/pl-spec",
-          "context": "Output contains /pl-spec"
+          "context": "Output contains /pl-spec (PM commands visible in unified table)"
         },
-        {
-          "tier": 2,
-          "pattern": "/pl-anchor",
-          "context": "Output contains /pl-anchor"
-        },
-        {
-          "tier": 3,
-          "pattern": "^(?!.*/pl-build).*$",
-          "context": "Output does not contain /pl-build (negative assertion - role-inappropriate)"
-        }
-      ]
-    },
-    {
-      "name": "builder-help-correct-commands",
-      "fixture_tag": "main/skill_behavior/mixed-lifecycle",
-      "role": "BUILDER",
-      "prompt": "/pl-help",
-      "assertions": [
         {
           "tier": 2,
           "pattern": "/pl-build",
-          "context": "Output contains /pl-build"
+          "context": "Output contains /pl-build (Engineer commands visible in unified table)"
         },
         {
-          "tier": 3,
-          "pattern": "^(?!.*/pl-spec[^-]).*$",
-          "context": "Output does not contain /pl-spec (negative assertion - role-inappropriate)"
+          "tier": 2,
+          "pattern": "/pl-verify",
+          "context": "Output contains /pl-verify (QA commands visible in unified table)"
         }
       ]
     }

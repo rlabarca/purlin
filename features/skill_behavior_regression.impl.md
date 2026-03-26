@@ -34,6 +34,16 @@
 
 **[CLARIFICATION]** Role enforcement reinforcement is added because `--print` mode lacks tool-level guardrails. In interactive mode, Claude Code's tool permissions block unauthorized file writes. In `--print` mode, only the system prompt constrains the model. The supplementary section adds explicit REFUSE instructions for each role's boundaries. (Severity: INFO)
 
+### Purlin Unified Agent Migration -- 2026-03-25
+
+**[DISCOVERY]** All 9 legacy scenarios replaced with 8 Purlin unified agent scenarios. The legacy suite tested role-specific agents (ARCHITECT, BUILDER, QA as separate agents) with a 4-layer instruction stack. The unified agent uses a 2-layer stack (PURLIN_BASE.md + PURLIN_OVERRIDES.md) with mode-specific behavior.
+
+Implementation changes:
+1. `build_print_mode_context()` accepts new `mode` parameter for PURLIN role. Mode-specific enforcement mandates added for pm, engineer, qa. Legacy role mandates preserved for backward compatibility.
+2. `execute_agent_behavior()` reads `mode` field from scenario JSON and passes it through.
+3. New fixture tag `main/skill_behavior/purlin-unified` created with PURLIN instruction stack, corrected lifecycle tags ([TESTING] not [Ready for Verification]), and purlin_commands.md reference.
+4. Scenario JSON updated: 8 scenarios with `role: "PURLIN"` and `mode` field. Old role-filtered help tests merged into single unified help test.
+
 ### Test Quality Audit
 - Rubric: 6/6 PASS
 - Tests: 41 total, 41 passed
