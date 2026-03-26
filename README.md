@@ -82,6 +82,17 @@ If `git pull` advances the Purlin submodule pointer (you'll see `purlin` in `git
 git submodule update --init purlin
 ```
 
+#### Upgrading from v0.8.4 or earlier
+
+Older versions use a different agent model. After updating, switch to the new unified launcher and run the update skill a second time to complete the migration:
+
+1. Run `/pl-update-purlin` from your current agent session to advance the submodule.
+2. Exit the session.
+3. Start a new session with `./pl-run.sh` (the unified launcher).
+4. Run `/pl-update-purlin` again. It detects the pending migration and converts your config, override files, specs, and companions to the new model.
+
+After migration, `./pl-run.sh` is the only launcher you need. The old launchers (`pl-run-architect.sh`, etc.) still work during the transition. When ready, run `/pl-update-purlin --complete-transition` to remove them.
+
 ### Configuration
 
 **Startup controls:** Per-agent flags in `.purlin/config.json`. Set `find_work: false` to skip orientation on launch (expert mode). Set `auto_start: true` (with `find_work: true`) to begin executing the work plan immediately without waiting for approval. See the [Agent Configuration Guide](docs/agent-configuration-guide.md) for details.
