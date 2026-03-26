@@ -590,42 +590,6 @@ SHIM_EOF
     chmod +x "$PROJECT_ROOT/pl-init.sh"
 }
 
-# Create CDD convenience symlinks at the project root.
-create_cdd_symlinks() {
-    local start_target="$SUBMODULE_NAME/tools/cdd/start.sh"
-    local stop_target="$SUBMODULE_NAME/tools/cdd/stop.sh"
-
-    # pl-cdd-start.sh
-    if [ -L "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
-        local current_target
-        current_target="$(readlink "$PROJECT_ROOT/pl-cdd-start.sh")"
-        if [ "$current_target" != "$start_target" ]; then
-            ln -sf "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
-        fi
-    elif [ -e "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
-        # Regular file exists where symlink should be — replace it
-        rm -f "$PROJECT_ROOT/pl-cdd-start.sh"
-        ln -s "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
-    else
-        ln -s "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
-    fi
-
-    # pl-cdd-stop.sh
-    if [ -L "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
-        local current_target
-        current_target="$(readlink "$PROJECT_ROOT/pl-cdd-stop.sh")"
-        if [ "$current_target" != "$stop_target" ]; then
-            ln -sf "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
-        fi
-    elif [ -e "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
-        # Regular file exists where symlink should be — replace it
-        rm -f "$PROJECT_ROOT/pl-cdd-stop.sh"
-        ln -s "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
-    else
-        ln -s "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
-    fi
-}
-
 # Install the Purlin session-recovery hook into .claude/settings.json (§2.15).
 # Idempotent: creates/merges without touching existing hooks or settings.
 install_session_hook() {
@@ -1003,10 +967,7 @@ else:
     # 3.9 Shim Generation
     generate_shim
 
-    # 3.10 CDD Convenience Symlinks
-    create_cdd_symlinks
-
-    # 3.11 Python Environment Suggestion (submodule_bootstrap.md §2.16)
+    # 3.10 Python Environment Suggestion (submodule_bootstrap.md §2.16)
     VENV_MSG=""
     if [ ! -d "$PROJECT_ROOT/.venv" ]; then
         VENV_MSG="(Optional) python3 -m venv .venv && .venv/bin/pip install -r $SUBMODULE_NAME/requirements-optional.txt"
@@ -1030,7 +991,6 @@ else:
     git -C "$PROJECT_ROOT" add .claude/settings.json 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .gitignore 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-init.sh 2>/dev/null || true
-    git -C "$PROJECT_ROOT" add pl-cdd-start.sh pl-cdd-stop.sh 2>/dev/null || true
     git -C "$PROJECT_ROOT" add CLAUDE.md 2>/dev/null || true
 
     # 3.16 Summary Output — "What's Next" Narrative (init_preflight_checks.md §2.4)
@@ -1054,9 +1014,6 @@ else:
     say "  3. Build from specs:"
     say "     The Builder reads your specs and writes the code and tests"
     say "     to match them. → ./pl-run-builder.sh"
-    say ""
-    say "  4. Watch progress:"
-    say "     ./pl-cdd-start.sh  — opens the CDD status dashboard"
     say ""
     if [ -n "$PROVIDER_SUMMARY" ]; then
         say "  $PROVIDER_SUMMARY"
@@ -1114,21 +1071,7 @@ else
         SHIM_NOTE=" Shim updated."
     fi
 
-    # 4.4 CDD Symlink Repair
-    SYMLINK_NOTE=""
-    REPAIRED=0
-    if [ ! -L "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
-        REPAIRED=$((REPAIRED + 1))
-    fi
-    if [ ! -L "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
-        REPAIRED=$((REPAIRED + 1))
-    fi
-    create_cdd_symlinks
-    if [ "$REPAIRED" -gt 0 ]; then
-        SYMLINK_NOTE=" $REPAIRED CDD symlink(s) repaired."
-    fi
-
-    # 4.5 Launcher Regeneration (always regenerate on refresh)
+    # 4.4 Launcher Regeneration (always regenerate on refresh)
     generate_purlin_launcher "$PROJECT_ROOT/pl-run.sh"
     # Remove stale launchers from previous naming conventions
     for stale in run_architect.sh run_builder.sh run_qa.sh; do
@@ -1183,12 +1126,11 @@ else
     if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
         MCP_NOTE=" MCP: $MCP_INSTALLED installed."
     fi
-    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}${MCP_NOTE}"
+    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${MCP_NOTE}"
     if [ "$MCP_ATTEMPTED" = true ] && [ -n "$MCP_NOTES" ]; then
         say "$MCP_NOTES"
     fi
     if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
         say "Restart Claude Code to load MCP servers."
     fi
-    say "Dashboard: ./pl-cdd-start.sh"
 fi
