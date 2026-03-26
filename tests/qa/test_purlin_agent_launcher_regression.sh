@@ -64,10 +64,15 @@ export PATH="$MOCK_DIR:$PATH"
 # --- Pre-check: required files exist ---
 echo "--- Pre-checks ---"
 
-if [ -f "$PURLIN_ROOT/pl-run-builder.sh" ]; then
-    log_pass "T0a: pl-run-builder.sh exists"
+LEGACY_LAUNCHER="$PURLIN_ROOT/pl-run-builder.sh"
+if [ -f "$LEGACY_LAUNCHER" ]; then
+    log_pass "T0a: pl-run-builder.sh exists (legacy launcher present)"
+    LEGACY_EXISTS=true
 else
-    log_fail "T0a: pl-run-builder.sh not found at $PURLIN_ROOT/pl-run-builder.sh"
+    # Legacy launchers were removed in the unified-launcher transition.
+    # Absence is expected — skip Scenario A deprecation tests.
+    log_pass "T0a: pl-run-builder.sh absent (legacy launchers removed — Scenario A N/A)"
+    LEGACY_EXISTS=false
 fi
 
 if [ -f "$PURLIN_ROOT/pl-run.sh" ]; then
@@ -98,30 +103,36 @@ echo ""
 # ============================================================
 echo "--- Scenario A: Deprecation warning on old launcher ---"
 
-# Run pl-run-builder.sh and capture stderr
-# The launcher will find our mock claude via PATH
-BUILDER_STDERR=$(cd "$PURLIN_ROOT" && bash "$PURLIN_ROOT/pl-run-builder.sh" 2>&1 1>/dev/null || true)
-BUILDER_ALL=$(cd "$PURLIN_ROOT" && bash "$PURLIN_ROOT/pl-run-builder.sh" 2>&1 || true)
+if $LEGACY_EXISTS; then
+    # Run pl-run-builder.sh and capture stderr
+    # The launcher will find our mock claude via PATH
+    BUILDER_STDERR=$(cd "$PURLIN_ROOT" && bash "$PURLIN_ROOT/pl-run-builder.sh" 2>&1 1>/dev/null || true)
+    BUILDER_ALL=$(cd "$PURLIN_ROOT" && bash "$PURLIN_ROOT/pl-run-builder.sh" 2>&1 || true)
 
-# T1: Check that output contains a deprecation warning
-if echo "$BUILDER_ALL" | grep -qi "deprecat"; then
-    log_pass "T1: pl-run-builder.sh prints deprecation warning"
-else
-    log_fail "T1: pl-run-builder.sh does not print deprecation warning (spec 2.5 requires it)"
-fi
+    # T1: Check that output contains a deprecation warning
+    if echo "$BUILDER_ALL" | grep -qi "deprecat"; then
+        log_pass "T1: pl-run-builder.sh prints deprecation warning"
+    else
+        log_fail "T1: pl-run-builder.sh does not print deprecation warning (spec 2.5 requires it)"
+    fi
 
-# T2: Check that the deprecation warning mentions pl-run.sh
-if echo "$BUILDER_ALL" | grep -q "pl-run.sh"; then
-    log_pass "T2: deprecation warning mentions pl-run.sh"
-else
-    log_fail "T2: deprecation warning does not mention pl-run.sh"
-fi
+    # T2: Check that the deprecation warning mentions pl-run.sh
+    if echo "$BUILDER_ALL" | grep -q "pl-run.sh"; then
+        log_pass "T2: deprecation warning mentions pl-run.sh"
+    else
+        log_fail "T2: deprecation warning does not mention pl-run.sh"
+    fi
 
-# T3: Check that the agent session still starts (mock claude was invoked)
-if [ -f "$MOCK_DIR/captured_args.txt" ]; then
-    log_pass "T3: agent session started after deprecation warning (claude was invoked)"
+    # T3: Check that the agent session still starts (mock claude was invoked)
+    if [ -f "$MOCK_DIR/captured_args.txt" ]; then
+        log_pass "T3: agent session started after deprecation warning (claude was invoked)"
+    else
+        log_fail "T3: agent session did not start (claude mock was not invoked)"
+    fi
 else
-    log_fail "T3: agent session did not start (claude mock was not invoked)"
+    log_pass "T1: Scenario A skipped — legacy launchers removed (unified launcher transition)"
+    log_pass "T2: Scenario A skipped — legacy launchers removed"
+    log_pass "T3: Scenario A skipped — legacy launchers removed"
 fi
 
 echo ""

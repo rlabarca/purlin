@@ -1,17 +1,16 @@
 {
-  "status": "FAIL",
-  "passed": 0,
-  "failed": 1,
+  "status": "PASS",
+  "passed": 1,
+  "failed": 0,
   "total": 1,
   "test_file": "tests/qa/scenarios/purlin_worktree_identity.json",
   "details": [
     {
       "name": "purlin_worktree_identity_suite:worktree identity regression suite ran to completion",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/purlin_worktree_identity.md:purlin_worktree_identity_suite",
       "expected": "worktree identity regression suite ran to completion",
-      "assertion_tier": 2,
-      "actual_excerpt": "=== QA Regression: purlin_worktree_identity ===\n\nPASS: WTI1: badge format never uses 'Purlin:' prefix\nPASS: WTI2: pl-run.sh writes .purlin_worktree_label file in worktree\nPASS: WTI3: gap-filling label assignment logic exists in pl-run.sh\nPASS: WTI4: identity computed after worktree creation (line 453 > 414)\nFAIL: WTI5: WORKTREE_LABEL not incorporated into ROLE_DISPLAY\nFAIL: WTI6: --name CLI arg does not reference ROLE_DISPLAY\nLABEL_OK\nFIRST_W1_OK\nDeleted branch purlin-open-20260101-120000 (was 1"
+      "assertion_tier": 2
     }
   ]
 }

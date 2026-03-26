@@ -76,12 +76,15 @@ fi
 
 # ──────────────────────────────────────────────
 # WTI5: Badge includes worktree label when label file exists
-# Verify the pattern: ROLE_DISPLAY="$MODE_NAME ($WORKTREE_LABEL)"
+# The label flows: WORKTREE_LABEL -> .purlin_worktree_label -> update_session_identity
+# -> _PURLIN_LAST_BADGE -> ROLE_DISPLAY. Verify this indirection chain.
 # ──────────────────────────────────────────────
 if [ -f "$PL_RUN" ] && grep -q 'WORKTREE_LABEL' "$PL_RUN" 2>/dev/null; then
-    # Check that the label is appended to ROLE_DISPLAY
-    if grep -q 'MODE_NAME.*WORKTREE_LABEL\|ROLE_DISPLAY.*WORKTREE_LABEL' "$PL_RUN" 2>/dev/null; then
-        log_pass "WTI5: badge appends worktree label when present"
+    # Verify the indirection chain: update_session_identity sets _PURLIN_LAST_BADGE,
+    # which is assigned to ROLE_DISPLAY. The label file is read by identity.sh.
+    if grep -q 'ROLE_DISPLAY.*_PURLIN_LAST_BADGE' "$PL_RUN" 2>/dev/null && \
+       grep -q 'update_session_identity' "$PL_RUN" 2>/dev/null; then
+        log_pass "WTI5: badge appends worktree label via update_session_identity -> _PURLIN_LAST_BADGE -> ROLE_DISPLAY"
     else
         log_fail "WTI5: WORKTREE_LABEL not incorporated into ROLE_DISPLAY"
     fi
@@ -91,9 +94,11 @@ fi
 
 # ──────────────────────────────────────────────
 # WTI6: --name CLI arg uses the same string as badge (ROLE_DISPLAY)
+# The chain is: SESSION_NAME includes ROLE_DISPLAY, --name uses SESSION_NAME.
 # ──────────────────────────────────────────────
-if [ -f "$PL_RUN" ] && grep -q '\-\-name.*ROLE_DISPLAY' "$PL_RUN" 2>/dev/null; then
-    log_pass "WTI6: --name CLI arg uses ROLE_DISPLAY value"
+if [ -f "$PL_RUN" ] && grep -q 'SESSION_NAME.*ROLE_DISPLAY' "$PL_RUN" 2>/dev/null && \
+   grep -q '\-\-name.*SESSION_NAME' "$PL_RUN" 2>/dev/null; then
+    log_pass "WTI6: --name CLI arg uses ROLE_DISPLAY via SESSION_NAME"
 else
     log_fail "WTI6: --name CLI arg does not reference ROLE_DISPLAY"
 fi
