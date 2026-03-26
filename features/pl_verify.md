@@ -22,7 +22,23 @@ The primary QA skill that executes interactive feature verification. Operates in
 
 - If an argument is provided, scope verification to that single feature.
 - If no argument is provided, batch the union of: (1) ALL TESTING features from `testing_features`, and (2) features from QA action items with `visual_verification` or `regression_run` categories (these are AUTO features that may not be in the TESTING lifecycle but still need automated re-verification). Do NOT limit to `testing_features` alone.
-- Scoped verification modes: `full` (default), `targeted:Scenario A,Scenario B`, `cosmetic` (skip), `dependency-only`.
+- Per-feature scoped verification modes: `full` (default), `targeted:Scenario A,Scenario B`, `cosmetic` (skip), `dependency-only`.
+
+### 2.2.1 Execution Modes
+
+The `--mode` flag controls which *type* of verification work runs. This is orthogonal to feature scope — you can combine `--mode auto` with a single feature argument.
+
+| Flag | What runs | What's skipped |
+|------|-----------|----------------|
+| (no flag) | Full pipeline: Phase A + Phase B | Nothing |
+| `--mode auto` | Phase A Steps 2-5 only (@auto scenarios, visual smoke) | Auto-pass (Step 1), classification (Step 4), Phase B manual checklist |
+| `--mode smoke` | Phase A Step 2 only (smoke-tier scenarios) | Everything else |
+| `--mode regression` | Phase A regression suites only (Step 0b + Step 5a regression checkpoint) | All other steps, Phase B |
+| `--mode manual` | Phase B only (assemble + present manual checklist) | Entire Phase A |
+
+Execution modes MUST NOT change what gets committed — a mode that skips steps simply doesn't execute them. Features that would have been finalized in a skipped step remain in their current state.
+
+When `--mode` is combined with a feature argument, both filters apply: e.g., `/pl-verify notifications --mode smoke` runs only smoke-tier scenarios for the notifications feature.
 
 ### 2.3 Phase A -- Automated Execution
 
@@ -67,6 +83,40 @@ The primary QA skill that executes interactive feature verification. Operates in
     Given feature_a and feature_b are both in TESTING state
     When /pl-verify is invoked without arguments
     Then both features are included in the verification pass
+
+#### Scenario: Auto mode runs only automated scenarios
+
+    Given features are in TESTING state with @auto scenarios
+    When /pl-verify is invoked with --mode auto
+    Then Phase A Steps 2-5 execute (@auto scenarios, visual smoke)
+    And Phase B manual checklist is skipped entirely
+
+#### Scenario: Smoke mode runs only smoke-tier scenarios
+
+    Given smoke-tier scenarios exist for a feature
+    When /pl-verify is invoked with --mode smoke
+    Then only smoke-tier scenarios execute
+    And all other steps and Phase B are skipped
+
+#### Scenario: Regression mode runs only regression suites
+
+    Given regression suites exist for TESTING features
+    When /pl-verify is invoked with --mode regression
+    Then only regression suites execute and are evaluated
+    And Phase A steps 1-5 and Phase B are skipped
+
+#### Scenario: Manual mode skips Phase A entirely
+
+    Given features have both @auto and @manual scenarios
+    When /pl-verify is invoked with --mode manual
+    Then Phase A is skipped
+    And Phase B manual checklist is assembled and presented
+
+#### Scenario: Execution mode combines with feature scope
+
+    Given feature_a has smoke-tier and standard scenarios
+    When /pl-verify is invoked with "feature_a --mode smoke"
+    Then only smoke-tier scenarios for feature_a execute
 
 #### Scenario: Cosmetic scope skips feature entirely
 
