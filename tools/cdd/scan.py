@@ -63,11 +63,10 @@ def _parse_args():
 
 
 def _filter_tombstones(result):
-    """Remove tombstone entries from features array."""
+    """Remove tombstone entries from features array (mutates in-place)."""
     if "features" in result:
         result["features"] = [f for f in result["features"]
                               if not f.get("tombstone")]
-    return result
 
 
 def _filter_sections(result, only):
