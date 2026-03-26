@@ -21,7 +21,7 @@ from tools.bootstrap import detect_project_root, load_config
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 _cfg = load_config(PROJECT_ROOT)
 
-REMOTE = _cfg.get('remote_collab', {}).get('remote', 'origin')
+REMOTE = _cfg.get('branch_collab', _cfg.get('remote_collab', {})).get('remote', 'origin')
 
 
 def _run_git(args, cwd=None):
