@@ -89,13 +89,12 @@ create_base_project() {
         fi
     done
 
-    # Minimal feature file for CDD to find
+    # Minimal feature file to find
     cat > features/sample_feature.md <<'FEAT'
 # Feature: Sample Feature
 
 > Label: "Sample Feature"
 > Category: "Test"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 
@@ -120,52 +119,6 @@ None.
 None.
 FEAT
 
-    # Minimal policy_critic.md anchor
-    cat > features/policy_critic.md <<'POLICY'
-# Policy: Critic Coordination Engine
-
-> Label: "Policy: Critic Coordination Engine"
-> Category: "Coordination & Lifecycle"
-
-[Complete]
-
-## 1. Purpose
-
-Defines the Critic's role as the coordination engine.
-
-## 2. Invariants
-
-### 2.1 Dual-Gate Principle
-Spec Gate and Implementation Gate.
-POLICY
-
-    # Minimal CRITIC_REPORT.md
-    cat > CRITIC_REPORT.md <<'REPORT'
-# Critic Quality Gate Report
-
-Generated: 2026-01-01T00:00:00Z
-
-## Summary
-
-| Feature | Spec Gate | Implementation Gate | User Testing |
-|---------|-----------|--------------------:|-------------|
-| features/sample_feature.md | PASS | PASS | CLEAN |
-
-## Action Items by Role
-
-### Architect
-
-No action items.
-
-### Builder
-
-No action items.
-
-### QA
-
-No action items.
-REPORT
-
     # Minimal dependency graph
     cat > .purlin/cache/dependency_graph.json <<'GRAPH'
 {
@@ -175,7 +128,7 @@ REPORT
       "category": "Test",
       "file": "features/sample_feature.md",
       "label": "Sample Feature",
-      "prerequisites": ["policy_critic.md"]
+      "prerequisites": []
     }
   ],
   "generated_at": "2026-01-01T00:00:00Z",
@@ -233,162 +186,12 @@ commit_and_tag() {
 }
 
 # ===================================================================
-# Fixture 1: main/cdd_startup_controls/startup-print-sequence
-# Default config (find_work: true, auto_start: false)
-# ===================================================================
-echo "Creating: main/cdd_startup_controls/startup-print-sequence" >&2
-rm -rf ./* .purlin 2>/dev/null || true
-create_base_project
-set_config true true
-commit_and_tag "main/cdd_startup_controls/startup-print-sequence"
-
-# ===================================================================
-# Fixture 2: main/cdd_startup_controls/expert-mode
-# Config with find_work: false
-# ===================================================================
-echo "Creating: main/cdd_startup_controls/expert-mode" >&2
-set_config false false
-commit_and_tag "main/cdd_startup_controls/expert-mode"
-
-# ===================================================================
-# Fixture 3: main/cdd_startup_controls/guided-mode
-# Config with find_work: true, auto_start: true
-# ===================================================================
-echo "Creating: main/cdd_startup_controls/guided-mode" >&2
-set_config true true
-
-# Add a TODO feature so the work plan has something to show
-cat > features/todo_feature.md <<'FEAT'
-# Feature: Todo Feature
-
-> Label: "Todo Feature"
-> Category: "Test"
-> Prerequisite: features/policy_critic.md
-
-[TODO]
-
-## 1. Overview
-
-A feature in TODO state for testing guided mode.
-
-## 2. Requirements
-
-### 2.1 Basic
-
-- Implement something.
-
-## 3. Scenarios
-
-### Automated Scenarios
-
-None.
-
-### Manual Scenarios (Human Verification Required)
-
-None.
-FEAT
-
-# Update CRITIC_REPORT to show Builder action items
-cat > CRITIC_REPORT.md <<'REPORT'
-# Critic Quality Gate Report
-
-Generated: 2026-01-01T00:00:00Z
-
-## Summary
-
-| Feature | Spec Gate | Implementation Gate | User Testing |
-|---------|-----------|--------------------:|-------------|
-| features/todo_feature.md | PASS | FAIL | CLEAN |
-
-## Action Items by Role
-
-### Architect
-
-No action items.
-
-### Builder
-
-- **[HIGH]** (todo_feature): Review and implement spec changes for todo_feature
-
-### QA
-
-No action items.
-REPORT
-
-commit_and_tag "main/cdd_startup_controls/guided-mode"
-
-# ===================================================================
-# Fixture 4: main/cdd_startup_controls/auto-mode
-# Config with find_work: true, auto_start: true
-# ===================================================================
-echo "Creating: main/cdd_startup_controls/auto-mode" >&2
-set_config true true
-
-# Add a TODO feature so auto-mode has work to begin executing
-cat > features/todo_feature.md <<'FEAT'
-# Feature: Todo Feature
-
-> Label: "Todo Feature"
-> Category: "Test"
-> Prerequisite: features/policy_critic.md
-
-[TODO]
-
-## 1. Overview
-
-A feature in TODO state for testing auto mode.
-
-## 2. Requirements
-
-### 2.1 Basic
-
-- Implement something.
-
-## 3. Scenarios
-
-### Automated Scenarios
-
-None.
-
-### Manual Scenarios (Human Verification Required)
-
-None.
-FEAT
-
-# Update CRITIC_REPORT to show Builder action items
-cat > CRITIC_REPORT.md <<'REPORT'
-# Critic Quality Gate Report
-
-Generated: 2026-01-01T00:00:00Z
-
-## Summary
-
-| Feature | Spec Gate | Implementation Gate | User Testing |
-|---------|-----------|--------------------:|-------------|
-| features/todo_feature.md | PASS | FAIL | CLEAN |
-
-## Action Items by Role
-
-### Architect
-
-No action items.
-
-### Builder
-
-- **[HIGH]** (todo_feature): Review and implement spec changes for todo_feature
-
-### QA
-
-No action items.
-REPORT
-
-commit_and_tag "main/cdd_startup_controls/auto-mode"
-
-# ===================================================================
-# Fixture 5: main/pl_session_resume/builder-mid-feature
+# Fixture 1: main/pl_session_resume/builder-mid-feature
 # Checkpoint file showing builder at protocol step 2
 # ===================================================================
 echo "Creating: main/pl_session_resume/builder-mid-feature" >&2
+rm -rf ./* .purlin 2>/dev/null || true
+create_base_project
 set_config true true
 
 cat > .purlin/cache/session_checkpoint.md <<'CHECKPOINT'
@@ -429,7 +232,7 @@ CHECKPOINT
 commit_and_tag "main/pl_session_resume/builder-mid-feature"
 
 # ===================================================================
-# Fixture 6: main/pl_session_resume/qa-mid-verification
+# Fixture 2: main/pl_session_resume/qa-mid-verification
 # Checkpoint file showing QA at scenario 6 of 8
 # ===================================================================
 echo "Creating: main/pl_session_resume/qa-mid-verification" >&2
@@ -473,7 +276,7 @@ set_config true true
 commit_and_tag "main/pl_session_resume/qa-mid-verification"
 
 # ===================================================================
-# Fixture 7: main/pl_session_resume/full-reboot-no-launcher
+# Fixture 3: main/pl_session_resume/full-reboot-no-launcher
 # Checkpoint exists but simulates non-launcher start
 # ===================================================================
 echo "Creating: main/pl_session_resume/full-reboot-no-launcher" >&2
@@ -485,7 +288,7 @@ echo "Creating: main/pl_session_resume/full-reboot-no-launcher" >&2
 commit_and_tag "main/pl_session_resume/full-reboot-no-launcher"
 
 # ===================================================================
-# Fixture 8: main/pl_help/architect-main-branch
+# Fixture 4: main/pl_help/architect-main-branch
 # Project on main branch, default config
 # ===================================================================
 echo "Creating: main/pl_help/architect-main-branch" >&2
@@ -499,7 +302,7 @@ set_config true true
 commit_and_tag "main/pl_help/architect-main-branch"
 
 # ===================================================================
-# Fixture 9: main/pl_help/builder-collab-branch
+# Fixture 5: main/pl_help/builder-collab-branch
 # Project with active_branch file for builder collab variant
 # ===================================================================
 echo "Creating: main/pl_help/builder-collab-branch" >&2
@@ -508,7 +311,7 @@ echo "collab/v2" > .purlin/runtime/active_branch
 commit_and_tag "main/pl_help/builder-collab-branch"
 
 # ===================================================================
-# Fixture 10: main/pl_help/qa-collab-branch
+# Fixture 6: main/pl_help/qa-collab-branch
 # Project with active_branch file
 # ===================================================================
 echo "Creating: main/pl_help/qa-collab-branch" >&2

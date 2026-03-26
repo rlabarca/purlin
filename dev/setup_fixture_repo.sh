@@ -71,7 +71,6 @@ create_base_project() {
     cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
-    "critic_llm_enabled": false,
     "agents": {
         "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
         "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
@@ -258,32 +257,6 @@ create_web_feature() {
     } > "features/$fname"
 }
 
-# Creates a critic.json with given role statuses
-create_critic_json() {
-    local dir="$1" architect="$2" builder="$3" qa="$4"
-    mkdir -p "tests/$dir"
-    cat > "tests/$dir/critic.json" <<EOF
-{
-    "spec_gate": {"status": "PASS", "details": []},
-    "implementation_gate": {"status": "PASS", "details": []},
-    "user_testing": {"status": "CLEAN", "details": []},
-    "action_items": [],
-    "role_status": {
-        "architect": "$architect",
-        "builder": "$builder",
-        "qa": "$qa"
-    },
-    "verification_effort": {
-        "auto_web": 0, "auto_test_only": 0, "auto_skip": 0,
-        "manual_interactive": 0, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 0, "total_manual": 0, "summary": "no QA items"
-    },
-    "change_scope": "full",
-    "regression_scope": {}
-}
-EOF
-}
-
 # Creates a tests.json with PASS status
 create_tests_json_pass() {
     local dir="$1"
@@ -316,12 +289,6 @@ create_dep_graph() {
     echo "$content" > .purlin/cache/dependency_graph.json
 }
 
-# Creates a CRITIC_REPORT.md
-create_critic_report() {
-    local content="$1"
-    echo "$content" > CRITIC_REPORT.md
-}
-
 # Creates a companion file with builder decisions
 create_companion() {
     local fname="$1" content="$2"
@@ -333,717 +300,6 @@ create_companion() {
 # =====================================================================
 
 echo ""
-echo "--- cdd_agent_configuration ---"
-
-reset_workdir
-create_base_project
-
-# Override config with different models per agent
-cat > .purlin/config.json <<'EOF'
-{
-    "tools_root": "tools",
-    "critic_llm_enabled": false,
-    "agents": {
-        "architect": {
-            "model": "claude-opus-4-6",
-            "effort": "high",
-            "bypass_permissions": true,
-            "find_work": true,
-            "auto_start": true,
-            "context_guard": true
-        },
-        "builder": {
-            "model": "claude-sonnet-4-6",
-            "effort": "medium",
-            "bypass_permissions": false,
-            "find_work": true,
-            "auto_start": false,
-            "context_guard": true
-        },
-        "qa": {
-            "model": "claude-haiku-4-5-20251001",
-            "effort": "low",
-            "bypass_permissions": true,
-            "find_work": false,
-            "auto_start": false,
-            "context_guard": false
-        }
-    },
-    "models": [
-        {"id": "claude-opus-4-6", "label": "Opus 4.6", "capabilities": {"effort": true, "permissions": true}},
-        {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6", "capabilities": {"effort": true, "permissions": true}},
-        {"id": "claude-haiku-4-5-20251001", "label": "Haiku 4.5", "capabilities": {"effort": true, "permissions": true}}
-    ]
-}
-EOF
-
-create_feature "cdd_agent_configuration.md" "CDD Agent Configuration" "CDD Dashboard" "policy_critic.md" "TESTING"
-create_critic_json "cdd_agent_configuration" "DONE" "DONE" "TODO"
-create_tests_json_pass "cdd_agent_configuration"
-
-commit_and_tag "main/cdd_agent_configuration/mixed-models" \
-    "Different models per agent for verifying model badges and capability-gated controls"
-
-# =====================================================================
-echo ""
-echo "--- cdd_branch_collab ---"
-
-reset_workdir
-create_base_project
-create_feature "cdd_branch_collab.md" "CDD Branch Collaboration" "CDD Dashboard" "policy_critic.md" "TESTING"
-
-# ahead-3: simulate a branch that is 3 commits ahead
-echo "collab/testbranch" > .purlin/runtime/active_branch
-create_critic_json "cdd_branch_collab" "DONE" "DONE" "TODO"
-create_tests_json_pass "cdd_branch_collab"
-
-# Create feature_status.json showing branch sync state
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "AHEAD", "commits_ahead": 3, "commits_behind": 0}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_branch_collab/ahead-3" \
-    "Branch 3 commits ahead of collaboration branch"
-
-# behind-2
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "BEHIND", "commits_ahead": 0, "commits_behind": 2}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_branch_collab/behind-2" \
-    "Branch 2 commits behind collaboration branch"
-
-# diverged
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "DIVERGED", "commits_ahead": 2, "commits_behind": 1}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_branch_collab/diverged" \
-    "Both branch and collaboration branch have unique commits"
-
-# same
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "SAME", "commits_ahead": 0, "commits_behind": 0}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_branch_collab/same" \
-    "Branch at same position as collaboration branch"
-
-# behind-dirty: branch behind remote, working tree has uncommitted changes
-# Includes a dirty_marker file that tests can modify to simulate dirty state
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "BEHIND", "commits_ahead": 0, "commits_behind": 2}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-echo "clean" > dirty_marker.txt
-
-commit_and_tag "main/cdd_branch_collab/behind-dirty" \
-    "Branch behind remote with dirty tree marker"
-
-# diverged-dirty: branch diverged, working tree has uncommitted changes
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "branch_collab_branches": [
-        {"name": "testbranch", "active": true, "sync_state": "DIVERGED", "commits_ahead": 2, "commits_behind": 1}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_branch_collab/diverged-dirty" \
-    "Branch diverged with dirty tree marker"
-
-# =====================================================================
-echo ""
-echo "--- cdd_isolated_teams ---"
-
-reset_workdir
-create_base_project
-create_feature "cdd_isolated_teams.md" "CDD Isolated Teams" "CDD Dashboard" "policy_critic.md" "TESTING"
-create_critic_json "cdd_isolated_teams" "DONE" "DONE" "TODO"
-create_tests_json_pass "cdd_isolated_teams"
-
-# two-worktrees: two worktrees at AHEAD and SAME states
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "isolated_sessions": [
-        {"name": "feat1", "branch": "isolated/feat1", "sync_state": "AHEAD", "commits_ahead": 2, "commits_behind": 0, "dirty": false},
-        {"name": "ui", "branch": "isolated/ui", "sync_state": "SAME", "commits_ahead": 0, "commits_behind": 0, "dirty": false}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_isolated_teams/two-worktrees" \
-    "Two worktrees at AHEAD and SAME states for verifying Sessions table"
-
-# delivery-phase-active
-mkdir -p .purlin/cache
-cat > .purlin/delivery_plan.md <<'EOF'
-# Delivery Plan
-
-## Phase 1: Core [COMPLETE]
-- feature_a.md
-
-## Phase 2: UI [IN_PROGRESS]
-- feature_b.md
-- feature_c.md
-
-## Phase 3: Polish [PENDING]
-- feature_d.md
-EOF
-
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "isolated_sessions": [
-        {"name": "feat1", "branch": "isolated/feat1", "sync_state": "AHEAD", "commits_ahead": 1, "commits_behind": 0, "dirty": false, "delivery_phase": "Phase 2 of 3"}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_isolated_teams/delivery-phase-active" \
-    "Worktree with an active delivery plan for verifying Phase N/M orange badge"
-
-# two-worktrees-mixed
-rm -f .purlin/delivery_plan.md
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "isolated_sessions": [
-        {"name": "feat1", "branch": "isolated/feat1", "sync_state": "AHEAD", "commits_ahead": 3, "commits_behind": 0, "dirty": true},
-        {"name": "bugfix", "branch": "isolated/bugfix", "sync_state": "BEHIND", "commits_ahead": 0, "commits_behind": 1, "dirty": false}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-commit_and_tag "main/cdd_isolated_teams/two-worktrees-mixed" \
-    "Two worktrees with different sync states and uncommitted changes"
-
-# ahead-with-digest: worktree AHEAD with pre-generated isolation digest
-cat > .purlin/cache/feature_status.json <<'EOF'
-{
-    "features": [],
-    "isolated_sessions": [
-        {"name": "feat1", "branch": "isolated/feat1", "sync_state": "AHEAD", "commits_ahead": 3, "commits_behind": 0, "dirty": false}
-    ],
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-EOF
-
-mkdir -p features/digests
-cat > features/digests/isolation-feat1-whats-different.md <<'EOF'
-<!-- tips: abc1234 def5678 -->
-# What's Different: isolated/feat1 vs main
-
-## Summary
-3 commits ahead of collaboration branch.
-
-### Changed Files
-- `tools/cdd/serve.py` — Added isolation digest caching
-- `tools/cdd/test_cdd_isolated_teams.py` — Added staleness tests
-- `features/cdd_isolated_teams.md` — Updated digest requirements
-EOF
-
-commit_and_tag "main/cdd_isolated_teams/ahead-with-digest" \
-    "Worktree AHEAD with pre-generated isolation digest for cached read and staleness detection"
-
-# =====================================================================
-echo ""
-echo "--- cdd_lifecycle ---"
-
-reset_workdir
-create_base_project
-
-# mixed-statuses: features in TODO, TESTING, and COMPLETE
-create_feature "feature_todo.md" "Feature Todo" "Test" "policy_critic.md" "TODO"
-create_feature "feature_testing.md" "Feature Testing" "Test" "policy_critic.md" "TESTING"
-create_feature "feature_complete.md" "Feature Complete" "Test" "policy_critic.md" "COMPLETE"
-
-create_critic_json "feature_todo" "DONE" "TODO" "N/A"
-create_critic_json "feature_testing" "DONE" "DONE" "TODO"
-create_critic_json "feature_complete" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feature_testing"
-create_tests_json_pass "feature_complete"
-
-commit_and_tag "main/cdd_lifecycle/mixed-statuses" \
-    "Project with features in TODO, TESTING, and COMPLETE lifecycle states"
-
-# all-complete
-reset_workdir
-create_base_project
-create_feature "feature_a.md" "Feature A" "Test" "policy_critic.md" "COMPLETE"
-create_feature "feature_b.md" "Feature B" "Test" "policy_critic.md" "COMPLETE"
-create_feature "feature_c.md" "Feature C" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feature_a" "DONE" "DONE" "CLEAN"
-create_critic_json "feature_b" "DONE" "DONE" "CLEAN"
-create_critic_json "feature_c" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feature_a"
-create_tests_json_pass "feature_b"
-create_tests_json_pass "feature_c"
-
-commit_and_tag "main/cdd_lifecycle/all-complete" \
-    "Project where every feature is at COMPLETE lifecycle state"
-
-# =====================================================================
-echo ""
-echo "--- cdd_qa_effort_display ---"
-
-reset_workdir
-create_base_project
-
-# Features with AUTO vs TODO QA states
-create_web_feature "feature_auto.md" "Feature Auto" "CDD Dashboard" "policy_critic.md" "TESTING" "Web Dashboard Check"
-create_feature "feature_todo_qa.md" "Feature Manual" "Process" "policy_critic.md" "TESTING"
-create_tests_json_pass "feature_auto"
-create_tests_json_pass "feature_todo_qa"
-
-# AUTO: web-testable with manual scenarios -> auto_web
-mkdir -p tests/feature_auto
-cat > tests/feature_auto/critic.json <<'EOF'
-{
-    "spec_gate": {"status": "PASS", "details": []},
-    "implementation_gate": {"status": "PASS", "details": []},
-    "user_testing": {"status": "CLEAN", "details": []},
-    "action_items": [],
-    "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"},
-    "verification_effort": {
-        "auto_web": 1, "auto_test_only": 0, "auto_skip": 0,
-        "manual_interactive": 0, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 1, "total_manual": 0, "summary": "1 auto-web"
-    },
-    "change_scope": "full"
-}
-EOF
-
-# TODO: non-web with manual scenarios -> manual_interactive
-mkdir -p tests/feature_todo_qa
-cat > tests/feature_todo_qa/critic.json <<'EOF'
-{
-    "spec_gate": {"status": "PASS", "details": []},
-    "implementation_gate": {"status": "PASS", "details": []},
-    "user_testing": {"status": "CLEAN", "details": []},
-    "action_items": [],
-    "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"},
-    "verification_effort": {
-        "auto_web": 0, "auto_test_only": 0, "auto_skip": 0,
-        "manual_interactive": 1, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 0, "total_manual": 1, "summary": "1 manual-interactive"
-    },
-    "change_scope": "full"
-}
-EOF
-
-commit_and_tag "main/cdd_qa_effort_display/auto-and-todo" \
-    "Features with AUTO vs TODO QA states for verifying green vs yellow distinction"
-
-# =====================================================================
-echo ""
-echo "--- cdd_modal_base ---"
-
-reset_workdir
-create_base_project
-
-# standard: features with varied metadata for modal rendering verification
-create_feature "feature_simple.md" "Simple Feature" "Core" "policy_critic.md" "COMPLETE"
-create_feature "feature_multi_prereq.md" "Multi Prerequisite Feature" "Dashboard" \
-    "policy_critic.md,feature_simple.md" "TESTING"
-create_feature "feature_long_content.md" "Long Content Feature" "Tools" "policy_critic.md" "TODO" \
-    "### 2.2 Extended Requirements
-
-- This feature has multiple requirements sections.
-- It includes lists, code blocks, and varied formatting.
-
-\`\`\`python
-def example():
-    return 'test'
-\`\`\`
-
-### 2.3 Additional Details
-
-- Bullet point one
-- Bullet point two
-- Bullet point three with \`inline code\`
-
-> Blockquote with important note about implementation."
-
-# Add implementation notes companion file for the multi-prereq feature
-cat > features/feature_multi_prereq.impl.md <<'IMPL'
-# Implementation Notes: Multi Prerequisite Feature
-
-## Builder Decisions
-
-### [DISCOVERY] Unexpected edge case
-The multi-prerequisite resolution required special handling for circular references.
-**Acknowledged**
-IMPL
-
-create_critic_json "feature_simple" "DONE" "DONE" "CLEAN"
-create_critic_json "feature_multi_prereq" "DONE" "DONE" "TODO"
-create_critic_json "feature_long_content" "DONE" "TODO" "N/A"
-create_tests_json_pass "feature_simple"
-create_tests_json_pass "feature_multi_prereq"
-
-commit_and_tag "main/cdd_modal_base/standard" \
-    "Project with features having varied metadata for modal rendering verification"
-
-# =====================================================================
-echo ""
-echo "--- cdd_spec_map ---"
-
-reset_workdir
-create_base_project
-
-# Features with varying scenario counts: 0, 5, 20+
-cat > features/feature_zero.md <<'FEAT'
-# Feature: Zero Scenarios
-
-> Label: "Zero Scenarios"
-> Category: "Test"
-> Prerequisite: features/policy_critic.md
-
-[COMPLETE]
-
-## 1. Overview
-Feature with no scenarios.
-
-## 2. Requirements
-### 2.1 Basic
-- None.
-
-## 3. Scenarios
-### Automated Scenarios
-None.
-### Manual Scenarios (Human Verification Required)
-None.
-FEAT
-
-# 5 scenarios
-{
-    echo "# Feature: Five Scenarios"
-    echo ""
-    echo "> Label: \"Five Scenarios\""
-    echo "> Category: \"Test\""
-    echo "> Prerequisite: features/policy_critic.md"
-    echo ""
-    echo "[TESTING]"
-    echo ""
-    echo "## 1. Overview"
-    echo "Feature with 5 scenarios."
-    echo ""
-    echo "## 2. Requirements"
-    echo "### 2.1 Basic"
-    echo "- Has 5 scenarios."
-    echo ""
-    echo "## 3. Scenarios"
-    echo "### Automated Scenarios"
-    for i in $(seq 1 5); do
-        echo ""
-        echo "#### Scenario: Test scenario $i"
-        echo ""
-        echo "    Given precondition $i"
-        echo "    When action $i"
-        echo "    Then result $i"
-    done
-    echo ""
-    echo "### Manual Scenarios (Human Verification Required)"
-    echo "None."
-} > features/feature_five.md
-
-# 22 scenarios
-{
-    echo "# Feature: Many Scenarios"
-    echo ""
-    echo "> Label: \"Many Scenarios\""
-    echo "> Category: \"Test\""
-    echo "> Prerequisite: features/policy_critic.md"
-    echo ""
-    echo "[TODO]"
-    echo ""
-    echo "## 1. Overview"
-    echo "Feature with 22 scenarios."
-    echo ""
-    echo "## 2. Requirements"
-    echo "### 2.1 Basic"
-    echo "- Has 22 scenarios."
-    echo ""
-    echo "## 3. Scenarios"
-    echo "### Automated Scenarios"
-    for i in $(seq 1 22); do
-        echo ""
-        echo "#### Scenario: Test scenario $i"
-        echo ""
-        echo "    Given precondition $i"
-        echo "    When action $i"
-        echo "    Then result $i"
-    done
-    echo ""
-    echo "### Manual Scenarios (Human Verification Required)"
-    echo "None."
-} > features/feature_many.md
-
-create_critic_json "feature_zero" "DONE" "DONE" "CLEAN"
-create_critic_json "feature_five" "DONE" "DONE" "TODO"
-create_critic_json "feature_many" "DONE" "TODO" "N/A"
-create_tests_json_pass "feature_zero"
-create_tests_json_pass "feature_five"
-
-commit_and_tag "main/cdd_spec_map/varied-scenarios" \
-    "Project with features having 0, 5, and 20+ scenarios for spec map rendering"
-
-# =====================================================================
-echo ""
-echo "--- cdd_startup_controls ---"
-
-reset_workdir
-create_base_project
-create_feature "sample_feature.md" "Sample Feature" "Test" "policy_critic.md" "TODO"
-
-# Copy real instruction files for behavior testing
-for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
-    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
-        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
-    fi
-done
-if [[ -d "$PROJECT_ROOT/instructions/references" ]]; then
-    cp -r "$PROJECT_ROOT/instructions/references/"* "instructions/references/" 2>/dev/null || true
-fi
-
-# startup-print-sequence (default config)
-commit_and_tag "main/cdd_startup_controls/startup-print-sequence" \
-    "Default config (find_work: true, auto_start: true)"
-
-# all-disabled
-cat > .purlin/config.json <<'EOF'
-{
-    "tools_root": "tools",
-    "agents": {
-        "architect": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
-        "builder": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
-        "qa": { "model": "claude-sonnet-4-6", "find_work": false, "auto_start": false }
-    }
-}
-EOF
-commit_and_tag "main/cdd_startup_controls/all-disabled" \
-    "Project with find_work false for all roles"
-
-# expert-mode
-cat > .purlin/config.json <<'EOF'
-{
-    "tools_root": "tools",
-    "agents": {
-        "architect": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
-        "builder": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
-        "qa": { "model": "claude-sonnet-4-6", "find_work": false, "auto_start": false }
-    }
-}
-EOF
-commit_and_tag "main/cdd_startup_controls/expert-mode" \
-    "Config with find_work: false, auto_start: false"
-
-# auto-mode
-cat > .purlin/config.json <<'EOF'
-{
-    "tools_root": "tools",
-    "agents": {
-        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
-        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
-        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
-    }
-}
-EOF
-commit_and_tag "main/cdd_startup_controls/auto-mode" \
-    "Project with find_work true and auto_start true for all roles"
-
-# guided-mode
-cat > .purlin/config.json <<'EOF'
-{
-    "tools_root": "tools",
-    "agents": {
-        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
-        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
-        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
-    }
-}
-EOF
-
-# Add a TODO feature and CRITIC_REPORT so guided mode has work items
-create_feature "todo_feature.md" "Todo Feature" "Test" "policy_critic.md" "TODO"
-cat > CRITIC_REPORT.md <<'REPORT'
-# Critic Quality Gate Report
-
-Generated: 2026-01-01T00:00:00Z
-
-## Summary
-
-| Feature | Spec Gate | Implementation Gate | User Testing |
-|---------|-----------|--------------------:|-------------|
-| features/todo_feature.md | PASS | FAIL | CLEAN |
-
-## Action Items by Role
-
-### Architect
-
-No action items.
-
-### Builder
-
-- **[HIGH]** (todo_feature): Review and implement spec changes for todo_feature
-
-### QA
-
-No action items.
-REPORT
-
-commit_and_tag "main/cdd_startup_controls/guided-mode" \
-    "Config with find_work: true, auto_start: true"
-
-# =====================================================================
-echo ""
-echo "--- cdd_status_monitor ---"
-
-reset_workdir
-create_base_project
-
-# mixed-states: features in TODO, DONE, FAIL, CLEAN
-create_feature "feat_todo.md" "Feature TODO" "CDD Dashboard" "policy_critic.md" "TODO"
-create_feature "feat_done.md" "Feature DONE" "CDD Dashboard" "policy_critic.md" "TESTING"
-create_feature "feat_fail.md" "Feature FAIL" "CDD Dashboard" "policy_critic.md" "TESTING"
-create_feature "feat_clean.md" "Feature CLEAN" "CDD Dashboard" "policy_critic.md" "COMPLETE"
-
-create_critic_json "feat_todo" "DONE" "TODO" "N/A"
-create_critic_json "feat_done" "DONE" "DONE" "TODO"
-create_critic_json "feat_fail" "DONE" "FAIL" "FAIL"
-create_critic_json "feat_clean" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_done"
-create_tests_json_fail "feat_fail"
-create_tests_json_pass "feat_clean"
-
-commit_and_tag "main/cdd_status_monitor/mixed-states" \
-    "Features in TODO, DONE, FAIL, and CLEAN states for badge colors and sorting"
-
-# tombstone-present
-mkdir -p features/tombstones
-cat > features/tombstones/old_feature.md <<'EOF'
-# Tombstone: Old Feature
-
-**Retired:** 2026-01-01
-**Reason:** Feature replaced by new_feature.
-
-## Files to Delete
-- tools/old_feature/
-
-## Dependencies to Check
-- features/new_feature.md references old_feature utilities
-EOF
-
-commit_and_tag "main/cdd_status_monitor/tombstone-present" \
-    "A tombstone file exists at features/tombstones/ for testing red styling"
-
-# empty-active: all features complete
-rm -rf features/tombstones
-reset_workdir
-create_base_project
-create_feature "feat_a.md" "Feature A" "CDD Dashboard" "policy_critic.md" "COMPLETE"
-create_feature "feat_b.md" "Feature B" "CDD Dashboard" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_a" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_b" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_a"
-create_tests_json_pass "feat_b"
-
-commit_and_tag "main/cdd_status_monitor/empty-active" \
-    "All features complete, Active section empty for empty-state badge behavior"
-
-# --- parallel-phases ---
-reset_workdir
-create_base_project
-
-# Create features for phases
-for i in $(seq 1 10); do
-    create_feature "phase_feat_${i}.md" "Phase Feature $i" "Core" "policy_critic.md" "TODO"
-done
-git add -A >/dev/null 2>&1
-git commit -m "feat: add 10 features for parallel phases" >/dev/null 2>&1
-
-# Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED
-mkdir -p .purlin/cache
-cat > .purlin/delivery_plan.md <<'DPEOF'
-# Delivery Plan
-
-> Last Updated: 2026-03-10
-
-## Phase 1: Foundation [COMPLETE]
-- phase_feat_1.md
-
-## Phase 2: Core Logic [COMPLETE]
-- phase_feat_2.md
-
-## Phase 3: Integration [COMPLETE]
-- phase_feat_3.md
-
-## Phase 4: Polish [COMPLETE]
-- phase_feat_4.md
-
-## Phase 5: Parallel A [IN_PROGRESS]
-- phase_feat_5.md
-
-## Phase 6: Parallel B [IN_PROGRESS]
-- phase_feat_6.md
-
-## Phase 7: Testing [PENDING]
-- phase_feat_7.md
-
-## Phase 8: Documentation [PENDING]
-- phase_feat_8.md
-
-## Phase 9: Release Prep [PENDING]
-- phase_feat_9.md
-
-## ~~Phase 10: Deprecated~~ [REMOVED]
-- ~~phase_feat_10.md~~
-DPEOF
-
-git add -A >/dev/null 2>&1
-git commit -m "chore: add delivery plan with parallel phases" >/dev/null 2>&1
-
-commit_and_tag "main/cdd_status_monitor/parallel-phases" \
-    "Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED"
-
-# =====================================================================
-echo ""
 echo "--- collab_whats_different ---"
 
 reset_workdir
@@ -1051,8 +307,6 @@ create_base_project
 create_feature "feature_changed.md" "Changed Feature" "Test" "policy_critic.md" "TESTING"
 create_feature "feature_same.md" "Same Feature" "Test" "policy_critic.md" "COMPLETE"
 echo "collab/testbranch" > .purlin/runtime/active_branch
-create_critic_json "feature_changed" "DONE" "DONE" "TODO"
-create_critic_json "feature_same" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feature_changed"
 create_tests_json_pass "feature_same"
 
@@ -1083,7 +337,6 @@ cat > .purlin/config.local.json <<'EOF'
 }
 EOF
 create_feature "config_layering.md" "Config Layering" "Install" "policy_critic.md" "TESTING"
-create_critic_json "config_layering" "DONE" "DONE" "TODO"
 create_tests_json_pass "config_layering"
 
 commit_and_tag "main/config_layering/local-override-present" \
@@ -1097,167 +350,11 @@ commit_and_tag "main/config_layering/config-json-only" \
 
 # =====================================================================
 echo ""
-echo "--- critic_tool ---"
-
-# spec-gate-fail: feature missing required sections
-reset_workdir
-create_base_project
-cat > features/broken_feature.md <<'EOF'
-# Feature: Broken Feature
-
-> Label: "Broken Feature"
-> Category: "Test"
-
-[TODO]
-
-This feature is missing Overview, Requirements, and Scenarios sections.
-EOF
-create_feature "good_feature.md" "Good Feature" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "good_feature" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "good_feature"
-
-commit_and_tag "main/critic_tool/spec-gate-fail" \
-    "Project with a feature missing required sections"
-
-# traceability-gap
-reset_workdir
-create_base_project
-create_feature "traced_feature.md" "Traced Feature" "Test" "policy_critic.md" "TESTING"
-# No matching test files -> traceability gap
-create_critic_json "traced_feature" "DONE" "DONE" "TODO"
-
-commit_and_tag "main/critic_tool/traceability-gap" \
-    "Feature with automated scenarios but no matching test files"
-
-# cascade-reset: anchor + 3 dependent features
-reset_workdir
-create_base_project
-
-cat > features/arch_data.md <<'EOF'
-# Architecture: Data Layer
-
-> Label: "Arch: Data Layer"
-> Category: "Architecture"
-
-## Purpose
-Defines data layer constraints.
-
-## 2. Invariants
-
-### 2.1 Data Access
-All data access through repository pattern.
-EOF
-
-create_feature "dep_a.md" "Dependent A" "Test" "arch_data.md" "COMPLETE"
-create_feature "dep_b.md" "Dependent B" "Test" "arch_data.md" "COMPLETE"
-create_feature "dep_c.md" "Dependent C" "Test" "arch_data.md,policy_critic.md" "TESTING"
-create_critic_json "dep_a" "DONE" "DONE" "CLEAN"
-create_critic_json "dep_b" "DONE" "DONE" "CLEAN"
-create_critic_json "dep_c" "DONE" "DONE" "TODO"
-create_tests_json_pass "dep_a"
-create_tests_json_pass "dep_b"
-create_tests_json_pass "dep_c"
-
-commit_and_tag "main/critic_tool/cascade-reset" \
-    "Anchor node + 3 dependent features for testing status cascade on anchor edit"
-
-# mixed-discoveries: features with BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE
-reset_workdir
-create_base_project
-
-cat > features/buggy_feature.md <<'FEAT'
-# Feature: Buggy Feature
-
-> Label: "Buggy Feature"
-> Category: "Test"
-> Prerequisite: features/policy_critic.md
-
-[TESTING]
-
-## 1. Overview
-Feature with various discovery types.
-
-## 2. Requirements
-### 2.1 Basic
-- Does things.
-
-## 3. Scenarios
-
-### Automated Scenarios
-
-#### Scenario: Basic operation
-    Given setup
-    When action
-    Then result
-
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Manual check
-    Given system ready
-    When user checks
-    Then correct
-
-## User Testing Discoveries
-
-### [BUG] Button does not respond on mobile
-- **Status:** OPEN
-- **Found by:** QA
-- **Date:** 2026-01-15
-- **Description:** Tap target too small on mobile devices.
-
-### [DISCOVERY] Missing loading spinner
-- **Status:** OPEN
-- **Found by:** QA
-- **Date:** 2026-01-16
-- **Description:** No loading indicator during async operations.
-
-### [INTENT_DRIFT] Sort order misleading
-- **Status:** SPEC_UPDATED
-- **Found by:** QA
-- **Date:** 2026-01-14
-- **Description:** Alphabetical sort is technically correct but users expect recency.
-
-### [SPEC_DISPUTE] Error message wording
-- **Status:** OPEN
-- **Found by:** User
-- **Date:** 2026-01-17
-- **Description:** User disagrees with the error message text.
-FEAT
-
-create_critic_json "buggy_feature" "DONE" "TODO" "FAIL"
-create_tests_json_pass "buggy_feature"
-
-commit_and_tag "main/critic_tool/mixed-discoveries" \
-    "Features with BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE entries"
-
-# builder-decisions
-reset_workdir
-create_base_project
-create_feature "decided_feature.md" "Decided Feature" "Test" "policy_critic.md" "TESTING"
-create_critic_json "decided_feature" "DONE" "DONE" "TODO"
-create_tests_json_pass "decided_feature"
-
-cat > features/decided_feature.impl.md <<'IMPL'
-# Implementation Notes: Decided Feature
-
-*   **[DEVIATION]** Used REST instead of GraphQL because the client library is more mature. (Severity: HIGH)
-*   **[DISCOVERY]** The API returns paginated results even for small datasets. Need scenario coverage. (Severity: HIGH)
-*   **[AUTONOMOUS]** Added request timeout of 30s since spec was silent on timeout. (Severity: WARN)
-*   **[CLARIFICATION]** Interpreted "recent items" as last 7 days. (Severity: INFO)
-*   **[DEVIATION]** Stored cache in memory instead of Redis. Acknowledged. (Severity: HIGH)
-IMPL
-
-commit_and_tag "main/critic_tool/builder-decisions" \
-    "Companion files with acknowledged/unacknowledged DEVIATION and DISCOVERY tags"
-
-# =====================================================================
-echo ""
 echo "--- impl_notes_companion ---"
 
 reset_workdir
 create_base_project
 create_feature "noted_feature.md" "Noted Feature" "Test" "policy_critic.md" "TESTING"
-create_critic_json "noted_feature" "DONE" "DONE" "TODO"
 create_tests_json_pass "noted_feature"
 
 cat > features/noted_feature.impl.md <<'IMPL'
@@ -1290,7 +387,6 @@ cat > .purlin/config.json <<'EOF'
 EOF
 
 create_feature "pl_context_guard.md" "Context Guard" "Agent Skills" "policy_critic.md" "TESTING"
-create_critic_json "pl_context_guard" "DONE" "DONE" "TODO"
 create_tests_json_pass "pl_context_guard"
 
 commit_and_tag "main/pl_context_guard/mixed-thresholds" \
@@ -1451,7 +547,6 @@ create_feature "divergent_feature.md" "Divergent Feature" "Test" "policy_critic.
     "### 2.2 Advanced
 - Must support batch processing of up to 1000 items.
 - Must validate input against JSON schema before processing."
-create_critic_json "divergent_feature" "DONE" "DONE" "TODO"
 create_tests_json_pass "divergent_feature"
 
 # Create implementation that doesn't match spec
@@ -1477,9 +572,6 @@ create_web_feature "web_feat_a.md" "Web Feature A" "CDD Dashboard" "policy_criti
 create_web_feature "web_feat_b.md" "Web Feature B" "CDD Dashboard" "policy_critic.md" "TESTING" "Data Table"
 create_feature "non_web_feat.md" "Non-Web Feature" "Process" "policy_critic.md" "TESTING"
 
-create_critic_json "web_feat_a" "DONE" "DONE" "TODO"
-create_critic_json "web_feat_b" "DONE" "DONE" "TODO"
-create_critic_json "non_web_feat" "DONE" "DONE" "TODO"
 create_tests_json_pass "web_feat_a"
 create_tests_json_pass "web_feat_b"
 create_tests_json_pass "non_web_feat"
@@ -1592,8 +684,6 @@ reset_workdir
 create_base_project
 create_feature "feat_a.md" "Feature A" "Test" "policy_critic.md" "COMPLETE"
 create_feature "feat_b.md" "Feature B" "Test" "feat_a.md" "COMPLETE"
-create_critic_json "feat_a" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_b" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_a"
 create_tests_json_pass "feat_b"
 create_dep_graph '{
@@ -1646,8 +736,6 @@ create_base_project
 create_feature "parent_feat.md" "Parent Feature" "Test" "policy_critic.md" "COMPLETE" \
     "See also features/child_feat.md for implementation details."
 create_feature "child_feat.md" "Child Feature" "Test" "parent_feat.md" "TESTING"
-create_critic_json "parent_feat" "DONE" "DONE" "CLEAN"
-create_critic_json "child_feat" "DONE" "DONE" "TODO"
 create_tests_json_pass "parent_feat"
 create_tests_json_pass "child_feat"
 
@@ -1659,8 +747,6 @@ reset_workdir
 create_base_project
 create_feature "clean_a.md" "Clean A" "Test" "policy_critic.md" "COMPLETE"
 create_feature "clean_b.md" "Clean B" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "clean_a" "DONE" "DONE" "CLEAN"
-create_critic_json "clean_b" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "clean_a"
 create_tests_json_pass "clean_b"
 
@@ -1671,7 +757,6 @@ commit_and_tag "main/release_zero_queue/all-clean" \
 reset_workdir
 create_base_project
 create_feature "todo_feat.md" "TODO Feature" "Test" "policy_critic.md" "TODO"
-create_critic_json "todo_feat" "DONE" "TODO" "N/A"
 
 commit_and_tag "main/release_zero_queue/builder-todo" \
     "Feature with builder: TODO"
@@ -1713,7 +798,6 @@ None.
 - **Date:** 2026-01-20
 - **Description:** Application crashes when input is empty.
 FEAT
-create_critic_json "qa_open_feat" "DONE" "TODO" "FAIL"
 create_tests_json_pass "qa_open_feat"
 
 commit_and_tag "main/release_zero_queue/qa-open-items" \
@@ -1794,7 +878,6 @@ commit_and_tag "main/release_submodule_safety/unguarded-json-load" \
 reset_workdir
 create_base_project
 create_feature "feat_alpha.md" "Feature Alpha" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_alpha" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_alpha"
 cat > README.md <<'EOF'
 # Test Project
@@ -1810,7 +893,6 @@ commit_and_tag "main/release_doc_consistency/clean-docs" \
 reset_workdir
 create_base_project
 create_feature "feat_current.md" "Current Feature" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_current" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_current"
 cat > README.md <<'EOF'
 # Test Project
@@ -1822,32 +904,6 @@ EOF
 
 commit_and_tag "main/release_doc_consistency/stale-reference" \
     "README references deleted file"
-
-# release_critic_consistency/clean
-reset_workdir
-create_base_project
-create_feature "feat_x.md" "Feature X" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_x" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_x"
-
-commit_and_tag "main/release_critic_consistency/clean" \
-    "All Critic files consistent"
-
-# release_critic_consistency/deprecated-term
-reset_workdir
-create_base_project
-create_feature "feat_y.md" "Feature Y" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_y" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_y"
-# A file using deprecated "quality gate" terminology
-cat > CRITIC_REPORT.md <<'EOF'
-# Critic Quality Gate Report
-
-This is the quality gate report for the project.
-EOF
-
-commit_and_tag "main/release_critic_consistency/deprecated-term" \
-    "File using quality gate"
 
 # release_instruction_audit/clean
 reset_workdir
@@ -1993,7 +1049,6 @@ cat > .purlin/release/config.json <<'EOF'
         {"id": "purlin.verify_zero_queue", "enabled": true},
         {"id": "purlin.doc_consistency", "enabled": false},
         {"id": "purlin.submodule_safety", "enabled": true},
-        {"id": "purlin.critic_consistency", "enabled": true},
         {"id": "purlin.instruction_audit", "enabled": false},
         {"id": "purlin.push_to_remote", "enabled": true}
     ]
@@ -2018,7 +1073,6 @@ cat > .purlin/release/config.json <<'EOF'
         {"id": "purlin.verify_zero_queue", "enabled": true},
         {"id": "purlin.doc_consistency", "enabled": true},
         {"id": "purlin.submodule_safety", "enabled": true},
-        {"id": "purlin.critic_consistency", "enabled": true},
         {"id": "purlin.instruction_audit", "enabled": true},
         {"id": "purlin.framework_doc", "enabled": true},
         {"id": "purlin.push_to_remote", "enabled": false},
@@ -2029,46 +1083,6 @@ EOF
 
 commit_and_tag "main/release_checklist_ui/mixed-enabled" \
     "7 enabled and 2 disabled steps for verifying drag handles, step numbering, dimming"
-
-# =====================================================================
-echo ""
-echo "--- release_critic_consistency_check ---"
-
-# consistent-docs
-reset_workdir
-create_base_project
-create_feature "feat_p.md" "Feature P" "Test" "policy_critic.md" "COMPLETE"
-create_feature "feat_q.md" "Feature Q" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_p" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_q" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_p"
-create_tests_json_pass "feat_q"
-
-cat > README.md <<'EOF'
-# Test Project
-
-Features: 2 total (2 complete).
-EOF
-
-commit_and_tag "main/release_critic_consistency_check/consistent-docs" \
-    "Project where README matches Critic output and feature counts"
-
-# stale-references
-reset_workdir
-create_base_project
-create_feature "feat_r.md" "Feature R" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_r" "DONE" "DONE" "CLEAN"
-create_tests_json_pass "feat_r"
-
-cat > README.md <<'EOF'
-# Test Project
-
-Features: 5 total (5 complete).
-See features/old_removed_feature.md for details.
-EOF
-
-commit_and_tag "main/release_critic_consistency_check/stale-references" \
-    "Project where README has outdated feature counts and stale references"
 
 # =====================================================================
 echo ""
@@ -2120,9 +1134,6 @@ fi
 create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
 create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
 create_feature "feat_monitoring.md" "Monitoring" "Observability" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_dashboard" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_monitoring" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_dashboard"
 create_tests_json_pass "feat_api"
 create_tests_json_pass "feat_monitoring"
@@ -2158,8 +1169,6 @@ fi
 
 create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "COMPLETE"
 create_feature "feat_monitoring.md" "System Monitoring" "Observability" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_auth" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_monitoring" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_auth"
 create_tests_json_pass "feat_monitoring"
 
@@ -2194,8 +1203,6 @@ fi
 
 create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
 create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_dashboard" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_dashboard"
 create_tests_json_pass "feat_api"
 
@@ -2228,7 +1235,6 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
 fi
 
 create_feature "feat_init.md" "Project Init" "Core" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_init" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_init"
 
 cat > README.md <<'EOF'
@@ -2255,8 +1261,6 @@ fi
 
 create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
 create_feature "feat_new.md" "New Feature" "Core" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_core" "DONE" "DONE" "CLEAN"
-create_critic_json "feat_new" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_core"
 create_tests_json_pass "feat_new"
 
@@ -2285,7 +1289,6 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
 fi
 
 create_feature "feat_basic.md" "Basic Feature" "Core" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_basic" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_basic"
 
 # README without ## Releases section
@@ -2312,7 +1315,6 @@ if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
 fi
 
 create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_core" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_core"
 
 cat > README.md <<'EOF'
@@ -2489,9 +1491,6 @@ create_base_project
 create_feature "layer1.md" "Layer 1" "Test" "policy_critic.md" "COMPLETE"
 create_feature "layer2.md" "Layer 2" "Test" "layer1.md" "COMPLETE"
 create_feature "layer3.md" "Layer 3" "Test" "layer2.md" "COMPLETE"
-create_critic_json "layer1" "DONE" "DONE" "CLEAN"
-create_critic_json "layer2" "DONE" "DONE" "CLEAN"
-create_critic_json "layer3" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "layer1"
 create_tests_json_pass "layer2"
 create_tests_json_pass "layer3"
@@ -2536,8 +1535,6 @@ reset_workdir
 create_base_project
 create_feature "done_a.md" "Done A" "Test" "policy_critic.md" "COMPLETE"
 create_feature "done_b.md" "Done B" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "done_a" "DONE" "DONE" "CLEAN"
-create_critic_json "done_b" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "done_a"
 create_tests_json_pass "done_b"
 
@@ -2549,8 +1546,6 @@ reset_workdir
 create_base_project
 create_feature "open_feat.md" "Open Feature" "Test" "policy_critic.md" "TODO"
 create_feature "done_feat.md" "Done Feature" "Test" "policy_critic.md" "COMPLETE"
-create_critic_json "open_feat" "DONE" "TODO" "N/A"
-create_critic_json "done_feat" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "done_feat"
 
 commit_and_tag "main/release_verify_zero_queue/features-with-open-items" \
@@ -2568,7 +1563,6 @@ create_feature "audit_target.md" "Audit Target" "Test" "policy_critic.md" "TESTI
 - Only Architect may invoke /pl-spec.
 - Only Builder may invoke /pl-build.
 - Only QA may invoke /pl-verify."
-create_critic_json "audit_target" "DONE" "DONE" "TODO"
 create_tests_json_pass "audit_target"
 
 # Implementation that doesn't match spec
@@ -2687,7 +1681,6 @@ cat > .purlin/cache/handoff_checklist.json <<'EOF'
     "steps": [
         {"id": "dirty_check", "label": "Working tree clean", "status": "passed"},
         {"id": "tests_pass", "label": "All tests pass", "status": "failed", "message": "2 tests failed"},
-        {"id": "critic_clean", "label": "Critic report clean", "status": "skipped"},
         {"id": "branch_ahead", "label": "Branch ahead of collab", "status": "passed"},
         {"id": "merge_ff", "label": "Fast-forward merge possible", "status": "passed"}
     ],
@@ -2917,8 +1910,6 @@ done
 
 create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "TODO"
 create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
-create_critic_json "feat_auth" "DONE" "TODO" "N/A"
-create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
 create_tests_json_pass "feat_api"
 
 cat > README.md <<'EOF'
@@ -2948,7 +1939,6 @@ done
 
 create_feature_with_manual "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "TESTING" \
     "Visual rendering check" "Responsive layout verification"
-create_critic_json "feat_dashboard" "DONE" "DONE" "VERIFY"
 create_tests_json_pass "feat_dashboard"
 
 cat > README.md <<'EOF'
