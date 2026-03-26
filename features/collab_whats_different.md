@@ -29,7 +29,7 @@ When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND,
 The digest can be generated from two trigger points:
 
 1. **CDD dashboard:** A "What's Different?" button in the active branch panel (Section 2.3 of `cdd_branch_collab.md`) triggers fresh generation.
-2. **Post-merge auto-generation:** After a successful merge in `/pl-remote-pull`, a new Step 7 auto-generates the digest.
+2. **Post-merge auto-generation:** After a successful merge in `/pl-remote pull` (Section 2.20.4 of `pl_remote.md`), the post-merge step auto-generates the digest.
 
 ### 2.3 Direction-Dependent Content Structure
 
@@ -114,7 +114,7 @@ All matched files are classified as `purlin_config`, which rolls up to the `[N P
 - The dashboard invokes Claude CLI in non-interactive mode (`--print`) via a shell script.
 - The shell script is the agent abstraction point -- swappable for other agents in the future.
 - The extraction tool produces structured JSON; the agent (Claude) synthesizes it into plain English.
-- The post-merge trigger in `/pl-remote-pull` Step 7 also runs the same script.
+- The post-merge trigger in `/pl-remote pull` (Section 2.20.4 of `pl_remote.md`) also runs the same script.
 
 ### 2.7 Dashboard UI: Button
 
@@ -174,9 +174,9 @@ The three major content sections in the modal body use color-coded headers to ma
 
 This creates a visual map: scan the tags for "what changed," then jump to the matching colored section for details.
 
-### 2.11 Post-Merge Integration (pl-remote-pull Step 7)
+### 2.11 Post-Merge Integration (/pl-remote pull)
 
-After a successful merge in `/pl-remote-pull` (BEHIND fast-forward or DIVERGED merge), a new Step 7 runs:
+After a successful merge in `/pl-remote pull` (BEHIND fast-forward or DIVERGED merge), the post-merge digest step runs:
 
 1. Execute the generation shell script to produce the digest.
 2. Read and display the generated markdown inline in the agent output.

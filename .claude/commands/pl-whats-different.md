@@ -31,14 +31,14 @@ Do NOT proceed to Step 1.
 Read `.purlin/runtime/active_branch`. If the file is absent or empty, abort:
 
 ```
-No active collaboration branch. Use /pl-remote add <branch> to start one.
+No active collaboration branch. Use /pl-remote branch create <name> to start one, or /pl-remote branch join <name> to join an existing one.
 ```
 
 Extract the branch name from the file contents (single line, trimmed).
 
 ### 2. Load Config
 
-Read `remote_collab.remote` from `.purlin/config.json`. Default to `"origin"` if the key is absent or the file does not exist.
+Read remote name from `.purlin/config.json`: check `branch_collab.remote` first, fall back to `remote_collab.remote`, default to `"origin"` if both absent.
 
 Construct the target branch: `<session>`.
 

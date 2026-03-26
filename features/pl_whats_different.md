@@ -22,12 +22,12 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 ### 2.2 Session Guard
 
 - The command reads `.purlin/runtime/active_branch`.
-- If the file is absent or empty, the command aborts with a message directing the user to start or join a collaboration branch via the CDD dashboard.
+- If the file is absent or empty, the command aborts with a message directing the user to create or join a collaboration branch via `/pl-remote branch create <name>` or `/pl-remote branch join <name>`.
 - The branch name is extracted from the file contents (single line, trimmed).
 
 ### 2.3 Config, Fetch, and Sync State
 
-- The command reads `remote_collab.remote` from `.purlin/config.json`, defaulting to `"origin"`.
+- The command reads the remote name from `.purlin/config.json`: check `branch_collab.remote` first, fall back to `remote_collab.remote`, default to `"origin"` if both absent.
 - It fetches the remote collab branch: `git fetch <remote> <branch>`.
 - It determines sync state (SAME, AHEAD, BEHIND, DIVERGED) via range queries.
 - If SAME, the command prints an in-sync message and exits without generating.
