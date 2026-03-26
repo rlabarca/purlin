@@ -15,6 +15,8 @@ Purlin agent: This skill activates QA mode.
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
 
+> **Test infrastructure:** See `instructions/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
+
 ---
 
 ## Subcommand: `/pl-smoke <feature>`

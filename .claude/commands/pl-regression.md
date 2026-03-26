@@ -41,6 +41,8 @@ Next: /pl-regression    (auto-detects next step)
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
 
+> **Test infrastructure:** See `instructions/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
+
 ## Subcommands
 
 ### run
