@@ -81,10 +81,9 @@ SAMPLE_WEB_TEST_WITH_START = """\
 # Feature: Sample Web Feature with Start
 
 > Label: "Sample Feature"
-> Category: "CDD"
-> Prerequisite: features/policy_critic.md
+> Category: "Tools"
 > Web Test: http://localhost:9086
-> Web Start: /pl-cdd
+> Web Start: /pl-server
 
 [TESTING]
 
@@ -104,8 +103,7 @@ SAMPLE_WEB_TESTABLE_FEATURE = """\
 # Feature: Sample Web Feature
 
 > Label: "Sample Feature"
-> Category: "CDD"
-> Prerequisite: features/policy_critic.md
+> Category: "Tools"
 > Web Test: http://localhost:9086
 
 [TESTING]
@@ -131,7 +129,7 @@ A sample feature for testing.
 #### Scenario: Dashboard Layout Correct
     Given the server is running on port 9086
     When the user navigates to http://localhost:9086
-    Then the dashboard heading displays "CDD Monitor"
+    Then the dashboard heading displays "Purlin Status"
     And the feature table is visible
 
 ## Visual Specification
@@ -148,7 +146,6 @@ SAMPLE_NON_WEB_FEATURE = """\
 
 > Label: "CLI Tool"
 > Category: "Tools"
-> Prerequisite: features/policy_critic.md
 
 [TESTING]
 
@@ -163,42 +160,18 @@ A command-line tool.
     Then the help text is displayed
 """
 
-# Sample critic.json for scope testing
-SAMPLE_CRITIC_TARGETED = """\
-{
-  "regression_scope": "targeted:Dashboard Layout Correct",
-  "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"}
-}
-"""
-
-SAMPLE_CRITIC_COSMETIC = """\
-{
-  "regression_scope": "cosmetic",
-  "role_status": {"architect": "DONE", "builder": "DONE", "qa": "N/A"}
-}
-"""
-
-SAMPLE_CRITIC_FULL = """\
-{
-  "regression_scope": "full",
-  "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"}
-}
-"""
-
-SAMPLE_CRITIC_DEPENDENCY_ONLY = """\
-{
-  "regression_scope": "dependency-only",
-  "role_status": {"architect": "DONE", "builder": "DONE", "qa": "N/A"}
-}
-"""
+# Inline regression scope data for scope filtering tests
+SAMPLE_SCOPE_TARGETED = 'targeted:Dashboard Layout Correct'
+SAMPLE_SCOPE_COSMETIC = 'cosmetic'
+SAMPLE_SCOPE_FULL = 'full'
+SAMPLE_SCOPE_DEPENDENCY_ONLY = 'dependency-only'
 
 # Sample feature spec with Figma reference and Token Map in Visual Specification
 SAMPLE_WEB_TESTABLE_WITH_FIGMA = """\
 # Feature: Sample Web Feature with Figma
 
 > Label: "Sample Feature"
-> Category: "CDD"
-> Prerequisite: features/policy_critic.md
+> Category: "Tools"
 > Prerequisite: features/design_visual_standards.md
 > Web Test: http://localhost:9086
 
@@ -235,8 +208,7 @@ SAMPLE_WEB_TESTABLE_NO_FIGMA_VISUAL = """\
 # Feature: Sample Web Feature No Figma Visual
 
 > Label: "Sample Feature"
-> Category: "CDD"
-> Prerequisite: features/policy_critic.md
+> Category: "Tools"
 > Web Test: http://localhost:9086
 
 [TESTING]
@@ -262,10 +234,9 @@ SAMPLE_WEB_TESTABLE_WITH_FIXTURES = """\
 # Feature: Sample Web Feature with Fixtures
 
 > Label: "Sample Feature"
-> Category: "CDD"
-> Prerequisite: features/policy_critic.md
+> Category: "Tools"
 > Web Test: http://localhost:9086
-> Web Start: /pl-cdd
+> Web Start: /pl-server
 > Test Fixtures: https://github.com/org/fixtures.git
 
 [TESTING]
@@ -277,7 +248,7 @@ A sample feature with fixture-backed testing.
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Dashboard Shows Fixture State
-    Given a CDD server loaded with fixture tag "main/feature/scenario-one"
+    Given a dev server loaded with fixture tag "main/feature/scenario-one"
     When the user navigates to the dashboard
     Then the dashboard displays fixture project data
 
@@ -310,16 +281,6 @@ def _write_feature(tmpdir, name, content):
     """Write a feature file to the temp project directory."""
     features_dir = _make_feature_dir(tmpdir, name)
     path = os.path.join(features_dir, f'{name}.md')
-    with open(path, 'w') as f:
-        f.write(content)
-    return path
-
-
-def _write_critic_json(tmpdir, feature_name, content):
-    """Write a critic.json to tests/<feature_name>/."""
-    test_dir = os.path.join(tmpdir, 'tests', feature_name)
-    os.makedirs(test_dir, exist_ok=True)
-    path = os.path.join(test_dir, 'critic.json')
     with open(path, 'w') as f:
         f.write(content)
     return path
@@ -542,14 +503,14 @@ def _extract_web_start(content):
 
 
 # Runtime port file path (hardcoded, not per-feature metadata)
-RUNTIME_PORT_FILE = '.purlin/runtime/cdd.port'
+RUNTIME_PORT_FILE = '.purlin/runtime/server.port'
 
 
 def _resolve_url(base_url, url_override=None, project_root=None):
     """Resolve the effective URL using the priority order.
 
     Priority: (1) URL override, (2) runtime port file at
-    .purlin/runtime/cdd.port, (3) base URL.
+    .purlin/runtime/server.port, (3) base URL.
     Returns the resolved URL string.
     """
     if url_override:
@@ -599,7 +560,7 @@ def _filter_scenarios_by_scope(scope, manual_scenarios, visual_items):
 class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
     """Scenario: Auto-discover web-testable features
 
-    Given the Critic report shows features in TESTING state
+    Given some features are in TESTING state
     And some features have `> Web Test:` metadata and others do not
     When `/pl-web-test` is invoked without arguments
     Then only features with `> Web Test:` metadata are selected
@@ -643,7 +604,6 @@ class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
         content = SAMPLE_WEB_TESTABLE_FEATURE
         self.assertIn('> Label:', content)
         self.assertIn('> Category:', content)
-        self.assertIn('> Prerequisite:', content)
         self.assertIn('> Web Test:', content)
 
     def test_command_file_exists(self):
@@ -775,7 +735,7 @@ class TestManualScenarioPassRecording(unittest.TestCase):
         result = {
             'scenario': 'Dashboard Layout Correct',
             'status': 'PASS',
-            'evidence': 'Screenshot shows heading "CDD Monitor"; table visible'
+            'evidence': 'Screenshot shows heading "Purlin Status"; table visible'
         }
         self.assertEqual(result['status'], 'PASS')
         self.assertIn('evidence', result)
@@ -814,9 +774,9 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
             '(Discovered: 2026-03-06)\n'
             '- **Scenario:** Dashboard Layout Correct\n'
             '- **Observed Behavior:** Heading shows "Status" '
-            'instead of "CDD Monitor"\n'
+            'instead of "Purlin Status"\n'
             '- **Expected Behavior:** Dashboard heading displays '
-            '"CDD Monitor"\n'
+            '"Purlin Status"\n'
             '- **Action Required:** Builder\n'
             '- **Status:** OPEN'
         )
@@ -1436,7 +1396,7 @@ class TestThreeSourceReportFormat(unittest.TestCase):
 class TestRegressionScopeRespected(unittest.TestCase):
     """Scenario: Regression scope respected
 
-    Given a feature's critic.json has regression_scope: "targeted:Scenario A"
+    Given a feature has regression_scope "targeted:Scenario A"
     When `/pl-web-test` is invoked for that feature
     Then only "Scenario A" is executed
     And all other manual scenarios and visual items are skipped
@@ -1488,18 +1448,16 @@ class TestRegressionScopeRespected(unittest.TestCase):
         self.assertEqual(filtered_sc, scenarios)
         self.assertEqual(filtered_vi, visuals)
 
-    def test_critic_json_scope_parsed(self):
-        """Regression scope is correctly read from critic.json content."""
-        import json
-        data = json.loads(SAMPLE_CRITIC_TARGETED)
+    def test_scope_data_parsed(self):
+        """Regression scope string is correctly defined."""
         self.assertEqual(
-            data['regression_scope'], 'targeted:Dashboard Layout Correct')
+            SAMPLE_SCOPE_TARGETED, 'targeted:Dashboard Layout Correct')
 
 
 class TestCosmeticScopeSkipsFeature(unittest.TestCase):
     """Scenario: Cosmetic scope skips feature
 
-    Given a feature's critic.json has regression_scope: "cosmetic"
+    Given a feature has regression_scope "cosmetic"
     When `/pl-web-test` is invoked for that feature
     Then the feature is skipped entirely with a note
 
@@ -1519,11 +1477,9 @@ class TestCosmeticScopeSkipsFeature(unittest.TestCase):
         self.assertEqual(filtered_sc, [])
         self.assertEqual(filtered_vi, [])
 
-    def test_cosmetic_critic_json_parsed(self):
-        """Cosmetic scope is correctly read from critic.json content."""
-        import json
-        data = json.loads(SAMPLE_CRITIC_COSMETIC)
-        self.assertEqual(data['regression_scope'], 'cosmetic')
+    def test_cosmetic_scope_data_parsed(self):
+        """Cosmetic scope string is correctly defined."""
+        self.assertEqual(SAMPLE_SCOPE_COSMETIC, 'cosmetic')
 
     def test_skill_file_documents_cosmetic_skip(self):
         """Skill file documents cosmetic scope skip behavior."""
@@ -1714,7 +1670,7 @@ class TestDynamicPortResolution(unittest.TestCase):
     """Scenario: Dynamic port resolution from runtime port file
 
     Given a feature has `> Web Test: http://localhost:9086`
-    And `.purlin/runtime/cdd.port` contains `52288`
+    And `.purlin/runtime/server.port` contains `52288`
     When `/pl-web-test` resolves the URL for that feature
     Then the resolved URL is `http://localhost:52288`
     And port `9086` from the metadata is not used
@@ -1731,7 +1687,7 @@ class TestDynamicPortResolution(unittest.TestCase):
     def test_web_start_metadata_extracted(self):
         """Web Start metadata is correctly extracted."""
         start_cmd = _extract_web_start(SAMPLE_WEB_TEST_WITH_START)
-        self.assertEqual(start_cmd, '/pl-cdd')
+        self.assertEqual(start_cmd, '/pl-server')
 
     def test_no_web_start_returns_none(self):
         """Feature without Web Start returns None."""
@@ -1742,7 +1698,7 @@ class TestDynamicPortResolution(unittest.TestCase):
         """Runtime port file replaces port in Web Test URL."""
         runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+        with open(os.path.join(runtime_dir, 'server.port'), 'w') as f:
             f.write('52288')
 
         resolved = _resolve_url(
@@ -1761,7 +1717,7 @@ class TestDynamicPortResolution(unittest.TestCase):
         """Empty port file falls back to spec URL."""
         runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+        with open(os.path.join(runtime_dir, 'server.port'), 'w') as f:
             f.write('')
 
         resolved = _resolve_url(
@@ -1773,7 +1729,7 @@ class TestDynamicPortResolution(unittest.TestCase):
         """URL override takes precedence over port file."""
         runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+        with open(os.path.join(runtime_dir, 'server.port'), 'w') as f:
             f.write('52288')
 
         resolved = _resolve_url(
@@ -1793,7 +1749,7 @@ class TestDynamicPortResolution(unittest.TestCase):
         """Non-numeric port file content falls back to spec URL."""
         runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+        with open(os.path.join(runtime_dir, 'server.port'), 'w') as f:
             f.write('not-a-port')
 
         resolved = _resolve_url(
@@ -1803,7 +1759,7 @@ class TestDynamicPortResolution(unittest.TestCase):
 
     def test_runtime_port_file_path_is_hardcoded(self):
         """The runtime port file path is a module constant, not per-feature."""
-        self.assertEqual(RUNTIME_PORT_FILE, '.purlin/runtime/cdd.port')
+        self.assertEqual(RUNTIME_PORT_FILE, '.purlin/runtime/server.port')
 
 
 class TestHeadedPlaywrightDetection(unittest.TestCase):
@@ -1857,7 +1813,7 @@ class TestDynamicPortResolutionInSkillFile(unittest.TestCase):
 
     def test_skill_references_runtime_port_file(self):
         """Skill file references runtime port file."""
-        self.assertIn('cdd.port', self.command_content)
+        self.assertIn('server.port', self.command_content)
 
     def test_skill_references_web_start(self):
         """Skill file references Web Start metadata."""
@@ -1893,7 +1849,7 @@ class TestFixtureBackedServerStarted(unittest.TestCase):
     And a scenario's Given step references fixture tag "main/feature/scenario-one"
     When `/pl-web-test` processes that scenario
     Then the fixture tag is checked out to a temp directory
-    And a CDD server is started with `--project-root <fixture-dir> --port 0`
+    And a dev server is started with `--project-root <fixture-dir> --port 0`
     And the ephemeral port from the server's stdout is used for navigation
     And the static URL port (9086) is NOT used
 
@@ -1919,7 +1875,7 @@ class TestFixtureBackedServerStarted(unittest.TestCase):
     def test_fixture_tag_detected_in_given_step(self):
         """Fixture tag reference is detected in scenario Given steps."""
         scenario = (
-            '    Given a CDD server loaded with '
+            '    Given a dev server loaded with '
             'fixture tag "main/feature/scenario-one"\n'
             '    When the user navigates to the dashboard\n'
             '    Then the dashboard displays fixture project data')
@@ -2005,7 +1961,7 @@ class TestFixtureCleanupAfterCompletion(unittest.TestCase):
 
     Given a fixture-backed scenario has completed (pass or fail)
     When `/pl-web-test` moves to the next scenario
-    Then the fixture-backed CDD server has been stopped
+    Then the fixture-backed dev server has been stopped
     And the fixture checkout directory has been removed
 
     Test: Verifies skill file documents cleanup protocol for fixture
@@ -2087,14 +2043,6 @@ class TestLegacyPlWebVerifyRemoved(unittest.TestCase):
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertNotIn('pl-web-verify', content)
-
-    def test_no_web_testable_in_critic(self):
-        """tools/critic/critic.py contains no 'Web Testable' references."""
-        critic_path = os.path.join(
-            PROJECT_ROOT, 'tools', 'critic', 'critic.py')
-        with open(critic_path) as f:
-            content = f.read()
-        self.assertNotIn('Web Testable', content)
 
     def test_no_web_testable_in_fixture_setup(self):
         """dev/setup_fixture_repo.sh contains no 'Web Testable' refs."""
