@@ -426,10 +426,17 @@ case "${PURLIN_MODE:-}" in
     pm)       MODE_NAME="PM" ;;
     *)        MODE_NAME="Purlin" ;;
 esac
+# Badge includes branch or worktree label for immediate context.
+# Worktree label wins over branch when present.
 DISPLAY_NAME="$MODE_NAME"
 if [[ -f "$PURLIN_PROJECT_ROOT/.purlin_worktree_label" ]]; then
     _wt_label=$(cat "$PURLIN_PROJECT_ROOT/.purlin_worktree_label")
     DISPLAY_NAME="$MODE_NAME ($_wt_label)"
+else
+    _BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [[ -n "$_BRANCH" ]]; then
+        DISPLAY_NAME="$MODE_NAME ($_BRANCH)"
+    fi
 fi
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$DISPLAY_NAME"
 
