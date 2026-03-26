@@ -30,6 +30,7 @@ Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `p
 ### 2.3 Config Reading
 *   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_FIND_WORK`, `AGENT_AUTO_START`, `AGENT_MODEL_WARNING`, and `AGENT_MODEL_WARNING_DISMISSED` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
 *   The generated launcher MUST call `resolve_config.py <role>` (via `$CORE_DIR/tools/config/resolve_config.py`) and `eval` the shell variable assignments it returns. It MUST NOT use an inline `python3 -c "import json; ..."` pattern that reads `config.json` directly.
+*   **Role fallback:** When the requested role (e.g., `purlin`) is absent from `agents` in the resolved config, the resolver falls back to `agents.builder` if present. This supports consumer projects that have not yet added an `agents.purlin` block.
 *   `AGENT_MODEL_WARNING` contains the `warning` field value from the agent's assigned model (empty string if absent). `AGENT_MODEL_WARNING_DISMISSED` is `true` if the model ID appears in the top-level `acknowledged_warnings` array AND the model has `warning_dismissible: true`; `false` otherwise.
 *   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_FIND_WORK="true"`, `AGENT_AUTO_START="false"`, `AGENT_MODEL_WARNING=""`, `AGENT_MODEL_WARNING_DISMISSED="false"`.
 

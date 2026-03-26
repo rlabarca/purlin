@@ -49,12 +49,13 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - All skill files MUST have both legacy (`**Purlin command owner:**`) and new (`**Purlin mode:**`) headers.
 - Legacy agents match on line 1 (old format). The Purlin agent matches on line 2 (new format).
 - New purlin-only skills MUST have `**Purlin command: Purlin agent only**` on line 1 so legacy agents skip them.
+- **Validation:** The scan engine's Untracked File Audit catches new skill files without corresponding feature specs. Dual-header compliance is enforced by convention; no automated scan validates header format across all skill files.
 
 ### 2.7 Work Discovery Delegation
 
 - `/pl-status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
 - Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) MUST delegate work discovery to `/pl-status`, not call `scan.sh` directly or implement their own detection logic.
-- Only `/pl-status` and the startup protocol (PURLIN_BASE.md Section 5) call `scan.sh` directly.
+- Only `/pl-status`, `/pl-resume` (startup protocol), and audit skills (`/pl-spec-code-audit`, `/pl-verify`) call `scan.sh` directly.
 - **Mode-specific routing rules:**
   - `spec_modified_after_completion: true` → Engineer ONLY. QA MUST NOT treat this as a blocker or show it in QA work items. If the Engineer has re-validated and re-tagged, QA proceeds normally.
   - `regression_status: FAIL` → Engineer (fix the code). QA blocks completion but does not fix.

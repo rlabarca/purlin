@@ -122,7 +122,7 @@ A single function `update_session_identity <mode_display> [project]` encapsulate
 2. Format the badge: `<mode_display> (<context>)` — or bare `<mode_display>` if no context is available.
 3. Format the title: `<project> - <badge>` when project is given, or bare `<badge>`.
 4. Dispatch to all detected environments: `set_term_title`, `set_iterm_badge`, `set_warp_tab_name`.
-5. Store the computed values in `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., the launcher uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for `--name`/`--remote-control`).
+5. Store the computed values in shell variables `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., the launcher uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for `--name`/`--remote-control`). These variables are set by every call to `update_session_identity` and persist in the calling shell's environment.
 
 This function replaces the scattered inline badge-computation + dispatch logic in `pl-run.sh`, `PURLIN_BASE.md` section 4.1.1, `/pl-mode`, `/pl-resume` Step 6, and `/pl-merge` step 7.
 
