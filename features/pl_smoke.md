@@ -67,7 +67,7 @@ Recommended: /pl-smoke suggest
 
 The scan engine (`tools/cdd/scan.sh`) MUST surface unclassified smoke candidates in its output so that `/pl-status` can display them without requiring QA to run `/pl-smoke suggest` manually.
 
-**Detection logic** (runs as part of the scan, not a separate command):
+**Detection logic** (runs as part of every `scan.sh` invocation — no separate command or manual trigger needed):
 1. Read the dependency graph from `.purlin/cache/dependency_graph.json`.
 2. Count dependents per feature (how many features list it as a prerequisite).
 3. Read the tier table to find existing smoke classifications.

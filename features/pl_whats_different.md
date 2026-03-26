@@ -75,7 +75,7 @@ For each inferred feature stem:
 
 1. Check whether `features/<stem>.impl.md` exists on disk (not just in the diff — the companion may pre-exist without changes).
 2. Check whether the companion appears in the changed companion files for this direction.
-3. **Flag condition:** The feature had code changes, a companion file exists on disk, but the companion was NOT updated in this range. This means the engineer touched code for a feature that has a companion file but didn't record anything new in it.
+3. **Flag condition:** The feature had code changes, a companion file exists on disk, but the companion was NOT updated in this range. "Code changes" means changes to any tracked file outside `.purlin/` and `features/` directories (includes `tools/`, `dev/`, `.claude/commands/`, but excludes feature specs and runtime state). This means the engineer touched code for a feature that has a companion file but didn't record anything new in it.
 
 Features without an existing companion file are not flagged — the companion mandate only applies when the engineer has already established one. New features that have never had a companion are a separate concern (handled by the pre-switch gate in §4.2 of PURLIN_BASE.md).
 
