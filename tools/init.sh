@@ -372,16 +372,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
-printf "\n\n" >> "$PROMPT_FILE"
-
+# PURLIN_BASE.md is the single instruction file (HOW_WE_WORK content merged in)
 if [ -f "$CORE_DIR/instructions/PURLIN_BASE.md" ]; then
-    cat "$CORE_DIR/instructions/PURLIN_BASE.md" >> "$PROMPT_FILE"
-fi
-
-if [ -f "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
+    cat "$CORE_DIR/instructions/PURLIN_BASE.md" > "$PROMPT_FILE"
+else
+    echo "ERROR: instructions/PURLIN_BASE.md not found at $CORE_DIR/instructions/" >&2
+    exit 1
 fi
 
 if [ -f "$SCRIPT_DIR/.purlin/PURLIN_OVERRIDES.md" ]; then

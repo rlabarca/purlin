@@ -76,10 +76,11 @@ else
     log_fail "T0b: pl-run.sh not found at $PURLIN_ROOT/pl-run.sh"
 fi
 
+# HOW_WE_WORK_BASE.md was removed in v0.8.5 (merged into PURLIN_BASE.md)
 if [ -f "$PURLIN_ROOT/instructions/HOW_WE_WORK_BASE.md" ]; then
-    log_pass "T0c: instructions/HOW_WE_WORK_BASE.md exists"
+    log_fail "T0c: instructions/HOW_WE_WORK_BASE.md still exists (should be removed)"
 else
-    log_fail "T0c: instructions/HOW_WE_WORK_BASE.md not found"
+    log_pass "T0c: instructions/HOW_WE_WORK_BASE.md correctly absent"
 fi
 
 if [ -f "$PURLIN_ROOT/instructions/PURLIN_BASE.md" ]; then

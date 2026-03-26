@@ -127,10 +127,7 @@ if [ $INIT_EXIT -eq 0 ]; then log_pass "Exit code 0"; else log_fail "Exit code w
 # .purlin/ with config, overrides, .upstream_sha
 if [ -d "$PROJECT/.purlin" ]; then log_pass ".purlin/ created"; else log_fail ".purlin/ not created"; fi
 if [ -f "$PROJECT/.purlin/config.json" ]; then log_pass "config.json exists"; else log_fail "config.json missing"; fi
-if [ -f "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" ]; then log_pass "ARCHITECT_OVERRIDES.md exists"; else log_fail "ARCHITECT_OVERRIDES.md missing"; fi
-if [ -f "$PROJECT/.purlin/BUILDER_OVERRIDES.md" ]; then log_pass "BUILDER_OVERRIDES.md exists"; else log_fail "BUILDER_OVERRIDES.md missing"; fi
-if [ -f "$PROJECT/.purlin/QA_OVERRIDES.md" ]; then log_pass "QA_OVERRIDES.md exists"; else log_fail "QA_OVERRIDES.md missing"; fi
-if [ -f "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then log_pass "HOW_WE_WORK_OVERRIDES.md exists"; else log_fail "HOW_WE_WORK_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/PURLIN_OVERRIDES.md" ]; then log_pass "PURLIN_OVERRIDES.md exists"; else log_fail "PURLIN_OVERRIDES.md missing"; fi
 if [ -f "$PROJECT/.purlin/.upstream_sha" ]; then log_pass ".upstream_sha exists"; else log_fail ".upstream_sha missing"; fi
 
 # Config JSON validity and correct tools_root

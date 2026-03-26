@@ -26,10 +26,7 @@ setup_launcher_sandbox() {
 
     # Minimal instruction stubs so launcher cat commands don't fail
     mkdir -p "$SANDBOX/instructions" "$SANDBOX/.purlin" "$SANDBOX/.purlin/runtime"
-    echo "# stub" > "$SANDBOX/instructions/HOW_WE_WORK_BASE.md"
-    echo "# stub" > "$SANDBOX/instructions/BUILDER_BASE.md"
-    echo "# stub" > "$SANDBOX/instructions/ARCHITECT_BASE.md"
-    echo "# stub" > "$SANDBOX/instructions/QA_BASE.md"
+    echo "# stub" > "$SANDBOX/instructions/PURLIN_BASE.md"
 
     # Copy config resolver so launchers can read agent config
     mkdir -p "$SANDBOX/tools/config"

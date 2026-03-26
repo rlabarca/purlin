@@ -14,12 +14,8 @@ If no argument is provided, default to the calling role's own override file (the
 
 ---
 
-**Base/override file pairs:**
-- `HOW_WE_WORK_OVERRIDES.md` ↔ `instructions/HOW_WE_WORK_BASE.md`
-- `ARCHITECT_OVERRIDES.md` ↔ `instructions/ARCHITECT_BASE.md`
-- `BUILDER_OVERRIDES.md` ↔ `instructions/BUILDER_BASE.md`
-- `QA_OVERRIDES.md` ↔ `instructions/QA_BASE.md`
-- `PM_OVERRIDES.md` ↔ `instructions/PM_BASE.md`
+**Base/override file pair:**
+- `PURLIN_OVERRIDES.md` ↔ `instructions/PURLIN_BASE.md`
 
 ---
 

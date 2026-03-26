@@ -86,10 +86,6 @@ def check_feature_coverage(readme_path, features_dir):
 
 # Base instruction files for framework doc consistency checks
 BASE_INSTRUCTION_FILES = [
-    "instructions/HOW_WE_WORK_BASE.md",
-    "instructions/ARCHITECT_BASE.md",
-    "instructions/BUILDER_BASE.md",
-    "instructions/QA_BASE.md",
     "instructions/PURLIN_BASE.md",
 ]
 
@@ -183,7 +179,7 @@ def check_readme_instruction_consistency(readme_path, project_root):
     behavior: role definitions, focus phrases, and instruction layer structure.
     """
     findings = []
-    hww_path = os.path.join(project_root, "instructions", "HOW_WE_WORK_BASE.md")
+    base_path = os.path.join(project_root, "instructions", "PURLIN_BASE.md")
 
     try:
         with open(readme_path, 'r', encoding='utf-8') as f:
@@ -191,17 +187,17 @@ def check_readme_instruction_consistency(readme_path, project_root):
     except (IOError, OSError):
         return findings
 
-    if not os.path.exists(hww_path):
+    if not os.path.exists(base_path):
         return findings
 
     try:
-        with open(hww_path, 'r', encoding='utf-8') as f:
-            hww_content = f.read()
+        with open(base_path, 'r', encoding='utf-8') as f:
+            base_content = f.read()
     except (IOError, OSError):
         return findings
 
-    # Check 1: Role focus phrases from HOW_WE_WORK_BASE appear in README
-    role_phrases = _extract_role_focus_phrases(hww_content)
+    # Check 1: Role focus phrases from PURLIN_BASE appear in README
+    role_phrases = _extract_role_focus_phrases(base_content)
     for role, phrase in role_phrases.items():
         if role == "Human Executive":
             continue  # Human Executive may not appear in README
@@ -210,10 +206,10 @@ def check_readme_instruction_consistency(readme_path, project_root):
                 "WARNING", "readme_instruction_drift",
                 "README.md",
                 f"{role} focus phrase '{phrase}' from "
-                f"HOW_WE_WORK_BASE.md not found in README",
+                f"PURLIN_BASE.md not found in README",
             ))
 
-    # Check 2: Every agent role in HOW_WE_WORK_BASE has a README section
+    # Check 2: Every agent role in PURLIN_BASE has a README section
     for role in role_phrases:
         if role == "Human Executive":
             continue
@@ -227,24 +223,24 @@ def check_readme_instruction_consistency(readme_path, project_root):
             findings.append(make_finding(
                 "WARNING", "readme_instruction_drift",
                 "README.md",
-                f"Role '{role}' defined in HOW_WE_WORK_BASE.md "
+                f"Role '{role}' defined in PURLIN_BASE.md "
                 f"has no section in README",
             ))
 
     # Check 3: Dual-gate architecture consistency
-    hww_has_dual_gate = (
-        "Spec Gate" in hww_content and "Implementation Gate" in hww_content
+    base_has_dual_gate = (
+        "Spec Gate" in base_content and "Implementation Gate" in base_content
     )
     readme_has_dual_gate = (
         "Dual-Gate" in readme_content or "dual-gate" in readme_content
         or ("Before coding" in readme_content
             and "After coding" in readme_content)
     )
-    if hww_has_dual_gate and not readme_has_dual_gate:
+    if base_has_dual_gate and not readme_has_dual_gate:
         findings.append(make_finding(
             "WARNING", "readme_instruction_drift",
             "README.md",
-            "HOW_WE_WORK_BASE.md defines Spec Gate / Implementation Gate "
+            "PURLIN_BASE.md defines Spec Gate / Implementation Gate "
             "dual-gate model but README does not describe it",
         ))
 

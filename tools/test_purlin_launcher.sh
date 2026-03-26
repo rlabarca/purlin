@@ -33,7 +33,6 @@ setup_purlin_sandbox() {
 
     # Minimal instruction stubs so launcher cat commands succeed
     mkdir -p "$SANDBOX/instructions" "$SANDBOX/.purlin" "$SANDBOX/.purlin/runtime"
-    echo "# stub HOW_WE_WORK_BASE" > "$SANDBOX/instructions/HOW_WE_WORK_BASE.md"
     echo "# stub PURLIN_BASE" > "$SANDBOX/instructions/PURLIN_BASE.md"
 
     # Copy config resolver so purlin launcher can read agent config

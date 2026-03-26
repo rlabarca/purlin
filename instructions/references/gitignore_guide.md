@@ -8,8 +8,7 @@
 | Path | Purpose |
 |------|---------|
 | `.purlin/config.json` | Shared project configuration |
-| `.purlin/*_OVERRIDES.md` | Role-specific instruction overrides |
-| `.purlin/HOW_WE_WORK_OVERRIDES.md` | Shared workflow overrides |
+| `.purlin/PURLIN_OVERRIDES.md` | Project-specific instruction overrides (all modes) |
 | `.purlin/release/` | Release configuration |
 | `.purlin/.upstream_sha` | Pinned submodule version |
 | `.purlin/delivery_plan.md` | Phased delivery coordination (read by all agents across sessions) |

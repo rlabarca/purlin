@@ -19,10 +19,7 @@ from tools.release.audit_common import (
 )
 
 EXPECTED_OVERRIDES = [
-    "HOW_WE_WORK_OVERRIDES.md",
-    "ARCHITECT_OVERRIDES.md",
-    "BUILDER_OVERRIDES.md",
-    "QA_OVERRIDES.md",
+    "PURLIN_OVERRIDES.md",
 ]
 
 # Contradiction detection: override keywords that negate base rules

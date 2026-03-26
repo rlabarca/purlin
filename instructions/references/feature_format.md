@@ -14,7 +14,7 @@ Copy from `{tools_root}/feature_templates/`:
 - `_feature.md` -- regular feature file
 - `_anchor.md` -- anchor node (arch_*, design_*, policy_*)
 
-**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 for the companion file convention.
+**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See `instructions/references/knowledge_colocation.md` for the companion file convention.
 
 ## Blockquote Metadata
 
