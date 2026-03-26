@@ -142,6 +142,16 @@ The launcher MUST set `--name` and `--remote-control` CLI flags on the `claude` 
 - **Format:** `<project> | <badge>` — e.g., `purlin | Purlin (main)`, `purlin | Engineer (W1)`.
 - The session name persists for the lifetime of the session, even if the badge changes later.
 
+#### 2.4.3 Session Overrides File
+
+The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved `find_work` and `auto_start` values before launching Claude. This file bridges ephemeral CLI flags (`--no-save --find-work false`, `--auto-start`) to the agent, which cannot read the launcher's shell variables.
+
+- **Written:** After sticky flag persistence and validation, before launch.
+- **Format:** `{"find_work": <bool>, "auto_start": <bool>}` — JSON with boolean values matching the launcher's resolved state.
+- **Read by:** `/pl-resume` Step 4 (takes priority over `config.local.json`).
+- **Lifetime:** Persists for the terminal session. The launcher's EXIT trap deletes it on session end. `/pl-resume` does NOT delete it (so it survives `/clear`).
+- **Absent:** When `/pl-resume` is invoked outside a launcher session (e.g., user types it manually), the file does not exist and the agent falls back to `config.local.json`.
+
 ### 2.5 Session Message Encoding
 
 - No `--mode`: `"Begin Purlin session."`

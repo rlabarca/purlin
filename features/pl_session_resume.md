@@ -172,9 +172,11 @@ When the checkpoint mode is `engineer`, check for orphaned worktree branches (`g
 
 **This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5 delegates entirely to `/pl-resume` — there is no separate implementation of work discovery in the startup protocol.
 
-**Reading startup flags:** Read the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work`, `auto_start`, and `default_mode` from the `agents.purlin` object. Defaults when absent: `find_work: true`, `auto_start: false`, `default_mode: null`.
+**Reading startup flags:** First check for `.purlin/cache/session_overrides.json`. The launcher writes this file with the resolved `find_work` and `auto_start` values for this session — including ephemeral `--no-save` overrides that are NOT in `config.local.json`. If found, read `find_work` and `auto_start` from it. Do NOT delete the file — it persists for the lifetime of the terminal session (the launcher's EXIT trap cleans it up on session end, so it survives `/clear`).
 
-> **Why resolved config?** The launcher persists CLI overrides (e.g., `--find-work false`) to `config.local.json` via `resolve_config.py`. Reading only `config.json` would ignore user preferences. The resolution rule is the same as `resolve_config.py`: local file wins when it exists; no merging.
+If no session overrides file exists (e.g., manual `/pl-resume` outside a launcher session), fall back to the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work` and `auto_start` from `agents.purlin`.
+
+Read `default_mode` from the resolved config always (it is not in session overrides). Defaults when absent: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
 **When a checkpoint exists (warm resume):**
 - Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.
@@ -371,6 +373,16 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
     Then the scan is NOT run
     And the recovery summary displays "find_work disabled -- awaiting instruction."
     And the agent does not auto-generate a work plan
+
+#### Scenario: Session overrides take priority over config @auto
+
+    Given no checkpoint file exists
+    And .purlin/cache/session_overrides.json contains find_work=false
+    And config.local.json has agents.purlin.find_work = true
+    When the agent invokes /pl-resume
+    Then the agent reads session_overrides.json (launcher authority)
+    And the agent outputs "find_work disabled -- awaiting instruction."
+    And the session_overrides.json file is NOT deleted
 
 #### Scenario: Cold start reads config.local.json over config.json @auto
 
