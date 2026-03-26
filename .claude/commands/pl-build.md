@@ -63,6 +63,11 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 ### Step 0 -- Pre-Flight (MANDATORY)
 
+*   **Spec Existence Check:** If a feature name was provided as an argument, verify `features/<name>.md` exists. If it does NOT exist:
+    1. Inform the user: `"No spec exists for '<name>'. In Purlin, specs come before code."`
+    2. Offer: `"Switch to PM mode to create the spec? (/pl-spec <name>)"`
+    3. If confirmed: switch to PM mode and invoke `/pl-spec <name>`. STOP — do not continue with /pl-build.
+    4. If declined: STOP — do not implement without a spec.
 *   **Re-Verification Detection:** Check scan results for this feature's `reset_context`. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
 *   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
 *   **Visual Design Sources:** When the feature has a `## Visual Specification`, read in priority: Token Map (in spec) -> `brief.json` (at `features/design/<stem>/brief.json`) -> Figma MCP (last resort, read-only).

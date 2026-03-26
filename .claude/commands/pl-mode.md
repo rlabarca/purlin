@@ -1,17 +1,27 @@
 **Purlin command: Purlin agent only**
 **Purlin mode: shared**
 
-Purlin agent: This skill switches the Purlin agent's operating mode.
+Purlin agent: This skill switches the Purlin agent's operating mode, or shows current mode status when invoked with no arguments.
 
 ---
 
 ## Usage
 
 ```
-/pl-mode <pm|engineer|qa>
+/pl-mode [pm|engineer|qa]
 ```
 
-## Protocol
+## No-Argument: Status Display
+
+When invoked with no arguments, display current mode status. No mode change, no terminal update.
+
+1. Print the current mode: `"Current mode: <Engineer|PM|QA>"` or `"No mode active"` if in open mode.
+2. Print the available skills for the current mode from `instructions/references/purlin_commands.md`:
+   - If a mode is active, print that mode's skill section.
+   - If no mode is active, print the Mode Quick Reference table below.
+3. Print: `"Switch with /pl-mode <pm|engineer|qa>"`
+
+## With Argument: Mode Switch
 
 1. **Check for uncommitted work.** If the current mode has uncommitted file changes:
    - List the uncommitted files.
