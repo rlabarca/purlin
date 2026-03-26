@@ -133,7 +133,7 @@ The launcher sets the badge and title using `set_agent_identity` from `tools/ter
 - **Worktree override:** If running in a worktree (`.purlin_worktree_label` exists), the worktree label replaces the branch — e.g., `Engineer (W1)`.
 - **Title format:** `<project> - <badge>` — e.g., `purlin - Purlin (main)`.
 
-The branch is detected via `git rev-parse --abbrev-ref HEAD`. This badge is the user's first visual signal that the agent is starting. `/pl-resume` Step 6 updates the badge to the determined mode once startup completes.
+The branch is detected via `git rev-parse --abbrev-ref HEAD`. This badge is the user's first visual signal that the agent is starting. `/pl-resume` Step 6 updates the mode name but preserves the branch context — e.g., `Purlin (main)` becomes `PM (main)`, not bare `PM`.
 
 #### 2.4.2 Remote Control Session Name
 

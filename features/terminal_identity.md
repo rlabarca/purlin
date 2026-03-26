@@ -5,11 +5,11 @@
 > Prerequisite: features/agent_launchers_common.md
 > Prerequisite: features/project_init.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
-When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent role name, with Engineer mode showing additional state during continuous-mode phase execution. Both are cleaned up on normal exit and Ctrl+C.
+When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent mode name with the current branch (or worktree label) in parentheses — e.g., `PM (main)`, `Engineer (W1)`. The branch context persists across mode switches so users always know which branch they're on. Engineer mode shows additional state during continuous-mode phase execution. Both layers are cleaned up on normal exit and Ctrl+C.
 
 ---
 
@@ -50,27 +50,39 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 - All clear functions are idempotent (multiple calls are safe).
 - Cleanup calls are guarded: `type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity` so that cleanup is safe when the helper was not sourced.
 
-### 2.4 Engineer Phase Transitions (Continuous Mode)
+### 2.4 Persistent Branch Context in Badge
 
-Both title and badge update together via `set_agent_identity` at each phase transition:
+The badge MUST always include the current branch name (or worktree label) in parentheses. This applies at startup, on mode switches, and during phase transitions — the branch context is never dropped.
+
+- **Non-worktree:** `<mode-text> (<branch>)` — e.g., `PM (main)`, `Engineer (feature-xyz)`.
+- **Worktree:** `<mode-text> (<worktree-label>)` — e.g., `Engineer (W1)`. Worktree label takes priority over branch name.
+- **Open mode:** `Purlin (<branch>)` or `Purlin (<worktree-label>)`.
+
+The branch is detected via `git rev-parse --abbrev-ref HEAD`. The worktree label is read from `.purlin_worktree_label` if present.
+
+This rule applies everywhere the badge is set: launcher startup, `/pl-resume` Step 6, `/pl-mode` switches, and Engineer phase transitions.
+
+### 2.5 Engineer Phase Transitions (Continuous Mode)
+
+Both title and badge update together via `set_agent_identity` at each phase transition. Branch context is always appended:
 
 | State | Title / Badge Text |
 |-------|-----------|
-| Startup / non-continuous | `Engineer` |
-| Bootstrap phase | `Engineer: Bootstrap` |
-| Sequential phase execution | `Engineer: Phase N/M` |
-| Parallel group execution | `Engineer: Phases 2,3,5` |
-| Evaluator running | `Engineer: Evaluating` |
-| Between phases | `Engineer` |
+| Startup / non-continuous | `Engineer (<branch>)` |
+| Bootstrap phase | `Engineer: Bootstrap (<branch>)` |
+| Sequential phase execution | `Engineer: Phase N/M (<branch>)` |
+| Parallel group execution | `Engineer: Phases 2,3,5 (<branch>)` |
+| Evaluator running | `Engineer: Evaluating (<branch>)` |
+| Between phases | `Engineer (<branch>)` |
 | Exit / Ctrl+C | (cleared) |
 
-### 2.5 Generated Launcher Integration (`tools/init.sh`)
+### 2.6 Generated Launcher Integration (`tools/init.sh`)
 
 - The `generate_launcher()` function emits code that sources the helper script, sets identity on start, and includes an augmented EXIT trap with `clear_agent_identity`.
 - Consumer projects receive terminal identity support on the next `pl-init.sh` refresh cycle.
 - The role display name is computed from the role parameter: `architect` -> `PM`, `qa` -> `QA`, `pm` -> `PM`, `builder` -> `Engineer`.
 
-### 2.6 Graceful Degradation
+### 2.7 Graceful Degradation
 
 - Terminal title works in all terminals (iTerm2, Terminal.app, VS Code integrated terminal, etc.).
 - iTerm2 badge is a no-op when `$TERM_PROGRAM != "iTerm.app"`.
@@ -121,7 +133,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
     Given the helper script is sourced
     And TERM_PROGRAM is set to "iTerm.app"
-    When set_agent_identity is called with "PM"
+    When set_agent_identity is called with "PM (main)"
     Then both the title escape sequence and the badge escape sequence are emitted
 
 #### Scenario: clear_agent_identity calls both clear functions
@@ -154,9 +166,10 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 #### @manual Scenario: Title and badge appear on start and clear on exit
 
     Given iTerm2 is the active terminal
+    And the current branch is "main"
     When the user runs ./pl-run.sh and the agent session starts
-    Then the terminal tab title shows "PM"
-    And the iTerm2 badge overlay shows "PM"
+    Then the terminal tab title shows "Purlin (main)"
+    And the iTerm2 badge overlay shows "Purlin (main)"
     When the agent session exits normally
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -172,16 +185,29 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 #### @manual Scenario: Engineer title and badge update during continuous mode phase transitions
 
     Given iTerm2 is the active terminal
+    And the current branch is "main"
     And a delivery plan exists with at least 3 phases
     When the user runs ./pl-run.sh --continuous
-    Then the title and badge show "Engineer" at startup
-    And the title and badge show "Engineer: Bootstrap" during the bootstrap phase
-    And the title and badge update to "Engineer: Phase N/M" during sequential phase execution
-    And the title and badge show "Engineer: Evaluating" when the evaluator runs
+    Then the title and badge show "Engineer (main)" at startup
+    And the title and badge show "Engineer: Bootstrap (main)" during the bootstrap phase
+    And the title and badge update to "Engineer: Phase N/M (main)" during sequential phase execution
+    And the title and badge show "Engineer: Evaluating (main)" when the evaluator runs
     And the title and badge are cleared on exit
+
+#### @manual Scenario: Badge preserves branch context across mode switches
+
+    Given iTerm2 is the active terminal
+    And the current branch is "feature-xyz"
+    And the agent started with badge "Purlin (feature-xyz)"
+    When the user switches to Engineer mode via /pl-mode engineer
+    Then the badge updates to "Engineer (feature-xyz)"
+    When the user switches to PM mode via /pl-mode pm
+    Then the badge updates to "PM (feature-xyz)"
 
 ## Regression Guidance
 - Cleanup on normal exit AND Ctrl+C (both title and badge cleared)
 - Non-iTerm2 terminals: badge functions are no-op, title still works
 - Escape sequences output to /dev/tty, not stdout (safe when piped)
 - Continuous mode: title updates through phase transitions (Bootstrap -> Phase N/M -> Evaluating)
+- Branch context in parentheses MUST persist across mode switches — never dropped to bare mode name
+- Worktree label takes priority over branch name when both could apply

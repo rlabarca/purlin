@@ -236,7 +236,7 @@ Uncommitted:    [none | summary]
 
 #### 2.3.6 Step 6 -- Update Terminal Identity, Cleanup, and Continue
 
-- **Update iTerm badge and title** to reflect the determined mode. The launcher already set an initial badge at launch (e.g., `Purlin (main)`) — Step 6 updates it to the mode-specific badge. If a mode was resolved (from checkpoint, `default_mode`, or session message), set the badge to that mode name (`Engineer`, `PM`, `QA`). If no mode was resolved, leave the launcher's initial badge in place. Check `.purlin_worktree_label` for worktree suffix (overrides branch in badge). Do not set the badge earlier in the /pl-resume flow — let the launcher's initial badge persist until mode is known.
+- **Update iTerm badge and title** to reflect the determined mode while preserving branch context. The launcher already set an initial badge at launch (e.g., `Purlin (main)`) — Step 6 updates the mode name but keeps the branch in parentheses. If a mode was resolved (from checkpoint, `default_mode`, or session message), set the badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. If no mode was resolved, leave the launcher's initial badge in place. Check `.purlin_worktree_label` — if present, the worktree label replaces the branch (e.g., `Engineer (W1)`). The branch is detected via `git rev-parse --abbrev-ref HEAD`. Do not set the badge earlier in the /pl-resume flow — let the launcher's initial badge persist until mode is known.
 - If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.
@@ -318,19 +318,21 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
     Then merge recovery runs before checkpoint detection
     And the breadcrumb is processed before proceeding to Step 1
 
-#### Scenario: Badge set once in Step 6 based on determined mode @auto
+#### Scenario: Badge set once in Step 6 with branch context @auto
 
     Given a cold start with no checkpoint and default_mode null
+    And the current branch is "main"
     When the agent completes /pl-resume
-    Then the iTerm badge is set to "Purlin" in Step 6
+    Then the iTerm badge is set to "Purlin (main)" in Step 6
     And the badge was NOT set earlier in the flow
 
-#### Scenario: Badge reflects checkpoint mode without flash @auto
+#### Scenario: Badge reflects checkpoint mode with branch context @auto
 
     Given a checkpoint exists with mode "engineer"
+    And the current branch is "main"
     When the agent completes /pl-resume
-    Then the iTerm badge is set to "Engineer" in Step 6
-    And the badge was NOT temporarily set to "Purlin" before Step 6
+    Then the iTerm badge is set to "Engineer (main)" in Step 6
+    And the badge was NOT temporarily set to "Purlin (main)" before Step 6
 
 #### Scenario: Restore prints command hint not full table @auto
 
