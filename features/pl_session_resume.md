@@ -163,33 +163,43 @@ When the system prompt already contains the Purlin instructions (agent was start
 
 When the checkpoint mode is `engineer`, check for orphaned worktree branches (`git branch --list 'worktree-*'`). For each found branch, attempt to merge it into the current branch using the Robust Merge Protocol (safe-file auto-resolution with `--ours` for `delivery_plan.md`, `.purlin/cache/*`; unsafe conflicts fall back to sequential). Report merged branches in the recovery summary.
 
-#### 2.3.4 Step 4 -- Gather Fresh Project State
-
-Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-status` to interpret the scan results and present work organized by mode.
+#### 2.3.4 Step 4 -- Read Startup Flags and Gather Project State
 
 **This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5.2 delegates here — there is no separate implementation of work discovery in the startup protocol.
 
-**Warm resume (checkpoint exists):**
-- The scan provides fresh project state. The work plan comes from the checkpoint's "Next" list.
-- Re-enter the mode recorded in the checkpoint.
-- Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.
+**Reading startup flags:** Read the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work`, `auto_start`, and `default_mode` from the `agents.purlin` object. Defaults when absent: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
-**Cold start (no checkpoint):**
+> **Why resolved config?** The launcher persists CLI overrides (e.g., `--find-work false`) to `config.local.json` via `resolve_config.py`. Reading only `config.json` would ignore user preferences. The resolution rule is the same as `resolve_config.py`: local file wins when it exists; no merging.
+
+**When a checkpoint exists (warm resume):**
+- Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.
+- Run `${TOOLS_ROOT}/cdd/scan.sh` for fresh project state. The work plan comes from the checkpoint's "Next" list.
+- Re-enter the mode recorded in the checkpoint.
+
+**When no checkpoint exists (cold start):**
 
 This is the path taken on fresh launch AND on `/clear` without `/pl-resume save`. The agent starts in open mode with no work plan — it discovers work fresh via scan.
 
-- Use `/pl-status` output to generate a full work plan organized by mode.
-- Suggest the mode with highest-priority work.
-- **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS or PENDING phases, highlight it and suggest Engineer mode.
-- **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
-- Check `find_work` and `auto_start` from the config:
-  - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
-  - `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
-  - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
+1. **Check `find_work`** (before running the scan):
+   - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` Skip the scan. Skip work plan generation. Proceed directly to the recovery summary (Step 5) with no action items.
+   - `find_work: true` -- continue to step 2.
 
-**Mode activation priority (context-dependent):**
-- **Warm resume (checkpoint exists):** checkpoint mode wins. This is the save/resume contract.
-- **Cold start (no checkpoint):** CLI `--mode` > config `default_mode` > `.purlin_session.lock` mode > user input.
+2. **Run scan and status:** Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Run `/pl-status` to interpret the results and present work organized by mode.
+
+3. **Generate work plan:**
+   - Use `/pl-status` output to generate a full work plan organized by mode.
+   - Suggest the mode with highest-priority work.
+   - **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS or PENDING phases, highlight it and suggest Engineer mode.
+   - **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
+
+4. **Check `auto_start`:**
+   - `auto_start: false` -- present the work plan and wait for user approval before executing.
+   - `auto_start: true` -- present the work plan and begin executing immediately without waiting for approval. Requires a resolved mode (see mode activation below); without one, `auto_start` is a no-op and the agent waits for mode selection.
+
+**Mode activation priority (cold start only):**
+- CLI `--mode` (inferred from the session message directing mode entry, e.g., "Enter Engineer mode") > config `default_mode` > `.purlin_session.lock` mode > user input.
+- **Applying `default_mode`:** If the session message does not direct a specific mode, read `default_mode` from the resolved config. If non-null (`"engineer"`, `"pm"`, or `"qa"`), enter that mode. If null, suggest a mode based on scan results and wait for user input.
+- **`auto_start` without a resolved mode** (no CLI `--mode`, `default_mode: null`, no session lock): `auto_start` is a no-op — the agent presents mode suggestions and waits for user selection before executing.
 
 **Worktree context:** If running inside a worktree (`.purlin_worktree_label` exists), read the label and include it in the recovery summary. If `.purlin_session.lock` exists, read the mode from the lock as a fallback when no checkpoint exists.
 
@@ -322,10 +332,38 @@ Resolve pending worktree merge failures. Called automatically by the startup pro
 #### Scenario: Cold start respects find_work false @auto
 
     Given no checkpoint file exists
-    And config sets find_work to false for purlin
+    And resolved config sets find_work to false for purlin
     When the agent invokes /pl-resume
-    Then the recovery summary displays "find_work disabled -- awaiting instruction."
+    Then the scan is NOT run
+    And the recovery summary displays "find_work disabled -- awaiting instruction."
     And the agent does not auto-generate a work plan
+
+#### Scenario: Cold start reads config.local.json over config.json @auto
+
+    Given no checkpoint file exists
+    And .purlin/config.json has agents.purlin.find_work = true
+    And .purlin/config.local.json has agents.purlin.find_work = false
+    When the agent invokes /pl-resume
+    Then the agent reads config.local.json (resolved config)
+    And the agent outputs "find_work disabled -- awaiting instruction."
+
+#### Scenario: Cold start applies default_mode from config @auto
+
+    Given no checkpoint file exists
+    And resolved config sets default_mode to "engineer" for purlin
+    And the session message does not specify a mode
+    When the agent invokes /pl-resume
+    Then the agent enters Engineer mode without prompting for mode selection
+
+#### Scenario: auto_start without resolved mode is a no-op @auto
+
+    Given no checkpoint file exists
+    And resolved config sets auto_start to true for purlin
+    And resolved config sets default_mode to null for purlin
+    And the session message does not specify a mode
+    When the agent invokes /pl-resume
+    Then the agent presents mode suggestions
+    And the agent waits for user selection before executing
 
 #### Scenario: Invalid argument prints error @auto
 
@@ -371,5 +409,8 @@ None.
 ## Regression Guidance
 - Checkpoint survives /clear and terminal restarts (written to .purlin/cache/, gitignored)
 - Legacy role-scoped checkpoints are recognized and consumed correctly
-- find_work=false respected during restore (no auto-generated work plan)
+- find_work=false respected during restore (no auto-generated work plan, no scan)
+- config.local.json takes priority over config.json for startup flags
+- default_mode from resolved config is applied when session message specifies no mode
+- auto_start=true without a resolved mode does not cause errors (no-op)
 - Merge recovery handles stale branches gracefully (branch deleted externally)

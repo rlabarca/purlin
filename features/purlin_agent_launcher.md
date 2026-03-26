@@ -54,7 +54,7 @@ Ephemeral flags affect only the current session and are never written to config.
 - `--auto-verify` — Alias for `--mode qa --auto-start`.
 - `--pm`, `--qa` — Shorthand for `--mode pm`, `--mode qa`.
 - `--verify [feature]` — `--mode qa`, optionally scoped to one feature.
-- `--auto-start` — Used with `--mode`: enters the mode and begins executing the work plan immediately without waiting for approval (e.g., `--mode engineer --auto-start`). Has no effect without `--mode`. The `--help` text for this flag MUST communicate the `--mode` dependency and include an example — e.g., "With --mode: begin executing immediately. Example: --mode engineer --auto-start. No effect without --mode."
+- `--auto-start` — Used with `--mode`: enters the mode and begins executing the work plan immediately without waiting for approval (e.g., `--mode engineer --auto-start`). Has no effect without `--mode`. The `--help` text for this flag MUST communicate the `--mode` dependency and include an example — e.g., "With --mode: begin executing immediately. Example: --mode engineer --auto-start. No effect without --mode." **Config-driven `auto_start`:** When `auto_start: true` is set in the config (not via CLI), it takes effect only when a mode is resolved — either from `default_mode` in config or from `.purlin_session.lock`. If no mode is resolved, `auto_start` is a no-op and the agent waits for mode selection.
 - `--worktree` — Runs in an isolated git worktree (see worktree feature).
 
 #### 2.2.3 Meta Flags
