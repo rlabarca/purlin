@@ -11,7 +11,7 @@ Defines invariants for how external design artifacts (images, PDFs, Figma URLs, 
 
 ### Storage Convention
 
-*   **Per-feature artifacts:** Stored at `features/design/<feature_stem>/` where `<feature_stem>` is the feature filename without the `.md` extension (e.g., `features/design/cdd_status_monitor/dashboard-layout.png`).
+*   **Per-feature artifacts:** Stored at `features/design/<feature_stem>/` where `<feature_stem>` is the feature filename without the `.md` extension (e.g., `features/design/project_init/setup-layout.png`).
 *   **Shared artifacts:** Cross-feature design standards (brand guides, global style references, design system exports) are stored at `features/design/_shared/`.
 *   **No new top-level directories:** All design artifacts live within the existing `features/` directory tree. Projects MUST NOT create separate top-level directories for design assets.
 *   **Naming convention:** `features/design/<feature_stem>/<descriptive-name>.<ext>` -- use lowercase, hyphen-separated descriptive names. The name should describe the content (e.g., `dashboard-layout.png`, `settings-panel-dark.pdf`), not a version or date.

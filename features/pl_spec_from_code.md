@@ -213,13 +213,6 @@ When Purlin is installed into a project with an existing codebase, there is no s
     Then the command skips Phase 0 and Phase 1
     And the command begins Phase 2 using the existing inventory
 
-#### Scenario: Generated features appear in CDD dashboard as TODO
-
-    Given Phase 4 has completed successfully
-    When tools/cdd/status.sh is run
-    Then all generated features appear in the CDD dashboard with TODO status
-    And all generated anchor nodes appear in the CDD dashboard
-
 #### Scenario: End-to-end onboarding of a non-trivial codebase
 
     Given a consumer project with 10+ source files across multiple directories

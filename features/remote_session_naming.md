@@ -22,7 +22,7 @@ Claude Code's remote control feature allows naming sessions visible in claude.ai
   - `builder` -> `Builder`
   - `qa` -> `QA`
   - `pm` -> `PM`
-- `ProjectName` is read from the `project_name` config key (already used by the CDD dashboard in `serve.py`). Falls back to the project directory basename when the key is absent or empty.
+- `ProjectName` is read from the `project_name` config key (used by Purlin tools). Falls back to the project directory basename when the key is absent or empty.
 
 ### 2.2 Config Resolver Extension
 

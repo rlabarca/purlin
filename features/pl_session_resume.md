@@ -98,7 +98,7 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **Step:** 3 -- Verify Locally (implementation committed, running tests)
 
 ### Done
@@ -108,16 +108,16 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 - Committed implementation: abc1234
 
 ### Next
-1. Run tests -- verify tests/cdd_status_monitor/tests.json shows PASS
+1. Run tests -- verify tests/project_init/tests.json shows PASS
 2. Commit status tag: [Ready for Verification]
 3. Run tools/cdd/status.sh to confirm TESTING transition
-4. Move to next feature: cdd_spec_map.md
+4. Move to next feature: config_layering.md
 
 ## Delivery Plan
 Phase 2 of 3 -- IN_PROGRESS
 Execution Group: Group 2 (Phases 2, 3)
-Completed this phase: cdd_status_monitor.md
-Remaining: cdd_spec_map.md, cdd_qa_effort_display.md
+Completed this phase: project_init.md
+Remaining: config_layering.md, pl_agent_config.md
 
 ## Work Queue
 1. [HIGH] cdd_spec_map.md -- Phase 2
@@ -245,7 +245,7 @@ Uncommitted:    [none | summary]
 #### Scenario: Save Writes Role-Scoped Checkpoint File
 
     Given an agent is in an active session with role "builder"
-    And the agent is working on features/cdd_status_monitor.md at protocol step 3
+    And the agent is working on features/project_init.md at protocol step 3
     When the agent invokes /pl-resume save
     Then .purlin/cache/session_checkpoint_builder.md is created
     And the file contains "**Role:** builder"

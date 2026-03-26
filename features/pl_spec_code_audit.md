@@ -202,7 +202,7 @@ Phase 0.5 runs in the parent agent after Phase 0 (Section 2.6) and before dispat
 | H2 | Spec explicit reference | HIGH | Feature spec `.md` mentions the file path in requirements or overview |
 | H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. Requires reading source files. |
 | H4 | Command-to-feature naming | HIGH | `.claude/commands/pl-<name>.md` maps to `features/pl_<name>.md` (dash-to-underscore convention) |
-| H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `cdd_status_monitor` -> `tools/cdd/`) |
+| H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `project_init` -> `tools/init/`) |
 | H6 | Name similarity | LOW | File stem substring-matches a feature name. |
 
 - A file MAY have multiple owners (legitimate for shared modules).
@@ -515,10 +515,10 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 #### Scenario: Ownership map uses companion Tool Location (H1)
 
-    Given a companion file features/cdd_status_monitor.impl.md contains "Tool Location: tools/cdd/status.sh"
-    And tools/cdd/status.sh exists in the code inventory
+    Given a companion file features/project_init.impl.md contains "Tool Location: tools/init/setup.sh"
+    And tools/init/setup.sh exists in the code inventory
     When Phase 0.5 Step 0.5.2 runs
-    Then tools/cdd/status.sh is owned by cdd_status_monitor with heuristic H1 and confidence HIGH
+    Then tools/init/setup.sh is owned by project_init with heuristic H1 and confidence HIGH
 
 #### Scenario: Ownership map uses spec path reference (H2)
 

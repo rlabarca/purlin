@@ -66,8 +66,6 @@ The migration replaces boilerplate `json.load()` / inline `python3 -c "import js
 All config writers MUST target `config.local.json`:
 
 - **`/pl-agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
-- **CDD Dashboard `POST /config/agents`:** Writes to `config.local.json`. Reads from `config.local.json` (via resolver).
-- **CDD Dashboard `GET /config.json`:** Serves the resolved config (local if present, shared fallback) via the resolver.
 - **`init.sh`:** Creates `config.json` (shared template) during full-init mode. Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
 
 ### 2.4 Update-Time Config Sync
@@ -164,19 +162,6 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     Given config.local.json is gitignored
     When /pl-agent-config updates a value
     Then no new git commit is created
-
-#### Scenario: CDD Dashboard POST Writes to Local Config
-
-    Given config.local.json exists
-    When POST /config/agents is sent with updated agent settings
-    Then config.local.json contains the new agent values
-    And config.json is unchanged
-
-#### Scenario: CDD Dashboard GET Serves Local Config
-
-    Given config.local.json exists with {"cdd_port": 9999}
-    When GET /config.json is requested
-    Then the response contains cdd_port: 9999 from the local config
 
 #### Scenario: Init Adds Local Config to Gitignore
 
