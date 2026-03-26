@@ -240,7 +240,7 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
    - **Scenario:** <scenario name or visual checklist item>
    - **Observed Behavior:** <what was observed -- include three-source values if triangulated>
    - **Expected Behavior:** <from the spec>
-   - **Action Required:** Builder
+   - **Action Required:** Engineer
    - **Status:** OPEN
    ```
    Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - web-test findings"`

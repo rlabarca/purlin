@@ -143,7 +143,7 @@ SAMPLE_LEGACY_BUILDER = """# Session Checkpoint
 ### Next
 1. Run tests
 
-## Builder Context
+## Engineer Context
 **Protocol Step:** 3 -- Verify Locally
 **Delivery Plan:** No delivery plan
 **Work Queue:**

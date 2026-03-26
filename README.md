@@ -18,7 +18,7 @@ Purlin helps AI agents build software together using a shared set of specs. The 
 
 The framework is built on four goals:
 
-1. **Agents stay coordinated** -- four specialized roles (PM, Architect, Builder, QA) each know exactly what to do next.
+1. **Agents stay coordinated** -- four specialized roles (PM, PM, Engineer, QA) each know exactly what to do next.
 2. **Specs are the source of truth** -- if the code disappeared tomorrow, any agent could rebuild it from the specs alone.
 3. **People steer, agents execute** -- you set the direction; agents handle the back-and-forth without meetings.
 4. **Code stays correct** -- specs and code are always in sync, so bugs from "stale requirements" don't happen.
@@ -57,8 +57,8 @@ The PM will ask what you're building. If you have Figma designs, paste the URL w
 The other agents are launched the same way:
 
 ```bash
-./pl-run-architect.sh   # Architect agent
-./pl-run-builder.sh     # Builder agent
+./pl-run.sh   # PM agent
+./pl-run.sh     # Engineer agent
 ./pl-run-qa.sh          # QA agent
 ```
 
@@ -95,7 +95,7 @@ git submodule update --init purlin
 Purlin is built on a few ideas that show up everywhere in the framework. The [full documentation](docs/index.md) covers each in depth.
 
 *   **Specs drive everything.** The project's state is defined by specification files in `features/`. Anchor nodes set project-wide rules; feature specs describe requirements in plain-language scenarios. If all source code were deleted, the specs must be sufficient to rebuild.
-*   **Four roles, strict boundaries.** The PM translates intent into specs, the Architect designs requirements and constraints, the Builder writes code and tests, and QA verifies behavior. Each role can read everything but only writes to its own domain.
+*   **Four roles, strict boundaries.** The PM translates intent into specs, the PM designs requirements and constraints, the Engineer writes code and tests, and QA verifies behavior. Each role can read everything but only writes to its own domain.
 *   **Notes live next to specs.** Implementation decisions, gotchas, and visual checklists are stored in companion files alongside the feature spec they belong to -- nothing gets lost in a side channel.
 *   **Your rules layer on top.** Purlin's built-in rules live inside the submodule. Your project-specific tweaks go in `.purlin/`. The agents combine both at launch -- you never need to edit framework files.
 
@@ -103,7 +103,7 @@ Purlin is built on a few ideas that show up everywhere in the framework. The [fu
 
 Each role can read everything but only writes to its own domain. The Purlin submodule is read-only for all roles.
 
-| Domain | PM | Architect | Builder | QA |
+| Domain | PM | PM | Engineer | QA |
 |---|---|---|---|---|
 | Feature specs (`features/*.md`) | Write | **Owner** | Read | Read |
 | Anchor nodes (`arch_*`, `design_*`, `policy_*`) | Read | **Owner** | Read | Read |
@@ -116,8 +116,8 @@ Each role can read everything but only writes to its own domain. The Purlin subm
 | Purlin submodule (`purlin/`) | -- | -- | -- | -- |
 
 *   **The PM** -- Translates human intent into feature specs with Figma-derived visual specifications. [PM Agent Guide](docs/pm-agent-guide.md)
-*   **The Architect** -- Designs specifications, enforces architectural integrity, and manages the release process. [Architect Agent Guide](docs/architect-agent-guide.md)
-*   **The Builder** -- Implements code and tests from specifications. Escalates when a spec is infeasible. [Builder Agent Guide](docs/builder-agent-guide.md)
+*   **The PM** -- Designs specifications, enforces architectural integrity, and manages the release process. [PM Agent Guide](docs/pm-agent-guide.md)
+*   **The Engineer** -- Implements code and tests from specifications. Escalates when a spec is infeasible. [Engineer Agent Guide](docs/engineer-agent-guide.md)
 *   **The QA Agent** -- Verifies features against specs, records discoveries, and authors regression suites. [QA Agent Guide](docs/qa-agent-guide.md)
 
 For the full command reference, see the [Skill Reference](docs/index.md#skill-reference) in the docs.
@@ -131,5 +131,5 @@ Created by `pl-init.sh` in your project root:
 *   `purlin/` -- The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` -- Your project-specific overrides and config.
 *   `features/` -- Your feature specifications.
-*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` / `pl-run-pm.sh` -- Agent launcher scripts.
+*   `pl-run.sh` / `pl-run.sh` / `pl-run-qa.sh` / `pl-run-pm.sh` -- Agent launcher scripts.
 *   `pl-init.sh` -- Collaborator setup shim. Commit this.

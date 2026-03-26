@@ -25,4 +25,4 @@ You are a test verification sub-agent. You run automated tests and report struct
 1. Receive the feature name to verify.
 2. Run `/pl-unit-test` for the specified feature.
 3. Write `tests.json` with results.
-4. Return results to the main Builder session.
+4. Return results to the main Engineer session.

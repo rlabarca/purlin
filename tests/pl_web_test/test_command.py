@@ -23,7 +23,7 @@ Covers automated scenarios from features/pl_web_test.md:
 - Regression scope respected
 - Cosmetic scope skips feature
 - QA completion gate prompts for completion
-- Builder completion gate is summary only
+- Engineer completion gate is summary only
 - Instruction files updated with web-test references
 - Fixture-backed server started for scenario with fixture tag
 - Fixture checkout failure marks scenario inconclusive
@@ -264,7 +264,7 @@ BUG_DISCOVERY_PATTERN = re.compile(
     r'- \*\*Scenario:\*\* .+\n'
     r'- \*\*Observed Behavior:\*\* .+\n'
     r'- \*\*Expected Behavior:\*\* .+\n'
-    r'- \*\*Action Required:\*\* Builder\n'
+    r'- \*\*Action Required:\*\* Engineer\n'
     r'- \*\*Status:\*\* OPEN',
     re.MULTILINE
 )
@@ -777,7 +777,7 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
             'instead of "Purlin Status"\n'
             '- **Expected Behavior:** Dashboard heading displays '
             '"Purlin Status"\n'
-            '- **Action Required:** Builder\n'
+            '- **Action Required:** Engineer\n'
             '- **Status:** OPEN'
         )
         self.assertRegex(sample_bug, BUG_DISCOVERY_PATTERN)
@@ -792,16 +792,16 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
             '- **Scenario:** Test\n'
             '- **Observed Behavior:** X\n'
             '- **Expected Behavior:** Y\n'
-            '- **Action Required:** Builder\n'
+            '- **Action Required:** Engineer\n'
             '- **Status:** OPEN'
         )
         for field in required_fields:
             self.assertIn(f'**{field}:**', sample_bug)
 
     def test_bug_action_required_is_builder(self):
-        """BUG discovery Action Required defaults to Builder."""
-        sample_bug = '- **Action Required:** Builder'
-        self.assertIn('Builder', sample_bug)
+        """BUG discovery Action Required defaults to Engineer."""
+        sample_bug = '- **Action Required:** Engineer'
+        self.assertIn('Engineer', sample_bug)
 
     def test_bug_status_is_open(self):
         """BUG discovery Status is OPEN when created."""
@@ -1027,7 +1027,7 @@ class TestFigmaTriangulatedDetectsBug(unittest.TestCase):
     And Figma reports 48px and spec says 48px but app computes 32px
     When `/pl-web-test` performs triangulated verification
     Then the item is recorded as BUG with three-source attribution
-    And a [BUG] discovery is created routing to Builder
+    And a [BUG] discovery is created routing to Engineer
 
     Test: Verifies BUG verdict logic and skill file BUG routing.
     """
@@ -1053,8 +1053,8 @@ class TestFigmaTriangulatedDetectsBug(unittest.TestCase):
         self.assertIn('code wrong', self.command_content.lower())
 
     def test_skill_routes_bug_to_builder(self):
-        """Skill file routes BUG discoveries to Builder."""
-        self.assertIn('Action Required:** Builder', self.command_content)
+        """Skill file routes BUG discoveries to Engineer."""
+        self.assertIn('Action Required:** Engineer', self.command_content)
 
     def test_skill_creates_bug_discovery_for_triangulated_bugs(self):
         """Skill file records triangulated BUGs as [BUG] discoveries."""
@@ -1188,11 +1188,11 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
         self.assertIn('- **Status:** OPEN', entry)
 
     def test_stale_discovery_routes_to_pm_not_builder(self):
-        """STALE discovery Action Required is PM, not Builder."""
+        """STALE discovery Action Required is PM, not Engineer."""
         entry = _format_stale_discovery_entry(
             'item', 'screen', 'https://figma.com/x', '2026-01-01')
         self.assertIn('- **Action Required:** PM', entry)
-        self.assertNotIn('- **Action Required:** Builder', entry)
+        self.assertNotIn('- **Action Required:** Engineer', entry)
 
     def test_stale_discovery_status_is_open(self):
         """STALE discovery status starts as OPEN."""
@@ -1376,9 +1376,9 @@ class TestThreeSourceReportFormat(unittest.TestCase):
         self.assertIn('DRIFT', self.command_content)
 
     def test_report_verdict_routing(self):
-        """Skill file documents verdict routing to Builder and PM."""
-        # BUG -> Builder (via Action Required), STALE/DRIFT -> PM
-        self.assertIn('Action Required:** Builder', self.command_content)
+        """Skill file documents verdict routing to Engineer and PM."""
+        # BUG -> Engineer (via Action Required), STALE/DRIFT -> PM
+        self.assertIn('Action Required:** Engineer', self.command_content)
         self.assertIn('PM action items', self.command_content)
 
     def test_all_verdicts_produce_correct_types(self):
@@ -1516,22 +1516,22 @@ class TestQaCompletionGate(unittest.TestCase):
         self.assertIn('zero failures', self.command_content)
 
     def test_qa_gate_distinct_from_builder_gate(self):
-        """QA and Builder completion gates are distinct in the skill."""
+        """QA and Engineer completion gates are distinct in the skill."""
         # Both role markers must appear in the file
         self.assertIn('QA Agent invocation', self.command_content)
-        self.assertIn('Builder invocation', self.command_content)
+        self.assertIn('Engineer invocation', self.command_content)
 
 
 class TestBuilderCompletionGate(unittest.TestCase):
-    """Scenario: Builder completion gate is summary only
+    """Scenario: Engineer completion gate is summary only
 
-    Given the invoking agent is Builder
+    Given the invoking agent is Engineer
     And all scenarios and visual items passed
     When results are presented
     Then only a summary is printed
     And the skill suggests QA run `/pl-complete`
 
-    Test: Verifies Builder-specific completion gate behavior.
+    Test: Verifies Engineer-specific completion gate behavior.
     """
 
     def setUp(self):
@@ -1539,19 +1539,19 @@ class TestBuilderCompletionGate(unittest.TestCase):
             self.command_content = f.read()
 
     def test_skill_detects_builder_role(self):
-        """Skill file checks for Builder role identity marker."""
-        self.assertIn('Role Definition: The Builder', self.command_content)
+        """Skill file checks for Engineer role identity marker."""
+        self.assertIn('Role Definition: The Engineer', self.command_content)
 
     def test_builder_does_not_mark_complete(self):
-        """Skill file states Builder does NOT mark complete."""
+        """Skill file states Engineer does NOT mark complete."""
         self.assertIn('Do NOT mark complete', self.command_content)
 
     def test_builder_suggests_qa_complete(self):
-        """Skill file suggests QA agent run /pl-complete for Builder."""
+        """Skill file suggests QA agent run /pl-complete for Engineer."""
         self.assertIn('Suggest QA', self.command_content)
 
     def test_builder_gets_summary_only(self):
-        """Builder invocation produces summary only, not a completion prompt."""
+        """Engineer invocation produces summary only, not a completion prompt."""
         self.assertIn('print summary only', self.command_content)
 
 
@@ -1560,7 +1560,7 @@ class TestInstructionFilesUpdated(unittest.TestCase):
 
     Given the skill file has been created
     When instruction updates are applied per Section 2.13
-    Then /pl-web-test appears in both QA and Builder authorized command lists
+    Then /pl-web-test appears in both QA and Engineer authorized command lists
     And /pl-web-test [name] appears in all variants of both command tables
     And > Web Test: is documented in feature_format.md
     And visual_spec_convention.md references the automated alternative

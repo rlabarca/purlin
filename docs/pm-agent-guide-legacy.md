@@ -1,45 +1,45 @@
-# Architect Agent Guide
+# PM Agent Guide
 
-A practical guide for using the Architect agent in Purlin.
+A practical guide for using the PM agent in Purlin.
 
 ---
 
 ## 1. Overview
 
-The Architect is Purlin's specification and process manager. It designs feature specs, defines architectural constraints, validates the [dependency graph](spec-map-guide.md), and owns the release process. The Architect communicates entirely through feature files -- it never writes code or delegates work through chat.
+The PM is Purlin's specification and process manager. It designs feature specs, defines architectural constraints, validates the [dependency graph](spec-map-guide.md), and owns the release process. The PM communicates entirely through feature files -- it never writes code or delegates work through chat.
 
-The Architect agent:
+The PM agent:
 
 - **Creates feature specifications** with Gherkin scenarios that define expected behavior.
 - **Creates anchor nodes** that establish shared constraints (architecture, design, governance).
 - **Validates specs** against the Spec Gate to ensure completeness.
 - **Manages the release process** through a structured checklist.
 - **Retires features** via the tombstone protocol when they are no longer needed.
-- **Never writes code.** Not scripts, not tests, not config files. If code needs to change, the Architect writes a spec -- the Builder discovers it at startup and implements it.
+- **Never writes code.** Not scripts, not tests, not config files. If code needs to change, the PM writes a spec -- the Engineer discovers it at startup and implements it.
 
-The guiding philosophy: "Code is disposable." The specifications in `features/` are the single source of truth. If all code were deleted, a fresh Builder session could rebuild the entire application from the specs.
+The guiding philosophy: "Code is disposable." The specifications in `features/` are the single source of truth. If all code were deleted, a fresh Engineer session could rebuild the entire application from the specs.
 
 ---
 
 ## 2. Getting Started
 
-### Launching an Architect Session
+### Launching an PM Session
 
 From your project root, run:
 
 ```bash
-./pl-run-architect.sh
+./pl-run.sh
 ```
 
-This launches a Claude Code session with the Architect's instructions, tools, and permissions pre-loaded.
+This launches a Claude Code session with the PM's instructions, tools, and permissions pre-loaded.
 
 ### What Happens at Startup
 
-The Architect prints a command table, then checks its startup configuration:
+The PM prints a command table, then checks its startup configuration:
 
-- **Find Work enabled** (default): The Architect scans feature status, and presents a prioritized work plan. It asks for your approval before starting.
-- **Find Work disabled**: The Architect prints `"find_work disabled -- awaiting instruction."` and waits for you to tell it what to do.
-- **Auto Start enabled**: The Architect begins executing its work plan immediately after presenting it.
+- **Find Work enabled** (default): The PM scans feature status, and presents a prioritized work plan. It asks for your approval before starting.
+- **Find Work disabled**: The PM prints `"find_work disabled -- awaiting instruction."` and waits for you to tell it what to do.
+- **Auto Start enabled**: The PM begins executing its work plan immediately after presenting it.
 
 The startup work plan groups action items by feature and sorts them by priority (CRITICAL and HIGH first). You can approve the plan, adjust the order, or give it a completely different task.
 
@@ -47,7 +47,7 @@ The startup work plan groups action items by feature and sorts them by priority 
 
 ## 3. The Zero-Code Mandate
 
-This is the Architect's defining constraint. The Architect's write access is limited to:
+This is the PM's defining constraint. The PM's write access is limited to:
 
 - Feature specs: `features/*.md`
 - Companion file bootstrap: `features/*.impl.md`
@@ -56,7 +56,7 @@ This is the Architect's defining constraint. The Architect's write access is lim
 - Prose docs: `README.md` and similar
 - Process config: `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json`
 
-Everything else -- application code, scripts, tests, app-level config -- belongs to the Builder. If you ask the Architect to "fix this bug," it will write a spec that describes the correct behavior. The Builder picks it up from there.
+Everything else -- application code, scripts, tests, app-level config -- belongs to the Engineer. If you ask the PM to "fix this bug," it will write a spec that describes the correct behavior. The Engineer picks it up from there.
 
 ---
 
@@ -68,7 +68,7 @@ Everything else -- application code, scripts, tests, app-level config -- belongs
 /pl-spec user-authentication
 ```
 
-The Architect checks if a spec already exists. If not, it runs a structured probing protocol:
+The PM checks if a spec already exists. If not, it runs a structured probing protocol:
 
 1. **Scope** -- What screens, data, and user goals are involved?
 2. **Edge Cases** -- What happens on failure, loading, responsive layouts?
@@ -76,9 +76,9 @@ The Architect checks if a spec already exists. If not, it runs a structured prob
 4. **Design** -- Do Figma designs exist? What is the visual priority?
 5. **Constraints** -- Performance budgets? Platform targets? Simplest useful version?
 
-After gathering answers, the Architect drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to anchor nodes, and commits.
+After gathering answers, the PM drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to anchor nodes, and commits.
 
-If a spec already exists, the Architect reads it, identifies gaps, and proposes targeted refinements. Specs are always edited in place -- never versioned as v2/v3 files.
+If a spec already exists, the PM reads it, identifies gaps, and proposes targeted refinements. Specs are always edited in place -- never versioned as v2/v3 files.
 
 ### Creating an Anchor Node
 
@@ -102,13 +102,13 @@ When you create or edit an anchor node, all features that depend on it reset to 
 /pl-tombstone old-api
 ```
 
-When a feature is no longer needed, the Architect creates a tombstone file in `features/tombstones/` that tells the Builder exactly what to delete:
+When a feature is no longer needed, the PM creates a tombstone file in `features/tombstones/` that tells the Engineer exactly what to delete:
 
 - Which files and directories to remove.
 - Which dependencies to check.
 - Why the feature was retired.
 
-The tombstone appears as a Builder action item. After the Builder deletes the code and the tombstone, the feature clears from the dashboard.
+The tombstone appears as a Engineer action item. After the Engineer deletes the code and the tombstone, the feature clears from the dashboard.
 
 ### Running a Release
 
@@ -118,7 +118,7 @@ The tombstone appears as a Builder action item. After the Builder deletes the co
 
 This walks through the release checklist step by step:
 
-1. **Zero-Queue Check** -- Every feature must have Architect=DONE, Builder=DONE, QA=CLEAN or N/A.
+1. **Zero-Queue Check** -- Every feature must have PM=DONE, Engineer=DONE, QA=CLEAN or N/A.
 2. **Instruction Audit** -- Override files are consistent with base instructions.
 3. **Dependency Integrity** -- The feature graph is acyclic with no broken links.
 4. **Documentation Consistency** -- README and docs match the current feature set.
@@ -132,10 +132,10 @@ Each step presents its status and asks for confirmation before proceeding.
 When you run `/pl-status`, action items are generated. Common ones:
 
 - **Spec Gate FAIL** -- The spec is missing required sections, has malformed scenarios, or lacks prerequisite declarations. Fix the spec.
-- **Unacknowledged [DEVIATION]** -- The Builder diverged from the spec and documented why in a companion file. Read the rationale and add "Acknowledged" to the entry.
-- **[SPEC_DISPUTE]** -- QA or the Builder disagrees with a scenario. Either update the spec or confirm it is correct. Route design-related disputes to the PM.
-- **Untracked files** -- Files in the working directory that are not git-tracked. Add generated artifacts to `.gitignore`; commit Architect-owned files.
-- **[INFEASIBLE]** -- The Builder says the feature cannot be implemented as specified. Revise the spec to make it feasible.
+- **Unacknowledged [DEVIATION]** -- The Engineer diverged from the spec and documented why in a companion file. Read the rationale and add "Acknowledged" to the entry.
+- **[SPEC_DISPUTE]** -- QA or the Engineer disagrees with a scenario. Either update the spec or confirm it is correct. Route design-related disputes to the PM.
+- **Untracked files** -- Files in the working directory that are not git-tracked. Add generated artifacts to `.gitignore`; commit PM-owned files.
+- **[INFEASIBLE]** -- The Engineer says the feature cannot be implemented as specified. Revise the spec to make it feasible.
 
 ### Spec-Code Audit
 
@@ -143,7 +143,7 @@ When you run `/pl-status`, action items are generated. Common ones:
 /pl-spec-code-audit
 ```
 
-This performs a bidirectional consistency check between specs and code. The Architect fixes spec-side gaps (missing scenarios, undeclared prerequisites) and escalates code-side gaps to the Builder via companion file entries.
+This performs a bidirectional consistency check between specs and code. The PM fixes spec-side gaps (missing scenarios, undeclared prerequisites) and escalates code-side gaps to the Engineer via companion file entries.
 
 ### Reverse-Engineering Specs from Code
 
@@ -180,7 +180,7 @@ Anchor nodes do not have scenarios. They are constraint definitions, not impleme
 When you edit an anchor node, every feature that declares it as a prerequisite resets to TODO. This triggers:
 
 1. The dependent features are flagged as needing re-validation.
-2. The Builder re-implements any features where the constraint change affects behavior.
+2. The Engineer re-implements any features where the constraint change affects behavior.
 3. QA re-verifies features that were previously complete.
 
 This is by design. It ensures that constraint changes propagate through the entire system.
@@ -189,23 +189,23 @@ This is by design. It ensures that constraint changes propagate through the enti
 
 ## 6. Working with Companion Files
 
-Companion files (`features/<name>.impl.md`) store implementation knowledge alongside specs. The Builder creates them during implementation; the Architect reads them to understand decisions.
+Companion files (`features/<name>.impl.md`) store implementation knowledge alongside specs. The Engineer creates them during implementation; the PM reads them to understand decisions.
 
 **When to read them:**
-- Before refining a spec -- understand what the Builder learned.
+- Before refining a spec -- understand what the Engineer learned.
 - When processing `[DEVIATION]` tags -- these represent deliberate design divergences.
-- When processing `[DISCOVERY]` tags -- these represent gaps the Builder found.
+- When processing `[DISCOVERY]` tags -- these represent gaps the Engineer found.
 
-**Builder decision tags you will encounter:**
+**Engineer decision tags you will encounter:**
 
 | Tag | Severity | What It Means |
 |-----|----------|---------------|
-| `[CLARIFICATION]` | INFO | Builder interpreted ambiguous spec language |
-| `[AUTONOMOUS]` | WARN | Spec was silent; Builder filled the gap |
-| `[DEVIATION]` | HIGH | Builder intentionally diverged from spec |
-| `[DISCOVERY]` | HIGH | Builder found an unstated requirement |
-| `[INFEASIBLE]` | CRITICAL | Builder says the feature cannot be built as specified |
-| `[SPEC_PROPOSAL]` | HIGH | Builder proposes a new anchor node or spec change |
+| `[CLARIFICATION]` | INFO | Engineer interpreted ambiguous spec language |
+| `[AUTONOMOUS]` | WARN | Spec was silent; Engineer filled the gap |
+| `[DEVIATION]` | HIGH | Engineer intentionally diverged from spec |
+| `[DISCOVERY]` | HIGH | Engineer found an unstated requirement |
+| `[INFEASIBLE]` | CRITICAL | Engineer says the feature cannot be built as specified |
+| `[SPEC_PROPOSAL]` | HIGH | Engineer proposes a new anchor node or spec change |
 
 HIGH and CRITICAL entries block completion until you acknowledge them.
 
@@ -235,7 +235,7 @@ Commit immediately after each discrete change. Do not batch work until session e
 
 ### Handling Design vs. Architecture Disputes
 
-When a SPEC_DISPUTE involves visual design, Token Maps, or Figma artifacts, route it to the PM by setting `Action Required: PM` in the discovery sidecar entry. The Architect resolves behavioral and architectural disputes directly.
+When a SPEC_DISPUTE involves visual design, Token Maps, or Figma artifacts, route it to the PM by setting `Action Required: PM` in the discovery sidecar entry. The PM resolves behavioral and architectural disputes directly.
 
 ### Override Files
 
@@ -253,7 +253,7 @@ Edit `.purlin/ARCHITECT_OVERRIDES.md` to add project-specific rules. This file i
 |---------|-------------|
 | `/pl-spec <topic>` | Create or refine a feature spec. Runs probing questions for new specs. |
 | `/pl-anchor <topic>` | Create or update an anchor node (arch\_, design\_, or policy\_). |
-| `/pl-tombstone <name>` | Retire a feature and create a deletion guide for the Builder. |
+| `/pl-tombstone <name>` | Retire a feature and create a deletion guide for the Engineer. |
 | `/pl-spec-code-audit` | Bidirectional spec-code consistency audit. |
 | `/pl-spec-from-code` | Reverse-engineer specs from an existing codebase. |
 | `/pl-release-check` | Execute the release checklist step by step. |

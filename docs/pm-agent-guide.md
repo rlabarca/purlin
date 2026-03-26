@@ -6,15 +6,15 @@ A practical guide for product managers using the PM agent in Purlin.
 
 ## 1. Overview
 
-The PM agent is Purlin's design and specification agent. It helps product managers translate ideas, Figma designs, and live web pages into structured feature specs that the rest of the team (Architect, Builder, QA) can act on.
+The PM agent is Purlin's design and specification agent. It helps product managers translate ideas, Figma designs, and live web pages into structured feature specs that the rest of the team (PM, Engineer, QA) can act on.
 
 The PM agent:
 
 - **Creates feature specs** with requirements, scenarios, and visual specifications.
-- **Ingests Figma designs** by extracting design tokens, component structure, and annotations -- then generates a machine-readable brief for the Builder.
+- **Ingests Figma designs** by extracting design tokens, component structure, and annotations -- then generates a machine-readable brief for the Engineer.
 - **Ingests live web pages** as design references when Figma is not available.
 - **Asks structured questions** to refine vague ideas into precise, testable specs.
-- **Never writes code.** The PM owns specs and design artifacts. Code is the Builder's job.
+- **Never writes code.** The PM owns specs and design artifacts. Code is the Engineer's job.
 
 By default, the PM agent uses Claude Sonnet 4.6 for fast, conversational iteration. You can change this in your project's configuration.
 
@@ -46,8 +46,8 @@ After onboarding, you will see something like:
 
 ```
 Your first spec is ready at features/dashboard_overview.md.
-Run ./pl-run-builder.sh in another terminal to start building from the spec.
-The Builder reads your spec and writes the code and tests to match it.
+Run ./pl-run.sh in another terminal to start building from the spec.
+The Engineer reads your spec and writes the code and tests to match it.
 ```
 
 ### Returning to an Existing Project
@@ -148,7 +148,7 @@ The PM generates `features/design/<feature_stem>/brief.json`, a machine-readable
 - Code Connect mappings (if present in the Figma file).
 - Figma dev status and version ID.
 
-This file is what the **Builder reads instead of needing Figma access**. The Builder never opens Figma -- it works entirely from the spec and `brief.json`.
+This file is what the **Engineer reads instead of needing Figma access**. The Engineer never opens Figma -- it works entirely from the spec and `brief.json`.
 
 ### Step 6: What Gets Added to Your Feature Spec
 
@@ -259,7 +259,7 @@ The PM asks about performance, platform limitations, and simplicity.
 - Are there platform constraints (browser support, device targets)?
 - What is the simplest version of this feature that would be useful?
 
-You do not need to have answers to every question. The PM adapts based on what you tell it. The goal is to produce a spec with enough detail that the Builder can implement without guessing.
+You do not need to have answers to every question. The PM adapts based on what you tell it. The goal is to produce a spec with enough detail that the Engineer can implement without guessing.
 
 ---
 
@@ -269,16 +269,16 @@ Here is a summary of every artifact the PM agent can produce.
 
 | Artifact | Location | Description |
 |---|---|---|
-| Feature spec | `features/<name>.md` | The primary specification: overview, requirements, Unit Tests, QA Scenarios, and optional visual specification. This is what the Builder implements against. |
+| Feature spec | `features/<name>.md` | The primary specification: overview, requirements, Unit Tests, QA Scenarios, and optional visual specification. This is what the Engineer implements against. |
 | Anchor node | `features/design_<name>.md` or `features/policy_<name>.md` | Shared design standards or policy constraints that apply across multiple features. |
-| Design brief | `features/design/<feature_stem>/brief.json` | Machine-readable Figma data (tokens, screens, components) that the Builder reads instead of accessing Figma. |
+| Design brief | `features/design/<feature_stem>/brief.json` | Machine-readable Figma data (tokens, screens, components) that the Engineer reads instead of accessing Figma. |
 | Design artifacts | `features/design/<feature_stem>/` | Local copies of design assets (images, exported screens) stored alongside the brief. |
 | Token Map | Inside the feature spec's Visual Specification section | Mapping from Figma design variable names (or observed CSS values) to the project's CSS custom properties. |
 | Visual checklist | Inside the feature spec's Visual Specification section | Measurable acceptance criteria derived from design properties (dimensions, spacing, colors, typography). |
 
 ### Visual Ownership: Specification vs. Verification
 
-The PM **authors** the Visual Specification -- Token Maps, acceptance checklists, and design briefs. The Builder **verifies** all visual checklist items during implementation (via `/pl-web-test` for web features, manual inspection for non-web features). QA does not re-verify visual items. This separation keeps the PM focused on design intent and the Builder accountable for visual fidelity in the implementation.
+The PM **authors** the Visual Specification -- Token Maps, acceptance checklists, and design briefs. The Engineer **verifies** all visual checklist items during implementation (via `/pl-web-test` for web features, manual inspection for non-web features). QA does not re-verify visual items. This separation keeps the PM focused on design intent and the Engineer accountable for visual fidelity in the implementation.
 
 ### How Artifacts Flow Between Agents
 
@@ -286,17 +286,17 @@ The PM **authors** the Visual Specification -- Token Maps, acceptance checklists
 PM creates spec + brief.json
     |
     v
-Architect validates structure and requirements
+PM validates structure and requirements
     |
     v
-Builder reads spec + brief.json, writes code and tests,
+Engineer reads spec + brief.json, writes code and tests,
   verifies visual checklist items during implementation
     |
     v
 QA verifies QA Scenarios (behavioral tests requiring human judgment)
 ```
 
-The Builder never needs Figma access. The `brief.json` and Token Map contain everything needed to match the design.
+The Engineer never needs Figma access. The `brief.json` and Token Map contain everything needed to match the design.
 
 ---
 
@@ -326,7 +326,7 @@ Use the "reprocess" keyword to re-ingest a specific screen:
 
 ### Handling Design Disputes
 
-When the Builder or QA flags a discrepancy between the spec and the implementation, entries tagged `SPEC_DISPUTE` are routed to the PM. You own the resolution:
+When the Engineer or QA flags a discrepancy between the spec and the implementation, entries tagged `SPEC_DISPUTE` are routed to the PM. You own the resolution:
 
 1. Check the status report (`/pl-status`) for any SPEC_DISPUTE items.
 2. Review the disputed section of the spec.

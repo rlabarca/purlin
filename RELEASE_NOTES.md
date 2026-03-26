@@ -7,7 +7,7 @@
 - A one-time cost warning prevents surprise charges on Pro plans; once acknowledged, it won't ask again
 
 **Parallel Feature Building**
-- Builder implements multiple features at the same time using isolated git worktrees, so large backlogs finish faster
+- Engineer implements multiple features at the same time using isolated git worktrees, so large backlogs finish faster
 - Delivery plans group independent features into execution groups that build in parallel and merge automatically
 
 **QA Improvements**
@@ -17,9 +17,9 @@
 - Three new commands (`/pl-regression-author`, `/pl-regression-run`, `/pl-regression-evaluate`) cover the full regression author-run-review cycle
 - QA cannot mark a feature complete while regressions are failing -- broken behavior blocks the release
 
-**Builder Escalation Path**
-- Builders can propose spec or anchor node changes directly with `/pl-propose` instead of waiting for the Architect
-- The Critic automatically surfaces unacknowledged proposals as high-priority Architect action items
+**Engineer Escalation Path**
+- Builders can propose spec or anchor node changes directly with `/pl-propose` instead of waiting for the PM
+- The Critic automatically surfaces unacknowledged proposals as high-priority PM action items
 
 **Spec-Code Audit**
 - `/pl-spec-code-audit` now finds code that has no matching spec, not just specs missing code
@@ -50,8 +50,8 @@
 - Tools now correctly detect the project root when Purlin is nested as a submodule inside a larger repository
 
 **Workflow**
-- STALE web test verdicts automatically record as PM-routed discoveries -- no manual Builder triage needed
-- The Architect silently resolves routine Critic items (untracked files, straightforward acknowledgments) and summarizes what it did
+- STALE web test verdicts automatically record as PM-routed discoveries -- no manual Engineer triage needed
+- The PM silently resolves routine Critic items (untracked files, straightforward acknowledgments) and summarizes what it did
 
 **Known Issues**
 - QA process is still not optimal. Gaps in workflow to be addressed.
@@ -79,7 +79,7 @@
 - `/pl-update-purlin` -- Now shows MCP manifest diffs when updating the submodule
 - `/pl-remote-push` / `/pl-remote-pull` -- Work gracefully without a remote configured
 - `/pl-help` -- Now discovers CLI scripts alongside slash commands
-- Continuous Phase Builder -- Parallel worktree execution with inter-phase Critic integration [ALPHA - UNSTABLE]
+- Continuous Phase Engineer -- Parallel worktree execution with inter-phase Critic integration [ALPHA - UNSTABLE]
 
 ### v0.8.2 — 2026-03-17
 
@@ -91,7 +91,7 @@
 - Identity token auto-detection and annotation extraction during ingestion
 - Code Connect and Dev Mode lifecycle integration
 
-**Continuous Phase Builder (initial implementation -- needs testing and improvement)**
+**Continuous Phase Engineer (initial implementation -- needs testing and improvement)**
 - Terminal canvas engine with width-aware rendering and SIGWINCH resize
 - Stale IN_PROGRESS reset on startup, log tail activity display, macOS line buffering fallback
 - Graceful SIGINT stop, bootstrap session without delivery plan, dynamic plan handling
@@ -117,13 +117,13 @@
 - Instructions: strengthened zero-code mandates, fixed PM sidecar contradiction
 - Overrides: updated stale submodule reference paths
 
-**Builder Quality**
+**Engineer Quality**
 - Critic now enforces that tests must break when the behavior they cover is removed -- tests that pass without their implementation are flagged
 
 **Architecture**
 - Unified role status model in `critic_role_status.md`
 - Deep spec-code audit: remediated 11 features and 7 anchors
-- SPEC_DISPUTE routing with PM/Architect handoff
+- SPEC_DISPUTE routing with PM/PM handoff
 - Owner metadata tag for feature routing
 
 ### v0.8.1 — 2026-03-09
@@ -156,7 +156,7 @@
 **Automated Feedback Tests (AFT)**
 - Introduced the AFT pattern as an architectural anchor node (`arch_automated_feedback_tests.md`). AFTs are tools that script interactions with a target system, observe results, and report structured pass/fail with evidence.
 - `/pl-web-verify` renamed to `/pl-aft-web` as the first AFT implementation. Metadata tags renamed: `> Web Testable:` -> `> AFT Web:`, `> Web Start:` -> `> AFT Start:`, `> Web Port File:` removed (port resolution is now internal to the tool).
-- Builder now owns all automated verification (AFT:Web, AFT:TestOnly, AFT:Skip). QA only sees manual items.
+- Engineer now owns all automated verification (AFT:Web, AFT:TestOnly, AFT:Skip). QA only sees manual items.
 - New B1/B2/B3 sub-phase protocol for phased delivery: Build, Test (cross-feature regression), Fix (analyze-first).
 
 **Test Fixtures (`/pl-fixture`)**
@@ -214,7 +214,7 @@
 - Spec Map (renamed from Software Map): interactive dependency graph with position persistence
 - Implementation notes migrated to standalone `*.impl.md` companion files
 - File access permissions formalized across all roles
-- Bidirectional spec-code audit (`/pl-spec-code-audit`) shared between Architect and Builder
+- Bidirectional spec-code audit (`/pl-spec-code-audit`) shared between PM and Engineer
 - Complete QA verification pass across all 31 features
 
 ### v0.5.0 — 2026-02-22

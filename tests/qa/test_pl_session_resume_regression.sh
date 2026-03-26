@@ -60,13 +60,13 @@ done
 
 # SR4: Role-scoped files are independent (writing one doesn't affect others)
 # Write architect and builder checkpoints simultaneously
-echo "# Architect checkpoint" > "$CACHE_DIR/session_checkpoint_architect.md"
-echo "# Builder checkpoint" > "$CACHE_DIR/session_checkpoint_builder.md"
+echo "# PM checkpoint" > "$CACHE_DIR/session_checkpoint_architect.md"
+echo "# Engineer checkpoint" > "$CACHE_DIR/session_checkpoint_builder.md"
 
 ARCH_CONTENT=$(cat "$CACHE_DIR/session_checkpoint_architect.md" 2>/dev/null)
 BUILDER_CONTENT=$(cat "$CACHE_DIR/session_checkpoint_builder.md" 2>/dev/null)
 
-if [ "$ARCH_CONTENT" = "# Architect checkpoint" ] && [ "$BUILDER_CONTENT" = "# Builder checkpoint" ]; then
+if [ "$ARCH_CONTENT" = "# PM checkpoint" ] && [ "$BUILDER_CONTENT" = "# Engineer checkpoint" ]; then
     log_pass "SR4: role-scoped checkpoints are independent (concurrent agents don't overwrite each other)"
 else
     log_fail "SR4: role-scoped checkpoints not independent"

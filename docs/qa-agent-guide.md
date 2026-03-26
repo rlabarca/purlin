@@ -6,7 +6,7 @@ A practical guide for using the QA agent in Purlin.
 
 ## 1. Overview
 
-The QA agent is Purlin's verification and feedback agent. It guides you through manual verification of implemented features, automates what it can, and routes findings back to the Builder (bugs) or Architect (spec issues).
+The QA agent is Purlin's verification and feedback agent. It guides you through manual verification of implemented features, automates what it can, and routes findings back to the Engineer (bugs) or PM (spec issues).
 
 The QA agent:
 
@@ -45,7 +45,7 @@ QA verification has two phases: Phase A (automated, runs first) and Phase B (man
 
 ### Phase A -- Automated (8 Steps + Checkpoint)
 
-**Step 1 -- Credit Builder Work.** Features the Builder already completed (unit-tests-only, no QA scenarios) are auto-credited. No human time needed. **AUTO features are NOT auto-passed** -- features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that must execute in Steps 2-5 even though they need zero human time.
+**Step 1 -- Credit Engineer Work.** Features the Engineer already completed (unit-tests-only, no QA scenarios) are auto-credited. No human time needed. **AUTO features are NOT auto-passed** -- features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that must execute in Steps 2-5 even though they need zero human time.
 
 **Step 2 -- Smoke Gate.** If test priority tiers are configured in `QA_OVERRIDES.md`, QA runs all smoke-tier scenarios first. If any fail, QA halts and asks whether to stop or continue.
 
@@ -108,17 +108,17 @@ When verification reveals a problem, QA records a structured discovery in the fe
 
 | Type | Meaning | Routes To |
 |------|---------|-----------|
-| `[BUG]` | Behavior contradicts an existing scenario | Builder |
-| `[DISCOVERY]` | Behavior exists but no scenario covers it | Architect |
-| `[INTENT_DRIFT]` | Behavior matches the spec literally but misses the actual intent | Architect |
-| `[SPEC_DISPUTE]` | You disagree with a scenario's expected behavior | Architect/PM |
+| `[BUG]` | Behavior contradicts an existing scenario | Engineer |
+| `[DISCOVERY]` | Behavior exists but no scenario covers it | PM |
+| `[INTENT_DRIFT]` | Behavior matches the spec literally but misses the actual intent | PM |
+| `[SPEC_DISPUTE]` | You disagree with a scenario's expected behavior | PM/PM |
 
 ### Discovery Lifecycle
 
 `OPEN` --> `SPEC_UPDATED` --> `RESOLVED` --> `PRUNED`
 
 - **OPEN**: Just recorded.
-- **SPEC_UPDATED**: Architect or PM updated the spec to address it.
+- **SPEC_UPDATED**: PM or PM updated the spec to address it.
 - **RESOLVED**: Fix complete and verified.
 - **PRUNED**: QA removes the entry and adds a one-liner to the companion file.
 
@@ -134,7 +134,7 @@ QA asks you to describe what you observed, classifies the finding, writes it to 
 
 ## 5. Scenario Classification
 
-Scenarios start untagged (written by the Architect or PM). QA classifies them on first encounter:
+Scenarios start untagged (written by the PM or PM). QA classifies them on first encounter:
 
 - **`@auto`** -- QA authored regression JSON for this scenario. The harness runner executes it automatically in future sessions.
 - **`@manual`** -- Requires human judgment. QA never re-proposes automation for these.
@@ -167,7 +167,7 @@ When regression scenarios exist but results are stale or failing, QA composes a 
 ./tests/qa/run_all.sh
 ```
 
-The harness runner writes results to `tests/<feature>/regression.json` (separate from the Builder's `tests.json`).
+The harness runner writes results to `tests/<feature>/regression.json` (separate from the Engineer's `tests.json`).
 
 ### Evaluating (`/pl-regression-evaluate`)
 
@@ -188,7 +188,7 @@ QA marks a feature complete when all gates pass:
 3. Zero OPEN or SPEC_UPDATED discoveries.
 4. Feature is not gated by a pending delivery plan phase.
 
-The completion commit includes a `[Verified]` tag that distinguishes QA completions from Builder auto-completions.
+The completion commit includes a `[Verified]` tag that distinguishes QA completions from Engineer auto-completions.
 
 ---
 
@@ -202,7 +202,7 @@ When QA encounters a scenario that needs fixtures during regression authoring, i
 2. **Remote repo** -- You provide a git URL. Good for team-shared fixtures.
 3. **Inline setup** -- Uses shell commands in the regression JSON. Good for simple state.
 
-For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Builder to handle.
+For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Engineer to handle.
 
 ---
 
@@ -230,7 +230,7 @@ For web features, QA uses `/pl-web-test` via Playwright. For non-web features, Q
 
 ### When You Disagree with a Spec
 
-Say `DISPUTE` followed by the item number during Phase B verification. QA records a SPEC_DISPUTE discovery and suspends the scenario. The Architect (or PM for design issues) must resolve the dispute before verification can continue.
+Say `DISPUTE` followed by the item number during Phase B verification. QA records a SPEC_DISPUTE discovery and suspends the scenario. The PM (or PM for design issues) must resolve the dispute before verification can continue.
 
 ### Partial Verification
 
@@ -238,7 +238,7 @@ If you need to stop mid-session, respond with `stop` or `partial` during Phase B
 
 ### Session Cleanup
 
-Before ending a session, QA runs a mandatory workspace cleanup. It resolves all uncommitted changes -- committing `regression.json` results, QA scenario updates, and discovery sidecar files, while restoring any Builder-owned `tests.json` files that were accidentally modified. This ensures a clean git state for the next agent session.
+Before ending a session, QA runs a mandatory workspace cleanup. It resolves all uncommitted changes -- committing `regression.json` results, QA scenario updates, and discovery sidecar files, while restoring any Engineer-owned `tests.json` files that were accidentally modified. This ensures a clean git state for the next agent session.
 
 ---
 

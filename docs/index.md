@@ -1,16 +1,16 @@
 # Purlin Documentation
 
-Purlin is an agentic development framework that coordinates four AI agents -- PM, Architect, Builder, and QA -- through structured specs and automated workflows. These guides cover agent interaction, end-to-end workflows, and multi-machine collaboration.
+Purlin is an agentic development framework that coordinates four AI agents -- PM, PM, Engineer, and QA -- through structured specs and automated workflows. These guides cover agent interaction, end-to-end workflows, and multi-machine collaboration.
 
 ---
 
 ## Agent Use
 
 * [PM Agent Guide](pm-agent-guide.md) -- Practical guide for product managers using the PM agent to create feature specs from ideas, Figma designs, and live pages.
-* [Architect Agent Guide](architect-agent-guide.md) -- How the Architect agent designs specs, manages anchor nodes, and runs release processes.
-* [Builder Agent Guide](builder-agent-guide.md) -- How the Builder agent implements features from specs, writes tests, and verifies visual specifications.
+* [PM Agent Guide](pm-agent-guide.md) -- How the PM agent designs specs, manages anchor nodes, and runs release processes.
+* [Engineer Agent Guide](engineer-agent-guide.md) -- How the Engineer agent implements features from specs, writes tests, and verifies visual specifications.
 * [QA Agent Guide](qa-agent-guide.md) -- How the QA agent verifies features, classifies scenarios, and authors regression suites.
-* [Parallel Execution in the Builder](parallel-execution-guide.md) -- How the Builder agent parallelizes independent features within a delivery plan phase using git worktrees.
+* [Parallel Execution in the Engineer](parallel-execution-guide.md) -- How the Engineer agent parallelizes independent features within a delivery plan phase using git worktrees.
 
 ## Workflow & Process
 
@@ -71,14 +71,14 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 
 | Skill | Caller | What It Does |
 |-------|--------|--------------|
-| `/pl-spec <topic>` | You | Creates a new feature spec (with probing questions) or refines an existing one. Shared with Architect. |
-| `/pl-anchor <topic>` | You | Creates or updates a `design_*` or `policy_*` anchor node. PM cannot create `arch_*` nodes. Shared with Architect. |
+| `/pl-spec <topic>` | You | Creates a new feature spec (with probing questions) or refines an existing one. Shared with PM. |
+| `/pl-anchor <topic>` | You | Creates or updates a `design_*` or `policy_*` anchor node. PM cannot create `arch_*` nodes. Shared with PM. |
 | `/pl-design-ingest <source>` | You | Ingests a Figma URL, live web page, or local image into a feature's Visual Specification. Generates Token Map and brief.json. |
-| `/pl-design-audit` | Either | Audits all design artifacts for integrity, staleness, and consistency with anchor nodes and Figma. Shared with Architect. |
+| `/pl-design-audit` | Either | Audits all design artifacts for integrity, staleness, and consistency with anchor nodes and Figma. Shared with PM. |
 
 ---
 
-### Architect Skills
+### PM Skills
 
 #### Specification & Design
 
@@ -86,9 +86,9 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 |-------|--------|--------------|
 | `/pl-spec <topic>` | You | Creates a new feature spec or refines an existing one. Runs gap analysis and probing questions. Shared with PM. |
 | `/pl-anchor <topic>` | You | Creates or updates any anchor node (`arch_*`, `design_*`, or `policy_*`). Defines shared constraints for dependent features. |
-| `/pl-tombstone <name>` | You | Retires a feature by creating a tombstone file that tells the Builder exactly what code to delete. |
+| `/pl-tombstone <name>` | You | Retires a feature by creating a tombstone file that tells the Engineer exactly what code to delete. |
 | `/pl-spec-from-code` | You | Scans an existing codebase and reverse-engineers feature specs, anchor nodes, and companion files. For adopting Purlin on established projects. |
-| `/pl-spec-code-audit` | You | Runs a bidirectional audit between specs and code. Architect fixes spec gaps; code gaps are escalated to the Builder. Shared with Builder. |
+| `/pl-spec-code-audit` | You | Runs a bidirectional audit between specs and code. PM fixes spec gaps; code gaps are escalated to the Engineer. Shared with Engineer. |
 
 #### Release Process
 
@@ -106,7 +106,7 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 
 ---
 
-### Builder Skills
+### Engineer Skills
 
 #### Implementation
 
@@ -122,14 +122,14 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 |-------|--------|--------------|
 | `/pl-unit-test [name]` | Agent | Runs unit tests against the 6-point quality rubric. Checks for anti-patterns. Produces `tests.json` results. |
 | `/pl-web-test [name]` | Agent | Runs Playwright-based visual verification for features with web test metadata and Visual Specifications. Shared with QA. |
-| `/pl-spec-code-audit` | You | Runs a bidirectional audit between specs and code. Builder fixes code gaps; spec gaps are escalated to the Architect. Shared with Architect. |
+| `/pl-spec-code-audit` | You | Runs a bidirectional audit between specs and code. Engineer fixes code gaps; spec gaps are escalated to the PM. Shared with PM. |
 
 #### Communication
 
 | Skill | Caller | What It Does |
 |-------|--------|--------------|
-| `/pl-infeasible <name>` | Agent | Records that a feature cannot be implemented as specified. Halts work and creates a CRITICAL escalation to the Architect. |
-| `/pl-propose <topic>` | Agent | Suggests a spec change or new anchor node to the Architect. Records a `[SPEC_PROPOSAL]` in the companion file. |
+| `/pl-infeasible <name>` | Agent | Records that a feature cannot be implemented as specified. Halts work and creates a CRITICAL escalation to the PM. |
+| `/pl-propose <topic>` | Agent | Suggests a spec change or new anchor node to the PM. Records a `[SPEC_PROPOSAL]` in the companion file. |
 
 ---
 
@@ -141,8 +141,8 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 |-------|--------|--------------|
 | `/pl-verify [name]` | Either | Runs the full verification workflow: automated scenarios first (Phase A), then a manual checklist (Phase B). |
 | `/pl-complete <name>` | Agent | Marks a verified feature as complete. Checks all gates: TESTING state, zero discoveries, delivery plan clearance. |
-| `/pl-web-test [name]` | Agent | Runs Playwright visual verification during QA's Phase A visual smoke check. Shared with Builder. |
-| `/pl-server` | Agent | Manages dev server processes during web test verification. Shared with Builder. |
+| `/pl-web-test [name]` | Agent | Runs Playwright visual verification during QA's Phase A visual smoke check. Shared with Engineer. |
+| `/pl-server` | Agent | Manages dev server processes during web test verification. Shared with Engineer. |
 
 #### Discoveries & Reporting
 

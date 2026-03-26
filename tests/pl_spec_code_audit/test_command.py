@@ -45,27 +45,27 @@ class TestCommandFileExists(unittest.TestCase):
 
 
 class TestRoleGateRejectsNonArchitectBuilder(unittest.TestCase):
-    """Scenario: Role gate rejects non-Architect/Builder invocation"""
+    """Scenario: Role gate rejects non-PM/Engineer invocation"""
 
     def test_command_contains_role_gate_message(self):
         content = _read_command()
         self.assertIn(
-            'This command is for the Architect or Builder', content)
+            'This command is for the PM or Engineer', content)
 
     def test_role_gate_appears_before_analysis(self):
         content = _read_command()
-        gate_pos = content.index('Architect or Builder')
+        gate_pos = content.index('PM or Engineer')
         phase_pos = content.index('Phase 0')
         self.assertLess(gate_pos, phase_pos)
 
     def test_role_gate_blocks_pm(self):
         """PM agents are blocked by the role gate (spec 2.1)."""
         content = _read_command()
-        # The gate says "not operating as ... Architect or ... Builder"
+        # The gate says "not operating as ... PM or ... Engineer"
         # which blocks QA and PM equally
         self.assertIn('not operating as', content.lower())
-        self.assertIn('Architect or', content)
-        self.assertIn('Builder', content)
+        self.assertIn('PM or', content)
+        self.assertIn('Engineer', content)
 
 
 class TestDefaultInvocationUsesTriageMode(unittest.TestCase):
@@ -209,7 +209,7 @@ class TestTriageModeChecksSpecCompleteness(unittest.TestCase):
         content = _read_command()
         dimensions = [
             'Spec completeness', 'Policy anchoring', 'Traceability',
-            'Builder decisions', 'User testing', 'Dependency currency',
+            'Engineer decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
             'Anchor invariant drift', 'Requirement hygiene',
             'Code ownership',
@@ -428,22 +428,22 @@ class TestAuditTableIncludesEvidenceAndAnchorSourceColumns(unittest.TestCase):
 
 
 class TestArchitectRemediationPlanDescribesOnlySpecEdits(unittest.TestCase):
-    """Scenario: Architect remediation plan describes only spec edits"""
+    """Scenario: PM remediation plan describes only spec edits"""
 
     def test_architect_fix_targets_specs_and_anchors(self):
         content = _read_command()
         self.assertIn(
-            'Architect FIX edits', content)
+            'PM FIX edits', content)
         self.assertIn('feature specs', content)
         self.assertIn('anchor nodes', content)
 
 
 class TestBuilderRemediationPlanDescribesOnlyCodeEdits(unittest.TestCase):
-    """Scenario: Builder remediation plan describes only code edits"""
+    """Scenario: Engineer remediation plan describes only code edits"""
 
     def test_builder_fix_targets_code_and_tests(self):
         content = _read_command()
-        self.assertIn('Builder FIX edits', content)
+        self.assertIn('Engineer FIX edits', content)
         self.assertIn('source code and tests', content)
 
 
@@ -533,7 +533,7 @@ class TestMissingPrerequisiteLinkClassifiedAsMediumSeverity(
 
 
 class TestArchitectEscalatesCodeSideGapViaCompanionFile(unittest.TestCase):
-    """Scenario: Architect escalates code-side gap via companion file"""
+    """Scenario: PM escalates code-side gap via companion file"""
 
     def test_architect_escalation_format(self):
         content = _read_command()
@@ -549,7 +549,7 @@ class TestArchitectEscalatesCodeSideGapViaCompanionFile(unittest.TestCase):
 
 
 class TestBuilderEscalatesSpecSideGapViaCompanionFile(unittest.TestCase):
-    """Scenario: Builder escalates spec-side gap via companion file"""
+    """Scenario: Engineer escalates spec-side gap via companion file"""
 
     def test_builder_escalation_format(self):
         content = _read_command()

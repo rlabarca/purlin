@@ -60,8 +60,8 @@ them), then runs **Full Init Mode**, which:
 
 - Copies config templates to `.purlin/` (config, overrides, release setup).
 - Sets `tools_root` in your config to `"purlin/tools"`.
-- Generates agent launcher scripts (`pl-run-architect.sh`,
-  `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`).
+- Generates agent launcher scripts (`pl-run.sh`,
+  `pl-run.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`).
 - Distributes slash commands to `.claude/commands/`.
 - Sets up the `features/` directory.
 - Updates `.gitignore` with Purlin-specific patterns.
@@ -78,7 +78,7 @@ git add -A && git commit -m "init purlin"
 
 ```bash
 ./pl-run-pm.sh       # Start the PM agent (recommended first)
-./pl-run-architect.sh # Or start the Architect
+./pl-run.sh # Or start the PM
 ```
 
 ### What Gets Created
@@ -90,8 +90,8 @@ my-project/
 ├── .purlin/
 │   ├── config.json              # Main config (models, tools_root, agent settings)
 │   ├── HOW_WE_WORK_OVERRIDES.md # Workflow rules, submodule safety mandate
-│   ├── ARCHITECT_OVERRIDES.md   # Architect rules, submodule compatibility
-│   ├── BUILDER_OVERRIDES.md     # Builder rules, submodule safety checklist
+│   ├── ARCHITECT_OVERRIDES.md   # PM rules, submodule compatibility
+│   ├── BUILDER_OVERRIDES.md     # Engineer rules, submodule safety checklist
 │   ├── QA_OVERRIDES.md          # QA rules, test tiers, voice/tone config
 │   ├── PM_OVERRIDES.md          # PM customizations
 │   ├── .upstream_sha            # Pinned Purlin version SHA
@@ -106,8 +106,8 @@ my-project/
 ├── features/                    # Feature specs go here
 ├── purlin/                      # The submodule (do not edit)
 ├── pl-init.sh                   # Init shim (committed)
-├── pl-run-architect.sh          # Architect launcher
-├── pl-run-builder.sh            # Builder launcher
+├── pl-run.sh          # PM launcher
+├── pl-run.sh            # Engineer launcher
 ├── pl-run-qa.sh                 # QA launcher
 └── pl-run-pm.sh                 # PM launcher
 ```
@@ -267,8 +267,8 @@ takes precedence over `config.json` for any keys it defines.
 
 Each role has an override file in `.purlin/`:
 
-- `ARCHITECT_OVERRIDES.md` -- project-specific Architect rules, submodule compatibility checks
-- `BUILDER_OVERRIDES.md` -- project-specific Builder rules, submodule safety checklist
+- `ARCHITECT_OVERRIDES.md` -- project-specific PM rules, submodule compatibility checks
+- `BUILDER_OVERRIDES.md` -- project-specific Engineer rules, submodule safety checklist
 - `QA_OVERRIDES.md` -- project-specific QA rules, test priority tiers, voice/tone config
 - `PM_OVERRIDES.md` -- project-specific PM rules
 - `HOW_WE_WORK_OVERRIDES.md` -- project-wide workflow additions, submodule safety mandate

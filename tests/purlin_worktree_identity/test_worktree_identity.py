@@ -290,13 +290,13 @@ source "{IDENTITY_SCRIPT}"
 CALLS=""
 set_term_title() {{ CALLS="$CALLS title:$1"; }}
 set_iterm_badge() {{ CALLS="$CALLS badge:$1"; }}
-set_agent_identity "Builder"
+set_agent_identity "Engineer"
 echo "$CALLS"
 """
     stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
     record(
         "set_agent_identity backward compatible (no project)",
-        rc == 0 and "title:Builder" in stdout and "badge:Builder" in stdout,
+        rc == 0 and "title:Engineer" in stdout and "badge:Engineer" in stdout,
         f"rc={rc}, calls={repr(stdout.strip())}"
     )
 

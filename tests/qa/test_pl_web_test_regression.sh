@@ -46,19 +46,19 @@ fi
 
 # WT3: Command file contains QA as authorized role
 if [ -f "$CMD_FILE" ]; then
-    if grep -q "QA\|qa\|Builder\|builder" "$CMD_FILE" 2>/dev/null; then
+    if grep -q "QA\|qa\|Engineer\|builder" "$CMD_FILE" 2>/dev/null; then
         log_pass "WT3: command file specifies role authorization"
     else
         log_fail "WT3: command file missing role specification"
     fi
 fi
 
-# WT4: Role guard — command file references Architect rejection
+# WT4: Role guard — command file references PM rejection
 if [ -f "$CMD_FILE" ]; then
     if grep -q "[Aa]rchitect\|role.*guard\|guard.*role\|not.*architect\|architect.*not" "$CMD_FILE" 2>/dev/null; then
-        log_pass "WT4: command file contains Architect role restriction"
+        log_pass "WT4: command file contains PM role restriction"
     else
-        log_fail "WT4: command file missing Architect role guard"
+        log_fail "WT4: command file missing PM role guard"
     fi
 fi
 

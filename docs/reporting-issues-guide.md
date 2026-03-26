@@ -22,7 +22,7 @@ Use `/pl-purlin-issue` when the problem is with Purlin's tooling:
 - Agent startup hangs, crashes, or loads the wrong instructions.
 - A release step does not work as documented.
 
-**Do not use it for project-level bugs.** If the Builder implemented a
+**Do not use it for project-level bugs.** If the Engineer implemented a
 feature incorrectly or QA found a behavioral issue in your application,
 use `/pl-discovery` instead. That records the finding in your project's
 discovery sidecar files and routes it to the appropriate role.
@@ -51,7 +51,7 @@ issue:
 /pl-purlin-issue
 ```
 
-The command works from any agent role -- Architect, Builder, QA, or PM.
+The command works from any agent role -- PM, Engineer, QA, or PM.
 
 ### What It Collects
 
@@ -83,7 +83,7 @@ The command outputs a formatted report between clear dividers:
 | Purlin Version | v2.1.0 |
 | Deployment | consumer |
 | OS | Darwin 25.3.0 |
-| Agent Role | Builder |
+| Agent Role | Engineer |
 | Branch | main |
 | ... | ... |
 
@@ -94,7 +94,7 @@ sections present and correctly formatted.
 
 ### Context
 
-The Builder was running startup orientation when feature_x.md
+The Engineer was running startup orientation when feature_x.md
 was flagged with a Spec Gate FAIL...
 
 ### Recent Git Activity
@@ -114,9 +114,9 @@ was flagged with a Spec Gate FAIL...
 
 Copy the text between the dividers and do one of the following:
 
-1. **Paste it into a Purlin Architect session.** If you have access to the
-   Purlin framework repository, start an Architect session there and paste
-   the report. The Architect can triage and create a fix.
+1. **Paste it into a Purlin PM session.** If you have access to the
+   Purlin framework repository, start an PM session there and paste
+   the report. The PM can triage and create a fix.
 
 2. **Post it to the issue tracker.** File an issue at the Purlin project's
    repository with the report as the issue body.
