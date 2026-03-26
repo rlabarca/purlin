@@ -121,20 +121,41 @@ Requirements:
 - The selection MUST be stored in `config.local.json` under `agents.purlin` via `resolve_config.py set_agent_config`. This persistence is NOT affected by `--no-save` — first-run interactive selection is explicitly establishing defaults, not overriding them.
 - CLI sticky flags MUST always override stored config (and persist the override, unless `--no-save`).
 
-### 2.4 Session Message Encoding
+### 2.4 Terminal Identity and Remote Control Name
+
+The launcher MUST set the iTerm badge, terminal title, and remote control session name before launching Claude. These provide immediate visual context and enable remote session management.
+
+#### 2.4.1 Initial Badge and Title
+
+The launcher sets the badge and title using `set_agent_identity` from `tools/terminal/identity.sh`. The badge MUST include the current git branch to provide useful context immediately:
+
+- **Badge format:** `<mode> (<branch>)` — e.g., `Purlin (main)`, `Engineer (feature-xyz)`.
+- **Worktree override:** If running in a worktree (`.purlin_worktree_label` exists), the worktree label replaces the branch — e.g., `Engineer (W1)`.
+- **Title format:** `<project> - <badge>` — e.g., `purlin - Purlin (main)`.
+
+The branch is detected via `git rev-parse --abbrev-ref HEAD`. This badge is the user's first visual signal that the agent is starting. `/pl-resume` Step 6 updates the badge to the determined mode once startup completes.
+
+#### 2.4.2 Remote Control Session Name
+
+The launcher MUST set `--name` and `--remote-control` CLI flags on the `claude` invocation. This is the only opportunity to set the session name — it cannot be changed mid-session.
+
+- **Format:** `<project> | <badge>` — e.g., `purlin | Purlin (main)`, `purlin | Engineer (W1)`.
+- The session name persists for the lifetime of the session, even if the badge changes later.
+
+### 2.5 Session Message Encoding
 
 - No `--mode`: `"Begin Purlin session."`
 - `--auto-build`: `"Begin Purlin session. Enter Engineer mode. Run /pl-build."`
 - `--verify <feature>`: `"Begin Purlin session. Enter QA mode. Run /pl-verify <feature>."`
 - `--pm`: `"Begin Purlin session. Enter PM mode."`
 
-### 2.5 Legacy Launcher Deprecation
+### 2.6 Legacy Launcher Deprecation
 
 - Old launchers (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) MUST print a visible deprecation warning before launching the agent.
 - The warning MUST suggest `./pl-run.sh` with example flags.
 - Old launchers MUST continue to function (instruction loading, config resolution, skill gates unchanged).
 
-### 2.6 Config Schema
+### 2.7 Config Schema
 
 - `.purlin/config.json` and `purlin-config-sample/config.json` MUST include an `agents.purlin` section with fields: `model`, `effort`, `bypass_permissions`, `find_work`, `auto_start`, `default_mode`.
 - `tools/config/resolve_config.py` MUST accept `"purlin"` as a valid role name.
