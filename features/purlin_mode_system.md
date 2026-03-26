@@ -240,7 +240,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
     Given the project after scan.sh migration
     When searching all .claude/commands/pl-*.md files
-    Then no file contains "status.sh"
+    Then no file contains "status.sh" (except tombstones)
     And no file contains "CRITIC_REPORT.md"
     And no file contains "critic.json"
 

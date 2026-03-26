@@ -20,7 +20,6 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 ### 2.2 Specific Path Conversions
 
 - `tools/cdd/` references become `{tools_root}/cdd/`
-- `tools/critic/` references become `{tools_root}/critic/`
 - `tools/release/` references become `{tools_root}/release/`
 - `tools/delivery/` references become `{tools_root}/delivery/`
 - `tools/test_support/` references become `{tools_root}/test_support/`

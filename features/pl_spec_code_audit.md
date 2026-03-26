@@ -364,7 +364,7 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 #### Scenario: Synthesis deduplicates overlapping gaps
 
-    Given two subagents both flag the same FORBIDDEN violation in file tools/critic/run.py line 15
+    Given two subagents both flag the same FORBIDDEN violation in file tools/cdd/scan.py line 15
     When Phase 2 synthesis parses all results
     Then only one gap entry appears in the audit table for that violation
 
