@@ -2,13 +2,14 @@
 
 > Label: "Agent Skills: Common: /pl-whats-different What's Different"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/collab_whats_different.md
 
 [TODO]
 
 ## 1. Overview
 
-The `/pl-whats-different` agent command generates a plain-English summary of what's different between local main and the remote collab branch. It is a standalone command usable by any role from the main checkout. When invoked with an active Purlin mode (PM, Engineer, or QA), it produces a **role-specific briefing** that answers what the reader specifically needs to care about, followed by the standard file-level digest. The generation pipeline (extraction tool, LLM synthesis, output file) and role-aware briefing requirements are defined in `features/collab_whats_different.md`; this spec covers only the agent command interface.
+The `/pl-whats-different` agent command generates a plain-English summary of what's different between local main and the remote collab branch. It is a standalone command usable by any role from the main checkout. When invoked with an active Purlin mode (PM, Engineer, or QA), it produces a **role-specific briefing** that answers what the reader specifically needs to care about, followed by the standard file-level digest.
+
+This spec owns the full pipeline: the agent command interface, the extraction tool (`tools/collab/extract_whats_different.py`), the generation script (`tools/collab/generate_whats_different.sh`), and the digest output format.
 
 ---
 
@@ -48,14 +49,70 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 
 When `--role` is provided, the output has two sections:
 
-1. **Role briefing** — A plain-language summary of what matters to this role, with numbered IDs on each item (see `collab_whats_different.md` Section 2.17.3 for tone, structure, and content per role).
+1. **Role briefing** — A plain-language summary of what matters to this role, with numbered IDs on each item.
 2. **Standard digest** — The full file-level digest (Spec Changes / Code Changes / Purlin Changes), unchanged.
 
 A horizontal rule separates the two sections.
 
 The role briefing is LLM-only. If Claude CLI is unavailable, the command produces only the standard digest without a role briefing section.
 
-### 2.7 ID Drill-Down
+### 2.7 Companion Staleness Signal
+
+The extraction tool cross-references code changes against companion file updates to detect features where the engineer may have skipped documentation. This is a deterministic check — no LLM needed — included in every digest regardless of mode.
+
+#### 2.7.1 Feature Inference from Code Changes
+
+For each direction (local/collab), the extraction tool infers which features were touched by code changes using two heuristics:
+
+1. **Commit scope parsing:** Purlin commits follow `mode(scope): message`. The scope field often contains one or more feature stems (comma-separated). The extraction tool parses commit subjects with the pattern `^\w+\(([^)]+)\):` and splits the captured group on `,` to extract feature stems.
+2. **Test directory mapping:** Changed files under `tests/<stem>/` map to feature `features/<stem>.md`.
+
+Both heuristics are best-effort. Features that cannot be inferred from either source are not flagged — no false positives from guessing.
+
+#### 2.7.2 Cross-Reference Logic
+
+For each inferred feature stem:
+
+1. Check whether `features/<stem>.impl.md` exists on disk (not just in the diff — the companion may pre-exist without changes).
+2. Check whether the companion appears in the changed companion files for this direction.
+3. **Flag condition:** The feature had code changes, a companion file exists on disk, but the companion was NOT updated in this range. This means the engineer touched code for a feature that has a companion file but didn't record anything new in it.
+
+Features without an existing companion file are not flagged — the companion mandate only applies when the engineer has already established one. New features that have never had a companion are a separate concern (handled by the pre-switch gate in §4.2 of PURLIN_BASE.md).
+
+#### 2.7.3 Output
+
+The extraction JSON includes a new `companion_staleness` field per direction:
+
+```json
+{
+  "companion_staleness": [
+    {
+      "feature": "foo_bar.md",
+      "companion": "foo_bar.impl.md",
+      "code_files_changed": 3,
+      "inferred_via": "commit_scope"
+    }
+  ]
+}
+```
+
+The digest renders this as a **Companion Check** subsection (after Sync Check):
+
+```
+### Companion Check
+- **foo_bar**: 3 code files changed, companion not updated — review for undocumented deviations
+```
+
+When empty, the subsection is omitted.
+
+#### 2.7.4 Performance
+
+No new git operations. The check uses data already collected by the extraction tool:
+- Commit subjects (already parsed for lifecycle transitions)
+- Changed file categories (already computed)
+- One `glob` for existing companion files on disk (single filesystem call)
+
+### 2.8 ID Drill-Down
 
 After displaying the briefing, the agent is prepared for the user to reply with a numeric ID (e.g., "3", "#3", "tell me about 3"). When this happens:
 
@@ -181,6 +238,46 @@ This is conversational — no script or endpoint is needed. The IDs make it easy
     Then the agent reads the source files referenced by item [2]
     And provides a detailed plain-language explanation of that item
     And includes what changed, the original state, and recommended next steps
+
+#### Scenario: Companion Staleness Flagged When Code Changed Without Companion Update
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the collab branch has commits scoped to "auth_login" that modify code files
+    And features/auth_login.impl.md exists on disk
+    And features/auth_login.impl.md was NOT modified in the collab branch commits
+    When the agent runs /pl-whats-different
+    Then the digest contains a "Companion Check" subsection
+    And the subsection flags "auth_login" with a count of changed code files
+    And the message suggests reviewing for undocumented deviations
+
+#### Scenario: No Companion Staleness When Companion Was Updated
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the collab branch has commits scoped to "auth_login" that modify code files
+    And features/auth_login.impl.md was also modified in the collab branch commits
+    When the agent runs /pl-whats-different
+    Then the digest does not contain a "Companion Check" subsection for "auth_login"
+
+#### Scenario: No Companion Staleness When No Companion Exists
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the collab branch has commits scoped to "new_feature" that modify code files
+    And features/new_feature.impl.md does NOT exist on disk
+    When the agent runs /pl-whats-different
+    Then the digest does not flag "new_feature" in a Companion Check subsection
+
+#### Scenario: Feature Inferred From Test Directory Change
+
+    Given the current branch is "main"
+    And an active branch "v0.6-sprint" is set in BEHIND state
+    And the collab branch modifies files under tests/auth_login/
+    And features/auth_login.impl.md exists on disk but was not modified
+    When the agent runs /pl-whats-different
+    Then the digest flags "auth_login" in the Companion Check subsection
+    And the inferred_via field is "test_directory"
 
 ### Manual Scenarios (Human Verification Required)
 
