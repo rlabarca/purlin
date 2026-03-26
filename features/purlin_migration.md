@@ -7,85 +7,96 @@
 
 ## 1. Overview
 
-When consumer projects run `/pl-update-purlin`, the migration module detects old 4-role config and offers to migrate to the purlin unified agent model. Migration includes: config schema update, override file consolidation, spec file role renames, companion file restructuring, launcher generation, and automatic cleanup of old artifacts. All spec modifications use the `[Migration]` exemption tag to prevent lifecycle resets.
+The migration module manages version-to-version upgrades for consumer projects using Purlin as a submodule. When `/pl-update-purlin` runs, it detects the project's current migration state and applies any pending upgrades. Each upgrade is tracked by a `_migration_version` integer in config — the module only runs upgrades newer than the current version.
+
+All spec modifications during migration use the `[Migration]` exemption tag to prevent lifecycle resets.
+
+### Version Registry
+
+| `_migration_version` | Upgrade | Source → Target | What changes |
+|---|---|---|---|
+| 1 | Unified Agent Model | v0.8.x → v0.9.x | 4-role config → single `agents.purlin`; 5 override files → 1; role renames in specs; companion restructuring; old launchers removed |
+| _(future)_ | | | |
 
 ---
 
 ## 2. Requirements
 
-### 2.1 Detection
+### 2.1 Detection Framework
 
 On `/pl-update-purlin`, determine migration state by checking `.purlin/config.local.json` first, then `.purlin/config.json`:
 
-- **Fast path:** If `_migration_version` key exists at the config top level → migration is `complete`, skip.
-- **Full migration needed:** If `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists → migration is `needed`.
-- **Partial state (v0.8.4 upgrade gap):** If `agents.purlin` exists but `_migration_version` is absent, check for incomplete migration:
-  - If old agents (`architect` or `builder`) exist without `"_deprecated": true` → `partial`.
-  - If `agents.purlin` is missing required fields (`find_work`, `auto_start`, or `default_mode`) → `partial`.
-  - Otherwise → `complete` (stamp `_migration_version: 1` for future fast path).
-- **Fresh install:** If neither old (`architect`/`builder`) nor new (`purlin`) agent config exists → `fresh`, skip (init.sh handles it).
+- **Fast path:** If `_migration_version` key exists and equals the latest version → `complete`, skip.
+- **Version gap:** If `_migration_version` exists but is less than the latest → run upgrades from current+1 to latest.
+- **No marker:** Inspect config structure to determine state (see version-specific detection below).
+- **Fresh install:** If neither old nor new agent config exists → `fresh`, skip (init.sh handles it).
 
-**Why partial detection is needed:** When users on v0.8.4 upgrade, their old `/pl-update-purlin` skill lacks the migration step. The new `init.sh` generates `pl-run.sh`, whose first-run flow creates a minimal `agents.purlin` (only `model` + `effort`). Without partial detection, this minimal entry permanently prevents the full migration from running.
+After any successful migration, write `_migration_version: <latest>` to config. This is the authoritative fast-path signal.
 
-### 2.2 Config Migration
+### 2.2 v0.8.x → v0.9.x: Unified Agent Model (`_migration_version: 1`)
+
+This upgrade converts the 4-role agent model (Architect, Builder, QA, PM with separate launchers and configs) to the unified Purlin agent with three operating modes.
+
+**Detection (no marker present):**
+
+- If `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists → `needed`.
+- **Partial state (v0.8.4 upgrade gap):** If `agents.purlin` exists but is incomplete:
+  - Old agents (`architect` or `builder`) still present in config → `partial`.
+  - `agents.purlin` missing required fields (`find_work`, `auto_start`, or `default_mode`) → `partial`.
+  - Otherwise → `complete` (stamp `_migration_version: 1`).
+
+**Why partial detection is needed:** Users on v0.8.4 have a `/pl-update-purlin` skill that predates migration. Their first update advances the submodule and generates `pl-run.sh`, whose first-run flow creates a minimal `agents.purlin` (only `model` + `effort`). Without partial detection, this minimal entry permanently prevents the full migration from running. The fix: `/pl-update-purlin` checks migration state before its "Already up to date" early exit — if migration is pending, it skips to config sync and runs migration even when the submodule is current.
+
+**Steps (all idempotent):**
+
+#### 2.2.1 Config Migration
 
 **Full migration** (status `needed`):
-- Create `agents.purlin` section by cloning `agents.builder` config (model, effort, bypass_permissions).
-- Add `find_work: true`, `auto_start: false`, `default_mode: null` fields.
+- Create `agents.purlin` by cloning `agents.builder` config (model, effort, bypass_permissions).
+- Add `find_work: true`, `auto_start: false`, `default_mode: null`.
 - Remove old agent entries (`architect`, `builder`, `qa`, `pm`) from config.
 
 **Enrichment** (status `partial`):
-- If `agents.purlin` exists but is missing any of `find_work`, `auto_start`, `default_mode`, or `bypass_permissions`: backfill from `agents.builder` (if present) or from defaults (`bypass_permissions: false`, `find_work: true`, `auto_start: false`, `default_mode: null`).
-- Remove old agent entries (`architect`, `builder`, `qa`, `pm`) from config.
+- Backfill missing keys from `agents.builder` (if present) or defaults (`bypass_permissions: false`, `find_work: true`, `auto_start: false`, `default_mode: null`).
+- Remove old agent entries from config.
 - Log: `"Enriched partial agents.purlin (backfilled N missing keys)"`.
 
-**Migration marker:** After successful full migration or enrichment, write `"_migration_version": 1` at the config top level (same file where `agents.purlin` was written). This is the authoritative signal for the fast-path detection in Section 2.1.
+#### 2.2.2 Override File Consolidation
 
-### 2.3 Override File Consolidation
-
-Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRIDES.md`:
+Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 
 - `BUILDER_OVERRIDES.md` content → `## Engineer Mode` section.
 - `PM_OVERRIDES.md` content → `## PM Mode` section.
 - `QA_OVERRIDES.md` content → `## QA Mode` section.
-- `ARCHITECT_OVERRIDES.md` content → split by keyword heuristic: technical keywords (arch, code, implementation, testing, script, tool, build) → `## Engineer Mode`; spec/design keywords (spec, design, requirement, visual, UX, stakeholder) → `## PM Mode`.
+- `ARCHITECT_OVERRIDES.md` content → split by keyword heuristic: technical keywords → `## Engineer Mode`; spec/design keywords → `## PM Mode`.
 - `HOW_WE_WORK_OVERRIDES.md` content → `## General (all modes)` header at top.
-- After creating `PURLIN_OVERRIDES.md`, delete the old override files (`ARCHITECT_OVERRIDES.md`, `BUILDER_OVERRIDES.md`, `QA_OVERRIDES.md`, `PM_OVERRIDES.md`, `HOW_WE_WORK_OVERRIDES.md`).
+- After creating `PURLIN_OVERRIDES.md`, delete the old override files.
 
-### 2.4 Spec File Role Renames
+#### 2.2.3 Spec File Role Renames
 
-- In all `features/*.md` files, replace old role references with new:
-  - "Architect" → "PM" (when referring to spec/design authority)
-  - "Builder" → "Engineer" (when referring to implementation)
-  - "the Architect" → "PM mode"
-  - "the Builder" → "Engineer mode"
-- In `features/*.discoveries.md`: replace `Action Required: Architect` → `PM`, `Action Required: Builder` → `Engineer`.
-- In `features/*.impl.md`: replace role references in prose (not in Active Deviations table which uses new format).
-- ALL spec modification commits MUST include the `[Migration]` tag to prevent lifecycle resets.
-- Example commit: `chore(migration): rename role references in feature specs [Migration]`
+- In all `features/*.md`: "Architect" → "PM", "Builder" → "Engineer", "the Architect" → "PM mode", "the Builder" → "Engineer mode".
+- In `features/*.discoveries.md`: `Action Required: Architect` → `PM`, `Action Required: Builder` → `Engineer`.
+- In `features/*.impl.md`: replace role references in prose (not in Active Deviations table).
+- ALL commits MUST include the `[Migration]` tag to prevent lifecycle resets.
 
-### 2.5 Companion File Restructuring
+#### 2.2.4 Companion File Restructuring
 
-- For each `features/*.impl.md`, check if an Active Deviations table exists.
-- If absent: insert the table template at the top (before existing content).
-- Parse existing `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`, `[SPEC_PROPOSAL]` tags and populate table rows with PM status `PENDING`.
+- For each `features/*.impl.md`, insert Active Deviations table if absent.
+- Parse existing `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`, `[SPEC_PROPOSAL]` tags into table rows with PM status `PENDING`.
 - Preserve all existing prose content below the table.
 
-### 2.6 CLAUDE.md Update
+#### 2.2.5 CLAUDE.md Update
 
-- If the consumer project has a `CLAUDE.md` that references the old 4-role model (Architect, Builder, QA, PM) but does not mention the Purlin unified agent:
-  - Add a section describing the Purlin agent alongside existing role boundaries.
-  - Reference: use `purlin-config-sample/CLAUDE.md.purlin` as the canonical template.
-- If `CLAUDE.md` already mentions "Purlin" or "unified agent": skip.
-- If no `CLAUDE.md` exists: skip (init.sh creates it from the sample).
+- If `CLAUDE.md` references old 4-role model but not "Purlin" or "unified agent": add Purlin agent description using `purlin-config-sample/CLAUDE.md.purlin` as template.
+- If already mentions "Purlin": skip. If no `CLAUDE.md` exists: skip.
 
-### 2.7 Launcher Generation and Old Launcher Cleanup
+#### 2.2.6 Launcher Cleanup
 
-- Generate `pl-run.sh` at project root (or trigger init.sh refresh to generate it).
+- Generate `pl-run.sh` at project root (or trigger init.sh refresh).
 - Delete old launchers: `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
 - After migration, `pl-run.sh` is the only launcher.
 
-### 2.8 CLI Restrictions
+### 2.3 CLI Flags
 
 - `--dry-run` — Show what would change without modifying any files.
 - `--skip-overrides` — Don't merge override files.
@@ -95,7 +106,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - `--purlin-only` — Only add purlin config section, skip all other migration.
 - `--complete-transition` — Manual cleanup fallback. Removes old launchers, old config entries, and old override files. Useful if migration was run with skip flags that prevented automatic cleanup.
 
-### 2.9 Idempotency
+### 2.4 Idempotency
 
 - Running migration twice MUST NOT corrupt files.
 - Check for Active Deviations table existence before inserting.
@@ -105,7 +116,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - **Partial repair pass:** When `detect_migration_needed()` returns `partial`, the full migration pipeline runs. Each step is already idempotent — `consolidate_overrides()` checks output existence, `rename_spec_roles()` no-ops if already renamed, `restructure_companions()` checks for existing table. The config enrichment path backfills only missing keys.
 - `_migration_version` is written after successful migration or repair. Once present, detection returns `complete` on the fast path without inspecting agent key sets.
 
-### 2.10 Migration Commit Convention
+### 2.5 Migration Commit Convention
 
 - All commits that modify feature spec files during migration MUST include `[Migration]` in the commit message.
 - This tag signals to scan.py's exemption tag awareness that the modification is non-behavioral.
@@ -130,13 +141,13 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
     When /pl-update-purlin runs
     Then migration is skipped
 
-#### Scenario: Config migration creates purlin section
+#### Scenario: Config migration creates purlin section and removes old
 
     Given config.json has agents.builder with model "claude-opus-4-6"
     When migration runs config step
     Then agents.purlin is created with model "claude-opus-4-6"
     And agents.purlin has default_mode null
-    And agents.builder has _deprecated true
+    And agents.builder is removed from config
 
 #### Scenario: Override files consolidated
 
@@ -205,12 +216,12 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 #### Scenario: Half-migrated state detected and repaired
 
     Given config.local.json has agents.purlin with only model and effort keys
-    And config.local.json has agents.builder without _deprecated flag
+    And config.local.json has agents.builder still present
     And no _migration_version key exists in config
     When /pl-update-purlin runs migration step
     Then detect_migration_needed returns "partial"
     And agents.purlin is enriched with find_work, auto_start, default_mode, bypass_permissions
-    And agents.builder is marked _deprecated true
+    And agents.builder is removed from config
     And _migration_version is set to 1
 
 #### Scenario: Migration marker prevents re-detection
@@ -224,7 +235,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 #### Scenario: Previously migrated config gets marker stamped
 
     Given agents.purlin has full 6-key config (model, effort, bypass_permissions, find_work, auto_start, default_mode)
-    And agents.builder has _deprecated true
+    And no old agent entries remain in config
     And no _migration_version key exists
     When /pl-update-purlin runs migration step
     Then detect_migration_needed returns "complete"
