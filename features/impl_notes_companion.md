@@ -1,6 +1,6 @@
 # Implementation Notes Companion Files
 
-> Label: "Impl Notes Companion"
+> Label: "Shared Agent Definitions: Impl Notes Companion"
 > Category: "Coordination & Lifecycle"
 > Prerequisite: features/policy_critic.md
 

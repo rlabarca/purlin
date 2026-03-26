@@ -1,6 +1,6 @@
 # Feature: Regression Testing
 
-> Label: "Regression Testing"
+> Label: "Test Infrastructure: Regression Testing"
 > Category: "Test Infrastructure"
 > Prerequisite: features/arch_testing.md
 
