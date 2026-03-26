@@ -52,7 +52,7 @@ Defines what Engineer mode runs during Step 3 versus what defers to the Regressi
 | Web UI without `> Web Test:` | Unit tests only | N/A |
 | Claude skill/command | Test infrastructure (parsers, validators, state) | Regression harness for interaction flow |
 
-**Builder rule:** Run `/pl-web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
+**Engineer rule:** Run `/pl-web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
 
 ### Fixture Exclusion
 

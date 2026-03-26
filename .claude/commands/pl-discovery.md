@@ -15,10 +15,10 @@ If no argument was provided, ask the user which feature the discovery belongs to
 
 Guide the user through classifying the finding:
 
-*   **[BUG]** -- Behavior contradicts an existing scenario. The spec is right, implementation is wrong. Routes to Builder (or Architect if instruction-level).
-*   **[DISCOVERY]** -- Behavior exists but no scenario covers it. The spec is incomplete. Routes to Architect (add scenarios), then Builder (re-implement).
-*   **[INTENT_DRIFT]** -- Behavior matches the spec literally but misses the actual intent. Routes to Architect (refine intent), then Builder.
-*   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. Routes to Architect or PM (review and revise/reaffirm). Scenario is **suspended** until resolved.
+*   **[BUG]** -- Behavior contradicts an existing scenario. The spec is right, implementation is wrong. Routes to Engineer.
+*   **[DISCOVERY]** -- Behavior exists but no scenario covers it. The spec is incomplete. Routes to PM (add scenarios), then Engineer (re-implement).
+*   **[INTENT_DRIFT]** -- Behavior matches the spec literally but misses the actual intent. Routes to PM (refine intent), then Engineer.
+*   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. Routes to PM or PM (review and revise/reaffirm). Scenario is **suspended** until resolved.
 
 When classifying: if the user says "this shouldn't work this way" or "the scenario is wrong," that's SPEC_DISPUTE. If they say "it doesn't do what the scenario says," that's BUG.
 
@@ -33,15 +33,15 @@ Record the entry in `features/<name>.discoveries.md`, creating the file if absen
 - **Scenario:** <which scenario, or NONE>
 - **Observed Behavior:** <what the user described>
 - **Expected Behavior:** <from the scenario, or "not specified">
-- **Action Required:** <Architect or Builder>
+- **Action Required:** <Engineer or PM>
 - **Status:** OPEN
 ```
 
 **Routing the `Action Required` field:**
-*   BUG -> `Builder` (default). Exception: when the BUG is in instruction-file-driven agent behavior (startup protocol, role compliance, slash command gating), set `Architect`.
-*   DISCOVERY -> `Architect`
-*   INTENT_DRIFT -> `Architect`
-*   SPEC_DISPUTE -> `Architect` (default). For design disputes (visual properties, Figma, Token Map), Architect will triage to PM by setting `Action Required: PM`.
+*   BUG -> `Engineer` (default). Exception: when the BUG is in instruction-file-driven agent behavior (startup protocol, role compliance, slash command gating), set `PM`.
+*   DISCOVERY -> `PM`
+*   INTENT_DRIFT -> `PM`
+*   SPEC_DISPUTE -> `PM` (default). For design disputes (visual properties, Figma, Token Map), PM will triage by setting `Action Required: PM`.
 
 Commit: `git commit -m "qa(<scope>): [TYPE] - <brief title>"`.
 
@@ -52,9 +52,9 @@ If SPEC_DISPUTE: inform user the scenario is suspended for future sessions until
 Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
 *   **OPEN:** Just recorded.
-*   **SPEC_UPDATED:** Architect/PM updated the spec to address it.
-*   **RESOLVED:** Fix complete or no fix needed. (Shortcut: Architect/Builder confirms no change needed -> skip to RESOLVED with resolution note.)
-*   **PRUNED:** QA removes entry from sidecar, adds one-liner to companion file (`features/<name>.impl.md`). Format: `<TYPE> -- <summary>` (NO bracket tags -- brackets are reserved for Builder Decisions).
+*   **SPEC_UPDATED:** PM updated the spec to address it.
+*   **RESOLVED:** Fix complete or no fix needed. (Shortcut: PM/Engineer confirms no change needed -> skip to RESOLVED with resolution note.)
+*   **PRUNED:** QA removes entry from sidecar, adds one-liner to companion file (`features/<name>.impl.md`). Format: `<TYPE> -- <summary>` (NO bracket tags -- brackets are reserved for Engineer Decisions).
 
 ## Pruning Protocol
 

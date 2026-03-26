@@ -13,8 +13,8 @@ Call the `EnterPlanMode` tool immediately before doing anything else. Do not rea
 Bidirectional spec-code audit with role-aware remediation. Two modes: **triage** (default, fast, in-agent) and **deep** (parallel subagent waves with scenario-by-scenario comparison and transitive anchor constraint validation). Both modes produce a prioritized gap table, then remediate gaps within your role's authority and escalate cross-role gaps through established mechanisms.
 
 **Role behavior:**
-- **Architect:** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to Engineer mode by adding actionable notes in companion files (`features/<name>.impl.md`).
-- **Builder:** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to PM mode by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
+- **PM mode:** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to Engineer mode by adding actionable notes in companion files (`features/<name>.impl.md`).
+- **Engineer mode:** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to PM mode by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
 
 ---
 
@@ -301,7 +301,7 @@ Write the following to the plan file:
 
 ### Spec-Code Audit -- `<timestamp>`
 
-**Role:** Architect | Builder
+**Role:** PM | Engineer
 **Mode:** triage | deep
 **Total features scanned:** N
 **Transitive anchor constraints checked:** N invariants across M anchors
@@ -318,8 +318,8 @@ Write the following to the plan file:
 **Remediation Plan:**
 
 For each FIX item, describe the specific edit scoped to the acting role's artifacts:
-- **Architect FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
-- **Builder FIX edits** target source code and tests only -- which implementation file to modify, what logic to correct, which test to add or update.
+- **PM FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
+- **Engineer FIX edits** target source code and tests only -- which implementation file to modify, what logic to correct, which test to add or update.
 For each ESCALATE item, describe the companion file entry that will be written.
 
 If no gaps are found, write: "No spec-code gaps detected across all N features." and call `ExitPlanMode`.
@@ -337,7 +337,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Spec completeness** | Missing required sections; vague scenarios; undefined terms; anchor nodes missing Purpose or Invariants |
 | **Policy anchoring** | Missing `> Prerequisite:` links to applicable anchor nodes |
 | **Traceability** | Automated scenarios with no matching test functions (`coverage < 1.0`) |
-| **Builder decisions** | Unacknowledged `[DEVIATION]` or `[DISCOVERY]` tags in companion file |
+| **Engineer decisions** | Unacknowledged `[DEVIATION]` or `[DISCOVERY]` tags in companion file |
 | **User testing** | OPEN or SPEC_UPDATED discovery entries |
 | **Dependency currency** | Prerequisite anchor node has lifecycle status TODO or was recently modified |
 | **Spec-reality alignment** | Implementation Notes document decisions that contradict or extend scenarios without spec updates |
@@ -373,7 +373,7 @@ On re-invocation: if state file exists, report resume status, skip Phase 0, resu
 
 After the user approves the plan, execute the remediation. Process FIX items first, then ESCALATE items.
 
-### If Running as Architect
+### If Running as PM
 
 **FIX (spec-side gaps you own):**
 1. Edit the feature file directly -- add missing sections, refine vague scenarios, add prerequisite links, update stale spec content.
@@ -396,7 +396,7 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 3. Commit all escalation entries together.
 4. Run `${TOOLS_ROOT}/cdd/scan.sh` after committing to refresh project state (the scan will surface these as Engineer action items).
 
-### If Running as Builder
+### If Running as Engineer
 
 **FIX (code-side gaps you own):**
 1. Fix code to match scenario assertions -- correct contradictions, add missing error handling, update hardcoded values.
@@ -422,9 +422,9 @@ After the user approves the plan, execute the remediation. Process FIX items fir
 
 ### Dimension 12 (Code Ownership) Remediation
 
-- **Architect FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
-- **Architect ESCALATE to Builder:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
-- **Builder ESCALATE to Architect:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
+- **PM FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
+- **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
+- **Engineer ESCALATE to PM:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 
 ### Post-Remediation
 

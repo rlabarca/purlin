@@ -20,7 +20,7 @@ Given the feature name provided as an argument, gate completion on all requireme
 4.  **Regression gate:** Check `regression_status` from scan results. If FAIL or STALE, do NOT mark complete. FAIL means tests are broken; STALE means source changed since results were generated. Both require `/pl-regression` to resolve.
 5.  **Companion file gate:** Check `features/<name>.impl.md` for unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries (no `[ACKNOWLEDGED]` tag). If any exist, do NOT mark complete — "N unacknowledged companion file entries exist. PM must review before completion." This prevents completing features where the Engineer made undocumented deviations PM hasn't seen.
 6.  **Delivery plan check:** Check `.purlin/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete -- inform the user: "Feature X is deferred until all phases are delivered (appears in Phase N)."
-7.  **[Verified] tag required:** QA completions MUST include the `[Verified]` tag. This distinguishes QA completions from Builder auto-completions and is checked by scan results.
+7.  **[Verified] tag required:** QA completions MUST include the `[Verified]` tag. This distinguishes QA completions from Engineer auto-completions and is checked by scan results.
 
 ## Execution
 

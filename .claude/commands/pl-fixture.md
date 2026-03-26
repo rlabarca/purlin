@@ -10,8 +10,8 @@ testing. Fixture states are immutable git tags in a dedicated bare repo. See
 
 ## Fixture Lifecycle Summary
 
-    Architect defines fixture tags in feature spec
-      -> Builder creates setup script + fixture repo + tags
+    PM defines fixture tags in feature spec
+      -> Engineer creates setup script + fixture repo + tags
         -> QA references tags in regression scenario JSON
           -> Harness runner checks out tags at test time
             -> Fixture cleanup after each scenario
@@ -34,7 +34,7 @@ Fixtures are needed when a test scenario requires specific, controlled project s
    - **Option C:** "Skip fixtures for now. These scenarios stay as manual verification until fixtures are set up."
 6. Record the decision in `tests/qa/fixture_recommendations.md` for Engineer mode.
 
-## For Architects: Fixture-Aware Feature Design
+## For PM mode: Fixture-Aware Feature Design
 
 ### When to Use Fixtures
 
@@ -67,7 +67,7 @@ format reference.
 
 ### Slug Convention
 
-Tag format: `<project-ref>/<feature-name>/<slug>`. Slugs are Architect-chosen, short
+Tag format: `<project-ref>/<feature-name>/<slug>`. Slugs are PM-chosen, short
 descriptive identifiers (2-4 words, kebab-case). They describe the fixture state, not the
 scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`.
 
@@ -78,7 +78,7 @@ why: "These scenarios need controlled project state. I am adding fixture tags --
 snapshots that tests check out automatically. Engineer mode will create a setup script to
 generate them."
 
-## For Builders: Fixture Setup Workflow
+## For Engineer mode: Fixture Setup Workflow
 
 Fixtures are set up when explicitly directed by the user or when the feature spec contains a fixture tag section.
 
@@ -107,7 +107,7 @@ When no setup script exists:
    `fixture add-tag <tag> --from-dir <tmpdir> --message "<state description>"`.
 3. Save the script at the project-appropriate location:
    - **Purlin:** `dev/setup_fixture_repo.sh` (not distributed to consumers)
-   - **Consumer:** Builder's choice, documented in companion file
+   - **Consumer:** Engineer mode's choice, documented in companion file
 
 ### State Construction Guidance
 
@@ -120,4 +120,4 @@ the files needed for that scenario's Given preconditions.
 If the fixture infrastructure has not been created yet, inform the
 user. Web-verify and automated test
 results for fixture-backed scenarios will be INCONCLUSIVE until Engineer mode creates the
-fixture repo. This is Builder-routable, not a QA failure -- do not record as a discovery.
+fixture repo. This is Engineer-routable, not a QA failure -- do not record as a discovery.

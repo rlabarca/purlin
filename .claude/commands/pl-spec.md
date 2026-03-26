@@ -12,7 +12,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 ## Required Reading
 
-Before authoring or refining any spec, read `instructions/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance. This guide applies to both PM and Architect.
+Before authoring or refining any spec, read `instructions/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance. This guide applies to PM.
 
 ---
 
@@ -34,7 +34,7 @@ When creating a new feature file, use this structure:
 
 > Label: "<Category>: <Label>"
 > Category: "<Category>"
-> Owner: <PM or Architect -- omit line if Architect (default)>
+> Owner: <PM -- default if omitted>
 > Prerequisite: features/<anchor_node>.md
 
 ## 1. Overview
@@ -105,7 +105,7 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 - `> Prerequisite: features/<name>.md` -- dependency link
 - `> Web Test: <url>` -- web UI for automated web testing
 - `> Web Start: <command>` -- auto-start for web test target
-- `> Owner: PM` or `> Owner: Architect` -- design authority (default: Architect)
+- `> Owner: PM` or `> Owner: PM` -- design authority (default: PM)
 - `> Test Fixtures: <url>` -- non-default fixture repo URL
 
 ---

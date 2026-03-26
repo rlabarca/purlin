@@ -269,6 +269,6 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
 - If all scenarios and visual items passed (zero failures, zero inconclusive): prompt "All web verification passed. Run `/pl-complete <name>` to mark done?"
 - If confirmed, run `/pl-complete <name>`.
 
-**Builder invocation:**
+**Engineer invocation:**
 - If all passed: print summary only. Add note: "Suggest QA agent run `/pl-complete <name>` after verification."
 - Do NOT mark complete.

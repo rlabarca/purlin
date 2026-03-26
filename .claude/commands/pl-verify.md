@@ -60,7 +60,7 @@ Under `auto_start: false`, still launch background suites — they're non-destru
 
 ### Step 1 -- Auto-pass builder-verified features
 
-Credit features where Builder status is DONE and zero QA scenarios exist. These require no QA action.
+Credit features where Engineer status is DONE and zero QA scenarios exist. These require no QA action.
 
 **AUTO features are NOT auto-passed.** Features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that MUST execute in Steps 2–5. Do NOT credit, skip, or auto-complete them here — they require test execution even though they need zero human time. **Regression guidance exclusion:** Features where scan results show `qa_reason` = `"regression harness authoring pending"` MUST be excluded from auto-pass. Do NOT mark them `[Complete]`, do NOT commit status tags for them, do NOT edit their lifecycle tags. Acknowledge them silently in the Phase A summary and route them to Step 3 for regression authoring.
 
@@ -258,18 +258,18 @@ If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite s
 no harness JSON and the gap was NOT resolved during Phase A):
 
 ```
-Regression gaps requiring Builder: T features
+Regression gaps requiring Engineer: T features
 | Feature | Harness Type | Blocker |
 |---------|-------------|---------|
 | <name>  | <type>      | <why>   |
 ```
 
-**Decision point** (only when BOTH regression gaps needing Builder AND manual
+**Decision point** (only when BOTH regression gaps needing Engineer AND manual
 items remain):
 ```
-T features need Builder work for regression infrastructure.
+T features need Engineer work for regression infrastructure.
 M manual items remain for human verification.
-→ [exit] Return to Builder for regression work
+→ [exit] Return to Engineer for regression work
 → [continue] Proceed to Phase B manual verification
 → [both] Author what's possible now, then manual
 ```
@@ -361,7 +361,7 @@ For each failed item:
     - **Scenario:** <which scenario, or NONE>
     - **Observed Behavior:** <what the user described>
     - **Expected Behavior:** <from the scenario, or "not specified">
-    - **Action Required:** <Architect or Builder>
+    - **Action Required:** <PM or Engineer>
     - **Status:** OPEN
     ```
 4.  **Commit** all discovery entries: `git commit -m "qa(scope): [TYPE] - <brief>"`.
@@ -376,7 +376,7 @@ Visual items appear as numbered `[V]` entries in the main checklist. Judged by n
     2.  Classify checklist items as screenshot-verifiable (static visible properties) vs. not (interactions, state persistence, temporal behaviors).
     3.  For verifiable items: PASS, FAIL, or UNCERTAIN with observation notes.
     4.  Present results in two groups: auto-verified + manual confirmation required.
-*   **Figma-Triangulated Verification:** When Figma MCP is available and a visual spec screen has a Figma reference, perform three-source comparison (Figma design, spec Token Map + checklists, running app). Verdicts: PASS, BUG (app wrong -> Builder), STALE (Figma updated -> PM), SPEC_DRIFT (app matches Figma, not spec -> PM).
+*   **Figma-Triangulated Verification:** When Figma MCP is available and a visual spec screen has a Figma reference, perform three-source comparison (Figma design, spec Token Map + checklists, running app). Verdicts: PASS, BUG (app wrong -> Engineer), STALE (Figma updated -> PM), SPEC_DRIFT (app matches Figma, not spec -> PM).
 *   **Web test alternative:** For features with `> Web Test:` metadata, `/pl-web-test` provides fully automated visual verification via Playwright MCP.
 
 ### Step 10 -- Exploratory Testing
@@ -401,4 +401,4 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
     *   Features completed (list).
     *   Features remaining in TESTING with discovery counts (list).
     *   Features deferred by delivery plan (list).
-    *   Discovery routing: which items need Architect vs. Builder.
+    *   Discovery routing: which items need PM vs. Engineer.

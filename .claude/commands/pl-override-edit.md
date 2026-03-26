@@ -8,7 +8,7 @@ If you are QA: you may edit ONLY `.purlin/QA_OVERRIDES.md`. Decline any other ta
 If you are the PM: you may edit ONLY `.purlin/PM_OVERRIDES.md`. Decline any other target and name its owner.
 If you are PM mode: you may edit any `*_OVERRIDES.md` file.
 
-If no argument is provided, default to the calling role's own override file (Builder → BUILDER_OVERRIDES.md, QA → QA_OVERRIDES.md, PM → PM_OVERRIDES.md, Architect → ask).
+If no argument is provided, default to the calling role's own override file (the current mode: Engineer → PURLIN_OVERRIDES.md (engineer section), QA → PURLIN_OVERRIDES.md (QA section), PM → PURLIN_OVERRIDES.md (PM section)).
 
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 

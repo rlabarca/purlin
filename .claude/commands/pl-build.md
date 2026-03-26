@@ -82,11 +82,11 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 *   Write code and tests.
 *   **Knowledge Colocation:** Record non-obvious discoveries in `features/<name>.impl.md` (never in the feature `.md`). Create the companion file if needed.
-*   **Builder Decision Tags:** Use these in companion files (`features/<name>.impl.md`):
+*   **Engineer Decision Tags:** Use these in companion files (`features/<name>.impl.md`):
     *   `[CLARIFICATION]` (INFO) -- Interpreted ambiguous spec language.
     *   `[AUTONOMOUS]` (WARN) -- Spec was silent; you filled the gap.
-    *   `[DEVIATION]` (HIGH) -- Intentionally diverged from spec. Blocks `[Complete]` until Architect acknowledges.
-    *   `[DISCOVERY]` (HIGH) -- Found unstated requirement. Blocks `[Complete]` until Architect acknowledges.
+    *   `[DEVIATION]` (HIGH) -- Intentionally diverged from spec. Blocks `[Complete]` until PM acknowledges.
+    *   `[DISCOVERY]` (HIGH) -- Found unstated requirement. Blocks `[Complete]` until PM acknowledges.
     *   `[INFEASIBLE]` (CRITICAL) -- Cannot implement as specced. Halt work, skip to next feature.
     Format: `**[TAG]** <description> (Severity: <level>)`
     Cross-feature: file `[DISCOVERY]` in the **target feature's** companion file, not the originating feature.
@@ -142,7 +142,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
         *   **`auto_start: false` (default):** STOP the session:
             ```
             Execution group complete (Phases N, M of T) -- [short label]
-            Recommended: run QA to verify completed phases. Relaunch Builder for next group.
+            Recommended: run QA to verify completed phases. Relaunch Engineer for next group.
             ```
         *   **`auto_start: true`:** Auto-advance to the next execution group. If the next group has 2+ features total, the Execution Group Dispatch is mandatory (see bright-line rule). Begin dispatch or sequential loop for the next group. Continue until all groups are complete or context is exhausted.
 
@@ -150,7 +150,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 ## Bright-Line Rules (always active)
 
-These rules are authoritative. They apply to all Builder work regardless of context.
+These rules are authoritative. They apply to all Engineer work regardless of context.
 
 *   **Companion file edits do NOT reset status.** Only edits to the feature spec (`<name>.md`) trigger resets.
 *   **Status tag MUST be a separate commit** from implementation work.
@@ -161,7 +161,7 @@ These rules are authoritative. They apply to all Builder work regardless of cont
 *   **Re-verification, not re-implementation:** When scan results show `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
 *   **Test quality:** Invoke `/pl-unit-test` for the complete testing protocol. The skill carries the quality rubric gate (6 checks), anti-pattern scan (AP-1 through AP-5), and result reporting rules. Do not execute the testing workflow from memory.
 *   **Web test TBD resolution:** If a feature has `> Web Test: TBD` or `> Web Start: TBD`, Engineer mode MUST replace `TBD` with the actual URL and start command after building the server (e.g., `> Web Test: http://localhost:3000`, `> Web Start: npm run dev`). This spec edit resets the feature to TODO, but since tests already pass, Engineer mode follows the re-verification fast path (run tests, re-tag). Commit the metadata update before running `/pl-web-test`.
-*   **Design alignment verification (web test):** Features with `> Web Test:` or `> AFT Web:` metadata (non-TBD) MUST pass `/pl-web-test` (zero BUG verdicts AND zero DRIFT verdicts) before status tag. When Figma MCP is available and the feature's `## Visual Specification` has Figma references, `/pl-web-test` performs Figma-triangulated verification -- Engineer mode MUST iterate until the live app matches the Figma design (no BUG or DRIFT). STALE verdicts (Figma updated but spec not yet re-ingested) are NOT Builder blockers. For each STALE verdict, create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`. These are routed directly to PM. Engineer mode proceeds with the status tag -- STALE does not block completion. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- design alignment verification cannot be automated]` in the companion file.
+*   **Design alignment verification (web test):** Features with `> Web Test:` or `> AFT Web:` metadata (non-TBD) MUST pass `/pl-web-test` (zero BUG verdicts AND zero DRIFT verdicts) before status tag. When Figma MCP is available and the feature's `## Visual Specification` has Figma references, `/pl-web-test` performs Figma-triangulated verification -- Engineer mode MUST iterate until the live app matches the Figma design (no BUG or DRIFT). STALE verdicts (Figma updated but spec not yet re-ingested) are NOT Engineer blockers. For each STALE verdict, create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`. These are routed directly to PM. Engineer mode proceeds with the status tag -- STALE does not block completion. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- design alignment verification cannot be automated]` in the companion file.
 *   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
 *   **Regression feedback:** When processing regression `regression.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
 *   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.

@@ -69,7 +69,7 @@ If the user approves phasing, create the delivery plan using the canonical forma
 *   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction?), then: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]`.
 *   Status tags only after B2 passes or B3 escalations are recorded.
 
-**Cross-Session Rule:** Each phase is a separate Builder session. STOP after completing a phase. Do not auto-advance.
+**Cross-Session Rule:** Each phase is a separate Engineer session. STOP after completing a phase. Do not auto-advance.
 
 **Canonical `delivery_plan.md` format:**
 

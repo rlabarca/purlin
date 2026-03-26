@@ -16,4 +16,4 @@ Given the topic provided as an argument, surface a structured spec change sugges
 
 Do NOT modify the feature spec directly. PM mode owns spec content.
 
-**Do NOT pass the finding as a chat message** (e.g., "Note for Architect: ..."). Chat is not a durable channel. The only valid output of `/pl-propose` is a committed `[SPEC_PROPOSAL]` entry in the feature's Implementation Notes.
+**Do NOT pass the finding as a chat message** (e.g., "Note for PM: ..."). Chat is not a durable channel. The only valid output of `/pl-propose` is a committed `[SPEC_PROPOSAL]` entry in the feature's Implementation Notes.
