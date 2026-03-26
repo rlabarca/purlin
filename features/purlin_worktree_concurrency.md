@@ -102,7 +102,7 @@ When the SessionEnd hook (2.3) or `/pl-merge` encounters a merge conflict that c
   }
   ```
 - One file per failed merge. Multiple concurrent failures each leave their own breadcrumb.
-- The hook MUST set the iTerm badge to `MERGE FAILED` after writing the breadcrumb. This persists on the terminal tab after the session ends, providing a visual indicator even if the user doesn't read stderr.
+- The hook MUST set the iTerm badge to `MERGE FAILED` after writing the breadcrumb, by calling `set_iterm_badge "MERGE FAILED"` (sourced from `identity.sh`). This persists on the terminal tab after the session ends, providing a visual indicator even if the user doesn't read stderr.
 - The hook MUST print a prominent multi-line warning to stderr:
   ```
   ╔══════════════════════════════════════════════════╗

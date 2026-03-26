@@ -168,7 +168,7 @@ Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never co
 
 #### 2.3.2 Step 2 -- Instruction Reload (Fresh Sessions Only)
 
-This step runs ONLY when the system prompt does not contain the Purlin agent instructions (i.e., the agent was started without `pl-run.sh`).
+This step runs ONLY when the system prompt does not contain the Purlin agent instructions (i.e., the agent was started without `pl-run.sh`). This is the sole instruction-loading mechanism for `/pl-resume` — no separate "startup briefing" step exists.
 
 When instruction reload is needed:
 1. Read the instruction layers in order:

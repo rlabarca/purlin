@@ -94,7 +94,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 | Role | Trigger | Action |
 |------|---------|--------|
 | **PM** | Writing a spec where scenarios need controlled project state (multi-feature interactions, specific lifecycle states, config variations) | Declare `### Integration Test Fixture Tags` section with tag table and state descriptions in the feature spec |
-| **Engineer** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag |
+| **Engineer** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag. When `fixture_repo_url` is configured, `add-tag` auto-pushes to the remote. If push fails, Engineer uses `fixture push <url>` manually. |
 | **QA** (during `/pl-regression-author`) | Scenario needs state beyond inline `setup_commands` | Create fixtures directly via `fixture add-tag`; record in `fixture_usage.json` |
 | **QA** (during `/pl-regression-author`) | Feature has NO PM-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
 
