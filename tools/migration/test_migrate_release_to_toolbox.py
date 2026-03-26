@@ -150,7 +150,7 @@ class TestMigration(unittest.TestCase):
         self.assertFalse(os.path.exists(self.toolbox_dir))
 
     def test_partial_migration_recovery(self):
-        """Toolbox dir exists but no marker → re-runs migration."""
+        """Toolbox dir exists but no marker → re-runs migration, preserves existing tools."""
         self._write_release_file("local_steps.json", {
             "steps": [
                 {"id": "tool1", "friendly_name": "T1", "description": "d",
@@ -158,8 +158,14 @@ class TestMigration(unittest.TestCase):
             ]
         })
 
-        # Create toolbox dir without marker (simulating crash)
+        # Create toolbox dir with an existing project tool (simulating manual use)
         os.makedirs(self.toolbox_dir, exist_ok=True)
+        existing = {"schema_version": "2.0", "tools": [
+            {"id": "existing_tool", "friendly_name": "Existing", "description": "e",
+             "code": None, "agent_instructions": None},
+        ]}
+        with open(os.path.join(self.toolbox_dir, "project_tools.json"), 'w') as f:
+            json.dump(existing, f)
 
         result = migrate(self.tmpdir)
         self.assertEqual(result["status"], "migrated")
@@ -168,6 +174,13 @@ class TestMigration(unittest.TestCase):
         # Marker should now exist
         marker_path = os.path.join(self.toolbox_dir, ".migrated_from_release")
         self.assertTrue(os.path.exists(marker_path))
+
+        # Both existing and migrated tools should be present
+        project = self._read_toolbox_file("project_tools.json")
+        ids = [t["id"] for t in project["tools"]]
+        self.assertIn("existing_tool", ids)
+        self.assertIn("tool1", ids)
+        self.assertEqual(len(project["tools"]), 2)
 
     def test_idempotent_rerun(self):
         """Running migration twice: second run returns already_migrated."""
@@ -210,6 +223,72 @@ class TestMigration(unittest.TestCase):
 
         community_dir = os.path.join(self.toolbox_dir, "community")
         self.assertTrue(os.path.isdir(community_dir))
+
+    def test_merge_preserves_existing_project_tools(self):
+        """Existing project_tools.json tools are preserved, migrated tools fill gaps."""
+        self._write_release_file("config.json", {"steps": []})
+        self._write_release_file("local_steps.json", {
+            "steps": [
+                {"id": "migrated_1", "friendly_name": "M1", "description": "d",
+                 "code": None, "agent_instructions": None},
+                {"id": "migrated_2", "friendly_name": "M2", "description": "d",
+                 "code": None, "agent_instructions": None},
+            ]
+        })
+
+        # Pre-existing project tools (manually created before migration)
+        os.makedirs(self.toolbox_dir, exist_ok=True)
+        existing = {"schema_version": "2.0", "tools": [
+            {"id": "existing_a", "friendly_name": "EA", "description": "ea",
+             "code": None, "agent_instructions": "Keep me"},
+            {"id": "existing_b", "friendly_name": "EB", "description": "eb",
+             "code": "run.sh", "agent_instructions": None},
+        ]}
+        with open(os.path.join(self.toolbox_dir, "project_tools.json"), 'w') as f:
+            json.dump(existing, f)
+
+        result = migrate(self.tmpdir)
+        self.assertEqual(result["status"], "migrated")
+        self.assertEqual(result["tools_migrated"], 2)
+
+        project = self._read_toolbox_file("project_tools.json")
+        self.assertEqual(len(project["tools"]), 4)
+        ids = [t["id"] for t in project["tools"]]
+        # Existing tools come first, migrated tools appended
+        self.assertEqual(ids, ["existing_a", "existing_b", "migrated_1", "migrated_2"])
+        # Existing tool content preserved
+        self.assertEqual(project["tools"][0]["agent_instructions"], "Keep me")
+
+    def test_merge_deduplicates_by_id(self):
+        """Migrated tools with IDs already in project_tools are skipped."""
+        self._write_release_file("config.json", {"steps": []})
+        self._write_release_file("local_steps.json", {
+            "steps": [
+                {"id": "shared_tool", "friendly_name": "Old Name", "description": "old",
+                 "code": None, "agent_instructions": "old instructions"},
+                {"id": "new_tool", "friendly_name": "New", "description": "new",
+                 "code": None, "agent_instructions": None},
+            ]
+        })
+
+        os.makedirs(self.toolbox_dir, exist_ok=True)
+        existing = {"schema_version": "2.0", "tools": [
+            {"id": "shared_tool", "friendly_name": "Current Name", "description": "current",
+             "code": None, "agent_instructions": "current instructions"},
+        ]}
+        with open(os.path.join(self.toolbox_dir, "project_tools.json"), 'w') as f:
+            json.dump(existing, f)
+
+        result = migrate(self.tmpdir)
+        self.assertEqual(result["status"], "migrated")
+        self.assertEqual(result["tools_migrated"], 1)  # only new_tool added
+
+        project = self._read_toolbox_file("project_tools.json")
+        self.assertEqual(len(project["tools"]), 2)
+        # Existing version wins for the duplicate
+        shared = [t for t in project["tools"] if t["id"] == "shared_tool"][0]
+        self.assertEqual(shared["friendly_name"], "Current Name")
+        self.assertEqual(shared["agent_instructions"], "current instructions")
 
     def test_release_dir_preserved(self):
         """Old .purlin/release/ is NOT deleted during migration."""

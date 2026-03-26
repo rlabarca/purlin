@@ -112,6 +112,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 8. **Stale Artifact Cleanup:**
    - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
+   - Check if `.purlin/release/` still exists AND `.purlin/toolbox/.migrated_from_release` exists (migration completed). If both true, prompt: `"Found legacy release config at .purlin/release/. This has been migrated to .purlin/toolbox/. Delete the old directory?"` Only delete on explicit user confirmation.
    - In `--dry-run` mode, list stale artifacts but do not delete
 
 9. **Summary:**

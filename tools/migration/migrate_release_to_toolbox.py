@@ -90,7 +90,7 @@ def migrate(project_root, dry_run=False):
     if local_steps_data is not None:
         source_steps = local_steps_data.get("steps", [])
 
-    project_tools = []
+    migrated_tools = []
     today = date.today().isoformat()
     for step in source_steps:
         tool = {
@@ -103,27 +103,47 @@ def migrate(project_root, dry_run=False):
                 "last_updated": today,
             },
         }
-        project_tools.append(tool)
+        migrated_tools.append(tool)
 
-    project_tools_data = {"schema_version": "2.0", "tools": project_tools}
+    # Merge with existing project tools — existing tools take precedence by ID.
+    # This prevents overwriting tools that were manually added before migration ran.
+    project_tools_path = os.path.join(toolbox_dir, "project_tools.json")
+    existing_data = _load_json_safe(project_tools_path)
+    existing_tools = []
+    if existing_data is not None:
+        existing_tools = existing_data.get("tools", existing_data.get("steps", []))
+    existing_ids = {t.get("id") for t in existing_tools}
+
+    merged_tools = list(existing_tools)
+    for tool in migrated_tools:
+        if tool["id"] not in existing_ids:
+            merged_tools.append(tool)
+
+    tools_migrated = len(merged_tools) - len(existing_tools)
+
+    project_tools_data = {"schema_version": "2.0", "tools": merged_tools}
     community_tools_data = {"schema_version": "2.0", "tools": []}
     marker_data = {
         "migrated_at": datetime.now(timezone.utc).isoformat(),
         "source_local_steps_checksum": _sha256(local_steps_raw),
-        "tools_migrated": len(project_tools),
+        "tools_migrated": tools_migrated,
     }
+
+    merge_note = ""
+    if existing_tools:
+        merge_note = f" ({len(existing_tools)} existing tools preserved)"
 
     if dry_run:
         print("[DRY RUN] Would create .purlin/toolbox/ directory structure")
-        print(f"[DRY RUN] Would write project_tools.json with {len(project_tools)} tools:")
+        print(f"[DRY RUN] Would write project_tools.json with {len(merged_tools)} tools{merge_note}:")
         print(json.dumps(project_tools_data, indent=2))
         print()
         print("[DRY RUN] Would write empty community_tools.json")
         print("[DRY RUN] Would write migration marker")
         return {
             "status": "migrated",
-            "tools_migrated": len(project_tools),
-            "message": f"[DRY RUN] Would migrate {len(project_tools)} tools.",
+            "tools_migrated": tools_migrated,
+            "message": f"[DRY RUN] Would migrate {tools_migrated} tools{merge_note}.",
         }
 
     # Create directory structure
@@ -146,8 +166,8 @@ def migrate(project_root, dry_run=False):
 
     return {
         "status": "migrated",
-        "tools_migrated": len(project_tools),
-        "message": f"Migrated {len(project_tools)} tools from release steps to Agentic Toolbox.",
+        "tools_migrated": tools_migrated,
+        "message": f"Migrated {tools_migrated} tools from release steps to Agentic Toolbox.{merge_note}",
     }
 
 
