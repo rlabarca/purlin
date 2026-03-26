@@ -46,12 +46,12 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
                        "First line must declare QA role ownership")
 
     def test_role_gate_pattern_present(self):
-        """Command file must contain a role gate check for QA."""
+        """Command file must contain a mode declaration for QA."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(mode declaration|purlin mode declaration).*QA",
-            "Must contain a mode declaration declaration for QA",
+            r"(?i)(purlin mode.*QA|activates QA mode)",
+            "Must contain a Purlin mode declaration for QA",
         )
 
     def test_redirect_message_for_non_qa(self):
@@ -64,10 +64,13 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
         )
 
     def test_redirect_references_command_name(self):
-        """The redirect message must reference the /pl-qa-report command."""
+        """The skill file must reference the QA report functionality."""
         content = read_command_file()
-        self.assertIn("pl-qa-report", content,
-                       "Redirect message must reference the command name")
+        self.assertRegex(
+            content,
+            r"(?i)(QA Status Report|QA.*report|activates QA mode)",
+            "Must reference QA report functionality",
+        )
 
 
 class TestReportShowsTestingFeaturesWithCounts(unittest.TestCase):

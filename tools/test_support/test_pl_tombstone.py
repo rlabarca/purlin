@@ -38,12 +38,12 @@ class TestRoleGateRejectsNonPMInvocation(unittest.TestCase):
     the mode declaration, which means non-PM agents will be redirected.
     """
 
-    def test_first_line_declares_architect_owner(self):
-        """First line must contain the PM mode declaration declaration."""
+    def test_first_line_declares_engineer_owner(self):
+        """First line must contain the Engineer mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Purlin mode: PM", first_line,
-                       "First line must declare PM as mode")
+        self.assertIn("Purlin mode: Engineer", first_line,
+                       "First line must declare Engineer as mode")
 
     def test_redirect_message_for_non_architect(self):
         """Command file must include a redirect message for non-PM agents."""
@@ -120,12 +120,12 @@ class TestTombstoneCreatedBeforeFeatureDeletion(unittest.TestCase):
     """
 
     def test_tombstone_before_deletion_rule(self):
-        """Command file must state that tombstones are created before deletion."""
+        """Command file must state that tombstones are created before the feature file is moved."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)tombstone.*MUST.*created.*before.*deleted|MUST.*created before.*feature file.*deleted",
-            "Must enforce tombstone-before-deletion ordering",
+            r"(?i)tombstone.*MUST.*created.*before.*moved|MUST.*created before.*feature file.*moved",
+            "Must enforce tombstone-before-move ordering",
         )
 
     def test_tombstone_path_is_tombstones_directory(self):
@@ -144,14 +144,14 @@ class TestTombstoneCreatedBeforeFeatureDeletion(unittest.TestCase):
         self.assertIn("## Dependencies to Check", content,
                        "Must include Dependencies to Check section in tombstone format")
 
-    def test_workflow_order_create_then_delete(self):
-        """In the numbered workflow, tombstone creation (step 3) must precede deletion (step 4)."""
+    def test_workflow_order_create_then_move(self):
+        """In the numbered workflow, tombstone creation must precede feature move."""
         content = read_command_file()
-        create_pos = content.find("create `features/tombstones/")
-        delete_pos = content.find("Delete `features/")
+        create_pos = content.find("create the tombstone content at")
+        move_pos = content.find("Move feature")
         self.assertGreater(create_pos, -1, "Tombstone creation step must exist")
-        self.assertGreater(delete_pos, create_pos,
-                           "Deletion step must come after tombstone creation step")
+        self.assertGreater(move_pos, create_pos,
+                           "Move step must come after tombstone creation step")
 
 
 class TestUnimplementedFeatureDeletedWithoutTombstone(unittest.TestCase):

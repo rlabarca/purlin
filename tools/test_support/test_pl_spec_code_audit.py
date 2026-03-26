@@ -78,12 +78,14 @@ class TestRoleGating(unittest.TestCase):
 
     def test_command_contains_role_gate_message(self):
         content = _read_command()
-        self.assertIn(
-            'This command is for the PM or Engineer', content)
+        self.assertRegex(
+            content,
+            r'(?i)(activates Engineer mode|another mode is active|confirm switch)',
+        )
 
     def test_role_gate_appears_before_analysis(self):
         content = _read_command()
-        gate_pos = content.index('PM or Engineer')
+        gate_pos = content.index('Purlin mode')
         phase_pos = content.index('Phase 0')
         self.assertLess(gate_pos, phase_pos,
                         'Role gate must appear before Phase 0 analysis')
@@ -95,10 +97,10 @@ class TestRoleGating(unittest.TestCase):
         self.assertIn('PM', content)
         self.assertIn('Engineer', content)
 
-    def test_role_gate_blocks_non_architect_builder(self):
-        """The gate message blocks QA and PM by requiring PM or Engineer."""
+    def test_role_gate_blocks_non_engineer(self):
+        """The gate message blocks non-Engineer agents via mode activation."""
         content = _read_command()
-        self.assertIn('not operating as', content.lower())
+        self.assertIn('another mode is active', content.lower())
 
 
 class TestArgumentParsing(unittest.TestCase):
@@ -566,10 +568,15 @@ class TestSeverityClassification(unittest.TestCase):
     def test_forbidden_in_high_row(self):
         """FORBIDDEN pattern violation appears in the HIGH severity criteria."""
         content = _read_command()
-        # Find severity table and verify FORBIDDEN is in the HIGH section
+        # Find the severity table (starts with "| Severity | Criteria |")
+        severity_table_pos = content.find('| Severity | Criteria |')
+        self.assertGreater(severity_table_pos, -1,
+                           'Severity table must exist')
+        severity_section = content[severity_table_pos:]
+        # Find the HIGH row in the severity table
         high_match = re.search(
-            r'\|\s*HIGH\s*\|(.+?)(?:\|\s*(?:MEDIUM|LOW|CRITICAL)\s*\||$)',
-            content, re.DOTALL)
+            r'\|\s*HIGH\s*\|(.+)',
+            severity_section)
         self.assertIsNotNone(high_match,
                              'Should find HIGH row in severity table')
         high_text = high_match.group(1)
@@ -765,20 +772,20 @@ class TestSpecFeatureAlignment(unittest.TestCase):
     on key structural elements.
     """
 
-    def test_spec_and_command_both_reference_11_dimensions(self):
-        """Both files reference 11 gap dimensions."""
+    def test_spec_and_command_both_reference_12_dimensions(self):
+        """Both files reference 12 gap dimensions."""
         cmd = _read_command()
         spec = _read_feature()
-        # Spec defines 11 dimensions in Section 2.12
-        self.assertIn('11 dimensions', spec.lower().replace(' ', ' '))
-        # Command file should reference all 11
+        # Spec defines 12 dimensions in Section 2.12
+        self.assertIn('12 dimensions', spec.lower().replace(' ', ' '))
+        # Command file should reference all 12
         cmd_dims = sum(1 for d in [
             'Spec completeness', 'Policy anchoring', 'Traceability',
             'Engineer decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
-            'Anchor invariant drift', 'Requirement hygiene',
+            'Anchor invariant drift', 'Requirement hygiene', 'Code ownership',
         ] if d in cmd)
-        self.assertEqual(cmd_dims, 11)
+        self.assertEqual(cmd_dims, 12)
 
     def test_spec_and_command_both_reference_explore_subagent_type(self):
         """Both files specify Explore as the subagent type."""

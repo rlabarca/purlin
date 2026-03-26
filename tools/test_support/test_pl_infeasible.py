@@ -44,17 +44,20 @@ class TestRoleGateRejectsNonEngineer(unittest.TestCase):
         self.assertIn("Purlin mode: Engineer", first_line,
                        "First line must declare 'Purlin mode: Engineer'")
 
-    def test_redirect_message_for_non_builder(self):
+    def test_redirect_message_for_non_engineer(self):
         """Command file must include a redirect message for non-Engineer agents."""
         content = read_command_file()
-        self.assertIn("Engineer command", content,
-                       "Must include redirect text mentioning Engineer command")
+        self.assertRegex(
+            content,
+            r"(?i)(activates Engineer mode|another mode is active|confirm switch)",
+            "Must include redirect text for non-Engineer agents",
+        )
 
     def test_redirect_references_pl_infeasible(self):
-        """The redirect message should reference the /pl-infeasible command."""
+        """The skill file should reference the INFEASIBLE workflow."""
         content = read_command_file()
-        self.assertIn("/pl-infeasible", content,
-                       "Redirect must reference /pl-infeasible")
+        self.assertIn("INFEASIBLE", content,
+                       "Must reference INFEASIBLE workflow")
 
 
 class TestInfeasibleEntryRecordedInCompanion(unittest.TestCase):
@@ -154,11 +157,11 @@ class TestScanSurfacesInfeasibleAsActionItem(unittest.TestCase):
         self.assertIn("scan", content,
                        "Must reference scan results")
 
-    def test_critical_priority_designation(self):
-        """Command file must designate INFEASIBLE as CRITICAL priority."""
+    def test_action_item_priority_designation(self):
+        """Command file must surface INFEASIBLE as a PM action item."""
         content = read_command_file().lower()
-        self.assertIn("critical", content,
-                       "Must designate INFEASIBLE escalation as CRITICAL priority")
+        self.assertIn("action item", content,
+                       "Must surface INFEASIBLE as a PM action item")
 
     def test_architect_action_item(self):
         """Command file must describe the escalation targeting the PM."""

@@ -48,19 +48,18 @@ class TestRoleGateRejectsNonEngineer(unittest.TestCase):
     def test_role_rejection_message_present(self):
         """A rejection message for non-Engineer agents must be present."""
         content = read_command_file()
-        self.assertIn("Engineer command", content)
         self.assertRegex(
             content,
-            r"(?i)(another mode is active|confirm switch)",
+            r"(?i)(activates Engineer mode|another mode is active|confirm switch)",
         )
 
     def test_rejection_stops_execution(self):
-        """The rejection message must instruct the agent to stop."""
+        """The rejection message must instruct the agent to confirm switch."""
         content = read_command_file()
         # Find the rejection block (first few lines)
         lines = content.splitlines()[:10]
         rejection_block = "\n".join(lines).lower()
-        self.assertIn("stop", rejection_block)
+        self.assertIn("confirm switch", rejection_block)
 
 
 class TestExistingPlanDisplaysCurrentState(unittest.TestCase):

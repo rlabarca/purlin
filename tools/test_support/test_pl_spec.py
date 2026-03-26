@@ -54,12 +54,12 @@ class TestRoleGateRejectsNonPMInvocation(unittest.TestCase):
                        "Must include redirect guidance for non-PM/PM agents")
 
     def test_redirect_mentions_correct_roles(self):
-        """Redirect message must tell non-owners to ask PM or PM."""
+        """Redirect message must mention PM mode activation."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)ask.*PM.*PM.*run.*pl-spec|ask.*PM.*PM.*run.*pl-spec",
-            "Redirect must instruct non-owner to ask PM or PM to run /pl-spec",
+            r"(?i)(activates PM mode|another mode is active|confirm switch)",
+            "Redirect must instruct non-owner about PM mode activation",
         )
 
 

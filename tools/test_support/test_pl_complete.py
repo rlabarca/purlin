@@ -42,24 +42,24 @@ class TestRoleGateRejectsNonQA(unittest.TestCase):
         """First line declares QA as the mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Purlin mode:", first_line.lower())
+        self.assertIn("purlin mode", first_line.lower())
         self.assertIn("qa", first_line.lower())
 
     def test_redirect_message_for_non_qa(self):
-        """Contains a redirect message telling non-QA agents to use QA."""
+        """Contains a redirect message telling non-QA agents to switch to QA mode."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(ask your qa|qa agent|qa command)",
+            r"(?i)(another mode is active|confirm switch|activates QA mode)",
         )
 
     def test_stop_instruction_after_redirect(self):
-        """The redirect message includes a stop instruction."""
+        """The redirect message includes a confirm-switch instruction."""
         content = read_command_file()
-        # After the role gate block, there should be a "stop" directive
+        # After the role gate block, there should be a "confirm switch" directive
         lines = content.splitlines()
         role_gate_region = "\n".join(lines[:10])
-        self.assertIn("stop", role_gate_region.lower())
+        self.assertIn("confirm switch", role_gate_region.lower())
 
 
 class TestAllGatesPassCreatesCompletionCommit(unittest.TestCase):

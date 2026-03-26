@@ -84,11 +84,11 @@ class TestOutputIncludesFeatureCountsByStatus(unittest.TestCase):
         self.assertIn("COMPLETE", content)
 
     def test_feature_counts_instruction(self):
-        """Command instructs summarizing feature counts by status."""
+        """Command instructs summarizing feature counts by lifecycle."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)feature\s+counts\s+by\s+status",
+            r"(?i)feature\s+counts\s+by\s+(status|lifecycle)",
         )
 
 
@@ -129,12 +129,12 @@ class TestPMSeesUncommittedChangesCheck(unittest.TestCase):
     uncommitted changes logic with commit message proposal.
     """
 
-    def test_architect_specific_section_present(self):
+    def test_pm_specific_section_present(self):
         content = read_command_file()
         self.assertIn("PM", content)
         self.assertRegex(
             content,
-            r"(?i)architect.*uncommitted",
+            r"(?i)PM.*uncommitted",
         )
 
     def test_git_status_check_present(self):

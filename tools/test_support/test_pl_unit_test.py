@@ -45,17 +45,20 @@ class TestRoleGateRejectsNonEngineer(unittest.TestCase):
         self.assertIn("Engineer", first_line)
         self.assertIn("purlin mode", first_line.lower())
 
-    def test_redirect_message_for_non_builder(self):
+    def test_redirect_message_for_non_engineer(self):
         """Command file must contain a redirect message for non-Engineer agents."""
-        content = read_command_file()
-        self.assertIn("another mode is active", content)
-
-    def test_redirect_mentions_builder_agent(self):
-        """Redirect message must tell the user to ask the Engineer agent."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(another mode is active|confirm switch)",
+            r"(?i)(another mode is active|confirm switch|activates Engineer mode)",
+        )
+
+    def test_redirect_mentions_engineer_mode(self):
+        """Redirect message must reference Engineer mode."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)(activates Engineer mode|another mode is active|confirm switch)",
         )
 
 

@@ -46,20 +46,20 @@ class TestRoleGateRejectsNonQA(unittest.TestCase):
         self.assertIn("purlin mode", first_line.lower())
 
     def test_redirect_message_present(self):
-        """A redirect message instructs non-QA agents to use QA."""
+        """A redirect message instructs non-QA agents to switch to QA mode."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(ask your QA|QA agent to run|QA command)",
+            r"(?i)(another mode is active|confirm switch|activates QA mode)",
         )
 
     def test_stop_instruction_after_redirect(self):
-        """The redirect message includes a stop instruction."""
+        """The redirect message includes a confirm-switch instruction."""
         content = read_command_file()
-        # Should tell the non-QA agent to stop after the redirect
-        redirect_match = re.search(r"(?i)ask your QA.*?stop", content, re.DOTALL)
+        # Should tell the non-QA agent to confirm switch after the redirect
+        redirect_match = re.search(r"(?i)(another mode is active|confirm switch)", content)
         self.assertIsNotNone(redirect_match,
-                             "Redirect message should include 'stop' instruction")
+                             "Redirect message should include 'confirm switch' instruction")
 
 
 class TestBugDiscoveryRoutesToBuilder(unittest.TestCase):

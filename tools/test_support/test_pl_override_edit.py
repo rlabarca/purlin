@@ -44,7 +44,7 @@ class TestEngineerCannotEditQAOverrides(unittest.TestCase):
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)engineer.*edit\s+only.*ENGINEER_OVERRIDES",
+            r"(?i)engineer.*edit\s+only.*BUILDER_OVERRIDES",
             "Must state Engineer may edit ONLY BUILDER_OVERRIDES.md",
         )
 

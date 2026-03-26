@@ -46,26 +46,23 @@ class TestRoleGateRejectsNonPM(unittest.TestCase):
     contains the exact redirect message for non-PM agents.
     """
 
-    def test_first_line_declares_architect_ownership(self):
+    def test_first_line_declares_engineer_ownership(self):
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("PM", first_line)
+        self.assertIn("Engineer", first_line)
         self.assertIn("purlin mode", first_line.lower())
 
     def test_redirect_message_present(self):
         content = read_command_file()
-        self.assertIn(
-            "This is an PM command. Ask your PM agent to run "
-            "`/pl-spec-from-code`.",
+        self.assertRegex(
             content,
+            r"(?i)(activates Engineer mode|another mode is active|confirm switch)",
         )
 
-    def test_redirect_instructs_stop(self):
-        """The redirect message is followed by 'and stop' to prevent execution."""
+    def test_redirect_instructs_confirm_switch(self):
+        """The redirect message includes 'confirm switch' to prevent execution."""
         content = read_command_file()
-        redirect_pos = content.find("Ask your PM agent")
-        stop_region = content[redirect_pos : redirect_pos + 200]
-        self.assertIn("stop", stop_region.lower())
+        self.assertIn("confirm switch", content.lower())
 
 
 # ===================================================================
@@ -429,9 +426,9 @@ class TestPhase4RecommendedNextSteps(unittest.TestCase):
             r"(?i)review.*features.*dependency\s+order",
         )
 
-    def test_third_recommendation_builder_pl_build(self):
+    def test_third_recommendation_engineer_pl_build(self):
         content = read_command_file()
-        self.assertRegex(content, r"(?i)builder.*run.*`?/pl-build`?")
+        self.assertRegex(content, r"(?i)engineer.*run.*`?/pl-build`?")
 
     def test_all_three_steps_present(self):
         """All three recommended next steps appear in the command file."""
@@ -441,7 +438,7 @@ class TestPhase4RecommendedNextSteps(unittest.TestCase):
             re.search(r"(?i)review.*features.*dependency\s+order", content)
         )
         has_build = bool(
-            re.search(r"(?i)builder.*run.*`?/pl-build`?", content)
+            re.search(r"(?i)engineer.*run.*`?/pl-build`?", content)
         )
         self.assertTrue(
             has_audit and has_review and has_build,

@@ -51,10 +51,10 @@ class TestAllRolesCanInvokeCommand(unittest.TestCase):
         self.assertNotIn("command owner:", first_line.lower())
 
     def test_all_roles_mentioned_in_first_line(self):
-        """First line should reference 'all roles'."""
+        """First line should reference shared mode."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("all roles", first_line.lower())
+        self.assertIn("shared", first_line.lower())
 
 
 class TestContentCoversFixtureLifecycle(unittest.TestCase):
@@ -111,14 +111,14 @@ class TestRoleSpecificSectionsPresented(unittest.TestCase):
     def test_builder_section_with_preflight_and_setup(self):
         """Engineer section covers pre-flight detection and setup workflow."""
         content = read_command_file()
-        self.assertIn("For Builders", content)
+        self.assertIn("For Engineer mode", content)
         self.assertIn("Pre-Flight", content)
         self.assertIn("Setup Workflow", content)
 
     def test_architect_section_with_design_guidance(self):
         """PM section covers fixture-aware feature design."""
         content = read_command_file()
-        self.assertIn("For Architects", content)
+        self.assertIn("For PM mode", content)
         self.assertIn("When to Use Fixtures", content)
 
     def test_qa_section_with_awareness(self):
@@ -128,11 +128,11 @@ class TestRoleSpecificSectionsPresented(unittest.TestCase):
         self.assertIn("Fixture Awareness", content)
 
     def test_sections_are_role_headed(self):
-        """Each role section uses a heading pattern '## For <Role>:'."""
+        """Each role section uses a heading pattern '## For <Mode>:'."""
         content = read_command_file()
         # Verify all three role headings exist as H2 sections
-        self.assertRegex(content, r"(?m)^## For Architects:")
-        self.assertRegex(content, r"(?m)^## For Builders:")
+        self.assertRegex(content, r"(?m)^## For PM mode:")
+        self.assertRegex(content, r"(?m)^## For Engineer mode:")
         self.assertRegex(content, r"(?m)^## For QA:")
 
 

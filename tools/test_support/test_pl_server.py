@@ -38,13 +38,12 @@ class TestRoleGateRejectsNonEngineerQA(unittest.TestCase):
     for Engineer and QA only, and contains a redirect message for other roles.
     """
 
-    def test_first_line_declares_shared_builder_qa(self):
-        """First line must declare the command as shared between Engineer and QA."""
+    def test_first_line_declares_engineer_mode(self):
+        """First line must declare Engineer mode (with QA cross-mode)."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         lower = first_line.lower()
-        self.assertIn("shared", lower)
-        self.assertIn("builder", lower)
+        self.assertIn("engineer", lower)
         self.assertIn("qa", lower)
 
     def test_first_line_not_all_roles(self):

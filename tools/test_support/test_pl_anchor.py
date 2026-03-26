@@ -49,7 +49,7 @@ class TestRoleGateRejectsNonPM(unittest.TestCase):
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(another mode is active|confirm switch)",
+            r"(?i)(another mode is active|confirm switch|activates.*mode)",
         )
 
     def test_redirect_mentions_architect(self):

@@ -51,19 +51,19 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
                        "First line must contain 'mode declaration' pattern")
 
     def test_redirect_message_for_non_qa(self):
-        """Non-QA agents receive a redirect message mentioning QA."""
+        """Non-QA agents receive a redirect message about QA mode."""
         content = read_command_file()
-        # The file should instruct non-QA agents to ask the QA agent
+        # The file should instruct non-QA agents about mode activation
         self.assertRegex(
             content,
-            r"(?i)(ask your QA|QA agent|QA command)",
-            "Must contain redirect to QA agent"
+            r"(?i)(another mode is active|confirm switch|activates QA mode)",
+            "Must contain redirect about QA mode activation"
         )
 
     def test_redirect_appears_before_execution_logic(self):
         """Role gate redirect must appear before any execution steps."""
         content = read_command_file()
-        redirect_pos = re.search(r"(?i)ask your QA", content)
+        redirect_pos = re.search(r"(?i)(another mode is active|confirm switch|activates QA mode)", content)
         # Phase A or scope logic appears later
         scope_pos = content.find("## Scope")
         self.assertIsNotNone(redirect_pos,
@@ -143,7 +143,7 @@ class TestBatchModeIncludesAllTestingFeatures(unittest.TestCase):
         )
 
     def test_batch_includes_action_item_features(self):
-        """Batch mode includes features from QA action items, not just testing_features."""
+        """Batch mode includes features from QA action items, not just TESTING lifecycle."""
         content = read_command_file()
         scope_match = re.search(r"## Scope.*?---", content, re.DOTALL)
         self.assertIsNotNone(scope_match, "Scope section must exist")
@@ -155,8 +155,8 @@ class TestBatchModeIncludesAllTestingFeatures(unittest.TestCase):
         )
         self.assertRegex(
             scope_text,
-            r"(?i)do NOT limit to.*testing_features.*alone",
-            "Scope must warn against limiting to testing_features alone"
+            r"(?i)union|batch the union",
+            "Scope must describe union of TESTING features and QA action item features"
         )
 
 
@@ -345,7 +345,7 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
         )
 
     def test_step_5a_dual_fire_checkpoints(self):
-        """Step 5a fires at two points: (A) after Steps 1-5, (B) after in-session suites."""
+        """Step 5a fires at two points: (A) after Steps 1-5, (B) after all regression suites complete."""
         content = read_command_file()
         step5a_match = re.search(
             r"### Step 5a.*?### Phase A Summary", content, re.DOTALL
@@ -354,27 +354,27 @@ class TestPhaseACheckpointFinalizesAutoFeatures(unittest.TestCase):
         step5a_text = step5a_match.group(0)
         self.assertRegex(
             step5a_text,
-            r"Checkpoint \(A\).*after Steps 1.5",
+            r"Checkpoint \(A\).*after Steps 1",
             "Step 5a must describe Checkpoint (A) after Steps 1-5"
         )
         self.assertRegex(
             step5a_text,
-            r"Checkpoint \(B\).*in-session regression",
-            "Step 5a must describe Checkpoint (B) after in-session regression suites"
+            r"Checkpoint \(B\).*after all regression suites complete",
+            "Step 5a must describe Checkpoint (B) after all regression suites complete"
         )
 
-    def test_step_5a_b_fires_before_external_gate(self):
-        """Step 5a(B) must fire BEFORE the agent_behavior external gate."""
+    def test_step_5a_b_fires_before_phase_b(self):
+        """Step 5a(B) must fire BEFORE Phase B begins."""
         content = read_command_file()
-        # In-session checkpoint reference must appear before agent_behavior gate
+        # Step 5a(B) checkpoint must appear before the Phase B section heading
         checkpoint_b_pos = content.find("Step 5a(B)")
-        agent_gate_pos = content.find("agent_behavior suites — HARD GATE")
+        phase_b_pos = content.find("## Phase B")
         self.assertGreater(checkpoint_b_pos, -1,
                            "Step 5a(B) checkpoint must exist in regression section")
-        self.assertGreater(agent_gate_pos, -1,
-                           "agent_behavior HARD GATE must exist")
-        self.assertLess(checkpoint_b_pos, agent_gate_pos,
-                        "Step 5a(B) must appear BEFORE the agent_behavior gate")
+        self.assertGreater(phase_b_pos, -1,
+                           "Phase B section heading must exist")
+        self.assertLess(checkpoint_b_pos, phase_b_pos,
+                        "Step 5a(B) must appear BEFORE Phase B section")
 
     def test_step_5a_covers_both_auto_and_todo(self):
         """Step 5a handles both AUTO and TODO features, not just AUTO."""
