@@ -85,7 +85,7 @@ See `references/commit_conventions.md` for full commit format, mode prefixes, st
 - The agent updates the terminal identity on mode switch (see 4.1.1).
 
 #### 4.1.1 iTerm Terminal Identity
-On every mode activation (including startup in open mode), update both badge and title to reflect the new mode.
+On every mode activation, update both badge and title to reflect the new mode. At startup, `/pl-resume` Step 6 handles the initial badge — do not set it earlier.
 
 **Badge format:** The badge is the mode name alone — `Engineer`, `PM`, `QA`, or `Purlin` (open mode). Do NOT prefix with "Purlin:". When running in a worktree, append the worktree label: `Engineer (W1)`, `QA (W2)`, etc. In open mode, badge = `Purlin` (or `Purlin (W1)` in a worktree).
 

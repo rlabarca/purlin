@@ -140,21 +140,6 @@ Execute this 7-step sequence:
 
 **Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
 
-### Step 0b -- Set Terminal Identity (Open Mode)
-
-Set the iTerm badge and terminal title to open mode. This gives the user immediate visual feedback that the agent is initializing.
-
-Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the badge.
-
-```bash
-WT_LABEL=""
-if [ -f ".purlin_worktree_label" ]; then WT_LABEL=" ($(cat .purlin_worktree_label))"; fi
-BADGE="Purlin${WT_LABEL}"
-source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term_title "<project> - $BADGE"
-```
-
-If a mode is activated later in Step 6, the badge and title are updated to reflect the active mode.
-
 ### Step 1 -- Checkpoint Detection
 
 Use Bash `test -f .purlin/cache/session_checkpoint_purlin.md && echo EXISTS || echo MISSING`. Do NOT use the Read tool for this check — Read errors on missing files and cancels sibling parallel calls.
@@ -255,8 +240,9 @@ Action Items:   <count> items from scan results
 Uncommitted:    <none | summary>
 ```
 
-### Step 6 -- Cleanup and Continue
+### Step 6 -- Set Terminal Identity, Cleanup, and Continue
 
+- **Set iTerm badge and title** based on the determined mode. If a mode was resolved (from checkpoint, `default_mode`, or session message), set the badge to that mode name. If no mode was resolved, set badge to `Purlin` (open mode). Check `.purlin_worktree_label` for worktree suffix. This is the single point where the badge is set during startup — do not set it earlier in the flow.
 - If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.
