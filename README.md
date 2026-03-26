@@ -91,7 +91,7 @@ Older versions use a different agent model. After updating, switch to the new un
 3. Start a new session with `./pl-run.sh` (the unified launcher).
 4. Run `/pl-update-purlin` again. It detects the pending migration and converts your config, override files, specs, and companions to the new model.
 
-After migration, `./pl-run.sh` is the only launcher you need. The old launchers (`pl-run-architect.sh`, etc.) still work during the transition. When ready, run `/pl-update-purlin --complete-transition` to remove them.
+Migration removes the old launchers (`pl-run-architect.sh`, etc.) automatically. After step 4, `./pl-run.sh` is the only launcher.
 
 ### Configuration
 

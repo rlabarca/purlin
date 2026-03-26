@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-When consumer projects run `/pl-update-purlin`, the migration module detects old 4-role config and offers to migrate to the purlin unified agent model. Migration includes: config schema update, override file consolidation, spec file role renames, companion file restructuring, and launcher generation. All spec modifications use the `[Migration]` exemption tag to prevent lifecycle resets. Old launchers and config are preserved during the transition period.
+When consumer projects run `/pl-update-purlin`, the migration module detects old 4-role config and offers to migrate to the purlin unified agent model. Migration includes: config schema update, override file consolidation, spec file role renames, companion file restructuring, launcher generation, and automatic cleanup of old artifacts. All spec modifications use the `[Migration]` exemption tag to prevent lifecycle resets.
 
 ---
 
@@ -32,12 +32,11 @@ On `/pl-update-purlin`, determine migration state by checking `.purlin/config.lo
 **Full migration** (status `needed`):
 - Create `agents.purlin` section by cloning `agents.builder` config (model, effort, bypass_permissions).
 - Add `find_work: true`, `auto_start: false`, `default_mode: null` fields.
-- Mark old entries with `"_deprecated": true` (old launchers still read them during transition).
-- Do NOT delete old entries — they're needed until transition is complete.
+- Remove old agent entries (`architect`, `builder`, `qa`, `pm`) from config.
 
 **Enrichment** (status `partial`):
 - If `agents.purlin` exists but is missing any of `find_work`, `auto_start`, `default_mode`, or `bypass_permissions`: backfill from `agents.builder` (if present) or from defaults (`bypass_permissions: false`, `find_work: true`, `auto_start: false`, `default_mode: null`).
-- Mark old agents with `"_deprecated": true` if not already marked.
+- Remove old agent entries (`architect`, `builder`, `qa`, `pm`) from config.
 - Log: `"Enriched partial agents.purlin (backfilled N missing keys)"`.
 
 **Migration marker:** After successful full migration or enrichment, write `"_migration_version": 1` at the config top level (same file where `agents.purlin` was written). This is the authoritative signal for the fast-path detection in Section 2.1.
@@ -51,7 +50,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - `QA_OVERRIDES.md` content → `## QA Mode` section.
 - `ARCHITECT_OVERRIDES.md` content → split by keyword heuristic: technical keywords (arch, code, implementation, testing, script, tool, build) → `## Engineer Mode`; spec/design keywords (spec, design, requirement, visual, UX, stakeholder) → `## PM Mode`.
 - `HOW_WE_WORK_OVERRIDES.md` content → `## General (all modes)` header at top.
-- Do NOT delete old override files — they're needed for old launchers during transition.
+- After creating `PURLIN_OVERRIDES.md`, delete the old override files (`ARCHITECT_OVERRIDES.md`, `BUILDER_OVERRIDES.md`, `QA_OVERRIDES.md`, `PM_OVERRIDES.md`, `HOW_WE_WORK_OVERRIDES.md`).
 
 ### 2.4 Spec File Role Renames
 
@@ -80,10 +79,11 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - If `CLAUDE.md` already mentions "Purlin" or "unified agent": skip.
 - If no `CLAUDE.md` exists: skip (init.sh creates it from the sample).
 
-### 2.7 Launcher Generation
+### 2.7 Launcher Generation and Old Launcher Cleanup
 
 - Generate `pl-run.sh` at project root (or trigger init.sh refresh to generate it).
-- Do NOT delete old launchers — they still work during transition.
+- Delete old launchers: `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
+- After migration, `pl-run.sh` is the only launcher.
 
 ### 2.8 CLI Restrictions
 
@@ -93,7 +93,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - `--skip-specs` — Don't rename roles in spec files.
 - `--auto-approve` — Skip confirmation prompts.
 - `--purlin-only` — Only add purlin config section, skip all other migration.
-- `--complete-transition` — Remove old launchers, deprecated config entries, and old override files.
+- `--complete-transition` — Manual cleanup fallback. Removes old launchers, old config entries, and old override files. Useful if migration was run with skip flags that prevented automatic cleanup.
 
 ### 2.9 Idempotency
 
@@ -101,7 +101,7 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 - Check for Active Deviations table existence before inserting.
 - Check config key names before renaming.
 - Check for PURLIN_OVERRIDES.md existence before creating.
-- `--complete-transition` is safe to run multiple times.
+- `--complete-transition` is safe to run multiple times (no-op if artifacts already removed).
 - **Partial repair pass:** When `detect_migration_needed()` returns `partial`, the full migration pipeline runs. Each step is already idempotent — `consolidate_overrides()` checks output existence, `rename_spec_roles()` no-ops if already renamed, `restructure_companions()` checks for existing table. The config enrichment path backfills only missing keys.
 - `_migration_version` is written after successful migration or repair. Once present, detection returns `complete` on the fast path without inspecting agent key sets.
 
@@ -232,18 +232,18 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 
 ### QA Scenarios
 
-#### Scenario: Complete transition removes old artifacts @auto
+#### Scenario: Migration automatically cleans up old artifacts @auto
 
-    Given migration has run and old launchers still exist
-    When /pl-update-purlin --complete-transition runs
-    Then pl-run-architect.sh is deleted
-    And pl-run-builder.sh is deleted
-    And pl-run-qa.sh is deleted
-    And pl-run-pm.sh is deleted
-    And agents.architect is removed from config
-    And agents.builder is removed from config
-    And ARCHITECT_OVERRIDES.md is deleted
-    And BUILDER_OVERRIDES.md is deleted
+    Given config.json has agents.builder and agents.architect but no agents.purlin
+    And BUILDER_OVERRIDES.md and ARCHITECT_OVERRIDES.md exist
+    And pl-run-architect.sh and pl-run-builder.sh exist at project root
+    When full migration runs
+    Then agents.purlin is created
+    And agents.architect and agents.builder are removed from config
+    And PURLIN_OVERRIDES.md is created
+    And BUILDER_OVERRIDES.md and ARCHITECT_OVERRIDES.md are deleted
+    And pl-run-architect.sh and pl-run-builder.sh are deleted
+    And pl-run.sh is the only launcher at project root
 
 #### Scenario: End-to-end migration preserves feature completeness @auto
 
@@ -256,6 +256,8 @@ Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRID
 ## Regression Guidance
 - Verify [Migration] tag is recognized by scan.py exemption logic
 - Verify migration does not modify spec behavioral content (only role names)
-- Verify old launchers still work after migration (before --complete-transition)
+- Verify old launchers are deleted after migration (only pl-run.sh remains)
+- Verify old override files are deleted after consolidation
+- Verify old config entries are removed (not just deprecated)
 - Verify config.local.json is handled (not just config.json)
 - Verify migration handles missing override files gracefully (not all projects have all 4)
