@@ -23,7 +23,7 @@ The Purlin unified agent replaces four separate role-specific agent sessions (PM
 - The launcher MUST check for Claude Code updates before launching (same as legacy launchers).
 - The launcher MUST handle graceful Ctrl+C shutdown with terminal identity cleanup.
 - The launcher MUST display and auto-acknowledge model warnings (same as legacy launchers).
-- The launcher MUST validate startup controls (find_work=false + auto_start=true is invalid).
+- The launcher MUST resolve startup control dependencies and validate the result (see Section 2.8).
 - The launcher MUST include `--help` that dynamically lists available options from the script itself.
 
 ### 2.2 CLI Arguments
@@ -43,7 +43,7 @@ Sticky flags write their resolved value to `config.local.json` via `resolve_conf
 | `--find-work <bool>` | `agents.purlin.find_work` | Set default work discovery (true/false). Persists the value. |
 
 - Sticky flags MUST persist proper JSON types: booleans for `bypass_permissions` and `find_work`, strings for `model` and `effort`. The resolver's `set_agent_config` MUST coerce `"true"`/`"false"` CLI strings to Python booleans for boolean config fields.
-- The launcher MUST validate flag combinations (e.g., `find_work=false` + `auto_start=true`) BEFORE persisting sticky values. Invalid combinations MUST fail without modifying config.
+- The launcher MUST resolve startup control dependencies and validate the result BEFORE persisting sticky values. Invalid combinations MUST fail without modifying config. See Section 2.8.
 
 #### 2.2.2 Ephemeral Flags (Session-Only)
 
@@ -172,6 +172,24 @@ The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved
 - When resolving `purlin` config, if `agents.purlin` is absent, fall back to `agents.builder`.
 - `--yolo`/`--no-yolo` map to the existing `bypass_permissions` field.
 
+### 2.8 Startup Control Resolution
+
+CLI flags that activate `auto_start` (`--auto-start`, `--auto-build`, `--auto-verify`) imply that work discovery is needed. When the saved config has `find_work: false`, the launcher MUST distinguish between an implied dependency and an explicit contradiction.
+
+**Resolution rules (applied after CLI overrides, before validation):**
+
+1. **Implied dependency:** `auto_start` activated via CLI, `find_work` is `false` from saved config, and `--find-work` was NOT passed on the CLI. The launcher MUST temporarily set `find_work=true` for the current session. This override is ephemeral — it MUST NOT be persisted to config and MUST NOT set the `PURLIN_FIND_WORK` variable (which would trigger sticky persistence). Rationale: convenience aliases like `--auto-verify` bundle intent; requiring the user to also pass `--find-work true` to counteract a saved preference defeats the purpose.
+
+2. **Explicit contradiction:** `auto_start` activated via CLI AND `--find-work false` passed explicitly on the same CLI. The launcher MUST exit with error: `"Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery."`
+
+3. **Config-only conflict:** Both `auto_start: true` and `find_work: false` from config, no CLI override for either. The config is in an invalid state. The launcher MUST exit with the existing error message.
+
+**Implementation:** After applying CLI overrides (Section 2.2) and before validation:
+- If `PURLIN_AUTO_START` is set (CLI) AND `PURLIN_FIND_WORK` is empty (not from CLI) AND `AGENT_FIND_WORK` is `"false"` (from config): set `AGENT_FIND_WORK="true"`.
+- If `PURLIN_AUTO_START` is set (CLI) AND `PURLIN_FIND_WORK` is `"false"` (explicit CLI): exit with the explicit-contradiction error.
+
+**Post-resolution validation:** If `AGENT_FIND_WORK` is still `"false"` and `AGENT_AUTO_START` is `"true"`, exit with error (catches case 3).
+
 ---
 
 ## 3. Scenarios
@@ -264,12 +282,34 @@ The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved
     And config.local.json contains agents.purlin.effort = "medium"
     And config.local.json contains agents.purlin.bypass_permissions = true
 
-#### Scenario: Validation before persistence
+#### Scenario: Explicit contradiction exits with error
 
     Given config.local.json has agents.purlin.find_work = true
     When pl-run.sh is invoked with --find-work false --auto-start --mode engineer
-    Then the launcher exits with an error (find_work=false + auto_start=true is invalid)
+    Then the launcher exits with error "Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery."
     And config.local.json still contains agents.purlin.find_work = true (not modified)
+
+#### Scenario: Auto-verify implies find_work when saved config has it false
+
+    Given config.local.json has agents.purlin.find_work = false
+    When pl-run.sh is invoked with --auto-verify
+    Then AGENT_FIND_WORK is temporarily set to "true" for this session
+    And config.local.json still contains agents.purlin.find_work = false (not modified)
+    And the session launches successfully with find_work=true and auto_start=true
+
+#### Scenario: Auto-build implies find_work when saved config has it false
+
+    Given config.local.json has agents.purlin.find_work = false
+    When pl-run.sh is invoked with --auto-build
+    Then AGENT_FIND_WORK is temporarily set to "true" for this session
+    And config.local.json still contains agents.purlin.find_work = false (not modified)
+    And the session launches successfully with find_work=true and auto_start=true
+
+#### Scenario: Config-only find_work/auto_start conflict exits with error
+
+    Given config.local.json has agents.purlin.find_work = false and agents.purlin.auto_start = true
+    When pl-run.sh is invoked with no CLI flags
+    Then the launcher exits with error about find_work=false with auto_start=true being invalid
 
 #### Scenario: CLI auto-build alias
 
