@@ -5,8 +5,13 @@ Gathers project facts and outputs structured JSON to stdout.
 The agent interprets the facts -- this script only collects them.
 
 Usage:
-    python3 tools/cdd/scan.py            # scan and output JSON
-    python3 tools/cdd/scan.py --cached   # return cached result if < 60s old
+    python3 tools/cdd/scan.py                            # full scan (no tombstones)
+    python3 tools/cdd/scan.py --cached                   # cached if < 60s old
+    python3 tools/cdd/scan.py --tombstones               # include tombstone entries
+    python3 tools/cdd/scan.py --only features,git        # focused output (skip other sections)
+    python3 tools/cdd/scan.py --cached --only features   # filter cached output
+
+Sections for --only: features, discoveries, deviations, plan, deps, git, smoke
 """
 
 import json
@@ -32,6 +37,47 @@ DEP_GRAPH_FILE = os.path.join(CACHE_DIR, "dependency_graph.json")
 
 # Max age of cache in seconds before a rescan is required.
 CACHE_MAX_AGE = 60
+
+# Maps --only section names to JSON output keys.
+SECTION_MAP = {
+    "features": "features",
+    "discoveries": "open_discoveries",
+    "deviations": "unacknowledged_deviations",
+    "plan": "delivery_plan",
+    "deps": "dependency_graph",
+    "git": "git_state",
+    "smoke": "smoke_candidates",
+}
+
+
+def _parse_args():
+    """Parse CLI arguments. Returns (cached, tombstones, only_set_or_None)."""
+    cached = "--cached" in sys.argv
+    tombstones = "--tombstones" in sys.argv
+    only = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--only" and i + 1 < len(sys.argv):
+            only = set(sys.argv[i + 1].split(","))
+            break
+    return cached, tombstones, only
+
+
+def _filter_tombstones(result):
+    """Remove tombstone entries from features array."""
+    if "features" in result:
+        result["features"] = [f for f in result["features"]
+                              if not f.get("tombstone")]
+    return result
+
+
+def _filter_sections(result, only):
+    """Filter result dict to only include requested sections."""
+    filtered = {"scanned_at": result.get("scanned_at", "")}
+    for section_name in only:
+        json_key = SECTION_MAP.get(section_name)
+        if json_key and json_key in result:
+            filtered[json_key] = result[json_key]
+    return filtered
 
 
 # ---------------------------------------------------------------------------
@@ -826,59 +872,78 @@ def _scan_smoke_candidates(features):
 # Main scan orchestration
 # ---------------------------------------------------------------------------
 
-def run_scan():
-    """Execute all scans and return the complete result dict."""
+def run_scan(only=None):
+    """Execute scans and return result dict.
+
+    Args:
+        only: set of section names to compute, or None for full scan.
+    """
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    result = {"scanned_at": now}
 
-    git_state = scan_git_state()
+    # Features are needed by "features" and "smoke" sections.
+    need_features = only is None or "features" in only or "smoke" in only
+    features = scan_features() if need_features else []
 
-    features = scan_features()
-    dep_graph = scan_dependency_graph()
-
-    result = {
-        "scanned_at": now,
-        "features": features,
-        "open_discoveries": [
+    if only is None or "features" in only:
+        result["features"] = features
+    if only is None or "discoveries" in only:
+        result["open_discoveries"] = [
             d for d in scan_discoveries() if d.get("status") == "OPEN"
-        ],
-        "unacknowledged_deviations": scan_unacknowledged_deviations(),
-        "delivery_plan": scan_delivery_plan(),
-        "dependency_graph": dep_graph,
-        "smoke_candidates": _scan_smoke_candidates(features),
-        "git_state": {
+        ]
+    if only is None or "deviations" in only:
+        result["unacknowledged_deviations"] = scan_unacknowledged_deviations()
+    if only is None or "plan" in only:
+        result["delivery_plan"] = scan_delivery_plan()
+    if only is None or "deps" in only:
+        result["dependency_graph"] = scan_dependency_graph()
+    if only is None or "smoke" in only:
+        result["smoke_candidates"] = _scan_smoke_candidates(features)
+    if only is None or "git" in only:
+        git_state = scan_git_state()
+        result["git_state"] = {
             "branch": git_state["branch"],
             "clean": git_state["clean"],
             "recent_commits": git_state["recent_commits"],
             "worktrees": scan_worktrees(),
-        },
-    }
+        }
 
     return result
 
 
 def main():
-    """Entry point: handle --cached flag and output JSON."""
-    use_cached = "--cached" in sys.argv
+    """Entry point: handle flags and output JSON."""
+    cached, tombstones, only = _parse_args()
 
-    if use_cached and os.path.isfile(CACHE_FILE):
+    if cached and os.path.isfile(CACHE_FILE):
         try:
             stat = os.stat(CACHE_FILE)
             age = time.time() - stat.st_mtime
             if age < CACHE_MAX_AGE:
                 with open(CACHE_FILE, 'r', encoding='utf-8') as f:
-                    print(f.read())
+                    result = json.load(f)
+                if not tombstones:
+                    _filter_tombstones(result)
+                if only:
+                    result = _filter_sections(result, only)
+                print(json.dumps(result, indent=2))
                 return
         except Exception:
             pass  # Fall through to fresh scan.
 
-    result = run_scan()
+    result = run_scan(only=only)
 
-    # Write to cache.
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    try:
-        atomic_write(CACHE_FILE, result, as_json=True)
-    except Exception as e:
-        print(f"Warning: could not write cache: {e}", file=sys.stderr)
+    # Only write to cache on full scans (--only produces partial results).
+    if only is None:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        try:
+            atomic_write(CACHE_FILE, result, as_json=True)
+        except Exception as e:
+            print(f"Warning: could not write cache: {e}", file=sys.stderr)
+
+    # Filter tombstones from output unless --tombstones.
+    if not tombstones:
+        _filter_tombstones(result)
 
     # Print to stdout.
     print(json.dumps(result, indent=2))
