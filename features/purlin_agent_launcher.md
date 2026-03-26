@@ -180,13 +180,15 @@ CLI flags that activate `auto_start` (`--auto-start`, `--auto-build`, `--auto-ve
 
 1. **Implied dependency:** `auto_start` activated via CLI, `find_work` is `false` from saved config, and `--find-work` was NOT passed on the CLI. The launcher MUST temporarily set `find_work=true` for the current session. This override is ephemeral — it MUST NOT be persisted to config and MUST NOT set the `PURLIN_FIND_WORK` variable (which would trigger sticky persistence). Rationale: convenience aliases like `--auto-verify` bundle intent; requiring the user to also pass `--find-work true` to counteract a saved preference defeats the purpose.
 
-2. **Explicit contradiction:** `auto_start` activated via CLI AND `--find-work false` passed explicitly on the same CLI. The launcher MUST exit with error: `"Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery."`
+2. **Explicit contradiction:** `auto_start` activated via CLI AND `--find-work false` passed explicitly on the same CLI (including interactive selection via bare `--find-work`). The launcher MUST exit with error: `"Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery."`
 
 3. **Config-only conflict:** Both `auto_start: true` and `find_work: false` from config, no CLI override for either. The config is in an invalid state. The launcher MUST exit with the existing error message.
 
+**Interactive selection edge case:** When `--find-work` is passed without a value (bare flag), the interactive menu sets `AGENT_FIND_WORK` to the user's choice. After the menu, the `__interactive__` sentinel MUST be replaced with the selected value (not cleared to empty). This preserves the "user explicitly chose this" signal so the dependency resolution treats it the same as `--find-work false`.
+
 **Implementation:** After applying CLI overrides (Section 2.2) and before validation:
 - If `PURLIN_AUTO_START` is set (CLI) AND `PURLIN_FIND_WORK` is empty (not from CLI) AND `AGENT_FIND_WORK` is `"false"` (from config): set `AGENT_FIND_WORK="true"`.
-- If `PURLIN_AUTO_START` is set (CLI) AND `PURLIN_FIND_WORK` is `"false"` (explicit CLI): exit with the explicit-contradiction error.
+- If `PURLIN_AUTO_START` is set (CLI) AND `PURLIN_FIND_WORK` is `"false"` (explicit CLI or interactive selection): exit with the explicit-contradiction error.
 
 **Post-resolution validation:** If `AGENT_FIND_WORK` is still `"false"` and `AGENT_AUTO_START` is `"true"`, exit with error (catches case 3).
 
@@ -310,6 +312,13 @@ CLI flags that activate `auto_start` (`--auto-start`, `--auto-build`, `--auto-ve
     Given config.local.json has agents.purlin.find_work = false and agents.purlin.auto_start = true
     When pl-run.sh is invoked with no CLI flags
     Then the launcher exits with error about find_work=false with auto_start=true being invalid
+
+#### Scenario: Interactive --find-work selecting false with --auto-verify exits with error
+
+    Given pl-run.sh is invoked with --find-work --auto-verify (bare --find-work triggers menu)
+    When the user selects false in the interactive find-work menu
+    Then the launcher exits with error "--find-work false conflicts with --auto-start"
+    And the interactive selection is treated as an explicit user choice, not a config default
 
 #### Scenario: CLI auto-build alias
 

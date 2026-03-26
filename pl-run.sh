@@ -310,10 +310,12 @@ if $SHOW_MODEL_MENU || $SHOW_EFFORT_MENU || $SHOW_FIND_WORK_MENU; then
     echo "(To change later: ./pl-run.sh --model)"
     echo ""
 
-    # Clear interactive flags so CLI override and persist blocks don't re-process
+    # Clear interactive sentinels so CLI override and persist blocks don't re-process.
+    # find_work keeps the selected value (not cleared) so dependency resolution
+    # can detect explicit user intent vs. saved config defaults.
     [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] && PURLIN_MODEL_OVERRIDE=""
     [[ "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]] && PURLIN_EFFORT_OVERRIDE=""
-    [[ "$PURLIN_FIND_WORK" == "__interactive__" ]] && PURLIN_FIND_WORK=""
+    [[ "$PURLIN_FIND_WORK" == "__interactive__" ]] && PURLIN_FIND_WORK="$AGENT_FIND_WORK"
 fi
 
 # --- CLI overrides (apply sticky + ephemeral flags) ---
