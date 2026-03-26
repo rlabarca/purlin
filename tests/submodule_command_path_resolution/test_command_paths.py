@@ -46,7 +46,7 @@ COMMANDS_DIR = PROJECT_ROOT / ".claude" / "commands"
 
 # Subdirectories that must use ${TOOLS_ROOT}/ notation
 TOOL_SUBDIRS = [
-    "cdd", "critic", "release", "delivery",
+    "release", "delivery",
     "test_support", "feature_templates", "collab",
 ]
 
@@ -226,7 +226,7 @@ def test_all_tool_referencing_files_converted():
         "pl-web-test.md", "pl-spec.md", "pl-qa-report.md", "pl-edit-base.md",
         "pl-anchor.md", "pl-whats-different.md", "pl-tombstone.md",
         "pl-spec-from-code.md", "pl-infeasible.md", "pl-release-step.md",
-        "pl-release-run.md", "pl-release-check.md", "pl-cdd.md",
+        "pl-release-run.md", "pl-release-check.md",
         "pl-remote-pull.md", "pl-spec-code-audit.md",
     }
     actual_converted = {f.name for f in files_with_tool_refs()}

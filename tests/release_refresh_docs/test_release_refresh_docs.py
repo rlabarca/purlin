@@ -265,11 +265,11 @@ class TestIndexUsesRelativeMarkdownLinks(unittest.TestCase):
 class TestFirstOccurrenceLinkedSubsequentLeftPlain(unittest.TestCase):
     """Scenario: First occurrence linked, subsequent left plain
 
-    Given docs/testing-workflow-guide.md contains two mentions of "Critic"
-    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
+    Given a doc contains two mentions of a registered concept
+    And the concept maps to a target file in cross_link_registry.json
     When the cross-link pass runs
-    Then the first mention becomes "[Critic](critic-and-cdd-guide.md)"
-    And the second mention remains plain text "Critic"
+    Then the first mention becomes a markdown link to the target
+    And the second mention remains plain text
     """
 
     def test_instructions_specify_first_occurrence_only(self):
@@ -296,10 +296,10 @@ class TestFirstOccurrenceLinkedSubsequentLeftPlain(unittest.TestCase):
 class TestSelfReferenceSkipped(unittest.TestCase):
     """Scenario: Self-reference skipped
 
-    Given docs/critic-and-cdd-guide.md contains a mention of "Critic"
-    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
-    When the cross-link pass processes critic-and-cdd-guide.md
-    Then "Critic" is not linked (self-reference skipped)
+    Given a doc contains a mention of a concept that maps to itself
+    And the concept maps to the same file in cross_link_registry.json
+    When the cross-link pass processes that file
+    Then the concept is not linked (self-reference skipped)
     """
 
     def test_instructions_skip_self_references(self):
@@ -340,9 +340,9 @@ class TestIdempotentOnSecondRun(unittest.TestCase):
 class TestCodeBlocksAndHeadingsSkipped(unittest.TestCase):
     """Scenario: Code blocks and headings skipped
 
-    Given docs/spec-map-guide.md contains "Critic" inside a fenced code block
-    And docs/spec-map-guide.md contains "Critic" in a heading
-    And docs/spec-map-guide.md contains "Critic" in plain body text
+    Given a doc contains a registered concept inside a fenced code block
+    And the doc contains the concept in a heading
+    And the doc contains the concept in plain body text
     When the cross-link pass runs
     Then only the plain body text occurrence is linked
     And the code block and heading occurrences remain unchanged
@@ -376,12 +376,11 @@ class TestCodeBlocksAndHeadingsSkipped(unittest.TestCase):
 class TestExistingLinksNotDoubleWrapped(unittest.TestCase):
     """Scenario: Existing links not double-wrapped
 
-    Given docs/parallel-execution-guide.md contains
-    "[Critic](critic-and-cdd-guide.md)" (already linked)
-    And no other plain-text occurrence of "Critic" exists in the file
+    Given a doc contains an already-linked concept (existing markdown link)
+    And no other plain-text occurrence of that concept exists in the file
     When the cross-link pass runs
     Then the existing link is left unchanged
-    And no new link is inserted for "Critic" in that file
+    And no new link is inserted for that concept in the file
     """
 
     def test_instructions_exclude_existing_links(self):

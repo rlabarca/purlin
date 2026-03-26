@@ -57,7 +57,7 @@ SAMPLE_CHECKPOINT_BUILDER = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Running local tests after implementation commit
 
 ### Done
@@ -67,10 +67,10 @@ SAMPLE_CHECKPOINT_BUILDER = """# Session Checkpoint
 - Committed implementation: abc1234
 
 ### Next
-1. Run tests -- verify tests/cdd_status_monitor/tests.json shows PASS
+1. Run tests -- verify tests/project_init/tests.json shows PASS
 2. Commit status tag: [Ready for Verification]
 3. Run tools/cdd/status.sh to confirm TESTING transition
-4. Move to next feature: cdd_spec_map.md
+4. Move to next feature: pl_spec_code_audit.md
 
 ## Uncommitted Changes
 None
@@ -82,7 +82,7 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 **Protocol Step:** 3 -- Verify Locally
 **Delivery Plan:** Phase 2 of 3 -- IN_PROGRESS
 **Work Queue:**
-1. [HIGH] cdd_spec_map.md
+1. [HIGH] pl_spec_code_audit.md
 2. [NORMAL] cdd_qa_effort_display.md
 **Pending Decisions:** None
 """
@@ -95,7 +95,7 @@ SAMPLE_CHECKPOINT_PM = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Drafting visual specification for status monitor redesign
 
 ### Done
@@ -113,8 +113,8 @@ None
 Figma file has updated token mappings -- need to verify against design_visual_standards.
 
 ## PM Context
-**Spec Drafts:** cdd_status_monitor.md visual spec in progress
-**Figma Context:** CDD Dashboard / Status Monitor frame
+**Spec Drafts:** project_init.md requirements in progress
+**Figma Context:** None
 **Probing Round:** 2
 """
 
@@ -135,7 +135,7 @@ SAMPLE_CHECKPOINT_ARCHITECT = """# Session Checkpoint
 
 ### Next
 1. Add new scenarios for role-scoped behavior
-2. Run Critic to validate spec completeness
+2. Run scan to validate spec completeness
 
 ## Uncommitted Changes
 None
@@ -205,7 +205,7 @@ class TestSaveWritesRoleScopedCheckpointFile(unittest.TestCase):
     """Scenario: Save Writes Role-Scoped Checkpoint File
 
     Given an agent is in an active session with role "builder"
-    And the agent is working on features/cdd_status_monitor.md at protocol step 3
+    And the agent is working on features/project_init.md at protocol step 3
     When the agent invokes /pl-resume save
     Then .purlin/cache/session_checkpoint_builder.md is created
     And the file contains "**Role:** builder"

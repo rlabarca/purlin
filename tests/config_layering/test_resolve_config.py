@@ -263,10 +263,10 @@ class TestPythonConsumerReadsViaResolver(ResolverTestBase):
     """Scenario: Python Consumer Reads Resolved Config via Resolver"""
 
     def test_resolver_returns_local_priority(self):
-        self.write_local({"critic_llm_enabled": True})
-        self.write_shared({"critic_llm_enabled": False})
+        self.write_local({"find_work": True})
+        self.write_shared({"find_work": False})
         result = resolve_config(self.tmpdir)
-        self.assertTrue(result["critic_llm_enabled"])
+        self.assertTrue(result["find_work"])
 
 
 class TestShellConsumerReadsViaCLI(ResolverTestBase):
@@ -319,15 +319,15 @@ class TestUpdateSyncAddsNewKeys(ResolverTestBase):
         self.write_shared({
             "cdd_port": 8086,
             "tools_root": "tools",
-            "critic_llm_enabled": True
+            "find_work": True
         })
 
         added = sync_config(self.tmpdir)
 
         local = self.read_local()
         self.assertEqual(local["cdd_port"], 9999)  # Preserved
-        self.assertEqual(local["critic_llm_enabled"], True)  # Added
-        self.assertIn("critic_llm_enabled", added)
+        self.assertEqual(local["find_work"], True)  # Added
+        self.assertIn("find_work", added)
         self.assertNotIn("cdd_port", added)
 
 

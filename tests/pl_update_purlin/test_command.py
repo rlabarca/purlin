@@ -8,7 +8,6 @@ Covers automated scenarios from features/pl_update_purlin.md:
 - Unmodified Command Files Auto-Updated
 - Modified Command File with No Upstream Change
 - Modified Command File with Upstream Conflict
-- Init Refresh Handles CDD Symlinks
 - Top-Level Script Updated Automatically
 - Top-Level Script with Local Changes
 - New Config Keys Added Upstream
@@ -71,8 +70,6 @@ KNOWN_STALE_ARTIFACTS = {
     'run_builder.sh': 'pl-run-builder.sh',
     'run_qa.sh': 'pl-run-qa.sh',
     'purlin_init.sh': 'pl-init.sh',
-    'purlin_cdd_start.sh': 'pl-cdd-start.sh',
-    'purlin_cdd_stop.sh': 'pl-cdd-stop.sh',
 }
 
 # Top-level scripts tracked by the update skill
@@ -254,40 +251,6 @@ class TestModifiedCommandFileWithUpstreamConflict(unittest.TestCase):
         content = _get_command_content()
         self.assertIn('old upstream', content.lower())
         self.assertIn('new upstream', content.lower())
-
-
-class TestInitRefreshHandlesCDDSymlinks(unittest.TestCase):
-    """Scenario: Init Refresh Handles CDD Symlinks
-
-    Given the submodule has been advanced to a newer commit
-    When init.sh --quiet runs as part of the update
-    Then pl-cdd-start.sh and pl-cdd-stop.sh are verified as correct symlinks
-    And the skill does NOT directly read, compare, or modify these files
-    """
-
-    def test_command_excludes_cdd_symlinks(self):
-        """Command explicitly warns not to touch CDD symlinks."""
-        content = _get_command_content()
-        # The command has a bold IMPORTANT note about CDD symlinks
-        self.assertIn('SYMLINKS', content)
-        self.assertIn('NEVER read, compare, copy, or modify', content)
-
-    def test_command_references_init_refresh(self):
-        """Command instructs running init.sh --quiet which handles symlinks."""
-        content = _get_command_content()
-        self.assertIn('init.sh --quiet', content)
-
-    def test_init_script_exists(self):
-        """The tools/init.sh script exists for post-update refresh."""
-        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
-        self.assertTrue(os.path.isfile(init_path),
-                        f'init.sh not found: {init_path}')
-
-    def test_command_references_cdd_symlink_names(self):
-        """Command references the specific CDD symlink filenames."""
-        content = _get_command_content()
-        self.assertIn('pl-cdd-start.sh', content)
-        self.assertIn('pl-cdd-stop.sh', content)
 
 
 class TestTopLevelScriptUpdatedAutomatically(unittest.TestCase):
