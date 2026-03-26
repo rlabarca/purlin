@@ -406,6 +406,161 @@ class TestEndToEndGenerationViaAgentCommand(unittest.TestCase):
         self.assertEqual(result.stdout.strip(), file_content.strip())
 
 
+class TestCompanionStalenessSignal(unittest.TestCase):
+    """Tests for §2.7 Companion Staleness Signal.
+
+    Covers scenarios:
+    - Companion Staleness Flagged When Code Changed Without Companion Update
+    - No Companion Staleness When Companion Was Updated
+    - No Companion Staleness When No Companion Exists
+    - Feature Inferred From Test Directory Change
+    """
+
+    def test_infer_features_from_commit_scopes(self):
+        """Commit scope parsing extracts feature stems."""
+        commits = [
+            {'hash': 'abc', 'subject': 'engineer(auth_login): add OAuth flow'},
+            {'hash': 'def', 'subject': 'engineer(auth_login,session): fix token refresh'},
+            {'hash': 'ghi', 'subject': 'fix: typo in README'},
+        ]
+        changed_files = []
+        result = ext._infer_feature_stems(commits, changed_files)
+        self.assertIn('auth_login', result)
+        self.assertIn('session', result)
+        self.assertEqual(result['auth_login']['inferred_via'], 'commit_scope')
+        # Non-scoped commit should not produce entries
+        self.assertEqual(len(result), 2)
+
+    def test_infer_features_from_test_directories(self):
+        """Test directory changes map to feature stems."""
+        commits = []
+        changed_files = [
+            {'path': 'tests/auth_login/test_oauth.py', 'status': 'M'},
+            {'path': 'tests/auth_login/test_token.py', 'status': 'A'},
+        ]
+        result = ext._infer_feature_stems(commits, changed_files)
+        self.assertIn('auth_login', result)
+        self.assertEqual(result['auth_login']['inferred_via'], 'test_directory')
+
+    def test_commit_scope_takes_precedence_over_test_dir(self):
+        """When both heuristics match, commit_scope wins (first seen)."""
+        commits = [
+            {'hash': 'abc', 'subject': 'engineer(auth_login): update'},
+        ]
+        changed_files = [
+            {'path': 'tests/auth_login/test_x.py', 'status': 'M'},
+        ]
+        result = ext._infer_feature_stems(commits, changed_files)
+        self.assertEqual(result['auth_login']['inferred_via'], 'commit_scope')
+
+    def test_staleness_flagged_when_companion_not_updated(self):
+        """Feature with code changes and existing companion but no companion
+        update is flagged."""
+        # Create a temp features dir with a companion file
+        tmpdir = tempfile.mkdtemp()
+        features_dir = os.path.join(tmpdir, 'features')
+        os.makedirs(features_dir)
+        companion = os.path.join(features_dir, 'auth_login.impl.md')
+        with open(companion, 'w') as f:
+            f.write('# Implementation Notes\n')
+
+        inferred = {
+            'auth_login': {
+                'code_files': {'src/auth.py', 'src/login.py', 'src/token.py'},
+                'inferred_via': 'commit_scope',
+            }
+        }
+        changed_companions = []  # No companion files changed
+
+        with patch.object(ext, 'PROJECT_ROOT', tmpdir):
+            result = ext._check_companion_staleness(
+                inferred, changed_companions)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['feature'], 'auth_login.md')
+        self.assertEqual(result[0]['companion'], 'auth_login.impl.md')
+        self.assertEqual(result[0]['code_files_changed'], 3)
+        self.assertEqual(result[0]['inferred_via'], 'commit_scope')
+
+        shutil.rmtree(tmpdir)
+
+    def test_no_staleness_when_companion_was_updated(self):
+        """Feature is not flagged when its companion was changed."""
+        tmpdir = tempfile.mkdtemp()
+        features_dir = os.path.join(tmpdir, 'features')
+        os.makedirs(features_dir)
+        companion = os.path.join(features_dir, 'auth_login.impl.md')
+        with open(companion, 'w') as f:
+            f.write('# Implementation Notes\n')
+
+        inferred = {
+            'auth_login': {
+                'code_files': {'src/auth.py'},
+                'inferred_via': 'commit_scope',
+            }
+        }
+        changed_companions = [
+            {'path': 'features/auth_login.impl.md', 'status': 'M'}
+        ]
+
+        with patch.object(ext, 'PROJECT_ROOT', tmpdir):
+            result = ext._check_companion_staleness(
+                inferred, changed_companions)
+
+        self.assertEqual(len(result), 0)
+
+        shutil.rmtree(tmpdir)
+
+    def test_no_staleness_when_no_companion_exists(self):
+        """Feature without a companion file on disk is not flagged."""
+        tmpdir = tempfile.mkdtemp()
+        features_dir = os.path.join(tmpdir, 'features')
+        os.makedirs(features_dir)
+        # No companion file created
+
+        inferred = {
+            'new_feature': {
+                'code_files': {'src/new.py'},
+                'inferred_via': 'commit_scope',
+            }
+        }
+        changed_companions = []
+
+        with patch.object(ext, 'PROJECT_ROOT', tmpdir):
+            result = ext._check_companion_staleness(
+                inferred, changed_companions)
+
+        self.assertEqual(len(result), 0)
+
+        shutil.rmtree(tmpdir)
+
+    def test_staleness_from_test_directory_inference(self):
+        """Feature inferred from test directory is correctly flagged."""
+        tmpdir = tempfile.mkdtemp()
+        features_dir = os.path.join(tmpdir, 'features')
+        os.makedirs(features_dir)
+        companion = os.path.join(features_dir, 'auth_login.impl.md')
+        with open(companion, 'w') as f:
+            f.write('# Implementation Notes\n')
+
+        inferred = {
+            'auth_login': {
+                'code_files': {'tests/auth_login/test_x.py'},
+                'inferred_via': 'test_directory',
+            }
+        }
+        changed_companions = []
+
+        with patch.object(ext, 'PROJECT_ROOT', tmpdir):
+            result = ext._check_companion_staleness(
+                inferred, changed_companions)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['inferred_via'], 'test_directory')
+
+        shutil.rmtree(tmpdir)
+
+
 if __name__ == '__main__':
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])

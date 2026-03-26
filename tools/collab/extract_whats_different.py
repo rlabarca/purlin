@@ -8,6 +8,7 @@ Categorizes changed files into specs, code, tests, companion files,
 purlin config, and submodule changes. Parses status commits for
 lifecycle transitions.
 """
+import glob
 import json
 import os
 import re
@@ -87,6 +88,9 @@ _PURLIN_LAUNCHER_RE = re.compile(
 
 # Patterns for scope tags in commit messages
 _SCOPE_RE = re.compile(r'\[Scope:\s*(\S+)\]')
+
+# Commit scope pattern: mode(scope1,scope2): message
+_COMMIT_SCOPE_RE = re.compile(r'^\w+\(([^)]+)\):')
 
 
 def categorize_file(path):
@@ -392,6 +396,86 @@ def _categorize_changes(changed_files):
     return categories
 
 
+def _infer_feature_stems(commits, changed_files):
+    """Infer which features were touched by code changes.
+
+    Uses two heuristics per spec §2.7.1:
+    1. Commit scope parsing: mode(scope): message
+    2. Test directory mapping: tests/<stem>/
+
+    Returns dict mapping feature_stem -> {code_files, inferred_via}.
+    """
+    features = {}  # stem -> {'code_files': set, 'inferred_via': str}
+
+    # Heuristic 1: commit scope parsing
+    for commit in commits:
+        match = _COMMIT_SCOPE_RE.match(commit['subject'])
+        if match:
+            scopes = [s.strip() for s in match.group(1).split(',')]
+            for scope in scopes:
+                if scope not in features:
+                    features[scope] = {
+                        'code_files': set(), 'inferred_via': 'commit_scope'}
+
+    # Heuristic 2: test directory mapping
+    for f in changed_files:
+        path = f['path']
+        if path.startswith('tests/'):
+            parts = path.split('/', 2)
+            if len(parts) >= 2:
+                stem = parts[1]
+                if stem not in features:
+                    features[stem] = {
+                        'code_files': set(),
+                        'inferred_via': 'test_directory'}
+
+    # Count code files per feature from commit scopes
+    code_files = [f for f in changed_files
+                  if categorize_file(f['path']) in ('code', 'test')]
+    for stem in features:
+        for f in code_files:
+            features[stem]['code_files'].add(f['path'])
+
+    return features
+
+
+def _check_companion_staleness(inferred_features, changed_companions):
+    """Cross-reference code changes against companion file updates.
+
+    Per spec §2.7.2: flag features where code changed, companion exists
+    on disk, but companion was NOT updated in the range.
+
+    Returns list of dicts for the companion_staleness field.
+    """
+    # Build set of companion stems that were updated in this range
+    updated_companions = set()
+    for f in changed_companions:
+        basename = os.path.basename(f['path'])
+        if basename.endswith('.impl.md'):
+            updated_companions.add(basename.replace('.impl.md', ''))
+
+    # Check each inferred feature
+    staleness = []
+    features_dir = os.path.join(PROJECT_ROOT, 'features')
+    for stem, info in inferred_features.items():
+        companion_path = os.path.join(features_dir, f'{stem}.impl.md')
+        if not os.path.isfile(companion_path):
+            continue
+        if stem in updated_companions:
+            continue
+        code_count = len(info['code_files'])
+        if code_count == 0:
+            continue
+        staleness.append({
+            'feature': f'{stem}.md',
+            'companion': f'{stem}.impl.md',
+            'code_files_changed': code_count,
+            'inferred_via': info['inferred_via'],
+        })
+
+    return staleness
+
+
 def extract_direction(range_spec):
     """Extract structured data for one direction (local or collab).
 
@@ -408,6 +492,9 @@ def extract_direction(range_spec):
     transitions = _parse_lifecycle_transitions(commits)
     discovery_count = _parse_discoveries(commits, changed_files)
     decisions = _extract_decisions_from_diff(range_spec, changed_files)
+    inferred_features = _infer_feature_stems(commits, changed_files)
+    companion_staleness = _check_companion_staleness(
+        inferred_features, categories.get('companion_files', []))
 
     return {
         'commits': commits,
@@ -416,6 +503,7 @@ def extract_direction(range_spec):
         'transitions': transitions,
         'discovery_count': discovery_count,
         'decisions': decisions,
+        'companion_staleness': companion_staleness,
     }
 
 

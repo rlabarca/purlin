@@ -115,6 +115,11 @@ For each direction include these subsections (skip empty ones):
 - Flag code that changed without spec changes
 - This is informational, not blocking
 
+### Companion Check
+- If the JSON contains a non-empty companion_staleness array for this direction, render a Companion Check subsection
+- For each entry: \"**<feature_stem>**: <code_files_changed> code files changed, companion not updated — review for undocumented deviations\"
+- If companion_staleness is empty or absent, omit this subsection entirely
+
 Rules:
 - Be concise — one line per change, grouped logically
 - Use bullet points, not paragraphs
@@ -203,6 +208,15 @@ def summarize_direction(label, direction):
             out.append(f'- {f[\"status\"]} {f[\"path\"]}')
         for f in submod:
             out.append(f'- [Submodule] {f[\"status\"]} {f[\"path\"]}')
+        out.append('')
+
+    staleness = direction.get('companion_staleness', [])
+    if staleness:
+        out.append('### Companion Check')
+        for s in staleness:
+            stem = s['feature'].replace('.md', '')
+            count = s['code_files_changed']
+            out.append(f'- **{stem}**: {count} code files changed, companion not updated — review for undocumented deviations')
         out.append('')
 
     return out
