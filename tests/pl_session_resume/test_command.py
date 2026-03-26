@@ -40,7 +40,7 @@ SAMPLE_CHECKPOINT_ENGINEER = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Running local tests after implementation commit
 
 ### Done
@@ -49,14 +49,14 @@ SAMPLE_CHECKPOINT_ENGINEER = """# Session Checkpoint
 - Committed implementation: abc1234
 
 ### Next
-1. Run tests -- verify tests/cdd_status_monitor/tests.json shows PASS
+1. Run tests -- verify tests/project_init/tests.json shows PASS
 2. Commit status tag: [Ready for Verification]
 
 ## Engineer Context
 **Protocol Step:** 3 -- Verify Locally
 **Delivery Plan:** Phase 2 of 3 -- IN_PROGRESS
 **Work Queue:**
-1. [HIGH] cdd_spec_map.md
+1. [HIGH] pl_spec_code_audit.md
 **Pending Decisions:** None
 
 ## Uncommitted Changes
@@ -74,7 +74,7 @@ SAMPLE_CHECKPOINT_QA = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Verifying QA scenarios
 
 ### Done
@@ -104,7 +104,7 @@ SAMPLE_CHECKPOINT_PM = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Drafting visual specification
 
 ### Done
@@ -115,8 +115,8 @@ SAMPLE_CHECKPOINT_PM = """# Session Checkpoint
 1. Complete Visual Specification section
 
 ## PM Context
-**Spec Drafts:** cdd_status_monitor.md visual spec in progress
-**Figma Context:** CDD Dashboard / Status Monitor frame
+**Spec Drafts:** project_init.md requirements in progress
+**Figma Context:** None
 
 ## Uncommitted Changes
 None
@@ -134,7 +134,7 @@ SAMPLE_LEGACY_BUILDER = """# Session Checkpoint
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **In Progress:** Running local tests
 
 ### Done
@@ -147,7 +147,7 @@ SAMPLE_LEGACY_BUILDER = """# Session Checkpoint
 **Protocol Step:** 3 -- Verify Locally
 **Delivery Plan:** No delivery plan
 **Work Queue:**
-1. [HIGH] cdd_spec_map.md
+1. [HIGH] pl_spec_code_audit.md
 **Pending Decisions:** None
 
 ## Uncommitted Changes
@@ -436,7 +436,7 @@ class TestEngineerModeFields(unittest.TestCase):
         with open(_purlin_checkpoint_path(self.tmpdir)) as f:
             content = f.read()
         self.assertIn('**Work Queue:**', content)
-        self.assertIn('cdd_spec_map.md', content)
+        self.assertIn('pl_spec_code_audit.md', content)
 
 
 class TestQAModeFields(unittest.TestCase):
