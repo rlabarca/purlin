@@ -184,7 +184,7 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 **This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5 delegates entirely to `/pl-resume` — there is no separate implementation.
 
-**Reading startup flags:** First check for `.purlin/cache/session_overrides.json` — the launcher writes this file with resolved CLI flags (including ephemeral `--no-save` overrides). If found, read `find_work` and `auto_start` from it, then delete the file. If not found (e.g., after `/clear`), read from the resolved config (`agents.purlin`). Read `default_mode` from the resolved config always (it's not in session overrides). Defaults: `find_work: true`, `auto_start: false`, `default_mode: null`.
+**Reading startup flags:** First check for `.purlin/cache/session_overrides.json` — the launcher writes this file with the resolved CLI flags for this session (including ephemeral `--no-save` overrides). If found, read `find_work` and `auto_start` from it. Do NOT delete the file — it persists for the lifetime of the terminal session (the launcher's EXIT trap cleans it up). If not found (manual `/pl-resume` outside a launcher session), read from the resolved config (`agents.purlin`). Read `default_mode` from the resolved config always (it's not in session overrides). Defaults: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
 **When a checkpoint exists (warm resume):**
 - Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.

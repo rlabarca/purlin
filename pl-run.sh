@@ -146,6 +146,7 @@ PROMPT_FILE=$(mktemp)
 cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
+    rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides.json"
 }
 trap cleanup EXIT
 
