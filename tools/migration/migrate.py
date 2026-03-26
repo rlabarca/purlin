@@ -77,25 +77,47 @@ def detect_migration_needed(project_root):
     """Check if migration from old 4-role config to Purlin is needed.
 
     Returns:
-        'needed' - old config exists, no purlin config
-        'complete' - agents.purlin already exists
-        'fresh' - neither old nor new config exists (fresh install)
+        'needed'   - old config exists, no purlin config
+        'partial'  - agents.purlin exists but migration incomplete (v0.8.4 gap)
+        'complete' - fully migrated (marker present or heuristic confirms)
+        'fresh'    - neither old nor new config exists (fresh install)
     """
     purlin_dir = os.path.join(project_root, '.purlin')
 
-    # Check both config files
+    # Check both config files (local first — it's the authority)
     for config_name in ('config.local.json', 'config.json'):
         config_path = os.path.join(purlin_dir, config_name)
         config = _read_json(config_path)
         if config is None:
             continue
 
+        # Fast path: migration marker is the authoritative signal
+        if '_migration_version' in config:
+            return 'complete'
+
         agents = config.get('agents', {})
         has_purlin = 'purlin' in agents
         has_old = 'architect' in agents or 'builder' in agents
 
         if has_purlin:
+            # agents.purlin exists but no marker — check if migration is
+            # truly complete or just a partial entry from the launcher's
+            # first-run flow (v0.8.4 upgrade gap)
+            purlin_cfg = agents['purlin']
+            required_fields = ('find_work', 'auto_start', 'default_mode')
+            missing_fields = [f for f in required_fields if f not in purlin_cfg]
+
+            # Old agents not deprecated = migration didn't run
+            old_not_deprecated = has_old and any(
+                not agents.get(role, {}).get('_deprecated', False)
+                for role in ('architect', 'builder')
+                if role in agents
+            )
+
+            if missing_fields or old_not_deprecated:
+                return 'partial'
             return 'complete'
+
         if has_old:
             return 'needed'
 
@@ -107,12 +129,22 @@ def detect_migration_needed(project_root):
 # ---------------------------------------------------------------------------
 
 def migrate_config(project_root, dry_run=False):
-    """Create agents.purlin from agents.builder; deprecate old entries.
+    """Create or enrich agents.purlin; deprecate old entries.
+
+    Handles both full migration (no agents.purlin) and enrichment
+    (partial agents.purlin from launcher first-run).
 
     Returns list of changes made (strings).
     """
     changes = []
     purlin_dir = os.path.join(project_root, '.purlin')
+
+    _DEFAULTS = {
+        'bypass_permissions': False,
+        'find_work': True,
+        'auto_start': False,
+        'default_mode': None,
+    }
 
     for config_name in ('config.json', 'config.local.json'):
         config_path = os.path.join(purlin_dir, config_name)
@@ -121,11 +153,41 @@ def migrate_config(project_root, dry_run=False):
             continue
 
         agents = config.get('agents', {})
+
         if 'purlin' in agents:
+            # Enrichment path: backfill missing keys
+            purlin_cfg = agents['purlin']
+            builder = agents.get('builder', {})
+            backfilled = []
+            for key, default in _DEFAULTS.items():
+                if key not in purlin_cfg:
+                    purlin_cfg[key] = builder.get(key, default)
+                    backfilled.append(key)
+
+            if backfilled or any(
+                role in agents and not agents[role].get('_deprecated', False)
+                for role in ('architect', 'builder', 'qa', 'pm')
+            ):
+                if not dry_run:
+                    for role in ('architect', 'builder', 'qa', 'pm'):
+                        if role in agents:
+                            agents[role]['_deprecated'] = True
+                    _write_json(config_path, config)
+
+                if backfilled:
+                    changes.append(
+                        f"Enriched partial agents.purlin in {config_name} "
+                        f"(backfilled {len(backfilled)} missing keys: {', '.join(backfilled)})"
+                    )
+                for role in ('architect', 'builder', 'qa', 'pm'):
+                    if role in agents and not agents[role].get('_deprecated', False):
+                        changes.append(f"Marked agents.{role} as _deprecated in {config_name}")
             continue
+
         if 'builder' not in agents:
             continue
 
+        # Full migration: create agents.purlin from builder
         builder = agents['builder']
         purlin_agent = {
             'model': builder.get('model', ''),
@@ -138,7 +200,6 @@ def migrate_config(project_root, dry_run=False):
 
         if not dry_run:
             agents['purlin'] = purlin_agent
-            # Mark old entries as deprecated
             for role in ('architect', 'builder', 'qa', 'pm'):
                 if role in agents:
                     agents[role]['_deprecated'] = True
@@ -575,6 +636,22 @@ def complete_transition(project_root, dry_run=False):
 # Orchestrator
 # ---------------------------------------------------------------------------
 
+def _stamp_migration_version(project_root, dry_run=False):
+    """Write _migration_version: 1 to the active config file."""
+    purlin_dir = os.path.join(project_root, '.purlin')
+    for config_name in ('config.local.json', 'config.json'):
+        config_path = os.path.join(purlin_dir, config_name)
+        config = _read_json(config_path)
+        if config is None:
+            continue
+        if '_migration_version' not in config:
+            if not dry_run:
+                config['_migration_version'] = 1
+                _write_json(config_path, config)
+            return f"Stamped _migration_version: 1 in {config_name}"
+    return None
+
+
 def run_migration(project_root, dry_run=False, skip_overrides=False,
                   skip_companions=False, skip_specs=False,
                   auto_approve=False, purlin_only=False,
@@ -596,13 +673,25 @@ def run_migration(project_root, dry_run=False, skip_overrides=False,
         return {'status': 'transition_complete', 'changes': all_changes}
 
     if status == 'complete' and not purlin_only:
-        return {'status': 'complete', 'changes': ['Migration already complete']}
+        # Stamp marker for future fast-path if missing (backfill for
+        # users who migrated before the marker was introduced)
+        stamp = _stamp_migration_version(project_root, dry_run=dry_run)
+        changes = ['Migration already complete']
+        if stamp:
+            changes.append(stamp)
+        return {'status': 'complete', 'changes': changes}
 
-    # Step 1: Config migration (always runs)
+    if status == 'partial':
+        all_changes.append('Partial migration detected — running repair pass')
+
+    # Step 1: Config migration / enrichment (always runs)
     changes = migrate_config(project_root, dry_run=dry_run)
     all_changes.extend(changes)
 
     if purlin_only:
+        stamp = _stamp_migration_version(project_root, dry_run=dry_run)
+        if stamp:
+            all_changes.append(stamp)
         return {'status': 'purlin_only', 'changes': all_changes}
 
     # Step 2: Override consolidation
@@ -623,6 +712,11 @@ def run_migration(project_root, dry_run=False, skip_overrides=False,
     # Step 5: Launcher generation
     changes = generate_launcher(project_root, dry_run=dry_run)
     all_changes.extend(changes)
+
+    # Step 6: Write migration marker
+    stamp = _stamp_migration_version(project_root, dry_run=dry_run)
+    if stamp:
+        all_changes.append(stamp)
 
     return {'status': 'migrated', 'changes': all_changes}
 

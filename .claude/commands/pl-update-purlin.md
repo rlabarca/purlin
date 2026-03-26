@@ -90,9 +90,11 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 
 7. **Migration Module (if needed):**
    - After config sync, check if migration to the Purlin unified agent model is needed:
-     - If `agents.purlin` is absent from config AND `agents.architect` or `agents.builder` exists: migration is needed
-     - If `agents.purlin` already exists: skip
-   - If needed, run: `python3 <submodule>/tools/migration/migrate.py --project-root <project_root>` with any applicable flags passed through (`--dry-run`, `--auto-approve`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--purlin-only`, `--complete-transition`)
+     - **Fast path:** If `_migration_version` exists in config: skip (already complete)
+     - If `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists: migration is `needed`
+     - If `agents.purlin` exists but `_migration_version` absent: check for incomplete migration (old agents not deprecated, or `agents.purlin` missing `find_work`/`auto_start`/`default_mode`). If incomplete: `partial` — run repair pass
+     - If fully complete: skip (stamp `_migration_version: 1` for future fast path)
+   - If needed or partial, run: `python3 <submodule>/tools/migration/migrate.py --project-root <project_root>` with any applicable flags passed through (`--dry-run`, `--auto-approve`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--purlin-only`, `--complete-transition`)
    - Report migration results in the summary
    - See `features/purlin_migration.md` for the full migration protocol
 
