@@ -1353,8 +1353,8 @@ class TestCompletionGate(unittest.TestCase):
         self.assertTrue(can_tag_complete)
 
 
-class TestBuilderFlagsBrokenScenario(unittest.TestCase):
-    """Scenario: Builder flags broken scenario via discovery.
+class TestEngineerFlagsBrokenScenario(unittest.TestCase):
+    """Scenario: Engineer flags broken scenario via discovery.
 
     Tests that the builder feedback protocol is documented in the spec
     and skill, with correct discovery format for broken test scenarios.

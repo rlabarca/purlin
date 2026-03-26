@@ -421,7 +421,7 @@ class TestBuildPrintModeContext(unittest.TestCase):
         os.makedirs(refs_dir)
         self.architect_table = (
             '## Main Branch Variant\n\n```\n'
-            'Purlin Architect — Ready\n'
+            'Purlin PM — Ready\n'
             '━━━━━━━━━━━━━━━━━━━━━━━━\n'
             '  /pl-spec    Create specs\n'
             '  /pl-anchor  Create anchors\n'
@@ -496,7 +496,7 @@ class TestBuildPrintModeContext(unittest.TestCase):
         self.assertNotIn('Skill Content', ctx)
 
     def test_architect_role_enforcement(self):
-        """Architect role enforcement mentions ZERO CODE MANDATE."""
+        """PM role enforcement mentions ZERO CODE MANDATE."""
         ctx = harness_runner.build_print_mode_context(
             self.fixture_dir, self.project_root, 'ARCHITECT', 'Begin session.')
 
@@ -505,13 +505,13 @@ class TestBuildPrintModeContext(unittest.TestCase):
         self.assertIn('REFUSE', ctx)
 
     def test_builder_role_enforcement(self):
-        """Builder role enforcement mentions spec files are Architect-owned."""
+        """Engineer role enforcement mentions spec files are PM-owned."""
         # Create builder command table
         refs_dir = os.path.join(
             self.fixture_dir, 'instructions', 'references')
         with open(os.path.join(refs_dir, 'builder_commands.md'), 'w') as f:
             f.write('## Main Branch Variant\n\n```\n'
-                    'Purlin Builder — Ready\n'
+                    'Purlin Engineer — Ready\n'
                     '━━━━━━━━━━━━━━━━━━━━━━━━\n'
                     '  /pl-build   Build features\n'
                     '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')
@@ -520,7 +520,7 @@ class TestBuildPrintModeContext(unittest.TestCase):
             self.fixture_dir, self.project_root, 'BUILDER', 'Begin session.')
 
         self.assertIn('NEVER write, edit, or create feature spec files', ctx)
-        self.assertIn('Architect-owned', ctx)
+        self.assertIn('PM-owned', ctx)
 
     def test_qa_role_enforcement(self):
         """QA role enforcement mentions NEVER write application code."""
@@ -537,7 +537,7 @@ class TestBuildPrintModeContext(unittest.TestCase):
             self.fixture_dir, self.project_root, 'QA', 'Begin session.')
 
         self.assertIn('NEVER write, edit, or create application code', ctx)
-        self.assertIn('Builder-owned', ctx)
+        self.assertIn('Engineer-owned', ctx)
 
     def test_falls_back_to_project_root_for_command_table(self):
         """Falls back to project_root when fixture has no command table."""
@@ -552,7 +552,7 @@ class TestBuildPrintModeContext(unittest.TestCase):
         os.makedirs(proj_refs)
         with open(os.path.join(proj_refs, 'architect_commands.md'), 'w') as f:
             f.write('## Main Branch Variant\n\n```\n'
-                    'Purlin Architect — Ready\n'
+                    'Purlin PM — Ready\n'
                     '━━━━━━━━━━━━━━━━━━━━━━━━\n'
                     '  /pl-spec    From project root\n'
                     '━━━━━━━━━━━━━━━━━━━━━━━━\n```\n')

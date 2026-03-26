@@ -30,7 +30,7 @@ def read_command_file():
 class TestRoleGateRejectsNonQA(unittest.TestCase):
     """Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-discovery
     Then the command responds with a redirect message
 
@@ -39,11 +39,11 @@ class TestRoleGateRejectsNonQA(unittest.TestCase):
     """
 
     def test_first_line_declares_qa_ownership(self):
-        """Command file declares QA as the command owner."""
+        """Command file declares QA as the mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertIn("QA", first_line)
-        self.assertIn("command owner", first_line.lower())
+        self.assertIn("purlin mode", first_line.lower())
 
     def test_redirect_message_present(self):
         """A redirect message instructs non-QA agents to use QA."""
@@ -63,13 +63,13 @@ class TestRoleGateRejectsNonQA(unittest.TestCase):
 
 
 class TestBugDiscoveryRoutesToBuilder(unittest.TestCase):
-    """Scenario: BUG discovery routes to Builder
+    """Scenario: BUG discovery routes to Engineer
 
     Given a verification failure contradicting an existing scenario
     When the QA agent classifies it as BUG
-    Then the discovery entry has Action Required set to Builder
+    Then the discovery entry has Action Required set to Engineer
 
-    Structural test: the command file defines BUG type with routing to Builder.
+    Structural test: the command file defines BUG type with routing to Engineer.
     """
 
     def test_bug_type_defined(self):
@@ -78,15 +78,15 @@ class TestBugDiscoveryRoutesToBuilder(unittest.TestCase):
         self.assertIn("[BUG]", content)
 
     def test_bug_routes_to_builder(self):
-        """BUG discoveries route to Builder by default."""
+        """BUG discoveries route to Engineer by default."""
         content = read_command_file()
-        # Find the BUG classification and verify it mentions Builder routing
+        # Find the BUG classification and verify it mentions Engineer routing
         bug_section = content[content.find("[BUG]"):]
         # Limit to just the BUG description line/paragraph
         next_type = re.search(r"\[(?:DISCOVERY|INTENT_DRIFT|SPEC_DISPUTE)\]", bug_section[1:])
         if next_type:
             bug_section = bug_section[:next_type.start() + 1]
-        self.assertIn("Builder", bug_section)
+        self.assertIn("Engineer", bug_section)
 
     def test_bug_contradicts_existing_scenario(self):
         """BUG type description references contradicting an existing scenario."""
@@ -108,10 +108,10 @@ class TestSpecDisputeSuspendsScenario(unittest.TestCase):
 
     Given the user disagrees with a scenario's expected behavior
     When the QA agent classifies it as SPEC_DISPUTE
-    Then the discovery entry has Action Required set to Architect
+    Then the discovery entry has Action Required set to PM
     And the user is informed the scenario is suspended
 
-    Structural test: the command file defines SPEC_DISPUTE type with Architect
+    Structural test: the command file defines SPEC_DISPUTE type with PM
     routing and scenario suspension messaging.
     """
 
@@ -121,10 +121,10 @@ class TestSpecDisputeSuspendsScenario(unittest.TestCase):
         self.assertIn("[SPEC_DISPUTE]", content)
 
     def test_spec_dispute_routes_to_architect(self):
-        """SPEC_DISPUTE routes to Architect by default."""
+        """SPEC_DISPUTE routes to PM by default."""
         content = read_command_file()
         # Find the routing section for SPEC_DISPUTE
-        self.assertRegex(content, r"SPEC_DISPUTE.*?Architect", re.DOTALL)
+        self.assertRegex(content, r"SPEC_DISPUTE.*?PM", re.DOTALL)
 
     def test_scenario_suspension_mentioned(self):
         """Command instructs agent to inform user scenario is suspended."""

@@ -27,44 +27,44 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilder(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder invocation
+class TestRoleGateRejectsNonEngineer(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer invocation
 
-    Given a non-Builder agent session
+    Given a non-Engineer agent session
     When the agent invokes /pl-build
-    Then the command responds with a redirect message to use the Builder agent
+    Then the command responds with a redirect message to use the Engineer agent
     And no implementation work is performed
 
-    Structural test: the command file's first line declares 'Builder' as the
-    command owner, and a redirect message is present for non-Builder agents.
+    Structural test: the command file's first line declares 'Engineer' as the
+    command owner, and a redirect message is present for non-Engineer agents.
     """
 
-    def test_first_line_declares_builder_owner(self):
+    def test_first_line_declares_engineer_mode(self):
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Builder", first_line)
-        self.assertIn("command owner", first_line.lower())
+        self.assertIn("Engineer", first_line)
+        self.assertIn("mode", first_line.lower())
 
-    def test_redirect_message_for_non_builder(self):
-        """Non-Builder agents receive a redirect message."""
+    def test_redirect_message_for_non_engineer(self):
+        """Non-Engineer agents receive a redirect message."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)not.*operat.*builder.*respond",
+            r"(?i)another mode is active.*confirm switch",
         )
 
-    def test_redirect_mentions_builder_agent(self):
-        """Redirect message tells the user to use the Builder agent."""
+    def test_redirect_mentions_engineer_mode(self):
+        """Redirect message tells the user to use Engineer mode."""
         content = read_command_file()
-        self.assertIn("Builder command", content)
+        self.assertIn("Engineer mode", content)
 
 
 class TestNamedFeatureArgumentScopes(unittest.TestCase):
     """Scenario: Named feature argument scopes to specific feature
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When /pl-build is invoked with argument "my_feature"
-    Then the Builder reads features/my_feature.md
+    Then the Engineer reads features/my_feature.md
     And implementation targets only that feature
 
     Structural test: the command file references reading features/<arg>.md
@@ -92,10 +92,10 @@ class TestNamedFeatureArgumentScopes(unittest.TestCase):
 class TestNoArgumentSelectsHighestPriority(unittest.TestCase):
     """Scenario: No-argument mode selects highest-priority action item
 
-    Given a Builder agent session with no argument
-    And /pl-status lists feature_a as highest-priority Builder action
+    Given a Engineer agent session with no argument
+    And /pl-status lists feature_a as highest-priority Engineer action
     When /pl-build is invoked
-    Then the Builder selects feature_a for implementation
+    Then the Engineer selects feature_a for implementation
 
     Structural test: the command file references scan.sh or /pl-status
     for finding the highest-priority work item.
@@ -189,7 +189,7 @@ class TestDeliveryPlanScopesToCurrentPhase(unittest.TestCase):
 class TestStatusTagIsSeparateCommit(unittest.TestCase):
     """Scenario: Status tag is a separate commit
 
-    Given the Builder completes implementation of a feature
+    Given the Engineer completes implementation of a feature
     When the status tag commit is created
     Then the status tag commit is separate from the implementation commit
     And the implementation commit does not contain lifecycle tags

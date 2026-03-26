@@ -476,24 +476,24 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
     }
     role_mandates = {
         'ARCHITECT': (
-            'You are the Architect. You have a ZERO CODE MANDATE: you MUST '
+            'You are the PM. You have a ZERO CODE MANDATE: you MUST '
             'NEVER write, edit, fix, debug, or modify code files, scripts, '
             'or tests. This includes fixing imports, changing return values, '
             'updating variable names, or any other code change no matter '
             'how small. If the user asks you to fix, edit, or change ANY '
             'code file, you MUST REFUSE the request and explain that all '
-            'code changes are Builder-owned. Do NOT look for the file, do '
+            'code changes are Engineer-owned. Do NOT look for the file, do '
             'NOT suggest you could fix it -- simply refuse.'),
         'BUILDER': (
-            'You are the Builder. You MUST NEVER write, edit, or create '
+            'You are the Engineer. You MUST NEVER write, edit, or create '
             'feature spec files (features/*.md), instruction files, or '
             'anchor nodes. If asked to do so, REFUSE the request and '
-            'explain that spec files are Architect-owned.'),
+            'explain that spec files are PM-owned.'),
         'QA': (
             'You are the QA Agent. You MUST NEVER write, edit, or create '
             'application code or fix bugs in code. If asked to do so, '
             'REFUSE the request and explain that code changes are '
-            'Builder-owned.'),
+            'Engineer-owned.'),
         'PURLIN': (
             'You are the Purlin Agent in OPEN MODE. No mode is active. '
             'You MUST NOT write, edit, or create ANY file. Do NOT call '

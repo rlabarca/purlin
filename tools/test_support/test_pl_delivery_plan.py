@@ -27,31 +27,31 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilder(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder invocation
+class TestRoleGateRejectsNonEngineer(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer invocation
 
-    Given a non-Builder agent (Architect, QA, or PM)
+    Given a non-Engineer agent (PM, QA, or PM)
     When the agent invokes /pl-delivery-plan
     Then the skill displays a role rejection message and stops
 
-    Structural test: the command file's first line declares 'Builder'
-    as the command owner, which triggers the standard role gate.
+    Structural test: the command file's first line declares 'Engineer'
+    as the mode declaration, which triggers the standard role gate.
     """
 
     def test_first_line_declares_builder_owner(self):
-        """First line must declare Builder as command owner."""
+        """First line must declare Engineer as mode."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Builder", first_line)
-        self.assertIn("command owner", first_line.lower())
+        self.assertIn("Engineer", first_line)
+        self.assertIn("purlin mode", first_line.lower())
 
     def test_role_rejection_message_present(self):
-        """A rejection message for non-Builder agents must be present."""
+        """A rejection message for non-Engineer agents must be present."""
         content = read_command_file()
-        self.assertIn("Builder command", content)
+        self.assertIn("Engineer command", content)
         self.assertRegex(
             content,
-            r"(?i)(not operating as|ask your builder)",
+            r"(?i)(another mode is active|confirm switch)",
         )
 
     def test_rejection_stops_execution(self):
@@ -198,7 +198,7 @@ class TestDependencyValidationCatchesCycles(unittest.TestCase):
 class TestPhaseSizingCapEnforced(unittest.TestCase):
     """Scenario: Phase sizing cap enforced
 
-    Given the Builder's model resolves to a context tier with max_features_per_phase of N
+    Given the Engineer's model resolves to a context tier with max_features_per_phase of N
     And N+1 features assigned to a single phase
     When /pl-delivery-plan validates the plan
     Then the phase is split to respect the tier-derived max features per phase
@@ -242,7 +242,7 @@ class TestPhaseSizingCapEnforced(unittest.TestCase):
 class TestExtendedContextTierIncreasesPhaseCapacity(unittest.TestCase):
     """Scenario: Extended context tier increases phase capacity
 
-    Given the Builder's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
+    Given the Engineer's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
     And 5 features in TODO state with no HIGH-complexity features
     When /pl-delivery-plan creates a plan
     Then the plan uses the Extended tier defaults
@@ -272,7 +272,7 @@ class TestExtendedContextTierIncreasesPhaseCapacity(unittest.TestCase):
         )
 
     def test_tier_resolution_uses_model_lookup(self):
-        """Tier resolution must look up the Builder model in the models array."""
+        """Tier resolution must look up the Engineer model in the models array."""
         content = read_command_file()
         self.assertRegex(
             content,
@@ -283,7 +283,7 @@ class TestExtendedContextTierIncreasesPhaseCapacity(unittest.TestCase):
 class TestPhaseSizingOverrideTakesPrecedence(unittest.TestCase):
     """Scenario: Phase sizing override takes precedence
 
-    Given the Builder's model resolves to the Extended tier
+    Given the Engineer's model resolves to the Extended tier
     And the agent config contains phase_sizing with max_features_per_phase of 3
     When /pl-delivery-plan creates a plan with 4 features
     Then the plan splits into phases of at most 3 features each

@@ -634,7 +634,7 @@ if [ -f "$TEMPLATE" ]; then
     else
         crh_fail "CLAUDE.md missing role boundary text"
     fi
-    if grep -qF "Architect" "$CLAUDE_MD" && grep -qF "Builder" "$CLAUDE_MD" && grep -qF "QA" "$CLAUDE_MD" && grep -qF "PM" "$CLAUDE_MD"; then
+    if grep -qF "PM" "$CLAUDE_MD" && grep -qF "Engineer" "$CLAUDE_MD" && grep -qF "QA" "$CLAUDE_MD" && grep -qF "PM" "$CLAUDE_MD"; then
         crh_pass "CLAUDE.md contains text for all four roles"
     else
         crh_fail "CLAUDE.md missing text for one or more roles"

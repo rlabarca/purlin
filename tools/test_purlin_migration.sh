@@ -232,15 +232,15 @@ cat > "$FIXTURE_DIR/features/auth_flow.md" << 'SPECEOF'
 
 ## Requirements
 
-The Builder implements the login flow.
-The Architect reviews the specification.
+The Engineer implements the login flow.
+The PM reviews the specification.
 SPECEOF
 
 run_migrate "$FIXTURE_DIR"
 
 spec_file="$FIXTURE_DIR/features/auth_flow.md"
 has_engineer=$(grep -c "Engineer mode implements" "$spec_file" 2>/dev/null || true)
-# "The Architect" -> "PM mode"
+# "The PM" -> "PM mode"
 has_pm_mode=$(grep -c "PM mode reviews" "$spec_file" 2>/dev/null || true)
 
 if [ "$has_engineer" -ge 1 ] && [ "$has_pm_mode" -ge 1 ]; then
@@ -288,7 +288,7 @@ CFGEOF
 # Feature: Auth Flow
 
 ## Requirements
-The Builder implements the login flow.
+The Engineer implements the login flow.
 SPECEOF
 
     git add -A && git commit -q -m "feat(auth): initial spec"
@@ -404,7 +404,7 @@ setup_fixture_old_config
 echo "use pytest" > "$FIXTURE_DIR/.purlin/BUILDER_OVERRIDES.md"
 cat > "$FIXTURE_DIR/features/auth_flow.md" << 'SPECEOF'
 # Feature: Auth Flow
-The Builder implements the login flow.
+The Engineer implements the login flow.
 SPECEOF
 cat > "$FIXTURE_DIR/features/auth_flow.impl.md" << 'IMPLEOF'
 # Implementation Notes: Auth Flow
@@ -422,7 +422,7 @@ has_overrides_file=false
 [ -f "$FIXTURE_DIR/.purlin/PURLIN_OVERRIDES.md" ] && has_overrides_file=true
 
 # Spec should NOT be modified (--skip-specs)
-spec_still_builder=$(grep -c "The Builder" "$FIXTURE_DIR/features/auth_flow.md" 2>/dev/null || true)
+spec_still_builder=$(grep -c "The Engineer" "$FIXTURE_DIR/features/auth_flow.md" 2>/dev/null || true)
 
 # Companion should NOT have table (--skip-companions)
 impl_no_table=$(grep -c "## Active Deviations" "$FIXTURE_DIR/features/auth_flow.impl.md" 2>/dev/null || true)

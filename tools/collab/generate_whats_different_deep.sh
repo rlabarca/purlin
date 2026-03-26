@@ -90,8 +90,8 @@ Format as markdown with these sections:
 - **Key Changes** — 3-5 bullet points, most important first
 - **Workflow Impact** — how day-to-day usage is affected
 - **Architecture Notes** — any structural or pattern changes (skip if none)
-- **Architect Actions** — role-specific items tagged with decision categories, one line each
-- **Builder Actions** — role-specific items tagged with decision categories, one line each
+- **PM Actions** — role-specific items tagged with decision categories, one line each
+- **Engineer Actions** — role-specific items tagged with decision categories, one line each
 
 The JSON contains a \`decisions\` array per direction. Each entry has \`category\` (e.g., \`[INFEASIBLE]\`, \`[BUG]\`, \`[DEVIATION]\`), \`feature\`, \`summary\`, and \`role\` (\`architect\` or \`builder\`). Route each entry to the correct role section.
 
@@ -168,7 +168,7 @@ lines.append('')
 arch_items = [d for d in all_decisions if d.get('role') == 'architect']
 builder_items = [d for d in all_decisions if d.get('role') == 'builder']
 
-lines.append('## Architect Actions')
+lines.append('## PM Actions')
 if arch_items:
     for d in arch_items:
         lines.append(f'{d[\"category\"]} {d[\"feature\"]} — {d[\"summary\"]}')
@@ -176,7 +176,7 @@ else:
     lines.append('No action items.')
 lines.append('')
 
-lines.append('## Builder Actions')
+lines.append('## Engineer Actions')
 if builder_items:
     for d in builder_items:
         lines.append(f'{d[\"category\"]} {d[\"feature\"]} — {d[\"summary\"]}')

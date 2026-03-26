@@ -37,7 +37,7 @@ cd "$WORK_DIR"
 git init >/dev/null 2>&1
 git remote add origin "$OUTPUT_DIR"
 git config user.email "fixture@purlin.dev"
-git config user.name "Purlin Fixture Builder"
+git config user.name "Purlin Fixture Engineer"
 
 TAG_COUNT=0
 
@@ -457,7 +457,7 @@ fi
 cat > .purlin/cache/session_checkpoint.md <<'CHECKPOINT'
 # Session Checkpoint
 
-**Role:** Builder
+**Role:** Engineer
 **Timestamp:** 2026-01-15T10:30:00Z
 **Branch:** collab/purlincollab
 
@@ -481,7 +481,7 @@ None
 ## Notes
 All prerequisites are satisfied.
 
-## Builder Context
+## Engineer Context
 **Protocol Step:** 2
 **Delivery Plan:** No delivery plan
 **Work Queue:**
@@ -929,10 +929,10 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
 done
 
 cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
-# Builder Overrides
+# Engineer Overrides
 
 ## Contradiction
-The Builder MUST NOT commit code. This contradicts the base rule requiring immediate commits.
+The Engineer MUST NOT commit code. This contradicts the base rule requiring immediate commits.
 EOF
 
 commit_and_tag "main/release_instruction_audit/contradiction" \
@@ -949,7 +949,7 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
 done
 
 cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
-# Builder Overrides
+# Engineer Overrides
 
 ## Stale Reference
 See `tools/deleted_tool/run.sh` for the build script.
@@ -976,10 +976,10 @@ fi
 
 # Override directly contradicts a base instruction
 cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
-# Builder Overrides
+# Engineer Overrides
 
 ## Status Commits
-The Builder MUST NOT make status tag commits. Status changes are tracked implicitly.
+The Engineer MUST NOT make status tag commits. Status changes are tracked implicitly.
 This contradicts the base rule requiring separate status tag commits.
 EOF
 
@@ -1006,7 +1006,7 @@ fi
 # and uses a deprecated lifecycle label. The override is correct and
 # cannot fix the base error without modifying the base itself.
 cat > instructions/BUILDER_BASE.md <<'EOF'
-# Builder Base Instructions
+# Engineer Base Instructions
 
 ## 1. Executive Summary
 Your mandate is to translate specifications into high-quality code.
@@ -1025,7 +1025,7 @@ EOF
 
 # Override is clean — no contradictions, just normal overrides
 cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
-# Builder Overrides
+# Engineer Overrides
 
 ## Build Environment
 Use Node.js 20+ for all build operations.
@@ -1106,7 +1106,7 @@ Status is driven by git commit tags.
 EOF
 
 cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
-# Builder Overrides
+# Engineer Overrides
 
 ## Lifecycle
 States: DRAFT -> REVIEW -> DONE -> DEPLOYED
@@ -1560,8 +1560,8 @@ create_base_project
 
 create_feature "audit_target.md" "Audit Target" "Test" "arch_testing.md" "TESTING" \
     "### 2.2 Role Gating
-- Only Architect may invoke /pl-spec.
-- Only Builder may invoke /pl-build.
+- Only PM may invoke /pl-spec.
+- Only Engineer may invoke /pl-build.
 - Only QA may invoke /pl-verify."
 create_tests_json_pass "audit_target"
 
@@ -1593,7 +1593,7 @@ cd "$NESTED_WORK"
 git init >/dev/null 2>&1
 git remote add origin "$NESTED_BARE"
 git config user.email "fixture@purlin.dev"
-git config user.name "Purlin Fixture Builder"
+git config user.name "Purlin Fixture Engineer"
 
 echo "content for tag 1" > file1.txt
 git add -A >/dev/null 2>&1
@@ -1648,7 +1648,7 @@ cd "$DUP_WORK"
 git init >/dev/null 2>&1
 git remote add origin "$DUP_BARE"
 git config user.email "fixture@purlin.dev"
-git config user.name "Purlin Fixture Builder"
+git config user.name "Purlin Fixture Engineer"
 
 echo "original content" > file.txt
 git add -A >/dev/null 2>&1
@@ -1921,7 +1921,7 @@ cat > README.md <<'EOF'
 EOF
 
 commit_and_tag "main/builder_startup/todo-features" \
-    "Project with TODO feature for Builder role testing"
+    "Project with TODO feature for Engineer role testing"
 
 # =====================================================================
 echo ""

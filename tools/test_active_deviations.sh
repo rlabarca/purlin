@@ -152,21 +152,21 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Scenario 4: All builder decision tags defined with severity
+# Scenario 4: All engineer decision tags defined with severity
 # ---------------------------------------------------------------------------
 echo ""
-echo "[Scenario] All builder decision tags defined with severity"
+echo "[Scenario] All engineer decision tags defined with severity"
 
 if [ ! -f "$AD_FILE" ]; then
     log_fail "active_deviations.md does not exist"
 else
     AD_CONTENT=$(cat "$AD_FILE")
 
-    # Builder Decision Tags section exists
-    if echo "$AD_CONTENT" | grep -q "Builder Decision Tags"; then
-        log_pass "Builder Decision Tags section exists"
+    # Engineer Decision Tags section exists
+    if echo "$AD_CONTENT" | grep -q "Engineer Decision Tags"; then
+        log_pass "Engineer Decision Tags section exists"
     else
-        log_fail "Builder Decision Tags section missing"
+        log_fail "Engineer Decision Tags section missing"
     fi
 
     # All 5 tags defined with severity

@@ -246,7 +246,7 @@ else
 fi
 
 if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
-    log_pass "Launcher passed --allowedTools for Architect role (bypass=false)"
+    log_pass "Launcher passed --allowedTools for PM role (bypass=false)"
 else
     log_fail "Launcher did not pass --allowedTools (captured: $CAPTURED)"
 fi
@@ -278,16 +278,16 @@ else
 fi
 
 if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
-    log_pass "Architect role restrictions applied when falling back to defaults"
+    log_pass "PM role restrictions applied when falling back to defaults"
 else
-    log_fail "Architect role restrictions not applied on fallback (captured: $CAPTURED)"
+    log_fail "PM role restrictions not applied on fallback (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Builder Launcher Has No AllowedTools ---
+# --- Scenario: Engineer Launcher Has No AllowedTools ---
 echo ""
-echo "[Scenario] Builder Launcher Has No AllowedTools"
+echo "[Scenario] Engineer Launcher Has No AllowedTools"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
@@ -308,15 +308,15 @@ PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -qv -- '--allowedTools'; then
-    log_pass "Builder launcher does not pass --allowedTools (default permissions)"
+    log_pass "Engineer launcher does not pass --allowedTools (default permissions)"
 else
-    log_fail "Builder launcher should not pass --allowedTools (captured: $CAPTURED)"
+    log_fail "Engineer launcher should not pass --allowedTools (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--model claude-opus-4-6'; then
-    log_pass "Builder launcher passed --model"
+    log_pass "Engineer launcher passed --model"
 else
-    log_fail "Builder launcher did not pass --model (captured: $CAPTURED)"
+    log_fail "Engineer launcher did not pass --model (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox

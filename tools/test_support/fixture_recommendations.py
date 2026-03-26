@@ -1,4 +1,4 @@
-"""Fixture recommendation decision logic and Builder read path.
+"""Fixture recommendation decision logic and Engineer read path.
 
 Implements the QA recommendation workflow from features/test_fixture_repo.md
 Section 2.12 and the fixture integration decision logic from
@@ -6,7 +6,7 @@ features/regression_testing.md Section 2.10.1.
 
 Two primary consumers:
   - QA agents: evaluate_fixture_needs() + write_recommendation()
-  - Builder agents (qa_mode): parse_recommendations() to identify PENDING work
+  - Engineer agents (qa_mode): parse_recommendations() to identify PENDING work
 """
 
 import json
@@ -135,13 +135,13 @@ def write_recommendation(rec_path, feature_name, reason, suggested_tags):
     return os.path.abspath(rec_path)
 
 
-# --- Builder Read Path ---
+# --- Engineer Read Path ---
 
 def parse_recommendations(rec_path):
     """Parse fixture_recommendations.md and return structured data.
 
-    This is the Builder startup read path: when qa_mode is enabled,
-    the Builder reads this file to identify PENDING fixture tags
+    This is the Engineer startup read path: when qa_mode is enabled,
+    the Engineer reads this file to identify PENDING fixture tags
     that need to be created.
 
     Args:
@@ -211,7 +211,7 @@ def parse_recommendations(rec_path):
 def get_pending_recommendations(rec_path):
     """Get only PENDING recommendations from the file.
 
-    Convenience wrapper for the Builder startup path: filters
+    Convenience wrapper for the Engineer startup path: filters
     parse_recommendations() output to only PENDING entries.
 
     Args:

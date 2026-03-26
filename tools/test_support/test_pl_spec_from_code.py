@@ -30,32 +30,32 @@ def read_command_file():
 
 
 # ===================================================================
-# Scenario 1: Role gate rejects non-Architect invocation
+# Scenario 1: Role gate rejects non-PM invocation
 # ===================================================================
 
 
-class TestRoleGateRejectsNonArchitect(unittest.TestCase):
-    """Scenario: Role gate rejects non-Architect invocation
+class TestRoleGateRejectsNonPM(unittest.TestCase):
+    """Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-spec-from-code
     Then the command responds with redirect message
     And no state file is created
 
-    Structural test: the command file declares Architect ownership and
-    contains the exact redirect message for non-Architect agents.
+    Structural test: the command file declares PM ownership and
+    contains the exact redirect message for non-PM agents.
     """
 
     def test_first_line_declares_architect_ownership(self):
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Architect", first_line)
-        self.assertIn("command owner", first_line.lower())
+        self.assertIn("PM", first_line)
+        self.assertIn("purlin mode", first_line.lower())
 
     def test_redirect_message_present(self):
         content = read_command_file()
         self.assertIn(
-            "This is an Architect command. Ask your Architect agent to run "
+            "This is an PM command. Ask your PM agent to run "
             "`/pl-spec-from-code`.",
             content,
         )
@@ -63,7 +63,7 @@ class TestRoleGateRejectsNonArchitect(unittest.TestCase):
     def test_redirect_instructs_stop(self):
         """The redirect message is followed by 'and stop' to prevent execution."""
         content = read_command_file()
-        redirect_pos = content.find("Ask your Architect agent")
+        redirect_pos = content.find("Ask your PM agent")
         stop_region = content[redirect_pos : redirect_pos + 200]
         self.assertIn("stop", stop_region.lower())
 
@@ -76,7 +76,7 @@ class TestRoleGateRejectsNonArchitect(unittest.TestCase):
 class TestPhase0CreatesStateAndPrompts(unittest.TestCase):
     """Scenario: Phase 0 creates state file and prompts for directories
 
-    Given an Architect agent session with no existing sfc_state.json
+    Given an PM agent session with no existing sfc_state.json
     When the agent invokes /pl-spec-from-code
     Then the command creates .purlin/cache/sfc_state.json
     And the command prompts for source directories and exclusions
@@ -412,7 +412,7 @@ class TestPhase4RecommendedNextSteps(unittest.TestCase):
     Then the command prints three recommended next steps
     And the first mentions /pl-spec-code-audit
     And the second mentions reviewing features in dependency order
-    And the third mentions having the Builder run /pl-build
+    And the third mentions having the Engineer run /pl-build
 
     Structural test: the command file contains all three recommended
     next step messages.
@@ -567,7 +567,7 @@ class TestEndToEndOnboarding(unittest.TestCase):
     """Scenario: End-to-end onboarding of a non-trivial codebase
 
     Given a consumer project with 10+ source files
-    When the Architect runs /pl-spec-from-code
+    When the PM runs /pl-spec-from-code
     Then all five phases execute in order with proper artifacts
 
     Structural test: the command file has all five phase sections
@@ -616,7 +616,7 @@ class TestEndToEndOnboarding(unittest.TestCase):
 class TestMidPhase3SessionRestart(unittest.TestCase):
     """Scenario: Mid-Phase-3 session restart and resume
 
-    Given the Architect is partway through Phase 3
+    Given the PM is partway through Phase 3
     And sfc_state.json records some completed categories
     When a new session starts and /pl-spec-from-code is invoked
     Then the command detects the existing state file

@@ -822,7 +822,7 @@ class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
 class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
     """Scenario: Fixture recommendation file read by future sessions
 
-    Validates that a Builder session with qa_mode enabled can read
+    Validates that a Engineer session with qa_mode enabled can read
     fixture_recommendations.md and identify which fixture tags
     need to be created (per spec Section 2.12).
 
@@ -858,14 +858,14 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
         subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
 
     def test_builder_can_read_recommendation_file(self):
-        """Builder reads the recommendations file and gets structured data."""
+        """Engineer reads the recommendations file and gets structured data."""
         from fixture_recommendations import parse_recommendations
         recs = parse_recommendations(self.rec_path)
         self.assertIn("branch_collab", recs)
         self.assertIn("instruction_audit", recs)
 
     def test_builder_identifies_pending_tags(self):
-        """Builder identifies PENDING features that need fixture tags created."""
+        """Engineer identifies PENDING features that need fixture tags created."""
         from fixture_recommendations import get_pending_recommendations
         pending = get_pending_recommendations(self.rec_path)
         self.assertEqual(len(pending), 1)
@@ -873,7 +873,7 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
         self.assertNotIn("instruction_audit", pending)
 
     def test_pending_entry_has_suggested_tags(self):
-        """PENDING entry includes suggested tags the Builder should create."""
+        """PENDING entry includes suggested tags the Engineer should create."""
         from fixture_recommendations import parse_recommendations
         recs = parse_recommendations(self.rec_path)
         branch_collab = recs["branch_collab"]
@@ -1020,11 +1020,11 @@ class TestEvaluateFixtureNeedsDecisionLogic(unittest.TestCase):
 
 
 # ===================================================================
-# Builder Startup Read Path Edge Cases (BUG M32)
+# Engineer Startup Read Path Edge Cases (BUG M32)
 # ===================================================================
 
 class TestParseRecommendationsEdgeCases(unittest.TestCase):
-    """Tests for the Builder startup read path edge cases.
+    """Tests for the Engineer startup read path edge cases.
 
     Covers: empty file, missing file, malformed content, partial fields,
     multiple entries with mixed statuses, single-tag entries.

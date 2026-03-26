@@ -5,7 +5,7 @@
 
 ## Purpose
 
-This sample project demonstrates Purlin's multi-role collaboration workflow using git worktrees. Three agents (Architect, Builder, QA) work concurrently on the same feature set.
+This sample project demonstrates Purlin's multi-role collaboration workflow using git worktrees. Three agents (PM, Engineer, QA) work concurrently on the same feature set.
 
 ## Sample Project Conventions
 

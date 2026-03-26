@@ -26,29 +26,29 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilder(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder invocation
+class TestRoleGateRejectsNonEngineer(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer invocation
 
-    Given an Architect agent session
+    Given an PM agent session
     When the agent invokes /pl-infeasible
     Then the command responds with a redirect message
 
-    Structural test: the command file's first line declares Builder ownership,
-    ensuring non-Builder agents are rejected with a redirect.
+    Structural test: the command file's first line declares Engineer ownership,
+    ensuring non-Engineer agents are rejected with a redirect.
     """
 
     def test_first_line_declares_builder_ownership(self):
-        """First line must declare Builder as command owner."""
+        """First line must declare Engineer as mode."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("command owner: Builder", first_line,
-                       "First line must declare 'command owner: Builder'")
+        self.assertIn("Purlin mode: Engineer", first_line,
+                       "First line must declare 'Purlin mode: Engineer'")
 
     def test_redirect_message_for_non_builder(self):
-        """Command file must include a redirect message for non-Builder agents."""
+        """Command file must include a redirect message for non-Engineer agents."""
         content = read_command_file()
-        self.assertIn("Builder command", content,
-                       "Must include redirect text mentioning Builder command")
+        self.assertIn("Engineer command", content,
+                       "Must include redirect text mentioning Engineer command")
 
     def test_redirect_references_pl_infeasible(self):
         """The redirect message should reference the /pl-infeasible command."""
@@ -60,7 +60,7 @@ class TestRoleGateRejectsNonBuilder(unittest.TestCase):
 class TestInfeasibleEntryRecordedInCompanion(unittest.TestCase):
     """Scenario: INFEASIBLE entry recorded in companion file
 
-    Given the Builder cannot implement feature_a as specified
+    Given the Engineer cannot implement feature_a as specified
     When /pl-infeasible is invoked for feature_a
     Then features/feature_a.impl.md contains an [INFEASIBLE] entry
     And the entry includes detailed rationale
@@ -115,10 +115,10 @@ class TestNoCodeImplemented(unittest.TestCase):
         )
 
     def test_architect_must_revise_before_resume(self):
-        """Command file must state the Architect must revise the spec first."""
+        """Command file must state the PM must revise the spec first."""
         content = read_command_file().lower()
-        self.assertIn("architect", content,
-                       "Must reference the Architect role")
+        self.assertIn("pm", content,
+                       "Must reference the PM role")
         self.assertIn("revise", content,
                        "Must state the spec needs to be revised")
 
@@ -161,10 +161,10 @@ class TestScanSurfacesInfeasibleAsActionItem(unittest.TestCase):
                        "Must designate INFEASIBLE escalation as CRITICAL priority")
 
     def test_architect_action_item(self):
-        """Command file must describe the escalation targeting the Architect."""
+        """Command file must describe the escalation targeting the PM."""
         content = read_command_file().lower()
-        self.assertIn("architect", content,
-                       "Must reference Architect as the action target")
+        self.assertIn("pm", content,
+                       "Must reference PM as the action target")
 
 
 # ===================================================================

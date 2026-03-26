@@ -1,6 +1,6 @@
-# Builder Overrides: Sample Task Manager
+# Engineer Overrides: Sample Task Manager
 
-> Project-specific rules for the Builder role in this sample project.
+> Project-specific rules for the Engineer role in this sample project.
 
 ## Tech Stack
 
@@ -12,4 +12,4 @@ Use pytest (Python) or Jest (Node). Keep tests minimal — one test file per fea
 
 ## Worktree Pre-Flight
 
-Before starting implementation, verify that `git log --oneline` shows the Architect's spec commit for the feature you are implementing. If the spec commit is not visible, run `git merge main` to pull the merged spec branch.
+Before starting implementation, verify that `git log --oneline` shows the PM's spec commit for the feature you are implementing. If the spec commit is not visible, run `git merge main` to pull the merged spec branch.

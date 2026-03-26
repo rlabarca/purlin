@@ -30,7 +30,7 @@ def read_command_file():
 class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
     """Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-verify
     Then the command responds with a redirect message
 
@@ -42,13 +42,13 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertIn("QA", first_line,
-                       "First line must declare QA command ownership")
+                       "First line must declare QA mode declarationship")
 
     def test_command_owner_pattern_present(self):
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("command owner", first_line.lower(),
-                       "First line must contain 'command owner' pattern")
+        self.assertIn("purlin mode", first_line.lower(),
+                       "First line must contain 'mode declaration' pattern")
 
     def test_redirect_message_for_non_qa(self):
         """Non-QA agents receive a redirect message mentioning QA."""
@@ -205,23 +205,23 @@ class TestCosmeticScopeSkipsFeature(unittest.TestCase):
 
 
 class TestAutoPassCreditsBuilderVerifiedFeatures(unittest.TestCase):
-    """Scenario: Auto-pass credits builder-verified features
+    """Scenario: Auto-pass credits engineer-verified features
 
-    Given feature_a has builder status DONE and zero QA scenarios
+    Given feature_a has engineer status DONE and zero QA scenarios
     When Phase A Step 1 runs
     Then feature_a is auto-passed with acknowledgment message
 
     Structural test: the command file contains auto-pass logic for
-    builder-verified features in Phase A Step 1.
+    engineer-verified features in Phase A Step 1.
     """
 
     def test_auto_pass_step_present(self):
-        """Step 1 auto-pass for builder-verified features is documented."""
+        """Step 1 auto-pass for engineer-verified features is documented."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)auto.pass.*builder|builder.*auto.pass",
-            "Must document auto-pass for builder-verified features"
+            r"(?i)auto.pass.*engineer|engineer.*auto.pass",
+            "Must document auto-pass for engineer-verified features"
         )
 
     def test_zero_qa_scenarios_condition(self):

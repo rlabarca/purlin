@@ -157,7 +157,7 @@ def _extract_role_focus_phrases(content):
     roles = {}
     current_role = None
     for line in content.splitlines():
-        # Detect role headings like "### The Architect Agent"
+        # Detect role headings like "### The PM Agent"
         role_match = re.match(r'###\s+The\s+(\w+)\s+Agent', line)
         if role_match:
             current_role = role_match.group(1)
@@ -217,8 +217,8 @@ def check_readme_instruction_consistency(readme_path, project_root):
     for role in role_phrases:
         if role == "Human Executive":
             continue
-        # Look for a heading or bold reference like "### The Builder" or
-        # "**The Builder:**"
+        # Look for a heading or bold reference like "### The Engineer" or
+        # "**The Engineer:**"
         pattern = re.compile(
             r'(?:###\s+The\s+' + re.escape(role) + r'|'
             r'\*\*The\s+' + re.escape(role) + r')'

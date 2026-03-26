@@ -239,12 +239,12 @@ _UT_DECISION_RE = re.compile(
 
 # Routing rules per spec Section 2.5
 _DECISION_ROUTING = {
-    'INFEASIBLE': 'architect',
-    'DEVIATION': 'architect',
-    'INTENT_DRIFT': 'architect',
-    'SPEC_DISPUTE': 'architect',
+    'INFEASIBLE': 'pm',
+    'DEVIATION': 'pm',
+    'INTENT_DRIFT': 'pm',
+    'SPEC_DISPUTE': 'pm',
 }
-# DISCOVERY routing depends on source; BUG defaults to builder
+# DISCOVERY routing depends on source; BUG defaults to engineer
 
 
 _DIFF_BATCH_SIZE = 50  # Max files per git diff call to avoid ARG_MAX
@@ -299,7 +299,7 @@ def _extract_decisions_from_diff(range_spec, changed_files):
     """
     decisions = []
     action_required_re = re.compile(
-        r'Action Required:\s*Architect', re.IGNORECASE)
+        r'Action Required:\s*PM', re.IGNORECASE)
 
     # Identify relevant files
     impl_files = [f['path'] for f in changed_files
@@ -343,21 +343,21 @@ def _extract_decisions_from_diff(range_spec, changed_files):
                 if not summary:
                     summary = f'{category} entry in {feature_name}'
                 if category == 'BUG':
-                    role = 'builder'
+                    role = 'engineer'
                 elif category == 'DISCOVERY':
-                    role = 'architect'
+                    role = 'pm'
                 else:
-                    role = _DECISION_ROUTING.get(category, 'architect')
+                    role = _DECISION_ROUTING.get(category, 'pm')
                 decisions.append({
                     'category': f'[{category}]',
                     'feature': feature_name,
                     'summary': summary,
                     'role': role,
                 })
-            # Check for Action Required: Architect override on BUG entries
+            # Check for Action Required: PM override on BUG entries
             if (decisions and decisions[-1]['category'] == '[BUG]'
                     and action_required_re.search(line)):
-                decisions[-1]['role'] = 'architect'
+                decisions[-1]['role'] = 'pm'
 
     return decisions
 

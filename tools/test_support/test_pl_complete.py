@@ -30,7 +30,7 @@ def read_command_file():
 class TestRoleGateRejectsNonQA(unittest.TestCase):
     """Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-complete
     Then the command responds with a redirect message
 
@@ -39,10 +39,10 @@ class TestRoleGateRejectsNonQA(unittest.TestCase):
     """
 
     def test_declares_qa_ownership(self):
-        """First line declares QA as the command owner."""
+        """First line declares QA as the mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("command owner:", first_line.lower())
+        self.assertIn("Purlin mode:", first_line.lower())
         self.assertIn("qa", first_line.lower())
 
     def test_redirect_message_for_non_qa(self):

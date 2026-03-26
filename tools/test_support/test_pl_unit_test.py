@@ -27,35 +27,35 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilder(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder invocation
+class TestRoleGateRejectsNonEngineer(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer invocation
 
     Given a QA agent session
     When the agent invokes /pl-unit-test
     Then the command responds with a redirect message
 
-    Structural test: the command file's first line declares Builder as
-    the command owner, which means non-Builder agents will be rejected.
+    Structural test: the command file's first line declares Engineer as
+    the mode declaration, which means non-Engineer agents will be rejected.
     """
 
     def test_first_line_declares_builder_owner(self):
-        """First line must declare Builder as the command owner."""
+        """First line must declare Engineer as the mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Builder", first_line)
-        self.assertIn("command owner", first_line.lower())
+        self.assertIn("Engineer", first_line)
+        self.assertIn("purlin mode", first_line.lower())
 
     def test_redirect_message_for_non_builder(self):
-        """Command file must contain a redirect message for non-Builder agents."""
+        """Command file must contain a redirect message for non-Engineer agents."""
         content = read_command_file()
-        self.assertIn("not operating as the Purlin Builder", content)
+        self.assertIn("another mode is active", content)
 
     def test_redirect_mentions_builder_agent(self):
-        """Redirect message must tell the user to ask the Builder agent."""
+        """Redirect message must tell the user to ask the Engineer agent."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)ask your builder agent to run /pl-unit-test",
+            r"(?i)(another mode is active|confirm switch)",
         )
 
 

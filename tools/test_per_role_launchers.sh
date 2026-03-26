@@ -1,6 +1,6 @@
 #!/bin/bash
 # test_per_role_launchers.sh — Automated tests for per-role agent launcher features.
-# Tests PM, Architect, Builder, and QA launchers.
+# Tests PM, PM, Engineer, and QA launchers.
 # Produces tests/{pm,architect,builder,qa}_agent_launcher/tests.json.
 set -uo pipefail
 
@@ -30,10 +30,10 @@ QA_ERRORS=""
 ###############################################################################
 pm_pass() { PM_PASS=$((PM_PASS + 1)); echo "  PASS: $1"; }
 pm_fail() { PM_FAIL=$((PM_FAIL + 1)); PM_ERRORS="$PM_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
-arch_pass() { ARCH_PASS=$((ARCH_PASS + 1)); echo "  PASS: $1"; }
-arch_fail() { ARCH_FAIL=$((ARCH_FAIL + 1)); ARCH_ERRORS="$ARCH_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
-build_pass() { BUILD_PASS=$((BUILD_PASS + 1)); echo "  PASS: $1"; }
-build_fail() { BUILD_FAIL=$((BUILD_FAIL + 1)); BUILD_ERRORS="$BUILD_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
+pm_pass() { ARCH_PASS=$((ARCH_PASS + 1)); echo "  PASS: $1"; }
+pm_fail() { ARCH_FAIL=$((ARCH_FAIL + 1)); ARCH_ERRORS="$ARCH_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
+eng_pass() { BUILD_PASS=$((BUILD_PASS + 1)); echo "  PASS: $1"; }
+eng_fail() { BUILD_FAIL=$((BUILD_FAIL + 1)); BUILD_ERRORS="$BUILD_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
 qa_pass() { QA_PASS=$((QA_PASS + 1)); echo "  PASS: $1"; }
 qa_fail() { QA_FAIL=$((QA_FAIL + 1)); QA_ERRORS="$QA_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
 
@@ -339,12 +339,12 @@ rm -rf "$INIT_SANDBOX"
 
 ###############################################################################
 echo ""
-echo "=== Architect Agent Launcher Tests ==="
+echo "=== PM Agent Launcher Tests ==="
 ###############################################################################
 
-# --- Scenario: Architect Launcher Dispatches with Config ---
+# --- Scenario: PM Launcher Dispatches with Config ---
 echo ""
-echo "[Scenario] Architect Launcher Dispatches with Config"
+echo "[Scenario] PM Launcher Dispatches with Config"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
@@ -365,47 +365,47 @@ PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--model claude-sonnet-4-6'; then
-    arch_pass "Architect launcher passed --model claude-sonnet-4-6"
+    arch_pass "PM launcher passed --model claude-sonnet-4-6"
 else
-    arch_fail "Architect launcher did not pass --model (captured: $CAPTURED)"
+    arch_fail "PM launcher did not pass --model (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--effort high'; then
-    arch_pass "Architect launcher passed --effort high"
+    arch_pass "PM launcher passed --effort high"
 else
-    arch_fail "Architect launcher did not pass --effort high (captured: $CAPTURED)"
+    arch_fail "PM launcher did not pass --effort high (captured: $CAPTURED)"
 fi
 
 # Verify resolve_config.py architect is called
 if grep -q 'resolve_config.py' "$SANDBOX/pl-run-architect.sh"; then
-    arch_pass "Architect launcher calls resolve_config.py architect"
+    arch_pass "PM launcher calls resolve_config.py architect"
 else
-    arch_fail "Architect launcher does not reference resolve_config.py"
+    arch_fail "PM launcher does not reference resolve_config.py"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
-    arch_pass "Architect launcher passes --allowedTools (bypass=false)"
+    arch_pass "PM launcher passes --allowedTools (bypass=false)"
 else
-    arch_fail "Architect launcher missing --allowedTools (captured: $CAPTURED)"
+    arch_fail "PM launcher missing --allowedTools (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q 'Write' && echo "$CAPTURED" | grep -q 'Edit'; then
-    arch_pass "Architect --allowedTools includes Write and Edit"
+    arch_pass "PM --allowedTools includes Write and Edit"
 else
-    arch_fail "Architect --allowedTools missing Write/Edit (captured: $CAPTURED)"
+    arch_fail "PM --allowedTools missing Write/Edit (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
-    arch_pass "Architect launcher passes --append-system-prompt-file"
+    arch_pass "PM launcher passes --append-system-prompt-file"
 else
-    arch_fail "Architect launcher missing --append-system-prompt-file (captured: $CAPTURED)"
+    arch_fail "PM launcher missing --append-system-prompt-file (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Architect Launcher Falls Back When Config is Missing ---
+# --- Scenario: PM Launcher Falls Back When Config is Missing ---
 echo ""
-echo "[Scenario] Architect Launcher Falls Back When Config is Missing"
+echo "[Scenario] PM Launcher Falls Back When Config is Missing"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
@@ -424,23 +424,23 @@ CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 # With empty model/effort, the launcher should still run (omitting --model/--effort or passing empty)
 # bypass_permissions defaults to false, so --allowedTools should be present (not --dangerously-skip-permissions)
 if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
-    arch_fail "Architect should NOT have --dangerously-skip-permissions when config missing (bypass defaults to false)"
+    arch_fail "PM should NOT have --dangerously-skip-permissions when config missing (bypass defaults to false)"
 else
-    arch_pass "Architect defaults bypass_permissions to false when config missing"
+    arch_pass "PM defaults bypass_permissions to false when config missing"
 fi
 
 # Verify it still launches (captured args exist)
 if [ -n "$CAPTURED" ]; then
-    arch_pass "Architect launcher still runs when role section missing from config"
+    arch_pass "PM launcher still runs when role section missing from config"
 else
-    arch_fail "Architect launcher did not run when role section missing"
+    arch_fail "PM launcher did not run when role section missing"
 fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Architect Launcher Assembles Correct Prompt ---
+# --- Scenario: PM Launcher Assembles Correct Prompt ---
 echo ""
-echo "[Scenario] Architect Launcher Assembles Correct Prompt"
+echo "[Scenario] PM Launcher Assembles Correct Prompt"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
@@ -483,8 +483,8 @@ fi
 
 # Verify session message
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
-if echo "$CAPTURED" | grep -q 'Begin Architect session.'; then
-    arch_pass "Session message is 'Begin Architect session.'"
+if echo "$CAPTURED" | grep -q 'Begin PM session.'; then
+    arch_pass "Session message is 'Begin PM session.'"
 else
     arch_fail "Wrong session message (captured: $CAPTURED)"
 fi
@@ -493,12 +493,12 @@ teardown_launcher_sandbox
 
 ###############################################################################
 echo ""
-echo "=== Builder Agent Launcher Tests ==="
+echo "=== Engineer Agent Launcher Tests ==="
 ###############################################################################
 
-# --- Scenario: Builder Launcher Dispatches with Config ---
+# --- Scenario: Engineer Launcher Dispatches with Config ---
 echo ""
-echo "[Scenario] Builder Launcher Dispatches with Config"
+echo "[Scenario] Engineer Launcher Dispatches with Config"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
@@ -519,41 +519,41 @@ PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--model claude-opus-4-6'; then
-    build_pass "Builder launcher passed --model claude-opus-4-6"
+    build_pass "Engineer launcher passed --model claude-opus-4-6"
 else
-    build_fail "Builder launcher did not pass --model (captured: $CAPTURED)"
+    build_fail "Engineer launcher did not pass --model (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--effort high'; then
-    build_pass "Builder launcher passed --effort high"
+    build_pass "Engineer launcher passed --effort high"
 else
-    build_fail "Builder launcher did not pass --effort high (captured: $CAPTURED)"
+    build_fail "Engineer launcher did not pass --effort high (captured: $CAPTURED)"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
-    build_pass "Builder launcher passed --dangerously-skip-permissions when bypass=true"
+    build_pass "Engineer launcher passed --dangerously-skip-permissions when bypass=true"
 else
-    build_fail "Builder launcher did not pass --dangerously-skip-permissions (captured: $CAPTURED)"
+    build_fail "Engineer launcher did not pass --dangerously-skip-permissions (captured: $CAPTURED)"
 fi
 
 # Verify resolve_config.py is called
 if grep -q 'resolve_config.py' "$SANDBOX/pl-run-builder.sh"; then
-    build_pass "Builder launcher calls resolve_config.py builder"
+    build_pass "Engineer launcher calls resolve_config.py builder"
 else
-    build_fail "Builder launcher does not reference resolve_config.py"
+    build_fail "Engineer launcher does not reference resolve_config.py"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
-    build_pass "Builder launcher passes --append-system-prompt-file"
+    build_pass "Engineer launcher passes --append-system-prompt-file"
 else
-    build_fail "Builder launcher missing --append-system-prompt-file (captured: $CAPTURED)"
+    build_fail "Engineer launcher missing --append-system-prompt-file (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Builder Launcher Uses Default Permissions When bypass=false ---
+# --- Scenario: Engineer Launcher Uses Default Permissions When bypass=false ---
 echo ""
-echo "[Scenario] Builder Launcher Uses Default Permissions When bypass=false"
+echo "[Scenario] Engineer Launcher Uses Default Permissions When bypass=false"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
@@ -574,22 +574,22 @@ PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
-    build_fail "Builder launcher should NOT pass --allowedTools when bypass=false (captured: $CAPTURED)"
+    build_fail "Engineer launcher should NOT pass --allowedTools when bypass=false (captured: $CAPTURED)"
 else
-    build_pass "Builder launcher does not pass --allowedTools when bypass=false"
+    build_pass "Engineer launcher does not pass --allowedTools when bypass=false"
 fi
 
 if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
-    build_fail "Builder launcher should NOT pass --dangerously-skip-permissions when bypass=false (captured: $CAPTURED)"
+    build_fail "Engineer launcher should NOT pass --dangerously-skip-permissions when bypass=false (captured: $CAPTURED)"
 else
-    build_pass "Builder launcher does not pass --dangerously-skip-permissions when bypass=false"
+    build_pass "Engineer launcher does not pass --dangerously-skip-permissions when bypass=false"
 fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Builder Launcher Assembles Correct Prompt ---
+# --- Scenario: Engineer Launcher Assembles Correct Prompt ---
 echo ""
-echo "[Scenario] Builder Launcher Assembles Correct Prompt"
+echo "[Scenario] Engineer Launcher Assembles Correct Prompt"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
@@ -632,8 +632,8 @@ fi
 
 # Verify session message
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
-if echo "$CAPTURED" | grep -q 'Begin Builder session.'; then
-    build_pass "Session message is 'Begin Builder session.'"
+if echo "$CAPTURED" | grep -q 'Begin Engineer session.'; then
+    build_pass "Session message is 'Begin Engineer session.'"
 else
     build_fail "Wrong session message (captured: $CAPTURED)"
 fi
@@ -806,13 +806,13 @@ if [ $PM_FAIL -gt 0 ]; then
     echo -e "$PM_ERRORS"
 fi
 echo ""
-echo "  Architect Launcher: $ARCH_PASS/$((ARCH_PASS + ARCH_FAIL)) passed"
+echo "  PM Launcher: $ARCH_PASS/$((ARCH_PASS + ARCH_FAIL)) passed"
 if [ $ARCH_FAIL -gt 0 ]; then
     echo "  Failures:"
     echo -e "$ARCH_ERRORS"
 fi
 echo ""
-echo "  Builder Launcher: $BUILD_PASS/$((BUILD_PASS + BUILD_FAIL)) passed"
+echo "  Engineer Launcher: $BUILD_PASS/$((BUILD_PASS + BUILD_FAIL)) passed"
 if [ $BUILD_FAIL -gt 0 ]; then
     echo "  Failures:"
     echo -e "$BUILD_ERRORS"

@@ -30,7 +30,7 @@ def read_command_file():
 class TestAllRolesCanInvoke(unittest.TestCase):
     """Scenario: All roles can invoke the command
 
-    Given any agent role (Architect, Builder, QA, or PM)
+    Given any agent role (PM, Engineer, QA, or PM)
     When the user invokes /pl-status
     Then the skill executes without a role authorization error
 
@@ -44,7 +44,7 @@ class TestAllRolesCanInvoke(unittest.TestCase):
         self.assertIn("shared (all roles)", first_line.lower())
 
     def test_no_role_gate_pattern(self):
-        """No single-role ownership pattern like 'command owner: Builder'."""
+        """No single-role ownership pattern like 'command owner: Engineer'."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertNotIn("command owner:", first_line.lower())
@@ -117,21 +117,21 @@ class TestModeGroupedView(unittest.TestCase):
         self.assertIn("QA work", content)
 
 
-class TestArchitectSeesUncommittedChangesCheck(unittest.TestCase):
-    """Scenario: Architect sees uncommitted changes check
+class TestPMSeesUncommittedChangesCheck(unittest.TestCase):
+    """Scenario: PM sees uncommitted changes check
 
-    Given the invoking agent is the Architect
+    Given the invoking agent is the PM
     When /pl-status is invoked
     Then the output includes an uncommitted changes check
-    And a commit message is proposed for Architect-owned files
+    And a commit message is proposed for PM-owned files
 
-    Structural test: the command file contains Architect-specific
+    Structural test: the command file contains PM-specific
     uncommitted changes logic with commit message proposal.
     """
 
     def test_architect_specific_section_present(self):
         content = read_command_file()
-        self.assertIn("Architect", content)
+        self.assertIn("PM", content)
         self.assertRegex(
             content,
             r"(?i)architect.*uncommitted",
@@ -148,7 +148,7 @@ class TestArchitectSeesUncommittedChangesCheck(unittest.TestCase):
         self.assertIn("git diff", content)
 
     def test_commit_message_proposal(self):
-        """Command instructs proposing a commit message for Architect-owned files."""
+        """Command instructs proposing a commit message for PM-owned files."""
         content = read_command_file()
         self.assertRegex(
             content,
@@ -156,9 +156,9 @@ class TestArchitectSeesUncommittedChangesCheck(unittest.TestCase):
         )
 
     def test_architect_owned_files_listed(self):
-        """Command lists file patterns considered Architect-owned."""
+        """Command lists file patterns considered PM-owned."""
         content = read_command_file()
-        # At least features/*.md should be listed as Architect-owned
+        # At least features/*.md should be listed as PM-owned
         self.assertIn("features/*.md", content)
 
 

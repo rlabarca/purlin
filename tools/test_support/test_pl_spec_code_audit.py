@@ -70,33 +70,33 @@ class TestCommandFileExists(unittest.TestCase):
 
 
 class TestRoleGating(unittest.TestCase):
-    """Scenario: Role gate rejects non-Architect/Builder invocation
+    """Scenario: Role gate rejects non-PM/Engineer invocation
 
-    Spec 2.1: Non-Architect/Builder agents (QA, PM) MUST receive the rejection
+    Spec 2.1: Non-PM/Engineer agents (QA, PM) MUST receive the rejection
     message. The gate must appear before any analysis phase.
     """
 
     def test_command_contains_role_gate_message(self):
         content = _read_command()
         self.assertIn(
-            'This command is for the Architect or Builder', content)
+            'This command is for the PM or Engineer', content)
 
     def test_role_gate_appears_before_analysis(self):
         content = _read_command()
-        gate_pos = content.index('Architect or Builder')
+        gate_pos = content.index('PM or Engineer')
         phase_pos = content.index('Phase 0')
         self.assertLess(gate_pos, phase_pos,
                         'Role gate must appear before Phase 0 analysis')
 
     def test_role_gate_mentions_shared_role(self):
-        """Command header declares shared Architect/Builder ownership."""
+        """Command header declares shared PM/Engineer ownership."""
         content = _read_command()
         self.assertIn('shared', content.lower())
-        self.assertIn('Architect', content)
-        self.assertIn('Builder', content)
+        self.assertIn('PM', content)
+        self.assertIn('Engineer', content)
 
     def test_role_gate_blocks_non_architect_builder(self):
-        """The gate message blocks QA and PM by requiring Architect or Builder."""
+        """The gate message blocks QA and PM by requiring PM or Engineer."""
         content = _read_command()
         self.assertIn('not operating as', content.lower())
 
@@ -245,7 +245,7 @@ class TestTriageModeAnalysis(unittest.TestCase):
         content = _read_command()
         dimensions = [
             'Spec completeness', 'Policy anchoring', 'Traceability',
-            'Builder decisions', 'User testing', 'Dependency currency',
+            'Engineer decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
             'Anchor invariant drift', 'Requirement hygiene',
         ]
@@ -475,29 +475,29 @@ class TestSynthesisAndAuditTable(unittest.TestCase):
 
 
 class TestRemediationPlan(unittest.TestCase):
-    """Scenarios: Architect remediation plan describes only spec edits,
-    Builder remediation plan describes only code edits.
+    """Scenarios: PM remediation plan describes only spec edits,
+    Engineer remediation plan describes only code edits.
 
-    Spec 2.11: Architect FIX edits target feature specs and anchor nodes
-    only. Builder FIX edits target source code and tests only.
+    Spec 2.11: PM FIX edits target feature specs and anchor nodes
+    only. Engineer FIX edits target source code and tests only.
     """
 
     def test_architect_fix_targets_specs_and_anchors(self):
         content = _read_command()
-        self.assertIn('Architect FIX edits', content)
+        self.assertIn('PM FIX edits', content)
         self.assertIn('feature specs', content)
         self.assertIn('anchor nodes', content)
 
     def test_builder_fix_targets_code_and_tests(self):
         content = _read_command()
-        self.assertIn('Builder FIX edits', content)
+        self.assertIn('Engineer FIX edits', content)
         self.assertIn('source code and tests', content)
 
     def test_architect_fix_before_builder_fix(self):
         """Both remediation plan descriptions appear in the command file."""
         content = _read_command()
-        arch_pos = content.index('Architect FIX edits')
-        builder_pos = content.index('Builder FIX edits')
+        arch_pos = content.index('PM FIX edits')
+        builder_pos = content.index('Engineer FIX edits')
         # Both exist (positions are valid)
         self.assertGreater(arch_pos, 0)
         self.assertGreater(builder_pos, 0)
@@ -577,11 +577,11 @@ class TestSeverityClassification(unittest.TestCase):
 
 
 class TestEscalation(unittest.TestCase):
-    """Scenarios: Architect escalates code-side gap via companion file,
-    Builder escalates spec-side gap via companion file.
+    """Scenarios: PM escalates code-side gap via companion file,
+    Engineer escalates spec-side gap via companion file.
 
-    Spec 2.14: Architect writes [DISCOVERY] entries with Source/Severity/
-    Details/Suggested fix. Builder writes [DISCOVERY] or [SPEC_PROPOSAL]
+    Spec 2.14: PM writes [DISCOVERY] entries with Source/Severity/
+    Details/Suggested fix. Engineer writes [DISCOVERY] or [SPEC_PROPOSAL]
     with Suggested spec change.
     """
 
@@ -774,7 +774,7 @@ class TestSpecFeatureAlignment(unittest.TestCase):
         # Command file should reference all 11
         cmd_dims = sum(1 for d in [
             'Spec completeness', 'Policy anchoring', 'Traceability',
-            'Builder decisions', 'User testing', 'Dependency currency',
+            'Engineer decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
             'Anchor invariant drift', 'Requirement hygiene',
         ] if d in cmd)

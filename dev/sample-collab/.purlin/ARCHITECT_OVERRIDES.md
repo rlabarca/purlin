@@ -1,6 +1,6 @@
-# Architect Overrides: Sample Task Manager
+# PM Overrides: Sample Task Manager
 
-> Project-specific rules for the Architect role in this sample project.
+> Project-specific rules for the PM role in this sample project.
 
 ## Scope Restriction
 

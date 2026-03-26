@@ -47,7 +47,7 @@ cd "$WORK_DIR"
 git init >/dev/null 2>&1
 git remote add origin "$BARE_DIR"
 git config user.email "fixture@purlin.dev"
-git config user.name "Purlin Fixture Builder"
+git config user.name "Purlin Fixture Engineer"
 
 # Seed the work dir from existing bare repo, or create initial commit
 if git ls-remote --exit-code origin HEAD >/dev/null 2>&1; then
@@ -197,7 +197,7 @@ set_config true true
 cat > .purlin/cache/session_checkpoint.md <<'CHECKPOINT'
 # Session Checkpoint
 
-**Role:** Builder
+**Role:** Engineer
 **Timestamp:** 2026-01-15T10:30:00Z
 **Branch:** collab/purlincollab
 
@@ -221,7 +221,7 @@ None
 ## Notes
 All prerequisites are satisfied.
 
-## Builder Context
+## Engineer Context
 **Protocol Step:** 2
 **Delivery Plan:** No delivery plan
 **Work Queue:**

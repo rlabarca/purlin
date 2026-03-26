@@ -616,7 +616,7 @@ compact_entry = {
     'hooks': [
         {
             'type': 'command',
-            'command': \"echo 'IMPORTANT: Context was compacted. This project uses role-restricted Purlin agents. Role boundaries: Architect/PM never write code; Builder never writes specs; QA never writes app code. Run /pl-resume immediately to restore session context.'\"
+            'command': \"echo 'IMPORTANT: Context was compacted. This project uses role-restricted Purlin agents. Role boundaries: PM/PM never write code; Engineer never writes specs; QA never writes app code. Run /pl-resume immediately to restore session context.'\"
         }
     ]
 }
@@ -1009,10 +1009,10 @@ else:
     say "     • Have designs?      → ./pl-run-pm.sh"
     say "       The PM reads your Figma designs and writes feature specs."
     say "     • Have requirements? → ./pl-run-architect.sh"
-    say "       The Architect turns requirements into feature specs."
+    say "       The PM turns requirements into feature specs."
     say ""
     say "  3. Build from specs:"
-    say "     The Builder reads your specs and writes the code and tests"
+    say "     The Engineer reads your specs and writes the code and tests"
     say "     to match them. → ./pl-run-builder.sh"
     say ""
     if [ -n "$PROVIDER_SUMMARY" ]; then

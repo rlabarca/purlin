@@ -336,7 +336,7 @@ cat > "$FIXTURE_DIR/features/auth.discoveries.md" << 'DISCEOF'
 ### [BUG] Login fails on empty password (Discovered: 2026-03-24)
 - **Observed Behavior:** Login crashes with empty password.
 - **Expected Behavior:** Should show validation error.
-- **Action Required:** Builder
+- **Action Required:** Engineer
 - **Status:** OPEN
 DISCEOF
 

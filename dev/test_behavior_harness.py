@@ -131,9 +131,9 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
         cls.repo = create_fixture_repo({
             "main/agent_behavior_tests/expert-mode": {
                 "instructions/HOW_WE_WORK_BASE.md": "# How We Work Base\nLayer 1 content.\n",
-                "instructions/BUILDER_BASE.md": "# Builder Base\nLayer 2 content.\n",
+                "instructions/BUILDER_BASE.md": "# Engineer Base\nLayer 2 content.\n",
                 ".purlin/HOW_WE_WORK_OVERRIDES.md": "# HWW Overrides\nLayer 3 content.\n",
-                ".purlin/BUILDER_OVERRIDES.md": "# Builder Overrides\nLayer 4 content.\n",
+                ".purlin/BUILDER_OVERRIDES.md": "# Engineer Overrides\nLayer 4 content.\n",
                 ".purlin/config.json": json.dumps({
                     "tools_root": "tools",
                     "agents": {
@@ -206,7 +206,7 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
         repo = create_fixture_repo({
             "main/test/minimal": {
                 "instructions/HOW_WE_WORK_BASE.md": "# Base\nBase content.\n",
-                "instructions/BUILDER_BASE.md": "# Builder\nBuilder content.\n",
+                "instructions/BUILDER_BASE.md": "# Engineer\nBuilder content.\n",
             },
         })
 
@@ -227,7 +227,7 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
                     prompt_content += f.read() + "\n\n"
 
         self.assertIn("Base content", prompt_content)
-        self.assertIn("Builder content", prompt_content)
+        self.assertIn("Engineer content", prompt_content)
         # Missing layers should not cause errors
         self.assertNotIn("Layer 3", prompt_content)
 
@@ -250,7 +250,7 @@ class TestCommandTableAssertion(unittest.TestCase):
     def test_assertion_passes_for_valid_table(self):
         """Assertion matches Unicode-bordered command table."""
         output = (
-            "Purlin Builder — Ready\n"
+            "Purlin Engineer — Ready\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "\n"
             "  Global\n"
@@ -268,7 +268,7 @@ class TestCommandTableAssertion(unittest.TestCase):
 
     def test_assertion_fails_for_missing_table(self):
         """Assertion fails when no command table is present."""
-        output = "Hello, I am the Builder. How can I help?\n"
+        output = "Hello, I am the Engineer. How can I help?\n"
         import re
         self.assertFalse(
             bool(re.search(r"━━━", output)),
@@ -276,17 +276,17 @@ class TestCommandTableAssertion(unittest.TestCase):
         )
 
     def test_assertion_detects_builder_header(self):
-        """Assertion detects 'Purlin Builder' in output."""
-        output = "Purlin Builder — Ready\n━━━━━━━━━━━━━━━━━━\n"
+        """Assertion detects 'Purlin Engineer' in output."""
+        output = "Purlin Engineer — Ready\n━━━━━━━━━━━━━━━━━━\n"
         import re
         self.assertTrue(
-            bool(re.search(r"Purlin Builder", output, re.IGNORECASE)),
-            "Should detect Builder header",
+            bool(re.search(r"Purlin Engineer", output, re.IGNORECASE)),
+            "Should detect Engineer header",
         )
 
     def test_assertion_detects_collab_variant(self):
         """Assertion detects collaboration branch variant markers."""
-        output = "Purlin Builder — Ready  [Branch: collab/v2]\n━━━━━━━━━━━━━━━━━━\n"
+        output = "Purlin Engineer — Ready  [Branch: collab/v2]\n━━━━━━━━━━━━━━━━━━\n"
         import re
         self.assertTrue(
             bool(re.search(r"Branch:", output, re.IGNORECASE)),
@@ -307,7 +307,7 @@ class TestExpertModeOutput(unittest.TestCase):
 
     Given the fixture tag "main/agent_behavior_tests/expert-mode" is checked out
     And the config has find_work: false
-    When claude --print is invoked with "Begin Builder session."
+    When claude --print is invoked with "Begin Engineer session."
     Then the output contains "find_work disabled"
     And the output does NOT contain a work plan
 
@@ -320,7 +320,7 @@ class TestExpertModeOutput(unittest.TestCase):
         """Expert mode outputs the correct find_work disabled message."""
         # Simulate the expected output from expert mode
         expected_output = (
-            "Purlin Builder — Ready\n"
+            "Purlin Engineer — Ready\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "...\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -360,7 +360,7 @@ class TestResumeCheckpointEcho(unittest.TestCase):
         checkpoint = (
             "# Session Checkpoint\n"
             "\n"
-            "**Role:** Builder\n"
+            "**Role:** Engineer\n"
             "**Timestamp:** 2026-01-15T10:30:00Z\n"
             "**Branch:** collab/purlincollab\n"
             "\n"
@@ -369,7 +369,7 @@ class TestResumeCheckpointEcho(unittest.TestCase):
             "**Feature:** features/sample_feature.md\n"
             "**In Progress:** Implementing sample_feature\n"
             "\n"
-            "## Builder Context\n"
+            "## Engineer Context\n"
             "**Protocol Step:** 2\n"
         )
         import re
@@ -734,7 +734,7 @@ class TestCLIScriptDiscovery(unittest.TestCase):
         with open(cls.script_with_help, "w") as f:
             f.write('#!/bin/bash\n')
             f.write('if [[ "$1" == "--help" ]]; then\n')
-            f.write('  echo "$(basename "$0") — Launch the Builder agent"\n')
+            f.write('  echo "$(basename "$0") — Launch the Engineer agent"\n')
             f.write('  echo ""\n')
             f.write('  echo "Options:"\n')
             f.write('  echo "  --continuous   Run in continuous mode"\n')
@@ -776,7 +776,7 @@ class TestCLIScriptDiscovery(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("pl-run-builder.sh", result.stdout)
-        self.assertIn("Launch the Builder agent", result.stdout)
+        self.assertIn("Launch the Engineer agent", result.stdout)
         self.assertIn("--continuous", result.stdout)
         self.assertIn("--help", result.stdout)
 

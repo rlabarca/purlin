@@ -1024,7 +1024,7 @@ scenario_builder_role_startup() {
     should_run_scenario "$name" || return 0
 
     echo ""
-    echo "--- Scenario: Builder Role — Identifies TODO Features ---"
+    echo "--- Scenario: Engineer Role — Identifies TODO Features ---"
     local fixture_dir prompt_file output
 
     fixture_dir=$(checkout_fixture_safe "main/builder_startup/todo-features") || {
@@ -1034,7 +1034,7 @@ scenario_builder_role_startup() {
 
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" \
-        "You are the Builder agent. Look at the features/ directory and identify any features that need implementation work. List features in TODO state." \
+        "You are the Engineer agent. Look at the features/ directory and identify any features that need implementation work. List features in TODO state." \
         "$fixture_dir")
 
     # Tier 2: Agent should identify the specific TODO feature
@@ -1042,7 +1042,7 @@ scenario_builder_role_startup() {
         record_result "PASS" "$name: identifies TODO feature by name" "" 2
     else
         record_result "FAIL" "$name: identifies TODO feature by name" \
-            "Expected Builder to identify Authentication / feat_auth as TODO" 2
+            "Expected Engineer to identify Authentication / feat_auth as TODO" 2
     fi
 
     rm -f "$prompt_file"

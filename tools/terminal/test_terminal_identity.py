@@ -72,12 +72,12 @@ set_term_title() {{
     local text="$1"
     printf '\\033]0;%s\\007' "$text"
 }}
-set_term_title "Architect"
+set_term_title "PM"
 """
     stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "xterm"})
     record(
         "Title escape sequence emitted for any terminal",
-        rc == 0 and "\033]0;Architect\007" in stdout,
+        rc == 0 and "\033]0;PM\007" in stdout,
         f"rc={rc}, stdout repr={repr(stdout)}"
     )
 
@@ -86,7 +86,7 @@ def test_badge_escape_sequence_iterm2():
     """Scenario: Badge escape sequence emitted for iTerm2"""
     # Compute expected base64
     import base64
-    expected_b64 = base64.b64encode(b"Builder").decode()
+    expected_b64 = base64.b64encode(b"Engineer").decode()
 
     script = f"""
 source "{IDENTITY_SCRIPT}"
@@ -98,7 +98,7 @@ set_iterm_badge() {{
     encoded=$(echo -n "$text" | base64 | tr -d '\\n')
     printf '\\e]1337;SetBadgeFormat=%s\\a' "$encoded"
 }}
-set_iterm_badge "Builder"
+set_iterm_badge "Engineer"
 """
     stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
     record(
@@ -147,7 +147,7 @@ echo "DONE"
 
 def test_base64_round_trip():
     """Scenario: Base64 encoding round-trips correctly"""
-    test_text = "Builder: Phase 2/5"
+    test_text = "Engineer: Phase 2/5"
     script = f"""
 source "{IDENTITY_SCRIPT}"
 ENCODED=$(echo -n "{test_text}" | base64 | tr -d '\\n')
@@ -172,13 +172,13 @@ set_term_title() {{ CALLS="$CALLS title:$1"; }}
 clear_term_title() {{ CALLS="$CALLS clear_title"; }}
 set_iterm_badge() {{ CALLS="$CALLS badge:$1"; }}
 clear_iterm_badge() {{ CALLS="$CALLS clear_badge"; }}
-set_agent_identity "Architect"
+set_agent_identity "PM"
 echo "$CALLS"
 """
     stdout, _, rc = run_bash(script, env={"TERM_PROGRAM": "iTerm.app"})
     record(
         "set_agent_identity calls both title and badge",
-        rc == 0 and "title:Architect" in stdout and "badge:Architect" in stdout,
+        rc == 0 and "title:PM" in stdout and "badge:PM" in stdout,
         f"rc={rc}, calls={repr(stdout.strip())}"
     )
 
@@ -232,8 +232,8 @@ def test_generated_launcher_exit_trap_contains_clear():
 def test_generated_launcher_display_name_per_role():
     """Scenario: Generated launcher uses correct display name per role"""
     init_src = read_file(INIT_SCRIPT)
-    has_architect = 'architect) DISPLAY_NAME="Architect"' in init_src
-    has_builder = 'builder) DISPLAY_NAME="Builder"' in init_src
+    has_architect = 'architect) DISPLAY_NAME="PM"' in init_src
+    has_builder = 'builder) DISPLAY_NAME="Engineer"' in init_src
     has_qa = 'qa) DISPLAY_NAME="QA"' in init_src
     has_pm = 'pm) DISPLAY_NAME="PM"' in init_src
     record(
@@ -283,11 +283,11 @@ def test_builder_launcher_graceful_stop_clears_identity():
 
 
 def test_builder_bootstrap_phase_identity():
-    """Verify bootstrap phase sets identity to 'Builder: Bootstrap'."""
+    """Verify bootstrap phase sets identity to 'Engineer: Bootstrap'."""
     launcher_src = read_file(LAUNCHER_PATH)
     record(
-        "Bootstrap phase sets identity to Builder: Bootstrap",
-        'set_agent_identity "Builder: Bootstrap"' in launcher_src,
+        "Bootstrap phase sets identity to Engineer: Bootstrap",
+        'set_agent_identity "Engineer: Bootstrap"' in launcher_src,
         "Bootstrap identity string not found"
     )
 
@@ -297,7 +297,7 @@ def test_builder_sequential_phase_identity():
     launcher_src = read_file(LAUNCHER_PATH)
     record(
         "Sequential phase sets identity with phase number",
-        'set_agent_identity "Builder: Phase ${PHASE_NUM}/${TOTAL_PHASE_COUNT}"' in launcher_src,
+        'set_agent_identity "Engineer: Phase ${PHASE_NUM}/${TOTAL_PHASE_COUNT}"' in launcher_src,
         "Sequential phase identity pattern not found"
     )
 
@@ -307,48 +307,48 @@ def test_builder_parallel_phase_identity():
     launcher_src = read_file(LAUNCHER_PATH)
     record(
         "Parallel execution sets identity with phase list",
-        'set_agent_identity "Builder: Phases $PHASE_DISPLAY"' in launcher_src,
+        'set_agent_identity "Engineer: Phases $PHASE_DISPLAY"' in launcher_src,
         "Parallel phase identity pattern not found"
     )
 
 
 def test_builder_evaluator_identity():
-    """Verify evaluator phase sets identity to 'Builder: Evaluating'."""
+    """Verify evaluator phase sets identity to 'Engineer: Evaluating'."""
     launcher_src = read_file(LAUNCHER_PATH)
-    count = launcher_src.count('set_agent_identity "Builder: Evaluating"')
+    count = launcher_src.count('set_agent_identity "Engineer: Evaluating"')
     record(
-        "Evaluator sets identity to Builder: Evaluating",
+        "Evaluator sets identity to Engineer: Evaluating",
         count >= 2,  # One for parallel eval, one for sequential eval
         f"Found {count} evaluating identity calls, expected >= 2"
     )
 
 
 def test_builder_between_phases_resets_identity():
-    """Verify identity resets to 'Builder' between phases."""
+    """Verify identity resets to 'Engineer' between phases."""
     launcher_src = read_file(LAUNCHER_PATH)
     # After evaluator completes (continue action), identity should reset
     # Find in the continue case blocks
     record(
-        "Between phases resets identity to Builder",
-        launcher_src.count('set_agent_identity "Builder"') >= 3,  # non-continuous, bootstrap-reset, between-phases
-        f"Found {launcher_src.count('set_agent_identity \"Builder\"')} Builder identity resets"
+        "Between phases resets identity to Engineer",
+        launcher_src.count('set_agent_identity "Engineer"') >= 3,  # non-continuous, bootstrap-reset, between-phases
+        f"Found {launcher_src.count('set_agent_identity \"Engineer\"')} Engineer identity resets"
     )
 
 
 def test_non_continuous_mode_sets_identity():
-    """Verify non-continuous mode sets identity to Builder."""
+    """Verify non-continuous mode sets identity to Engineer."""
     launcher_src = read_file(LAUNCHER_PATH)
     # Should be in the non-continuous block
     non_cont_section = launcher_src.split('# --- Non-continuous mode')[1].split('fi')[0] if '# --- Non-continuous mode' in launcher_src else ""
     record(
-        "Non-continuous mode sets Builder identity",
-        'set_agent_identity "Builder"' in non_cont_section,
-        "Builder identity not found in non-continuous section"
+        "Non-continuous mode sets Engineer identity",
+        'set_agent_identity "Engineer"' in non_cont_section,
+        "Engineer identity not found in non-continuous section"
     )
 
 
 # ============================================================
-# Non-Builder Root Launcher Integration Tests
+# Non-Engineer Root Launcher Integration Tests
 # ============================================================
 
 def _test_launcher_sources_identity(path, role_name):
@@ -385,7 +385,7 @@ def _test_launcher_cleanup_clears_identity(path, role_name):
 
 def test_architect_launcher_identity():
     _test_launcher_sources_identity(ARCHITECT_LAUNCHER, "architect")
-    _test_launcher_sets_identity(ARCHITECT_LAUNCHER, "architect", "Architect")
+    _test_launcher_sets_identity(ARCHITECT_LAUNCHER, "architect", "PM")
     _test_launcher_cleanup_clears_identity(ARCHITECT_LAUNCHER, "architect")
 
 
@@ -437,7 +437,7 @@ if __name__ == '__main__':
     test_non_continuous_mode_sets_identity()
 
     # Non-builder root launcher integration
-    print("\n--- Non-Builder Root Launcher Integration ---")
+    print("\n--- Non-Engineer Root Launcher Integration ---")
     test_architect_launcher_identity()
     test_qa_launcher_identity()
     test_pm_launcher_identity()

@@ -30,7 +30,7 @@ def read_command_file():
 class TestSkillAvailableToAllRoles(unittest.TestCase):
     """Scenario: Skill is available to all roles
 
-    Given any agent role (Architect, Builder, QA, or PM)
+    Given any agent role (PM, Engineer, QA, or PM)
     When the user invokes /pl-purlin-issue
     Then the skill executes without a role authorization error
 
@@ -44,7 +44,7 @@ class TestSkillAvailableToAllRoles(unittest.TestCase):
         self.assertIn("shared (all roles)", first_line.lower())
 
     def test_no_role_restriction_pattern(self):
-        """No single-role ownership pattern like 'command owner: Builder'."""
+        """No single-role ownership pattern like 'command owner: Engineer'."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertNotIn("command owner:", first_line.lower())

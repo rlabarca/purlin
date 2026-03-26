@@ -27,39 +27,39 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonArchitect(unittest.TestCase):
-    """Scenario: Role gate rejects non-PM/Architect invocation
+class TestRoleGateRejectsNonPM(unittest.TestCase):
+    """Scenario: Role gate rejects non-PM/PM invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-anchor
     Then the command responds with a redirect message
 
-    Structural test: the command file declares Architect ownership and
-    contains a redirect message for non-Architect agents.
+    Structural test: the command file declares PM ownership and
+    contains a redirect message for non-PM agents.
     """
 
     def test_declares_architect_command_owner(self):
-        """The first line establishes Architect-only ownership."""
+        """The first line establishes PM-only ownership."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("Architect", first_line)
+        self.assertIn("PM", first_line)
 
     def test_contains_role_gate_redirect(self):
-        """Contains a redirect message for non-Architect agents."""
+        """Contains a redirect message for non-PM agents."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(not operating as|ask your.*architect)",
+            r"(?i)(another mode is active|confirm switch)",
         )
 
     def test_redirect_mentions_architect(self):
-        """Redirect message specifically names the Architect role."""
+        """Redirect message specifically names the PM role."""
         content = read_command_file()
         # Find the redirect/rejection line
         lines = content.splitlines()
         redirect_lines = [l for l in lines if "stop" in l.lower() or "instead" in l.lower()]
         combined = " ".join(redirect_lines)
-        self.assertIn("Architect", combined)
+        self.assertIn("PM", combined)
 
 
 class TestPMRestrictedFromArchPrefix(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestPMRestrictedFromArchPrefix(unittest.TestCase):
 
     Given a PM agent session
     When the PM attempts to create an arch_data_layer.md anchor
-    Then the command responds that arch_ anchors are Architect-only
+    Then the command responds that arch_ anchors are PM-only
 
     Structural test: the command file documents the three anchor prefix
     types and associates arch_* exclusively with the Technical domain.
@@ -89,7 +89,7 @@ class TestPMRestrictedFromArchPrefix(unittest.TestCase):
         self.assertIn("policy_", content)
 
     def test_arch_prefix_associated_with_technical(self):
-        """arch_* is associated with the Technical domain (Architect-only)."""
+        """arch_* is associated with the Technical domain (PM-only)."""
         content = read_command_file()
         # The arch_ row should be on the same line as Technical
         arch_lines = [l for l in content.splitlines() if "arch_" in l]

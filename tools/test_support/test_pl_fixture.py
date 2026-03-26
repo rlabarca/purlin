@@ -30,7 +30,7 @@ def read_command_file():
 class TestAllRolesCanInvokeCommand(unittest.TestCase):
     """Scenario: All roles can invoke the command
 
-    Given any agent role (Architect, Builder, QA, or PM)
+    Given any agent role (PM, Engineer, QA, or PM)
     When the user invokes /pl-fixture
     Then the skill executes without a role authorization error
 
@@ -45,7 +45,7 @@ class TestAllRolesCanInvokeCommand(unittest.TestCase):
         self.assertIn("shared", first_line.lower())
 
     def test_no_single_role_gate(self):
-        """No single-role ownership pattern like 'command owner: Builder'."""
+        """No single-role ownership pattern like 'command owner: Engineer'."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertNotIn("command owner:", first_line.lower())
@@ -101,22 +101,22 @@ class TestRoleSpecificSectionsPresented(unittest.TestCase):
 
     Given the /pl-fixture command file
     When each role reads the command
-    Then role-specific guidance is presented (Builder sees pre-flight and
-    setup workflow, Architect sees design guidance, QA sees awareness).
+    Then role-specific guidance is presented (Engineer sees pre-flight and
+    setup workflow, PM sees design guidance, QA sees awareness).
 
     Structural test: the command file contains clearly labeled sections
     for each role with relevant content.
     """
 
     def test_builder_section_with_preflight_and_setup(self):
-        """Builder section covers pre-flight detection and setup workflow."""
+        """Engineer section covers pre-flight detection and setup workflow."""
         content = read_command_file()
         self.assertIn("For Builders", content)
         self.assertIn("Pre-Flight", content)
         self.assertIn("Setup Workflow", content)
 
     def test_architect_section_with_design_guidance(self):
-        """Architect section covers fixture-aware feature design."""
+        """PM section covers fixture-aware feature design."""
         content = read_command_file()
         self.assertIn("For Architects", content)
         self.assertIn("When to Use Fixtures", content)

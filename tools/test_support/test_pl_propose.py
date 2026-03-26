@@ -27,44 +27,44 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilderInvocation(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder invocation
+class TestRoleGateRejectsNonEngineerInvocation(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer invocation
 
-    Given an Architect agent session
+    Given an PM agent session
     When the agent invokes /pl-propose
     Then the command responds with a redirect message
 
-    Structural test: the command file's first line declares Builder as
-    the command owner, which means non-Builder agents will be redirected.
+    Structural test: the command file's first line declares Engineer as
+    the mode declaration, which means non-Engineer agents will be redirected.
     """
 
     def test_first_line_declares_builder_owner(self):
-        """First line must contain the Builder command owner declaration."""
+        """First line must contain the Engineer mode declaration declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("command owner: Builder", first_line,
-                       "First line must declare Builder as command owner")
+        self.assertIn("Purlin mode: Engineer", first_line,
+                       "First line must declare Engineer as mode")
 
     def test_redirect_message_for_non_builder(self):
-        """Command file must include a redirect message for non-Builder agents."""
+        """Command file must include a redirect message for non-Engineer agents."""
         content = read_command_file()
-        self.assertIn("not operating as the Purlin Builder", content,
-                       "Must include redirect guidance for non-Builder agents")
+        self.assertIn("another mode is active", content,
+                       "Must include redirect guidance for non-Engineer agents")
 
     def test_redirect_mentions_builder_role(self):
-        """Redirect message must tell non-Builder agents to ask a Builder."""
+        """Redirect message must tell non-Engineer agents to ask a Engineer."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)ask.*builder.*run.*pl-propose",
-            "Redirect must instruct non-Builder to ask Builder to run /pl-propose",
+            r"(?i)(another mode is active|confirm switch)",
+            "Redirect must instruct non-Engineer to ask Engineer to run /pl-propose",
         )
 
 
 class TestProposalRecordedInCompanionFile(unittest.TestCase):
     """Scenario: Proposal recorded in companion file
 
-    Given the Builder discovers a spec gap in feature_a
+    Given the Engineer discovers a spec gap in feature_a
     When /pl-propose is invoked with topic about feature_a
     Then features/feature_a.impl.md contains a [SPEC_PROPOSAL] entry
     And the entry includes rationale and proposed change
@@ -108,7 +108,7 @@ class TestProposalRecordedInCompanionFile(unittest.TestCase):
 class TestAnchorNodeProposalUsesCorrectTag(unittest.TestCase):
     """Scenario: Anchor node proposal uses correct tag
 
-    Given the Builder discovers a cross-cutting constraint
+    Given the Engineer discovers a cross-cutting constraint
     When /pl-propose records a new anchor proposal
     Then the entry uses [SPEC_PROPOSAL: NEW_ANCHOR] tag
     And includes proposed anchor type, name, and invariants
@@ -138,10 +138,10 @@ class TestProposalCommittedToGit(unittest.TestCase):
     Given a proposal entry is written to the companion file
     When the proposal workflow completes
     Then the companion file change is committed
-    And the Critic report will surface it at the Architect's next session
+    And the Critic report will surface it at the PM's next session
 
     Structural test: the command file describes committing the companion
-    file entry to git so it is visible to the Architect via the Critic.
+    file entry to git so it is visible to the PM via the Critic.
     """
 
     def test_commit_instruction_present(self):

@@ -229,7 +229,7 @@ scenario_startup_print_sequence() {
 
     fixture_dir=$(checkout_fixture "main/agent_behavior_tests/startup-print-sequence")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
-    output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
+    output=$(run_claude_test "$prompt_file" "Begin Engineer session." "$fixture_dir")
 
     if assert_contains "$output" "━━━"; then
         record_result "PASS" "Startup Print Sequence: command table present"
@@ -238,11 +238,11 @@ scenario_startup_print_sequence() {
             "Expected Unicode horizontal rule (━━━) in output"
     fi
 
-    if assert_contains "$output" "Purlin Builder"; then
-        record_result "PASS" "Startup Print Sequence: Builder header present"
+    if assert_contains "$output" "Purlin Engineer"; then
+        record_result "PASS" "Startup Print Sequence: Engineer header present"
     else
-        record_result "FAIL" "Startup Print Sequence: Builder header present" \
-            "Expected 'Purlin Builder' in output"
+        record_result "FAIL" "Startup Print Sequence: Engineer header present" \
+            "Expected 'Purlin Engineer' in output"
     fi
 
     rm -f "$prompt_file"
@@ -256,7 +256,7 @@ scenario_expert_mode() {
 
     fixture_dir=$(checkout_fixture "main/agent_behavior_tests/expert-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
-    output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
+    output=$(run_claude_test "$prompt_file" "Begin Engineer session." "$fixture_dir")
 
     if assert_contains "$output" "find_work disabled"; then
         record_result "PASS" "Expert Mode: disabled message present"
@@ -283,7 +283,7 @@ scenario_guided_mode() {
 
     fixture_dir=$(checkout_fixture "main/agent_behavior_tests/guided-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
-    output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
+    output=$(run_claude_test "$prompt_file" "Begin Engineer session." "$fixture_dir")
 
     if assert_contains "$output" "━━━"; then
         record_result "PASS" "Guided Mode: command table present"
@@ -311,7 +311,7 @@ scenario_auto_mode() {
 
     fixture_dir=$(checkout_fixture "main/agent_behavior_tests/auto-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
-    output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
+    output=$(run_claude_test "$prompt_file" "Begin Engineer session." "$fixture_dir")
 
     if assert_contains "$output" "━━━"; then
         record_result "PASS" "Auto Mode: command table present"
@@ -342,7 +342,7 @@ scenario_auto_mode() {
 
 scenario_builder_mid_feature_resume() {
     echo ""
-    echo "--- Scenario 5: Builder Mid-Feature Resume ---"
+    echo "--- Scenario 5: Engineer Mid-Feature Resume ---"
     local fixture_dir prompt_file output
 
     fixture_dir=$(checkout_fixture "main/pl_session_resume/builder-mid-feature")
@@ -350,16 +350,16 @@ scenario_builder_mid_feature_resume() {
     output=$(run_claude_test "$prompt_file" "/pl-resume" "$fixture_dir")
 
     if assert_contains "$output" "my_feature\|sample_feature"; then
-        record_result "PASS" "Builder Resume: checkpoint feature name echoed"
+        record_result "PASS" "Engineer Resume: checkpoint feature name echoed"
     else
-        record_result "FAIL" "Builder Resume: checkpoint feature name echoed" \
+        record_result "FAIL" "Engineer Resume: checkpoint feature name echoed" \
             "Expected checkpoint feature name in output"
     fi
 
     if assert_contains "$output" "Context Restored\|Resume Point\|Checkpoint"; then
-        record_result "PASS" "Builder Resume: recovery summary present"
+        record_result "PASS" "Engineer Resume: recovery summary present"
     else
-        record_result "FAIL" "Builder Resume: recovery summary present" \
+        record_result "FAIL" "Engineer Resume: recovery summary present" \
             "Expected recovery summary in output"
     fi
 
@@ -396,7 +396,7 @@ scenario_full_reboot_resume() {
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "/pl-resume" "$fixture_dir")
 
-    if assert_contains "$output" "Role\|Builder\|Architect\|QA"; then
+    if assert_contains "$output" "Role\|Engineer\|PM\|QA"; then
         record_result "PASS" "Full Reboot: role detection occurs"
     else
         record_result "FAIL" "Full Reboot: role detection occurs" \
@@ -409,7 +409,7 @@ scenario_full_reboot_resume() {
 
 scenario_architect_main_help() {
     echo ""
-    echo "--- Scenario 8: Architect Re-displays Command Table ---"
+    echo "--- Scenario 8: PM Re-displays Command Table ---"
     local fixture_dir prompt_file output
 
     fixture_dir=$(checkout_fixture "main/pl_help/architect-main-branch")
@@ -417,9 +417,9 @@ scenario_architect_main_help() {
     output=$(run_claude_test "$prompt_file" "/pl-help" "$fixture_dir")
 
     if assert_contains "$output" "━━━"; then
-        record_result "PASS" "Architect Help: command table present"
+        record_result "PASS" "PM Help: command table present"
     else
-        record_result "FAIL" "Architect Help: command table present" \
+        record_result "FAIL" "PM Help: command table present" \
             "Expected command table in output"
     fi
 
@@ -429,7 +429,7 @@ scenario_architect_main_help() {
 
 scenario_builder_collab_help() {
     echo ""
-    echo "--- Scenario 9: Builder Re-displays Command Table on Collab Branch ---"
+    echo "--- Scenario 9: Engineer Re-displays Command Table on Collab Branch ---"
     local fixture_dir prompt_file output
 
     fixture_dir=$(checkout_fixture "main/pl_help/builder-collab-branch")
@@ -439,16 +439,16 @@ scenario_builder_collab_help() {
     output=$(run_claude_test "$prompt_file" "/pl-help" "$fixture_dir")
 
     if assert_contains "$output" "Branch:\|branch"; then
-        record_result "PASS" "Builder Collab Help: branch variant detected"
+        record_result "PASS" "Engineer Collab Help: branch variant detected"
     else
-        record_result "FAIL" "Builder Collab Help: branch variant detected" \
+        record_result "FAIL" "Engineer Collab Help: branch variant detected" \
             "Expected 'Branch:' in output for collab branch variant"
     fi
 
     if assert_contains "$output" "pl-remote-push\|pl-remote-pull"; then
-        record_result "PASS" "Builder Collab Help: remote commands present"
+        record_result "PASS" "Engineer Collab Help: remote commands present"
     else
-        record_result "FAIL" "Builder Collab Help: remote commands present" \
+        record_result "FAIL" "Engineer Collab Help: remote commands present" \
             "Expected remote push/pull commands in output"
     fi
 

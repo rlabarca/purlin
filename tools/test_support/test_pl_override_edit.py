@@ -27,34 +27,34 @@ def read_command_file():
         return f.read()
 
 
-class TestBuilderCannotEditQAOverrides(unittest.TestCase):
-    """Scenario: Builder cannot edit QA overrides
+class TestEngineerCannotEditQAOverrides(unittest.TestCase):
+    """Scenario: Engineer cannot edit QA overrides
 
-    Given a Builder agent session
-    When the Builder attempts to edit QA_OVERRIDES.md
+    Given a Engineer agent session
+    When the Engineer attempts to edit QA_OVERRIDES.md
     Then the command declines and names the QA role as the owner
 
     Structural test: the command file contains role-scoping rules that
-    restrict Builder to BUILDER_OVERRIDES.md only and name the owning
+    restrict Engineer to BUILDER_OVERRIDES.md only and name the owning
     role for other override files.
     """
 
     def test_builder_restricted_to_builder_overrides(self):
-        """Builder role instruction limits editing to BUILDER_OVERRIDES.md only."""
+        """Engineer role instruction limits editing to BUILDER_OVERRIDES.md only."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)builder.*edit\s+only.*BUILDER_OVERRIDES",
-            "Must state Builder may edit ONLY BUILDER_OVERRIDES.md",
+            r"(?i)engineer.*edit\s+only.*ENGINEER_OVERRIDES",
+            "Must state Engineer may edit ONLY BUILDER_OVERRIDES.md",
         )
 
     def test_builder_decline_names_owner(self):
-        """Builder instruction says to decline other targets and name the owner."""
+        """Engineer instruction says to decline other targets and name the owner."""
         content = read_command_file()
         self.assertRegex(
             content,
             r"(?i)decline.*name.*owner",
-            "Must instruct Builder to decline non-own targets and name the owner",
+            "Must instruct Engineer to decline non-own targets and name the owner",
         )
 
     def test_qa_overrides_has_qa_owner(self):

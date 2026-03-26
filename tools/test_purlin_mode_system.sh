@@ -151,8 +151,8 @@ echo "[Scenario] Dual skill header for legacy compatibility"
 
 if [ -f "$BUILD_FILE" ]; then
     LINE1=$(sed -n '1p' "$BUILD_FILE")
-    if echo "$LINE1" | grep -q "Purlin command owner: Builder"; then
-        log_pass "pl-build.md line 1 has legacy header: Purlin command owner: Builder"
+    if echo "$LINE1" | grep -q "Purlin command owner: Engineer"; then
+        log_pass "pl-build.md line 1 has legacy header: Purlin command owner: Engineer"
     else
         log_fail "pl-build.md line 1 missing legacy header (got: $LINE1)"
     fi

@@ -27,37 +27,37 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonArchitectInvocation(unittest.TestCase):
-    """Scenario: Role gate rejects non-Architect invocation
+class TestRoleGateRejectsNonPMInvocation(unittest.TestCase):
+    """Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-tombstone
     Then the command responds with a redirect message
 
-    Structural test: the command file's first line declares Architect as
-    the command owner, which means non-Architect agents will be redirected.
+    Structural test: the command file's first line declares PM as
+    the mode declaration, which means non-PM agents will be redirected.
     """
 
     def test_first_line_declares_architect_owner(self):
-        """First line must contain the Architect command owner declaration."""
+        """First line must contain the PM mode declaration declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
-        self.assertIn("command owner: Architect", first_line,
-                       "First line must declare Architect as command owner")
+        self.assertIn("Purlin mode: PM", first_line,
+                       "First line must declare PM as mode")
 
     def test_redirect_message_for_non_architect(self):
-        """Command file must include a redirect message for non-Architect agents."""
+        """Command file must include a redirect message for non-PM agents."""
         content = read_command_file()
-        self.assertIn("not operating as the Purlin Architect", content,
-                       "Must include redirect guidance for non-Architect agents")
+        self.assertIn("another mode is active", content,
+                       "Must include redirect guidance for non-PM agents")
 
     def test_redirect_mentions_architect_role(self):
-        """Redirect message must tell non-Architect agents to ask an Architect."""
+        """Redirect message must tell non-PM agents to ask an PM."""
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)ask.*architect.*run.*pl-tombstone",
-            "Redirect must instruct non-Architect to ask Architect to run /pl-tombstone",
+            r"(?i)(another mode is active|confirm switch)",
+            "Redirect must instruct non-PM to ask PM to run /pl-tombstone",
         )
 
 

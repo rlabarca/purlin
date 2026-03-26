@@ -131,7 +131,7 @@ class TestSingleTurnStructuredOutput(unittest.TestCase):
         cls.repo = create_fixture_repo({
             "main/release_instruction_audit/base-conflict": {
                 "instructions/HOW_WE_WORK_BASE.md": "# How We Work\nCommit at milestones.\n",
-                "instructions/ARCHITECT_BASE.md": "# Architect\nArchitect instructions.\n",
+                "instructions/ARCHITECT_BASE.md": "# PM\nArchitect instructions.\n",
                 ".purlin/HOW_WE_WORK_OVERRIDES.md": "# Overrides\n",
                 ".purlin/ARCHITECT_OVERRIDES.md": "# Arch Overrides\n",
                 ".purlin/config.json": json.dumps({
@@ -419,7 +419,7 @@ class TestNegativeTestCleanFixture(unittest.TestCase):
         cls.repo = create_fixture_repo({
             "main/release_instruction_audit/clean": {
                 "instructions/HOW_WE_WORK_BASE.md": "# How We Work\nCommit at milestones.\n",
-                "instructions/ARCHITECT_BASE.md": "# Architect\nArchitect instructions.\n",
+                "instructions/ARCHITECT_BASE.md": "# PM\nArchitect instructions.\n",
                 ".purlin/HOW_WE_WORK_OVERRIDES.md": "# Overrides\n\nNo additional rules.\n",
                 ".purlin/ARCHITECT_OVERRIDES.md": "# Arch Overrides\n\nConsistent with base.\n",
                 ".purlin/config.json": json.dumps({
@@ -561,13 +561,13 @@ class TestTier2SpecificFinding(unittest.TestCase):
         # This test verifies the defect-specific fixture actually contains the defect.
         repo = create_fixture_repo({
             "main/release_instruction_audit/clean": {
-                ".purlin/BUILDER_OVERRIDES.md": "# Builder Overrides\n\nConsistent.\n",
+                ".purlin/BUILDER_OVERRIDES.md": "# Engineer Overrides\n\nConsistent.\n",
             },
             "main/release_instruction_audit/base-conflict": {
                 ".purlin/BUILDER_OVERRIDES.md": (
-                    "# Builder Overrides\n\n"
+                    "# Engineer Overrides\n\n"
                     "## Contradiction\n"
-                    "The Builder MUST NOT commit status tags.\n"
+                    "The Engineer MUST NOT commit status tags.\n"
                 ),
             },
         })

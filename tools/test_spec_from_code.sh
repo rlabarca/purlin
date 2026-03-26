@@ -24,10 +24,10 @@ log_fail() { FAIL=$((FAIL + 1)); ERRORS="$ERRORS\n  FAIL: $1"; echo "  FAIL: $1"
 echo "=== /pl-spec-from-code Command Tests ==="
 
 ###############################################################################
-# Scenario: Role gate rejects non-Architect invocation
+# Scenario: Role gate rejects non-PM invocation
 ###############################################################################
 echo ""
-echo "[Scenario] Role gate rejects non-Architect invocation"
+echo "[Scenario] Role gate rejects non-PM invocation"
 
 if [ -f "$COMMAND_FILE" ]; then
     log_pass "Command file exists at .claude/commands/pl-spec-from-code.md"
@@ -36,17 +36,17 @@ else
 fi
 
 # Check role gate line
-if grep -q "Purlin command owner: Architect" "$COMMAND_FILE"; then
-    log_pass "Command has Architect ownership declaration"
+if grep -q "Purlin command owner: PM" "$COMMAND_FILE"; then
+    log_pass "Command has PM ownership declaration"
 else
-    log_fail "Missing Architect ownership declaration"
+    log_fail "Missing PM ownership declaration"
 fi
 
-# Check redirect message for non-Architect agents
-if grep -q "This is an Architect command" "$COMMAND_FILE"; then
-    log_pass "Command has non-Architect redirect message"
+# Check redirect message for non-PM agents
+if grep -q "This is an PM command" "$COMMAND_FILE"; then
+    log_pass "Command has non-PM redirect message"
 else
-    log_fail "Missing non-Architect redirect message"
+    log_fail "Missing non-PM redirect message"
 fi
 
 if grep -q "/pl-spec-from-code" "$COMMAND_FILE"; then

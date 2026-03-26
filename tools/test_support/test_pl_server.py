@@ -27,19 +27,19 @@ def read_command_file():
         return f.read()
 
 
-class TestRoleGateRejectsNonBuilderQA(unittest.TestCase):
-    """Scenario: Role gate rejects non-Builder/QA invocation
+class TestRoleGateRejectsNonEngineerQA(unittest.TestCase):
+    """Scenario: Role gate rejects non-Engineer/QA invocation
 
-    Given an Architect agent session
+    Given an PM agent session
     When the agent invokes /pl-server
     Then the command responds with a redirect message
 
     Structural test: the command file's first line declares shared access
-    for Builder and QA only, and contains a redirect message for other roles.
+    for Engineer and QA only, and contains a redirect message for other roles.
     """
 
     def test_first_line_declares_shared_builder_qa(self):
-        """First line must declare the command as shared between Builder and QA."""
+        """First line must declare the command as shared between Engineer and QA."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         lower = first_line.lower()
@@ -48,13 +48,13 @@ class TestRoleGateRejectsNonBuilderQA(unittest.TestCase):
         self.assertIn("qa", lower)
 
     def test_first_line_not_all_roles(self):
-        """Command must NOT be shared with all roles -- only Builder and QA."""
+        """Command must NOT be shared with all roles -- only Engineer and QA."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertNotIn("all roles", first_line.lower())
 
     def test_redirect_message_for_other_roles(self):
-        """Non-Builder/QA agents must receive a redirect/stop message."""
+        """Non-Engineer/QA agents must receive a redirect/stop message."""
         content = read_command_file()
         lower = content.lower()
         self.assertTrue(

@@ -219,7 +219,7 @@ cmd_add_tag() {
 
     cd "$work_dir/clone"
     git config user.email "fixture@purlin.dev"
-    git config user.name "Purlin Fixture Builder"
+    git config user.name "Purlin Fixture Engineer"
 
     # Clean working directory (preserve .git)
     git rm -rf --quiet . 2>/dev/null || true

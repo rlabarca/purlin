@@ -30,7 +30,7 @@ def read_command_file():
 class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
     """Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-qa-report
     Then the command responds with a redirect message
 
@@ -39,7 +39,7 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
     """
 
     def test_first_line_declares_qa_ownership(self):
-        """The command file must declare QA as the command owner."""
+        """The command file must declare QA as the mode declaration."""
         content = read_command_file()
         first_line = content.splitlines()[0]
         self.assertIn("QA", first_line,
@@ -50,8 +50,8 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(command owner|purlin command owner).*QA",
-            "Must contain a command owner declaration for QA",
+            r"(?i)(mode declaration|purlin mode declaration).*QA",
+            "Must contain a mode declaration declaration for QA",
         )
 
     def test_redirect_message_for_non_qa(self):
@@ -59,7 +59,7 @@ class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
         content = read_command_file()
         self.assertRegex(
             content,
-            r"(?i)(ask your QA|QA.*(command|agent).*run|not operating as.*QA)",
+            r"(?i)(another mode is active|confirm switch|purlin mode.*QA)",
             "Must contain a redirect message directing non-QA agents to QA",
         )
 
