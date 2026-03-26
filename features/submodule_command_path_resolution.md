@@ -5,7 +5,7 @@
 
 ## 1. Overview
 
-When Purlin is consumed as a git submodule, command files (`.claude/commands/*.md`) reference `tools/cdd/scan.sh`, `tools/critic/run.sh`, and similar paths that do not exist at the consumer project root. The correct path is `<tools_root>/cdd/scan.sh` where `tools_root` is read from `.purlin/config.json` (default: `tools`). This feature updates all command files to use `{tools_root}/` notation with an explicit resolution step, matching the pattern already established in `pl-spec-code-audit.md` and `pl-cdd.md`.
+When Purlin is consumed as a git submodule, command files (`.claude/commands/*.md`) reference `tools/cdd/scan.sh` and similar paths that do not exist at the consumer project root. The correct path is `<tools_root>/cdd/scan.sh` where `tools_root` is read from `.purlin/config.json` (default: `tools`). This feature updates all command files to use `{tools_root}/` notation with an explicit resolution step, matching the pattern already established in `pl-spec-code-audit.md`.
 
 ---
 
