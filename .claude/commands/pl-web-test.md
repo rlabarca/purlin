@@ -94,7 +94,7 @@ For each eligible feature, resolve the final URL before navigating:
 
 1. **Determine effective URL** using this priority order:
    a. **URL override from command argument** — If the user provided a URL argument, use it as-is. Skip steps 2-4.
-   b. **Runtime port file** — Read `.purlin/runtime/cdd.port` at the project root.
+   b. **Runtime port file** — Read `.purlin/runtime/server.port` at the project root.
       - If the file exists and contains a valid port number (digits only, trimmed), replace the port in the `> Web Test:` URL with this runtime port.
       - If the file does not exist or is empty, fall through to the `> Web Test:` URL.
    c. **Spec URL** — Use the `> Web Test:` URL as-is (fallback).
