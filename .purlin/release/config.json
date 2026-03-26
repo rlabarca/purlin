@@ -17,7 +17,7 @@
       "enabled": true
     },
     {
-      "id": "purlin.doc_consistency_check",
+      "id": "doc_consistency_check",
       "enabled": true
     },
     {
@@ -37,7 +37,7 @@
       "enabled": true
     },
     {
-      "id": "purlin.push_to_remote",
+      "id": "push_to_remote",
       "enabled": true
     },
     {
