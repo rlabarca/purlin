@@ -58,7 +58,7 @@ Agentic Toolbox — <N> tools
 
 PURLIN (<count>)                                              source: framework
   purlin.verify_zero_queue            Verify Zero-Queue Status
-  purlin.instruction_audit            Agent Instruction Audit
+  purlin.doc_consistency_check        Documentation Consistency Check
 
 PROJECT (<count>)                                             source: .purlin/toolbox/
   submodule_safety_audit              Submodule Safety Audit
@@ -97,7 +97,8 @@ Interactive flow:
 ### 2.6 Edit Subcommand
 
 *   Resolve tool name via fuzzy matching.
-*   **Purlin tool:** Block with message: `"Purlin tools are read-only. Use '/pl-toolbox copy <tool>' to create an editable project copy."`
+*   **Purlin tool (submodule context):** Block with message: `"Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy <tool>' to create an editable project copy."` Submodule context is detected when `tools_root` resolves to a path inside a git submodule (the resolved `tools_root` directory contains a `.git` file rather than a `.git` directory, or `tools_root` contains a path separator indicating a submodule prefix like `purlin/tools`).
+*   **Purlin tool (framework repo):** Allow editing. Read the tool definition from `purlin_tools.json`, present all fields for editing, write changes back.
 *   **Project tool:** Read the tool definition from `project_tools.json`. Present all fields for editing. Write changes back.
 *   **Community tool:** Read the tool definition from `.purlin/toolbox/community/<tool_id>/tool.json`. Warn: `"Local edits will diverge from upstream. Next '/pl-toolbox pull' will detect the conflict."` Present fields for editing. Write changes back.
 
@@ -113,7 +114,8 @@ Interactive flow:
 ### 2.8 Delete Subcommand
 
 *   Resolve tool name via fuzzy matching.
-*   **Purlin tool:** Block with message: `"Purlin tools cannot be deleted. They are distributed with the framework."`
+*   **Purlin tool (submodule context):** Block with message: `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as Section 2.6.)
+*   **Purlin tool (framework repo):** Allow deletion. Show a dry-run preview, confirm, then remove from `purlin_tools.json`.
 *   **Project tool:** Show a dry-run preview of what will be removed. On confirmation, remove from `project_tools.json`.
 *   **Community tool:** Show a dry-run preview of what will be removed (registry entry + community directory). On confirmation, remove from `community_tools.json` and delete `.purlin/toolbox/community/<tool_id>/` directory.
 
@@ -136,8 +138,8 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 All error messages are clear, actionable, and suggest a recovery path:
 
-*   Edit purlin tool → suggests `copy`.
-*   Delete purlin tool → explains why and stops.
+*   Edit purlin tool (submodule) → suggests `copy`. Edit purlin tool (framework) → allows edit.
+*   Delete purlin tool (submodule) → explains why and stops. Delete purlin tool (framework) → allows with confirmation.
 *   Reserved prefix → names the prefix and explains the restriction.
 *   Network failure → confirms no state was modified.
 *   Missing tool.json in repo → explains what the repo needs.
@@ -176,8 +178,8 @@ All error messages are clear, actionable, and suggest a recovery path:
 
 #### Scenario: Run multiple tools sequentially
 
-    Given tools "purlin.verify_zero_queue" and "purlin.instruction_audit" exist
-    When the user runs "/pl-toolbox run verify_zero_queue instruction_audit"
+    Given tools "purlin.verify_zero_queue" and "purlin.doc_consistency_check" exist
+    When the user runs "/pl-toolbox run verify_zero_queue doc_consistency_check"
     Then both tools execute in the order specified
 
 #### Scenario: Create project tool
@@ -186,12 +188,20 @@ All error messages are clear, actionable, and suggest a recovery path:
     When the user runs "/pl-toolbox create" and provides id "my_audit", friendly_name "My Audit", description "Custom audit"
     Then project_tools.json contains a new tool with id "my_audit"
 
-#### Scenario: Edit blocked for purlin tool
+#### Scenario: Edit blocked for purlin tool in submodule context
 
-    Given the user runs "/pl-toolbox edit purlin.verify_zero_queue"
+    Given the project uses purlin as a git submodule
+    And the user runs "/pl-toolbox edit purlin.verify_zero_queue"
     When the skill resolves the tool
-    Then the message "Purlin tools are read-only. Use '/pl-toolbox copy ...' to create an editable project copy." is displayed
+    Then the message "Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy ...' to create an editable project copy." is displayed
     And no file is modified
+
+#### Scenario: Edit allowed for purlin tool in framework repo
+
+    Given the project is the purlin framework repository (not a submodule consumer)
+    And the user runs "/pl-toolbox edit purlin.verify_zero_queue"
+    When the skill resolves the tool
+    Then the tool definition is presented for editing
 
 #### Scenario: Copy purlin tool to project
 
@@ -207,11 +217,19 @@ All error messages are clear, actionable, and suggest a recovery path:
     Then a dry-run preview is shown listing what will be removed
     And the user is asked to confirm before deletion
 
-#### Scenario: Delete blocked for purlin tool
+#### Scenario: Delete blocked for purlin tool in submodule context
 
-    Given the user runs "/pl-toolbox delete purlin.verify_zero_queue"
+    Given the project uses purlin as a git submodule
+    And the user runs "/pl-toolbox delete purlin.verify_zero_queue"
     When the skill resolves the tool
-    Then the message "Purlin tools cannot be deleted. They are distributed with the framework." is displayed
+    Then the message "Purlin tools cannot be deleted in consumer projects. They are distributed with the framework." is displayed
+
+#### Scenario: Delete allowed for purlin tool in framework repo
+
+    Given the project is the purlin framework repository (not a submodule consumer)
+    And the user runs "/pl-toolbox delete purlin.verify_zero_queue"
+    When the skill resolves the tool
+    Then a dry-run preview is shown and the user is asked to confirm
 
 #### Scenario: Run tool with no instructions or code
 
