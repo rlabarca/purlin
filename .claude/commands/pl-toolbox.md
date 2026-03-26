@@ -87,7 +87,7 @@ Interactive flow (Engineer mode required):
 ### edit
 
 Resolve tool name via fuzzy matching.
-- **Purlin tool (submodule context):** `"Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy <tool>' to create an editable project copy."` Submodule context: `tools_root` resolves inside a git submodule (contains a path separator like `purlin/tools`, or the resolved directory has a `.git` file rather than a `.git` directory).
+- **Purlin tool (submodule context):** `"Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy <tool>' to create an editable project copy."` Detect submodule context: run `git -C "${TOOLS_ROOT}" rev-parse --show-superproject-working-tree 2>/dev/null` — if non-empty, tools are inside a submodule.
 - **Purlin tool (framework repo):** Allow editing. Read definition from `purlin_tools.json`, present fields for editing, write changes back.
 - **Project tool:** Read definition, present fields for editing, write changes back.
 - **Community tool:** Warn about upstream divergence, present fields for editing, write changes.
@@ -103,7 +103,7 @@ Copy a purlin tool to project for customization (Engineer mode required).
 ### delete
 
 Resolve tool name via fuzzy matching (Engineer mode required).
-- **Purlin tool (submodule context):** `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as edit.)
+- **Purlin tool (submodule context):** `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as edit — `git rev-parse --show-superproject-working-tree`.)
 - **Purlin tool (framework repo):** Allow deletion. Show dry-run preview, confirm, then remove from `purlin_tools.json`.
 - **Project tool:** Show dry-run preview, confirm, then remove from `project_tools.json`.
 - **Community tool:** Show preview (registry entry + directory), confirm, then remove.

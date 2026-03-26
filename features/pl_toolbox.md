@@ -97,7 +97,7 @@ Interactive flow:
 ### 2.6 Edit Subcommand
 
 *   Resolve tool name via fuzzy matching.
-*   **Purlin tool (submodule context):** Block with message: `"Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy <tool>' to create an editable project copy."` Submodule context is detected when `tools_root` resolves to a path inside a git submodule (the resolved `tools_root` directory contains a `.git` file rather than a `.git` directory, or `tools_root` contains a path separator indicating a submodule prefix like `purlin/tools`).
+*   **Purlin tool (submodule context):** Block with message: `"Purlin tools are read-only in consumer projects. Use '/pl-toolbox copy <tool>' to create an editable project copy."` Submodule context is detected by running `git -C "${TOOLS_ROOT}" rev-parse --show-superproject-working-tree 2>/dev/null` — a non-empty result means tools are inside a git submodule.
 *   **Purlin tool (framework repo):** Allow editing. Read the tool definition from `purlin_tools.json`, present all fields for editing, write changes back.
 *   **Project tool:** Read the tool definition from `project_tools.json`. Present all fields for editing. Write changes back.
 *   **Community tool:** Read the tool definition from `.purlin/toolbox/community/<tool_id>/tool.json`. Warn: `"Local edits will diverge from upstream. Next '/pl-toolbox pull' will detect the conflict."` Present fields for editing. Write changes back.
@@ -114,7 +114,7 @@ Interactive flow:
 ### 2.8 Delete Subcommand
 
 *   Resolve tool name via fuzzy matching.
-*   **Purlin tool (submodule context):** Block with message: `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as Section 2.6.)
+*   **Purlin tool (submodule context):** Block with message: `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as Section 2.6 — `git rev-parse --show-superproject-working-tree`.)
 *   **Purlin tool (framework repo):** Allow deletion. Show a dry-run preview, confirm, then remove from `purlin_tools.json`.
 *   **Project tool:** Show a dry-run preview of what will be removed. On confirmation, remove from `project_tools.json`.
 *   **Community tool:** Show a dry-run preview of what will be removed (registry entry + community directory). On confirmation, remove from `community_tools.json` and delete `.purlin/toolbox/community/<tool_id>/` directory.

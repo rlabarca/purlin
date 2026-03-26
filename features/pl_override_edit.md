@@ -16,7 +16,7 @@ A shared skill for editing override files (`.purlin/PURLIN_OVERRIDES.md`) with b
 ### 2.1 Access
 
 - Any active mode (Engineer, PM, QA) may edit any section of `PURLIN_OVERRIDES.md`.
-- No per-section role restriction. The mode guard does not apply to override editing.
+- No per-section role restriction. Override files are classified as CODE but have a Cross-Mode Recording Rights entry allowing any mode to edit via this skill (see `references/file_classification.md`).
 
 ### 2.2 Conflict and Consistency Scan
 
