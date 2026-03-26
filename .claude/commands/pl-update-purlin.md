@@ -25,7 +25,10 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 1. **Fetch and Version Check:**
    - Run `git -C <submodule_dir> fetch --tags`
    - Compare local submodule HEAD against remote tracking branch (`origin/main`)
-   - If already current AND `.purlin/.upstream_sha` matches HEAD: print "Already up to date." and exit
+   - If already current AND `.purlin/.upstream_sha` matches HEAD:
+     - Check if migration is pending: run migration detection per `features/purlin_migration.md` §2.1 (check `_migration_version`, `agents.purlin` completeness, old agent deprecation status)
+     - If migration state is `needed` or `partial`: print "Already at latest version. Running pending migration..." and skip to step 6 (Config Sync)
+     - Otherwise: print "Already up to date." and exit
    - If behind: show current version -> target version (from `git describe --tags --abbrev=0`) and commit count
    - Prompt: "Update to <version>? (y/n)" (skip if `--auto-approve`)
 
