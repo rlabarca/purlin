@@ -138,7 +138,7 @@ class TestMigrateConfig(unittest.TestCase):
         self.proj.cleanup()
 
     def test_full_migration(self):
-        """Full migration creates agents.purlin and deprecates old."""
+        """Full migration creates agents.purlin and removes old entries."""
         self.proj.write_config('config.local.json', {
             'agents': {
                 'builder': {'model': 'opus', 'effort': 'high', 'bypass_permissions': True},
@@ -153,8 +153,9 @@ class TestMigrateConfig(unittest.TestCase):
         self.assertTrue(config['agents']['purlin']['find_work'])
         self.assertFalse(config['agents']['purlin']['auto_start'])
         self.assertIsNone(config['agents']['purlin']['default_mode'])
-        self.assertTrue(config['agents']['builder']['_deprecated'])
-        self.assertTrue(config['agents']['architect']['_deprecated'])
+        # Old entries removed, not just deprecated
+        self.assertNotIn('builder', config['agents'])
+        self.assertNotIn('architect', config['agents'])
 
     def test_enrichment_backfills_missing_keys(self):
         """Enrichment backfills missing keys from defaults."""
@@ -174,8 +175,8 @@ class TestMigrateConfig(unittest.TestCase):
         self.assertIsNone(purlin['default_mode'])
         # bypass_permissions backfilled from builder
         self.assertTrue(purlin['bypass_permissions'])
-        # Old agents deprecated
-        self.assertTrue(config['agents']['builder']['_deprecated'])
+        # Old agents removed
+        self.assertNotIn('builder', config['agents'])
 
     def test_enrichment_uses_defaults_when_no_builder(self):
         """Enrichment uses hardcoded defaults when builder is absent."""
@@ -192,8 +193,8 @@ class TestMigrateConfig(unittest.TestCase):
         self.assertFalse(purlin['bypass_permissions'])  # default
         self.assertTrue(purlin['find_work'])
 
-    def test_enrichment_noop_when_already_full(self):
-        """No changes when agents.purlin already has all keys."""
+    def test_enrichment_removes_old_when_purlin_full(self):
+        """Old entries removed even when agents.purlin has all keys."""
         self.proj.write_config('config.local.json', {
             'agents': {
                 'purlin': {
@@ -201,7 +202,24 @@ class TestMigrateConfig(unittest.TestCase):
                     'bypass_permissions': True, 'find_work': True,
                     'auto_start': False, 'default_mode': None,
                 },
-                'builder': {'model': 'opus', '_deprecated': True},
+                'builder': {'model': 'opus'},
+            }
+        })
+        changes = migrate_config(self.proj.tmpdir)
+        self.assertTrue(any('Removed agents.builder' in c for c in changes))
+
+        config = self.proj.read_config('config.local.json')
+        self.assertNotIn('builder', config['agents'])
+
+    def test_noop_when_only_purlin(self):
+        """No changes when only agents.purlin exists with all keys."""
+        self.proj.write_config('config.local.json', {
+            'agents': {
+                'purlin': {
+                    'model': 'opus', 'effort': 'high',
+                    'bypass_permissions': True, 'find_work': True,
+                    'auto_start': False, 'default_mode': None,
+                },
             }
         })
         changes = migrate_config(self.proj.tmpdir)
@@ -218,10 +236,10 @@ class TestMigrateConfig(unittest.TestCase):
         changes = migrate_config(self.proj.tmpdir, dry_run=True)
         self.assertTrue(len(changes) > 0)
 
-        # Config unchanged
+        # Config unchanged — old entries still present, purlin not enriched
         config = self.proj.read_config('config.local.json')
         self.assertNotIn('find_work', config['agents']['purlin'])
-        self.assertNotIn('_deprecated', config['agents']['builder'])
+        self.assertIn('builder', config['agents'])
 
 
 class TestStampMigrationVersion(unittest.TestCase):
@@ -283,7 +301,8 @@ class TestRunMigrationPartial(unittest.TestCase):
         config = self.proj.read_config('config.local.json')
         self.assertEqual(config['_migration_version'], 1)
         self.assertTrue(config['agents']['purlin']['find_work'])
-        self.assertTrue(config['agents']['builder']['_deprecated'])
+        # Old entries removed, not just deprecated
+        self.assertNotIn('builder', config['agents'])
 
     def test_complete_stamps_marker_backfill(self):
         """Already-complete migration gets marker stamped on first check."""

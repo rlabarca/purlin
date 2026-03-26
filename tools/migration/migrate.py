@@ -129,7 +129,7 @@ def detect_migration_needed(project_root):
 # ---------------------------------------------------------------------------
 
 def migrate_config(project_root, dry_run=False):
-    """Create or enrich agents.purlin; deprecate old entries.
+    """Create or enrich agents.purlin; remove old agent entries.
 
     Handles both full migration (no agents.purlin) and enrichment
     (partial agents.purlin from launcher first-run).
@@ -145,6 +145,7 @@ def migrate_config(project_root, dry_run=False):
         'auto_start': False,
         'default_mode': None,
     }
+    _OLD_ROLES = ('architect', 'builder', 'qa', 'pm')
 
     for config_name in ('config.json', 'config.local.json'):
         config_path = os.path.join(purlin_dir, config_name)
@@ -155,7 +156,7 @@ def migrate_config(project_root, dry_run=False):
         agents = config.get('agents', {})
 
         if 'purlin' in agents:
-            # Enrichment path: backfill missing keys
+            # Enrichment path: backfill missing keys (read from builder BEFORE removing)
             purlin_cfg = agents['purlin']
             builder = agents.get('builder', {})
             backfilled = []
@@ -164,14 +165,11 @@ def migrate_config(project_root, dry_run=False):
                     purlin_cfg[key] = builder.get(key, default)
                     backfilled.append(key)
 
-            if backfilled or any(
-                role in agents and not agents[role].get('_deprecated', False)
-                for role in ('architect', 'builder', 'qa', 'pm')
-            ):
+            old_present = [r for r in _OLD_ROLES if r in agents]
+            if backfilled or old_present:
                 if not dry_run:
-                    for role in ('architect', 'builder', 'qa', 'pm'):
-                        if role in agents:
-                            agents[role]['_deprecated'] = True
+                    for role in old_present:
+                        del agents[role]
                     _write_json(config_path, config)
 
                 if backfilled:
@@ -179,15 +177,14 @@ def migrate_config(project_root, dry_run=False):
                         f"Enriched partial agents.purlin in {config_name} "
                         f"(backfilled {len(backfilled)} missing keys: {', '.join(backfilled)})"
                     )
-                for role in ('architect', 'builder', 'qa', 'pm'):
-                    if role in agents and not agents[role].get('_deprecated', False):
-                        changes.append(f"Marked agents.{role} as _deprecated in {config_name}")
+                for role in old_present:
+                    changes.append(f"Removed agents.{role} from {config_name}")
             continue
 
         if 'builder' not in agents:
             continue
 
-        # Full migration: create agents.purlin from builder
+        # Full migration: create agents.purlin from builder (read BEFORE removing)
         builder = agents['builder']
         purlin_agent = {
             'model': builder.get('model', ''),
@@ -198,18 +195,17 @@ def migrate_config(project_root, dry_run=False):
             'default_mode': None,
         }
 
+        old_present = [r for r in _OLD_ROLES if r in agents]
         if not dry_run:
             agents['purlin'] = purlin_agent
-            for role in ('architect', 'builder', 'qa', 'pm'):
-                if role in agents:
-                    agents[role]['_deprecated'] = True
+            for role in old_present:
+                del agents[role]
             config['agents'] = agents
             _write_json(config_path, config)
 
         changes.append(f"Created agents.purlin in {config_name} (cloned from builder)")
-        for role in ('architect', 'builder', 'qa', 'pm'):
-            if role in agents:
-                changes.append(f"Marked agents.{role} as _deprecated in {config_name}")
+        for role in old_present:
+            changes.append(f"Removed agents.{role} from {config_name}")
 
     return changes
 
@@ -303,6 +299,20 @@ def consolidate_overrides(project_root, dry_run=False):
             f.write(output)
 
     changes.append(f"Created PURLIN_OVERRIDES.md with {len(sections)} section(s)")
+
+    # Delete old override files after successful consolidation
+    if not dry_run:
+        _OLD_OVERRIDES = [
+            'ARCHITECT_OVERRIDES.md', 'BUILDER_OVERRIDES.md',
+            'QA_OVERRIDES.md', 'PM_OVERRIDES.md',
+            'HOW_WE_WORK_OVERRIDES.md',
+        ]
+        for name in _OLD_OVERRIDES:
+            old_path = os.path.join(purlin_dir, name)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+                changes.append(f"Deleted {name}")
+
     return changes
 
 
@@ -709,9 +719,21 @@ def run_migration(project_root, dry_run=False, skip_overrides=False,
         changes = restructure_companions(project_root, dry_run=dry_run)
         all_changes.extend(changes)
 
-    # Step 5: Launcher generation
+    # Step 5: Launcher generation + old launcher cleanup
     changes = generate_launcher(project_root, dry_run=dry_run)
     all_changes.extend(changes)
+
+    # Delete old launchers
+    _OLD_LAUNCHERS = [
+        'pl-run-architect.sh', 'pl-run-builder.sh',
+        'pl-run-qa.sh', 'pl-run-pm.sh',
+    ]
+    for name in _OLD_LAUNCHERS:
+        old_path = os.path.join(project_root, name)
+        if os.path.exists(old_path):
+            if not dry_run:
+                os.remove(old_path)
+            all_changes.append(f"Deleted old launcher {name}")
 
     # Step 6: Write migration marker
     stamp = _stamp_migration_version(project_root, dry_run=dry_run)
