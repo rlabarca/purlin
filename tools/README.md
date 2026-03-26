@@ -9,5 +9,4 @@ This directory contains the tools that power the **Agentic Workflow**.
 - **Output:** `.purlin/cache/scan.json`
 
 ## Feature Cleanup
-- **Purpose:** Identifies orphaned feature files that are not part of the dependency tree.
-- **Run:** `python3 tools/cleanup_orphaned_features.py`
+- **Purpose:** Orphan detection is handled by the scan engine (`tools/cdd/graph.py`), which reports orphaned features in `dependency_graph.json`. Run `tools/cdd/scan.sh` and check the `orphans` key.

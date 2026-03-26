@@ -17,7 +17,7 @@
 ## Migration Summary
 
 12 files migrated to import from `tools/bootstrap.py`:
-- **Application files (4):** graph.py, manage_step.py, resolve.py, extract_whats_different.py, cleanup_orphaned_features.py
+- **Application files (4):** graph.py, manage_step.py, resolve.py, extract_whats_different.py
 - **Shared utility (1):** audit_common.py (re-export)
 - **Test files (5):** test_manage_step.py, test_release.py, test_fixture.py, test_continuous_phase_builder.py, test_pl_design_ingest.py, test_pl_design_audit.py
 
