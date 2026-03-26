@@ -11,8 +11,8 @@ The Architect is Purlin's specification and process manager. It designs feature 
 The Architect agent:
 
 - **Creates feature specifications** with Gherkin scenarios that define expected behavior.
-- **Creates [anchor nodes](critic-and-cdd-guide.md)** that establish shared constraints (architecture, design, governance).
-- **Validates specs** against [the Critic](critic-and-cdd-guide.md)'s [Spec Gate](critic-and-cdd-guide.md) to ensure completeness.
+- **Creates anchor nodes** that establish shared constraints (architecture, design, governance).
+- **Validates specs** against the Spec Gate to ensure completeness.
 - **Manages the release process** through a structured checklist.
 - **Retires features** via the tombstone protocol when they are no longer needed.
 - **Never writes code.** Not scripts, not tests, not config files. If code needs to change, the Architect writes a spec -- the Builder discovers it at startup and implements it.
@@ -37,7 +37,7 @@ This launches a Claude Code session with the Architect's instructions, tools, an
 
 The Architect prints a command table, then checks its startup configuration:
 
-- **Find Work enabled** (default): The Architect runs the Critic, reads the report, and presents a prioritized work plan. It asks for your approval before starting.
+- **Find Work enabled** (default): The Architect scans feature status, and presents a prioritized work plan. It asks for your approval before starting.
 - **Find Work disabled**: The Architect prints `"find_work disabled -- awaiting instruction."` and waits for you to tell it what to do.
 - **Auto Start enabled**: The Architect begins executing its work plan immediately after presenting it.
 
@@ -76,7 +76,7 @@ The Architect checks if a spec already exists. If not, it runs a structured prob
 4. **Design** -- Do Figma designs exist? What is the visual priority?
 5. **Constraints** -- Performance budgets? Platform targets? Simplest useful version?
 
-After gathering answers, the Architect drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to [anchor nodes](critic-and-cdd-guide.md), and commits.
+After gathering answers, the Architect drafts the spec with Gherkin scenarios (Given/When/Then), declares prerequisites to anchor nodes, and commits.
 
 If a spec already exists, the Architect reads it, identifies gaps, and proposes targeted refinements. Specs are always edited in place -- never versioned as v2/v3 files.
 
@@ -127,9 +127,9 @@ This walks through the release checklist step by step:
 
 Each step presents its status and asks for confirmation before proceeding.
 
-### Responding to Critic Action Items
+### Responding to Action Items
 
-When you run `/pl-status`, the Critic generates action items. Common ones:
+When you run `/pl-status`, action items are generated. Common ones:
 
 - **Spec Gate FAIL** -- The spec is missing required sections, has malformed scenarios, or lacks prerequisite declarations. Fix the spec.
 - **Unacknowledged [DEVIATION]** -- The Builder diverged from the spec and documented why in a companion file. Read the rationale and add "Acknowledged" to the entry.
@@ -171,7 +171,7 @@ Each anchor defines:
 
 - **Purpose** -- What invariants it enforces and why.
 - **Invariants** -- The specific rules that dependent features must follow.
-- **FORBIDDEN patterns** (optional) -- Grepable code patterns that the Critic checks for violations.
+- **FORBIDDEN patterns** (optional) -- Grepable code patterns that are checked for violations.
 
 Anchor nodes do not have scenarios. They are constraint definitions, not implementable features.
 
@@ -179,7 +179,7 @@ Anchor nodes do not have scenarios. They are constraint definitions, not impleme
 
 When you edit an anchor node, every feature that declares it as a prerequisite resets to TODO. This triggers:
 
-1. The Critic flags the dependent features as needing re-validation.
+1. The dependent features are flagged as needing re-validation.
 2. The Builder re-implements any features where the constraint change affects behavior.
 3. QA re-verifies features that were previously complete.
 
@@ -227,11 +227,11 @@ Searches across all specs to find where a topic is discussed. Useful before crea
 /pl-status
 ```
 
-Runs the Critic and shows the current state of all features with role-specific action items. This is your primary orientation command.
+Shows the current state of all features with role-specific action items. This is your primary orientation command.
 
 ### Commit Discipline
 
-Commit immediately after each discrete change. Do not batch work until session end. After committing changes to specs or anchor nodes, run `/pl-status` to regenerate the Critic report for the next agent.
+Commit immediately after each discrete change. Do not batch work until session end. After committing changes to specs or anchor nodes, run `/pl-status` to refresh feature status for the next agent.
 
 ### Handling Design vs. Architecture Disputes
 
@@ -259,10 +259,9 @@ Edit `.purlin/ARCHITECT_OVERRIDES.md` to add project-specific rules. This file i
 | `/pl-release-check` | Execute the release checklist step by step. |
 | `/pl-release-run <step>` | Run a single release step by name. |
 | `/pl-release-step` | Create, modify, or delete a release step definition. |
-| `/pl-status` | Check CDD status and Critic action items. |
+| `/pl-status` | Check feature status and action items. |
 | `/pl-find <topic>` | Search specs for where a topic is discussed. |
 | `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow reference. |
-| `/pl-cdd` | Start, stop, or restart the [CDD Dashboard](status-grid-guide.md). |
 | `/pl-agent-config` | View or modify agent model and startup settings. |
 | `/pl-override-edit` | Edit `ARCHITECT_OVERRIDES.md` with conflict scanning. |
 | `/pl-whats-different` | Compare branches (main checkout only). |

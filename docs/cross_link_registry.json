@@ -1,15 +1,11 @@
 {
   "version": 1,
   "concepts": [
-    { "terms": ["Critic", "the Critic"], "target": "critic-and-cdd-guide.md", "case_sensitive": true },
-    { "terms": ["CDD Dashboard", "CDD dashboard"], "target": "status-grid-guide.md" },
     { "terms": ["Spec Map", "spec map", "dependency graph"], "target": "spec-map-guide.md" },
-    { "terms": ["anchor node", "anchor nodes"], "target": "critic-and-cdd-guide.md" },
     { "terms": ["fixture tag", "fixture tags", "test fixture"], "target": "testing-workflow-guide.md" },
     { "terms": ["parallel execution", "parallel build"], "target": "parallel-execution-guide.md" },
     { "terms": ["branch collaboration", "collaboration branch"], "target": "branch-collaboration-guide.md" },
     { "terms": ["PM agent", "PM Agent"], "target": "pm-agent-guide.md" },
-    { "terms": ["Dual-Gate", "dual-gate", "Spec Gate", "Implementation Gate"], "target": "critic-and-cdd-guide.md" },
     { "terms": ["status grid"], "target": "status-grid-guide.md" },
     { "terms": ["Agent Configuration", "agent configuration"], "target": "agent-configuration-guide.md" }
   ]

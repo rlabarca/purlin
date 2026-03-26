@@ -1,6 +1,6 @@
 # Purlin Documentation
 
-Purlin is an agentic development framework that coordinates four AI agents -- PM, Architect, Builder, and QA -- through structured specs, automated critics, and a real-time dashboard. These guides cover agent interaction, dashboard features, end-to-end workflows, and multi-machine collaboration.
+Purlin is an agentic development framework that coordinates four AI agents -- PM, Architect, Builder, and QA -- through structured specs and automated workflows. These guides cover agent interaction, end-to-end workflows, and multi-machine collaboration.
 
 ---
 
@@ -12,17 +12,9 @@ Purlin is an agentic development framework that coordinates four AI agents -- PM
 * [QA Agent Guide](qa-agent-guide.md) -- How the QA agent verifies features, classifies scenarios, and authors regression suites.
 * [Parallel Execution in the Builder](parallel-execution-guide.md) -- How the Builder agent parallelizes independent features within a delivery plan phase using git worktrees.
 
-## CDD Dashboard
-
-* [CDD Dashboard Guide](cdd-dashboard-guide.md) -- Overview of the CDD Dashboard panels, navigation, and real-time project status visualization.
-* [Reading the CDD Status Grid](status-grid-guide.md) -- How to read the status grid showing every feature's current state across all four roles.
-* [Spec Map Guide](spec-map-guide.md) -- Interactive dependency graph that visualizes feature prerequisites and category groupings.
-* [Agent Configuration Guide](agent-configuration-guide.md) -- Dashboard panel for controlling each agent's model, optimization effort, permissions, and auto-start behavior.
-
 ## Workflow & Process
 
 * [Installing and Updating Purlin](installation-guide.md) -- Adding Purlin to a new project, joining an existing team, and updating to a newer version.
-* [The Critic and CDD](critic-and-cdd-guide.md) -- How the Critic coordination engine and CDD Monitor work together to direct agents and inform humans.
 * [Purlin Testing Workflow Guide](testing-workflow-guide.md) -- Taking a feature from idea through spec, implementation, and verified automated regression coverage.
 * [Reporting Purlin Issues](reporting-issues-guide.md) -- How to report bugs in the Purlin framework using `/pl-purlin-issue`.
 
@@ -44,11 +36,9 @@ Skills are slash commands you type (or the agent invokes automatically) to trigg
 
 | Skill | Caller | What It Does |
 |-------|--------|--------------|
-| `/pl-status` | You | Runs the Critic and shows the current state of every feature with role-specific action items. |
+| `/pl-status` | You | Shows the current state of every feature with role-specific action items. |
 | `/pl-help` | You | Prints the command table for your current role and lists available launcher scripts. |
 | `/pl-find <topic>` | You | Searches all specs for coverage of a topic. Reports which features discuss it and whether a new spec is needed. |
-| `/pl-cdd` | You | Starts, stops, or restarts the CDD Dashboard web server. Prints the URL on start. |
-
 #### Session & Configuration
 
 | Skill | Caller | What It Does |

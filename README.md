@@ -44,7 +44,7 @@ git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 git add -A && git commit -m "init purlin"
 ```
 
-The setup script checks for missing tools and tells you how to install them. It creates `features/`, `.purlin/` (overrides and config), agent launchers (`pl-run-*.sh`), dashboard scripts (`pl-cdd-*.sh`), and slash commands (`.claude/commands/`).
+The setup script checks for missing tools and tells you how to install them. It creates `features/`, `.purlin/` (overrides and config), agent launchers (`pl-run-*.sh`), and slash commands (`.claude/commands/`).
 
 Start the PM agent:
 
@@ -60,19 +60,6 @@ The other agents are launched the same way:
 ./pl-run-architect.sh   # Architect agent
 ./pl-run-builder.sh     # Builder agent
 ./pl-run-qa.sh          # QA agent
-```
-
-To see project status in your browser, type this inside any agent session:
-
-```
-/pl-cdd
-```
-
-This starts the CDD Dashboard -- a live view of every feature's progress across all four agent roles. Or start it directly from the terminal:
-
-```bash
-./pl-cdd-start.sh                  # uses port from config (default: 8086)
-./pl-cdd-start.sh -p 9090         # override port at runtime
 ```
 
 ### Collaborator Setup
@@ -97,19 +84,9 @@ git submodule update --init purlin
 
 ### Configuration
 
-**Startup controls:** Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard). Set `find_work: false` to skip orientation on launch (expert mode). Set `auto_start: true` (with `find_work: true`) to begin executing the work plan immediately without waiting for approval. See the [Agent Configuration Guide](docs/agent-configuration-guide.md) for details.
+**Startup controls:** Per-agent flags in `.purlin/config.json`. Set `find_work: false` to skip orientation on launch (expert mode). Set `auto_start: true` (with `find_work: true`) to begin executing the work plan immediately without waiting for approval. See the [Agent Configuration Guide](docs/agent-configuration-guide.md) for details.
 
 **Python environment:** Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) need: `python3 -m venv .venv && .venv/bin/pip install -r purlin/requirements-optional.txt`
-
----
-
-## Screenshots
-
-**CDD Dashboard**
-![CDD Dashboard](assets/PurlinCDDV0.8.3.png)
-
-**CDD Spec Map**
-![CDD Spec Map](assets/PurlinSpecMapV0.8.3.png)
 
 ---
 
@@ -156,4 +133,3 @@ Created by `pl-init.sh` in your project root:
 *   `features/` -- Your feature specifications.
 *   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` / `pl-run-pm.sh` -- Agent launcher scripts.
 *   `pl-init.sh` -- Collaborator setup shim. Commit this.
-*   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard start/stop scripts.
