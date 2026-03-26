@@ -20,7 +20,7 @@ Executable, interpreted, or controls agent behavior at runtime.
 - Launcher scripts (`pl-run*.sh`)
 - Technical anchors (`features/arch_*.md`)
 - Companion files (`features/*.impl.md`)
-- Process config (`.purlin/config.json`, `.purlin/release/*.json`)
+- Process config (`.purlin/config.json`, `.purlin/toolbox/*.json`)
 - Override files — Engineer Mode section of `PURLIN_OVERRIDES.md`
 
 ## SPEC (PM-owned)

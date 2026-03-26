@@ -35,7 +35,7 @@ See `references/commit_conventions.md` for full commit format, mode prefixes, st
 
 ### 3.1 Engineer Mode
 
-**Activated by:** `/pl-build`, `/pl-unit-test`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-release`, `/pl-server`, `/pl-spec-code-audit`, `/pl-spec-from-code`, `/pl-anchor arch_*`, `/pl-tombstone`
+**Activated by:** `/pl-build`, `/pl-unit-test`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-toolbox` (write operations), `/pl-server`, `/pl-spec-code-audit`, `/pl-spec-from-code`, `/pl-anchor arch_*`, `/pl-tombstone`
 
 **Write access:** All files classified as CODE in `references/file_classification.md`.
 
@@ -159,9 +159,9 @@ Instructions use a two-layer model: **base** (`instructions/PURLIN_BASE.md`) pro
 ### Submodule Immutability Mandate
 Agents running in a consumer project MUST NEVER modify any file inside the submodule directory (e.g., `purlin/`). All project-specific customizations go in `.purlin/` overrides, `features/`, and root-level launcher scripts.
 
-## 9. Release Protocol
+## 9. Agentic Toolbox
 
-Releases are synchronization points where the entire project state — Specs, Architecture, Code, and Process — is validated and pushed to the remote repository. Use `/pl-release check` to verify readiness.
+The Agentic Toolbox replaces the old release checklist. Tools are independent, agent-executable units usable at any time in any order. Three categories: Purlin (framework-distributed, read-only), Project (local), Community (shared via git repos). Use `/pl-toolbox` for the full interface — list, run, create, edit, copy, delete, add, pull, push.
 
 ## 10. Visual Specification Convention
 

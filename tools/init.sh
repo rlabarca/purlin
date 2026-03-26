@@ -881,9 +881,10 @@ if [ "$MODE" = "full" ]; then
     fi
     cp -R "$SAMPLE_DIR" "$PROJECT_ROOT/.purlin"
 
-    # Ensure runtime and cache directories exist (gitignored, per-machine state)
+    # Ensure runtime, cache, and toolbox community directories exist (gitignored, per-machine state)
     mkdir -p "$PROJECT_ROOT/.purlin/runtime"
     mkdir -p "$PROJECT_ROOT/.purlin/cache"
+    mkdir -p "$PROJECT_ROOT/.purlin/toolbox/community"
 
     # 3.2 Config Patching (JSON-safe sed per submodule_bootstrap.md §2.10)
     TOOLS_ROOT_VALUE="$SUBMODULE_NAME/tools"
@@ -1085,9 +1086,10 @@ else:
 ###############################################################################
 else
 
-    # 4.0 Ensure runtime and cache directories exist
+    # 4.0 Ensure runtime, cache, and toolbox community directories exist
     mkdir -p "$PROJECT_ROOT/.purlin/runtime"
     mkdir -p "$PROJECT_ROOT/.purlin/cache"
+    mkdir -p "$PROJECT_ROOT/.purlin/toolbox/community"
 
     # 4.1 Command File Refresh
     copy_command_files
