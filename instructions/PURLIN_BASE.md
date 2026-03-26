@@ -85,20 +85,24 @@ See `references/commit_conventions.md` for full commit format, mode prefixes, st
 - The agent updates the terminal identity on mode switch (see 4.1.1).
 
 #### 4.1.1 iTerm Terminal Identity
-The launcher sets the initial badge with branch context (e.g., `Purlin (main)`) before the agent starts. On mode activation — including `/pl-resume` Step 6 at startup — update both badge and title to reflect the new mode. Do not set the badge earlier in the `/pl-resume` flow; let the launcher's initial badge persist until mode is determined.
+The launcher sets the initial badge with branch context (e.g., `Purlin (main)`) before the agent starts. On mode activation — including `/pl-resume` Step 6 at startup — update both badge and title to reflect the new mode while preserving the branch context. Do not set the badge earlier in the `/pl-resume` flow; let the launcher's initial badge persist until mode is determined.
 
-**Badge format:** The badge is the mode name alone — `Engineer`, `PM`, `QA`, or `Purlin` (open mode). Do NOT prefix with "Purlin:". When running in a worktree, append the worktree label: `Engineer (W1)`, `QA (W2)`, etc. In open mode, badge = `Purlin` (or `Purlin (W1)` in a worktree).
+**Badge format:** The badge always includes branch context in parentheses: `<mode> (<branch>)` — e.g., `PM (main)`, `Engineer (feature-xyz)`, `Purlin (main)`. Do NOT prefix with "Purlin:". When running in a worktree, the worktree label replaces the branch: `Engineer (W1)`, `QA (W2)`, etc. In open mode, badge = `Purlin (<branch>)` (or `Purlin (W1)` in a worktree). The branch is never dropped — mode switches update the mode name but preserve the parenthetical context.
 
-**Title format:** `<project> - <mode>`, extended to `<project> - <mode> (<label>)` in worktrees. In open mode, title = `<project> - Purlin`.
+**Title format:** `<project> - <badge>` — e.g., `purlin - PM (main)`, `purlin - Engineer (W1)`. In open mode, title = `<project> - Purlin (<branch>)`.
 
 **Session name:** Set at launch only via `--name` and `--remote-control` flags in the format `<project> | <badge>`. The launcher handles this. Mid-session mode switches update the iTerm badge and terminal title but cannot update the remote session name (no programmatic rename API).
 
-**Worktree label detection:** Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the mode name.
+**Branch/worktree detection:** Check for `.purlin_worktree_label` first — if present, use the worktree label. Otherwise, detect the branch via `git rev-parse --abbrev-ref HEAD`.
 
 ```bash
-WT_LABEL=""
-if [ -f ".purlin_worktree_label" ]; then WT_LABEL=" ($(cat .purlin_worktree_label))"; fi
-BADGE="<mode>${WT_LABEL}"
+CONTEXT=""
+if [ -f ".purlin_worktree_label" ]; then
+    CONTEXT="$(cat .purlin_worktree_label)"
+else
+    CONTEXT="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+fi
+BADGE="<mode> ($CONTEXT)"
 source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term_title "<project> - $BADGE"
 ```
 

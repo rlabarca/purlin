@@ -242,7 +242,7 @@ Uncommitted:    <none | summary>
 
 ### Step 6 -- Update Terminal Identity, Cleanup, and Continue
 
-- **Update iTerm badge and title** to reflect the determined mode. The launcher already set an initial badge with branch context (e.g., `Purlin (main)`). If a mode was resolved (from checkpoint, `default_mode`, or session message), update the badge to that mode name (`Engineer`, `PM`, `QA`). If no mode was resolved, leave the launcher's initial badge in place. Check `.purlin_worktree_label` for worktree suffix. Do not set the badge earlier in the `/pl-resume` flow.
+- **Update iTerm badge and title** to reflect the determined mode while preserving branch context. The launcher already set an initial badge (e.g., `Purlin (main)`). If a mode was resolved (from checkpoint, `default_mode`, or session message), update the badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. If `.purlin_worktree_label` exists, the worktree label replaces the branch (e.g., `Engineer (W1)`). If no mode was resolved, leave the launcher's initial badge in place. Do not set the badge earlier in the `/pl-resume` flow.
 - If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.
