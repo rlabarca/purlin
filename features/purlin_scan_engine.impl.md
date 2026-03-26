@@ -19,3 +19,11 @@ positives on 30 features.
 **Fix:** The index now stores `(timestamp, message)` tuples. The check filters
 entries to only those with `ts > status_ts` for the specific feature, so commits
 before completion are correctly ignored.
+
+## [DISCOVERY] Smoke candidate detection added to scan output (2026-03-26)
+
+The scan now includes a `smoke_candidates` field that surfaces completed features
+with 3+ dependents that aren't already smoke-classified. Implementation reuses
+`suggest_smoke_features()` from `tools/smoke/smoke.py` and applies two additional
+filters: lifecycle must be COMPLETE, and dependents must be >= 3. This is the
+scan-level signal described in `features/pl_smoke.md` Section 2.7.
