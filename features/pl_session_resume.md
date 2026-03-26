@@ -36,9 +36,12 @@ This skill is shared across all modes (Engineer, PM, QA). The checkpoint capture
 
 ### 2.2 Save Mode (`/pl-resume save`)
 
-The agent writes a structured checkpoint to `.purlin/cache/session_checkpoint_purlin.md`. The agent composes the file based on its own understanding of its current state (no automated extraction is needed).
+The agent writes a structured checkpoint to a **PID-scoped** path so that concurrent terminals never collide:
 
-The checkpoint file is written to disk but NOT committed. It survives `/clear` and terminal restarts as a regular file. The `.purlin/cache/` directory is gitignored.
+- If `PURLIN_SESSION_ID` is set (launcher session): `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`
+- If `PURLIN_SESSION_ID` is not set (manual `/pl-resume`): `.purlin/cache/session_checkpoint_purlin.md` (unscoped fallback)
+
+The checkpoint file is written to disk but NOT committed. It survives `/clear` and agent restarts within the same terminal because the shell session (and its PID) persists. The `.purlin/cache/` directory is gitignored.
 
 #### 2.2.1 Common Checkpoint Fields
 
@@ -82,7 +85,7 @@ When the active mode is PM, the checkpoint MUST additionally include:
 
 #### 2.2.5 Checkpoint File Format
 
-The checkpoint file path is `.purlin/cache/session_checkpoint_purlin.md`.
+The checkpoint file path is PID-scoped (see Section 2.2). Example: `.purlin/cache/session_checkpoint_46946.md`.
 
 The checkpoint is human-readable Markdown. The structure uses headings and labeled fields:
 
@@ -128,7 +131,7 @@ Font-size decision needs PM review -- recorded as [CLARIFICATION] but may escala
 
 #### 2.2.6 Legacy Checkpoint Compatibility
 
-When restoring, the agent MUST also check for legacy role-scoped checkpoint files (`session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). If a legacy file is found and no `session_checkpoint_purlin.md` exists, read the legacy file and map the role to the equivalent mode (`builder`/`architect` -> `engineer`, `qa` -> `qa`, `pm` -> `pm`). Delete the legacy file after consuming it.
+When restoring, the agent MUST also check for legacy checkpoint files: role-scoped (`session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`) and unscoped (`session_checkpoint_purlin.md`). If a legacy file is found and no PID-scoped checkpoint exists, read the legacy file and map the role to the equivalent mode (`builder`/`architect` -> `engineer`, `qa` -> `qa`, `pm` -> `pm`; unscoped `purlin` preserves whatever mode is in the file). Delete the legacy file after consuming it.
 
 ### 2.3 Restore Mode (`/pl-resume`)
 
@@ -138,14 +141,30 @@ Restore mode follows a 7-step sequence. Each step is mandatory unless noted othe
 
 **Merge breadcrumb check:** Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run the merge recovery protocol (Section 2.4) before proceeding. This check is essential because `/pl-resume` may be invoked standalone (after `/clear`) when no startup protocol ran.
 
-**Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
+**Stale checkpoint reaping:** Glob `.purlin/cache/session_checkpoint_*.md`. For each file:
+1. Extract the stem after `session_checkpoint_` (e.g., `46946` from `session_checkpoint_46946.md`).
+2. Skip known legacy names (`builder`, `architect`, `qa`, `pm`, `purlin`) — these are handled by the legacy compatibility path in Step 1.
+3. If the stem is numeric (a PID), check liveness: `kill -0 <pid> 2>/dev/null`.
+4. If the PID is dead, the checkpoint is orphaned (terminal crashed or closed without cleanup). **Delete the file** and log: `"Reaped stale checkpoint for PID <pid>."`
+5. If the PID is alive, leave the file — it belongs to a running terminal.
+
+This reaping runs BEFORE checkpoint detection (Step 1) so that stale files from crashed terminals don't interfere with the current restore.
+
+**Other stale session state:** Clear any additional stale session state carried over from the previous session. If no such state exists, this is a no-op.
 
 #### 2.3.1 Step 1 -- Checkpoint Detection
 
-- Use Bash `test -f .purlin/cache/session_checkpoint_purlin.md && echo EXISTS || echo MISSING` to detect the checkpoint file. Do NOT use the Read tool for existence detection — it errors on missing files and cancels sibling parallel tool calls.
-- Also check for legacy role-scoped files (see 2.2.6).
-- If **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. The checkpoint's **Mode** field determines which mode to re-enter.
-- If **MISSING:** Proceed silently to Step 2.
+Check for checkpoint files in priority order. Use Bash `test -f` for existence detection — do NOT use the Read tool, which errors on missing files and cancels sibling parallel tool calls.
+
+**Detection priority:**
+1. **PID-scoped:** If `PURLIN_SESSION_ID` is set, check `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`. This is the current terminal's own checkpoint.
+2. **Unscoped (migration):** Check `.purlin/cache/session_checkpoint_purlin.md`. This is the pre-PID-scoping format — treat as a one-time migration path.
+3. **Legacy role-scoped:** Check for `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md` (see 2.2.6).
+
+Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never consumed — only the current terminal's PID matches.
+
+- If **EXISTS (any level):** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. The checkpoint's **Mode** field determines which mode to re-enter. Record which file was matched (needed for deletion in Step 6).
+- If **MISSING (all levels):** Proceed silently to Step 2.
 
 #### 2.3.2 Step 2 -- Instruction Reload (Fresh Sessions Only)
 
@@ -172,9 +191,9 @@ When the checkpoint mode is `engineer`, check for orphaned worktree branches (`g
 
 **This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5 delegates entirely to `/pl-resume` — there is no separate implementation of work discovery in the startup protocol.
 
-**Reading startup flags:** First check for `.purlin/cache/session_overrides.json`. The launcher writes this file with the resolved `find_work` and `auto_start` values for this session — including ephemeral `--no-save` overrides that are NOT in `config.local.json`. If found, read `find_work` and `auto_start` from it. Do NOT delete the file — it persists for the lifetime of the terminal session (the launcher's EXIT trap cleans it up on session end, so it survives `/clear`).
+**Reading startup flags:** Check `$PURLIN_SESSION_ID` env var (set by the launcher, inherited by the agent). If set, look for `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`. This file is PID-scoped so concurrent agents (10+ in the same project) don't clobber each other. If found, verify the PID is still alive (`kill -0 $PURLIN_SESSION_ID`). If alive, read `find_work` and `auto_start` from it. If dead (stale from crash), delete the file and fall back to config. Do NOT delete a live session overrides file — it persists for the lifetime of the terminal session (the launcher's EXIT trap cleans it up on session end, so it survives `/clear`).
 
-If no session overrides file exists (e.g., manual `/pl-resume` outside a launcher session), fall back to the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work` and `auto_start` from `agents.purlin`.
+If `PURLIN_SESSION_ID` is not set (e.g., manual `/pl-resume` outside a launcher session), fall back to the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work` and `auto_start` from `agents.purlin`.
 
 Read `default_mode` from the resolved config always (it is not in session overrides). Defaults when absent: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
@@ -237,7 +256,7 @@ Uncommitted:    [none | summary]
 #### 2.3.6 Step 6 -- Update Terminal Identity, Cleanup, and Continue
 
 - **Update iTerm badge and title** to reflect the determined mode while preserving branch context. The launcher already set an initial badge at launch (e.g., `Purlin (main)`) — Step 6 updates the mode name but keeps the branch in parentheses. If a mode was resolved (from checkpoint, `default_mode`, or session message), set the badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. If no mode was resolved, leave the launcher's initial badge in place. Check `.purlin_worktree_label` — if present, the worktree label replaces the branch (e.g., `Engineer (W1)`). The branch is detected via `git rev-parse --abbrev-ref HEAD`. Do not set the badge earlier in the /pl-resume flow — let the launcher's initial badge persist until mode is known.
-- If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
+- If a checkpoint file was read in Step 1, **delete whichever file was consumed** (PID-scoped, unscoped, or legacy). The checkpoint has been consumed and must not be restored again.
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.
 
@@ -269,47 +288,66 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
 
 5. **Return control** to the caller (startup protocol continues).
 
+### 2.5 Launcher Cleanup Contract
+
+The launcher (`pl-run.sh`) is responsible for cleaning up PID-scoped files when the terminal session ends. Its EXIT trap MUST remove:
+
+1. **Session overrides:** `rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"` (already implemented)
+2. **Session checkpoint:** `rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_checkpoint_$$.md"`
+
+This ensures that normal terminal closure (including Ctrl+C) does not leave orphaned checkpoint files. The stale checkpoint reaping in Step 0 (Section 2.3.0) serves as a safety net for abnormal termination (kill -9, power loss) where the EXIT trap cannot run.
+
 ---
 
 ## 3. Scenarios
 
 ### Unit Tests
 
-#### Scenario: Checkpoint file path is correct
+#### Scenario: Checkpoint file path is PID-scoped
 
     Given the Purlin agent
+    And PURLIN_SESSION_ID is set to "46946"
+    When determining the checkpoint file path
+    Then the path is .purlin/cache/session_checkpoint_46946.md
+
+#### Scenario: Checkpoint file path falls back to unscoped without session ID
+
+    Given the Purlin agent
+    And PURLIN_SESSION_ID is not set
     When determining the checkpoint file path
     Then the path is .purlin/cache/session_checkpoint_purlin.md
 
 #### Scenario: Legacy checkpoint files are recognized
 
     Given .purlin/cache/session_checkpoint_builder.md exists
-    And .purlin/cache/session_checkpoint_purlin.md does not exist
+    And no PID-scoped or unscoped checkpoint exists
     When the agent checks for checkpoints
     Then the legacy builder checkpoint is found
     And the mode is mapped to "engineer"
 
 ### QA Scenarios
 
-#### Scenario: Save writes checkpoint file @auto
+#### Scenario: Save writes PID-scoped checkpoint file @auto
 
     Given the Purlin agent is in Engineer mode
+    And PURLIN_SESSION_ID is set to "46946"
     And the agent is working on a feature at protocol step 3
     When the agent invokes /pl-resume save
-    Then .purlin/cache/session_checkpoint_purlin.md is created
+    Then .purlin/cache/session_checkpoint_46946.md is created
     And the file contains "**Mode:** engineer"
     And the file contains a valid ISO 8601 timestamp
     And the file contains the current branch name
 
-#### Scenario: Restore with checkpoint re-enters mode @auto
+#### Scenario: Restore with PID-scoped checkpoint re-enters mode @auto
 
-    Given .purlin/cache/session_checkpoint_purlin.md exists with mode "engineer"
+    Given PURLIN_SESSION_ID is set to "46946"
+    And .purlin/cache/session_checkpoint_46946.md exists with mode "engineer"
     When the agent invokes /pl-resume
-    Then the checkpoint file is read
+    Then the PID-scoped checkpoint file is read
     And the recovery summary displays the checkpoint timestamp
     And the checkpoint's Next list is presented as the work plan
     And the agent re-enters Engineer mode
-    And the checkpoint file is deleted after consumption
+    And .purlin/cache/session_checkpoint_46946.md is deleted after consumption
 
 #### Scenario: Restore checks merge breadcrumbs in Step 0 @auto
 
@@ -343,7 +381,7 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
 
 #### Scenario: Restore without checkpoint runs cold start @auto
 
-    Given .purlin/cache/session_checkpoint_purlin.md does not exist
+    Given no PID-scoped, unscoped, or legacy checkpoint file exists
     When the agent invokes /pl-resume
     Then a fresh scan is run
     And the recovery summary displays "Checkpoint: none"
@@ -379,12 +417,13 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
 #### Scenario: Session overrides take priority over config @auto
 
     Given no checkpoint file exists
-    And .purlin/cache/session_overrides.json contains find_work=false
+    And PURLIN_SESSION_ID is set to "46946"
+    And .purlin/cache/session_overrides_46946.json contains find_work=false
     And config.local.json has agents.purlin.find_work = true
     When the agent invokes /pl-resume
-    Then the agent reads session_overrides.json (launcher authority)
+    Then the agent reads session_overrides_46946.json (launcher authority)
     And the agent outputs "find_work disabled -- awaiting instruction."
-    And the session_overrides.json file is NOT deleted
+    And the session_overrides_46946.json file is NOT deleted
 
 #### Scenario: Cold start reads config.local.json over config.json @auto
 
@@ -450,14 +489,69 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
     Then the merge is attempted
     And on success the breadcrumb is deleted and the branch cleaned up
 
+#### Scenario: Concurrent terminals do not collide on checkpoints @auto
+
+    Given terminal A has PURLIN_SESSION_ID "11111"
+    And terminal B has PURLIN_SESSION_ID "22222"
+    When terminal A invokes /pl-resume save
+    And terminal B invokes /pl-resume save
+    Then .purlin/cache/session_checkpoint_11111.md exists
+    And .purlin/cache/session_checkpoint_22222.md exists
+    And each file contains the respective terminal's session state
+    And restoring in terminal A reads only session_checkpoint_11111.md
+    And restoring in terminal B reads only session_checkpoint_22222.md
+
+#### Scenario: Stale checkpoint from dead PID is reaped in Step 0 @auto
+
+    Given .purlin/cache/session_checkpoint_99999.md exists
+    And PID 99999 is not running
+    When the agent invokes /pl-resume (restore mode)
+    Then Step 0 detects session_checkpoint_99999.md as stale
+    And the file is deleted
+    And the log contains "Reaped stale checkpoint for PID 99999"
+    And Step 1 proceeds without finding that checkpoint
+
+#### Scenario: Checkpoint from live PID is not reaped @auto
+
+    Given .purlin/cache/session_checkpoint_12345.md exists
+    And PID 12345 is running (different terminal)
+    And the current PURLIN_SESSION_ID is "67890"
+    When the agent invokes /pl-resume (restore mode)
+    Then Step 0 leaves session_checkpoint_12345.md in place
+    And Step 1 does NOT read session_checkpoint_12345.md (wrong PID)
+
+#### Scenario: Launcher EXIT trap cleans up checkpoint file
+
+    Given the launcher started with PID 46946
+    And the agent saved a checkpoint to session_checkpoint_46946.md
+    When the terminal session ends (EXIT trap fires)
+    Then .purlin/cache/session_checkpoint_46946.md is deleted
+    And .purlin/cache/session_overrides_46946.md is deleted
+
+#### Scenario: Unscoped checkpoint consumed as migration path @auto
+
+    Given PURLIN_SESSION_ID is set to "46946"
+    And .purlin/cache/session_checkpoint_46946.md does not exist
+    And .purlin/cache/session_checkpoint_purlin.md exists with mode "pm"
+    When the agent invokes /pl-resume
+    Then the unscoped checkpoint is read (migration fallback)
+    And the agent re-enters PM mode
+    And .purlin/cache/session_checkpoint_purlin.md is deleted after consumption
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
 
 ## Regression Guidance
-- Checkpoint survives /clear and terminal restarts (written to .purlin/cache/, gitignored)
-- Legacy role-scoped checkpoints are recognized and consumed correctly
+- Checkpoint is PID-scoped (`session_checkpoint_${PURLIN_SESSION_ID}.md`) — concurrent terminals never collide
+- Checkpoint falls back to unscoped `session_checkpoint_purlin.md` when PURLIN_SESSION_ID is not set
+- Unscoped and legacy checkpoints are consumed as a migration path (one-time, then deleted)
+- Stale checkpoints (dead PIDs) are reaped in Step 0 before checkpoint detection
+- Live checkpoints from other terminals are never consumed or reaped
+- Launcher EXIT trap cleans up both session_overrides and session_checkpoint files
+- Checkpoint survives /clear and agent restarts within the same terminal (PID persists)
 - find_work=false respected during restore (no auto-generated work plan, no scan)
+- Session overrides are PID-scoped and read with liveness check
 - config.local.json takes priority over config.json for startup flags
 - default_mode from resolved config is applied when session message specifies no mode
 - auto_start=true without a resolved mode does not cause errors (no-op)
