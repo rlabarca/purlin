@@ -12,10 +12,33 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 
 ---
 
+## Argument Parsing
+
+Parse `$ARGUMENTS` for two orthogonal filters:
+
+- **Feature scope:** A bare word (no `--` prefix) scopes to `features/<arg>.md` only. If absent, batch all TESTING features + AUTO re-verification candidates.
+- **Execution mode:** `--mode <auto|smoke|regression|manual>`. If absent, run the full pipeline.
+
+Examples: `/pl-verify` (full batch), `/pl-verify notifications` (full, one feature), `/pl-verify --mode smoke` (smoke batch), `/pl-verify notifications --mode auto` (auto, one feature).
+
+## Execution Mode Dispatch
+
+| Mode | Runs | Skips |
+|------|------|-------|
+| (none/full) | Phase A + Phase B | Nothing |
+| `auto` | Phase A Steps 2-5 (@auto scenarios, visual smoke) | Step 1 auto-pass, Step 4 classification, Phase B |
+| `smoke` | Phase A Step 2 only (smoke-tier scenarios) | Everything else |
+| `regression` | Phase A Step 0b + regression checkpoint (Step 5a-B) | All other steps, Phase B |
+| `manual` | Phase B only (assemble + present manual checklist) | Entire Phase A |
+
+Execution modes do NOT change what gets committed — a mode that skips steps simply doesn't execute them. Features that would have been finalized in a skipped step remain in their current state.
+
+---
+
 ## Scope
 
-If an argument was provided, scope verification to `features/<arg>.md` only.
-If no argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
+If a feature argument was provided, scope verification to `features/<arg>.md` only.
+If no feature argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
 
@@ -23,7 +46,9 @@ Phase A and Phase B both respect this scope. In scoped mode, all steps target on
 
 ## Phase A -- Automated Execution
 
-Execute these steps IN ORDER before assembling the manual checklist. Do NOT skip Phase A or defer automated items to after Phase B. This phase applies in both batch mode (all TESTING features) and scoped mode (single feature). In scoped mode, all steps target only the scoped feature.
+**Mode gate:** Skip this entire phase if `--mode manual`. If `--mode smoke`, execute only Step 2. If `--mode regression`, execute only Step 0b + regression checkpoint (Step 5a-B). If `--mode auto`, execute Steps 2-5 (skip Step 1 auto-pass and Step 4 classification). If no mode flag (full), execute all steps.
+
+Execute the applicable steps IN ORDER before assembling the manual checklist. This phase applies in both batch mode (all TESTING features) and scoped mode (single feature). In scoped mode, all steps target only the scoped feature.
 
 > **Canonical source:** QA_BASE Section 3.3 defines the Auto-First Protocol. This phase implements it. If they diverge, QA_BASE Section 3.3 is authoritative.
 
@@ -287,6 +312,8 @@ Skip directly to Step 11 (Batch Completion).
 ---
 
 ## Phase B -- Manual Verification Checklist
+
+**Mode gate:** Skip this entire phase if `--mode auto`, `--mode smoke`, or `--mode regression`. Only execute for full (no flag) or `--mode manual`.
 
 ### Step 6 -- Checklist Assembly
 

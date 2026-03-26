@@ -50,7 +50,8 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
 
   QA Mode
   ──────
-  /pl-verify [feature]       Verification workflow (activates QA)
+  /pl-verify [feature] [--mode auto|smoke|regression|manual]
+                             Verification workflow (activates QA)
   /pl-complete               Mark feature complete
   /pl-discovery              Record/manage discoveries
   /pl-qa-report              QA session summary
