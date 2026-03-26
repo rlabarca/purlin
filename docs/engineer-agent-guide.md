@@ -1,258 +1,159 @@
-# Engineer Agent Guide
+# Engineer Mode Guide
 
-A practical guide for using the Engineer agent in Purlin.
-
----
-
-## 1. Overview
-
-The Engineer is Purlin's implementation agent. It reads feature specs and translates them into working code, tests, and scripts. The Engineer is the sole author of all implementation artifacts in the project.
-
-The Engineer agent:
-
-- **Implements features** by reading specs from `features/` and writing code.
-- **Writes automated tests** with a rigorous quality rubric (6 checks, 5 anti-pattern scans).
-- **Runs web tests** via Playwright for features with visual specifications.
-- **Documents decisions** in companion files when it deviates from or extends a spec.
-- **Manages phased delivery** for large-scope work across multiple features.
-- **Never writes specs.** Feature files, anchor nodes, and instruction files belong to the PM and PM. If the Engineer finds a spec gap, it records a discovery -- it does not edit the spec.
-
-The Engineer discovers its own work. At startup, it identifies features in TODO state and proposes an implementation plan. You approve, and it begins.
+How to use Engineer mode to implement features, write tests, and manage delivery.
 
 ---
 
-## 2. Getting Started
+## What Engineer Mode Does
 
-### Launching a Engineer Session
+Engineer mode reads feature specs and turns them into working code, tests, and scripts. It's the only mode that writes implementation files.
 
-```bash
-./pl-run.sh
+Engineer mode:
+
+- Implements features by reading specs from `features/` and writing code.
+- Writes automated tests against a quality rubric.
+- Runs visual verification via Playwright for web features.
+- Documents implementation decisions in companion files when it deviates from a spec.
+- Manages phased delivery for large-scope work across multiple features.
+- Never writes specs. If it finds a gap, it records a finding — it doesn't edit the spec.
+
+### Entering Engineer Mode
+
+From any session:
+
+```
+/pl-mode engineer
 ```
 
-### What Happens at Startup
+Or run an Engineer skill directly — `/pl-build`, `/pl-unit-test`, and `/pl-delivery-plan` all activate Engineer mode automatically.
 
-The Engineer prints a command table, then checks its startup configuration:
-
-- **Find Work only** (default): The Engineer identifies TODO features, proposes a delivery plan if needed, and waits for your approval before starting.
-- **Find Work + Auto Start**: The Engineer proposes a work plan and begins implementing immediately without waiting for approval.
-- **Find Work disabled**: The Engineer waits for your direct instruction.
+At startup, Engineer mode checks for TODO features and proposes a work plan. You approve, and it begins.
 
 ---
 
-## 3. The Build Workflow
+## The Build Workflow
 
-When the Engineer implements a feature, it follows a four-step protocol.
+When implementing a feature, the agent follows four steps.
 
-### Step 0 -- Pre-Flight
+### Step 0 — Pre-Flight
 
-Before writing any code, the Engineer:
+Before writing code, the agent:
 
-1. Reads the companion file (`features/<name>.impl.md`) if one exists, to understand prior implementation decisions.
-2. Checks anchor node constraints (FORBIDDEN patterns and invariants).
-3. Reads visual design sources: Token Map from the spec, then `brief.json`, then Figma MCP as a last resort.
-4. Checks Playwright MCP availability for features with web test metadata.
-5. Detects whether this is new work or re-verification of existing code.
+- Reads the companion file (`features/<name>.impl.md`) for prior decisions.
+- Checks anchor node constraints (forbidden patterns, invariants).
+- Loads visual design sources if the feature has a Visual Specification.
+- Detects whether this is new work or re-verification of existing code.
 
-### Step 1 -- Plan
+### Step 1 — Plan
 
-The Engineer states which feature it is implementing and outlines its approach, referencing companion file notes and anchor constraints.
+States which feature it's implementing and outlines the approach, referencing any relevant companion file notes and anchor constraints.
 
-### Step 2 -- Implement
+### Step 2 — Implement
 
-The Engineer writes code and tests, then documents any non-obvious decisions in the companion file using structured tags:
+Writes code and tests. When it makes a decision the spec doesn't cover, it records it in the companion file:
 
-| Tag | Severity | When to Use |
-|-----|----------|-------------|
-| `[CLARIFICATION]` | INFO | Interpreted ambiguous spec language |
-| `[AUTONOMOUS]` | WARN | Spec was silent; filled the gap with judgment |
-| `[DEVIATION]` | HIGH | Intentionally diverged from spec (blocks completion) |
-| `[DISCOVERY]` | HIGH | Found an unstated requirement (blocks completion) |
-| `[INFEASIBLE]` | CRITICAL | Cannot implement as specified; halts work |
-| `[SPEC_PROPOSAL]` | HIGH | Proposes a new anchor node or spec change |
+| Tag | When Used |
+|-----|-----------|
+| `[CLARIFICATION]` | Interpreted ambiguous spec language. |
+| `[AUTONOMOUS]` | Spec was silent — filled the gap with judgment. |
+| `[DEVIATION]` | Intentionally diverged from spec. |
+| `[DISCOVERY]` | Found an unstated requirement. |
+| `[INFEASIBLE]` | Cannot implement as specified — halts work. |
 
-HIGH and CRITICAL tags route to the PM as action items.
+HIGH and CRITICAL tags show up as PM action items in `/pl-status`.
 
-### Step 3 -- Verify
+### Step 3 — Verify
 
-The Engineer runs `/pl-unit-test` to execute tests against a quality rubric. For features with visual specifications and web test metadata, it also runs `/pl-web-test` via Playwright.
+Runs `/pl-unit-test` to check tests against the quality rubric. For features with visual specs, runs `/pl-web-test` via Playwright.
 
-### Step 4 -- Status Tag
+### Step 4 — Status Tag
 
-A separate commit (never bundled with implementation) that marks the feature's lifecycle state:
+A separate commit marks the feature's state:
 
-- **`[Complete]`** -- All scenarios are unit tests, all pass, no manual verification needed. QA never sees this feature.
-- **`[Ready for Verification]`** -- The feature has QA scenarios that require manual verification. QA picks it up next.
-
-Each tag includes a scope declaration that tells QA how much re-testing is needed:
-
-| Scope | Meaning |
-|-------|---------|
-| `full` | Behavioral change or new scenarios -- test everything |
-| `targeted:A,B` | Only specific scenarios affected |
-| `cosmetic` | Non-functional change -- skip QA if prior clean pass exists |
-| `dependency-only` | Prerequisite update -- test only affected scenarios |
+- **`[Complete]`** — All tests pass, no manual verification needed. QA never sees this feature.
+- **`[Ready for Verification]`** — Has QA scenarios that need manual or automated verification. QA picks it up.
 
 ---
 
-## 4. Unit Testing
+## Unit Testing
 
-The Engineer runs `/pl-unit-test` which enforces a strict quality rubric.
+`/pl-unit-test` runs tests and checks them against a quality rubric. Every test must:
 
-### The 6-Point Quality Gate
+1. **Fail if the implementation is deleted** — tests that pass without their code are worthless.
+2. **Actually call the implementation** — no reading source files and checking strings.
+3. **Assert specific values** — not just that something exists or has the right type.
+4. **Use realistic inputs** — not empty strings or single items.
+5. **Only mock external dependencies** — network, filesystem, not the code under test.
 
-Every test must pass all six checks:
-
-1. **Deletion test** -- If the implementation were deleted, would the test fail?
-2. **Behavioral verification** -- Does the test import, call, or execute the implementation?
-3. **Value assertions** -- Does every test have at least one value-verifying assertion?
-4. **Anti-pattern free** -- Does every test pass all 5 anti-pattern checks?
-5. **Representative inputs** -- Do tests use realistic data, not empty strings or single items?
-6. **No self-mocking** -- Are mocks limited to external dependencies (network, filesystem)?
-
-### 5 Anti-Patterns to Avoid
-
-| Pattern | Bad | Good |
-|---------|-----|------|
-| Prose inspection | Read a `.md` file, check for string | Import and call implementation |
-| Structural presence | Assert a key exists | Assert the key's specific value |
-| Mock-dominated | Mock the code under test | Execute real code with controlled inputs |
-| Tautological assertion | Type-check a typed function | Assert a specific computed value |
-| Input neglect | Empty strings, single items | Realistic data matching real usage |
-
-Test results are written to `tests/<feature>/tests.json` with `status`, `passed`, `failed`, and `total` fields.
+Test results land in `tests/<feature>/tests.json`.
 
 ---
 
-## 5. Web Testing
+## Web Testing
 
-For features with `> Web Test: <url>` metadata and a `## Visual Specification` section, the Engineer runs `/pl-web-test` using Playwright MCP.
+For features with a Visual Specification section and `> Web Test:` metadata:
 
-### What It Does
+```
+/pl-web-test feature-name
+```
 
-1. Navigates to the feature's URL.
-2. Reads the visual specification checklist from the spec.
-3. Checks each item against the running application (computed CSS styles, layout, content).
-4. When Figma MCP is available, performs three-source triangulation: Figma design values, spec Token Map values, and actual app values.
-
-### Verdicts
-
-| Verdict | Meaning | Routed To |
-|---------|---------|-----------|
-| PASS | All sources agree | -- |
-| BUG | App does not match spec | Engineer |
-| STALE | Figma updated after spec was written | PM |
-| DRIFT | App matches Figma but not the spec | PM |
-
-The Engineer iterates until zero BUG and zero DRIFT verdicts before committing the status tag.
+This uses Playwright to navigate to the feature's URL and check each visual checklist item against the running app — CSS values, layout, content. The agent iterates until all items pass before committing the status tag.
 
 ---
 
-## 6. Delivery Plans
+## Delivery Plans
 
-When the Engineer has multiple features to implement, it uses phased delivery to organize the work.
+When multiple features need implementation, the agent organizes work into phases.
 
-### When Phasing Kicks In
+```
+/pl-delivery-plan
+```
 
-- 2+ HIGH-complexity features, or
-- 3+ features of any complexity mix, or
-- A single feature with 5+ unimplemented scenarios
+Phasing kicks in when there are 2+ high-complexity features, 3+ features of any mix, or a single feature with 5+ scenarios.
 
-### Phase Structure
+Each phase groups related features and follows three sub-phases:
 
-Each phase groups related features (sized by testability, parallelism, and
-context budget -- there is no hard per-phase cap) and follows three sub-phases:
+- **Build** — Implement and test each feature.
+- **Test** — Re-run tests across all phase features to catch regressions.
+- **Fix** — Diagnose and fix any cross-feature failures.
 
-- **B1 (Build)** -- Implement and test each feature locally.
-- **B2 (Test)** -- Re-run all tests across phase features to catch cross-feature regressions.
-- **B3 (Fix)** -- Diagnose and fix any B2 failures. Analyze root cause before changing code.
-
-### Parallel Execution
-
-When a phase has 2+ independent features (no spec-level dependencies), the Engineer spawns parallel `builder-worker` sub-agents, each in an isolated git worktree. After workers complete, branches merge back sequentially. Conflicts on safe files (delivery plan, cache) auto-resolve; conflicts on source files trigger sequential fallback for that feature.
-
-See the [Parallel Execution Guide](parallel-execution-guide.md) for details.
+When a phase has independent features (no dependencies on each other), the agent can build them in parallel using isolated git worktrees. See the [Parallel Execution Guide](parallel-execution-guide.md) for details.
 
 ---
 
-## 7. Companion Files
+## Companion Files
 
-The Engineer creates `features/<name>.impl.md` alongside the spec to document implementation knowledge. These files are the durable channel between Engineer and PM.
+The agent creates `features/<name>.impl.md` alongside the spec to document implementation decisions. This is the durable communication channel between Engineer and PM.
 
-### What Goes In Them
+**What goes in:** Decision tags with rationale, test quality results, visual verification results.
 
-- Decision tags (`[CLARIFICATION]`, `[DEVIATION]`, etc.) with rationale.
-- Test quality audit results (rubric score, test count, anti-pattern scan).
-- Visual verification results.
-- Any tribal knowledge that would be lost between sessions.
-
-### What Does Not Go In Them
-
-- The implementation itself (that is in the code).
-- Spec content (that stays in the feature file).
-- Temporary debugging notes.
+**What doesn't:** The implementation itself (that's in the code), spec content (that's in the feature file), or temporary debugging notes.
 
 ---
 
-## 8. Day-to-Day Tips
+## Communicating with PM Mode
 
-### Checking What Needs Building
+Engineer mode has three ways to flag issues for PM:
 
-```
-/pl-status
-```
-
-Shows all features with their lifecycle states. Features with Engineer=TODO are ready for implementation.
-
-### Finding Feature Context
-
-```
-/pl-find caching
-```
-
-Searches specs for a topic. Useful when implementing a feature that may interact with other parts of the system.
-
-### When You Cannot Implement a Spec
-
-```
-/pl-infeasible feature-name
-```
-
-Records an `[INFEASIBLE]` tag in the companion file and halts work on that feature. The PM sees it as a CRITICAL action item and must revise the spec.
-
-### Proposing Spec Changes
-
-```
-/pl-propose topic
-```
-
-Records a `[SPEC_PROPOSAL]` in the companion file suggesting a new anchor node or spec modification. The PM picks it up on their next session.
-
-### Fixing QA Bugs
-
-When QA records a `[BUG]` discovery, it appears as a Engineer action item. Fix the code, update the discovery status to RESOLVED in the same commit, and re-run tests.
+| Situation | What to Do |
+|-----------|------------|
+| Spec is impossible to implement | `/pl-infeasible feature-name` — halts work, creates a critical escalation. |
+| Implementation differs from spec | Record a `[DEVIATION]` in the companion file — PM reviews it. |
+| Spec should change | `/pl-propose topic` — suggests a spec change for PM to evaluate. |
 
 ---
 
-## 9. Command Reference
+## Day-to-Day Commands
 
-| Command | Description |
-|---------|-------------|
-| `/pl-build [name]` | Implement pending features or a specific feature. Core workflow. |
-| `/pl-unit-test [name]` | Run unit tests with quality rubric gate. |
-| `/pl-web-test [name]` | Run Playwright visual verification for web features. |
+| Command | What It Does |
+|---------|--------------|
+| `/pl-build [name]` | Implement features following the build protocol. |
+| `/pl-unit-test [name]` | Run unit tests with the quality rubric. |
+| `/pl-web-test [name]` | Visual verification via Playwright. |
 | `/pl-delivery-plan` | Create or review a phased delivery plan. |
-| `/pl-infeasible <name>` | Escalate a feature as unimplementable. |
-| `/pl-propose <topic>` | Suggest a spec change to the PM. |
-| `/pl-spec-code-audit` | Bidirectional spec-code consistency audit. |
-| `/pl-status` | Check feature status and action items. |
-| `/pl-find <topic>` | Search specs for where a topic is discussed. |
-| `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
-| `/pl-server` | Dev server lifecycle management. |
-| `/pl-agent-config` | View or modify agent model and startup settings. |
-| `/pl-override-edit` | Edit `BUILDER_OVERRIDES.md`. |
-| `/pl-whats-different` | Compare branches (main checkout only). |
-| `/pl-remote-push` | Push [collaboration branch](branch-collaboration-guide.md) to remote. |
-| `/pl-remote-pull` | Pull remote into current branch. |
-| `/pl-help` | Display the full command list. |
-| `/pl-resume [save\|role]` | Save or restore session state. |
-| `/pl-update-purlin` | Update the Purlin submodule. |
+| `/pl-infeasible <name>` | Escalate a feature that can't be built as specified. |
+| `/pl-propose <topic>` | Suggest a spec change to PM. |
+| `/pl-spec-code-audit` | Audit alignment between specs and code. |
+| `/pl-status` | Check feature states and what needs building. |
+| `/pl-find <topic>` | Search specs for a topic. |
+| `/pl-help` | Full command list for Engineer mode. |

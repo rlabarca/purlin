@@ -1,85 +1,38 @@
-# Parallel Execution in the Engineer
+# Parallel Execution Guide
 
-How the Engineer parallelizes feature implementation across delivery plan phases using execution groups.
+How the agent builds independent features simultaneously using git worktrees.
 
 ---
 
 ## When It Happens
 
-When a delivery plan has PENDING phases, the Engineer forms **execution groups** -- sets of phases with no cross-dependencies that can be scheduled together. Within each execution group, independent features are dispatched to parallel sub-agents.
+When a delivery plan has multiple pending features that don't depend on each other, Engineer mode can build them in parallel. Each feature gets its own isolated copy of the repository (a git worktree), so parallel builds don't interfere with each other.
 
-The Engineer reads `.purlin/cache/dependency_graph.json` and the delivery plan to determine which phases can be grouped and which features within a group are independent. If no cross-dependencies exist between features, the Engineer spawns one `builder-worker` sub-agent per feature. Each worker runs in an isolated git worktree.
-
----
-
-## Execution Groups
-
-Phases are authoring units; execution groups are scheduling units. The Engineer forms groups by checking whether any feature in one PENDING phase depends (transitively) on any feature in another PENDING phase. Phases with no cross-dependencies are combined into a single execution group.
-
-For example, if Phases 2 and 3 are both PENDING and share no feature dependencies, they form one execution group. All features across both phases are collected and dispatched together.
-
-Individual phases within a group complete independently. If one phase's features all pass while another has a stuck feature, the completed phase is marked COMPLETE and QA can verify it immediately. The incomplete phase becomes a singleton group on the next session.
-
-When the entire execution group is complete, the Engineer checks `auto_start`:
-- **`auto_start: false` (default):** The Engineer stops the session and recommends running QA to verify completed phases, then relaunching Engineer for the next group.
-- **`auto_start: true`:** The Engineer auto-advances to the next execution group.
-
-If a delivery plan has only 1 PENDING phase with 1 feature, the Engineer skips group analysis and uses the sequential per-feature loop directly.
+This kicks in automatically during `/pl-build` when the delivery plan has 2+ independent features in the same phase.
 
 ---
 
-## Independence Checks
+## How It Works
 
-The Engineer uses the prerequisite graph in `dependency_graph.json` to assess whether features can be built in parallel.
+1. The agent reads the delivery plan and dependency graph.
+2. It groups pending phases that have no cross-dependencies into **execution groups**.
+3. For each group, it spawns one sub-agent per independent feature, each in its own worktree.
+4. Sub-agents implement their features (pre-flight, plan, implement) and commit to their worktree branches.
+5. Branches merge back to the main branch sequentially.
+6. The agent runs cross-feature verification to catch regressions.
 
-### Spec-Level Dependencies (Hard Gate)
+### Independence Checks
 
-Checks the prerequisite graph (`dependency_graph.json`). If Feature A declares `> Prerequisite: features/feature_b.md`, they must be sequential. This is the only check that **blocks** parallelism.
+The agent uses the prerequisite graph to determine which features can be parallel. If Feature A declares a dependency on Feature B, they must be built sequentially. Features without spec-level dependencies are treated as independent.
 
-### Key Principle: Optimistic Parallelism
+The approach is optimistic: parallel first, sequential fallback only if merge actually conflicts on source files.
 
-Features without spec-level cross-dependencies are treated as independent. The Engineer proceeds with parallel execution and relies on the merge protocol to handle any resulting conflicts. Sequential fallback happens only when merge actually fails -- not when coupling is predicted.
+### Merge Protocol
 
----
+After parallel builds complete, branches merge one at a time:
 
-## Execution Flow
-
-```
-1. Engineer reads dependency_graph.json and delivery plan
-2. Groups PENDING phases by cross-dependency analysis (execution groups)
-3. Identifies the active execution group (first group with non-COMPLETE phases)
-4. Marks all phases in the group as IN_PROGRESS
-5. Collects all features across all member phases
-6. Checks pairwise feature independence within the group
-7. For each set of independent features (2+):
-   a. Spawns one builder-worker sub-agent per feature (isolated worktree)
-   b. Each worker runs Steps 0-2 (pre-flight, plan, implement)
-   c. Workers commit to their worktree branches
-8. Merges branches back using the robust merge protocol
-9. Runs verification (B2) across all group features
-```
-
----
-
-## Merge Protocol
-
-After parallel workers complete, branches are merged sequentially using rebase-before-merge:
-
-1. For each worker branch: `git rebase HEAD <branch>`
-2. On conflict, check if all conflicting files are **safe files** (delivery plan, cache files).
-   - Safe conflict: auto-resolve with `git checkout --ours`, continue rebase.
-   - Unsafe conflict: abort rebase, fall back to **sequential rebuild** for that feature only.
-3. After rebase: fast-forward merge.
-4. Already-merged features are preserved -- only the conflicting feature rebuilds sequentially.
-
----
-
-## Sub-Agent Constraints
-
-| Agent | Runs | Cannot |
-|-------|------|--------|
-| `builder-worker` | Steps 0-2, single feature, isolated worktree | Run Step 3/4, modify delivery plan, spawn nested agents |
-| `verification-runner` | `/pl-unit-test`, writes `tests.json` | Edit implementation files, spawn agents |
+- **Safe file conflicts** (delivery plan, cache files) — auto-resolved, merge continues.
+- **Source file conflicts** — the conflicting feature falls back to sequential rebuild. Already-merged features are preserved.
 
 ---
 
@@ -87,12 +40,7 @@ After parallel workers complete, branches are merged sequentially using rebase-b
 
 | Situation | What Happens |
 |-----------|--------------|
-| 1 PENDING phase, 1 feature | Sequential build (no group analysis needed) |
-| 2+ PENDING phases, no cross-dependencies | Phases grouped into one execution group, features dispatched in parallel |
-| 2+ PENDING phases, some cross-dependent | Independent phases grouped; dependent phases form separate groups |
-| Group has 2+ features, all spec-independent | Parallel build via builder-worker sub-agents |
-| Group has 2+ features, some spec-dependent | Mixed: independent features parallel, dependent features sequential |
-| Merge conflict on source file | Sequential fallback for that feature only |
-| Merge conflict on safe file | Auto-resolved, parallel continues |
-| Execution group complete, `auto_start: false` | Engineer stops, recommends QA then relaunch |
-| Execution group complete, `auto_start: true` | Engineer auto-advances to next group |
+| 1 feature pending | Sequential build (no parallelism needed). |
+| 2+ features, no dependencies | Parallel build via worktree sub-agents. |
+| 2+ features, some dependent | Independent ones parallel, dependent ones sequential. |
+| Source file merge conflict | That feature rebuilds sequentially; others preserved. |

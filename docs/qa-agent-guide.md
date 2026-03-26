@@ -1,265 +1,204 @@
-# QA Agent Guide
+# QA Mode Guide
 
-A practical guide for using the QA agent in Purlin.
-
----
-
-## 1. Overview
-
-The QA agent is Purlin's verification and feedback agent. It guides you through manual verification of implemented features, automates what it can, and routes findings back to the Engineer (bugs) or PM (spec issues).
-
-The QA agent:
-
-- **Verifies features** by walking you through scenarios step by step.
-- **Classifies scenarios** as `@auto` (automatable) or `@manual` (requires human judgment).
-- **Authors regression tests** that run automatically in future sessions.
-- **Records discoveries** (bugs, spec disputes, intent drift) in structured sidecar files.
-- **Marks features complete** after clean verification with zero open discoveries.
-- **Never writes application code.** QA writes verification scripts, discovery files, and scenario tags -- not implementation.
-
-QA discovers its own work. At startup, it finds features in TESTING state and presents a verification plan.
+How to use QA mode to verify features, run regression tests, and build smoke test coverage.
 
 ---
 
-## 2. Getting Started
+## What QA Mode Does
 
-### Launching a QA Session
+QA mode verifies that implemented features match their specs. It automates what it can, walks you through what it can't, and routes findings back to the right mode for resolution.
 
-```bash
-./pl-run-qa.sh
+QA mode:
+
+- Verifies features by walking through scenarios step by step.
+- Classifies scenarios as `@auto` (automatable) or `@manual` (needs human judgment).
+- Builds and runs regression test suites.
+- Manages smoke tests — the critical-path checks that run first every time.
+- Records discoveries (bugs, spec disputes, intent drift) in structured sidecar files.
+- Marks features complete when all checks pass.
+- Never writes application code. QA writes test scripts, discovery files, and scenario tags.
+
+### Entering QA Mode
+
+From any session:
+
+```
+/pl-mode qa
 ```
 
-### What Happens at Startup
+Or run a QA skill directly — `/pl-verify`, `/pl-regression`, and `/pl-discovery` all activate QA mode automatically.
 
-QA prints a command table, then checks its configuration:
-
-- **Find Work + Auto Start**: QA runs through automated verification (Phase A) fully without prompting, then presents manual items.
-- **Find Work only**: QA proposes a verification plan and waits for your approval.
-- **Find Work disabled**: QA waits for your direct instruction.
+At startup, QA mode finds features in TESTING state and presents a verification plan.
 
 ---
 
-## 3. The Verification Workflow
+## The Verification Workflow
 
-QA verification has two phases: Phase A (automated, runs first) and Phase B (manual, presented after).
+Verification has two phases: automated first, then manual.
 
-### Phase A -- Automated (8 Steps + Checkpoint)
+### Phase A — Automated
 
-**Step 1 -- Credit Engineer Work.** Features the Engineer already completed (unit-tests-only, no QA scenarios) are auto-credited. No human time needed. **AUTO features are NOT auto-passed** -- features with `qa_status: AUTO` have automated QA work (web tests, @auto scenarios) that must execute in Steps 2-5 even though they need zero human time.
+The agent works through these steps without needing you:
 
-**Step 2 -- Smoke Gate.** If test priority tiers are configured in `QA_OVERRIDES.md`, QA runs all smoke-tier scenarios first. If any fail, QA halts and asks whether to stop or continue.
+1. **Credit Engineer work.** Features that only have unit tests (no QA scenarios) are auto-credited as complete.
 
-**Step 3 -- Run @auto Scenarios.** Scenarios tagged `@auto` from prior sessions already have regression JSON. QA invokes the harness runner automatically. Regression suites with a valid PASS result (source files not modified since the result was written) are NOT re-run -- only STALE, FAIL, and NOT_RUN results require action.
+2. **Smoke gate.** If you've defined smoke-tier features (see [Smoke Testing](#smoke-testing) below), those scenarios run first. If any fail, the agent halts and asks whether to stop or continue.
 
-**Step 4 -- Classify Untagged Scenarios.** For each QA scenario with no tag yet:
-- QA evaluates whether it can be automated (deterministic assertions, no hardware, no subjective judgment).
-- If automatable: QA proposes the approach and asks you to confirm. On approval, it authors regression JSON, runs it, and tags the scenario `@auto`.
-- If not automatable: QA tags it `@manual` and moves it to the manual checklist.
-- After this step, every scenario is tagged.
+3. **Run `@auto` scenarios.** Scenarios tagged `@auto` from prior sessions already have regression tests. The agent runs them automatically. Suites with valid passing results that haven't gone stale are skipped.
 
-**Step 5 -- Visual Smoke.** For features with visual specifications, QA runs a quick Playwright check (web features) or asks for a screenshot (non-web features).
+4. **Classify untagged scenarios.** For each new scenario PM mode wrote:
+   - If it can be automated (deterministic assertions, no subjective judgment), the agent proposes an approach and asks you to confirm.
+   - If it can't, the agent tags it `@manual` and moves it to the manual checklist.
+   - After this step, every scenario is tagged.
 
-**Step 5a -- Phase A Checkpoint (HARD GATE).** Status tag commits are mandatory before proceeding to Phase B. This checkpoint fires at two points:
-- **Checkpoint A** -- after Steps 1-5: finalize AUTO features verified by web tests, @auto scenarios, and visual smoke.
-- **Checkpoint B** -- after in-session regression suites pass: finalize features whose regression suites ran and passed this session.
+5. **Visual smoke check.** For features with visual specs, runs a quick Playwright check.
 
-At each checkpoint, QA commits regression artifacts, commits one `[Complete] [Verified]` status tag per eligible feature, and verifies the finalized features no longer show as AUTO/TODO.
+**Phase A Checkpoint:** Before any manual work, the agent finalizes and commits status tags for every feature that passed automated verification.
 
-**Step 6 -- LLM Delegation.** For scenarios needing Claude to analyze output, QA composes a command for you to run externally.
+### Phase B — Manual
 
-**Step 7 -- Standard and Full-Only Manual.** Remaining `@manual` scenarios are verified: standard-tier first, then full-only.
-
-**Step 8 -- Full Manual Pass.** Visual checklists grouped by screen; `@manual` scenarios walked through step-by-step.
-
-### Phase A Summary
-
-After automated steps complete, QA prints a bridging summary:
-
-```
---- Phase A Complete ---
-Auto-passed:     3 features (builder-verified)
-Smoke gate:      ran 5 smoke scenarios
-@auto executed:  12 scenarios -- 11 passed, 1 failed
-Classified:      4 scenarios (2 -> @auto, 2 -> @manual)
-
-Remaining for manual verification: 6 items across 2 features.
-```
-
-### Phase B -- Manual Verification
-
-QA assembles a numbered checklist of all remaining items across features. Each item has a **Do:** line (setup and action) and a **Verify:** line (expected outcome).
+The agent assembles a numbered checklist of remaining items. Each item has a **Do:** line (what to set up and perform) and a **Verify:** line (what should happen).
 
 You respond with:
-- `all pass` -- Everything passed.
-- `F3, F7` -- Items 3 and 7 failed.
-- `help 5` -- Walk through item 5 step by step.
-- `detail 5` -- Show raw Gherkin or full visual context.
-- `DISPUTE 4` -- Trigger a SPEC_DISPUTE for item 4.
 
-After processing results, QA records discoveries for failures, marks clean features as complete, and presents a batch summary.
+- `all pass` — Everything passed.
+- `F3, F7` — Items 3 and 7 failed.
+- `help 5` — Walk through item 5 in detail.
+- `DISPUTE 4` — You disagree with item 4's expected behavior.
+
+After processing, the agent records discoveries for failures, marks clean features as complete, and presents a summary.
 
 ---
 
-## 4. Discoveries
+## Discoveries
 
-When verification reveals a problem, QA records a structured discovery in the feature's sidecar file (`features/<name>.discoveries.md`).
+When verification finds a problem, QA mode records a structured discovery in the feature's sidecar file (`features/<name>.discoveries.md`).
 
-### Four Discovery Types
+### Four Types
 
-| Type | Meaning | Routes To |
+| Type | Meaning | Routed To |
 |------|---------|-----------|
-| `[BUG]` | Behavior contradicts an existing scenario | Engineer |
-| `[DISCOVERY]` | Behavior exists but no scenario covers it | PM |
-| `[INTENT_DRIFT]` | Behavior matches the spec literally but misses the actual intent | PM |
-| `[SPEC_DISPUTE]` | You disagree with a scenario's expected behavior | PM/PM |
+| `[BUG]` | Behavior contradicts an existing scenario. | Engineer mode |
+| `[DISCOVERY]` | Behavior exists but no scenario covers it. | PM mode |
+| `[INTENT_DRIFT]` | Matches the spec literally but misses the intent. | PM mode |
+| `[SPEC_DISPUTE]` | You disagree with the scenario's expected behavior. | PM mode |
 
-### Discovery Lifecycle
+### Lifecycle
 
-`OPEN` --> `SPEC_UPDATED` --> `RESOLVED` --> `PRUNED`
+`OPEN` → `SPEC_UPDATED` → `RESOLVED` → `PRUNED`
 
-- **OPEN**: Just recorded.
-- **SPEC_UPDATED**: PM or PM updated the spec to address it.
-- **RESOLVED**: Fix complete and verified.
-- **PRUNED**: QA removes the entry and adds a one-liner to the companion file.
+- **OPEN** — Just recorded.
+- **SPEC_UPDATED** — PM updated the spec to address it.
+- **RESOLVED** — Fix verified.
+- **PRUNED** — Entry removed after resolution.
 
-### Recording a Discovery
+Record a discovery at any time:
 
 ```
 /pl-discovery feature-name
 ```
 
-QA asks you to describe what you observed, classifies the finding, writes it to the sidecar file, and commits. SPEC_DISPUTE entries suspend the affected scenario until resolved.
-
 ---
 
-## 5. Scenario Classification
+## Regression Testing
 
-Scenarios start untagged (written by the PM or PM). QA classifies them on first encounter:
+Regression tests catch things that used to work but broke after a change. QA mode manages the full lifecycle.
 
-- **`@auto`** -- QA authored regression JSON for this scenario. The harness runner executes it automatically in future sessions.
-- **`@manual`** -- Requires human judgment. QA never re-proposes automation for these.
+### How It Works
 
-Once tagged, a scenario stays tagged. The classification decision is final.
+**1. Author scenarios** — QA mode reads the feature spec and writes regression test files (`tests/qa/scenarios/<feature>.json`). Each test has assertions ranked by confidence:
 
----
+| Tier | What It Checks |
+|------|----------------|
+| Tier 1 | Keyword presence (low confidence). |
+| Tier 2 | Specific values — file names, identifiers (medium). |
+| Tier 3 | State verification — checked the actual output (high). |
 
-## 6. Regression Testing
+Suites with too many Tier 1 assertions are flagged as shallow.
 
-Regression testing uses three separate commands, each handling one phase of the workflow:
-
-### Authoring (`/pl-regression-author`)
-
-When features need regression scenario files, QA reads the spec, evaluates fixture needs, and writes scenario JSON to `tests/qa/scenarios/<feature>.json`. Each scenario includes assertions at three confidence tiers:
-
-| Tier | Confidence | Example |
-|------|-----------|---------|
-| 1 | Low | Keyword presence (e.g., "found the word `error`") |
-| 2 | Medium | Specific finding (exact file name or defect identifier) |
-| 3 | High | State verification (checked the agent's output artifact) |
-
-Suites with over 50% Tier 1 assertions are flagged as `[SHALLOW]`.
-
-### Running (`/pl-regression-run`)
-
-When regression scenarios exist but results are stale or failing, QA composes a copy-pasteable command for you to run:
+**2. Run the suite** — The agent composes a command for you to run in a separate terminal:
 
 ```bash
 ./tests/qa/run_all.sh
 ```
 
-The harness runner writes results to `tests/<feature>/regression.json` (separate from the Engineer's `tests.json`).
+Results land in `tests/<feature>/regression.json`.
 
-### Evaluating (`/pl-regression-evaluate`)
+**3. Evaluate results** — QA mode reads the results, creates `[BUG]` discoveries for failures, and reports the assertion quality distribution.
 
-After tests run, QA reads the `regression.json` results, creates BUG discoveries for failures, and reports the assertion tier distribution.
+### Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `/pl-regression author` | Write regression test files from specs. |
+| `/pl-regression run` | Generate the command to run the suite. |
+| `/pl-regression evaluate` | Process results and create discoveries for failures. |
+
+### Staleness
+
+A regression result goes stale when: the feature's source code changed since the result was written, the test infrastructure changed, or the prior run failed. Stale features are prioritized for re-testing and can't be marked complete.
 
 ---
 
-## 7. Completing Features
+## Smoke Testing
+
+Smoke tests are your critical-path checks — the features that, if broken, mean the app is unusable. They run first in every QA verification pass and block everything else if they fail.
+
+### Setting Up Smoke Tests
+
+Promote a feature to the smoke tier:
+
+```
+/pl-smoke feature-name
+```
+
+This adds the feature to the test priority table and optionally creates a simplified smoke regression (1-3 scenarios, under 30 seconds).
+
+### How Smoke Tests Fit into Verification
+
+During Phase A, Step 2, QA mode runs all smoke-tier scenarios before anything else. If a smoke test fails:
+
+- QA halts and reports the failure.
+- You decide whether to stop (fix first) or continue with the rest.
+
+This catches critical breakage early, before you spend time verifying less important features.
+
+### Guidelines
+
+- Every project should have 5-15 smoke features.
+- Smoke tests should cover the features your users would notice first if broken.
+- QA mode decides what qualifies as smoke — it's a test design decision.
+
+---
+
+## Completing Features
 
 ```
 /pl-complete feature-name
 ```
 
-QA marks a feature complete when all gates pass:
+QA mode marks a feature complete when all gates pass:
 
 1. Feature is in TESTING state.
-2. All QA scenarios passed (current or prior session).
-3. Zero OPEN or SPEC_UPDATED discoveries.
-4. Feature is not gated by a pending delivery plan phase.
+2. All QA scenarios passed.
+3. Zero open discoveries.
+4. Not blocked by a pending delivery plan phase.
 
-The completion commit includes a `[Verified]` tag that distinguishes QA completions from Engineer auto-completions.
-
----
-
-## 8. Fixtures
-
-Some scenarios need controlled project state to test against. Purlin uses [fixture tags](testing-workflow-guide.md) -- immutable git tags in a dedicated repo.
-
-When QA encounters a scenario that needs fixtures during regression authoring, it checks for a fixture repo. If none exists, it offers three options:
-
-1. **Local repo** -- Created at `.purlin/runtime/fixture-repo`. Good for most projects.
-2. **Remote repo** -- You provide a git URL. Good for team-shared fixtures.
-3. **Inline setup** -- Uses shell commands in the regression JSON. Good for simple state.
-
-For complex fixtures that need application-level knowledge, QA records recommendations in `tests/qa/fixture_recommendations.md` for the Engineer to handle.
+The completion commit includes a `[Verified]` tag.
 
 ---
 
-## 9. Day-to-Day Tips
+## Day-to-Day Commands
 
-### Checking What Needs Verification
-
-```
-/pl-status
-```
-
-Features with QA=TODO are waiting for verification. Features with QA=FAIL have open bugs.
-
-### Getting a QA Status Report
-
-```
-/pl-qa-report
-```
-
-Shows all TESTING features, open discoveries, completion blockers, and an effort estimate.
-
-### Visual Verification
-
-For web features, QA uses `/pl-web-test` via Playwright. For non-web features, QA asks you for screenshots and analyzes them against the visual specification checklist.
-
-### When You Disagree with a Spec
-
-Say `DISPUTE` followed by the item number during Phase B verification. QA records a SPEC_DISPUTE discovery and suspends the scenario. The PM (or PM for design issues) must resolve the dispute before verification can continue.
-
-### Partial Verification
-
-If you need to stop mid-session, respond with `stop` or `partial` during Phase B. QA marks passing features complete and leaves the rest in TESTING for next time.
-
-### Session Cleanup
-
-Before ending a session, QA runs a mandatory workspace cleanup. It resolves all uncommitted changes -- committing `regression.json` results, QA scenario updates, and discovery sidecar files, while restoring any Engineer-owned `tests.json` files that were accidentally modified. This ensures a clean git state for the next agent session.
-
----
-
-## 10. Command Reference
-
-| Command | Description |
-|---------|-------------|
-| `/pl-verify [name]` | Run interactive verification (scoped or batch mode). |
+| Command | What It Does |
+|---------|--------------|
+| `/pl-verify [name]` | Run the verification workflow (scoped or batch). |
 | `/pl-complete <name>` | Mark a verified feature as complete. |
-| `/pl-discovery [name]` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE). |
-| `/pl-regression-author` | Author regression scenario JSON files. |
-| `/pl-regression-run` | Execute existing regression scenarios. |
-| `/pl-regression-evaluate` | Process regression results, create BUG discoveries. |
-| `/pl-web-test [name]` | Run Playwright visual verification. |
-| `/pl-qa-report` | Summary of open discoveries and QA status. |
-| `/pl-status` | Check feature status and action items. |
-| `/pl-find <topic>` | Search specs for where a topic is discussed. |
-| `/pl-fixture` | [Test fixture](testing-workflow-guide.md) convention and workflow. |
-| `/pl-server` | Dev server lifecycle management. |
-| `/pl-override-edit` | Edit `QA_OVERRIDES.md`. |
-| `/pl-help` | Display the full command list. |
-| `/pl-resume [save\|role]` | Save or restore session state. |
-| `/pl-purlin-issue` | Report a Purlin framework issue. |
-| `/pl-update-purlin` | Update the Purlin submodule. |
+| `/pl-discovery [name]` | Record a structured finding. |
+| `/pl-regression <cmd>` | Author, run, or evaluate regression suites. |
+| `/pl-smoke <feature>` | Promote a feature to the smoke tier. |
+| `/pl-qa-report` | Summary of discoveries and verification status. |
+| `/pl-web-test [name]` | Playwright visual verification. |
+| `/pl-status` | Check what needs verification. |
+| `/pl-find <topic>` | Search specs for a topic. |
+| `/pl-help` | Full command list for QA mode. |
