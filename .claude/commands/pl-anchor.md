@@ -55,7 +55,14 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 
 ## Protocol
 
-1. Determine the correct prefix from the table above.
+1. **Determine the correct prefix.** If the topic argument already starts with `arch_`, `design_`, or `policy_`, use that prefix. If it does NOT match any recognized prefix, prompt the user:
+   ```
+   What type of anchor?
+     1. Technical (arch_<topic>)    — architecture, APIs, data patterns, conventions
+     2. Design (design_<topic>)     — visual language, spacing, interaction patterns
+     3. Policy (policy_<topic>)     — security, compliance, process rules, quality gates
+   ```
+   Wait for the user's choice before proceeding. Do not default to any type.
 2. If **updating**: read the existing anchor node, identify the constraint to add or revise, apply the change, and identify all dependent features whose status will be reset to TODO.
 3. If **creating**: scaffold using the template above. Replace `Policy:` with `Architecture:` or `Design:` as appropriate.
 4. **Cascade awareness:** Editing an anchor node resets ALL dependent features to TODO. This triggers re-validation across the entire domain. Verify this is intended.

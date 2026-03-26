@@ -58,5 +58,10 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-smoke <feature>        Promote tests to smoke tier
   /pl-fixture                Test fixture management
 
+  Also available from QA (no mode switch):
+  /pl-unit-test              Run tests (verify-only, cannot edit code)
+  /pl-web-test               Run browser tests (verify-only)
+  /pl-server                 Start/stop dev server (run-only)
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
