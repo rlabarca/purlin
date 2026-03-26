@@ -1,10 +1,6 @@
 {
   "steps": [
     {
-      "id": "purlin.instruction_audit",
-      "enabled": true
-    },
-    {
       "id": "override_promotion_audit",
       "enabled": false
     },

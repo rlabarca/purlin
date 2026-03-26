@@ -280,7 +280,6 @@ class TestFuzzyMatch(unittest.TestCase):
     def setUp(self):
         self.tools = [
             {"id": "purlin.verify_dependency_integrity", "friendly_name": "Verify Dependency Integrity", "category": "purlin"},
-            {"id": "purlin.instruction_audit", "friendly_name": "Agent Instruction Audit", "category": "purlin"},
             {"id": "my_audit", "friendly_name": "My Custom Audit", "category": "project"},
             {"id": "purlin.doc_consistency_check", "friendly_name": "Documentation Consistency", "category": "purlin"},
             {"id": "doc_consistency_framework", "friendly_name": "Framework Doc Consistency", "category": "project"},

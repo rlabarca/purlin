@@ -21,7 +21,7 @@ Executable, interpreted, or controls agent behavior at runtime.
 - Technical anchors (`features/arch_*.md`)
 - Companion files (`features/*.impl.md`)
 - Process config (`.purlin/config.json`, `.purlin/toolbox/*.json`)
-- Override files — Engineer Mode section of `PURLIN_OVERRIDES.md`
+- Override files — all sections of `PURLIN_OVERRIDES.md` (any mode can edit via `/pl-override-edit`)
 
 ## SPEC (PM-owned)
 
@@ -31,7 +31,6 @@ Defines WHAT the system should do, not HOW.
 - Design anchors (`features/design_*.md`)
 - Policy anchors (`features/policy_*.md`)
 - Visual design artifacts (Figma exports, design images)
-- Override files — General and PM Mode sections of `PURLIN_OVERRIDES.md`
 - Prose documentation (`README.md`)
 
 ## QA-OWNED
@@ -42,7 +41,6 @@ Verification artifacts and test lifecycle management.
 - QA scenario tags (`@auto`/`@manual` suffixes on scenario headings)
 - Regression test JSON (`tests/qa/scenarios/*.json`, `tests/*/regression.json`)
 - QA verification scripts (`tests/qa/*.sh`)
-- Override files — QA Mode section of `PURLIN_OVERRIDES.md`
 
 ## Cross-Mode Recording Rights
 

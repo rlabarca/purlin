@@ -1,15 +1,9 @@
-**Purlin command: role-scoped (all roles, own file only)**
+**Purlin command: shared (all roles, all sections)**
 **Purlin mode: shared**
 
 Available to all agents and modes.
 
-All modes edit `.purlin/PURLIN_OVERRIDES.md` — scoped to your mode's section:
-- Engineer mode: may edit ONLY the `## Engineer Mode` section. Decline edits to other sections.
-- QA mode: may edit ONLY the `## QA Mode` section. Decline edits to other sections.
-- PM mode: may edit any section of `PURLIN_OVERRIDES.md`.
-- The `## General (all modes)` section: PM may edit; other modes propose via PM.
-
-If no argument is provided, default to the calling mode's own section.
+Any active mode (Engineer, PM, QA) may edit any section of `.purlin/PURLIN_OVERRIDES.md`. There is no per-section role restriction.
 
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 
@@ -24,10 +18,14 @@ If no argument is provided, default to the calling mode's own section.
 
 1. Read the target override file in full.
 2. Read the corresponding base file (use the pairs above).
-3. **Conflict scan:** For each rule or section in the override, classify against the base:
+3. **Conflict and consistency scan:** For each rule or section in the override, classify against the base:
    - **[CONFLICT]** — directly contradicts or negates a base rule. Must be resolved before acting.
-   - **[WARNING]** — addresses the same concern as a base rule but not clearly contradictory. Risk of confusion.
-   - **[INFO]** — cosmetic overlap, redundant phrasing, or a reference to a renamed/renumbered base section.
+   - **[WARNING]** — addresses the same concern as a base rule but not clearly contradictory. Risk of confusion. Also: terminology mismatches where the override uses a term the base has renamed or deprecated.
+   - **[INFO]** — cosmetic overlap, redundant phrasing, stale path references (file paths in the override that no longer resolve to existing files or sections), or a reference to a renamed/renumbered base section.
+
+   Additionally check:
+   - **Stale path references:** Verify that file paths mentioned in the override actually exist on disk. Report missing paths as [INFO].
+   - **Terminology mismatches:** Compare key terms against the base file's vocabulary. Flag cases where the override uses a different name for the same concept as [WARNING].
 
    Present findings grouped: CONFLICT → WARNING → INFO. For each finding cite the override text, the base section, and a brief explanation. Conclude with a count summary.
 
