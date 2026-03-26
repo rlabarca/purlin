@@ -350,7 +350,7 @@ fi
 # --- Write session overrides for the agent ---
 mkdir -p "$SCRIPT_DIR/.purlin/cache"
 cat > "$SCRIPT_DIR/.purlin/cache/session_overrides.json" << OVERRIDES_EOF
-{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START}
+{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
 OVERRIDES_EOF
 
 # --- Prompt assembly ---

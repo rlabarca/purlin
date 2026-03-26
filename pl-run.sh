@@ -295,10 +295,10 @@ fi
 # --- Write session overrides for the agent ---
 # /pl-resume reads this file to get the launcher's resolved startup flags.
 # This bridges ephemeral CLI overrides (--no-save, --auto-start) that
-# aren't persisted to config.local.json.
+# aren't persisted to config.local.json. PID included for liveness check.
 mkdir -p "$PURLIN_PROJECT_ROOT/.purlin/cache"
 cat > "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides.json" << OVERRIDES_EOF
-{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START}
+{"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
 OVERRIDES_EOF
 
 # --- CLI auto-update ---
