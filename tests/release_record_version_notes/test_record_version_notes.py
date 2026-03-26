@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-"""Tests for the purlin.record_version_notes release step.
+"""Tests for the record_version_notes project tool.
 
-Covers data integrity and agent_instructions alignment with the spec
-from features/release_record_version_notes.md:
-- Step metadata matches spec Section 2.6
+Covers data integrity and agent_instructions alignment:
+- Tool metadata (friendly_name, description, code, agent_instructions)
 - Agent instructions contain prepend ordering (most recent first)
-- Agent instructions cover all spec requirements (Sections 2.1-2.5)
-- Tag discovery command matches spec Section 2.1
-- Commit candidate collection command matches spec Section 2.2
-- README.md entry format matches spec Section 2.5
-- Step is registered in project release config
+- Agent instructions cover all spec requirements
+- Tag discovery command
+- Commit candidate collection command
+- README.md entry format
 
-Manual scenarios (PM-executed) are verified via agent behavior
-harness in dev/test_agent_interactions.sh, not here.
+The tool was originally purlin.record_version_notes in global_steps.json,
+now record_version_notes in .purlin/toolbox/project_tools.json.
 """
 import json
 import os
@@ -26,20 +24,20 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
 
 
-def _load_global_steps():
-    """Load the global steps JSON file."""
-    path = os.path.join(PROJECT_ROOT, 'tools', 'release', 'global_steps.json')
+def _load_project_tools():
+    """Load the project tools JSON file."""
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'toolbox', 'project_tools.json')
     with open(path) as f:
         return json.load(f)
 
 
-def _get_record_version_notes_step():
-    """Extract the purlin.record_version_notes step definition."""
-    data = _load_global_steps()
-    for step in data['steps']:
-        if step['id'] == 'purlin.record_version_notes':
-            return step
-    raise AssertionError('purlin.record_version_notes not found in global_steps.json')
+def _get_record_version_notes_tool():
+    """Extract the record_version_notes tool definition."""
+    data = _load_project_tools()
+    for tool in data['tools']:
+        if tool['id'] == 'record_version_notes':
+            return tool
+    raise AssertionError('record_version_notes not found in project_tools.json')
 
 
 def _git(args, cwd):
@@ -61,31 +59,31 @@ class TestStepMetadata(unittest.TestCase):
     """Verify step metadata matches spec Section 2.6."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
+        self.tool = _get_record_version_notes_tool()
 
-    def test_step_id(self):
-        """Step ID is purlin.record_version_notes per Section 2.6."""
-        self.assertEqual(self.step['id'], 'purlin.record_version_notes')
+    def test_tool_id(self):
+        """Tool ID is record_version_notes."""
+        self.assertEqual(self.tool['id'], 'record_version_notes')
 
     def test_friendly_name(self):
-        """Friendly name matches spec Section 2.6."""
+        """Friendly name matches expected value."""
         self.assertEqual(
-            self.step['friendly_name'],
+            self.tool['friendly_name'],
             'Record Version & Release Notes')
 
     def test_code_is_null(self):
-        """Code field is null per Section 2.6."""
-        self.assertIsNone(self.step['code'])
+        """Code field is null (agent-interactive tool)."""
+        self.assertIsNone(self.tool['code'])
 
     def test_agent_instructions_present(self):
         """Agent instructions field is non-null and non-empty."""
-        self.assertIsNotNone(self.step['agent_instructions'])
-        self.assertTrue(len(self.step['agent_instructions']) > 0)
+        self.assertIsNotNone(self.tool['agent_instructions'])
+        self.assertTrue(len(self.tool['agent_instructions']) > 0)
 
     def test_description_present(self):
         """Description field is non-empty."""
-        self.assertIsNotNone(self.step.get('description'))
-        self.assertTrue(len(self.step['description']) > 0)
+        self.assertIsNotNone(self.tool.get('description'))
+        self.assertTrue(len(self.tool['description']) > 0)
 
 
 class TestPrependOrder(unittest.TestCase):
@@ -99,8 +97,8 @@ class TestPrependOrder(unittest.TestCase):
     """
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_prepend_keyword_present(self):
         """Agent instructions contain 'Prepend' or 'prepend'."""
@@ -141,8 +139,8 @@ class TestTagDiscovery(unittest.TestCase):
     """Verify agent_instructions cover tag discovery per spec Section 2.1."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_git_tag_command_present(self):
         """Instructions include the git tag discovery command."""
@@ -163,8 +161,8 @@ class TestCommitCandidateCollection(unittest.TestCase):
     """Verify agent_instructions cover commit collection per spec Section 2.2."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_git_log_command_present(self):
         """Instructions include the git log command pattern."""
@@ -192,8 +190,8 @@ class TestSuggestionSynthesis(unittest.TestCase):
     """Verify agent_instructions cover suggestion synthesis per spec Section 2.3."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_grouping_by_theme(self):
         """Instructions mention grouping by theme."""
@@ -207,8 +205,8 @@ class TestUserConfirmation(unittest.TestCase):
     """Verify agent_instructions cover user confirmation per spec Section 2.4."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_version_number_request(self):
         """Instructions ask for the version number."""
@@ -229,8 +227,8 @@ class TestReadmeRecording(unittest.TestCase):
     """Verify agent_instructions cover README recording per spec Section 2.5."""
 
     def setUp(self):
-        self.step = _get_record_version_notes_step()
-        self.instructions = self.step['agent_instructions']
+        self.tool = _get_record_version_notes_tool()
+        self.instructions = self.tool['agent_instructions']
 
     def test_releases_heading(self):
         """Instructions reference the ## Releases heading."""
@@ -258,34 +256,14 @@ class TestReadmeRecording(unittest.TestCase):
             'Must include date format per Section 2.5')
 
 
-class TestProjectConfig(unittest.TestCase):
-    """Verify step is registered in the project release config."""
+class TestToolInProjectToolbox(unittest.TestCase):
+    """Verify tool is registered in the project toolbox."""
 
-    def test_step_in_release_config(self):
-        """purlin.record_version_notes is listed in .purlin/release/config.json."""
-        config_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'config.json')
-        with open(config_path) as f:
-            config = json.load(f)
-        step_ids = [s['id'] for s in config['steps']]
-        self.assertIn('purlin.record_version_notes', step_ids)
-
-    def test_step_enabled_in_config(self):
-        """purlin.record_version_notes is enabled in the project config."""
-        config_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'config.json')
-        with open(config_path) as f:
-            config = json.load(f)
-        step = next(
-            s for s in config['steps']
-            if s['id'] == 'purlin.record_version_notes')
-        self.assertTrue(step['enabled'])
-
-    def test_step_in_global_steps(self):
-        """purlin.record_version_notes is defined in global_steps.json."""
-        data = _load_global_steps()
-        step_ids = [s['id'] for s in data['steps']]
-        self.assertIn('purlin.record_version_notes', step_ids)
+    def test_tool_in_project_tools(self):
+        """record_version_notes is listed in .purlin/toolbox/project_tools.json."""
+        data = _load_project_tools()
+        tool_ids = [t['id'] for t in data['tools']]
+        self.assertIn('record_version_notes', tool_ids)
 
 
 class TestGitNoTags(unittest.TestCase):

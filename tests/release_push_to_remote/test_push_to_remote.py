@@ -160,36 +160,27 @@ class TestStepIsDisabled(unittest.TestCase):
             if s['id'] == 'purlin.push_to_remote')
         self.assertTrue(step['enabled'])
 
-    def test_real_config_has_push_step(self):
-        """Project's release config includes the push_to_remote step."""
-        config_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'config.json')
-        with open(config_path) as f:
-            config = json.load(f)
-        step_ids = [s['id'] for s in config['steps']]
-        self.assertIn('purlin.push_to_remote', step_ids)
-
-    def test_global_steps_defines_push_step(self):
-        """Global steps JSON defines the purlin.push_to_remote step."""
-        steps_path = os.path.join(
-            PROJECT_ROOT, 'tools', 'release', 'global_steps.json')
-        with open(steps_path) as f:
+    def test_project_tools_has_push_tool(self):
+        """Project toolbox includes the push_to_remote tool."""
+        tools_path = os.path.join(
+            PROJECT_ROOT, '.purlin', 'toolbox', 'project_tools.json')
+        with open(tools_path) as f:
             data = json.load(f)
-        step_ids = [s['id'] for s in data['steps']]
-        self.assertIn('purlin.push_to_remote', step_ids)
+        tool_ids = [t['id'] for t in data['tools']]
+        self.assertIn('push_to_remote', tool_ids)
 
-    def test_step_metadata_matches_spec(self):
-        """Step metadata in global_steps.json matches spec Section 2.5."""
-        steps_path = os.path.join(
-            PROJECT_ROOT, 'tools', 'release', 'global_steps.json')
-        with open(steps_path) as f:
+    def test_tool_metadata_matches_spec(self):
+        """Tool metadata in project_tools.json matches expected values."""
+        tools_path = os.path.join(
+            PROJECT_ROOT, '.purlin', 'toolbox', 'project_tools.json')
+        with open(tools_path) as f:
             data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'purlin.push_to_remote')
-        self.assertEqual(step['friendly_name'], 'Push to Remote Repository')
-        self.assertIsNone(step['code'])
-        self.assertIsNotNone(step['agent_instructions'])
+        tool = next(
+            t for t in data['tools']
+            if t['id'] == 'push_to_remote')
+        self.assertEqual(tool['friendly_name'], 'Push to Remote Repository')
+        self.assertIsNone(tool['code'])
+        self.assertIsNotNone(tool['agent_instructions'])
 
 
 class TestCleanPushToRemote(unittest.TestCase):
