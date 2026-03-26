@@ -1,4 +1,3 @@
-**Purlin command owner: Architect**
 **Purlin mode: Engineer**
 
 Legacy agents: If you are not the Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-tombstone instead." and stop.

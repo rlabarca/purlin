@@ -1,4 +1,3 @@
-**Purlin command owner: PM, Architect**
 **Purlin mode: PM**
 
 Legacy agents: If you are not the PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-spec instead." and stop.

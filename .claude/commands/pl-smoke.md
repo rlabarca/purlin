@@ -1,4 +1,3 @@
-**Purlin command owner: QA**
 **Purlin mode: QA**
 
 Legacy agents: If you are not the QA agent, this is not your command.

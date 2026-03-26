@@ -1,4 +1,3 @@
-**Purlin command owner: QA**
 **Purlin mode: QA**
 
 Legacy agents: If you are not the QA, respond: "This is a QA command. Ask your QA agent to run /pl-verify instead." and stop.

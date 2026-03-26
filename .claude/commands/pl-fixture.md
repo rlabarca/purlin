@@ -1,4 +1,3 @@
-**Purlin command owner: shared**
 **Purlin mode: shared (QA cross-mode: setup-only)**
 
 Legacy agents: Available to all agents.

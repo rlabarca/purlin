@@ -1,4 +1,3 @@
-**Purlin command owner: PM**
 **Purlin mode: PM**
 
 Legacy agents: If you are not the PM, respond: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead." and stop.

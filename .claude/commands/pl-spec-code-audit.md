@@ -1,4 +1,3 @@
-**Purlin command owner: Architect, Builder**
 **Purlin mode: Engineer**
 
 Legacy agents: If you are not the Architect or Builder, respond: "This is an Architect/Builder command. Ask the appropriate agent to run /pl-spec-code-audit instead." and stop.

@@ -28,20 +28,19 @@ setup_sandbox() {
     trap cleanup_sandbox EXIT
 
     PROJECT="$SANDBOX/my-project"
-    mkdir -p "$PROJECT/tools/critic"
     mkdir -p "$PROJECT/tools/cdd"
 
     # Copy resolve_python.sh into the sandbox
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/tools/resolve_python.sh"
 
-    # Create a test sourcing script at tools/critic/ depth
-    cat > "$PROJECT/tools/critic/test_source.sh" << 'SRCEOF'
+    # Create a test sourcing script at tools/cdd/ depth
+    cat > "$PROJECT/tools/cdd/test_source.sh" << 'SRCEOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../resolve_python.sh"
 echo "$PYTHON_EXE"
 SRCEOF
-    chmod +x "$PROJECT/tools/critic/test_source.sh"
+    chmod +x "$PROJECT/tools/cdd/test_source.sh"
 }
 
 # Create a .venv with a python3 symlink at the given root
@@ -62,7 +61,7 @@ setup_sandbox
 create_venv "$PROJECT"
 
 SYSTEM_PYTHON="$(command -v python3)"
-RESULT=$(AGENTIC_PYTHON="$SYSTEM_PYTHON" PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/critic/test_source.sh" 2>/dev/null)
+RESULT=$(AGENTIC_PYTHON="$SYSTEM_PYTHON" PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/cdd/test_source.sh" 2>/dev/null)
 if [ "$RESULT" = "$SYSTEM_PYTHON" ]; then
     log_pass "AGENTIC_PYTHON takes priority over .venv"
 else
@@ -77,7 +76,7 @@ echo "[Scenario] resolve_python Finds Project Root Venv via PURLIN_PROJECT_ROOT"
 setup_sandbox
 create_venv "$PROJECT"
 
-RESULT=$(unset AGENTIC_PYTHON; PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/critic/test_source.sh" 2>/dev/null)
+RESULT=$(unset AGENTIC_PYTHON; PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/cdd/test_source.sh" 2>/dev/null)
 EXPECTED="$PROJECT/.venv/bin/python3"
 if [ "$RESULT" = "$EXPECTED" ]; then
     log_pass "Project root venv found via PURLIN_PROJECT_ROOT"
@@ -93,8 +92,8 @@ echo "[Scenario] resolve_python Climbing Detection (Standalone Layout)"
 setup_sandbox
 create_venv "$PROJECT"
 
-# Unset both env vars to force climbing from tools/critic/
-RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/critic/test_source.sh" 2>/dev/null)
+# Unset both env vars to force climbing from tools/cdd/
+RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/cdd/test_source.sh" 2>/dev/null)
 EXPECTED="$PROJECT/.venv/bin/python3"
 if [ "$RESULT" = "$EXPECTED" ]; then
     log_pass "Climbing detection finds standalone venv"
@@ -110,19 +109,19 @@ echo "[Scenario] resolve_python Climbing Detection (Submodule Layout)"
 SANDBOX="$(mktemp -d)"
 trap cleanup_sandbox EXIT
 PROJECT="$SANDBOX/my-project"
-mkdir -p "$PROJECT/agentic-dev/tools/critic"
+mkdir -p "$PROJECT/agentic-dev/tools/cdd"
 
 cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
-cat > "$PROJECT/agentic-dev/tools/critic/test_source.sh" << 'SRCEOF'
+cat > "$PROJECT/agentic-dev/tools/cdd/test_source.sh" << 'SRCEOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../resolve_python.sh"
 echo "$PYTHON_EXE"
 SRCEOF
-chmod +x "$PROJECT/agentic-dev/tools/critic/test_source.sh"
+chmod +x "$PROJECT/agentic-dev/tools/cdd/test_source.sh"
 create_venv "$PROJECT"
 
-RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/agentic-dev/tools/critic/test_source.sh" 2>/dev/null)
+RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/agentic-dev/tools/cdd/test_source.sh" 2>/dev/null)
 EXPECTED="$PROJECT/.venv/bin/python3"
 if [ "$RESULT" = "$EXPECTED" ]; then
     log_pass "Climbing detection finds submodule venv"
@@ -138,7 +137,7 @@ echo "[Scenario] resolve_python Falls Back to System Python"
 setup_sandbox
 # No .venv created — should fall back to system python3
 
-RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/critic/test_source.sh" 2>/dev/null)
+RESULT=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/cdd/test_source.sh" 2>/dev/null)
 SYSTEM_PYTHON="$(command -v python3)"
 if [ "$RESULT" = "$SYSTEM_PYTHON" ]; then
     log_pass "Falls back to system python3"
@@ -147,7 +146,7 @@ else
 fi
 
 # Verify no stderr output for system fallback
-STDERR=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/critic/test_source.sh" 2>&1 1>/dev/null)
+STDERR=$(unset AGENTIC_PYTHON; unset PURLIN_PROJECT_ROOT; bash "$PROJECT/tools/cdd/test_source.sh" 2>&1 1>/dev/null)
 if [ -z "$STDERR" ]; then
     log_pass "No diagnostic output for system python fallback"
 else
@@ -162,8 +161,8 @@ echo "[Scenario] resolve_python Diagnostic Output to Stderr Only"
 setup_sandbox
 create_venv "$PROJECT"
 
-STDOUT=$(PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/critic/test_source.sh" 2>/dev/null)
-STDERR=$(PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/critic/test_source.sh" 2>&1 1>/dev/null)
+STDOUT=$(PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/cdd/test_source.sh" 2>/dev/null)
+STDERR=$(PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/tools/cdd/test_source.sh" 2>&1 1>/dev/null)
 
 if echo "$STDERR" | grep -q '\[resolve_python\]'; then
     log_pass "Diagnostic message printed to stderr with [resolve_python] tag"

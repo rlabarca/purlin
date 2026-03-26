@@ -1,4 +1,3 @@
-**Purlin command owner: Builder, QA**
 **Purlin mode: Engineer (QA cross-mode: verify-only)**
 
 Legacy agents: If you are not the Builder or QA, respond: "This is a Builder/QA command. Ask your Builder or QA agent to run /pl-web-test instead." and stop.

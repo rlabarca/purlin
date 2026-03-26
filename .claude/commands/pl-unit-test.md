@@ -1,4 +1,3 @@
-**Purlin command owner: Builder**
 **Purlin mode: Engineer (QA cross-mode: verify-only)**
 
 Legacy agents: If you are not the Builder, respond: "This is a Builder command. Ask your Builder agent to run /pl-unit-test instead." and stop.

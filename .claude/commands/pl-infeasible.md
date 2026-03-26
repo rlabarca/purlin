@@ -1,4 +1,3 @@
-**Purlin command owner: Builder**
 **Purlin mode: Engineer**
 
 Legacy agents: If you are not the Builder, respond: "This is a Builder command. Ask your Builder agent to run /pl-infeasible instead." and stop.
