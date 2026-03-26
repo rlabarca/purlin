@@ -28,7 +28,7 @@ Scan `tests/qa/scenarios/*.json` and check each feature's `tests/<feature>/regre
 
 **Auto-detect** — execute the first matching rule:
 
-1. **Author needed:** Features with `## Regression Guidance` or `### QA Scenarios` but no `tests/qa/scenarios/<feature>.json` → run `author`.
+1. **Author needed:** Features with `### QA Scenarios`, `## Regression Guidance`, or `> Web Test:` metadata, Engineer status DONE, but no `tests/qa/scenarios/<feature>.json` → run `author`. QA does not need PM's Regression Guidance to author — QA Scenarios alone are sufficient.
 2. **Run needed:** Scenario files exist with STALE, FAIL, or NOT_RUN results → run `run`.
 3. **Evaluate needed:** Fresh results exist that haven't been documented (FAIL with no companion file entry, or results newer than last evaluation) → run `evaluate`.
 4. **All green:** Health summary is sufficient. Stop.

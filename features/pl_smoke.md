@@ -6,7 +6,9 @@
 
 ## 1. Overview
 
-The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or @manual) to smoke tier and optionally create a simplified fast-running smoke version. Smoke tests run first in every QA verification pass and block further verification on failure. QA proactively suggests smoke promotion for critical features that lack smoke coverage.
+The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or @manual) to smoke tier and optionally create a simplified fast-running smoke version. Smoke tests run first in every QA verification pass and block further verification on failure.
+
+**QA is the smoke test design authority.** QA decides which features are critical path, what constitutes a meaningful smoke check, and when to promote or demote a feature's tier. PM may suggest candidates, but the classification decision belongs to QA — they have the verification experience to judge what actually breaks and what matters.
 
 ---
 

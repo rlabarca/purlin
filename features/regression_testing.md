@@ -14,7 +14,7 @@ Provides infrastructure for running full regression suites outside the build cyc
 2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Engineer never touches it.
 3. **Meta-runner** -- A shell script in `tools/test_support/` discovers all scenario files, runs each via the harness runner, continues past failures, and prints a summary.
 
-Engineer mode focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. QA authors the scenario declarations, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so Engineer mode can batch-fix failures without re-running the suite.
+Engineer mode focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. **QA is the test design authority for regression and smoke tests.** QA decides what to test, how to test it, what harness type to use, and what constitutes the critical path. QA authors the scenario declarations from multiple sources: their own verification experience, the feature spec's QA Scenarios, PM's optional Regression Guidance (if provided), and their judgment about failure modes and fragility. PM's Regression Guidance is helpful context — not a prerequisite. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so Engineer mode can batch-fix failures without re-running the suite.
 
 For the Purlin framework repo, a dev-specific runner script at `dev/regression_runner.sh` provides watch/once modes as an additional convenience (see Section 2.1). This runner is NOT consumer-facing and is NOT part of the composed commands the QA skill prints.
 
@@ -71,7 +71,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Behavior:**
 
-1. Discover features needing scenario authoring: feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata, Engineer status is DONE, and no corresponding `tests/qa/scenarios/<feature_name>.json` exists.
+1. Discover features needing scenario authoring: feature has `### QA Scenarios` section, `### Regression Testing` section, `## Regression Guidance` section, or `> Web Test:` metadata; Engineer status is DONE; and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. QA does NOT need PM to write Regression Guidance before authoring — QA is the test design authority and can author scenarios from the spec's QA Scenarios, their own verification experience, or both.
 2. Present authoring plan to user with feature count and list.
 3. Per feature (one at a time, sequential): read spec, evaluate fixture needs (see Section 2.10.1), write scenario JSON to `tests/qa/scenarios/<feature_name>.json`, commit.
 4. Print handoff message with next steps (see Section 2.12).
@@ -384,7 +384,7 @@ exec "$(git rev-parse --show-toplevel)/purlin/tools/test_support/run_regression.
 
 QA authors scenario files one feature at a time during `/pl-regression-author`:
 
-1. Read the feature spec and its `### Regression Testing` section (or `## Regression Guidance`).
+1. Read the feature spec. Draw from all available sources: `### QA Scenarios` (PM-authored behavioral requirements), `## Regression Guidance` (PM's optional hints — harness type, fixture suggestions, critical paths), `> Web Test:` metadata, and QA's own knowledge of what's fragile or critical. QA is the test design authority — PM guidance is input, not a prerequisite.
 2. Evaluate fixture needs per the fixture integration protocol (Section 2.10.1).
 3. Write the scenario JSON file to `tests/qa/scenarios/<feature_name>.json`.
 4. Commit the scenario file: `git commit -m "qa(<feature>): author regression scenario"`.
@@ -393,9 +393,11 @@ QA authors scenario files one feature at a time during `/pl-regression-author`:
 
 **Discovery heuristic (which features need authoring):**
 
-- Feature has `### Regression Testing` section or `## Regression Guidance` section or `> Web Test:` metadata.
+- Feature has `### QA Scenarios` section, `### Regression Testing` section, `## Regression Guidance` section, or `> Web Test:` metadata.
 - Engineer status is DONE (implementation exists to test against).
 - No corresponding `tests/qa/scenarios/<feature_name>.json` exists.
+
+Note: `### QA Scenarios` is sufficient — QA does not need PM to write `## Regression Guidance` before authoring. QA is the test design authority.
 
 **Context management:**
 
