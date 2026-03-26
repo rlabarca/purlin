@@ -5,6 +5,8 @@
 > Prerequisite: features/purlin_agent_launcher.md
 > Prerequisite: features/policy_branch_collab.md
 
+[Complete]
+
 ## 1. Overview
 
 The `/pl-remote` skill is the single entry point for branch collaboration operations. It provides four subcommands — `push`, `pull`, `add`, and `branch` — that manage remote configuration, branch lifecycle, and synchronization between machines. Push and pull resolve the collaboration branch from `.purlin/runtime/active_branch` (defaulting to `main` when absent), enforce safety preconditions, and operate within the sync-state model defined in `policy_branch_collab.md`. Branch manages the collaboration branch lifecycle (create, join, leave, list). Add handles remote configuration with guided setup, SSH key management, and connectivity verification.

@@ -4,7 +4,7 @@
 > Category: "Agent Skills: Common"
 > Prerequisite: features/purlin_worktree_concurrency.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 

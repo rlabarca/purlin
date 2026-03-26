@@ -19,8 +19,19 @@ A shared skill available to all roles that wraps `scan.sh` to display the curren
 
 ### 2.2 Core Output
 
-- Run `scan.sh` and summarize: feature counts by status, role-specific action items (highest priority first with reasons), and open discoveries or tombstones.
+- Run `scan.sh` and read the JSON output (`scan.json`). Summarize: feature counts by status, role-specific action items sorted by priority, and open discoveries or tombstones.
+- The `regression_status` field in scan.json comes from `tests/<feature>/regression.json` — values: `PASS`, `FAIL`, `STALE`, or `null` (no regression tests).
 - Tombstone files (features with `tombstone: true` in scan output) MUST be surfaced as Engineer work items with highest priority — tombstones are processed before regular feature work.
+
+### 2.2.1 Work Item Priority Ranking
+
+Action items MUST be sorted in this order (highest priority first):
+
+1. **Tombstones** — Engineer processes tombstones before any regular work
+2. **FAIL** — Test failures or regression failures require immediate attention
+3. **TESTING** — Features in verification (QA) or features blocked by spec issues (PM)
+4. **TODO** — Features not yet started
+5. **Informational** — Smoke candidates, cosmetic notes
 
 ### 2.3 Role-Filtered Shortcut
 

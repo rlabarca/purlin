@@ -15,16 +15,45 @@ The QA summary report skill that produces a structured overview of verification 
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the QA role.
-- Non-QA agents MUST receive a redirect message.
+- The command MUST only execute when invoked by QA mode.
+- Non-QA agents MUST receive: `"This is a QA command. Switch to QA mode with /pl-mode qa."`
 
-### 2.2 Report Sections
+### 2.2 Data Source
 
-- **TESTING Features:** Each with manual scenario count, verification scope, and open discovery count.
-- **Open Discoveries:** All OPEN and SPEC_UPDATED discoveries grouped by type.
-- **Completion Blockers:** Per TESTING feature, what blocks completion.
-- **Delivery Plan Context:** Classify features as fully delivered vs phase-gated.
-- **Effort Estimate:** Total manual items across all TESTING features.
+- Run `${TOOLS_ROOT}/cdd/scan.sh` and read the JSON output to get feature status, discovery state, and delivery plan context.
+
+### 2.3 Output Format
+
+The report MUST use this table-based layout:
+
+```
+## QA Status Report
+
+### TESTING Features (N)
+| Feature | Manual Items | Scope | Open Discoveries |
+|---------|-------------|-------|-----------------|
+| <label> | Nm manual | full | 0 |
+| <label> | builder-verified | -- | 1 BUG |
+
+### Open Discoveries (N)
+**BUG (N):** <feature>: <title> [OPEN]
+**SPEC_DISPUTE (N):** <feature>: <title> [OPEN]
+
+### Completion Blockers
+- <feature>: 1 open BUG, 2 unverified scenarios
+- <feature>: phase-gated (Phase 2 PENDING)
+
+### Effort Estimate
+Total: N items across M features
+```
+
+### 2.4 Section Details
+
+1. **TESTING Features:** List each with manual scenario count, verification scope (`full`/`targeted`/`cosmetic`/`dependency-only`), and open discovery count.
+2. **Open Discoveries:** All OPEN and SPEC_UPDATED discoveries grouped by type (BUG / DISCOVERY / INTENT_DRIFT / SPEC_DISPUTE). Include feature name, title, and status.
+3. **Completion Blockers:** Per TESTING feature, what blocks `[Complete]`: open discoveries, unverified scenarios, pending delivery phases.
+4. **Delivery Plan Context:** If `.purlin/delivery_plan.md` exists, classify features as fully delivered vs. phase-gated.
+5. **Effort Estimate:** Total manual items across all TESTING features after scope filtering.
 
 ---
 
