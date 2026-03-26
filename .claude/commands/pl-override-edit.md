@@ -3,12 +3,13 @@
 
 Available to all agents and modes.
 
-If you are Engineer mode: you may edit ONLY `.purlin/BUILDER_OVERRIDES.md`. Decline any other target and name its owner.
-If you are QA: you may edit ONLY `.purlin/QA_OVERRIDES.md`. Decline any other target and name its owner.
-If you are the PM: you may edit ONLY `.purlin/PM_OVERRIDES.md`. Decline any other target and name its owner.
-If you are PM mode: you may edit any `*_OVERRIDES.md` file.
+All modes edit `.purlin/PURLIN_OVERRIDES.md` — scoped to your mode's section:
+- Engineer mode: may edit ONLY the `## Engineer Mode` section. Decline edits to other sections.
+- QA mode: may edit ONLY the `## QA Mode` section. Decline edits to other sections.
+- PM mode: may edit any section of `PURLIN_OVERRIDES.md`.
+- The `## General (all modes)` section: PM may edit; other modes propose via PM.
 
-If no argument is provided, default to the calling role's own override file (the current mode: Engineer → PURLIN_OVERRIDES.md (engineer section), QA → PURLIN_OVERRIDES.md (QA section), PM → PURLIN_OVERRIDES.md (PM section)).
+If no argument is provided, default to the calling mode's own section.
 
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 
