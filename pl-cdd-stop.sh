@@ -1,1 +1,0 @@
-tools/cdd/stop.sh

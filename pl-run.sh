@@ -34,7 +34,8 @@ Launch a Purlin agent session.
 Saved preferences (written to .purlin/config.local.json):
   --model [id]         Set default model (opus, sonnet, haiku, or full ID).
                        Interactive if no value. Saves to config.
-  --effort <level>     Set default effort level (high, medium). Saves to config.
+  --effort [level]     Set default effort level (high, medium).
+                       Interactive if no value. Saves to config.
   --yolo               Enable YOLO mode (skip all permission prompts). Saves to config.
   --no-yolo            Disable YOLO mode (restore permission prompts). Saves to config.
   --find-work <bool>   Set default work discovery (true/false). Saves to config.
@@ -85,8 +86,13 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --effort)
-            PURLIN_EFFORT_OVERRIDE="$2"
-            shift 2
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                PURLIN_EFFORT_OVERRIDE="$2"
+                shift 2
+            else
+                PURLIN_EFFORT_OVERRIDE="__interactive__"
+                shift
+            fi
             ;;
         --yolo)
             PURLIN_YOLO="true"; shift ;;
@@ -199,9 +205,35 @@ if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
 fi
 
-# --- First-run / interactive model selection ---
-# Always persists (not affected by --no-save — this establishes defaults)
-if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ -z "$AGENT_MODEL" ]]; then
+# --- First-run / interactive model & effort selection ---
+SHOW_MODEL_MENU=false
+SHOW_EFFORT_MENU=false
+FIRST_RUN=false
+
+# First run: no model in config and user didn't pass --model
+if [[ -z "$AGENT_MODEL" && -z "$PURLIN_MODEL_OVERRIDE" ]]; then
+    FIRST_RUN=true
+    SHOW_MODEL_MENU=true
+    # Show effort menu too, unless --effort provided a value
+    if [[ -z "$PURLIN_EFFORT_OVERRIDE" || "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]]; then
+        SHOW_EFFORT_MENU=true
+    fi
+fi
+
+# --model with no param: show model menu, and effort menu unless --effort provided a value
+if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]]; then
+    SHOW_MODEL_MENU=true
+    if [[ -z "$PURLIN_EFFORT_OVERRIDE" || "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]]; then
+        SHOW_EFFORT_MENU=true
+    fi
+fi
+
+# --effort with no param: show effort menu only
+if [[ "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]]; then
+    SHOW_EFFORT_MENU=true
+fi
+
+if $SHOW_MODEL_MENU; then
     echo ""
     echo "Select model:"
     echo "  1. Opus 4.6         (200K context)"
@@ -210,14 +242,15 @@ if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ -z "$AGENT_MODEL" ]
     echo ""
     read -p "Choice [1]: " MODEL_CHOICE
     MODEL_CHOICE="${MODEL_CHOICE:-1}"
-
     case "$MODEL_CHOICE" in
         1) AGENT_MODEL="claude-opus-4-6" ;;
         2) AGENT_MODEL="claude-sonnet-4-6" ;;
         3) AGENT_MODEL="claude-opus-4-6[1m]" ;;
         *) AGENT_MODEL="claude-opus-4-6" ;;
     esac
+fi
 
+if $SHOW_EFFORT_MENU; then
     echo ""
     echo "Select effort:"
     echo "  1. high   (thorough)"
@@ -225,23 +258,32 @@ if [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] || [[ -z "$AGENT_MODEL" ]
     echo ""
     read -p "Choice [1]: " EFFORT_CHOICE
     EFFORT_CHOICE="${EFFORT_CHOICE:-1}"
-
     case "$EFFORT_CHOICE" in
         1) AGENT_EFFORT="high" ;;
         2) AGENT_EFFORT="medium" ;;
         *) AGENT_EFFORT="high" ;;
     esac
+fi
 
-    # First-run always persists regardless of --no-save
-    if [ -f "$RESOLVER" ]; then
-        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
-        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+if $SHOW_MODEL_MENU || $SHOW_EFFORT_MENU; then
+    # First-run always persists; otherwise respect --no-save
+    if $FIRST_RUN || [[ "$PURLIN_NO_SAVE" != "true" ]]; then
+        if [ -f "$RESOLVER" ]; then
+            $SHOW_MODEL_MENU && PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin model "$AGENT_MODEL" 2>/dev/null
+            $SHOW_EFFORT_MENU && PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" set_agent_config purlin effort "$AGENT_EFFORT" 2>/dev/null
+        fi
+        echo ""
+        echo "Saved to config: model=$AGENT_MODEL effort=$AGENT_EFFORT"
+    else
+        echo ""
+        echo "Session only (--no-save): model=$AGENT_MODEL effort=$AGENT_EFFORT"
     fi
-
-    echo ""
-    echo "Saved to config: model=$AGENT_MODEL effort=$AGENT_EFFORT"
     echo "(To change later: ./pl-run.sh --model)"
     echo ""
+
+    # Clear interactive flags so CLI override and persist blocks don't re-process
+    [[ "$PURLIN_MODEL_OVERRIDE" == "__interactive__" ]] && PURLIN_MODEL_OVERRIDE=""
+    [[ "$PURLIN_EFFORT_OVERRIDE" == "__interactive__" ]] && PURLIN_EFFORT_OVERRIDE=""
 fi
 
 # --- CLI overrides (apply sticky + ephemeral flags) ---

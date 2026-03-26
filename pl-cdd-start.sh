@@ -1,1 +1,0 @@
-tools/cdd/start.sh
