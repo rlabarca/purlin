@@ -6,6 +6,7 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 
 ## Using the Agent
 
+* [Common Commands Guide](common-commands-guide.md) — Status, mode switching, collaboration, session management, and other commands available in any mode.
 * [PM Mode Guide](pm-agent-guide.md) — Write feature specs from ideas, Figma designs, or live web pages.
 * [Engineer Mode Guide](engineer-agent-guide.md) — Implement features from specs, write tests, and manage delivery plans.
 * [QA Mode Guide](qa-agent-guide.md) — Verify features, classify scenarios, build regression suites, and run smoke tests.
