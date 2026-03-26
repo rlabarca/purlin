@@ -15,35 +15,52 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 ### 2.1 Detection
 
-- On `/pl-update-purlin`, check if `agents.purlin` exists in `.purlin/config.json` or `config.local.json`.
-- If absent AND `agents.architect` or `agents.builder` exists: migration is needed.
-- If `agents.purlin` already exists: migration is complete, skip.
-- If neither old nor new config exists: fresh install, skip migration (init.sh handles it).
+On `/pl-update-purlin`, determine migration state by checking `.purlin/config.local.json` first, then `.purlin/config.json`:
+
+- **Fast path:** If `_migration_version` key exists at the config top level → migration is `complete`, skip.
+- **Full migration needed:** If `agents.purlin` is absent AND `agents.architect` or `agents.builder` exists → migration is `needed`.
+- **Partial state (v0.8.4 upgrade gap):** If `agents.purlin` exists but `_migration_version` is absent, check for incomplete migration:
+  - If old agents (`architect` or `builder`) exist without `"_deprecated": true` → `partial`.
+  - If `agents.purlin` is missing required fields (`find_work`, `auto_start`, or `default_mode`) → `partial`.
+  - Otherwise → `complete` (stamp `_migration_version: 1` for future fast path).
+- **Fresh install:** If neither old (`architect`/`builder`) nor new (`purlin`) agent config exists → `fresh`, skip (init.sh handles it).
+
+**Why partial detection is needed:** When users on v0.8.4 upgrade, their old `/pl-update-purlin` skill lacks the migration step. The new `init.sh` generates `pl-run.sh`, whose first-run flow creates a minimal `agents.purlin` (only `model` + `effort`). Without partial detection, this minimal entry permanently prevents the full migration from running.
 
 ### 2.2 Config Migration
 
+**Full migration** (status `needed`):
 - Create `agents.purlin` section by cloning `agents.builder` config (model, effort, bypass_permissions).
 - Add `find_work: true`, `auto_start: false`, `default_mode: null` fields.
 - Mark old entries with `"_deprecated": true` (old launchers still read them during transition).
 - Do NOT delete old entries — they're needed until transition is complete.
 
+**Enrichment** (status `partial`):
+- If `agents.purlin` exists but is missing any of `find_work`, `auto_start`, `default_mode`, or `bypass_permissions`: backfill from `agents.builder` (if present) or from defaults (`bypass_permissions: false`, `find_work: true`, `auto_start: false`, `default_mode: null`).
+- Mark old agents with `"_deprecated": true` if not already marked.
+- Log: `"Enriched partial agents.purlin (backfilled N missing keys)"`.
+
+**Migration marker:** After successful full migration or enrichment, write `"_migration_version": 1` at the config top level (same file where `agents.purlin` was written). This is the authoritative signal for the fast-path detection in Section 2.1.
+
 ### 2.3 Override File Consolidation
 
-- If `PURLIN_OVERRIDES.md` (Engineer Mode section) has content: create `.purlin/PURLIN_OVERRIDES.md` with content under `## Engineer Mode` header.
-- If `PURLIN_OVERRIDES.md` (PM Mode section) has content: append under `## PM Mode`.
-- If `PURLIN_OVERRIDES.md` (QA Mode section) has content: append under `## QA Mode`.
-- If `PURLIN_OVERRIDES.md` (Engineer Mode section) has content: merge into appropriate mode section (technical → Engineer, spec → PM).
-- Add `## General (all modes)` header at top with content from `PURLIN_OVERRIDES.md` if it exists.
+Merge the old role-specific override files into a single `.purlin/PURLIN_OVERRIDES.md`:
+
+- `BUILDER_OVERRIDES.md` content → `## Engineer Mode` section.
+- `PM_OVERRIDES.md` content → `## PM Mode` section.
+- `QA_OVERRIDES.md` content → `## QA Mode` section.
+- `ARCHITECT_OVERRIDES.md` content → split by keyword heuristic: technical keywords (arch, code, implementation, testing, script, tool, build) → `## Engineer Mode`; spec/design keywords (spec, design, requirement, visual, UX, stakeholder) → `## PM Mode`.
+- `HOW_WE_WORK_OVERRIDES.md` content → `## General (all modes)` header at top.
 - Do NOT delete old override files — they're needed for old launchers during transition.
 
 ### 2.4 Spec File Role Renames
 
-- In all `features/*.md` files, replace role references:
-  - "PM" → "PM" (when referring to spec/design authority)
-  - "Engineer" → "Engineer" (when referring to implementation)
-  - "the PM" → "PM mode"
-  - "the Engineer" → "Engineer mode"
-- In `features/*.discoveries.md`: replace `Action Required: PM` → `PM`, `Engineer` → `Engineer`.
+- In all `features/*.md` files, replace old role references with new:
+  - "Architect" → "PM" (when referring to spec/design authority)
+  - "Builder" → "Engineer" (when referring to implementation)
+  - "the Architect" → "PM mode"
+  - "the Builder" → "Engineer mode"
+- In `features/*.discoveries.md`: replace `Action Required: Architect` → `PM`, `Action Required: Builder` → `Engineer`.
 - In `features/*.impl.md`: replace role references in prose (not in Active Deviations table which uses new format).
 - ALL spec modification commits MUST include the `[Migration]` tag to prevent lifecycle resets.
 - Example commit: `chore(migration): rename role references in feature specs [Migration]`
@@ -57,7 +74,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 ### 2.6 CLAUDE.md Update
 
-- If the consumer project has a `CLAUDE.md` that references the old 4-role model (PM, Engineer, QA, PM) but does not mention the Purlin unified agent:
+- If the consumer project has a `CLAUDE.md` that references the old 4-role model (Architect, Builder, QA, PM) but does not mention the Purlin unified agent:
   - Add a section describing the Purlin agent alongside existing role boundaries.
   - Reference: use `purlin-config-sample/CLAUDE.md.purlin` as the canonical template.
 - If `CLAUDE.md` already mentions "Purlin" or "unified agent": skip.
@@ -85,6 +102,8 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 - Check config key names before renaming.
 - Check for PURLIN_OVERRIDES.md existence before creating.
 - `--complete-transition` is safe to run multiple times.
+- **Partial repair pass:** When `detect_migration_needed()` returns `partial`, the full migration pipeline runs. Each step is already idempotent — `consolidate_overrides()` checks output existence, `rename_spec_roles()` no-ops if already renamed, `restructure_companions()` checks for existing table. The config enrichment path backfills only missing keys.
+- `_migration_version` is written after successful migration or repair. Once present, detection returns `complete` on the fast path without inspecting agent key sets.
 
 ### 2.10 Migration Commit Convention
 
@@ -121,8 +140,8 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: Override files consolidated
 
-    Given PURLIN_OVERRIDES.md contains "use pytest"
-    And PURLIN_OVERRIDES.md contains "smoke tier table"
+    Given BUILDER_OVERRIDES.md contains "use pytest"
+    And QA_OVERRIDES.md contains "smoke tier table"
     When migration runs override consolidation
     Then PURLIN_OVERRIDES.md exists
     And it contains "## Engineer Mode" with "use pytest"
@@ -130,7 +149,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: Spec role renames use Migration tag
 
-    Given features/auth_flow.md contains "the Engineer implements"
+    Given features/auth_flow.md contains "the Builder implements"
     When migration runs spec rename step
     Then features/auth_flow.md contains "Engineer mode implements"
     And the commit message contains "[Migration]"
@@ -152,7 +171,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: CLAUDE.md updated to mention Purlin agent
 
-    Given CLAUDE.md references "PM, Engineer, QA, PM" roles
+    Given CLAUDE.md references "Architect, Builder, QA, PM" roles
     And CLAUDE.md does not mention "Purlin" or "unified agent"
     When migration runs
     Then CLAUDE.md is updated to include Purlin unified agent description
@@ -183,20 +202,48 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
     And no duplicate config entries are created
     And PURLIN_OVERRIDES.md is not duplicated
 
+#### Scenario: Half-migrated state detected and repaired
+
+    Given config.local.json has agents.purlin with only model and effort keys
+    And config.local.json has agents.builder without _deprecated flag
+    And no _migration_version key exists in config
+    When /pl-update-purlin runs migration step
+    Then detect_migration_needed returns "partial"
+    And agents.purlin is enriched with find_work, auto_start, default_mode, bypass_permissions
+    And agents.builder is marked _deprecated true
+    And _migration_version is set to 1
+
+#### Scenario: Migration marker prevents re-detection
+
+    Given config.local.json has _migration_version set to 1
+    And agents.purlin has full key set
+    When /pl-update-purlin runs migration step
+    Then detect_migration_needed returns "complete"
+    And migration is skipped
+
+#### Scenario: Previously migrated config gets marker stamped
+
+    Given agents.purlin has full 6-key config (model, effort, bypass_permissions, find_work, auto_start, default_mode)
+    And agents.builder has _deprecated true
+    And no _migration_version key exists
+    When /pl-update-purlin runs migration step
+    Then detect_migration_needed returns "complete"
+    And _migration_version is stamped as 1 for future fast path
+
 ### QA Scenarios
 
 #### Scenario: Complete transition removes old artifacts @auto
 
     Given migration has run and old launchers still exist
     When /pl-update-purlin --complete-transition runs
-    Then pl-run.sh is deleted
-    And pl-run.sh is deleted
-    And pl-run.sh is deleted
-    And pl-run.sh is deleted
+    Then pl-run-architect.sh is deleted
+    And pl-run-builder.sh is deleted
+    And pl-run-qa.sh is deleted
+    And pl-run-pm.sh is deleted
     And agents.architect is removed from config
     And agents.builder is removed from config
-    And PURLIN_OVERRIDES.md is deleted
-    And PURLIN_OVERRIDES.md is deleted
+    And ARCHITECT_OVERRIDES.md is deleted
+    And BUILDER_OVERRIDES.md is deleted
 
 #### Scenario: End-to-end migration preserves feature completeness @auto
 
