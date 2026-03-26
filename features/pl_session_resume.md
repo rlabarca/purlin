@@ -8,7 +8,12 @@
 
 ## 1. Overview
 
-The `/pl-resume` skill is the **single implementation** of "gather state, present work, activate mode" for the Purlin agent. Both fresh startup and mid-session context recovery use this skill — the startup protocol (PURLIN_BASE.md §5) delegates to `/pl-resume` after preamble steps (merge recovery, command table, flag reading). This prevents the startup and resume flows from drifting apart.
+The `/pl-resume` skill is the **entire startup flow** for the Purlin agent. The startup protocol (PURLIN_BASE.md §5) is a single line: "Run `/pl-resume`." All startup logic — merge recovery, terminal identity, command hints, scanning, work discovery, and mode activation — lives here. This prevents startup and resume flows from drifting apart.
+
+There are three entry points that all converge on `/pl-resume`:
+1. **Cold start from launcher** (`pl-run.sh` → §5 → `/pl-resume`): Fresh session, no checkpoint, instructions in system prompt.
+2. **After `/clear` → `/pl-resume`**: Mid-session recovery, no checkpoint, instructions may be compressed out.
+3. **After `/pl-resume save` → `/clear` → `/pl-resume`**: Warm resume, checkpoint exists, instructions may be compressed out.
 
 When invoked without a checkpoint, `/pl-resume` runs a cold start: scan the project, present work via `/pl-status`, and activate the appropriate mode. When a checkpoint exists, it restores the previous session's state and resumes work. The `/pl-resume save` subcommand captures session state for recovery.
 
@@ -129,11 +134,21 @@ When restoring, the agent MUST also check for legacy role-scoped checkpoint file
 
 Restore mode follows a 7-step sequence. Each step is mandatory unless noted otherwise.
 
-#### 2.3.0 Step 0 -- Stale Session State Cleanup
+#### 2.3.0 Step 0 -- Merge Recovery and Stale State Cleanup
 
-Clear any stale session state carried over from the previous session. This includes resetting internal turn counters or budget trackers if the agent runtime maintains them. If no such state exists in the current runtime, this step is a no-op and may be skipped silently.
+**Merge breadcrumb check:** Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run the merge recovery protocol (Section 2.4) before proceeding. This check is essential because `/pl-resume` may be invoked standalone (after `/clear`) when no startup protocol ran.
 
-Merge-pending breadcrumbs are handled by the startup protocol (PURLIN_BASE.md §5.0) BEFORE `/pl-resume` is called. Do NOT re-check breadcrumbs here.
+**Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
+
+#### 2.3.0b Step 0b -- Set Terminal Identity (Open Mode)
+
+Set the iTerm badge and terminal title to open mode. This gives the user immediate visual feedback that the agent is initializing.
+
+Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the badge.
+
+Badge: `Purlin` (or `Purlin (W1)` in a worktree). Title: `<project> - Purlin` (or `<project> - Purlin (W1)`).
+
+If a mode is activated later in Step 6, the badge and title are updated to reflect the active mode.
 
 #### 2.3.1 Step 1 -- Checkpoint Detection
 
@@ -154,10 +169,10 @@ When instruction reload is needed:
 
 When the system prompt already contains the Purlin instructions (agent was started via launcher), skip this step silently (no output).
 
-#### 2.3.3 Step 3 -- Command Reference
+#### 2.3.3 Step 3 -- Command Hint
 
-- Print a single line: `Commands: /pl-help for full list`
-- Do NOT read or print the full command table file.
+- Print: `Use /pl-help for commands`
+- Do NOT read or print the full command table. The command table is owned by `/pl-help`.
 
 #### 2.3.3b Step 3b -- Orphaned Sub-Agent Branch Recovery (Engineer mode checkpoint only)
 
@@ -165,7 +180,7 @@ When the checkpoint mode is `engineer`, check for orphaned worktree branches (`g
 
 #### 2.3.4 Step 4 -- Read Startup Flags and Gather Project State
 
-**This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5.2 delegates here — there is no separate implementation of work discovery in the startup protocol.
+**This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5 delegates entirely to `/pl-resume` — there is no separate implementation of work discovery in the startup protocol.
 
 **Reading startup flags:** Read the **resolved config**: `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`. Extract `find_work`, `auto_start`, and `default_mode` from the `agents.purlin` object. Defaults when absent: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
@@ -235,7 +250,7 @@ Uncommitted:    [none | summary]
 
 ### 2.4 Merge Recovery Mode (`/pl-resume merge-recovery`)
 
-Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md §5.0) when breadcrumbs exist, or manually by the user.
+Resolve pending worktree merge failures. Called automatically by Step 0 of the restore flow when breadcrumbs exist, or manually by the user.
 
 #### Protocol
 
@@ -302,6 +317,27 @@ Resolve pending worktree merge failures. Called automatically by the startup pro
     And the checkpoint's Next list is presented as the work plan
     And the agent re-enters Engineer mode
     And the checkpoint file is deleted after consumption
+
+#### Scenario: Restore checks merge breadcrumbs in Step 0 @auto
+
+    Given .purlin/cache/merge_pending/branch1.json exists
+    When the agent invokes /pl-resume (restore mode)
+    Then merge recovery runs before checkpoint detection
+    And the breadcrumb is processed before proceeding to Step 1
+
+#### Scenario: Restore sets open mode badge in Step 0b @auto
+
+    Given a fresh session with no checkpoint
+    When the agent invokes /pl-resume
+    Then the iTerm badge is set to "Purlin" before scanning
+    And the terminal title is set to "<project> - Purlin"
+
+#### Scenario: Restore prints command hint not full table @auto
+
+    Given any /pl-resume invocation (cold or warm)
+    When the agent reaches Step 3
+    Then the output contains "Use /pl-help for commands"
+    And the full command table is NOT printed
 
 #### Scenario: Restore without checkpoint runs cold start @auto
 

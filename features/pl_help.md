@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The Purlin agent prints its command table at startup, but after a long work session or context compression, the user loses visibility into available commands. `/pl-help` provides a quick way to re-print the unified command table and discover user-facing CLI scripts at any time.
+The Purlin agent does NOT print the command table at startup — it shows `Use /pl-help for commands` instead. `/pl-help` is the **sole owner** of command table display. It prints the unified command table and discovers user-facing CLI scripts on demand.
 
 ---
 
