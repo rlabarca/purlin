@@ -480,9 +480,9 @@ fi
 teardown_sandbox
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Scenario 20: Refresh Removes Stale PreToolUse Architect Hook
+# Scenario 20: Refresh Removes Stale PreToolUse PM Hook
 # ─────────────────────────────────────────────────────────────────────────────
-echo "[S20] Refresh Removes Stale PreToolUse Architect Hook"
+echo "[S20] Refresh Removes Stale PreToolUse PM Hook"
 setup_sandbox
 
 PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1

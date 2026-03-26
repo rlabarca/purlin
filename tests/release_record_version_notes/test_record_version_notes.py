@@ -11,7 +11,7 @@ from features/release_record_version_notes.md:
 - README.md entry format matches spec Section 2.5
 - Step is registered in project release config
 
-Manual scenarios (Architect-executed) are verified via agent behavior
+Manual scenarios (PM-executed) are verified via agent behavior
 harness in dev/test_agent_interactions.sh, not here.
 """
 import json

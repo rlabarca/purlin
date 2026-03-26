@@ -74,7 +74,7 @@ class TestRemoteIsAheadOfLocal(unittest.TestCase):
     """Scenario: Remote is ahead of local
 
     Given the remote branch has commits not present locally
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then the step detects the remote is ahead via git log comparison
     And the step halts with an error message containing "pull and reconcile"
     And no git push command is executed
@@ -130,7 +130,7 @@ class TestStepIsDisabled(unittest.TestCase):
 
     Given .purlin/release/config.json has purlin.push_to_remote set to
     enabled: false
-    When the Architect executes the release checklist
+    When the PM executes the release checklist
     Then the purlin.push_to_remote step is skipped entirely
     And no git push command is executed
     And the release proceeds to the next step
@@ -197,7 +197,7 @@ class TestCleanPushToRemote(unittest.TestCase):
 
     Given the local branch is ahead of the remote by one or more commits
     And no force-push is required
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then git push <remote> <branch> is executed with the confirmed remote
     And git push <remote> --tags is executed
     And the step reports the push result
@@ -244,7 +244,7 @@ class TestForcePushRequired(unittest.TestCase):
     """Scenario: Force-push would be required
 
     Given the push cannot proceed without --force
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then the step detects the force-push requirement
     And the step halts with a warning about force-push
     And no git push --force command is executed without explicit user
@@ -313,7 +313,7 @@ class TestMultipleRemotes(unittest.TestCase):
 
     Given the project has remotes "origin" and "github"
     And the current branch is "main" tracking "origin/main"
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then the step identifies "origin" as the default remote via upstream tracking
     And "github" is listed as an alternative remote
     And the default remote URL is included in the confirmation prompt
@@ -378,7 +378,7 @@ class TestSingleRemote(unittest.TestCase):
 
     Given the project has only one remote "origin"
     And the current branch is "main"
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then the step identifies "origin" as the only remote
     And no remote selection prompt is generated
     And the confirmation prompt shows "Push main to origin (<url>)?"
@@ -424,10 +424,10 @@ class TestCollaborationBranchWarning(unittest.TestCase):
 
     Given .purlin/runtime/active_branch contains "collab/v0.6-sprint"
     And the current branch is "collab/v0.6-sprint"
-    When the Architect executes the purlin.push_to_remote step
+    When the PM executes the purlin.push_to_remote step
     Then the step warns that the current branch is a collaboration branch
     And the warning message contains "collab/v0.6-sprint"
-    And the Architect must confirm before proceeding
+    And the PM must confirm before proceeding
     """
 
     @classmethod

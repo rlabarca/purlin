@@ -348,7 +348,7 @@ class TestUpdateSyncNestedKeys(ResolverTestBase):
         added = sync_config(self.tmpdir)
 
         local = self.read_local()
-        # Architect model preserved
+        # PM model preserved
         self.assertEqual(local["agents"]["architect"]["model"], "opus")
         # QA added with shared defaults
         self.assertIn("qa", local["agents"])
