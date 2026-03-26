@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature adds two layers of terminal identity: a terminal title (universal, works in all terminals) that sets the tab/window title to the agent role, and an iTerm2 badge (iTerm2 only) that overlays the role name for at-a-glance identification. Both layers show the agent mode name with the current branch (or worktree label) in parentheses — e.g., `PM (main)`, `Engineer (W1)`. The branch context persists across mode switches so users always know which branch they're on. Engineer mode shows additional state during continuous-mode phase execution. Both layers are cleaned up on normal exit and Ctrl+C.
+When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature provides multi-environment terminal identity: a terminal title (universal), an iTerm2 badge (iTerm2 only), and a Warp tab name (Warp only, best-effort). All layers show the agent mode name with the current branch (or worktree label) in parentheses — e.g., `PM (main)`, `Engineer (W1)`. The branch context persists across mode switches so users always know which branch they're on. Engineer mode shows additional state during continuous-mode phase execution. All layers are cleaned up on normal exit and Ctrl+C. A centralized `update_session_identity` function handles context detection and dispatch to all environments, replacing scattered inline logic.
 
 ---
 
@@ -89,6 +89,45 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 - All functions are a no-op when the helper script is missing (e.g., an older submodule that does not include the file).
 - No error output is produced in degraded mode.
 
+### 2.8 Environment Detection
+
+The helper script detects the terminal environment once at source-time (terminal type cannot change mid-session) and caches the result in shell variables:
+
+- `_PURLIN_ENV_ITERM` — `true` when `$TERM_PROGRAM` is `iTerm.app`.
+- `_PURLIN_ENV_WARP` — `true` when `$TERM_PROGRAM` is `WarpTerminal`.
+- `_PURLIN_ENV_TITLE` — always `true` (OSC 0 title works in virtually all terminals).
+
+Detection uses a `case` statement on `$TERM_PROGRAM`, extensible by adding new branches for future terminals (Ghostty, Kitty, etc.).
+
+A query function `purlin_detect_env` returns the detection state as a space-separated key:value string for callers that need to inspect which environments are active: `"title:true iterm:false warp:true"`.
+
+### 2.9 Warp Terminal Support
+
+Warp terminal tab naming via two functions:
+
+- `set_warp_tab_name <text>` — sets the Warp tab name via OSC 0 (`\033]0;<text>\007`). No-op when `_PURLIN_ENV_WARP` is not `true`.
+- `clear_warp_tab_name` — clears the Warp tab name. No-op when not Warp.
+
+Warp is detected via `TERM_PROGRAM=WarpTerminal`.
+
+**Known limitation:** Warp's OSC 0 support for tab naming is unreliable in some versions (ref: warp-dev/Warp#8330). This implementation is best-effort. The Warp-specific function is separated from `set_term_title` so that a proprietary Warp escape sequence can replace OSC 0 without touching the universal title function.
+
+The convenience wrappers `set_agent_identity` and `clear_agent_identity` dispatch to Warp functions in addition to title and iTerm badge.
+
+### 2.10 Centralized Session Identity
+
+A single function `update_session_identity <mode_display> [project]` encapsulates the full identity update flow:
+
+1. Detect branch or worktree context via `_purlin_detect_context` (reads `.purlin_worktree_label` first, falls back to `git rev-parse --abbrev-ref HEAD`).
+2. Format the badge: `<mode_display> (<context>)` — or bare `<mode_display>` if no context is available.
+3. Format the title: `<project> - <badge>` when project is given, or bare `<badge>`.
+4. Dispatch to all detected environments: `set_term_title`, `set_iterm_badge`, `set_warp_tab_name`.
+5. Store the computed values in `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., the launcher uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for `--name`/`--remote-control`).
+
+This function replaces the scattered inline badge-computation + dispatch logic in `pl-run.sh`, `PURLIN_BASE.md` section 4.1.1, `/pl-mode`, `/pl-resume` Step 6, and `/pl-merge` step 7.
+
+**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., `pl-run-builder.sh` phase transitions like `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
+
 ---
 
 ## 3. Scenarios
@@ -161,6 +200,84 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     When launchers are generated for each role
     Then architect uses "PM", builder uses "Engineer", qa uses "QA", pm uses "PM"
 
+#### Scenario: Environment detection identifies iTerm2
+
+    Given TERM_PROGRAM is set to "iTerm.app"
+    When the helper script is sourced
+    Then _PURLIN_ENV_ITERM is "true"
+    And _PURLIN_ENV_WARP is "false"
+
+#### Scenario: Environment detection identifies Warp
+
+    Given TERM_PROGRAM is set to "WarpTerminal"
+    When the helper script is sourced
+    Then _PURLIN_ENV_WARP is "true"
+    And _PURLIN_ENV_ITERM is "false"
+
+#### Scenario: Environment detection for unknown terminal
+
+    Given TERM_PROGRAM is set to "xterm"
+    When the helper script is sourced
+    Then _PURLIN_ENV_ITERM is "false"
+    And _PURLIN_ENV_WARP is "false"
+    And _PURLIN_ENV_TITLE is "true"
+
+#### Scenario: Warp tab name emits OSC 0
+
+    Given TERM_PROGRAM is set to "WarpTerminal"
+    And the helper script is sourced
+    When set_warp_tab_name is called with "PM (main)"
+    Then the output contains the escape sequence "\033]0;PM (main)\007"
+
+#### Scenario: Warp tab name is no-op when not Warp
+
+    Given TERM_PROGRAM is set to "iTerm.app"
+    And the helper script is sourced
+    When set_warp_tab_name is called with "QA"
+    Then no output is produced
+
+#### Scenario: update_session_identity computes badge with branch
+
+    Given a git repository with branch "main"
+    And no .purlin_worktree_label file exists
+    When update_session_identity is called with "Engineer" and "purlin"
+    Then _PURLIN_LAST_BADGE is "Engineer (main)"
+    And _PURLIN_LAST_TITLE is "purlin - Engineer (main)"
+
+#### Scenario: update_session_identity uses worktree label over branch
+
+    Given a .purlin_worktree_label file contains "W2"
+    When update_session_identity is called with "QA" and "myproject"
+    Then _PURLIN_LAST_BADGE is "QA (W2)"
+    And _PURLIN_LAST_TITLE is "myproject - QA (W2)"
+
+#### Scenario: update_session_identity dispatches to all environments
+
+    Given TERM_PROGRAM is set to "iTerm.app"
+    And the helper script is sourced
+    When update_session_identity is called with "PM" and "purlin"
+    Then set_term_title, set_iterm_badge, and set_warp_tab_name are all invoked
+
+#### Scenario: set_agent_identity includes Warp dispatch
+
+    Given TERM_PROGRAM is set to "WarpTerminal"
+    And the helper script is sourced
+    When set_agent_identity is called with "Engineer (main)"
+    Then set_warp_tab_name is invoked with the title text
+
+#### Scenario: clear_agent_identity includes Warp cleanup
+
+    Given TERM_PROGRAM is set to "WarpTerminal"
+    And the helper script is sourced
+    When clear_agent_identity is called
+    Then clear_warp_tab_name is invoked
+
+#### Scenario: purlin_detect_env returns expected format
+
+    Given TERM_PROGRAM is set to "iTerm.app"
+    When purlin_detect_env is called
+    Then the output is "title:true iterm:true warp:false"
+
 ### QA Scenarios
 
 #### @manual Scenario: Title and badge appear on start and clear on exit
@@ -204,6 +321,22 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     When the user switches to PM mode via /pl-mode pm
     Then the badge updates to "PM (feature-xyz)"
 
+#### @manual Scenario: Warp tab name updates on mode switch
+
+    Given Warp terminal is the active terminal
+    And the current branch is "main"
+    When the user starts a Purlin session
+    And switches to Engineer mode via /pl-mode engineer
+    Then the Warp tab title shows "purlin - Engineer (main)"
+
+#### @manual Scenario: update_session_identity used by /pl-session-name skill
+
+    Given any terminal is active
+    And the agent is in PM mode on branch "develop"
+    When the user runs /pl-session-name
+    Then the terminal title updates to "purlin - PM (develop)"
+    And the output shows which environments were updated
+
 ## Regression Guidance
 - Cleanup on normal exit AND Ctrl+C (both title and badge cleared)
 - Non-iTerm2 terminals: badge functions are no-op, title still works
@@ -211,3 +344,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 - Continuous mode: title updates through phase transitions (Bootstrap -> Phase N/M -> Evaluating)
 - Branch context in parentheses MUST persist across mode switches — never dropped to bare mode name
 - Worktree label takes priority over branch name when both could apply
+- Environment detection cached at source-time, consistent across all calls in session
+- Warp tab name best-effort (OSC 0 unreliable in some Warp versions)
+- `update_session_identity` always stores results in `$_PURLIN_LAST_BADGE` / `$_PURLIN_LAST_TITLE`
+- `set_agent_identity` backward compatible — still works with pre-formatted text, now also dispatches to Warp
