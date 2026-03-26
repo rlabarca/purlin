@@ -45,7 +45,7 @@ Engineer makes decisions during build: interprets ambiguity, chooses different a
 
 Engineer is not building. They want to suggest a spec change or new feature. Writes a `[SPEC_PROPOSAL]` to companion file. Use `/pl-propose`.
 
-## Builder Decision Tags
+## Engineer Decision Tags
 
 Use these in companion files:
 

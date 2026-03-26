@@ -14,7 +14,7 @@ Copy from `{tools_root}/feature_templates/`:
 - `_feature.md` -- regular feature file
 - `_anchor.md` -- anchor node (arch_*, design_*, policy_*)
 
-**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 and BUILDER_BASE Section 5.2 for the companion file convention.
+**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 for the companion file convention.
 
 ## Blockquote Metadata
 
@@ -25,13 +25,13 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
 - `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `/pl-web-test`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
 - `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-server`. Legacy `> AFT Start:` is accepted for backward compatibility.
-- `> Owner: PM` or `> Owner: Architect` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: Architect. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always Architect-owned; the tag is ignored if present on an anchor. The Owner tag is sticky -- it persists through edits by any agent. Architect can edit PM-owned features (spec gate fixes, prerequisite additions) without changing ownership. This tag is used to route SPEC_DISPUTEs: disputes on `> Owner: PM` features or referencing Visual Specification screens route to PM; all others route to Architect.
-- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Builder work queue: a LOW-priority PM action item is generated when a feature is in Builder TODO state with `Figma Status: Design`.
+- `> Owner: PM` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: PM. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always PM-owned. The Owner tag is sticky -- it persists through edits by any agent. This tag is used to route SPEC_DISPUTEs.
+- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Engineer work queue: a LOW-priority PM action item is generated when a feature is in Engineer TODO state with `Figma Status: Design`.
 - `> Test Fixtures: <url>` -- non-default fixture repo URL (local path or remote URL). Most features use the convention path (`.purlin/runtime/fixture-repo`) and do not need this field. Only add when the feature's fixtures live in a different repo.
 
 ## Category and Label Consistency
 
-When creating a new feature file, the Architect MUST scan existing features to ensure the new
+When creating a new feature file, PM MUST scan existing features to ensure the new
 file uses a consistent category and label. Do NOT invent a new category when an existing one
 applies.
 
@@ -93,20 +93,20 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 
     (Use "None." if no QA scenarios.)
 
-**Scenario classification tags (`@auto`, `@manual`):** QA Scenarios start **untagged** when the Architect or PM writes them. On QA's first verification pass, every untagged scenario gets classified:
+**Scenario classification tags (`@auto`, `@manual`):** QA Scenarios start **untagged** when PM writes them. On QA's first verification pass, every untagged scenario gets classified:
 
 *   **`@auto`** — QA determined the scenario can be automated and authored regression JSON for it. On future sessions, the harness runner executes it without human involvement. Example: `#### Scenario: Widget renders correctly @auto`
 *   **`@manual`** — QA determined the scenario requires human judgment, or the user declined automation. QA never re-proposes automation for `@manual` scenarios. Example: `#### Scenario: Hardware calibration check @manual`
 
-**Lifecycle:** `untagged` (Architect/PM writes) → QA proposes automation → `@auto` (if feasible and approved) or `@manual` (if declined or infeasible). No scenario stays untagged after QA's first pass.
+**Lifecycle:** `untagged` (PM writes) → QA proposes automation → `@auto` (if feasible and approved) or `@manual` (if declined or infeasible). No scenario stays untagged after QA's first pass.
 
-**Architects and PMs MUST NOT add `@auto` or `@manual` tags.** These are QA-authored classification outputs, not spec inputs. Write scenarios untagged; QA classifies them.
+**PM MUST NOT add `@auto` or `@manual` tags.** These are QA-authored classification outputs, not spec inputs. Write scenarios untagged; QA classifies them.
 
 **Gradual migration:** The scan accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 
 ## Test Priority Tier Classification
 
-**MANDATE:** When creating or refining a feature spec, the Architect MUST evaluate whether the feature warrants a non-default tier classification in `QA_OVERRIDES.md` under `## Test Priority Tiers`.
+**MANDATE:** When creating or refining a feature spec, PM MUST evaluate whether the feature warrants a non-default tier classification in `QA_OVERRIDES.md` under `## Test Priority Tiers`.
 
 **Tier decision prompt (ask yourself):**
 1. **If this feature breaks, is the app unusable?** Can agents start up? Can the scan run? Can projects initialize? If yes → `smoke`.
@@ -129,7 +129,7 @@ Scenario classification and gherkin quality checks are automatically skipped for
 ## Regression Guidance Section (Optional)
 
 Feature files MAY contain a `## Regression Guidance` section with bullet points describing
-behaviors that are regression-worthy. PM or Architect adds these hints during spec authoring
+behaviors that are regression-worthy. PM adds these hints during spec authoring
 to signal which behaviors deserve independent regression coverage by QA.
 
 **Placement:** After `## Visual Specification` (if present) or after `## 3. Scenarios`,
@@ -150,7 +150,7 @@ as the last content section before end-of-file.
 
 **Scan interaction:** The scan detects this section and, when the feature reaches
 `builder: "DONE"`, generates MEDIUM-priority QA action items with category
-`regression_guidance_pending`. The Builder ignores this section entirely.
+`regression_guidance_pending`. Engineer mode ignores this section entirely.
 
 ## Fixture Tag Section Format
 
@@ -172,7 +172,7 @@ or:
     |-----|-------------------|
     | `main/feature_name/slug` | Description of the project state this tag represents |
 
-**Tag naming:** `<project-ref>/<feature-name>/<slug>`. The slug is Architect-chosen (2-4
+**Tag naming:** `<project-ref>/<feature-name>/<slug>`. The slug is PM-chosen (2-4
 words, kebab-case) and describes the fixture state, not the scenario title. Examples:
 `ahead-3`, `empty-repo`, `expert-mode`.
 

@@ -19,7 +19,7 @@ The single source of truth for any project using this framework is not the code,
 
 ### 1.2 "Design Evolves with Code"
 Specifications are not static blueprints written once and handed off. They are continuously refined through the implementation lifecycle:
-*   Builder discoveries feed back into specs via Implementation Notes and the INFEASIBLE escalation.
+*   Engineer discoveries feed back into specs via Implementation Notes and the INFEASIBLE escalation.
 *   QA discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) trigger spec revisions before code fixes.
 *   Anchor node changes cascade to all dependent features, triggering re-validation across the entire domain.
 *   The Feature Lifecycle (TODO -> TESTING -> COMPLETE) tracks the sync state between design and implementation at all times.
@@ -29,30 +29,25 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 
 ## 2. Roles and Responsibilities
 
-### The Architect Agent
-*   **Focus:** "The What and The Why".
-*   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and process configuration (`.purlin/toolbox/*.json`, `.purlin/config.json`).
-*   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of implementation files.
-*   **Key Duty:** Designing rigorous, unambiguous specifications and enforcing architectural invariants.
-
 ### The PM Agent
-*   **Focus:** "The Intent and The Design".
-*   **Ownership:** Feature spec authoring (shared with Architect), Visual Specification sections, Figma design iteration, design artifact management, and `design_*`/`policy_*` anchor nodes (shared with Architect).
-*   **Key Duty:** Translating human intent into complete, unambiguous feature specs with integrated Figma-derived Visual Specifications. Proactively challenges requirements for completeness and implementation simplicity.
-*   **Does NOT:** Write code (Builder), modify `arch_*` anchor nodes or instruction files (Architect), or verify behavior (QA).
-*   **Figma Authority:** When Figma MCP is available, the PM is the primary agent for reading and writing Figma designs. Other agents read Figma for reference; only the PM writes to it.
+*   **Focus:** "The What, The Why, and The Design".
+*   **Ownership:** Feature Specifications, Architectural Policies, Visual Specification sections, instruction overrides, process configuration (`.purlin/toolbox/*.json`, `.purlin/config.json`), Figma design iteration, design artifact management, and `design_*`/`policy_*` anchor nodes.
+*   **Specification Authority:** PM holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of implementation files.
+*   **Key Duty:** Translating human intent into complete, unambiguous feature specs with integrated Figma-derived Visual Specifications. Designing rigorous specifications and enforcing architectural invariants. Proactively challenges requirements for completeness and implementation simplicity.
+*   **Does NOT:** Write code (Engineer), modify `arch_*` anchor nodes or instruction files (Engineer-owned), or verify behavior (QA).
+*   **Figma Authority:** When Figma MCP is available, the PM is the primary agent for reading and writing Figma designs. Other agents read Figma for reference; only PM writes to it.
 
-### The Builder Agent
+### The Engineer Agent
 *   **Focus:** "The How".
-*   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, skill files (`.claude/commands/pl-*.md`), or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all implementation files regardless of domain.
+*   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, skill files (`.claude/commands/pl-*.md`), or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, `arch_*` anchor nodes, instruction files, and automated tests. The Engineer is the sole author of all implementation files regardless of domain.
 *   **Key Duty:** Translating specifications into high-quality, verified code and documenting implementation discoveries.
 
 ### The QA Agent
 *   **Focus:** "The Verification and The Feedback".
 *   **Ownership:** Discovery sidecar files (`features/<name>.discoveries.md`) with exclusive lifecycle management, QA verification scripts (`tests/qa/`), QA scenario authoring (under `### QA Scenarios`), `@auto` tag management, and discovery lifecycle management.
 *   **Key Duty:** Executing QA scenarios (auto and manual), recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle. QA MAY start servers for verification (port safety + cleanup mandate).
-*   **Scenario Classification:** QA classifies untagged QA Scenarios as `@auto` (automated, regression JSON authored) or `@manual` (human judgment required) during verification. QA MAY also add new scenarios under `### QA Scenarios`. QA MUST NOT modify Unit Tests, Requirements, Overview, or Visual Specification sections. Architects and PMs write scenarios untagged; QA owns the `@auto`/`@manual` tags.
-*   **Status Commits:** QA makes `[Complete]` status commits for features that have QA scenarios, after all QA scenarios pass with zero discoveries. Features with no QA scenarios are completed by the Builder.
+*   **Scenario Classification:** QA classifies untagged QA Scenarios as `@auto` (automated, regression JSON authored) or `@manual` (human judgment required) during verification. QA MAY also add new scenarios under `### QA Scenarios`. QA MUST NOT modify Unit Tests, Requirements, Overview, or Visual Specification sections. PM writes scenarios untagged; QA owns the `@auto`/`@manual` tags.
+*   **Status Commits:** QA makes `[Complete]` status commits for features that have QA scenarios, after all QA scenarios pass with zero discoveries. Features with no QA scenarios are completed by the Engineer.
 
 ### The Human Executive
 *   **Focus:** "The Intent and The Review".
@@ -62,11 +57,11 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream status regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/scan.sh`. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
-1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
-2.  **Implementation:** Builder reads the feature and implementation notes, writes code/tests, and verifies locally.
-3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed. See Section 7.3 for when to invoke QA versus letting the Builder complete features directly.
-4.  **Completion:** If the feature has no manual scenarios, the Builder marks `[Complete]`. If it has manual scenarios, the QA Agent marks `[Complete]` after clean verification.
-5.  **Synchronization:** Architect updates documentation and regenerates the dependency graph.
+1.  **Design:** PM creates/refines a feature file in `features/`, shaping the spec and Visual Specification.
+2.  **Implementation:** Engineer reads the feature and implementation notes, writes code/tests, and verifies locally.
+3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed. See Section 7.3 for when to invoke QA versus letting the Engineer complete features directly.
+4.  **Completion:** If the feature has no manual scenarios, the Engineer marks `[Complete]`. If it has manual scenarios, the QA Agent marks `[Complete]` after clean verification.
+5.  **Synchronization:** PM updates documentation and regenerates the dependency graph.
 
 ## 4. Knowledge Colocation
 We do not use a global implementation log. Tribal knowledge, technical "gotchas," and lessons learned are stored in **companion files** (`features/<name>.impl.md`) alongside each feature specification. Feature files themselves do not contain implementation notes.
@@ -97,7 +92,7 @@ Implementation knowledge is stored in **companion files** separate from the feat
 *   **File naming:** `features/<name>.impl.md` alongside `features/<name>.md`.
 *   **Standalone:** Companion files are standalone -- feature files do NOT reference or link to them. The naming convention provides discoverability.
 *   **Not a feature file:** Companion files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle.
-*   **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO. Only edits to the feature spec (`<name>.md`) trigger resets. This ensures Builder decisions and tribal knowledge updates do not invalidate completed features.
+*   **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO. Only edits to the feature spec (`<name>.md`) trigger resets. This ensures Engineer decisions and tribal knowledge updates do not invalidate completed features.
 
 ### 4.4 Lifecycle Reset Exemption Tags
 Certain commits that modify feature spec files are exempt from triggering lifecycle resets. The committing agent signals exemption by including a trailer tag in the commit message. The CDD lifecycle tracker skips these commits when computing reset detection.
@@ -105,7 +100,7 @@ Certain commits that modify feature spec files are exempt from triggering lifecy
 | Tag | Meaning | When to Use |
 |-----|---------|-------------|
 | `[QA-Tags]` | Only modifies `@auto`/`@manual` tag suffixes on QA Scenario headings. | QA classifying scenarios. |
-| `[Spec-FMT]` | Only changes spec formatting (indentation, Gherkin keyword casing, whitespace, parsing fixes) without altering behavioral content. | Architect or PM fixing formatting. |
+| `[Spec-FMT]` | Only changes spec formatting (indentation, Gherkin keyword casing, whitespace, parsing fixes) without altering behavioral content. | PM fixing formatting. |
 
 If ALL commits to a feature spec since the last status commit contain one of these tags (or a combination), the lifecycle is preserved. If any commit lacks an exempt tag, the normal reset applies. Do NOT use these tags when behavioral content changes.
 
@@ -122,13 +117,13 @@ Instructions use a two-layer model: **base** (`instructions/` in the framework) 
 ## 7. User Testing Protocol
 
 ### 7.1 Discovery Sidecar Convention
-User Testing Discoveries are stored in **sidecar files** (`features/<name>.discoveries.md`) alongside the feature specification (`features/<name>.md`). This separates mutable QA findings from the Architect-owned spec, preventing discovery edits from triggering lifecycle resets.
+User Testing Discoveries are stored in **sidecar files** (`features/<name>.discoveries.md`) alongside the feature specification (`features/<name>.md`). This separates mutable QA findings from the PM-owned spec, preventing discovery edits from triggering lifecycle resets.
 
 *   **File naming:** `features/<name>.discoveries.md` alongside `features/<name>.md`.
 *   **Not a feature file:** Discovery sidecar files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle. The same exclusion rules as companion files (`*.impl.md`) apply.
 *   **Status reset exemption:** Edits to `<name>.discoveries.md` do NOT reset the parent feature's lifecycle status to TODO.
 *   **Orphan detection:** If `<name>.md` is orphaned, `<name>.discoveries.md` MUST also be flagged.
-*   **Content:** A **live queue** of open verification findings. **Any agent** (Architect, Builder, QA, or PM) MAY record a new OPEN discovery. The QA Agent owns **lifecycle management**: verification, resolution confirmation, and pruning of RESOLVED entries.
+*   **Content:** A **live queue** of open verification findings. **Any agent** (PM, Engineer, QA) MAY record a new OPEN discovery. The QA Agent owns **lifecycle management**: verification, resolution confirmation, and pruning of RESOLVED entries.
 *   **Queue hygiene:** An empty or absent file means the feature has no open discoveries.
 
 ### 7.2 Discovery Types
@@ -141,12 +136,12 @@ Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-disc
 
 ### 7.3 Testing Responsibility Split
 
-The Builder and QA Agent have non-overlapping testing domains. No test is verified twice.
+The Engineer and QA Agent have non-overlapping testing domains. No test is verified twice.
 
-*   **Builder-owned testing:** Unit Tests (`### Unit Tests` section, `/pl-unit-test`) and web tests (`/pl-web-test`). Results are written to `tests.json`. If all scenarios are Unit Tests (no QA scenarios in the spec), the Builder marks `[Complete]` directly -- QA is never invoked.
-*   **QA-owned testing:** QA Scenarios (`### QA Scenarios` section). Scenarios start untagged and are classified by QA on first encounter: `@auto` (QA authored regression JSON, runs via harness runner) or `@manual` (requires human judgment, QA never re-proposes automation). QA follows the auto-first protocol (QA_BASE Section 3.3): run `@auto` scenarios first, classify untagged scenarios (propose automation or mark `@manual`), then verify `@manual` scenarios. Features with BOTH Unit Tests and QA Scenarios: QA auto-credits the Builder's Unit Test results and presents only the QA items.
-*   **Handoff signal:** `[Ready for Verification]` = QA scenarios exist, QA needed. `[Complete]` = Builder verified everything (Unit Tests only), QA not needed.
-*   **Dedup invariant:** QA MUST NOT re-verify Builder-completed Unit Tests. The auto-pass in QA startup (Step 1 of QA_BASE Section 3.3) enforces this.
+*   **Engineer-owned testing:** Unit Tests (`### Unit Tests` section, `/pl-unit-test`) and web tests (`/pl-web-test`). Results are written to `tests.json`. If all scenarios are Unit Tests (no QA scenarios in the spec), the Engineer marks `[Complete]` directly -- QA is never invoked.
+*   **QA-owned testing:** QA Scenarios (`### QA Scenarios` section). Scenarios start untagged and are classified by QA on first encounter: `@auto` (QA authored regression JSON, runs via harness runner) or `@manual` (requires human judgment, QA never re-proposes automation). QA follows the auto-first protocol (QA_BASE Section 3.3): run `@auto` scenarios first, classify untagged scenarios (propose automation or mark `@manual`), then verify `@manual` scenarios. Features with BOTH Unit Tests and QA Scenarios: QA auto-credits the Engineer's Unit Test results and presents only the QA items.
+*   **Handoff signal:** `[Ready for Verification]` = QA scenarios exist, QA needed. `[Complete]` = Engineer verified everything (Unit Tests only), QA not needed.
+*   **Dedup invariant:** QA MUST NOT re-verify Engineer-completed Unit Tests. The auto-pass in QA startup (Step 1 of QA_BASE Section 3.3) enforces this.
 *   **Tier-based prioritization:** Consumer projects MAY define test priority tiers (`smoke`, `standard`, `full-only`) in `QA_OVERRIDES.md`. QA reads the tier table and orders verification accordingly. "Just smoke" mode filters to smoke-tier only. See QA_BASE Section 3.2 for details.
 
 ## 8. Protocol Quick Reference
@@ -170,9 +165,8 @@ Skills carry the complete workflow protocol. Invoke the skill before executing t
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI
 components. This section uses per-screen checklists (not Gherkin) with design anchor
 references. It is exempt from Gherkin traceability. The PM agent is the primary author of
-Visual Specification sections. When a PM is active, the Architect defers visual spec
-authoring to the PM and focuses on structural validation. Visual checklist items are
-Builder-verified (via `/pl-web-test` for web features, manual inspection for non-web
+Visual Specification sections. Visual checklist items are
+Engineer-verified (via `/pl-web-test` for web features, manual inspection for non-web
 features) and do NOT generate QA action items.
 
 For the full convention (format, inheritance, design pipeline, verification methods), see

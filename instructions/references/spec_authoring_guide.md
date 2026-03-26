@@ -1,40 +1,38 @@
 # Spec Authoring Guide
 
-> Shared reference for PM and Architect agents. Loaded by `/pl-spec` and `/pl-anchor`.
+> Shared reference for PM mode. Loaded by `/pl-spec` and `/pl-anchor`.
 
 ## 1. Shared Principles
 
-Both PM and Architect write feature specs and must produce artifacts that are:
+PM mode writes feature specs and must produce artifacts that are:
 
-- **Behavioral, not implementational.** Describe what the system does, not how code is structured. The Builder decides the "how."
+- **Behavioral, not implementational.** Describe what the system does, not how code is structured. Engineer mode decides the "how."
 - **Unambiguous.** Every scenario has one correct interpretation. If two reasonable people could disagree on the expected behavior, the spec is incomplete.
 - **Testable.** Every requirement must be verifiable — either through an automated scenario, a manual scenario, or a visual checklist item.
 - **Anchored.** Every feature declares `> Prerequisite:` links to the anchor nodes whose constraints it must satisfy. Missing anchors mean missing constraints.
-- **Minimal.** Include only what the Builder and QA need. Don't over-specify implementation details, don't pad with aspirational requirements, don't add scenarios for impossible states.
-- **Untagged scenarios.** QA Scenarios are written without `@auto` or `@manual` suffix tags. These tags are QA-owned classification outputs added during verification. The Architect and PM write the scenario; QA decides how to test it.
+- **Minimal.** Include only what Engineer and QA need. Don't over-specify implementation details, don't pad with aspirational requirements, don't add scenarios for impossible states.
+- **Untagged scenarios.** QA Scenarios are written without `@auto` or `@manual` suffix tags. These tags are QA-owned classification outputs added during verification. PM writes the scenario; QA decides how to test it.
 
 ## 2. Role Focus
 
-| Concern | PM | Architect |
-|---|---|---|
-| **Intent & UX** | Primary — translates user intent into behavioral requirements | Reviews for completeness |
-| **Visual Specification** | Authors Token Maps and visual checklists | Validates structure, defers design decisions to PM |
-| **Structural Integrity** | Follows format rules | Enforces format rules, validates prerequisite graph |
-| **Anchor Nodes** | May propose new anchors via specs | Creates and maintains anchor nodes |
-| **Gap Analysis** | Probes for missing edge cases (Probing Questions) | Validates spec gate compliance, scenario coverage |
-| **Figma Artifacts** | Reads/writes Figma, manages design pipeline | References for context, does not write to Figma |
-
-When both roles are active: PM drafts, Architect validates. When only Architect is active: Architect does both.
+| Concern | PM Mode |
+|---|---|
+| **Intent & UX** | Translates user intent into behavioral requirements |
+| **Visual Specification** | Authors Token Maps and visual checklists |
+| **Structural Integrity** | Enforces format rules, validates prerequisite graph |
+| **Anchor Nodes** | Creates and maintains `design_*` and `policy_*` anchor nodes |
+| **Gap Analysis** | Probes for missing edge cases, validates spec gate compliance and scenario coverage |
+| **Figma Artifacts** | Reads/writes Figma, manages design pipeline |
 
 ### Anchor Node Authorship
 
-| Prefix | PM | Architect |
+| Prefix | PM Mode | Engineer Mode |
 |---|---|---|
-| `design_*` | **Can create and modify** -- PM owns the design language | Can create and modify |
-| `policy_*` | **Can create and modify** -- PM may define governance rules | Can create and modify |
-| `arch_*` | **Cannot touch** -- technical architecture is Architect-only | Can create and modify |
+| `design_*` | **Can create and modify** -- PM owns the design language | Read-only |
+| `policy_*` | **Can create and modify** -- PM may define governance rules | Read-only |
+| `arch_*` | Read-only | **Can create and modify** -- technical architecture is Engineer-owned |
 
-The PM runs `/pl-anchor` for `design_*` and `policy_*` nodes. The command enforces the `arch_*` restriction.
+PM runs `/pl-anchor` for `design_*` and `policy_*` nodes. Engineer runs `/pl-anchor` for `arch_*` nodes.
 
 ## 3. Anchor Node Classification Guide
 
@@ -44,7 +42,7 @@ Anchor nodes define **shared constraints** that multiple features must obey. The
 
 **Question:** "How must the system be built?"
 
-These define the technologies, code patterns, and structural conventions that the Builder follows when writing code. They are the technical contract.
+These define the technologies, code patterns, and structural conventions that Engineer mode follows when writing code. They are the technical contract.
 
 | Domain | What Goes Here | Examples |
 |---|---|---|
@@ -56,20 +54,20 @@ These define the technologies, code patterns, and structural conventions that th
 | **State Management** | Client state libraries, caching strategy, persistence rules | "Zustand for client state", "React Query for server cache" |
 | **Error Handling** | Error taxonomy, propagation patterns, recovery contracts | "All errors extend AppError", "Use Result types, not thrown exceptions" |
 | **Logging & Observability** | Log format, levels, correlation, metrics | "Structured JSON logs", "Correlation ID on every request" |
-| **Performance Budgets** | Hard limits the Builder must meet | "Bundle < 200KB gzipped", "API P95 < 200ms" |
+| **Performance Budgets** | Hard limits Engineer mode must meet | "Bundle < 200KB gzipped", "API P95 < 200ms" |
 | **Infrastructure** | Container base images, deployment shape, environment contracts | "Alpine-based Docker images", "12-factor app configuration" |
 | **Testing Patterns** | Test tooling, assertion styles, fixture conventions | See `arch_testing.md` for the canonical example |
 | **Dependency Rules** | What may depend on what, forbidden couplings | "UI layer must not import from data layer directly" |
 
 **FORBIDDEN patterns** in `arch_*` are typically grepable code patterns: banned imports, prohibited function calls, disallowed file patterns.
 
-**Key signal:** If the constraint tells the Builder *which tool to pick* or *how to structure code*, it belongs in `arch_*`.
+**Key signal:** If the constraint tells Engineer mode *which tool to pick* or *how to structure code*, it belongs in `arch_*`.
 
 ### 3.2 `design_*` — Design Language
 
 **Question:** "How must the system look and feel?"
 
-These define the visual and interaction conventions that shape user experience. Both PM and Builder read these — PM to author Visual Specifications, Builder to implement them.
+These define the visual and interaction conventions that shape user experience. Both PM and Engineer read these — PM to author Visual Specifications, Engineer to implement them.
 
 | Domain | What Goes Here | Examples |
 |---|---|---|

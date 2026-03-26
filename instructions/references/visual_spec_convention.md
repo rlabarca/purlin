@@ -38,20 +38,20 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   **Design anchor declaration** -- the `> **Design Anchor:**` blockquote establishes which `design_*.md` anchor governs visual properties (colors, fonts, theme behavior) for this feature.
 *   **Design asset references** -- local artifact paths, Figma URLs, live web page URLs, or "N/A" when no reference exists.
 *   **Processed date** -- records when the artifact was last ingested and the Token Map was generated. Used for staleness detection.
-*   **Token Map** -- the explicit bridge between Figma's design token names and the project's token system. This is the PM's primary value-add. Each entry maps a Figma design variable name to the corresponding project token. The Builder uses the Token Map to know which project tokens to apply. The format is design-system agnostic -- CSS custom properties, SCSS variables, Tailwind classes, etc.
+*   **Token Map** -- the explicit bridge between Figma's design token names and the project's token system. This is the PM's primary value-add. Each entry maps a Figma design variable name to the corresponding project token. Engineer mode uses the Token Map to know which project tokens to apply. The format is design-system agnostic -- CSS custom properties, SCSS variables, Tailwind classes, etc.
 *   **Checklist format** -- not Gherkin. Measurable visual acceptance criteria as checkboxes.
 *   **Separate from functional scenarios** -- QA can batch all visual checks across features instead of interleaving with functional verification.
-*   **No prose descriptions** -- the Token Map + checklists replace the previous `- **Description:**` prose paragraph. The Builder reads Figma MCP directly for layout and structure details. Prose descriptions are eliminated to avoid the lossy double-translation (Figma -> prose -> code).
+*   **No prose descriptions** -- the Token Map + checklists replace the previous `- **Description:**` prose paragraph. Engineer mode reads Figma MCP directly for layout and structure details. Prose descriptions are eliminated to avoid the lossy double-translation (Figma -> prose -> code).
 
 ## 9.3 Ownership and Traceability
-*   The `## Visual Specification` section is **PM-owned** when a PM agent is active, otherwise **Architect-owned**. QA does NOT modify it.
+*   The `## Visual Specification` section is **PM-owned**. QA does NOT modify it.
 *   The **Token Map** is authored by the PM during design ingestion. It maps Figma design variable names to the project's token system.
-*   The **checklists** are authored by the PM (or Architect) as measurable visual acceptance criteria.
+*   The **checklists** are authored by PM mode as measurable visual acceptance criteria.
 *   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
 *   The scan detects visual spec sections and generates separate QA action items for visual verification.
 
 ## 9.3.1 Design Brief Cache
-When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides the Builder with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
+When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
 
 ## 9.4 Design Asset Storage
 *   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).
@@ -64,7 +64,7 @@ Visual checklist items are verified by the QA Agent during the visual verificati
 For features with `> Web Test: <url>` metadata, `/pl-web-test` provides fully automated visual verification using Playwright MCP browser control. The agent navigates to the page, takes screenshots, executes interactions, and judges each checklist item via vision analysis -- no manual screenshot provision required.
 
 ## 9.6 Visual vs Functional Classification
-When a feature has UI components, the Architect MUST classify each acceptance criterion:
+When a feature has UI components, PM MUST classify each acceptance criterion:
 
 *   **Visual Specification** (checklist item): Verifiable from a static screenshot -- layout, colors, typography, element presence/absence, spacing. No interaction required.
 *   **QA Scenario** (Gherkin): Requires user interaction (clicks, hovers, typing), temporal observation (waiting for refresh/animation), or multi-step functional verification (start server, trigger action, observe result).

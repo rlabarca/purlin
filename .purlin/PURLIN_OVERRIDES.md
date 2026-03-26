@@ -33,7 +33,7 @@ This repository contains two distinct categories of scripts, stored in two separ
 
 ## Engineer Mode
 
-# Builder Overrides (Purlin)
+# Engineer Overrides (Purlin)
 
 > Core-specific rules for the Purlin framework repository itself.
 
@@ -54,7 +54,7 @@ If ANY item fails, fix it before committing.
 ## Test Code Location
 In this repository, test code is colocated with the tool it tests under `tools/` (e.g., `tools/cdd/test_spec_map.py`).
 
-# Architect Overrides (Purlin)
+# PM Overrides (Purlin)
 
 > Core-specific rules for the Purlin framework repository itself.
 
@@ -63,7 +63,7 @@ When modifying ANY file inside `.purlin/` (instructions, configs, or other artif
 
 ## Pre-Push Documentation Consistency Check
 Before any push to GitHub, you MUST run a cross-reference consistency check across all instruction and documentation files. Specifically:
-*   Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `README.md`.
+*   Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/PURLIN_BASE.md`, `instructions/QA_BASE.md`, and `README.md`.
 *   Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state.
 *   If inconsistencies are found, fix them before pushing.
 
@@ -75,11 +75,11 @@ When reviewing or modifying feature specs that touch tool behavior, verify the s
 *   Verify submodule safety per the checklist in the Submodule Compatibility Mandate above.
 
 ## Base File Soft Check
-Although Architect write access includes `instructions/*.md`, base files MUST NOT be modified without using `/pl-edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate -- they are never editable regardless of tool used.
+Although PM/Engineer write access includes `instructions/*.md`, base files MUST NOT be modified without using `/pl-edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate -- they are never editable regardless of tool used.
 
 ## Script Classification Mandate
 
-When designing features that require implementation scripts, you MUST classify each script before delegating to the Builder:
+When designing features that require implementation scripts, you MUST classify each script before delegating to Engineer mode:
 
 *   **Consumer-facing → `tools/`**: The script is useful to or runnable by consumer projects. Submodule safety compliance is mandatory (see HOW_WE_WORK_OVERRIDES Submodule Compatibility Mandate). Reference must work when `tools/` is at `<project_root>/<submodule>/tools/`.
 *   **Purlin-dev-specific → `dev/`**: The script is for maintaining, building, or releasing the Purlin framework itself. No submodule safety mandate applies. Path references use `dev/` directly (no `tools_root` indirection).
@@ -98,11 +98,11 @@ Feature files (`features/*.md`) in this repository define the framework's own De
 
 ## Skill-Spec Sync Mandate (Purlin-Specific)
 
-The base instruction SKILL FILE LIFECYCLE (ARCHITECT_BASE Section 2) establishes that skill files are Builder-owned. This section adds Purlin-specific naming and enforcement details.
+The base instruction SKILL FILE LIFECYCLE (PURLIN_BASE Section 3.1) establishes that skill files are Engineer-owned. This section adds Purlin-specific naming and enforcement details.
 
 **Naming convention:** Skill file `pl-<name>.md` maps to feature spec `pl_<name>.md` (hyphens become underscores). No exceptions.
 
-**Enforcement:** The Critic's Untracked File Audit catches new skill files without specs. The Architect's startup protocol (Section 5.1) surfaces these as action items.
+**Enforcement:** The scan's Untracked File Audit catches new skill files without specs. The startup protocol surfaces these as action items.
 
 ## QA Mode
 
@@ -123,11 +123,11 @@ For each scenario, verify:
 Report any submodule-specific failures as `[BUG]` with the tag "submodule-compat" in the description.
 
 ## Application Code Location
-In this repository, Builder-owned application code lives in `tools/` (consumer-facing framework tools) and `dev/` (Purlin-dev maintenance scripts).
+In this repository, Engineer-owned application code lives in `tools/` (consumer-facing framework tools) and `dev/` (Purlin-dev maintenance scripts).
 
 ## Test Priority Tiers
 
-<!-- Architect maintains this table. QA reads it to order verification (smoke first). -->
+<!-- PM maintains this table. QA reads it to order verification (smoke first). -->
 <!-- Features not listed default to 'standard'. -->
 
 | Feature | Tier |

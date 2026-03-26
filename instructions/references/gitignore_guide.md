@@ -34,12 +34,12 @@
 
 ## Why `delivery_plan.md` is committed
 
-The delivery plan is a coordination artifact read by all agents (Builder, QA, Architect) across
+The delivery plan is a coordination artifact read by all agents (Engineer, QA, PM) across
 sessions. It lives at `.purlin/delivery_plan.md` -- outside the gitignored `.purlin/cache/`
 directory -- because it must survive `git clone` and be visible to collaborators.
 
 Generated cache artifacts (dependency graph, feature status) are regenerated on
-every `scan.sh` run and are truly ephemeral. The delivery plan is authored by the Builder,
+every `scan.sh` run and are truly ephemeral. The delivery plan is authored by Engineer mode,
 reviewed by the user, and consumed by QA -- it is not regenerable.
 
 ## Template-Driven Gitignore Management
