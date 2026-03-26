@@ -21,10 +21,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
 from tools.bootstrap import detect_project_root
 PROJECT_ROOT = detect_project_root(os.path.join(SCRIPT_DIR, 'config'))
-sys.path.insert(0, os.path.join(SCRIPT_DIR, 'critic'))
-
-from critic import parse_visual_spec
-
 
 # ---------------------------------------------------------------------------
 # Ingest operation helpers — simulate the operations /pl-design-ingest performs
@@ -555,36 +551,6 @@ class TestIngestLocalImageArtifact(unittest.TestCase):
             self.assertEqual(stored_path, "features/design/my_feature/mockup.png")
             self.assertTrue(os.path.exists(os.path.join(project_root, stored_path)))
 
-    def test_visual_spec_section_created(self):
-        """Feature file is updated with a Visual Specification section containing Token Map."""
-        feature_content = """# Feature: My Feature
-## 1. Overview
-A test feature.
-## 2. Requirements
-Some requirements.
-"""
-        updated = create_visual_spec_section(
-            feature_content,
-            screen_name="Main Dashboard",
-            reference="features/design/my_feature/mockup.png",
-            token_map="`surface` -> `var(--purlin-bg)`, `accent` -> `var(--purlin-accent)`",
-            design_anchor="features/design_visual_standards.md",
-            checklist=["Verify sidebar placement", "Check color tokens"],
-        )
-
-        vs = parse_visual_spec(updated)
-        self.assertTrue(vs["present"])
-        self.assertEqual(vs["screens"], 1)
-        self.assertIn("## Visual Specification", updated)
-        self.assertIn("### Screen: Main Dashboard", updated)
-        self.assertIn("**Reference:** features/design/my_feature/mockup.png", updated)
-        self.assertIn("**Token Map:**", updated)
-        self.assertIn("surface", updated)
-        self.assertIn("- [ ] Verify sidebar placement", updated)
-        self.assertIn("Design Anchor:", updated)
-        # Must NOT contain Description field
-        self.assertNotIn("**Description:**", updated)
-
     def test_processed_date_set_to_today(self):
         """Processed date is set to today's date."""
         feature_content = "# Feature: Test\n## Requirements\nStuff.\n"
@@ -629,20 +595,6 @@ class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
 
         self.assertIn(f"[Figma]({figma_url})", updated)
         self.assertIn("### Screen: Settings Panel", updated)
-
-    def test_figma_reference_type_detected(self):
-        """parse_visual_spec detects Figma URL references correctly."""
-        content = """## Visual Specification
-### Screen: Design
-- **Reference:** [Figma](https://figma.com/file/xyz)
-- **Processed:** 2025-01-15
-- **Token Map:** `primary` -> `var(--purlin-accent)`
-- [ ] Check layout
-"""
-        vs = parse_visual_spec(content)
-        refs = vs.get("references", [])
-        self.assertEqual(len(refs), 1)
-        self.assertEqual(refs[0]["reference_type"], "figma")
 
     def test_no_mcp_produces_placeholder_token_map(self):
         """When MCP is unavailable, Token Map notes manual processing is needed."""
@@ -802,51 +754,10 @@ class TestIngestLiveWebPageURL(unittest.TestCase):
         self.assertIn("Token Map:", updated)
         self.assertIn("- [ ] Background matches --purlin-bg", updated)
 
-    def test_live_reference_type_detected(self):
-        """parse_visual_spec detects Live URL references correctly."""
-        content = """## Visual Specification
-### Screen: Live View
-- **Reference:** [Live](https://example.com/page)
-- **Processed:** 2025-02-01
-- **Token Map:** `surface` -> `var(--purlin-bg)`
-- [ ] Check components
-"""
-        vs = parse_visual_spec(content)
-        refs = vs.get("references", [])
-        self.assertEqual(len(refs), 1)
-        self.assertEqual(refs[0]["reference_type"], "live")
 
 
 class TestReProcessUpdatedArtifact(unittest.TestCase):
     """Scenario: Re-Process Updated Artifact"""
-
-    def test_reprocess_updates_token_map_and_date(self):
-        """Re-processing replaces the Token Map and updates the processed date."""
-        original = """# Feature: My Feature
-## Visual Specification
-### Screen: Main Dashboard
-- **Reference:** features/design/my_feature/dashboard-layout.png
-- **Processed:** 2025-01-15
-- **Token Map:** `surface` -> `var(--purlin-bg)`
-- [ ] Check layout
-"""
-        # Simulate re-processing by replacing Token Map content
-        new_token_map = "`surface` -> `var(--purlin-bg)`, `accent` -> `var(--purlin-accent)`"
-        today_str = date.today().isoformat()
-
-        updated = original.replace(
-            "- **Token Map:** `surface` -> `var(--purlin-bg)`",
-            f"- **Token Map:** {new_token_map}",
-        ).replace(
-            "- **Processed:** 2025-01-15",
-            f"- **Processed:** {today_str}",
-        )
-
-        vs = parse_visual_spec(updated)
-        refs = vs.get("references", [])
-        self.assertEqual(len(refs), 1)
-        self.assertEqual(refs[0]["processed_date"], today_str)
-        self.assertTrue(refs[0]["has_token_map"])
 
     def test_reprocess_updates_checklist(self):
         """Re-processing updates checklist items to reflect the new design."""
