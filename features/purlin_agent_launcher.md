@@ -1,7 +1,7 @@
 # Feature: Purlin Unified Agent Launcher
 
 > Label: "Tool: Purlin Unified Agent Launcher"
-> Category: "Install, Update & Scripts"
+> Category: "Framework Core"
 > Prerequisite: features/agent_launchers_common.md
 
 ## 1. Overview

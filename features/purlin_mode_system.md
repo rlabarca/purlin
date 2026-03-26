@@ -1,7 +1,7 @@
 # Feature: Purlin Mode System
 
 > Label: "Tool: Purlin Mode System"
-> Category: "Install, Update & Scripts"
+> Category: "Framework Core"
 > Prerequisite: features/purlin_agent_launcher.md
 
 ## 1. Overview

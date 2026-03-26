@@ -1,7 +1,7 @@
 # Feature: Purlin Worktree Identity
 
 > Label: "Tool: Purlin Worktree Identity"
-> Category: "Install, Update & Scripts"
+> Category: "Framework Core"
 > Prerequisite: features/purlin_mode_system.md
 > Prerequisite: features/purlin_worktree_concurrency.md
 

@@ -1,7 +1,7 @@
 # Policy: Branch Collaboration
 
 > Label: "Policy: Branch Collaboration"
-> Category: "Coordination & Lifecycle"
+> Category: "Policy"
 
 ## Purpose
 

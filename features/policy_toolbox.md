@@ -1,7 +1,7 @@
 # Policy: Agentic Toolbox
 
 > Label: "Policy: Agentic Toolbox"
-> Category: "Coordination & Lifecycle"
+> Category: "Policy"
 
 ## 1. Purpose
 

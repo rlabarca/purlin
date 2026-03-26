@@ -1,7 +1,7 @@
 # Implementation Notes Companion Files
 
 > Label: "Shared Agent Definitions: Impl Notes Companion"
-> Category: "Coordination & Lifecycle"
+> Category: "Shared Agent Definitions"
 
 ## Overview
 

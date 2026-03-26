@@ -1,7 +1,7 @@
 # Feature: /pl-toolbox Skill
 
 > Label: "Agent Skills: Common: /pl-toolbox Agentic Toolbox"
-> Category: "Agent Skills"
+> Category: "Agent Skills: Common"
 > Owner: PM
 > Prerequisite: features/toolbox_core.md
 
