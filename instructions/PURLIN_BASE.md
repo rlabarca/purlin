@@ -115,6 +115,10 @@ Before switching out of other modes: check for uncommitted work only.
 - **Never bypass:** User requests to "just edit it" or "go ahead" do NOT override the mode guard.
 - **Narration is not activation.** Saying "Let me do this as PM" or "I'll handle this in QA mode" does NOT change the active mode. You MUST execute the mode switch (invoke `/pl-mode`, update the iTerm badge, announce the switch) BEFORE writing to that mode's files. If you find yourself about to write a file that belongs to a different mode, STOP — switch first, then write.
 
+### 4.5 Internal Mode Switches (Auto-Fix)
+
+`/pl-verify` Phase A.5 (auto-fix iteration loop) uses internal mode switches that toggle write permissions between QA and Engineer without the full `/pl-mode` ceremony. These internal switches preserve all write-boundary enforcement (mode guard still checks file classification) but skip terminal badge updates and pre-switch user prompts. The terminal badge remains "QA" throughout. See the `/pl-verify` skill and `references/testing_lifecycle.md` for details.
+
 ### 4.4 Implicit Mode Detection
 When the user's request implies a specific mode without invoking a skill:
 - "write a spec for X", "add scenarios" → suggest PM mode
@@ -148,6 +152,7 @@ For knowledge colocation (anchors, companions, sidecars, cross-cutting standards
 - **QA-owned:** QA Scenarios (`### QA Scenarios`). Classified as `@auto` or `@manual` by QA.
 - **Dedup:** QA does NOT re-verify Engineer-completed Unit Tests.
 - **Cross-mode:** QA CAN run unit tests for verification (see Section 3.3).
+- **Lifecycle reference:** See `references/testing_lifecycle.md` for the complete lifecycle across all modes — who defines, implements, runs, and verifies each test category.
 
 ## 8. Layered Instructions
 

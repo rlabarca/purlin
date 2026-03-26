@@ -42,3 +42,7 @@ When invoked with no arguments, display current mode status. No mode change, no 
 | engineer | Build, test, release, arch anchors | Code, tests, scripts, arch_*, companions, instructions |
 | pm | Spec authoring, design anchors | Feature specs, design_*, policy_* |
 | qa | Verification, discovery, regression | Discovery sidecars, QA tags, regression JSON |
+
+## Internal Mode Switches
+
+`/pl-verify` Phase A.5 (auto-fix iteration loop) performs internal write-boundary toggles between QA and Engineer without invoking `/pl-mode`. These internal switches preserve mode guard enforcement but skip terminal badge updates and user-facing prompts. See the `/pl-verify` skill for the full protocol.
