@@ -18,7 +18,7 @@ The `/pl-toolbox` skill provides the user-facing interface for the Agentic Toolb
 | Subcommand | Usage | Description |
 |---|---|---|
 | *(none)* | `/pl-toolbox` | Guided interactive menu (Section 2.2) |
-| `list` | `/pl-toolbox list [--tag <tag>]` | Show all tools grouped by category |
+| `list` | `/pl-toolbox list` | Show all tools grouped by category |
 | `run` | `/pl-toolbox run <tool> [tool2 ...]` | Execute one or more tools sequentially |
 | `create` | `/pl-toolbox create` | Create a new project tool interactively |
 | `edit` | `/pl-toolbox edit <tool>` | Edit a project or community tool |
@@ -57,22 +57,20 @@ The agent waits for user input, then executes the corresponding subcommand.
 Agentic Toolbox — <N> tools
 
 PURLIN (<count>)                                              source: framework
-  purlin.verify_zero_queue            Verify Zero-Queue Status        [release, audit]
-  purlin.instruction_audit            Agent Instruction Audit         [release, audit]
+  purlin.verify_zero_queue            Verify Zero-Queue Status
+  purlin.instruction_audit            Agent Instruction Audit
 
 PROJECT (<count>)                                             source: .purlin/toolbox/
-  submodule_safety_audit              Submodule Safety Audit          [release, audit]
+  submodule_safety_audit              Submodule Safety Audit
 
 COMMUNITY (<count>)                                           source: git repos
-  community.deploy_vercel             Deploy to Vercel  v1.2.0       [deploy]
+  community.deploy_vercel             Deploy to Vercel  v1.2.0
     by: user@example.com
     repo: git@github.com:user/purlin-tool-deploy-vercel.git
 ```
 
 *   Categories with zero tools are omitted from output.
 *   Community tools show author and repo on indented lines below the tool entry.
-*   `--tag <tag>` filters to tools whose `tags` array contains the specified tag (case-insensitive).
-*   When filtering by tag, the header shows: `Agentic Toolbox — <N> tools matching tag "<tag>"`.
 
 ### 2.4 Run Subcommand
 
@@ -91,9 +89,8 @@ Interactive flow:
 1. Prompt for tool ID (validate: non-empty, no reserved prefixes, no collision with existing tools).
 2. Prompt for friendly name.
 3. Prompt for description.
-4. Prompt for tags (comma-separated, optional).
-5. Ask whether to add `code` (shell command). If yes, prompt for the command.
-6. Ask whether to add `agent_instructions` (natural language). If yes, prompt for instructions.
+4. Ask whether to add `code` (shell command). If yes, prompt for the command.
+5. Ask whether to add `agent_instructions` (natural language). If yes, prompt for instructions.
 7. Write the new tool to `project_tools.json`.
 8. Confirm: `"Created tool '<id>' in project_tools.json."`
 
@@ -169,14 +166,7 @@ All error messages are clear, actionable, and suggest a recovery path:
     And community_tools.json contains 1 tool
     When the user runs "/pl-toolbox list"
     Then output shows PURLIN (6), PROJECT (3), COMMUNITY (1) sections
-    And each tool shows id, friendly_name, and tags
-
-#### Scenario: List with tag filter
-
-    Given tools exist with tags ["release", "audit"] and ["docs"]
-    When the user runs "/pl-toolbox list --tag release"
-    Then only tools with "release" in their tags array are shown
-    And the header shows the tag filter
+    And each tool shows id and friendly_name
 
 #### Scenario: Run single tool
 

@@ -36,7 +36,7 @@ This policy replaces `policy_release.md`. The "release checklist" concept is ret
 
 ### 2.5 Forward Compatibility
 *   The tool schema supports unrecognized fields. Tooling MUST ignore unrecognized fields with a warning, never an error.
-*   Old-format tool definitions (without `tags`, `version`, or `metadata` fields) are valid. Missing new fields default to `null` or `[]`.
+*   Old-format tool definitions (without `version` or `metadata` fields) are valid. Missing new fields default to `null`.
 *   The `schema_version` field in registry files enables format detection. Absence of `schema_version` indicates legacy format (pre-toolbox).
 
 ### 2.6 PM Ownership

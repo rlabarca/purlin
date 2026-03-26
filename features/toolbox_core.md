@@ -26,7 +26,6 @@ Each tool (whether Purlin, Project, or Community) is a JSON object conforming to
 | `description` | string | Yes | Prose explanation of what this tool does and why it exists. |
 | `code` | string or null | No | Shell command or script path for automated execution. `null` indicates agent-only execution via `agent_instructions`. |
 | `agent_instructions` | string or null | No | Natural language instructions for the agent when executing this tool. `null` if no agent-specific guidance is needed. |
-| `tags` | string[] | No | Free-form labels for filtering and grouping (e.g., `["release", "audit"]`). Defaults to `[]` when absent. Not validated — any string is accepted. |
 | `version` | string or null | No | Semver version string. Required for community tools. Purlin tools version with the framework. Project tools are unversioned (`null`). |
 | `metadata` | object or null | No | Extended metadata. Tooling MUST ignore unrecognized keys within metadata (forward-compatible). |
 | `metadata.author` | string or null | No | Email address of the tool author. Required for community tools, optional for project tools, null for purlin tools. |
@@ -147,7 +146,7 @@ tools/toolbox/
 The old release steps schema (`{"steps": [...]}` in `global_steps.json` and `local_steps.json`) is structurally compatible with the new tool schema. The only changes are:
 *   Top-level key renamed from `"steps"` to `"tools"`.
 *   `"schema_version": "2.0"` added.
-*   New optional fields (`tags`, `version`, `metadata`) added.
+*   New optional fields (`version`, `metadata`) added.
 
 The resolver detects old-format files by the absence of `schema_version` and the presence of a `"steps"` key (instead of `"tools"`). It reads old-format files transparently, treating `"steps"` as `"tools"`.
 

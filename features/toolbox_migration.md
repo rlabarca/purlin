@@ -40,7 +40,6 @@ The migration is skipped when:
 2. **Transform local steps to project tools:**
     *   For each step in `local_steps.json`:
         *   Copy all existing fields (`id`, `friendly_name`, `description`, `code`, `agent_instructions`).
-        *   Add `"tags": ["release"]` (since these were all release steps).
         *   Add `"metadata": {"last_updated": "<today>"}`.
     *   Wrap in `{"schema_version": "2.0", "tools": [...]}`.
 
@@ -115,7 +114,7 @@ After successful migration (marker exists), the next `/pl-update-purlin` run sho
 | No release dir | `.purlin/release/` absent | Returns "nothing_to_migrate" |
 | Already migrated | `.migrated_from_release` exists | Returns "already_migrated" |
 | Default config only | `config.json` with global steps, no `local_steps.json` | Empty `project_tools.json`, marker written |
-| Custom local tools | `local_steps.json` with 3 tools | `project_tools.json` with 3 tools, each has `tags: ["release"]` |
+| Custom local tools | `local_steps.json` with 3 tools | `project_tools.json` with 3 tools, each has `metadata.last_updated` |
 | Empty local steps | `local_steps.json` with empty `steps` array | Empty `project_tools.json` |
 | Corrupt source JSON | `local_steps.json` with invalid JSON | Error logged, empty `project_tools.json`, marker written |
 | Dry run | `--dry-run` flag | No files created, report generated |
@@ -145,7 +144,6 @@ After successful migration (marker exists), the next `/pl-update-purlin` run sho
     And .purlin/toolbox/ does not exist
     When the migration script runs
     Then .purlin/toolbox/project_tools.json contains 3 tools
-    And each tool has tags ["release"]
     And each tool has metadata.last_updated set
     And .purlin/toolbox/community_tools.json is created with empty tools array
     And .purlin/toolbox/.migrated_from_release marker exists
