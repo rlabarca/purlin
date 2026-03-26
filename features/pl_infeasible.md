@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Engineer mode's escalation skill for halting work on a feature that cannot be implemented as specified. Records an `[INFEASIBLE]` entry with detailed rationale in the companion file, commits it, and runs the Critic to surface the escalation as a CRITICAL-priority PM action item. No code is implemented for infeasible features until PM mode revises the spec.
+Engineer mode's escalation skill for halting work on a feature that cannot be implemented as specified. Records an `[INFEASIBLE]` entry with detailed rationale in the companion file, commits it, and runs `scan.sh` to surface the escalation as a PM action item in `/pl-status`. No code is implemented for infeasible features until PM mode revises the spec.
 
 ---
 
@@ -24,7 +24,7 @@ Engineer mode's escalation skill for halting work on a feature that cannot be im
 - Read `features/<name>.md` to confirm the feature and its current state.
 - Record `[INFEASIBLE]` entry in companion file with detailed rationale.
 - Commit with message including `[INFEASIBLE]` tag and brief reason.
-- Run `scan.sh` to surface the entry in the Critic report.
+- Run `scan.sh` to surface the entry as a PM action item in `/pl-status`.
 
 ### 2.3 Constraints
 
@@ -56,11 +56,11 @@ Engineer mode's escalation skill for halting work on a feature that cannot be im
     When the escalation workflow completes
     Then no implementation code exists for feature_a
 
-#### Scenario: Critic surfaces INFEASIBLE as CRITICAL
+#### Scenario: Scan surfaces INFEASIBLE as PM action item
 
     Given the INFEASIBLE entry is committed
     When scan.sh runs
-    Then the Critic report shows a CRITICAL-priority PM action item for feature_a
+    Then /pl-status shows a PM action item for feature_a
 
 ### QA Scenarios
 

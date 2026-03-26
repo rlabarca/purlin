@@ -56,9 +56,9 @@ Feature specs use three scenario section types. Each has a strict scope. Mixing 
 
 **Classification test:** If a scenario requires setup-act-modify-act-verify (two or more action phases with state changes between them), it is a QA Scenario, not a Unit Test. If it requires creating a sandbox, cloning a repo, or starting a server, it is a QA Scenario.
 
-**Engineer obligation:** When Engineer mode encounters or creates unit tests that violate this contract (see Test Classification Heuristic below), Engineer mode MUST propose reclassification via `[SPEC_PROPOSAL]` in the companion file. Engineer mode does not halt work -- the proposal routes through the normal Critic cycle to PM mode.
+**Engineer obligation:** When Engineer mode encounters or creates unit tests that violate this contract (see Test Classification Heuristic below), Engineer mode MUST propose reclassification via `[SPEC_PROPOSAL]` in the companion file. Engineer mode does not halt work -- the proposal routes through the normal deviation cycle to PM mode.
 
-**Heading migration:** Old headings (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) are accepted by the Critic during transition. Agents rename to the new format when touching a spec. The classification contract applies regardless of heading format.
+**Heading migration:** Old headings (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) are accepted during transition. Agents rename to the new format when touching a spec. The classification contract applies regardless of heading format.
 
 ### Execution Constraints
 
@@ -76,7 +76,7 @@ The `### Regression Testing` section describes:
 - **Scenarios covered:** Which behavioral scenarios the regression tests verify
 - **Fixture tags:** References to fixture tags used by the regression tests (if applicable)
 
-The Critic detects features with `### Regression Testing` sections or `> Web Test:` metadata and flags missing regression results as QA action items ("regression coverage gap").
+The scan detects features with `### Regression Testing` sections or `> Web Test:` metadata and flags missing regression results as QA action items ("regression coverage gap").
 
 ### Regression Test Naming Contract
 
@@ -112,15 +112,15 @@ Record a `[SPEC_PROPOSAL]` entry in the feature's companion file:
 Proposed anchor: No new anchor (arch_testing.md Section "Test Classification Heuristic")
 ```
 
-The Critic surfaces this as a HIGH-priority PM action item. PM mode then updates the feature spec's scenario sections accordingly.
+This is surfaced as a PM action item via `/pl-status`. PM mode then updates the feature spec's scenario sections accordingly.
 
-**Timing:** Engineer mode runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- Engineer mode does not halt work. The proposal routes through the normal Critic cycle.
+**Timing:** Engineer mode runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- Engineer mode does not halt work. The proposal routes through the normal deviation cycle.
 
 **Relationship to Section Classification Contract:** The heuristic is the detection mechanism for violations of the Section Classification Contract (above). The contract defines what belongs where; the heuristic tells Engineer mode when to flag a mismatch.
 
 ### Backward Compatibility
 
-During the transition from `> AFT Web:` to `> Web Test:` metadata, the Critic parser and `/pl-web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.
+During the transition from `> AFT Web:` to `> Web Test:` metadata, the scan and `/pl-web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.
 
 ### FORBIDDEN
 
@@ -150,7 +150,7 @@ When QA modifies an assertion pattern in a test harness, the commit message MUST
 | `[assertion-fix]` | Old assertion had a bug (wrong pattern, inverted logic, missing escape). | Correcting a defective assertion that was producing false positives or false negatives. |
 | `[assertion-broaden]` | Old assertion too narrow for model variance; broader pattern still verifies intent. | Relaxing a pattern to accommodate acceptable phrasing variation. Commit message MUST explain why the broader pattern still verifies the intended behavior. |
 
-Non-tagged assertion modification commits are non-compliant. The Critic's Implementation Gate MAY flag untagged assertion commits as a traceability gap (future enhancement).
+Non-tagged assertion modification commits are non-compliant and may be flagged as a traceability gap during audits.
 
 ## Scenarios
 

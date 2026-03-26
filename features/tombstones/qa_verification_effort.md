@@ -3,7 +3,9 @@
 > Label: "Critic: QA Effort Classification"
 > Category: "Coordination & Lifecycle"
 
-[TODO]
+[Tombstone]
+
+> Tombstone reason: Entire spec assumes the deleted Critic system as its actor. All 9 scenarios begin with "When the Critic computes verification_effort" — the Critic no longer exists. Feature was [TODO] (never implemented). The verification effort concept may be re-specified against scan.py if needed.
 
 ## 1. Overview
 

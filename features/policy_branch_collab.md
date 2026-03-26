@@ -2,7 +2,6 @@
 
 > Label: "Policy: Branch Collaboration"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_release.md
 
 ## Purpose
 
@@ -80,9 +79,9 @@ All branch transitions abort if the working tree is dirty. A dirty working tree 
 
 ### 2.11 Release Integration
 
-During active collaboration, remote main is untouched. The release process (governed by `policy_release.md`) operates independently of the collaboration branch lifecycle. Specifically:
+During active collaboration, remote main is untouched. The release process operates independently of the collaboration branch lifecycle. Specifically:
 
-- **Pre-release:** All features must reach zero-queue state per `policy_release.md` Invariant 2.1. This work happens on the collaboration branch.
+- **Pre-release:** All features must reach a satisfied state before release. This work happens on the collaboration branch.
 - **Merge to main:** When the release is ready, the collaboration branch is merged to `main` via a standard `git merge` (not rebase, consistent with Section 2.8). This merge is performed by the human or PM as part of the release checklist, not by `/pl-remote push`.
 - **Post-merge push:** After merging to `main`, the `purlin.push_to_remote` release step pushes `main` to the remote. The active branch file should be cleared (`/pl-remote branch leave`) before this step.
 - **FORBIDDEN pattern exemption:** The `git push origin main` FORBIDDEN pattern (Section 4) does not apply during the release merge-to-main step, as the collaboration branch has been merged and the active branch cleared.

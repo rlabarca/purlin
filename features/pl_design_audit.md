@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The `/pl-design-audit` command provides the PM and PM with a comprehensive audit of all design artifacts and visual specifications across the project. It validates reference integrity, detects staleness, checks anchor consistency, and produces a summary report. This command complements the Critic's automated visual spec checks with a deeper, on-demand analysis that PM mode can run during design reviews or before releases.
+The `/pl-design-audit` command provides the PM and PM with a comprehensive audit of all design artifacts and visual specifications across the project. It validates reference integrity, detects staleness, checks anchor consistency, and produces a summary report. This command provides a deeper, on-demand analysis that PM mode can run during design reviews or before releases.
 
 ---
 

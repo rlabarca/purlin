@@ -2,8 +2,6 @@
 
 > Label: "Release Step: Purlin Agent Instruction Audit"
 > Category: "Release Process"
-> Prerequisite: features/policy_release.md
-> Prerequisite: features/release_checklist_core.md
 
 [Complete]
 

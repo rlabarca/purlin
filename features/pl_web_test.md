@@ -243,7 +243,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
 
 #### Scenario: Auto-discover web-testable features
 
-    Given the Critic report shows features in TESTING state
+    Given /pl-status shows features in TESTING state
     And some features have `> Web Test:` metadata and others do not
     When `/pl-web-test` is invoked without arguments
     Then only features with `> Web Test:` metadata are selected for verification
