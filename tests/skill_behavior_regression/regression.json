@@ -1,128 +1,114 @@
 {
   "status": "PASS",
-  "passed": 17,
+  "passed": 15,
   "failed": 0,
-  "total": 17,
+  "total": 15,
   "test_file": "tests/qa/scenarios/skill_behavior_regression.json",
   "details": [
     {
-      "name": "architect-startup-command-table:Output contains a command table with Unicode border characters",
+      "name": "purlin-pm-startup:Output contains a status or command table with Unicode border characters",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-pm-startup",
+      "expected": "Output contains a status or command table with Unicode border characters",
+      "assertion_tier": 2
+    },
+    {
+      "name": "purlin-pm-startup:Output references PM-mode responsibilities (specs, anchors, or design)",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-pm-startup",
+      "expected": "Output references PM-mode responsibilities (specs, anchors, or design)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "purlin-pm-startup:Output includes feature lifecycle status",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-pm-startup",
+      "expected": "Output includes feature lifecycle status",
+      "assertion_tier": 2
+    },
+    {
+      "name": "purlin-engineer-startup:Output contains a command table with Unicode border characters",
+      "status": "PASS",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-engineer-startup",
       "expected": "Output contains a command table with Unicode border characters",
       "assertion_tier": 2
     },
     {
-      "name": "architect-startup-command-table:Output references /pl-spec",
+      "name": "purlin-engineer-startup:Output identifies TODO features by name",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
-      "expected": "Output references /pl-spec",
-      "assertion_tier": 2
-    },
-    {
-      "name": "architect-startup-command-table:Output references /pl-anchor",
-      "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-startup-command-table",
-      "expected": "Output references /pl-anchor",
-      "assertion_tier": 2
-    },
-    {
-      "name": "builder-startup-identifies-todo:Output contains a command table with Unicode border characters",
-      "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
-      "expected": "Output contains a command table with Unicode border characters",
-      "assertion_tier": 2
-    },
-    {
-      "name": "builder-startup-identifies-todo:Output identifies TODO features by name",
-      "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-engineer-startup",
       "expected": "Output identifies TODO features by name",
       "assertion_tier": 2
     },
     {
-      "name": "builder-startup-identifies-todo:Output proposes a work plan or execution order",
+      "name": "purlin-engineer-startup:Output proposes a work plan or execution order",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-startup-identifies-todo",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-engineer-startup",
       "expected": "Output proposes a work plan or execution order",
       "assertion_tier": 2
     },
     {
-      "name": "qa-startup-identifies-testing:Output contains verification context (CDD keyword or QA verification vocabulary)",
+      "name": "purlin-qa-startup:Output contains verification context (CDD keyword or QA verification vocabulary)",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-qa-startup",
       "expected": "Output contains verification context (CDD keyword or QA verification vocabulary)",
       "assertion_tier": 2
     },
     {
-      "name": "qa-startup-identifies-testing:Output proposes a verification order or plan",
+      "name": "purlin-qa-startup:Output proposes a verification order or plan",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:qa-startup-identifies-testing",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-qa-startup",
       "expected": "Output proposes a verification order or plan",
       "assertion_tier": 2
     },
     {
-      "name": "architect-refuses-code:Output refuses the request and references the zero-code mandate",
+      "name": "purlin-pm-refuses-code:Output refuses the request and references mode boundaries or states code is Engineer-owned",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-refuses-code",
-      "expected": "Output refuses the request and references the zero-code mandate",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-pm-refuses-code",
+      "expected": "Output refuses the request and references mode boundaries or states code is Engineer-owned",
       "assertion_tier": 2
     },
     {
-      "name": "builder-refuses-spec-edit:Output refuses the request and indicates spec files are Architect-owned",
+      "name": "purlin-engineer-refuses-spec:Output refuses the request and indicates spec files are PM-owned",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-refuses-spec-edit",
-      "expected": "Output refuses the request and indicates spec files are Architect-owned",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-engineer-refuses-spec",
+      "expected": "Output refuses the request and indicates spec files are PM-owned",
       "assertion_tier": 2
     },
     {
-      "name": "qa-refuses-code:Output refuses the request and references the zero-code mandate",
+      "name": "purlin-qa-refuses-code:Output refuses the request and references mode boundaries or states code is Engineer-owned",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:qa-refuses-code",
-      "expected": "Output refuses the request and references the zero-code mandate",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-qa-refuses-code",
+      "expected": "Output refuses the request and references mode boundaries or states code is Engineer-owned",
       "assertion_tier": 2
     },
     {
-      "name": "status-skill-structured-summary:Output contains feature counts by lifecycle status",
+      "name": "purlin-status-summary:Output contains feature counts by lifecycle status",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:status-skill-structured-summary",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-status-summary",
       "expected": "Output contains feature counts by lifecycle status",
       "assertion_tier": 2
     },
     {
-      "name": "architect-help-correct-commands:Output contains /pl-spec",
+      "name": "purlin-help-unified:Output contains /pl-spec (PM commands visible in unified table)",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-help-correct-commands",
-      "expected": "Output contains /pl-spec",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-help-unified",
+      "expected": "Output contains /pl-spec (PM commands visible in unified table)",
       "assertion_tier": 2
     },
     {
-      "name": "architect-help-correct-commands:Output contains /pl-anchor",
+      "name": "purlin-help-unified:Output contains /pl-build (Engineer commands visible in unified table)",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-help-correct-commands",
-      "expected": "Output contains /pl-anchor",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-help-unified",
+      "expected": "Output contains /pl-build (Engineer commands visible in unified table)",
       "assertion_tier": 2
     },
     {
-      "name": "architect-help-correct-commands:Output does not contain /pl-build (negative assertion - role-inappropriate)",
+      "name": "purlin-help-unified:Output contains /pl-verify (QA commands visible in unified table)",
       "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:architect-help-correct-commands",
-      "expected": "Output does not contain /pl-build (negative assertion - role-inappropriate)",
-      "assertion_tier": 3
-    },
-    {
-      "name": "builder-help-correct-commands:Output contains /pl-build",
-      "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-help-correct-commands",
-      "expected": "Output contains /pl-build",
+      "scenario_ref": "features/skill_behavior_regression.md:purlin-help-unified",
+      "expected": "Output contains /pl-verify (QA commands visible in unified table)",
       "assertion_tier": 2
-    },
-    {
-      "name": "builder-help-correct-commands:Output does not contain /pl-spec (negative assertion - role-inappropriate)",
-      "status": "PASS",
-      "scenario_ref": "features/skill_behavior_regression.md:builder-help-correct-commands",
-      "expected": "Output does not contain /pl-spec (negative assertion - role-inappropriate)",
-      "assertion_tier": 3
     }
   ]
 }
