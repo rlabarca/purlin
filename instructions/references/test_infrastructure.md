@@ -2,6 +2,8 @@
 
 Canonical reference for regression test result formats, harness types, status interpretation, and smoke tier classification. Skills should reference this file instead of restating these definitions.
 
+For the complete testing lifecycle (who defines, implements, runs, and verifies each test type), see `testing_lifecycle.md`.
+
 ## Result File Locations
 
 | File | Owner | Purpose |

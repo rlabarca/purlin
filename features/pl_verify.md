@@ -40,16 +40,121 @@ Execution modes MUST NOT change what gets committed — a mode that skips steps 
 
 When `--mode` is combined with a feature argument, both filters apply: e.g., `/pl-verify notifications --mode smoke` runs only smoke-tier scenarios for the notifications feature.
 
+### 2.2.2 Auto-Verify Flag
+
+`--auto-verify` enables the Phase A.5 auto-fix iteration loop (Section 2.3.2). When present:
+
+- The full pipeline runs (Phase A + Phase A.5 + Phase B).
+- After Phase A completes, if any automated tests failed, the agent automatically iterates: switching to Engineer mode to fix failures, switching back to QA to re-run, up to 5 rounds.
+- Only after ALL automated tests pass (or max iterations exhausted) does the agent proceed to Phase B manual verification.
+- Passed tests are never re-run — only scenarios with FAIL status are re-executed.
+
+`--auto-verify` is mutually exclusive with `--mode`. It is also activated when `auto_start: true` is set in the agent's session config.
+
+### 2.2.3 Interactive Strategy Menu
+
+When `--auto-verify` is NOT active and `auto_start` is `false`, the agent MUST present a strategy menu after Phase A completes (before Phase B). This gives the user control over how to proceed based on Phase A results.
+
+The menu is presented when Phase A has failures, regression gaps, or remaining manual items. Options:
+
+| Choice | Behavior |
+|--------|----------|
+| Auto-fix | Enter Phase A.5 loop (same as `--auto-verify`) |
+| Run automated only | Current Phase A behavior, then proceed to Phase B |
+| Smoke only | Re-run Step 2 smoke gate only |
+| Skip to manual | Proceed directly to Phase B |
+| Exit | Save checkpoint via `/pl-resume save`, end session |
+
+If Phase A had zero failures and zero gaps, the menu is skipped — proceed directly to Phase B (or skip Phase B if zero manual items).
+
 ### 2.3 Phase A -- Automated Execution
 
+- **Step 0c (Regression Readiness Check):** Before any tests run, scan all in-scope features for @auto scenarios that lack regression JSON (`tests/qa/scenarios/<feature>.json`). Also check smoke-tier features that lack `_smoke.json`. If `--auto-verify` or `auto_start`: use an internal mode switch to Engineer (Section 2.3.2) to author ALL missing regression and smoke JSON upfront, then switch back to QA. If interactive: count gaps and surface them in the strategy menu (Section 2.2.3). This ensures all tests exist before any tests run, giving the smoke gate (Step 2) full coverage.
 - **Step 1 (Auto-pass):** Credit builder-verified features (TestOnly, Skip) with zero QA scenarios. AUTO features (`qa_status: AUTO`) are NOT auto-passed — they have automated QA work (web tests, @auto scenarios) that MUST execute in Steps 2–5.
 - **Step 2 (Smoke gate):** If test priority tiers exist, run smoke-tier scenarios first with halt-on-fail behavior.
-- **Step 3 (Run @auto):** Execute @auto-tagged scenarios via the harness runner. Create BUG discoveries for failures.
+- **Step 3 (Run @auto):** Execute @auto-tagged scenarios via the harness runner. Create BUG discoveries for failures. These failures feed into Phase A.5 (not just deferred to a future session).
 - **Step 4 (Classify untagged):** Propose automation for untagged scenarios. Tag as @auto (author + run regression JSON) or @manual based on feasibility and user approval.
 - **Step 5 (Visual smoke):** For features with visual specs, run web test or request screenshot for verification. For AUTO features where all items are automated/web-test, this step completes their verification.
-- **Step 5a (Phase A Checkpoint, MANDATORY HARD GATE):** Fires at two points: (A) after Steps 1-5, and (B) after in-session regression suites pass — BEFORE the external agent_behavior test gate. At each checkpoint, IN ORDER: (1) commit regression artifacts, (2) commit `[Complete] [Verified]` status tags — ONE `--allow-empty` COMMIT PER FEATURE (this is what changes lifecycle, not the artifact commits), (3) run `{tools_root}/cdd/scan.sh` as a hard gate — do NOT proceed to Phase B until it completes, (4) verify finalized features no longer show AUTO/TODO in scan output — if they do, a status tag was missed. The external test gate does NOT block finalization. If zero manual items remain, skip to Session Conclusion.
-- Print Phase A Summary bridging to Phase B.
+- **Step 5a (Phase A Checkpoint, MANDATORY HARD GATE):** Fires at three points: (A) after Steps 1-5, (B) after in-session regression suites pass, and (C) after Phase A.5 auto-fix loop completes. At each checkpoint, IN ORDER: (1) commit regression artifacts, (2) commit `[Complete] [Verified]` status tags — ONE `--allow-empty` COMMIT PER FEATURE (this is what changes lifecycle, not the artifact commits), (3) run `{tools_root}/cdd/scan.sh` as a hard gate — do NOT proceed to Phase B until it completes, (4) verify finalized features no longer show AUTO/TODO in scan output — if they do, a status tag was missed. The external test gate does NOT block finalization. If zero manual items remain, skip to Session Conclusion.
+- Print Phase A Summary bridging to Phase A.5 or Phase B.
 - **Regression result validity:** A `regression.json` with `status: "PASS"` where source files are NOT modified since the result mtime is a valid pass. Do NOT re-run, do NOT flag as "prior run; re-run needed." Only STALE, FAIL, and NOT_RUN require action.
+
+### 2.3.1 Phase A Summary and Strategy Dispatch
+
+After Phase A Steps 0c–5a complete, print a summary of automated results (auto-passed, smoke gate, @auto results, classifications, visual checks, regression suite status).
+
+**Dispatch logic:**
+- If `--auto-verify` or `auto_start: true`: auto-proceed to Phase A.5 if any automated failures exist. Skip to Phase B if zero failures.
+- If interactive (`auto_start: false`, no `--auto-verify`): present the strategy menu (Section 2.2.3) if failures or gaps exist. If zero failures and zero gaps, skip directly to Phase B.
+
+### 2.3.2 Phase A.5 -- Auto-Fix Iteration Loop
+
+Activates when: `--auto-verify` flag is present, OR `auto_start: true`, OR user selects "Auto-fix" from the interactive strategy menu.
+
+**Purpose:** Automatically resolve all automated test failures before presenting any manual verification. The agent iterates between Engineer mode (fixing code/tests) and QA mode (re-running failed tests) until all automated tests pass or the maximum iteration count is reached.
+
+#### Iteration Protocol (max 5 iterations)
+
+Each iteration consists of two fix phases and a re-run:
+
+1. **Collect failures.** Read all `regression.json` files for in-scope features. Gather `[BUG]` discoveries recorded during Phase A. Skip tests with status PASS or ESCALATED.
+2. **If zero failures remain**, exit the loop.
+3. **Group failures by feature** with scenario details (expected, actual_excerpt, scenario_ref).
+4. **Engineer fix phase.** Internal mode switch to Engineer (Section 2.3.3). For each feature with failures:
+   - Read regression.json details and source code referenced by scenario_ref.
+   - Read the test scenario assertions.
+   - Diagnose: code bug vs stale test assertion vs spec-level issue.
+   - **Code bug** → fix source code, commit with `fix(scope):` prefix.
+   - **Stale test** → flag for QA fix in step 5 (record `[BUG] test-scenario:` with `Action Required: QA`). Do NOT modify QA-owned scenario JSON.
+   - **Spec issue** → ESCALATE. Record `[SPEC_DISPUTE]` or `[INTENT_DRIFT]` discovery routed to PM. Do not attempt fix.
+   - Update companion file with `[CLARIFICATION]` auto-fix entry.
+   - Engineer scope is minimal: fix ONLY the specific failure. No refactoring, no extras.
+5. **QA fix phase.** Internal mode switch to QA. Fix any test scenarios flagged as stale by Engineer (update assertion patterns, remove brittle checks). Commit scenario fixes.
+6. **Re-run failed tests only.** Run harness on scenario files that had at least one failure. Do NOT re-run scenario files that were all-PASS. Update the failure tracker.
+7. **Check escalation conditions.** For each re-run result:
+   - New PASS → mark test as resolved.
+   - Same failure (identical signature: `hash(expected + actual_excerpt[:200])`) → if this is the second identical failure, ESCALATE that test. Do not attempt a third fix on the same failure.
+   - Different failure → reset signature, continue iterating.
+8. **Print iteration summary:** fixed count, remaining failures, escalated tests.
+
+#### Exit Conditions
+
+| Condition | Trigger | Action |
+|-----------|---------|--------|
+| All pass | Zero failures remain after re-run | Exit loop, proceed to Step 5a(C) checkpoint |
+| Max iterations | 5 iterations completed | Exit loop, report remaining failures |
+| Same failure twice | Identical failure signature after fix attempt | Escalate that specific test, continue fixing others |
+| Spec change needed | Engineer diagnoses intent mismatch | Escalate to PM, continue fixing others |
+| No progress | Zero tests fixed in an iteration | Early exit to conserve context |
+
+#### Post-Loop
+
+After the loop exits (success, max iterations, or all escalated):
+- Print an auto-fix summary: iterations used, tests fixed, tests escalated with reasons, tests remaining.
+- Execute Step 5a Checkpoint (C) to finalize any newly-passing features.
+- Proceed to Phase B for manual items, or skip Phase B if zero manual items remain.
+
+### 2.3.3 Internal Mode Switch Protocol (Auto-Fix Only)
+
+Phase A.5 requires crossing the QA/Engineer write boundary within a single verification session. This uses a lightweight "internal mode switch" that preserves safety while avoiding the full ceremony of `/pl-mode`.
+
+**Invariants:**
+- Write-boundary enforcement (mode guard) remains active. Engineer cannot write QA files; QA cannot write code files.
+- Terminal badge stays "QA (<branch>)" throughout. The user is in a QA verification session; rapid mode flips should be invisible.
+- Pending work is committed before each switch.
+
+**QA → Engineer:**
+1. Commit any pending QA artifacts (regression JSON, scenario tags).
+2. Activate Engineer write permissions.
+3. Log internally: "Auto-fix: Engineer mode (iteration N)."
+
+**Engineer → QA:**
+1. Run companion file gate: verify `[CLARIFICATION]` entries exist for all fixes made.
+2. Commit any pending Engineer changes with `fix(scope):` prefix.
+3. Activate QA write permissions.
+4. Log internally: "Auto-fix: QA mode (iteration N)."
+
+This protocol is defined within `/pl-verify` only. It does NOT modify `/pl-mode` behavior.
 
 ### 2.4 Phase B -- Manual Verification Checklist
 
@@ -142,6 +247,88 @@ When `--mode` is combined with a feature argument, both filters apply: e.g., `/p
     When the failure is processed
     Then a discovery entry is recorded in the feature's discovery sidecar file
     And the discovery includes observed behavior and classification
+
+#### Scenario: Regression readiness check authors missing JSON before tests run
+
+    Given feature_a has @auto scenarios but no regression JSON file
+    And /pl-verify is invoked with --auto-verify
+    When Step 0c runs
+    Then the agent switches to Engineer mode internally
+    And authors regression JSON for feature_a
+    And switches back to QA mode
+    And the smoke gate (Step 2) runs with the newly-authored JSON available
+
+#### Scenario: Auto-fix loop resolves a code bug
+
+    Given feature_a has a failing @auto scenario due to a code bug
+    And /pl-verify is invoked with --auto-verify
+    When Phase A.5 begins
+    Then the agent switches to Engineer mode
+    And diagnoses the failure from regression.json details
+    And fixes the source code
+    And commits with a fix() prefix
+    And switches back to QA mode
+    And re-runs only the failed scenario
+    And the scenario now passes
+
+#### Scenario: Auto-fix loop handles stale test assertion
+
+    Given feature_a has a failing @auto scenario due to a stale test assertion
+    And /pl-verify is invoked with --auto-verify
+    When Phase A.5 iteration 1 runs the Engineer fix phase
+    Then the agent flags the test as stale with Action Required: QA
+    When the QA fix phase runs
+    Then the agent updates the scenario JSON assertion
+    And re-runs the test
+    And the scenario now passes
+
+#### Scenario: Auto-fix escalates after same failure twice
+
+    Given feature_a has a failing scenario
+    And the agent fixes code in iteration 1 but the same failure recurs
+    When iteration 2 produces an identical failure signature
+    Then the test is marked ESCALATED
+    And the agent stops attempting to fix that specific test
+    And continues fixing other failing tests
+
+#### Scenario: Auto-fix exits after max iterations
+
+    Given 3 features have failing scenarios that cannot be resolved
+    When the agent reaches iteration 5
+    Then the loop exits
+    And remaining failures are reported with iteration count
+    And the agent proceeds to Phase B
+
+#### Scenario: Auto-fix exits early on no progress
+
+    Given all remaining failures persist unchanged after an iteration
+    And zero tests were fixed in that iteration
+    Then the loop exits early to conserve context
+    And the agent reports the no-progress condition
+
+#### Scenario: Passed tests are not re-run
+
+    Given feature_a has 5 scenarios with 4 passing and 1 failing
+    When the auto-fix loop re-runs after fixing the failure
+    Then only the 1 previously-failing scenario is re-executed
+    And the 4 passing scenarios are not re-run
+
+#### Scenario: Interactive strategy menu presented when failures exist
+
+    Given Phase A completed with 3 test failures
+    And auto_start is false and --auto-verify is not set
+    When the Phase A Summary displays
+    Then the strategy menu is presented with options
+    And the user can choose "Auto-fix" to enter Phase A.5
+    Or "Skip to manual" to proceed to Phase B
+
+#### Scenario: Strategy menu skipped when no failures
+
+    Given Phase A completed with zero failures and zero gaps
+    And auto_start is false
+    When the Phase A Summary displays
+    Then the strategy menu is NOT presented
+    And the agent proceeds directly to Phase B
 
 ### QA Scenarios
 
