@@ -43,8 +43,6 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
      - Only check if launcher-relevant paths appeared in the diff-tree output
      - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
-   - **IMPORTANT: `pl-cdd-start.sh` and `pl-cdd-stop.sh` are SYMLINKS managed exclusively by init.sh. NEVER read, compare, copy, or modify these files. They are refreshed automatically by the init step (step 4).**
-
 3. **Advance Submodule:**
    - `git -C <submodule_dir> checkout <remote_sha>` (detached HEAD)
    - If this fails, abort with error
@@ -60,7 +58,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 
 4. **Init Refresh:**
    - Run `<submodule>/tools/init.sh --quiet` to refresh all project-root artifacts
-   - This handles: command files (unmodified ones auto-copied), CDD symlinks, launcher scripts, shim (`pl-init.sh`), and `.purlin/.upstream_sha`
+   - This handles: command files (unmodified ones auto-copied), launcher scripts, shim (`pl-init.sh`), and `.purlin/.upstream_sha`
    - Init's timestamp logic preserves locally modified command files — conflict resolution happens in step 5
 
 4b. **MCP Manifest Diff (only if step 2 detected manifest change):**
@@ -107,7 +105,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - If neither condition is met, skip silently
 
 8. **Stale Artifact Cleanup:**
-   - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `purlin_cdd_start.sh`, `purlin_cdd_stop.sh`)
+   - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
    - In `--dry-run` mode, list stale artifacts but do not delete
 

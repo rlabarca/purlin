@@ -119,7 +119,7 @@ the files needed for that scenario's Given preconditions.
 
 ## For QA: Fixture Awareness
 
-If the Critic report for a feature includes a `fixture_repo_unavailable` finding, inform the
-user that the fixture infrastructure has not been created yet. Web-verify and automated test
+If the fixture infrastructure has not been created yet, inform the
+user. Web-verify and automated test
 results for fixture-backed scenarios will be INCONCLUSIVE until Engineer mode creates the
 fixture repo. This is Builder-routable, not a QA failure -- do not record as a discovery.

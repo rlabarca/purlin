@@ -119,8 +119,7 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 | Category | Label Pattern | Example |
 |---|---|---|
 | Agent Skills | `/pl-<command> Descriptive Name` | `/pl-help Purlin Help` |
-| CDD Dashboard | `CDD <Feature Name>` | `CDD Monitor` |
-| Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Policy: Critic` |
+| Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Policy: Lifecycle` |
 | Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
 | Install, Update & Scripts | `Tool: <Name>` | `Tool: Agent Launchers` |
 | Process | `Process: <Name>` | `Process: Spec-Code Audit` |

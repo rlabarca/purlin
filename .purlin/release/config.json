@@ -29,10 +29,6 @@
       "enabled": true
     },
     {
-      "id": "critic_consistency_check",
-      "enabled": true
-    },
-    {
       "id": "refresh_docs",
       "enabled": true
     },

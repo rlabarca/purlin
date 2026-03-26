@@ -24,7 +24,7 @@ The ownership heuristic chain (H1-H6) is ranked by signal reliability:
 *   **H1-H2 (HIGH):** Explicit path references in companion or spec files are the most reliable because they represent intentional documentation by Engineer mode or PM. These are exact-match lookups.
 *   **H3 (HIGH, deep only):** Test import tracing requires reading source but provides a strong ownership signal -- if a feature's test suite imports a file, that file is part of the feature's implementation. Restricted to deep mode because it requires parsing source files.
 *   **H4 (HIGH):** The skill file naming convention (`pl-<name>.md` -> `pl_<name>.md`) is a project-enforced invariant, making it as reliable as an explicit reference.
-*   **H5 (MEDIUM):** Directory convention mapping (e.g., `cdd_status_monitor` -> `tools/cdd/`) is reliable when directory structures are well-organized but can produce false positives in flat directory layouts or when multiple features share a directory.
+*   **H5 (MEDIUM):** Directory convention mapping (e.g., `pl_help` -> `tools/help/`) is reliable when directory structures are well-organized but can produce false positives in flat directory layouts or when multiple features share a directory.
 *   **H6 (LOW, deep only):** Name similarity is the weakest signal -- substring matching can produce spurious links. Used only as a last resort and flagged as "weak ownership" in audit output.
 
 ### False Positive Mitigation Strategy

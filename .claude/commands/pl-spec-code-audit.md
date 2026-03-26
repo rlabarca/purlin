@@ -155,7 +155,7 @@ For each code file, attempt to find an owning feature using a ranked heuristic c
 | H2 | Spec explicit reference | HIGH | Feature spec `.md` mentions the file path in requirements or overview |
 | H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. **Deep mode only** -- requires reading source files. |
 | H4 | Command-to-feature naming | HIGH | `.claude/commands/pl-<name>.md` maps to `features/pl_<name>.md` (dash-to-underscore convention) |
-| H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `cdd_status_monitor` -> `tools/cdd/`) |
+| H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `pl_help` -> `tools/help/`) |
 | H6 | Name similarity | LOW | File stem substring-matches a feature name. **Deep mode only.** |
 
 - A file MAY have multiple owners (legitimate for shared modules).
