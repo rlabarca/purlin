@@ -146,7 +146,7 @@ PROMPT_FILE=$(mktemp)
 cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
-    rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides.json"
+    rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"
 }
 trap cleanup EXIT
 
@@ -293,11 +293,11 @@ if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
 fi
 
 # --- Write session overrides for the agent ---
-# /pl-resume reads this file to get the launcher's resolved startup flags.
-# This bridges ephemeral CLI overrides (--no-save, --auto-start) that
-# aren't persisted to config.local.json. PID included for liveness check.
+# PID-scoped so concurrent agents don't clobber each other.
+# The agent reads PURLIN_SESSION_ID env var to find its own file.
+export PURLIN_SESSION_ID=$$
 mkdir -p "$PURLIN_PROJECT_ROOT/.purlin/cache"
-cat > "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides.json" << OVERRIDES_EOF
+cat > "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json" << OVERRIDES_EOF
 {"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
 OVERRIDES_EOF
 

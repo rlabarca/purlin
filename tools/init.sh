@@ -348,8 +348,9 @@ if [[ "$PURLIN_NO_SAVE" != "true" ]] && [ -f "$RESOLVER" ]; then
 fi
 
 # --- Write session overrides for the agent ---
+export PURLIN_SESSION_ID=$$
 mkdir -p "$SCRIPT_DIR/.purlin/cache"
-cat > "$SCRIPT_DIR/.purlin/cache/session_overrides.json" << OVERRIDES_EOF
+cat > "$SCRIPT_DIR/.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json" << OVERRIDES_EOF
 {"find_work": $AGENT_FIND_WORK, "auto_start": $AGENT_AUTO_START, "pid": $$}
 OVERRIDES_EOF
 
@@ -358,7 +359,7 @@ PROMPT_FILE=$(mktemp)
 cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
-    rm -f "$SCRIPT_DIR/.purlin/cache/session_overrides.json"
+    rm -f "$SCRIPT_DIR/.purlin/cache/session_overrides_$$.json"
 }
 trap cleanup EXIT
 
