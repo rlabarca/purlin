@@ -123,11 +123,8 @@ tools/toolbox/
   resolve.py                  # Resolution algorithm
   manage.py                   # CLI tool management
   audit_common.py             # Shared audit output format
-  verify_zero_queue.py        # Audit scripts (moved from tools/release/)
-  verify_dependency_integrity.py
-  instruction_audit.py
-  doc_consistency_check.py
-  submodule_safety_audit.py
+  verify_zero_queue.py        # Remaining audit script (zero-queue gate)
+  submodule_safety_audit.py   # Submodule safety audit script
   test_toolbox.py             # Tests (colocated per project convention)
   test_manage.py
   test_toolbox_audit.py

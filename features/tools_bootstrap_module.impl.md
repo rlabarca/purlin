@@ -12,7 +12,7 @@
 
 **[CLARIFICATION]** For scripts at non-standard depths (`tools/cleanup_orphaned_features.py` and `tools/test_pl_design_*.py` at `tools/` root level), the migration passes `os.path.join(SCRIPT_DIR, 'config')` as `script_dir` to align with the standard 2-level depth expectation. This is functionally equivalent to their original custom climbing depths. (Severity: INFO)
 
-**[CLARIFICATION]** `audit_common.py`'s `detect_project_root` was replaced with a re-export from bootstrap, preserving the import interface for downstream consumers (`verify_zero_queue.py`, `verify_dependency_integrity.py`, `test_release_audit.py`). (Severity: INFO)
+**[CLARIFICATION]** `audit_common.py`'s `detect_project_root` was replaced with a re-export from bootstrap, preserving the import interface for downstream consumers (`verify_zero_queue.py`, `test_release_audit.py`). Legacy scripts (`verify_dependency_integrity.py`, `instruction_audit.py`, `doc_consistency_check.py`) were removed in 2026-03-26 — their functionality is now in toolbox agent_instructions. (Severity: INFO)
 
 ## Migration Summary
 
