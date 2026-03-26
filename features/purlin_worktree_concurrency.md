@@ -1,6 +1,6 @@
 # Feature: Purlin Worktree Concurrency
 
-> Label: "Install, Update & Scripts: Purlin Worktree Concurrency"
+> Label: "Tool: Purlin Worktree Concurrency"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/purlin_agent_launcher.md
 

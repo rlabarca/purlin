@@ -1,6 +1,6 @@
 # Feature: Purlin Mode System
 
-> Label: "Install, Update & Scripts: Purlin Mode System"
+> Label: "Tool: Purlin Mode System"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/purlin_agent_launcher.md
 

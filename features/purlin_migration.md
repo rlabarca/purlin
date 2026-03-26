@@ -1,6 +1,6 @@
 # Feature: Purlin Migration Module
 
-> Label: "Install, Update & Scripts: Purlin Migration Module"
+> Label: "Tool: Purlin Migration Module"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/purlin_agent_launcher.md
 > Prerequisite: features/purlin_scan_engine.md

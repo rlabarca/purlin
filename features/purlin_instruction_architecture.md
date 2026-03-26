@@ -1,6 +1,6 @@
 # Feature: Purlin Instruction Architecture
 
-> Label: "Install, Update & Scripts: Purlin Instruction Architecture"
+> Label: "Tool: Purlin Instruction Architecture"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/agent_launchers_common.md
 
