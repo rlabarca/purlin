@@ -351,17 +351,25 @@ def _extract_owner(feature_file):
 
 
 def _extract_prerequisites(feature_file):
-    """Extract > Prerequisite: links from a feature file."""
+    """Extract > Prerequisite: links from a feature file.
+
+    Each prerequisite is on its own ``> Prerequisite:`` line.
+    Inline comments after the .md reference are stripped, e.g.:
+        > Prerequisite: features/foo.md (some note)
+    becomes just ``features/foo.md``.
+    """
     prereqs = []
     try:
         with open(feature_file, 'r', encoding='utf-8') as f:
             for line in f:
                 m = re.match(r'^>\s*Prerequisite:\s*(.*)', line)
                 if m:
-                    for part in m.group(1).split(','):
-                        part = part.strip()
-                        if part:
-                            prereqs.append(part)
+                    value = m.group(1).strip()
+                    if not value:
+                        continue
+                    # Extract the .md file reference, ignoring trailing comments
+                    ref_match = re.match(r'([\w/.\-]+\.md)\b', value)
+                    prereqs.append(ref_match.group(1) if ref_match else value)
     except Exception:
         pass
     return prereqs
