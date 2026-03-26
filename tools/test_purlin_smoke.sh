@@ -99,8 +99,7 @@ EOF
         {"file": "features/feature_b.md", "category": "General", "label": "Feature B", "prerequisites": ["agent_launchers_common.md"]},
         {"file": "features/feature_c.md", "category": "General", "label": "Feature C", "prerequisites": ["agent_launchers_common.md"]},
         {"file": "features/feature_d.md", "category": "General", "label": "Feature D", "prerequisites": ["agent_launchers_common.md"]},
-        {"file": "features/cdd_status_monitor.md", "category": "Coordination & Lifecycle", "label": "CDD Status", "prerequisites": []},
-        {"file": "features/critic_tool.md", "category": "General", "label": "Critic Tool", "prerequisites": []}
+        {"file": "features/regression_testing.md", "category": "Test Infrastructure", "label": "Regression Testing", "prerequisites": []}
     ],
     "orphans": [],
     "generated_at": "2026-03-25T00:00:00Z"
@@ -118,8 +117,7 @@ EOF
         {"name": "feature_b", "test_status": null},
         {"name": "feature_c", "test_status": "PASS"},
         {"name": "feature_d", "test_status": null},
-        {"name": "cdd_status_monitor", "test_status": "PASS"},
-        {"name": "critic_tool", "test_status": "PASS"}
+        {"name": "regression_testing", "test_status": "PASS"}
     ]
 }
 EOF
@@ -149,7 +147,7 @@ echo ""
 echo "--- Scenario 1: Promote feature to smoke tier ---"
 setup_fixture_with_table
 
-run_smoke "$FIXTURE_DIR" add cdd_status_monitor
+run_smoke "$FIXTURE_DIR" add regression_testing
 
 action=$(json_get "['action']")
 # Verify the feature was added to the table
@@ -157,7 +155,7 @@ tiers_after=$(PURLIN_PROJECT_ROOT="$FIXTURE_DIR" python3 "$SMOKE_PY" read-tiers 
 has_feature=$(echo "$tiers_after" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-print('true' if d.get('cdd_status_monitor') == 'smoke' else 'false')
+print('true' if d.get('regression_testing') == 'smoke' else 'false')
 " 2>/dev/null)
 
 if [ "$action" = "added" ] && [ "$has_feature" = "true" ]; then
@@ -200,10 +198,10 @@ sys.path.insert(0, '$PROJECT_ROOT/tools/smoke')
 from smoke import create_smoke_regression
 result = create_smoke_regression(
     '$FIXTURE_DIR',
-    'cdd_status_monitor',
+    'regression_testing',
     [
-        {'name': 'critical_path_check', 'description': 'Verify monitor starts and reports status'},
-        {'name': 'event_detection', 'description': 'Verify monitor detects file changes'}
+        {'name': 'critical_path_check', 'description': 'Verify regression harness runs and reports results'},
+        {'name': 'result_output', 'description': 'Verify regression produces valid JSON output'}
     ]
 )
 import json
@@ -211,7 +209,7 @@ print(json.dumps(result))
 " 2>/dev/null)
 
 # Verify the file was created
-smoke_json_path="$FIXTURE_DIR/tests/qa/scenarios/cdd_status_monitor_smoke.json"
+smoke_json_path="$FIXTURE_DIR/tests/qa/scenarios/regression_testing_smoke.json"
 if [ -f "$smoke_json_path" ]; then
     has_tier=$(python3 -c "
 import json
@@ -305,33 +303,33 @@ cleanup_fixture
 echo "--- Scenario 6: Verify smoke gate runs smoke regressions first ---"
 setup_fixture_with_table
 
-# Create a _smoke.json regression for critic_tool
+# Create a _smoke.json regression for regression_testing
 mkdir -p "$FIXTURE_DIR/tests/qa/scenarios"
-cat > "$FIXTURE_DIR/tests/qa/scenarios/critic_tool_smoke.json" << 'EOF'
+cat > "$FIXTURE_DIR/tests/qa/scenarios/regression_testing_smoke.json" << 'EOF'
 {
-    "feature": "critic_tool",
+    "feature": "regression_testing",
     "frequency": "per-feature",
     "tier": "smoke",
-    "smoke_of": "critic_tool.json",
-    "scenarios": [{"name": "basic_check", "description": "Verify critic runs"}]
+    "smoke_of": "regression_testing.json",
+    "scenarios": [{"name": "basic_check", "description": "Verify regression harness runs"}]
 }
 EOF
 
-# Call order_verification with critic_tool and feature_a
+# Call order_verification with regression_testing and feature_a
 ORDER_OUTPUT=$(PURLIN_PROJECT_ROOT="$FIXTURE_DIR" python3 -c "
 import sys, json
 sys.path.insert(0, '$PROJECT_ROOT/tools/smoke')
 from smoke import order_verification
-result = order_verification('$FIXTURE_DIR', ['critic_tool', 'feature_a', 'project_init'])
+result = order_verification('$FIXTURE_DIR', ['regression_testing', 'feature_a', 'project_init'])
 print(json.dumps(result))
 " 2>/dev/null)
 
-# smoke_regressions should include critic_tool_smoke.json
+# smoke_regressions should include regression_testing_smoke.json
 has_smoke_reg=$(echo "$ORDER_OUTPUT" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 regs = d.get('smoke_regressions', [])
-found = any(r['feature'] == 'critic_tool' for r in regs)
+found = any(r['feature'] == 'regression_testing' for r in regs)
 print('true' if found else 'false')
 " 2>/dev/null)
 
