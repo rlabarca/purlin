@@ -172,12 +172,12 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
     Then line 1 contains "Purlin command: Purlin agent only"
     And the legacy agent skips this command
 
-#### Scenario: Consolidated release skill subcommands
+#### Scenario: Consolidated toolbox skill subcommands
 
-    Given the agent is in Engineer mode
-    When the user invokes /pl-release check
-    Then the release check protocol executes
-    And old /pl-release-check file does not exist
+    Given the agent is in any mode
+    When the user invokes /pl-toolbox list
+    Then the toolbox list protocol executes
+    And old /pl-release file does not exist
 
 #### Scenario: pl-anchor dual-mode activation
 
@@ -248,7 +248,8 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
     Given the project after skill consolidation
     When checking .claude/commands/
-    Then pl-release-check.md does not exist
+    Then pl-release.md does not exist
+    And pl-release-check.md does not exist
     And pl-release-run.md does not exist
     And pl-release-step.md does not exist
     And pl-regression-run.md does not exist
