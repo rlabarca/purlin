@@ -129,14 +129,7 @@ When the user's request implies a specific mode without invoking a skill:
 
 ## 5. Startup Protocol
 
-### 5.0 Merge Recovery Gate
-Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run `/pl-resume merge-recovery` and resolve all pending merges before continuing.
-
-### 5.1 Print Command Table
-Read `instructions/references/purlin_commands.md` and print the appropriate variant.
-
-### 5.2 Delegate to `/pl-resume`
-Run `/pl-resume`. It handles everything from here: checkpoint detection, scanning, work discovery via `/pl-status`, mode activation, delivery plan resumption, and `find_work`/`auto_start` flag handling. See `features/pl_session_resume.md` for the full protocol.
+Run `/pl-resume`. It is the entire startup flow: merge recovery, terminal identity, command hints, checkpoint detection, scanning, work discovery via `/pl-status`, mode activation, delivery plan resumption, and `find_work`/`auto_start` flag handling. See `features/pl_session_resume.md` for the full protocol.
 
 **Mode activation priority:** If a checkpoint exists, checkpoint mode wins (save/resume contract). If no checkpoint: CLI `--mode` > config `default_mode` > user input.
 

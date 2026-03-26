@@ -1,6 +1,6 @@
 # Purlin Agent Command Tables
 
-> Read by the Purlin Agent during startup. Print the appropriate variant.
+> Read and printed by `/pl-help` and `/pl-mode`. NOT printed at startup — startup shows `Use /pl-help for commands` only.
 
 ## Default Variant (no mode active)
 

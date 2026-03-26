@@ -18,7 +18,7 @@ Save or restore Purlin agent session state across context clears and terminal re
 
 ## Merge Recovery Mode (`/pl-resume merge-recovery`)
 
-Resolve pending worktree merge failures. Called automatically by the startup protocol (PURLIN_BASE.md §5.0) when breadcrumbs exist, or manually by the user.
+Resolve pending worktree merge failures. Called automatically by Step 0 of the restore flow when breadcrumbs exist, or manually by the user.
 
 ### Protocol
 
@@ -42,11 +42,7 @@ Resolve pending worktree merge failures. Called automatically by the startup pro
 
 4. **Summary:** After processing all breadcrumbs, report how many were resolved vs deferred. If any were deferred, note that the warning will persist until resolved.
 
-5. **Return control** to the caller (startup protocol continues with §5.1).
-
-### Behavior during normal restore flow
-
-When `/pl-resume` runs without arguments (restore mode), it MUST also check for merge-pending breadcrumbs as part of Step 0 (stale state cleanup). If breadcrumbs exist, run the merge recovery protocol above before proceeding to Step 1.
+5. **Return control** to the caller (restore flow continues with Step 1).
 
 ---
 
@@ -138,11 +134,26 @@ Read the **resolved config**: `.purlin/config.local.json` if it exists, otherwis
 
 Execute this 7-step sequence:
 
-### Step 0 -- Stale Session State Cleanup
+### Step 0 -- Merge Recovery and Stale State Cleanup
 
-Clear any stale session state carried over from the previous session. If no such state exists, this step is a no-op and may be skipped silently.
+**Merge breadcrumb check:** Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run the merge recovery protocol (see Merge Recovery Mode above) before proceeding. This check is essential because `/pl-resume` may be invoked standalone (after `/clear`) when no startup protocol ran.
 
-**Note:** Merge-pending breadcrumbs are handled by the startup protocol (PURLIN_BASE.md §5.0) BEFORE `/pl-resume` is called. Do NOT re-check breadcrumbs here — they are already resolved or deferred by the time this step runs.
+**Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
+
+### Step 0b -- Set Terminal Identity (Open Mode)
+
+Set the iTerm badge and terminal title to open mode. This gives the user immediate visual feedback that the agent is initializing.
+
+Check for `.purlin_worktree_label` in the project root. If present, read its content (e.g., `W1`) and append ` (<label>)` to the badge.
+
+```bash
+WT_LABEL=""
+if [ -f ".purlin_worktree_label" ]; then WT_LABEL=" ($(cat .purlin_worktree_label))"; fi
+BADGE="Purlin${WT_LABEL}"
+source {tools_root}/terminal/identity.sh && set_iterm_badge "$BADGE" && set_term_title "<project> - $BADGE"
+```
+
+If a mode is activated later in Step 6, the badge and title are updated to reflect the active mode.
 
 ### Step 1 -- Checkpoint Detection
 
@@ -165,9 +176,11 @@ When instruction reload is needed:
 
 When the system prompt already contains the Purlin instructions (agent was started via launcher), skip this step silently.
 
-### Step 3 -- Command Reference
+### Step 3 -- Command Hint
 
-Print a single line: `Commands: /pl-help for full list`
+Print: `Use /pl-help for commands`
+
+Do NOT read or print the full command table. The command table is owned by `/pl-help`.
 
 ### Step 3b -- Orphaned Sub-Agent Branch Recovery (Engineer mode checkpoint only)
 
@@ -184,7 +197,7 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 ### Step 4 -- Read Startup Flags and Gather Project State
 
-**This step is the shared path for BOTH normal startup (PURLIN_BASE.md §5.2) and context recovery.** There is no separate implementation — `/pl-resume` is the canonical flow.
+**This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5 delegates entirely to `/pl-resume` — there is no separate implementation.
 
 **Reading startup flags:** From the resolved config (read in Path Resolution above), extract `find_work`, `auto_start`, and `default_mode` from `agents.purlin`. Defaults: `find_work: true`, `auto_start: false`, `default_mode: null`.
 
