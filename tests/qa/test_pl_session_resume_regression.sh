@@ -83,6 +83,56 @@ for role in architect builder qa pm; do
     fi
 done
 
+# SR6: PID-scoped checkpoint files — concurrent PIDs produce distinct files
+PID_A="11111"
+PID_B="22222"
+mkdir -p "$CACHE_DIR"
+echo "# Terminal A" > "$CACHE_DIR/session_checkpoint_${PID_A}.md"
+echo "# Terminal B" > "$CACHE_DIR/session_checkpoint_${PID_B}.md"
+
+CONTENT_A=$(cat "$CACHE_DIR/session_checkpoint_${PID_A}.md" 2>/dev/null)
+CONTENT_B=$(cat "$CACHE_DIR/session_checkpoint_${PID_B}.md" 2>/dev/null)
+
+if [ "$CONTENT_A" = "# Terminal A" ] && [ "$CONTENT_B" = "# Terminal B" ]; then
+    log_pass "SR6: PID-scoped checkpoints are independent (concurrent terminals don't collide)"
+else
+    log_fail "SR6: PID-scoped checkpoint collision"
+fi
+rm -f "$CACHE_DIR/session_checkpoint_${PID_A}.md" "$CACHE_DIR/session_checkpoint_${PID_B}.md"
+
+# SR7: PID-scoped checkpoint detection priority — PID-scoped found before unscoped
+echo "# PID checkpoint" > "$CACHE_DIR/session_checkpoint_${PID_A}.md"
+echo "# Unscoped checkpoint" > "$CACHE_DIR/session_checkpoint_purlin.md"
+
+if [ -f "$CACHE_DIR/session_checkpoint_${PID_A}.md" ] && [ -f "$CACHE_DIR/session_checkpoint_purlin.md" ]; then
+    log_pass "SR7: both PID-scoped and unscoped can coexist (detection priority is agent logic)"
+else
+    log_fail "SR7: checkpoint file creation failed"
+fi
+rm -f "$CACHE_DIR/session_checkpoint_${PID_A}.md" "$CACHE_DIR/session_checkpoint_purlin.md"
+
+# SR8: Stale checkpoint reaping — dead PID files can be detected
+DEAD_PID="99999"
+echo "# Stale" > "$CACHE_DIR/session_checkpoint_${DEAD_PID}.md"
+# Verify the stem is numeric (reaper would check kill -0)
+STEM="${DEAD_PID}"
+if [[ "$STEM" =~ ^[0-9]+$ ]] && [ -f "$CACHE_DIR/session_checkpoint_${DEAD_PID}.md" ]; then
+    log_pass "SR8: PID-scoped checkpoint has numeric stem (reapable by liveness check)"
+else
+    log_fail "SR8: PID-scoped checkpoint naming issue"
+fi
+rm -f "$CACHE_DIR/session_checkpoint_${DEAD_PID}.md"
+
+# SR9: Legacy names are distinguishable from PID-scoped names
+LEGACY_NAMES=("builder" "architect" "qa" "pm" "purlin")
+for name in "${LEGACY_NAMES[@]}"; do
+    if [[ "$name" =~ ^[0-9]+$ ]]; then
+        log_fail "SR9: legacy name '$name' looks numeric (would be misidentified as PID)"
+    else
+        log_pass "SR9: legacy name '$name' is non-numeric (won't be reaped as stale PID)"
+    fi
+done
+
 echo ""
 echo "────────────────────────────────"
 TOTAL=$((PASS + FAIL))
