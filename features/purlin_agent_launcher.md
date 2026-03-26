@@ -1,6 +1,6 @@
 # Feature: Purlin Unified Agent Launcher
 
-> Label: "Install, Update & Scripts: Purlin Unified Agent Launcher"
+> Label: "Tool: Purlin Unified Agent Launcher"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/agent_launchers_common.md
 

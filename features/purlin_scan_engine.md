@@ -1,6 +1,6 @@
 # Feature: Purlin Scan Engine
 
-> Label: "Install, Update & Scripts: Purlin Scan Engine"
+> Label: "Tool: Purlin Scan Engine"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/agent_launchers_common.md
 
