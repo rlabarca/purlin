@@ -30,20 +30,20 @@ This command only works when the agent is running in a worktree (launched with `
 
 3. **Commit any pending work** in the current worktree with appropriate mode prefix.
 
-4. **Identify the source branch.** The worktree was created from a base branch (usually `main`). Detect it:
+4. **Save paths and identify source branch.** Capture these values BEFORE any directory changes:
    ```bash
-   git merge-base --fork-point main HEAD 2>/dev/null || git merge-base main HEAD
+   WORKTREE_PATH="$(pwd)"
+   MAIN_ROOT="$(git rev-parse --git-common-dir | sed 's|/\.git$||')"
+   WORKTREE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+   SOURCE_BRANCH="main"
    ```
 
-5. **Switch to the main working directory** and source branch:
+5. **Merge from the main working directory.** Run the checkout and merge via `cd "$MAIN_ROOT"` in each Bash call:
    ```bash
-   cd "$PURLIN_PROJECT_ROOT"  # Original project root, not worktree
-   git checkout main
+   cd "$MAIN_ROOT" && git checkout "$SOURCE_BRANCH"
    ```
-
-6. **Merge the worktree branch** using the robust merge protocol:
    ```bash
-   git merge <worktree-branch> --no-edit
+   cd "$MAIN_ROOT" && git merge "$WORKTREE_BRANCH" --no-edit
    ```
 
    **On conflict:**
@@ -52,11 +52,17 @@ This command only works when the agent is running in a worktree (launched with `
    - Do NOT force-resolve code or spec conflicts automatically
    - On unresolvable conflict: release merge lock, write breadcrumb per `purlin_worktree_concurrency.md` Section 2.8
 
-7. **Clean up:**
-   - Delete `.purlin_session.lock` from the worktree
-   - Remove the worktree: `git worktree remove <worktree-path>`
-   - Delete the branch: `git branch -d <worktree-branch>`
+6. **Clean up in a SINGLE Bash call.** This is CRITICAL — the worktree removal deletes the agent's CWD, and the Bash tool validates CWD existence before executing any command. If cleanup is split across multiple Bash calls, all calls after the worktree removal will fail with "Path does not exist." Run everything as one chained command:
+   ```bash
+   cd "$MAIN_ROOT" && rm -f "$WORKTREE_PATH/.purlin_session.lock" && git worktree remove "$WORKTREE_PATH" --force && git worktree prune && git branch -d "$WORKTREE_BRANCH" && rm -f .purlin/cache/merge.lock && echo "Cleanup complete"
+   ```
+   If any cleanup step fails, the remaining steps still execute (use `;` instead of `&&` for non-critical steps like lock removal). The `cd "$MAIN_ROOT"` MUST be first — it is what keeps the shell alive after the worktree directory is gone.
 
-8. **Release merge lock.** Delete `.purlin/cache/merge.lock`.
+7. **Update terminal identity.** The agent is no longer in a worktree. Update the iTerm badge and title to reflect the current mode on the source branch:
+   ```bash
+   BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+   source {tools_root}/terminal/identity.sh && set_iterm_badge "<mode> ($BRANCH)" && set_term_title "<project> - <mode> ($BRANCH)"
+   ```
+   Replace `<mode>` with the current active mode (Engineer, PM, QA) and `<project>` with the project name.
 
-9. **Report:** "Merged [branch] into [source]. Worktree cleaned up. [N files changed]."
+8. **Report:** "Merged [branch] into [source]. Worktree cleaned up. [N files changed]."
