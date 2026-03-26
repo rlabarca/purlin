@@ -13,9 +13,9 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
 
   Common
   ──────
-  /pl-status                 Project status and work discovery
-  /pl-mode <mode>            Switch mode (pm | engineer | qa)
-  /pl-resume [save]          Save or restore session state
+  /pl-status                 What needs doing? (project scan)
+  /pl-mode [mode]            Show current mode, or switch (pm | engineer | qa)
+  /pl-resume [save]          Recover after context clear or restart
   /pl-help                   Full command reference
   /pl-find <topic>           Search feature specs
   /pl-remote <cmd>           Branch collaboration (push | pull | add | branch)
