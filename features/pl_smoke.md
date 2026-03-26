@@ -28,7 +28,7 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 ### 2.3 Smoke Suggestion
 
 - `/pl-smoke suggest` MUST analyze the project and identify features that should be smoke tier.
-- Candidates: features with 3+ dependents, `arch_*`/`policy_*` anchors, core categories (Install/Update, Coordination), names containing launcher/init/config/critic/cdd/status.
+- Candidates: features with 3+ dependents, `arch_*`/`policy_*` anchors, core categories (Install/Update, Coordination), names containing launcher/init/config/status/scan.
 - MUST filter out features already classified as smoke.
 - MUST present suggestions with rationale and let the user select.
 

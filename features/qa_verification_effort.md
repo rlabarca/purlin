@@ -35,13 +35,13 @@ Engineer-owned categories (TestOnly, Skip) are computed but NOT shown as QA acti
 *   **@auto detection:** A QA scenario heading containing `@auto` as a suffix (e.g., `#### Scenario: Title @auto`) is classified as auto. A heading containing `@manual` is classified as manual (force-manual). QA scenarios without either tag default to manual.
 *   **Visual checklist item count:** The number of `- [ ]` items under `## Visual Specification`.
 *   **Test-only detection:** A feature is `test_only` when it has Unit Tests, zero QA scenarios, zero visual spec items, and `tests/<feature>/tests.json` exists with `status: "PASS"`.
-*   **Cosmetic detection:** A feature is `skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard (policy_critic.md Section 2.8) did not escalate it to `full`.
+*   **Cosmetic detection:** A feature is `skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard did not escalate it to `full`.
 *   **Visual spec classification:** On web-test features, visual spec items are classified as `auto`. On non-web-test features, visual spec items are classified as `manual`.
-*   **Scope filtering:** Classification respects regression scoping. A `targeted:` scope reduces the count to only named scenarios/screens. A `cosmetic` scope sets all counts to zero and `skip` to 1. A `dependency-only` scope counts only scenarios in the Critic's computed `regression_scope.scenarios` list.
+*   **Scope filtering:** Classification respects regression scoping. A `targeted:` scope reduces the count to only named scenarios/screens. A `cosmetic` scope sets all counts to zero and `skip` to 1. A `dependency-only` scope counts only scenarios in the computed `regression_scope.scenarios` list.
 
 ### 2.3 Output Schema
 
-The Critic MUST include a `verification_effort` block in each feature's `tests/<feature>/critic.json`:
+The scan engine MUST include a `verification_effort` block in each feature's `tests/<feature>/tests.json`:
 
 ```json
 "verification_effort": {

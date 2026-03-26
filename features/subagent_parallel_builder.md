@@ -193,7 +193,7 @@ When `auto_start: true` in Engineer mode's config:
 *   `--continuous` flag in `pl-run.sh` prints a deprecation warning and exits.
 *   Warning message: "The --continuous flag is deprecated. Set `auto_start: true` in agent config and relaunch the interactive Engineer."
 *   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/tombstones/continuous_phase_builder.md`).
-*   Deprecated config keys: `continuous_evaluator_model`, `inter_phase_critic`, `max_remediation_attempts`.
+*   Deprecated config keys: `continuous_evaluator_model`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
 
 ### 2.9 Context Recovery
@@ -513,7 +513,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given terminal_identity.md is in COMPLETE state
     And its only change is removing a > Prerequisite: line
-    When the CDD status computation runs
+    When the scan status computation runs
     Then terminal_identity.md remains in COMPLETE state
     And no Engineer action item is generated for it
 
@@ -533,7 +533,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     When Engineer mode executes the phase with parallel sub-agents
     Then a human verifies all 3 features are correctly implemented
     And the merge produced no regressions
-    And the CDD status shows expected states
+    And the scan status shows expected states
 
 #### @manual Scenario: Robust merge handles real-world conflicts
 

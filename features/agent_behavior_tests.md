@@ -3,7 +3,6 @@
 > Label: "Dev: Agent Behavior Tests"
 > Category: "Test Infrastructure"
 > Prerequisite: features/test_fixture_repo.md
-> Prerequisite: features/cdd_startup_controls.md
 > Prerequisite: features/pl_session_resume.md
 
 [TODO]
@@ -86,13 +85,13 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 
 The following manual scenarios are automated by this harness:
 
-**From `cdd_startup_controls.md`:**
+**From `pl_session_resume.md` (startup controls):**
 1. Startup Print Sequence Appears First
-2. Expert Mode Bypasses Orientation
-3. Guided Mode Presents Work Plan
-4. Auto Mode Begins Executing Immediately
+2. Expert Mode Bypasses Orientation (find_work: false)
+3. Guided Mode Presents Work Plan (find_work: true, auto_start: false)
+4. Auto Mode Begins Executing Immediately (find_work: true, auto_start: true)
 
-**From `pl_session_resume.md`:**
+**From `pl_session_resume.md` (resume scenarios):**
 5. Engineer Mid-Feature Resume
 6. QA Mid-Verification Resume
 7. Full Reboot Without Launcher
@@ -107,7 +106,6 @@ The following manual scenarios are automated by this harness:
 The following scenarios are NOT covered by this harness because they require human judgment:
 
 - `pl_update_purlin.md` merge review scenarios -- require human assessment of merge correctness.
-- `cdd_startup_controls.md` dashboard toggle scenarios -- these are web UI scenarios, covered by `/pl-aft-web` instead.
 
 ### 2.10 Fixture Tags Required
 
@@ -115,10 +113,10 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/cdd_startup_controls/startup-print-sequence` | Default config (find_work: true, auto_start: false) |
-| `main/cdd_startup_controls/expert-mode` | Config with find_work: false, auto_start: false for builder |
-| `main/cdd_startup_controls/guided-mode` | Config with find_work: true, auto_start: false for builder |
-| `main/cdd_startup_controls/auto-mode` | Config with find_work: true, auto_start: true for builder |
+| `main/agent_behavior_tests/startup-print-sequence` | Default config (find_work: true, auto_start: false) |
+| `main/agent_behavior_tests/expert-mode` | Config with find_work: false, auto_start: false |
+| `main/agent_behavior_tests/guided-mode` | Config with find_work: true, auto_start: false |
+| `main/agent_behavior_tests/auto-mode` | Config with find_work: true, auto_start: true |
 | `main/pl_session_resume/builder-mid-feature` | Checkpoint file showing builder at protocol step 2 for a feature |
 | `main/pl_session_resume/qa-mid-verification` | Checkpoint file showing QA at scenario 6 of 8 for a feature |
 | `main/pl_session_resume/full-reboot-no-launcher` | Project state with checkpoint but no system prompt (simulating non-launcher start) |
@@ -134,7 +132,7 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
 #### Scenario: Test runner checks out fixture and constructs prompt
 
-    Given the fixture repo has tag "main/cdd_startup_controls/expert-mode"
+    Given the fixture repo has tag "main/agent_behavior_tests/expert-mode"
     When the test runner executes the expert-mode test
     Then the fixture is checked out to a temp directory
     And the system prompt is constructed from the fixture's instruction files
@@ -148,10 +146,10 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
 #### Scenario: Expert mode outputs correct message
 
-    Given the fixture tag "main/cdd_startup_controls/expert-mode" is checked out
+    Given the fixture tag "main/agent_behavior_tests/expert-mode" is checked out
     When claude --print is invoked with "Begin Engineer session."
     Then the output contains "find_work disabled"
-    And the output does NOT contain a work plan or Critic report
+    And the output does NOT contain a work plan or scan results
 
 #### Scenario: Resume test echoes checkpoint fields
 

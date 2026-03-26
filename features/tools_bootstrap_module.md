@@ -44,7 +44,7 @@ A shared Python module (`tools/bootstrap.py`) providing canonical implementation
 
 - All 24+ files in `tools/` that contain the inline project root detection pattern MUST be migrated to import from `tools/bootstrap.py`.
 - Each callsite replaces its inline 10-20 line block with an import and single function call.
-- The two duplicated atomic write implementations (`_write_atomic` in `tools/cdd/serve.py` and `_atomic_write` in `tools/release/manage_step.py`) MUST be replaced with imports from `tools/bootstrap.py`.
+- The duplicated atomic write implementation (`_atomic_write` in `tools/release/manage_step.py`) MUST be replaced with an import from `tools/bootstrap.py`.
 - Existing tests MUST continue to pass without modification after migration. No behavioral change is introduced.
 
 ### 2.5 Submodule Compatibility

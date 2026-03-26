@@ -31,14 +31,14 @@ Fixture states are git tags (not branches). Tags are immutable -- once created, 
 **Convention:** `<project-ref>/<feature-name>/<scenario-slug>`
 
 - `<project-ref>` is the project branch or version the fixtures target (e.g., `main`, `v2`, `release-1.x`). Most single-branch projects use `main/`.
-- `<feature-name>` matches the feature file name without extension (e.g., `cdd_branch_collab`).
+- `<feature-name>` matches the feature file name without extension (e.g., `config_layering`).
 - `<scenario-slug>` is a PM-chosen, short descriptive identifier (2-4 words, kebab-case with hyphens). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`. Note: `<feature-name>` uses underscores (matching the feature filename), while `<scenario-slug>` uses hyphens. This distinction is intentional -- filenames follow Python/filesystem conventions, slugs follow URL/kebab-case conventions.
 
 **Examples:**
-- `main/cdd_branch_collab/sync-state-ahead`
-- `main/cdd_branch_collab/sync-state-diverged`
+- `main/config_layering/local-override-present`
+- `main/config_layering/config-json-only`
 - `main/release_verify_deps/cycle-in-prerequisites`
-- `main/cdd_startup_controls/expert-mode`
+- `main/agent_behavior_tests/expert-mode`
 
 When a project version changes enough to need different fixtures (schema changes, new config format), new tags are created under the new `<project-ref>`. Old tags coexist until pruned.
 
@@ -106,7 +106,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 2. PM mode prompts the user: "These scenarios need controlled state. Want to use a fixture repo for automated testing?"
 3. If yes: the user creates an empty git repo for test fixtures. Before recording the URL, PM mode MUST verify access (see Section 2.6.4).
 4. If no: scenarios stay manual (`@manual-interactive` / `@manual-visual`).
-5. PM mode writes scenarios with Given steps that reference fixture state (e.g., "Given the fixture tag `main/cdd_branch_collab/sync-state-ahead` is checked out").
+5. PM mode writes scenarios with Given steps that reference fixture state (e.g., "Given the fixture tag `main/config_layering/local-override-present` is checked out").
 
 ### 2.6.2 Engineer Workflow
 
@@ -115,7 +115,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 3. Engineer mode uses `fixture init` to create the bare repo (if not already present) and `fixture add-tag` to create each declared tag from a constructed state directory.
 4. Each tag points to a commit containing the project state for that scenario.
 5. Each tagged commit has a clear message describing the state it represents.
-6. **Remote push:** If the feature spec declares `> Test Fixtures: <remote-url>`, Engineer mode MUST push tags to the remote via `fixture push <remote-url>`. The Critic validates against the remote URL, so tags that exist only locally will not satisfy the Critic gate. If push fails, guide the user through access setup and retry (see Section 2.12).
+6. **Remote push:** If the feature spec declares `> Test Fixtures: <remote-url>`, Engineer mode MUST push tags to the remote via `fixture push <remote-url>`. If push fails, guide the user through access setup and retry (see Section 2.12).
 7. Engineer mode writes the automated test code that checks out the tag, runs the check, and asserts results.
 8. Engineer mode creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
@@ -172,34 +172,34 @@ Agents MUST call `fixture verify-url <url>` before recording any fixture URL in 
 
 For agent startup/resume scenarios:
 
-1. Check out fixture tag (e.g., `main/cdd_startup_controls/expert-mode`).
+1. Check out fixture tag (e.g., `main/agent_behavior_tests/expert-mode`).
 2. Construct system prompt from the fixture's instruction files.
 3. Run `claude --print` against the fixture project.
 4. Assert output patterns.
 5. Cleanup.
 
-### 2.8 Critic Validation
+### 2.8 Fixture Tag Validation
 
-The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Engineer action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
+The scan and audit tools MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the tools check `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Engineer action item.
 
 This validation is also triggered when a feature has `> Test Fixtures:` metadata and a scenario's Given step references a fixture tag by name.
 
 **Validation Gap Coverage:**
 
-The Critic handles two distinct states when fixture tags are declared:
+The validation handles two distinct states when fixture tags are declared:
 
-1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Engineer action items.
-2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Engineer action item (category: `fixture_repo_unavailable`) instructing Engineer mode to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
+1. **Fixture repo accessible:** Normal path — resolve the repo via the three-tier lookup (per-feature metadata → config → convention path), then validate each declared tag against `fixture list` output. Missing tags produce MEDIUM Engineer action items.
+2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). Generate a MEDIUM Engineer action item (category: `fixture_repo_unavailable`) instructing Engineer mode to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
 **SSH fallback for remote repos:**
 
-When `git ls-remote --tags <url>` fails on a remote URL (non-zero exit, empty output, or authentication error), the Critic MUST attempt an SSH fallback before reporting the repo as unavailable:
+When `git ls-remote --tags <url>` fails on a remote URL (non-zero exit, empty output, or authentication error), the tool MUST attempt an SSH fallback before reporting the repo as unavailable:
 
 - If the URL matches `https://github.com/<owner>/<repo>`, retry with `git@github.com:<owner>/<repo>.git`.
 - If the URL matches `https://gitlab.com/<owner>/<repo>`, retry with `git@gitlab.com:<owner>/<repo>.git`.
 - For other HTTPS URLs, no automatic fallback — report `fixture_repo_unavailable` with a note that the URL may require SSH format.
 
-This handles the common case of private repos where SSH keys are configured but HTTPS authentication is not. The fallback is silent — if SSH succeeds, the Critic proceeds normally without surfacing the HTTPS failure.
+This handles the common case of private repos where SSH keys are configured but HTTPS authentication is not. The fallback is silent — if SSH succeeds, the tool proceeds normally without surfacing the HTTPS failure.
 
 ### 2.10 Fixture Usage Tracking
 
@@ -229,7 +229,7 @@ QA announces fixture usage during authoring: `"Using fixture tag main/instructio
 
 ### 2.11 Remote Fixture Repos
 
-When a feature spec declares `> Test Fixtures: <remote-url>`, the Critic validates tags against the remote repo (via `git ls-remote --tags`). Tags must exist on the remote for the Critic to clear them. The local convention-path repo is a staging area; the remote is the source of truth for declared fixtures.
+When a feature spec declares `> Test Fixtures: <remote-url>`, the audit tools validate tags against the remote repo (via `git ls-remote --tags`). Tags must exist on the remote for validation to pass. The local convention-path repo is a staging area; the remote is the source of truth for declared fixtures.
 
 **Engineer push workflow:**
 
@@ -242,7 +242,7 @@ When creating fixtures for a feature with a remote configured (via `fixture remo
    c. After the user confirms access is configured, retries via `fixture push <url>`.
    d. Does NOT ask the user to push manually — Engineer mode pushes once it has access.
 3. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
-4. Re-run `tools/cdd/scan.sh` to confirm the Critic clears the fixture validation.
+4. Re-run `tools/cdd/scan.sh` to confirm fixture validation passes.
 
 **Remote repo setup flow:**
 

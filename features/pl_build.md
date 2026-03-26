@@ -37,7 +37,7 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
 1. **Read the tombstone:** Parse `features/tombstones/<name>.md` for the "Files to Delete" and "Dependencies to Check" sections.
 2. **Delete listed files:** Remove every file and directory listed in "Files to Delete":
    - Implementation code files
-   - `tests/<name>/` directory (unit tests, tests.json, regression.json, critic.json)
+   - `tests/<name>/` directory (unit tests, tests.json, regression.json)
    - `tests/qa/scenarios/<name>.json` (QA regression scenario)
    - `tests/qa/test_<name>_regression.sh` (QA regression runner)
    - Any other paths listed in the tombstone

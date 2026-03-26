@@ -99,7 +99,7 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   **Toggle:** Sun/moon icon in top-right of page header.
 *   **Persistence:** `localStorage` key `purlin-theme`, value `light` or `dark`.
 *   **Application:** `:root` defines dark theme defaults. `[data-theme='light']` on `<html>` overrides to light values.
-*   **FOUC Prevention:** An early synchronous `<script>` in `<head>` reads localStorage and applies the `data-theme` attribute before first paint. This is critical for CDD's 5-second meta-refresh cycle.
+*   **FOUC Prevention:** An early synchronous `<script>` in `<head>` reads localStorage and applies the `data-theme` attribute before first paint.
 
 ### 2.5 Logo Placement
 *   Top-left of every tool header, approximately 24px height, adjacent to tool title.

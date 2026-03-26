@@ -20,8 +20,8 @@ Copy from `{tools_root}/feature_templates/`:
 
 Feature files use `>` blockquote lines at the top for metadata. Supported metadata fields:
 
-- `> Label: "Human-Readable Name"` -- display name for CDD dashboard.
-- `> Category: "Category Name"` -- grouping for CDD dashboard.
+- `> Label: "Human-Readable Name"` -- display name for status reports.
+- `> Category: "Category Name"` -- grouping for status reports.
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
 - `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `/pl-web-test`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
 - `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-server`. Legacy `> AFT Start:` is accepted for backward compatibility.
@@ -44,7 +44,7 @@ to the best-fitting category.
 | Category | Label Pattern | Example |
 |---|---|---|
 | Agent Skills | `/pl-<command> Descriptive Name` | `/pl-help Purlin Help` |
-| CDD Dashboard | `CDD <Feature Name>` or `CDD: <Feature Name>` | `CDD: QA Effort Breakdown` |
+| Tools | `Tool: <Descriptive Name>` | `Tool: Config Layering` |
 | Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Handoff Checklist System` |
 | Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
 | Install, Update & Scripts | `Tool: <Name>` | `Tool: Agent Launchers`, `Tool: Config Layering` |

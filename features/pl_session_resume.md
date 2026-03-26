@@ -115,8 +115,8 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 **Delivery Plan:** Phase 2 of 3 -- IN_PROGRESS
 **Execution Group:** Group 2 (Phases 2, 3)
 **Work Queue:**
-1. [HIGH] cdd_spec_map.md -- Phase 2
-2. [NORMAL] cdd_qa_effort_display.md -- Phase 2
+1. [HIGH] config_layering.md -- Phase 2
+2. [NORMAL] regression_testing.md -- Phase 2
 **Pending Decisions:** None
 
 ## Uncommitted Changes

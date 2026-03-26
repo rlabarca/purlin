@@ -3,9 +3,7 @@
 .purlin/runtime/
 .purlin/config.local.json
 
-# Generated reports (regenerated on every status run)
-CRITIC_REPORT.md
-tests/*/critic.json
+# Generated feature digests
 features/digests/
 
 # Logs & process files

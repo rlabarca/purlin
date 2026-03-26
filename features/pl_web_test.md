@@ -43,7 +43,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 
 ### 2.4 Pre-flight
 
-- For each eligible feature, extract: base URL from `> Web Test:` (or URL override argument), Manual Scenarios under `### Manual Scenarios`, Visual Specification items under `## Visual Specification`, and regression scope from `tests/<feature_name>/critic.json`.
+- For each eligible feature, extract: base URL from `> Web Test:` (or URL override argument), Manual Scenarios under `### Manual Scenarios`, Visual Specification items under `## Visual Specification`, and regression scope from `tests/<feature_name>/tests.json`.
 - Respect `targeted:` scoping (only verify named scenarios/screens).
 - Respect `cosmetic` scope (skip feature).
 - Respect `dependency-only` scope (verify only listed scenarios).
@@ -60,8 +60,8 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 
 ### 2.6 Dynamic Port Resolution and Server Liveness
 
-- **Port resolution order:** (1) URL override from command argument, (2) runtime port file at `.purlin/runtime/cdd.port`, (3) port from `> Web Test:` URL.
-- The tool reads `.purlin/runtime/cdd.port` automatically (no per-feature metadata needed). If the file exists and contains a valid port number, replace the port in the `> Web Test:` URL with the runtime port. If the file does not exist or is empty, fall through to the `> Web Test:` URL as-is.
+- **Port resolution order:** (1) URL override from command argument, (2) runtime port file at `.purlin/runtime/server.port`, (3) port from `> Web Test:` URL.
+- The tool reads `.purlin/runtime/server.port` automatically (no per-feature metadata needed). If the file exists and contains a valid port number, replace the port in the `> Web Test:` URL with the runtime port. If the file does not exist or is empty, fall through to the `> Web Test:` URL as-is.
 - **Liveness check:** Before navigating, attempt an HTTP request (via `browser_navigate` or `curl`) to the resolved URL. If the server is not reachable:
   - If `> Web Start:` is declared, invoke the start command, wait for the port file to appear (up to 10 seconds), re-read the port, and retry the liveness check.
   - If `> Web Start:` is not declared or the server is still not reachable after auto-start, report the error with the resolved URL and stop verification for this feature (do not fail the entire run -- continue with other features).
@@ -194,10 +194,10 @@ When a feature has `> Web Test:` metadata and the project has a fixture repo (re
 
 1. **Fixture detection:** During pre-flight (Section 2.4), resolve the fixture repo path using the three-tier lookup. If a fixture repo is accessible, check whether any in-scope scenario's Given steps reference a fixture tag (pattern: `fixture tag "<tag-path>"`).
 2. **Fixture checkout:** For each scenario referencing a fixture tag, run `tools/test_support/fixture.sh checkout <repo-path> <tag>` to obtain the fixture state in a temp directory.
-3. **Server startup against fixture:** Start the CDD server against the fixture checkout: `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0`. The `--port 0` flag tells the server to bind an ephemeral port. The server prints the actual bound port to stdout (e.g., `Serving on port 52341`). The skill reads this port from the server's stdout.
+3. **Server startup against fixture:** Start the dev server against the fixture checkout via `/pl-server --project-root <fixture-dir> --port 0`. The `--port 0` flag tells the server to bind an ephemeral port. The server prints the actual bound port to stdout (e.g., `Serving on port 52341`). The skill reads this port from the server's stdout.
 4. **URL construction:** Construct the test URL using `http://localhost:<ephemeral-port>`. This bypasses the `> Web Test:` static URL and the runtime port file entirely -- the ephemeral port from the fixture-backed server is the only port used.
 5. **Scenario execution:** Execute the scenario's When/Then steps against the fixture-backed server using the standard Playwright MCP flow (Sections 2.8-2.9).
-6. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed CDD server and run `tools/test_support/fixture.sh cleanup <fixture-dir>`.
+6. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `tools/test_support/fixture.sh cleanup <fixture-dir>`.
 
 **Non-fixture scenarios:** Scenarios without fixture tag references in the same feature continue using the normal port resolution flow (Section 2.6) against the live project.
 
@@ -209,13 +209,13 @@ The following legacy artifacts from prior naming conventions MUST be removed or 
 
 1. **Rename** skill file `.claude/commands/pl-aft-web.md` to `.claude/commands/pl-web-test.md`. Update all internal references: `> AFT Web:` to `> Web Test:`, `> AFT Start:` to `> Web Start:`, `/pl-aft-web` to `/pl-web-test`.
 2. **Rename** test directory `tests/pl_aft_web/` to `tests/pl_web_test/`. Update all internal references.
-3. **Update** `tools/critic/critic.py`: rename `_parse_aft_web()` to `_parse_web_test()` and implement dual-regex accepting both `> AFT Web:` and `> Web Test:` for backward compatibility with consumer projects. Update all call sites and key names in `compute_verification_effort()`.
-4. **Update** `tools/critic/test_critic.py`: replace `> AFT Web:` with `> Web Test:` in test data and assertions. Add backward-compatibility test for `> AFT Web:` parsing.
+3. ~~`tools/critic/critic.py` and `tools/critic/test_critic.py`~~ — Removed (Critic system retired).
+4. (reserved)
 5. **Update** `dev/setup_fixture_repo.sh`: update fixture tag names from `pl_aft_web` to `pl_web_test` and metadata from `> AFT Web:` to `> Web Test:`.
 6. **Delete** old skill file `.claude/commands/pl-web-verify.md` if it still exists.
 7. **Screenshot directory:** `.purlin/runtime/aft-web/` renamed to `.purlin/runtime/web-test/`.
 
-**Backward compatibility:** The Critic parser MUST accept both `> AFT Web:` and `> Web Test:` during the transition period. Consumer projects using `> AFT Web:` will continue to work without immediate migration.
+**Backward compatibility:** The scan engine accepts both `> AFT Web:` and `> Web Test:` during the transition period. Consumer projects using `> AFT Web:` will continue to work without immediate migration.
 
 ### 2.13 Instruction Updates
 
@@ -274,7 +274,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
 #### Scenario: Dynamic port resolution from runtime port file
 
     Given a feature has `> Web Test: http://localhost:9086`
-    And `.purlin/runtime/cdd.port` contains `52288`
+    And `.purlin/runtime/server.port` contains `52288`
     When `/pl-web-test` resolves the URL for that feature
     Then the resolved URL is `http://localhost:52288`
     And port `9086` from the metadata is not used
@@ -282,7 +282,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
 #### Scenario: Runtime port file missing falls back to metadata URL
 
     Given a feature has `> Web Test: http://localhost:9086`
-    And `.purlin/runtime/cdd.port` does not exist
+    And `.purlin/runtime/server.port` does not exist
     When `/pl-web-test` resolves the URL for that feature
     Then the resolved URL is `http://localhost:9086`
 
@@ -310,7 +310,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
 #### Scenario: URL override takes precedence over port file
 
     Given a feature has `> Web Test: http://localhost:9086`
-    And `.purlin/runtime/cdd.port` contains `52288`
+    And `.purlin/runtime/server.port` contains `52288`
     When `/pl-web-test feature_name http://localhost:3000` is invoked
     Then the resolved URL is `http://localhost:3000`
     And neither the metadata port nor the port file port is used
@@ -400,14 +400,14 @@ The following instruction files MUST be updated by Engineer mode to reference th
 
 #### Scenario: Regression scope respected
 
-    Given a feature's `critic.json` has `regression_scope: "targeted:Scenario A"`
+    Given a feature's `tests.json` has `regression_scope: "targeted:Scenario A"`
     When `/pl-web-test` is invoked for that feature
     Then only "Scenario A" is executed
     And all other manual scenarios and visual items are skipped
 
 #### Scenario: Cosmetic scope skips feature
 
-    Given a feature's `critic.json` has `regression_scope: "cosmetic"`
+    Given a feature's `tests.json` has `regression_scope: "cosmetic"`
     When `/pl-web-test` is invoked for that feature
     Then the feature is skipped entirely with a note
 
@@ -443,7 +443,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
     And a scenario's Given step references fixture tag "main/feature/scenario-one"
     When `/pl-web-test` processes that scenario
     Then the fixture tag is checked out to a temp directory
-    And a CDD server is started with `--project-root <fixture-dir> --port 0`
+    And a dev server is started with `--project-root <fixture-dir> --port 0`
     And the ephemeral port from the server's stdout is used for navigation
     And the static URL port (9086) is NOT used
 
@@ -460,7 +460,7 @@ The following instruction files MUST be updated by Engineer mode to reference th
 
     Given a fixture-backed scenario has completed (pass or fail)
     When `/pl-web-test` moves to the next scenario
-    Then the fixture-backed CDD server has been stopped
+    Then the fixture-backed dev server has been stopped
     And the fixture checkout directory has been removed
 
 #### Scenario: Legacy pl-web-verify references fully removed
@@ -477,7 +477,7 @@ None.
 
 
 ## Regression Guidance
-- Auto-discovery respects targeted/cosmetic scope from critic.json
+- Auto-discovery respects targeted/cosmetic scope from tests.json
 - Server auto-start via Web Start metadata when server unreachable
 - Old skill name (pl-web-verify) fully renamed -- zero references remain
 - Role guard rejects PM invocation

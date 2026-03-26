@@ -70,8 +70,8 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.7 Phase 4 -- Finalization
 
-- The command MUST run `tools/cdd/scan.sh` to generate the initial Critic report and dependency graph for the newly created features.
-- The command MUST summarize the results: total features created, total anchor nodes created, total companion files created, and any immediate Critic findings.
+- The command MUST run `tools/cdd/scan.sh` to generate the scan results and dependency graph for the newly created features.
+- The command MUST summarize the results: total features created, total anchor nodes created, total companion files created, and any immediate scan findings.
 - The command MUST delete the temporary state and cache files (`.purlin/cache/sfc_state.json`, `.purlin/cache/sfc_inventory.md`, `.purlin/cache/sfc_taxonomy.md`) and commit the cleanup.
 - The command MUST print recommended next steps to the user:
   - "Run `/pl-spec-code-audit` to validate the generated specs against the actual code and identify any gaps the import missed."
@@ -86,8 +86,8 @@ When Purlin is installed into a project with an existing codebase, there is no s
 
 ### 2.9 Template Compliance
 
-- All generated feature files MUST pass the Critic's Spec Gate (required sections: overview, requirements, scenarios; scenario headings at `####` level).
-- All generated anchor nodes MUST pass the Critic's Spec Gate (required sections: purpose, invariants).
+- All generated feature files MUST have required sections: overview, requirements, scenarios; scenario headings at `####` level.
+- All generated anchor nodes MUST have required sections: purpose, invariants.
 
 ---
 
@@ -168,17 +168,17 @@ When Purlin is installed into a project with an existing codebase, there is no s
     And the state file is updated with the completed category name
     And the next category does not begin until the user responds
 
-#### Scenario: Phase 4 runs CDD status and summarizes results
+#### Scenario: Phase 4 runs scan and summarizes results
 
     Given all categories are generated and committed
     When Phase 4 begins
     Then tools/cdd/scan.sh is executed
     And the command prints total features created, anchor nodes created, and companion files created
-    And the command prints any immediate Critic findings
+    And the command prints any immediate scan findings
 
 #### Scenario: Phase 4 cleans up temporary files
 
-    Given the CDD status has been generated in Phase 4
+    Given the scan has completed in Phase 4
     When finalization cleanup runs
     Then .purlin/cache/sfc_state.json is deleted
     And .purlin/cache/sfc_inventory.md is deleted
@@ -224,8 +224,8 @@ When Purlin is installed into a project with an existing codebase, there is no s
     And Phase 3 generates anchor nodes matching the _anchor.md template structure
     And Phase 3 companion files contain extracted comments with source references
     And Phase 3 commits happen per-category
-    And Phase 4 produces a Critic report and cleanup commit
-    And all generated features appear as TODO in CDD status
+    And Phase 4 produces a scan report and cleanup commit
+    And all generated features appear as TODO in scan status
 
 #### Scenario: Mid-Phase-3 session restart and resume
 

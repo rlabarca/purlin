@@ -5,9 +5,9 @@
 > Prerequisite: features/project_init.md
 
 ## 1. Overview
-Standardizes how all shell scripts in the framework discover and invoke Python. Today, 1 of 5 scripts (`cdd/start.sh`) has ad-hoc venv detection while the other 4 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server script finds it. The Critic, CDD status, init, and lifecycle test scripts silently use system Python instead.
+Standardizes how all shell scripts in the framework discover and invoke Python. Shell scripts that invoke Python use bare `python3`, which ignores any project-level `.venv/`. If a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), scripts silently use system Python instead.
 
-This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates all 5 shell scripts to the unified resolution path.
+This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates shell scripts to the unified resolution path.
 
 ## 2. Requirements
 
@@ -34,15 +34,10 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 
 | Script | Current Python Invocation | Migration Action |
 |--------|--------------------------|------------------|
-| `tools/critic/run.sh` | `exec python3 "$SCRIPT_DIR/critic.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
-| `tools/cdd/scan.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
-| `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
+| `tools/cdd/scan.sh` | `exec python3 "$SCRIPT_DIR/scan.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/init.sh` | `python3 -c "import json; ..."` (JSON validation) | Source helper, replace `python3` with `$PYTHON_EXE` |
-| `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
 
 **Source Path Convention:** Each script MUST compute the path to `resolve_python.sh` relative to its own location. For scripts in `tools/<subtool>/`, the path is `"$SCRIPT_DIR/../resolve_python.sh"`. For scripts directly in `tools/`, the path is `"$SCRIPT_DIR/resolve_python.sh"`.
-
-**Ad-Hoc Block Removal:** `tools/cdd/start.sh` MUST remove its existing venv detection block (the `if [ -d "$DIR/../../.venv" ]; then ... fi` construct) and replace it entirely with the shared helper.
 
 ### 2.3 Dependency Manifests
 Two dependency manifest files MUST be created at the framework/submodule root (alongside `README.md` and `tools/`):
@@ -57,7 +52,7 @@ Two dependency manifest files MUST be created at the framework/submodule root (a
     ```
     # Optional dependencies for Purlin.
     # Install with: pip install -r requirements-optional.txt
-    anthropic>=0.18.0  # LLM-based logic drift detection (Critic tool)
+    anthropic>=0.18.0  # LLM-based analysis features
     ```
 
 ### 2.4 Init Venv Suggestion
@@ -92,19 +87,19 @@ Example output:
     Then $PYTHON_EXE is set to $PURLIN_PROJECT_ROOT/.venv/bin/python3
 
 #### Scenario: resolve_python Climbing Detection (Standalone Layout)
-    Given the script is located at <project_root>/tools/critic/run.sh
+    Given the script is located at <project_root>/tools/cdd/scan.sh
     And <project_root>/.venv/bin/python3 exists
     And AGENTIC_PYTHON is not set
     And PURLIN_PROJECT_ROOT is not set
-    When tools/critic/run.sh sources tools/resolve_python.sh
+    When tools/cdd/scan.sh sources tools/resolve_python.sh
     Then $PYTHON_EXE is set to <project_root>/.venv/bin/python3
 
 #### Scenario: resolve_python Climbing Detection (Submodule Layout)
-    Given the script is located at <project_root>/agentic-dev/tools/critic/run.sh
+    Given the script is located at <project_root>/purlin/tools/cdd/scan.sh
     And <project_root>/.venv/bin/python3 exists
     And AGENTIC_PYTHON is not set
     And PURLIN_PROJECT_ROOT is not set
-    When tools/critic/run.sh sources tools/resolve_python.sh
+    When tools/cdd/scan.sh sources tools/resolve_python.sh
     Then $PYTHON_EXE is set to <project_root>/.venv/bin/python3
 
 #### Scenario: resolve_python Falls Back to System Python
@@ -121,32 +116,15 @@ Example output:
     Then a diagnostic message is printed to stderr containing "[resolve_python]"
     And stdout is empty (no pollution of JSON output)
 
-#### Scenario: Critic run.sh Uses Resolved Python
-    Given a .venv/ exists at the project root with python3
-    When tools/critic/run.sh is executed
-    Then it invokes the Critic using the venv Python interpreter
-    And not the system python3
-
 #### Scenario: CDD scan.sh Uses Resolved Python
     Given a .venv/ exists at the project root with python3
     When tools/cdd/scan.sh is executed
-    Then it invokes serve.py using the venv Python interpreter
-
-#### Scenario: CDD start.sh Replaced Ad-Hoc Detection
-    Given tools/cdd/start.sh has been migrated
-    When the script is inspected
-    Then it does not contain the pattern 'if [ -d "$DIR/../../.venv" ]'
-    And it sources tools/resolve_python.sh
+    Then it invokes scan.py using the venv Python interpreter
 
 #### Scenario: Init Uses Resolved Python for JSON Validation
     Given tools/init.sh has been migrated
     When init.sh runs the JSON validation step
     Then it uses $PYTHON_EXE instead of bare python3
-
-#### Scenario: test_lifecycle.sh Uses Resolved Python
-    Given test_lifecycle.sh has been migrated
-    When the helper functions invoke Python
-    Then they use $PYTHON_EXE instead of bare python3
 
 #### Scenario: requirements.txt Exists with No Packages
     Given the framework root is inspected

@@ -107,12 +107,11 @@ project-root artifacts:
 
 *   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic)
 *   Agent files (new/updated `.claude/agents/*.md` are copied; locally modified files are preserved by init's timestamp logic)
-*   CDD convenience symlinks (repaired if missing or corrupted)
 *   Launcher scripts (`pl-run-*.sh` regenerated)
 *   Project-root shim (`pl-init.sh` updated with new SHA and version)
 *   `.purlin/.upstream_sha` (updated to current submodule HEAD)
 
-This delegates the mechanical copy/symlink/shim work to the canonical init script.
+This delegates the mechanical copy/shim work to the canonical init script.
 
 ### 2.8 Conflict Resolution
 
@@ -490,10 +489,10 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And identifies the renamed heading
 
 #### Scenario: Go-Deeper Detects Orphaned Config Keys
-    Given upstream removed the key "dashboard.legacy_mode" from purlin-config-sample/config.json
-    And the consumer's config.local.json contains "dashboard.legacy_mode"
+    Given upstream removed the key "agents.builder.auto_test" from purlin-config-sample/config.json
+    And the consumer's config.local.json contains "agents.builder.auto_test"
     When the user accepts the go-deeper analysis
-    Then the report flags "dashboard.legacy_mode" as an orphaned key
+    Then the report flags "agents.builder.auto_test" as an orphaned key
 
 #### Scenario: Go-Deeper Summarizes Skipped Command Changes
     Given the consumer kept their local version of pl-status.md during conflict resolution

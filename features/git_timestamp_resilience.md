@@ -3,7 +3,9 @@
 > Label: "Git Timestamp Resilience"
 > Category: "Coordination & Lifecycle"
 
-[TODO]
+[Tombstone]
+
+> Tombstone reason: All implementation targets (critic.py, serve.py) were deleted as part of the CDD Dashboard and Critic system removal. Every function referenced in this spec (_has_testing_phase_commit, _has_verified_complete_commit, build_status_commit_cache, get_feature_status) no longer exists. The scan-based replacement (scan.py) does not perform the same timestamp-sensitive lifecycle comparisons.
 
 ## 1. Overview
 

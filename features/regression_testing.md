@@ -120,44 +120,22 @@ After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification)
 
 ```
 Regression suites:
-  per-feature (run in-session):
+  per-feature:
     [STALE]   critic_tool (3/3, but source modified since) [smoke]
     [PASS]    instruction_audit (5/5, 2h ago)
     [NOT_RUN] terminal_identity
+    [NOT_RUN] release_record_version_notes (agent_behavior, 3 scenarios)
 
-  per-feature (agent_behavior — run externally):
-    [NOT_RUN] release_record_version_notes (3 scenarios)
+  pre-release:
+    [NOT_RUN] skill_behavior_regression (agent_behavior, 9 scenarios)
 
-  pre-release (agent_behavior — run externally):
-    [NOT_RUN] skill_behavior_regression (9 scenarios)
-
-Run in-session suites? [all / per-feature / skip]
+Run regression suites? [all / per-feature / skip]
 ```
 
-6. **Harness type detection:** Before running any suite, read the scenario JSON's `harness_type`. Suites with `harness_type: "agent_behavior"` CANNOT run inside an active Claude Code session (nested session protection). These must be run externally by the user.
-7. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session).
-8. **agent_behavior suites — HARD GATE:** QA MUST NOT attempt to run these in-session. QA MUST print the CLI commands AND STOP. Do NOT proceed to Phase B until the user responds. This is a blocking prompt — the user must either run the commands and report back, or explicitly skip.
-
-Print:
-
-```
-These suites use agent_behavior (claude --print) and must run
-outside this session:
-
-    python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json
-    python3 tools/test_support/harness_runner.py tests/qa/scenarios/release_record_version_notes.json
-
-Run in a separate terminal, then say "done" when finished.
-Or say "skip" to proceed without running them.
-```
-
-**STOP HERE. Wait for the user to respond.** Do NOT print the Phase B checklist, do NOT present manual scenarios, do NOT continue with any other work until the user says "done" or "skip". This gate applies even when `auto_start` is `true` — agent_behavior external execution always requires a user round-trip.
-
-When the user says "done": run `/pl-regression-evaluate` to process results, then proceed to Phase B.
-When the user says "skip": proceed to Phase B.
-
-9. **Non-agent_behavior suites:** QA runs these directly via the harness runner (in-session) based on user selection.
-10. When `auto_start` is `true`: run STALE and NOT_RUN non-agent_behavior suites automatically (smoke first, then standard). For agent_behavior suites: the hard gate in step 8 applies unconditionally. For pre-release non-agent_behavior suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
+6. **Run all suites in-session.** All harness types — including `agent_behavior` — run directly via the harness runner. The `agent_behavior` harness invokes `claude --print` as a non-interactive subprocess; this is safe because `claude --print` is stateless and does not conflict with the parent Claude Code session.
+7. **Background execution for slow suites.** When a suite is expected to take >30 seconds (e.g., `agent_behavior` with multiple scenarios), run it via `run_in_background` so QA can continue with other Phase A work (visual smoke, scenario classification) while tests execute. When the background process completes, QA is notified and auto-evaluates the results.
+8. **Foreground execution for fast suites.** `web_test` and `custom_script` suites typically complete in seconds. Run these synchronously (foreground) for immediate feedback.
+9. When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). For pre-release suites: prompt `"Run pre-release regression suites? [yes / skip]"` even under auto_start.
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 
@@ -192,7 +170,7 @@ A regression result is stale when ANY of these conditions hold:
 
 The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
 
-**Completion gate:** A feature with a `[STALE]` or `[FAIL]` `regression.json` MUST NOT be marked `[Complete]` by QA. If the feature has `agent_behavior` regression scenarios that require external execution, QA MUST print the CLI command and wait for the user to run it (per Section 2.2.4 step 8) before marking complete. Features with only passing, non-stale regression results may proceed to `[Complete]`.
+**Completion gate:** A feature with a `[STALE]` or `[FAIL]` `regression.json` MUST NOT be marked `[Complete]` by QA. Features with only passing, non-stale regression results may proceed to `[Complete]`.
 
 ### 2.6 Assertion Tier Tracking
 
@@ -246,7 +224,7 @@ QA authors JSON scenario files in `tests/qa/scenarios/<feature_name>.json`. Each
 **Supported harness types:**
 
 - **`agent_behavior`:** Fixture checkout (if `fixture_tag` specified) -> construct system prompt from fixture's instruction files -> run `claude --print` with the specified `role` and `prompt` -> evaluate assertions against output.
-- **`web_test`:** Delegates to the existing web test patterns (CDD server against fixture state). Uses `web_test_url` or falls back to the feature's `> Web Test:` metadata.
+- **`web_test`:** Delegates to the existing web test patterns (dev server against fixture state). Uses `web_test_url` or falls back to the feature's `> Web Test:` metadata.
 - **`custom_script`:** Escape hatch. Runs the script at `script_path` with `--write-results` flag. The script is QA-authored and lives in `tests/qa/`.
 
 **File naming:** The JSON filename MUST match the feature file stem (`<feature_name>.json` for `features/<feature_name>.md`). One scenario file per feature.
@@ -297,7 +275,7 @@ The `(running)` line is printed before execution starts (flushed immediately so 
    b. If `setup_commands` are specified, execute them in order (CWD = fixture dir if checked out, otherwise project root).
    c. Dispatch based on `harness_type`:
       - `agent_behavior`: Construct Claude invocation with `--print` flag, specified role, and prompt. Capture output.
-      - `web_test`: Manage CDD server lifecycle (see Section 2.8.1), fetch page content from URL, evaluate assertions.
+      - `web_test`: Manage dev server lifecycle (see Section 2.8.1), fetch page content from URL, evaluate assertions.
       - `custom_script`: Execute the script at `script_path` with `--write-results`.
    d. Evaluate assertions against captured output (regex match for each pattern).
    e. Clean up: if fixture was checked out, run `fixture cleanup`. If a server was started by the harness, stop it (see Section 2.8.1).
@@ -306,30 +284,30 @@ The `(running)` line is printed before execution starts (flushed immediately so 
    - Per-detail enriched fields: `scenario_ref`, `expected` (from assertion context), `actual_excerpt`, `assertion_tier`.
 4. Exit with 0 if all assertions passed, non-zero otherwise.
 
-**Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Engineer-owned (unit test results). Writing regression results to `tests.json` clobbers Engineer counts and breaks the Critic's structural completeness gate. The Critic reads both files independently: `tests.json` for the Implementation Gate, `regression.json` for regression status.
+**Output path separation:** The harness runner writes to `regression.json`, never `tests.json`. `tests.json` is Engineer-owned (unit test results). Writing regression results to `tests.json` clobbers Engineer counts and breaks the structural completeness gate.
 
 #### 2.8.1 Web Test Server Lifecycle
 
-The harness runner manages CDD server lifecycle for `web_test` scenarios. The behavior depends on whether a fixture is checked out:
+The harness runner manages dev server lifecycle for `web_test` scenarios. The behavior depends on whether a fixture is checked out:
 
 **No fixture (testing against live project state):**
 
-1. Check if a CDD server is already running: read `.purlin/runtime/cdd.port`. If the file exists and the port is responsive (HTTP GET returns 200), reuse the existing server — do NOT start a new one, do NOT stop it after the test.
-2. If no server is running: start one via `tools/cdd/start.sh -p <port>` (use the port from `web_test_url`, or auto-select if not specified). Track the PID for cleanup. After all scenarios in this file complete, stop the server.
-3. **Readiness polling:** After starting a server, poll for readiness (HTTP GET to `http://localhost:<port>/status.json`) with retries: 10 attempts, 1 second apart. If the server is not responsive after 10 attempts, fail the scenario with `"Error: CDD server did not become ready within 10 seconds"`. Do NOT use a fixed `sleep`.
+1. Check if a dev server is already running: read `.purlin/runtime/server.port`. If the file exists and the port is responsive (HTTP GET returns 200), reuse the existing server — do NOT start a new one, do NOT stop it after the test.
+2. If no server is running: start one via `/pl-server` (use the port from `web_test_url`, or auto-select if not specified). Track the PID for cleanup. After all scenarios in this file complete, stop the server.
+3. **Readiness polling:** After starting a server, poll for readiness (HTTP GET to `http://localhost:<port>/`) with retries: 10 attempts, 1 second apart. If the server is not responsive after 10 attempts, fail the scenario with `"Error: dev server did not become ready within 10 seconds"`. Do NOT use a fixed `sleep`.
 
 **With fixture (testing against controlled project state):**
 
-1. Check if a CDD server is already running on the `web_test_url` port. If yes, start the fixture server on a DIFFERENT port (auto-select via OS) to avoid conflict. Update the `web_test_url` for assertions to use the new port.
-2. Start the CDD server against the fixture directory: `tools/cdd/start.sh -p <port> --project-root <fixture_dir>`. This runs CDD against the fixture's feature files, config, and test artifacts — providing the controlled state the fixture was designed for.
+1. Check if a dev server is already running on the `web_test_url` port. If yes, start the fixture server on a DIFFERENT port (auto-select via OS) to avoid conflict. Update the `web_test_url` for assertions to use the new port.
+2. Start the dev server against the fixture directory via `/pl-server --project-root <fixture_dir> --port <port>`. This serves the fixture's feature files, config, and test artifacts — providing the controlled state the fixture was designed for.
 3. **Readiness polling:** Same as above (10 attempts, 1 second apart).
 4. After all scenarios using this fixture complete, stop the fixture server. The pre-existing server (if any) is left untouched.
 
 **Cleanup mandate:** The harness runner MUST stop any server it started, even if scenarios fail or the harness crashes (use try/finally or atexit). Never leave orphaned server processes.
 
-**Scenario JSON changes:** With this server lifecycle management, `web_test` scenarios do NOT need `setup_commands` to start the CDD server. The harness runner handles it. Scenarios should specify `fixture_tag` for controlled state testing and `web_test_url` for the target URL (port). The harness adjusts the port if needed.
+**Scenario JSON changes:** With this server lifecycle management, `web_test` scenarios do NOT need `setup_commands` to start the dev server. The harness runner handles it. Scenarios should specify `fixture_tag` for controlled state testing and `web_test_url` for the target URL (port). The harness adjusts the port if needed.
 
-**Preference for fixture-based web tests:** When a `web_test` scenario has a `fixture_tag`, the harness MUST start CDD against the fixture directory (not the live project). Fixture-based tests provide deterministic, controlled state — testing against live project state should be the fallback, not the default. QA should author `web_test` scenarios with fixture tags whenever the assertions depend on specific feature states, config values, or lifecycle statuses.
+**Preference for fixture-based web tests:** When a `web_test` scenario has a `fixture_tag`, the harness MUST start the server against the fixture directory (not the live project). Fixture-based tests provide deterministic, controlled state — testing against live project state should be the fallback, not the default. QA should author `web_test` scenarios with fixture tags whenever the assertions depend on specific feature states, config values, or lifecycle statuses.
 
 **CLI interface:**
 
@@ -357,7 +335,7 @@ A shell wrapper that discovers and runs all scenario files:
    Regression Summary:
      PASS  instruction_audit (5/5)
      FAIL  branch_collab (3/5)
-     PASS  cdd_startup (8/8)
+     PASS  config_layering (8/8)
 
    Total: 16/18 passed (3 features tested, 1 failure)
    ```
@@ -635,9 +613,9 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
     Given a scenario JSON file with harness_type "web_test"
     And the scenario specifies web_test_url "http://localhost:9086"
-    And no CDD server is currently running
+    And no dev server is currently running
     When the harness runner processes the scenario file
-    Then the harness starts a CDD server on port 9086
+    Then the harness starts a dev server on port 9086
     And polls for readiness before running assertions
     And enriched regression.json is written with pass/fail results
     And the server is stopped after all scenarios complete
@@ -645,7 +623,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
 #### Scenario: Harness runner reuses existing server for non-fixture web_test
 
     Given a scenario JSON file with harness_type "web_test"
-    And a CDD server is already running on port 9086
+    And a dev server is already running on port 9086
     And no fixture_tag is specified
     When the harness runner processes the scenario file
     Then the harness reuses the existing server (does not start a new one)
@@ -655,10 +633,10 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
     Given a scenario JSON file with harness_type "web_test"
     And the scenario has a fixture_tag and web_test_url "http://localhost:9086"
-    And a CDD server is already running on port 9086
+    And a dev server is already running on port 9086
     When the harness runner processes the scenario file
     Then the fixture is checked out
-    And the harness starts a SEPARATE CDD server against the fixture directory on a different port
+    And the harness starts a SEPARATE dev server against the fixture directory on a different port
     And assertions run against the fixture server (not the existing one)
     And the fixture server is stopped after scenarios complete
     And the pre-existing server on port 9086 is left running

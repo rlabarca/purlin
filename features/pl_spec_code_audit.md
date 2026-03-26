@@ -51,7 +51,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 ### 2.6 Phase 0 -- Project State and Constraint Loading
 
 - The command MUST run `${TOOLS_ROOT}/cdd/scan.sh` and read `/pl-status` and `.purlin/cache/dependency_graph.json`.
-- For each feature, the command MUST read `tests/<name>/critic.json` to extract scenario count from traceability detail.
+- For each feature, the command MUST read `tests/<name>/tests.json` to extract scenario count and test results.
 - The command MUST build a transitive prerequisite map by walking all `> Prerequisite:` chains recursively (BFS) for every feature in the dependency graph. Output: `{feature_name: [list of all ancestor anchor filenames]}`.
 - The command MUST collect anchor constraints from each unique anchor node in the transitive map: all `FORBIDDEN:` patterns (line + pattern text), numbered invariant statements, and named constraints. Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...]}}`.
 - Phase 0 reads only metadata and anchor node constraint sections -- never feature scenarios or source code.
@@ -86,7 +86,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 - **Code-comparison subagents** MUST, for each assigned feature:
   - Read the feature spec and extract all `#### Scenario:` entries with Given/When/Then.
   - Read the companion file and note Tool Location, source mappings, and decision tags.
-  - Read `tests/<name>/critic.json` for gate statuses and traceability.
+  - Read `tests/<name>/tests.json` for test results and traceability.
   - Discover source files via test imports, companion file Tool Location, or directory convention mapping.
   - Read up to 5 primary implementation files per feature.
   - Perform scenario-by-scenario comparison: find the corresponding test function, trace to the code path, verify assertions match actual code logic, and flag contradictions, missing logic, extra behavior, or hardcoded values.
@@ -288,9 +288,9 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 #### Scenario: Anchor constraint collection extracts invariants
 
-    Given anchor node policy_critic.md contains numbered invariants in an Invariants section
+    Given anchor node policy_branch_collab.md contains numbered invariants in an Invariants section
     When the command collects anchor constraints
-    Then policy_critic.md's constraint entry includes all numbered invariant statements
+    Then policy_branch_collab.md's constraint entry includes all numbered invariant statements
 
 #### Scenario: Deep mode classifies anchor nodes into spec-only track
 
@@ -528,10 +528,10 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
 
 #### Scenario: Ownership map uses test import tracing (H3)
 
-    Given tests/critic_tool/test_critic.py imports tools.critic.run
-    And tools/critic/run.py exists in the code inventory
+    Given tests/config_layering/test_resolve_config.py imports tools.config.resolve_config
+    And tools/config/resolve_config.py exists in the code inventory
     When Phase 0.5 Step 0.5.2 runs in deep mode
-    Then tools/critic/run.py is owned by critic_tool with heuristic H3 and confidence HIGH
+    Then tools/config/resolve_config.py is owned by config_layering with heuristic H3 and confidence HIGH
 
 #### Scenario: Command file maps to feature by naming convention (H4)
 

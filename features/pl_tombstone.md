@@ -40,7 +40,7 @@ Engineer mode's feature retirement skill that creates tombstone files before del
 ### 2.5 Test Artifact Discovery
 
 - The tombstone's "Files to Delete" section MUST auto-discover and list all test infrastructure for the feature:
-  - `tests/<name>/` directory (if it exists) — unit tests, tests.json, critic.json
+  - `tests/<name>/` directory (if it exists) — unit tests, tests.json
   - `tests/<name>/regression.json` (if it exists) — regression test results
   - `tests/qa/scenarios/<name>.json` (if it exists) — QA regression scenario
   - `tests/qa/test_<name>_regression.sh` (if it exists) — QA regression runner

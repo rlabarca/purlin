@@ -11,12 +11,12 @@ As feature files grow, their Implementation Notes sections consume increasing pr
 
 ### 2.1 File Naming Convention
 - Companion files MUST use the naming pattern `features/<name>.impl.md` alongside `features/<name>.md`.
-- Example: `features/critic_tool.md` has companion `features/critic_tool.impl.md`.
+- Example: `features/project_init.md` has companion `features/project_init.impl.md`.
 
 ### 2.2 Companion File Resolution
 Companion files are resolved by naming convention: for a feature file `features/<name>.md`, the companion is `features/<name>.impl.md`. Feature files do NOT reference companion files -- companion files are standalone, discovered purely by naming convention. This aligns with PURLIN_BASE.md Section 4.3: "companion files are standalone -- feature files do NOT reference them."
 
-When a companion file exists, the feature file's `## Implementation Notes` section MAY contain a stub or be absent entirely. The Critic resolves the companion by convention, not by parsing links.
+When a companion file exists, the feature file's `## Implementation Notes` section MAY contain a stub or be absent entirely. The companion is resolved by convention, not by parsing links.
 
 ### 2.3 Companion File Structure
 The companion file contains the extracted implementation notes content. The file has no metadata headers (no Label, Category, or Prerequisite lines). It begins with a heading and contains the implementation knowledge directly.
@@ -29,8 +29,8 @@ The companion file contains the extracted implementation notes content. The file
 ### 2.4 Exclusion Rules
 - Companion files (`*.impl.md`) and discovery sidecar files (`*.discoveries.md`) are NOT feature files.
 - They MUST NOT appear in the dependency graph.
-- They MUST NOT be processed by the Spec Gate or Implementation Gate.
-- They MUST NOT appear in the CDD lifecycle tracking.
+- They MUST NOT be processed by spec validation gates.
+- They MUST NOT appear in lifecycle tracking.
 - They MUST NOT be detected as feature files by the orphan cleanup tool.
 
 ### 2.5 Status Reset Exemption
@@ -38,15 +38,15 @@ The companion file contains the extracted implementation notes content. The file
 - Only edits to the feature spec file (`<name>.md`) trigger status resets.
 - This ensures Engineer decisions, tribal knowledge updates, and QA discovery recording do not invalidate completed features.
 
-### 2.6 Companion File Resolution in Critic
-- The Critic's Implementation Gate MUST resolve companion file content when evaluating builder decisions, traceability overrides, and section completeness.
-- The Critic resolves companion files by naming convention: for `features/<name>.md`, it checks whether `features/<name>.impl.md` exists on disk. If it does, the Critic reads the companion file content.
-- When no companion file exists (backward compatibility), the Critic uses inline `## Implementation Notes` content as before.
+### 2.6 Companion File Resolution
+- The scan and audit tools MUST resolve companion file content when evaluating implementation decisions, traceability overrides, and section completeness.
+- Companion files are resolved by naming convention: for `features/<name>.md`, check whether `features/<name>.impl.md` exists on disk. If it does, read the companion file content.
+- When no companion file exists (backward compatibility), inline `## Implementation Notes` content is used.
 - A feature with a companion file on disk is NOT considered to have "empty notes" for section completeness purposes, regardless of what the inline stub contains.
 
 ### 2.7 Orphan Detection
 - If `<name>.md` is flagged as orphaned, `<name>.impl.md` and `<name>.discoveries.md` MUST also be flagged.
-- If `<name>.impl.md` or `<name>.discoveries.md` exists but `<name>.md` does not, it MUST be flagged as orphaned.
+- If `<name>.impl.md` or `<name>.discoveries.md` exists but `<name>.md` does not, it MUST be flagged as orphaned by the orphan cleanup tool.
 
 ### 2.8 Integration Test Fixture Tags
 
@@ -59,30 +59,30 @@ The companion file contains the extracted implementation notes content. The file
 ### Automated Scenarios
 
 ##### Scenario: Feature Scanning Excludes Companion Files
-Given a features directory with `critic_tool.md` and `critic_tool.impl.md`
-When the Critic scans for feature files
-Then only `critic_tool.md` is processed
-And `critic_tool.impl.md` is not treated as a feature file
+Given a features directory with `project_init.md` and `project_init.impl.md`
+When the scan processes feature files
+Then only `project_init.md` is processed
+And `project_init.impl.md` is not treated as a feature file
 
-#### Scenario: Companion File Resolution for Implementation Gate
-Given a feature file with a stub `## Implementation Notes` referencing `critic_tool.impl.md`
-And a companion file `features/critic_tool.impl.md` with builder decisions
-When the Critic runs the Implementation Gate
-Then builder decisions from the companion file are parsed and audited
+#### Scenario: Companion File Resolution for Audit
+Given a feature file with a stub `## Implementation Notes` referencing `project_init.impl.md`
+And a companion file `features/project_init.impl.md` with engineer decisions
+When the spec-code audit evaluates implementation decisions
+Then decisions from the companion file are parsed and audited
 
 #### Scenario: Backward Compatible Inline Notes
 Given a feature file with inline `## Implementation Notes` (no companion file reference)
-When the Critic runs the Implementation Gate
-Then the inline content is used for builder decision parsing (unchanged behavior)
+When the spec-code audit evaluates implementation decisions
+Then the inline content is used for decision parsing (unchanged behavior)
 
 #### Scenario: Stub With Companion Reference Not Flagged as Empty
 Given a feature file with a stub `## Implementation Notes` containing a companion file link
-When the Critic checks section completeness
+When the audit checks section completeness
 Then the section is NOT flagged as "Implementation Notes empty"
 
 #### Scenario: Orphan Detection Flags Companion Without Parent
 Given a companion file `features/old_feature.impl.md` without a corresponding `features/old_feature.md`
-When the Critic scans `features/*.impl.md` files and no corresponding `features/<name>.md` parent exists, the companion is flagged as an orphan in the Critic report
+When the orphan cleanup tool scans `features/*.impl.md` files and no corresponding `features/<name>.md` parent exists
 Then `old_feature.impl.md` is flagged as orphaned
 
 ### Manual Scenarios
