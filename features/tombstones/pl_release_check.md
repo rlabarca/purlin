@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-The Architect's release readiness skill that executes the CDD release checklist step by step. Verifies the Zero-Queue Mandate (all features DONE across Architect, Builder, and QA), checks the dependency graph for cycles, and works through each enabled release step in the project-specific sequence from `.purlin/release/config.json`.
+The PM's release readiness skill that executes the CDD release checklist step by step. Verifies the Zero-Queue Mandate (all features DONE across PM, Engineer, and QA), checks the dependency graph for cycles, and works through each enabled release step in the project-specific sequence from `.purlin/release/config.json`.
 
 ---
 
@@ -18,8 +18,8 @@ The Architect's release readiness skill that executes the CDD release checklist 
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Architect role.
-- Non-Architect agents MUST receive a redirect message.
+- The command MUST only execute when invoked by the PM role.
+- Non-PM agents MUST receive a redirect message.
 
 ### 2.2 Release Verification Steps
 
@@ -38,9 +38,9 @@ The Architect's release readiness skill that executes the CDD release checklist 
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-release-check
     Then the command responds with a redirect message
 

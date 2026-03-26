@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The QA skill for processing regression test results after execution. Reads enriched `regression.json` results, creates BUG discoveries for failures, computes assertion tier distribution metrics, flags shallow assertion suites, and prints a structured summary with handoff guidance for the Builder.
+The QA skill for processing regression test results after execution. Reads enriched `regression.json` results, creates BUG discoveries for failures, computes assertion tier distribution metrics, flags shallow assertion suites, and prints a structured summary with handoff guidance for the Engineer.
 
 ---
 
@@ -39,7 +39,7 @@ The QA skill for processing regression test results after execution. Reads enric
 
 - Print structured summary: per-feature PASS/FAIL with counts.
 - Run `status.sh` to refresh Critic report.
-- If failures found, print handoff message directing to launch Builder.
+- If failures found, print handoff message directing to launch Engineer.
 
 ---
 
@@ -49,7 +49,7 @@ The QA skill for processing regression test results after execution. Reads enric
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-regression-evaluate
     Then the command responds with a redirect message
 

@@ -39,11 +39,11 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 ### 2.4 Spec File Role Renames
 
 - In all `features/*.md` files, replace role references:
-  - "Architect" → "PM" (when referring to spec/design authority)
-  - "Builder" → "Engineer" (when referring to implementation)
-  - "the Architect" → "PM mode"
-  - "the Builder" → "Engineer mode"
-- In `features/*.discoveries.md`: replace `Action Required: Architect` → `PM`, `Builder` → `Engineer`.
+  - "PM" → "PM" (when referring to spec/design authority)
+  - "Engineer" → "Engineer" (when referring to implementation)
+  - "the PM" → "PM mode"
+  - "the Engineer" → "Engineer mode"
+- In `features/*.discoveries.md`: replace `Action Required: PM` → `PM`, `Engineer` → `Engineer`.
 - In `features/*.impl.md`: replace role references in prose (not in Active Deviations table which uses new format).
 - ALL spec modification commits MUST include the `[Migration]` tag to prevent lifecycle resets.
 - Example commit: `chore(migration): rename role references in feature specs [Migration]`
@@ -57,7 +57,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 ### 2.6 CLAUDE.md Update
 
-- If the consumer project has a `CLAUDE.md` that references the old 4-role model (Architect, Builder, QA, PM) but does not mention the Purlin unified agent:
+- If the consumer project has a `CLAUDE.md` that references the old 4-role model (PM, Engineer, QA, PM) but does not mention the Purlin unified agent:
   - Add a section describing the Purlin agent alongside existing role boundaries.
   - Reference: use `purlin-config-sample/CLAUDE.md.purlin` as the canonical template.
 - If `CLAUDE.md` already mentions "Purlin" or "unified agent": skip.
@@ -130,7 +130,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: Spec role renames use Migration tag
 
-    Given features/auth_flow.md contains "the Builder implements"
+    Given features/auth_flow.md contains "the Engineer implements"
     When migration runs spec rename step
     Then features/auth_flow.md contains "Engineer mode implements"
     And the commit message contains "[Migration]"
@@ -152,7 +152,7 @@ When consumer projects run `/pl-update-purlin`, the migration module detects old
 
 #### Scenario: CLAUDE.md updated to mention Purlin agent
 
-    Given CLAUDE.md references "Architect, Builder, QA, PM" roles
+    Given CLAUDE.md references "PM, Engineer, QA, PM" roles
     And CLAUDE.md does not mention "Purlin" or "unified agent"
     When migration runs
     Then CLAUDE.md is updated to include Purlin unified agent description

@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-The Architect's skill for running a single release step from the project's checklist without executing the full sequence. Supports name-based step selection with partial matching, disabled step warning, and execution via agent_instructions or shell code. Resolves the fully merged release step list from global and local step definitions.
+The PM's skill for running a single release step from the project's checklist without executing the full sequence. Supports name-based step selection with partial matching, disabled step warning, and execution via agent_instructions or shell code. Resolves the fully merged release step list from global and local step definitions.
 
 ---
 
@@ -18,8 +18,8 @@ The Architect's skill for running a single release step from the project's check
 
 ### 2.1 Role Gating
 
-- The command MUST only execute when invoked by the Architect role.
-- Non-Architect agents MUST receive a redirect message.
+- The command MUST only execute when invoked by the PM role.
+- Non-PM agents MUST receive a redirect message.
 
 ### 2.2 Step Resolution
 
@@ -39,9 +39,9 @@ The Architect's skill for running a single release step from the project's check
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-Architect invocation
+#### Scenario: Role gate rejects non-PM invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-release-run
     Then the command responds with a redirect message
 

@@ -102,7 +102,7 @@ The script MUST generate a `pl-init.sh` file at the project root with the follow
 
 ### 2.6 Full Init Output
 
-The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (Architect), (3) what the Builder does. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
+The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (PM), (3) what the Engineer does. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
 
 ### 2.7 Refresh Output
 

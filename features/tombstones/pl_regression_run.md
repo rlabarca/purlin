@@ -47,7 +47,7 @@ The QA skill for executing existing regression scenarios. Discovers regression-e
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-regression-run
     Then the command responds with a redirect message
 

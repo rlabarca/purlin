@@ -35,7 +35,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 - After creating the first spec and anchor node, the PM MUST commit all created files.
 - The PM MUST tell the user to run `./pl-run-builder.sh` in another terminal to start building from the spec.
 - The PM MUST tell the user to run `./pl-cdd-start.sh` to see the status dashboard.
-- The PM MUST explain (one sentence) what the Builder will do: "The Builder reads your spec and writes the code and tests to match it."
+- The PM MUST explain (one sentence) what the Engineer will do: "The Engineer reads your spec and writes the code and tests to match it."
 
 ### 2.4 Figma MCP Health Check
 
@@ -49,7 +49,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
 - Guided onboarding mode activates ONLY when `feature_summary.total == 0`. Once any feature exists, the PM follows its standard startup protocol.
 - The Figma health check runs on every startup regardless of project state.
-- The PM MUST NOT attempt to run the Builder or start the CDD dashboard itself. It advises the user on what command to run.
+- The PM MUST NOT attempt to run the Engineer or start the CDD dashboard itself. It advises the user on what command to run.
 
 ---
 
@@ -97,13 +97,13 @@ When the PM agent launches into an empty project (zero feature specs), it enters
     And the visual spec references the Figma source
     And at least one anchor node is created
 
-#### Scenario: Next steps include Builder and CDD
+#### Scenario: Next steps include Engineer and CDD
 
     Given the PM has completed the guided onboarding flow
     When the PM presents next steps to the user
     Then the PM output includes "./pl-run-builder.sh"
     And the PM output includes "./pl-cdd-start.sh"
-    And the PM output includes a one-sentence explanation of what the Builder does
+    And the PM output includes a one-sentence explanation of what the Engineer does
 
 #### Scenario: Figma MCP missing when user shares URL
 
@@ -142,7 +142,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
     Then the PM creates a spec with visual specification
     And creates at least one anchor node
     And commits all files
-    And clearly explains what to do next (Builder, dashboard)
+    And clearly explains what to do next (Engineer, dashboard)
     And the created spec passes the Critic spec gate when tools/cdd/status.sh runs
 
 #### @manual Scenario: First session without Figma

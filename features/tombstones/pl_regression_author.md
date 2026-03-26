@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The QA skill for creating regression scenario JSON files from feature specs. Discovers features that have reached Builder DONE status with no existing scenario file, then sequentially authors scenario JSON for each feature following the schema defined in the regression testing spec. Supports fixture integration with three-tier fixture repo resolution and generates consumer wrapper scripts on first use.
+The QA skill for creating regression scenario JSON files from feature specs. Discovers features that have reached Engineer DONE status with no existing scenario file, then sequentially authors scenario JSON for each feature following the schema defined in the regression testing spec. Supports fixture integration with three-tier fixture repo resolution and generates consumer wrapper scripts on first use.
 
 ---
 
@@ -23,11 +23,11 @@ The QA skill for creating regression scenario JSON files from feature specs. Dis
 ### 2.2 Prerequisite Check
 
 - Check for harness runner framework at `tools/test_support/harness_runner.py`.
-- If missing: print handoff message directing user to launch Builder and STOP.
+- If missing: print handoff message directing user to launch Engineer and STOP.
 
 ### 2.3 Feature Discovery
 
-- Run `status.sh --role qa` to identify features needing authoring: has Regression Testing or Regression Guidance section or Web Test metadata, Builder status is DONE, and no `tests/qa/scenarios/<feature_name>.json` exists.
+- Run `status.sh --role qa` to identify features needing authoring: has Regression Testing or Regression Guidance section or Web Test metadata, Engineer status is DONE, and no `tests/qa/scenarios/<feature_name>.json` exists.
 
 ### 2.4 Scenario Authoring
 
@@ -53,7 +53,7 @@ The QA skill for creating regression scenario JSON files from feature specs. Dis
 
 #### Scenario: Role gate rejects non-QA invocation
 
-    Given a Builder agent session
+    Given a Engineer agent session
     When the agent invokes /pl-regression-author
     Then the command responds with a redirect message
 
@@ -61,12 +61,12 @@ The QA skill for creating regression scenario JSON files from feature specs. Dis
 
     Given harness_runner.py does not exist
     When /pl-regression-author is invoked
-    Then a handoff message is printed directing to launch Builder
+    Then a handoff message is printed directing to launch Engineer
     And no scenario files are created
 
 #### Scenario: Feature discovery identifies eligible features
 
-    Given feature_a has Builder DONE status and Regression Guidance section
+    Given feature_a has Engineer DONE status and Regression Guidance section
     And no tests/qa/scenarios/feature_a.json exists
     When /pl-regression-author discovers features
     Then feature_a is listed as needing scenario authoring

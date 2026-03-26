@@ -58,7 +58,7 @@ Defines the visual and behavioral constraints for all text-based (content-readin
 
 ### Theme Integration
 
-- All modal elements MUST respect the active theme (Blueprint/Architect) using CSS custom properties from `design_visual_standards.md`.
+- All modal elements MUST respect the active theme (Blueprint/PM) using CSS custom properties from `design_visual_standards.md`.
 
 ### Excluded Modals
 

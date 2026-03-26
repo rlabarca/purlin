@@ -16,7 +16,7 @@ A Purlin-framework-only skill (not distributed to consumer projects) that provid
 
 ### 2.1 Role and Repository Gating
 
-- The command MUST only execute when invoked by the Architect role in the Purlin framework repository.
+- The command MUST only execute when invoked by the PM role in the Purlin framework repository.
 - Consumer project agents MUST receive a redirect to `/pl-override-edit`.
 - Confirm no `purlin/` submodule directory exists (which would indicate a consumer project).
 

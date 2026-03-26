@@ -161,14 +161,14 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 #### Scenario: Dual skill header for legacy compatibility
 
     Given pl-build.md skill file
-    When a legacy Builder agent reads the file
-    Then line 1 contains "Purlin command owner: Builder"
-    And the legacy agent recognizes it as a Builder command
+    When a legacy Engineer agent reads the file
+    Then line 1 contains "Purlin command owner: Engineer"
+    And the legacy agent recognizes it as a Engineer command
 
 #### Scenario: Purlin-only skill blocked by legacy agents
 
     Given pl-mode.md skill file
-    When a legacy Builder agent reads the file
+    When a legacy Engineer agent reads the file
     Then line 1 contains "Purlin command: Purlin agent only"
     And the legacy agent skips this command
 

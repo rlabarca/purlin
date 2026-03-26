@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-This feature defines the CLI tool and Architect slash command for creating, modifying, and deleting local release steps. The tool enforces schema correctness and namespace safety before writing to `.purlin/release/local_steps.json` and `.purlin/release/config.json`, preventing the malformed states that manual JSON editing can introduce.
+This feature defines the CLI tool and PM slash command for creating, modifying, and deleting local release steps. The tool enforces schema correctness and namespace safety before writing to `.purlin/release/local_steps.json` and `.purlin/release/config.json`, preventing the malformed states that manual JSON editing can introduce.
 
 ## 2. Requirements
 
@@ -102,7 +102,7 @@ The tool prints a `[DRY RUN]` header followed by the full proposed JSON for each
 
 ### 2.4 Slash Command: /pl-release-step
 
-The Architect slash command `/pl-release-step [create|modify|delete] [<step-id>]` provides a guided, interactive interface over the CLI tool. If no operation argument is given, the command presents the three operations and prompts the user to choose.
+The PM slash command `/pl-release-step [create|modify|delete] [<step-id>]` provides a guided, interactive interface over the CLI tool. If no operation argument is given, the command presents the three operations and prompts the user to choose.
 
 **Operation: create**
 

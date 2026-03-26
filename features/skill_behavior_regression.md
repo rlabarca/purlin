@@ -30,7 +30,7 @@ Consumer project state snapshots stored in the `purlin-fixtures` repo:
 | `main/skill_behavior/purlin-unified` | Consumer project with 3 TODO features, 2 TESTING, 2 COMPLETE features. `.purlin/config.json` with `agents.purlin` configured. `instructions/PURLIN_BASE.md` + `.purlin/PURLIN_OVERRIDES.md` instruction stack. `instructions/references/purlin_commands.md` for command table. `.claude/commands/` with skill files. `features/` with mixed lifecycle specs. Self-contained — no external dependencies. |
 | `main/skill_behavior/fresh-init` | Freshly initialized consumer project (post project_init). No feature specs yet. Default config. |
 
-**Retired fixture tags:** `main/skill_behavior/mixed-lifecycle` and `main/skill_behavior/architect-backlog` tested legacy role-specific agents (Architect, Builder, QA). These are superseded by `purlin-unified`. They MAY be retained for legacy agent regression if legacy agents are still supported; otherwise they should be removed.
+**Retired fixture tags:** `main/skill_behavior/mixed-lifecycle` and `main/skill_behavior/architect-backlog` tested legacy role-specific agents (PM, Engineer, QA). These are superseded by `purlin-unified`. They MAY be retained for legacy agent regression if legacy agents are still supported; otherwise they should be removed.
 
 Each fixture tag contains a complete `.purlin/` config, `features/` directory, `instructions/` directory, and any other files the scenario requires. The fixture state MUST be self-contained — tests should not depend on external network or the current Purlin repo state.
 
