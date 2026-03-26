@@ -167,26 +167,28 @@ When the checkpoint mode is `engineer`, check for orphaned worktree branches (`g
 
 Run `${TOOLS_ROOT}/cdd/scan.sh` to get the current project state. Then run `/pl-status` to interpret the scan results and present work organized by mode.
 
-**This step is the shared path used by BOTH normal startup and context recovery.** PURLIN_BASE.md §5.3-5.4 delegate here — there is no separate implementation of work discovery in the startup protocol.
+**This step is the shared path for BOTH normal startup and context recovery.** PURLIN_BASE.md §5.2 delegates here — there is no separate implementation of work discovery in the startup protocol.
 
 **Warm resume (checkpoint exists):**
 - The scan provides fresh project state. The work plan comes from the checkpoint's "Next" list.
 - Re-enter the mode recorded in the checkpoint.
+- Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.
 
 **Cold start (no checkpoint):**
+
+This is the path taken on fresh launch AND on `/clear` without `/pl-resume save`. The agent starts in open mode with no work plan — it discovers work fresh via scan.
+
 - Use `/pl-status` output to generate a full work plan organized by mode.
 - Suggest the mode with highest-priority work.
-- **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
 - **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS or PENDING phases, highlight it and suggest Engineer mode.
+- **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `/pl-delivery-plan` before proposing the work plan.
 - Check `find_work` and `auto_start` from the config:
   - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
   - `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
   - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
 
-When a checkpoint exists, startup flags are not consulted -- the checkpoint is the authority for both mode and work plan.
-
 **Mode activation priority (context-dependent):**
-- **Warm resume (checkpoint exists):** checkpoint mode wins. This is the save/resume contract — the user gets back where they were regardless of launcher flags or config defaults.
+- **Warm resume (checkpoint exists):** checkpoint mode wins. This is the save/resume contract.
 - **Cold start (no checkpoint):** CLI `--mode` > config `default_mode` > `.purlin_session.lock` mode > user input.
 
 **Worktree context:** If running inside a worktree (`.purlin_worktree_label` exists), read the label and include it in the recovery summary. If `.purlin_session.lock` exists, read the mode from the lock as a fallback when no checkpoint exists.
