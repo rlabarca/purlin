@@ -279,7 +279,7 @@ class TestResolveToolbox(unittest.TestCase):
 class TestFuzzyMatch(unittest.TestCase):
     def setUp(self):
         self.tools = [
-            {"id": "purlin.verify_zero_queue", "friendly_name": "Verify Zero-Queue Status", "category": "purlin"},
+            {"id": "purlin.verify_dependency_integrity", "friendly_name": "Verify Dependency Integrity", "category": "purlin"},
             {"id": "purlin.instruction_audit", "friendly_name": "Agent Instruction Audit", "category": "purlin"},
             {"id": "my_audit", "friendly_name": "My Custom Audit", "category": "project"},
             {"id": "purlin.doc_consistency_check", "friendly_name": "Documentation Consistency", "category": "purlin"},
@@ -287,14 +287,14 @@ class TestFuzzyMatch(unittest.TestCase):
         ]
 
     def test_exact_id_match(self):
-        matches = fuzzy_match("purlin.verify_zero_queue", self.tools)
+        matches = fuzzy_match("purlin.verify_dependency_integrity", self.tools)
         self.assertEqual(len(matches), 1)
-        self.assertEqual(matches[0]["id"], "purlin.verify_zero_queue")
+        self.assertEqual(matches[0]["id"], "purlin.verify_dependency_integrity")
 
     def test_partial_id_match(self):
-        matches = fuzzy_match("zero", self.tools)
+        matches = fuzzy_match("dependency", self.tools)
         self.assertEqual(len(matches), 1)
-        self.assertEqual(matches[0]["id"], "purlin.verify_zero_queue")
+        self.assertEqual(matches[0]["id"], "purlin.verify_dependency_integrity")
 
     def test_friendly_name_match(self):
         matches = fuzzy_match("Custom", self.tools)

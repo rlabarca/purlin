@@ -2,7 +2,6 @@
 """Lightweight status scanner for the Purlin agent.
 
 Gathers project facts and outputs structured JSON to stdout.
-Replaces the heavy critic.py with a simple fact-gathering script.
 The agent interprets the facts -- this script only collects them.
 
 Usage:

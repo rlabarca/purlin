@@ -196,7 +196,7 @@ def create_smoke_regression(project_root, feature, scenarios):
 
 # Category keywords for smoke candidates
 _SMOKE_CATEGORIES = {'Install, Update & Scripts', 'Coordination & Lifecycle'}
-_SMOKE_NAME_KEYWORDS = {'launcher', 'init', 'config', 'critic', 'cdd', 'status'}
+_SMOKE_NAME_KEYWORDS = {'launcher', 'init', 'config', 'cdd', 'status'}
 
 
 def _count_dependents(dep_graph):

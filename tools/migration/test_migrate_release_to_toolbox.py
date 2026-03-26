@@ -57,7 +57,7 @@ class TestMigration(unittest.TestCase):
         """Config.json with global steps but no local_steps.json → empty project_tools."""
         self._write_release_file("config.json", {
             "steps": [
-                {"id": "purlin.verify_zero_queue", "enabled": True},
+                {"id": "purlin.verify_dependency_integrity", "enabled": True},
                 {"id": "purlin.push_to_remote", "enabled": True},
             ]
         })

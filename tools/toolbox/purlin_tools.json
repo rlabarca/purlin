@@ -10,14 +10,6 @@
             "tags": ["release"]
         },
         {
-            "id": "purlin.verify_zero_queue",
-            "friendly_name": "Verify Zero-Queue Status",
-            "description": "Verifies that all features are in a fully satisfied state by checking that every feature has engineer: 'DONE' and qa is 'CLEAN' or 'N/A'.",
-            "code": null,
-            "agent_instructions": "Run the CDD scan and confirm that every entry in the features array has engineer: \"DONE\" and qa is either \"CLEAN\" or \"N/A\". If any feature fails this check, halt and report which features are not ready.",
-            "tags": ["release", "audit"]
-        },
-        {
             "id": "purlin.verify_dependency_integrity",
             "friendly_name": "Verify Dependency Integrity",
             "description": "Verifies that the dependency graph is acyclic and all prerequisite links are valid.",

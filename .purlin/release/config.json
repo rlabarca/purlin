@@ -1,10 +1,6 @@
 {
   "steps": [
     {
-      "id": "purlin.verify_zero_queue",
-      "enabled": true
-    },
-    {
       "id": "purlin.instruction_audit",
       "enabled": true
     },

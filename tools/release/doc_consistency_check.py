@@ -180,7 +180,7 @@ def check_readme_instruction_consistency(readme_path, project_root):
     """Check README against instruction files for content drift.
 
     Verifies that README accurately describes instruction-file-governed
-    behavior: role definitions, focus phrases, and critic architecture.
+    behavior: role definitions, focus phrases, and instruction layer structure.
     """
     findings = []
     hww_path = os.path.join(project_root, "instructions", "HOW_WE_WORK_BASE.md")
@@ -231,7 +231,7 @@ def check_readme_instruction_consistency(readme_path, project_root):
                 f"has no section in README",
             ))
 
-    # Check 3: Critic dual-gate architecture consistency
+    # Check 3: Dual-gate architecture consistency
     hww_has_dual_gate = (
         "Spec Gate" in hww_content and "Implementation Gate" in hww_content
     )
