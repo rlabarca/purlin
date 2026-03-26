@@ -2,7 +2,6 @@
 
 > Label: "Tool: Test Fixture Repo"
 > Category: "Test Infrastructure"
-> Prerequisite: features/policy_critic.md
 
 [Complete] <!-- re-verified 2026-03-23 after doc-only spec edits (decision matrix, section renumbering) -->
 

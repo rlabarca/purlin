@@ -2,7 +2,6 @@
 
 > Label: "Dev: Agent Behavior Tests"
 > Category: "Test Infrastructure"
-> Prerequisite: features/policy_critic.md
 > Prerequisite: features/test_fixture_repo.md
 > Prerequisite: features/cdd_startup_controls.md
 > Prerequisite: features/pl_session_resume.md

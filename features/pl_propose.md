@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Engineer: /pl-propose Spec Change Proposal"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/policy_critic.md
 > Prerequisite: features/impl_notes_companion.md
 
 [TODO]

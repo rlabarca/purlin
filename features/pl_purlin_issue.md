@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Common: /pl-purlin-issue Purlin Issue Report"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

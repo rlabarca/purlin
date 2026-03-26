@@ -2,7 +2,6 @@
 
 > Label: "Critic: QA Effort Classification"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

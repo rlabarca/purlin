@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Engineer: /pl-unit-test Unit Test Protocol"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/policy_critic.md
 > Prerequisite: features/arch_testing.md
 
 [TODO]

@@ -3,7 +3,6 @@
 > Label: "Agent Skills: PM: /pl-design-audit Design Audit"
 > Category: "Agent Skills: PM"
 > Prerequisite: features/design_artifact_pipeline.md
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

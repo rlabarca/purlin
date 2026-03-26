@@ -2,7 +2,6 @@
 
 > Label: "Git Timestamp Resilience"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

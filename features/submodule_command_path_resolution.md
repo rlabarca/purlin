@@ -2,7 +2,6 @@
 
 > Label: "Tool: Submodule Command Path Resolution"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/policy_critic.md
 
 ## 1. Overview
 

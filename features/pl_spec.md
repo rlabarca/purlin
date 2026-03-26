@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: PM: /pl-spec Spec Authoring"
 > Category: "Agent Skills: PM"
-> Prerequisite: features/policy_critic.md
 > Prerequisite: features/impl_notes_companion.md
 
 [TODO]

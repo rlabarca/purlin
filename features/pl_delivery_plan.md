@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Engineer: /pl-delivery-plan Delivery Plan"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/policy_critic.md
 
 [Complete]
 

@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Common: /pl-status Status Check"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

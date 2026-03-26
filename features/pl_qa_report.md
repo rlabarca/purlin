@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: QA: /pl-qa-report QA Status Report"
 > Category: "Agent Skills: QA"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

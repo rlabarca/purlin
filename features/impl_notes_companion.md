@@ -2,7 +2,6 @@
 
 > Label: "Impl Notes Companion"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_critic.md
 
 ## Overview
 

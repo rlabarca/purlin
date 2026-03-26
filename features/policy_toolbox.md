@@ -2,7 +2,6 @@
 
 > Label: "Policy: Agentic Toolbox"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_critic.md
 
 ## 1. Purpose
 

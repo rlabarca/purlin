@@ -3,7 +3,6 @@
 > Label: "Agent Skills: QA: /pl-web-test Web Test"
 > Category: "Agent Skills: QA"
 > Prerequisite: features/arch_testing.md
-> Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_artifact_pipeline.md
 
 [Complete]

@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Engineer: /pl-build Build"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 

@@ -2,7 +2,6 @@
 
 > Label: "Agent Skills: Common: /pl-find Topic Discovery"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/policy_critic.md
 
 [TODO]
 
