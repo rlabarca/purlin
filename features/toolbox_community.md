@@ -58,7 +58,7 @@ For each community tool being updated:
 2. Fetch remote HEAD: `git ls-remote <source_repo> HEAD`. If unreachable: warn and skip this tool (do not abort all updates).
 3. Compare remote HEAD SHA against `last_pull_sha`. If identical: report `"<id>: already up to date."` and skip.
 4. Clone to temporary directory, check out HEAD.
-5. **Local edit detection:** Compare the current local `tool.json` content (in `.purlin/toolbox/community/<tool_id>/tool.json`) against the content at `last_pull_sha`. If they differ, the user has made local edits.
+5. **Local edit detection:** Compare the current local `tool.json` content (in `.purlin/toolbox/community/<tool_id>/tool.json`) against the content at `last_pull_sha` (stored per-tool in `community_tools.json`). To retrieve the original content: clone the source repo to a temp directory and `git show <last_pull_sha>:tool.json`. If they differ, the user has made local edits.
 6. **If no local edits:** Auto-update. Copy new `tool.json` (and any supporting files) to the community directory. Update `last_pull_sha` and `version` in registry.
 7. **If local edits detected:** Show the diff between local and upstream. Offer three options:
     *   **Accept upstream** — overwrites local changes with upstream version.

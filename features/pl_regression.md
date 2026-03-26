@@ -18,7 +18,7 @@ Bare `/pl-regression` (no subcommand) MUST first print a **health summary** show
 
 1. **No scenario files exist** for any feature with QA scenarios, regression guidance, or web test metadata (Engineer DONE) → run `author`.
 2. **Scenario files exist with STALE, FAIL, or NOT_RUN results** → run `run`.
-3. **Fresh results exist that haven't been evaluated** (no companion file entry for recent FAIL, or results newer than last evaluation) → run `evaluate`.
+3. **Fresh results exist that haven't been evaluated** → run `evaluate`. "Evaluated" means the feature's discovery sidecar contains a `[DISCOVERY]` or `[BUG]` entry referencing this regression result, OR the result is PASS (no entry needed). Fresh FAIL/STALE results without a corresponding sidecar entry are unevaluated.
 4. **Everything is green** (all PASS, all evaluated) → print status summary and stop.
 
 When a feature argument is provided (`/pl-regression <feature>`), apply the same detection logic scoped to that single feature.

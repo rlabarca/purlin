@@ -33,7 +33,7 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 ### 2.4 Template Compliance
 
 - New feature files MUST use the canonical template structure from `tools/feature_templates/_feature.md`.
-- Required section headings (scan checks): a heading containing `overview`, `requirements`, and `scenarios`.
+- Required section headings (scan checks): a heading containing `overview`, `requirements`, and `scenarios`. Matching is case-insensitive substring (e.g., `## 2. Requirements` matches the `requirements` check).
 - Scenario headings MUST use four-hash `####` format.
 
 ### 2.5 Category and Label Conventions

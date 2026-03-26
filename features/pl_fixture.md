@@ -4,11 +4,11 @@
 > Category: "Agent Skills: QA"
 > Prerequisite: features/test_fixture_repo.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
-A shared skill available to all roles that provides the test fixture convention and lifecycle reference. Covers when fixtures are needed, the three-tier fixture repo resolution, slug naming conventions, fixture-aware feature design guidance for Architects, fixture setup workflow for Builders, and fixture awareness for QA during regression authoring.
+A shared skill available to all roles that provides the test fixture convention and lifecycle reference. QA mode has cross-mode access (setup-only): QA can invoke fixture commands for test setup but cannot modify application code. Covers when fixtures are needed, the three-tier fixture repo resolution, slug naming conventions, fixture-aware feature design guidance for Architects, fixture setup workflow for Builders, and fixture awareness for QA during regression authoring.
 
 ---
 

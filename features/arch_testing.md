@@ -140,6 +140,14 @@ For any assertion checking that the agent detected a problem, there MUST exist a
 
 If an assertion passes on both the defective and clean fixtures, it is too loose -- it matches incidental output rather than the specific defect. Such assertions MUST be tightened to Tier 2 or Tier 3.
 
+**Assertion Tier Definitions:**
+
+| Tier | Name | Pattern Type | Example | Reliability |
+|------|------|-------------|---------|------------|
+| 1 | Keyword | Single word or phrase match | `"error" in output` | Low — matches too broadly |
+| 2 | Structural | Regex matching specific format | `Results: \d+/\d+ tests passed` | Medium — catches specific patterns |
+| 3 | Semantic | Multi-field or absence validation | Parse JSON, check field values; verify role-inappropriate commands absent | High — validates meaning |
+
 ### Assertion Modification Discipline
 
 When QA modifies an assertion pattern in a test harness, the commit message MUST include one of the following tags:
