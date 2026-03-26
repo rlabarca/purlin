@@ -48,21 +48,7 @@ The companion file contains the extracted implementation notes content. The file
 - If `<name>.md` is flagged as orphaned, `<name>.impl.md` and `<name>.discoveries.md` MUST also be flagged.
 - If `<name>.impl.md` or `<name>.discoveries.md` exists but `<name>.md` does not, it MUST be flagged as orphaned.
 
-### 2.8 CDD Dashboard Feature Modal
-- When a companion `.impl.md` file exists for a feature, the CDD Dashboard feature detail modal shows tabs: "Specification" and "Implementation Notes".
-- When no companion file exists, the modal shows content without tabs (same as current behavior).
-- Tab content is lazy-loaded and cached for instant switching.
-
-### 2.10 Companion File API Endpoint
-
-The CDD Dashboard exposes companion file content via:
-
-*   **Endpoint:** `GET /impl-notes?file=<feature_path>`
-*   **Response (200):** Raw markdown content of the companion file.
-*   **Response (404):** No companion file exists for the given feature path.
-*   **Path resolution:** The `file` parameter is the feature filename (e.g., `critic_tool.md`). The endpoint resolves the companion as `features/<stem>.impl.md`.
-
-### 2.9 Integration Test Fixture Tags
+### 2.8 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -94,32 +80,10 @@ Given a feature file with a stub `## Implementation Notes` containing a companio
 When the Critic checks section completeness
 Then the section is NOT flagged as "Implementation Notes empty"
 
-#### Scenario: CDD Excludes Companion Files
-Given a features directory with `critic_tool.md` and `critic_tool.impl.md`
-When the CDD monitor scans for feature lifecycle status
-Then only `critic_tool.md` is included in the status report
-And `critic_tool.impl.md` does not appear as a feature
-
-#### Scenario: Dependency Graph Excludes Companion Files
-Given a features directory with `critic_tool.md` and `critic_tool.impl.md`
-When the CDD Dashboard generates the dependency graph
-Then only `critic_tool.md` appears as a node
-And `critic_tool.impl.md` is not included
-
 #### Scenario: Orphan Detection Flags Companion Without Parent
 Given a companion file `features/old_feature.impl.md` without a corresponding `features/old_feature.md`
 When the Critic scans `features/*.impl.md` files and no corresponding `features/<name>.md` parent exists, the companion is flagged as an orphan in the Critic report
 Then `old_feature.impl.md` is flagged as orphaned
-
-#### Scenario: Companion File Served via API
-Given a feature `critic_tool.md` with a companion file `critic_tool.impl.md`
-When the CDD Dashboard requests `/impl-notes?file=features/critic_tool.md`
-Then the companion file content is returned with status 200
-
-#### Scenario: No Companion File Returns 404
-Given a feature `policy_critic.md` without a companion file
-When the CDD Dashboard requests `/impl-notes?file=features/policy_critic.md`
-Then a 404 status is returned
 
 ### Manual Scenarios
 

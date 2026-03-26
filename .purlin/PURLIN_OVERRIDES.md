@@ -52,7 +52,7 @@ If ANY item fails, fix it before committing.
 **Exemption:** Scripts located in `dev/` are Purlin-dev-specific and are exempt from this checklist. They are never run in a consumer project's submodule context. Apply normal quality standards but skip submodule-specific verification items.
 
 ## Test Code Location
-In this repository, test code is colocated with the tool it tests under `tools/` (e.g., `tools/critic/test_critic.py`).
+In this repository, test code is colocated with the tool it tests under `tools/` (e.g., `tools/cdd/test_spec_map.py`).
 
 # Architect Overrides (Purlin)
 
@@ -63,7 +63,7 @@ When modifying ANY file inside `.purlin/` (instructions, configs, or other artif
 
 ## Pre-Push Documentation Consistency Check
 Before any push to GitHub, you MUST run a cross-reference consistency check across all instruction and documentation files. Specifically:
-*   Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, `README.md`, and `features/policy_critic.md`.
+*   Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `README.md`.
 *   Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state.
 *   If inconsistencies are found, fix them before pushing.
 
@@ -132,10 +132,6 @@ In this repository, Builder-owned application code lives in `tools/` (consumer-f
 
 | Feature | Tier |
 |---------|------|
-| policy_critic | smoke |
-| critic_role_status | smoke |
-| critic_tool | smoke |
-| cdd_status_monitor | smoke |
 | config_layering | smoke |
 | project_init | smoke |
 | regression_testing | smoke |

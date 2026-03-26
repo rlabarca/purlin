@@ -168,16 +168,7 @@ The fixture tool provides a `verify-url` subcommand that implements this protoco
 
 Agents MUST call `fixture verify-url <url>` before recording any fixture URL in a spec.
 
-### 2.7 Integration with /pl-aft-web
-
-For CDD dashboard scenarios needing fixture state:
-
-1. Check out fixture tag into temp dir via `fixture checkout`.
-2. Start CDD server against it: `python3 tools/cdd/serve.py --project-root /tmp/fixture-xyz/`.
-3. `/pl-aft-web` runs against that server instance.
-4. Cleanup via `fixture cleanup`.
-
-### 2.8 Integration with Agent Behavior Tests
+### 2.7 Integration with Agent Behavior Tests
 
 For agent startup/resume scenarios:
 
@@ -187,7 +178,7 @@ For agent startup/resume scenarios:
 4. Assert output patterns.
 5. Cleanup.
 
-### 2.9 Critic Validation
+### 2.8 Critic Validation
 
 The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Engineer action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
 

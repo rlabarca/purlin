@@ -68,10 +68,9 @@ Purlin agents (PM, Engineer, QA, PM) are launched via shell scripts that invoke 
 
 ### 2.2 Model Warning Display and Acknowledgment
 
-*   When an agent is assigned a model with a non-empty `warning` field, AND the model ID is NOT in the `acknowledged_warnings` array, the warning text MUST be displayed at: CDD Dashboard (confirmation modal on model selection) and agent launcher (stderr at startup).
+*   When an agent is assigned a model with a non-empty `warning` field, AND the model ID is NOT in the `acknowledged_warnings` array, the warning text MUST be displayed at the agent launcher (stderr at startup).
 *   Warning text is taken verbatim from the model's `warning` field -- no hardcoded messages.
 *   **Acknowledgment is automatic** -- no explicit dismiss action or skill command is required from the user. Each surface auto-acknowledges when the user proceeds:
-    *   **CDD Dashboard:** When a model with an un-acknowledged warning is selected, a confirmation modal appears with the warning text and "I Understand" / "Cancel" buttons. "I Understand" saves the model selection AND adds the model ID to `acknowledged_warnings`. "Cancel" reverts the dropdown to the previous model. The warning is shown once per model -- after acknowledgment, selecting the same model again does not trigger the modal.
     *   **Launcher:** The warning is printed to stderr on the first launch with that model. The launcher auto-acknowledges by writing the model ID to `acknowledged_warnings` in `config.local.json` before invoking `claude`. Subsequent launches with the same model do not show the warning.
 *   When `warning_dismissible` is `false`, the warning is displayed on every access and cannot be auto-acknowledged. The `acknowledged_warnings` array is not modified.
 *   Acknowledgment is per-user (stored in gitignored `config.local.json`) and per-model (keyed by model ID).
@@ -96,9 +95,7 @@ Purlin agents (PM, Engineer, QA, PM) are launched via shell scripts that invoke 
     Given a model entry has a non-empty warning field
     And the model ID is not in the acknowledged_warnings array
     When an agent is assigned that model
-    Then the warning text is displayed at the CDD Dashboard (confirmation modal)
-    And the warning text is displayed at the agent launcher (stderr at startup)
-    And no other configuration surface displays the warning
+    Then the warning text is displayed at the agent launcher (stderr at startup)
 
 #### Scenario: Acknowledged Warning is Suppressed on Subsequent Access
     Given a model entry has warning_dismissible true

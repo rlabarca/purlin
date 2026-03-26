@@ -170,7 +170,7 @@ The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved
 - `.purlin/config.json` and `purlin-config-sample/config.json` MUST include an `agents.purlin` section with fields: `model`, `effort`, `bypass_permissions`, `find_work`, `auto_start`, `default_mode`.
 - `tools/config/resolve_config.py` MUST accept `"purlin"` as a valid role name.
 - When resolving `purlin` config, if `agents.purlin` is absent, fall back to `agents.builder`.
-- `--yolo`/`--no-yolo` map to the existing `bypass_permissions` field. The CDD dashboard also exposes this field as the "YOLO" checkbox — both interfaces write to the same config key.
+- `--yolo`/`--no-yolo` map to the existing `bypass_permissions` field.
 
 ---
 
@@ -319,12 +319,6 @@ The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved
     And the output contains "--no-save" in the "Other" section
     And the output contains at least one --no-save example
 
-#### Scenario: CDD dashboard reflects CLI-set bypass_permissions @manual
-
-    Given pl-run.sh has been invoked with --yolo (persisting bypass_permissions=true)
-    When the CDD dashboard is loaded
-    Then the YOLO checkbox for the purlin agent shows as checked
-
 ## Regression Guidance
 - Verify init.sh refresh does not delete old role-specific launchers
 - Verify pl-run.sh handles missing PURLIN_BASE.md gracefully (during partial setup)
@@ -332,4 +326,3 @@ The launcher MUST write `.purlin/cache/session_overrides.json` with the resolved
 - Verify --worktree flag creates worktree directory under .purlin/worktrees/
 - Verify sticky flag persistence uses correct JSON types (booleans for bypass_permissions/find_work, not strings)
 - Verify --no-save does not suppress first-run interactive persistence
-- Verify CDD dashboard picks up CLI-written bypass_permissions on next auto-refresh

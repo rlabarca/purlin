@@ -15,7 +15,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 - Every `.claude/commands/pl-*.md` file that references `tools/` subdirectories MUST use `{tools_root}/` notation instead of hardcoded `tools/` paths.
 - Each command file that references tool paths MUST include a resolution preamble: read `.purlin/config.json`, extract `tools_root` (default: `"tools"`), resolve to absolute path, and substitute into all `{tools_root}/` references.
-- The resolution preamble MUST match the pattern already used in `pl-spec-code-audit.md` and `pl-cdd.md` (read config, extract key, set variable).
+- The resolution preamble MUST match the pattern already used in `pl-spec-code-audit.md` and `pl-status.md` (read config, extract key, set variable).
 
 ### 2.2 Specific Path Conversions
 

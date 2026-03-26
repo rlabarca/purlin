@@ -69,9 +69,9 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 
 #### Scenario: Offer simplified smoke regression
 
-    Given feature "cdd_status_monitor" has 3 regression scenarios
-    When /pl-smoke cdd_status_monitor is invoked and user accepts simplification
-    Then tests/qa/scenarios/cdd_status_monitor_smoke.json is created
+    Given feature "project_init" has 3 regression scenarios
+    When /pl-smoke project_init is invoked and user accepts simplification
+    Then tests/qa/scenarios/project_init_smoke.json is created
     And it contains 1-3 scenarios (fewer than the full suite)
     And it contains "tier": "smoke"
 
@@ -90,8 +90,8 @@ The `/pl-smoke` skill allows QA mode to promote any test (regression, @auto, or 
 
 #### Scenario: Verify smoke gate runs smoke regressions first
 
-    Given feature "critic_tool" has a _smoke.json regression file
-    And feature "critic_tool" also has @auto QA scenarios
+    Given feature "agent_launchers_common" has a _smoke.json regression file
+    And feature "agent_launchers_common" also has @auto QA scenarios
     When /pl-verify runs the smoke gate
     Then the _smoke.json regression runs BEFORE the @auto scenarios
 

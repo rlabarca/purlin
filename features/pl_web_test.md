@@ -24,8 +24,8 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - Feature files MAY include a `> Web Test: <url>` blockquote metadata line (e.g., `> Web Test: http://localhost:9086`), placed alongside other `>` metadata (Label, Category, Prerequisite).
 - The URL declares where the feature's web UI is accessible for automated verification.
 - Features without this annotation are not eligible for `/pl-web-test` and continue using `/pl-verify` (manual).
-- Feature files MAY include a `> Web Start: <command>` blockquote metadata line (e.g., `> Web Start: /pl-cdd`). When present and the server is not reachable during pre-flight, the skill invokes this command to start the server before proceeding.
-- Runtime configuration (port files, auth tokens) is handled internally by the web test tool, not via per-feature metadata. The tool reads `.purlin/runtime/cdd.port` for dynamic port resolution automatically.
+- Feature files MAY include a `> Web Start: <command>` blockquote metadata line (e.g., `> Web Start: /pl-server`). When present and the server is not reachable during pre-flight, the skill invokes this command to start the server before proceeding.
+- Runtime configuration (port files, auth tokens) is handled internally by the web test tool, not via per-feature metadata. The tool reads `.purlin/runtime/server.port` for dynamic port resolution automatically.
 
 ### 2.2 Skill File
 
@@ -289,10 +289,10 @@ The following instruction files MUST be updated by Engineer mode to reference th
 #### Scenario: Server auto-start when not reachable
 
     Given a feature has `> Web Test: http://localhost:9086`
-    And the feature has `> Web Start: /pl-cdd`
+    And the feature has `> Web Start: /pl-server`
     And no server is reachable at the resolved URL
     When `/pl-web-test` performs the liveness check
-    Then the skill invokes `/pl-cdd` to start the server
+    Then the skill invokes `/pl-server` to start the server
     And waits up to 10 seconds for the port file to appear
     And re-reads the port file for the new port
     And retries the liveness check at the updated URL

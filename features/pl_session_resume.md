@@ -95,7 +95,7 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 
 ## Current Work
 
-**Feature:** features/cdd_status_monitor.md
+**Feature:** features/project_init.md
 **Protocol Step:** 3 -- Verify Locally (implementation committed, running tests)
 
 ### Done
@@ -105,10 +105,10 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 - Committed implementation: abc1234
 
 ### Next
-1. Run tests -- verify tests/cdd_status_monitor/tests.json shows PASS
+1. Run tests -- verify tests/project_init/tests.json shows PASS
 2. Commit status tag: [Ready for Verification]
 3. Run tools/cdd/scan.sh to confirm TESTING transition
-4. Move to next feature: cdd_spec_map.md
+4. Move to next feature: config_layering.md
 
 ## Engineer Context
 **Protocol Step:** 3 -- Verify Locally

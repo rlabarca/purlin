@@ -20,7 +20,7 @@ Claude Code's remote control feature allows naming sessions visible in claude.ai
 - `Badge` is identical to the iTerm badge value set by `identity.sh`:
   - Mode name alone in the main worktree: `Engineer`, `PM`, `QA`, `Purlin` (open mode).
   - With worktree label appended when running in a worktree: `Engineer (W1)`, `QA (W2)`, etc.
-- `ProjectName` is read from the `project_name` config key (already used by the CDD dashboard in `serve.py`). Falls back to the project directory basename when the key is absent or empty.
+- `ProjectName` is read from the `project_name` config key (used by Purlin tools). Falls back to the project directory basename when the key is absent or empty.
 - Examples:
   - `purlin | Engineer`
   - `MyApp | PM (W1)`

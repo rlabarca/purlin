@@ -73,11 +73,6 @@ full analysis to Section 2.8.
    - Only check if launcher-relevant paths appeared in the diff-tree output
    - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
 
-**CDD Symlink Exclusion:** `pl-cdd-start.sh` and `pl-cdd-stop.sh` are **symlinks** managed
-exclusively by `init.sh` (see `project_init.md` Section 2.6). The skill MUST NOT read,
-compare, copy, or modify these files under any circumstance. They are refreshed automatically
-by the init step (Section 2.7).
-
 ### 2.5 Advance Submodule
 
 Advance the submodule to the latest remote commit:
@@ -172,8 +167,6 @@ Check for legacy-named scripts at the consumer project root:
 - `run_builder.sh` (renamed to `pl-run.sh`)
 - `run_qa.sh` (renamed to `pl-run.sh`)
 - `purlin_init.sh` (renamed to `pl-init.sh`)
-- `purlin_cdd_start.sh` (renamed to `pl-cdd-start.sh`)
-- `purlin_cdd_stop.sh` (renamed to `pl-cdd-stop.sh`)
 
 If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
 if none found. In `--dry-run` mode, list but do not delete.
@@ -359,12 +352,6 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     Then the skill shows a three-way diff (old upstream, new upstream, local)
     And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
     And waits for user decision
-
-#### Scenario: Init Refresh Handles CDD Symlinks
-    Given the submodule has been advanced to a newer commit
-    When init.sh --quiet runs as part of the update
-    Then pl-cdd-start.sh and pl-cdd-stop.sh are verified as correct symlinks
-    And the skill does NOT directly read, compare, or modify these files
 
 #### Scenario: Top-Level Script Updated Automatically
     Given pl-run.sh changed upstream

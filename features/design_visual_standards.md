@@ -4,7 +4,7 @@
 > Category: "Common Design Standards"
 
 ## 1. Purpose
-Defines the visual language for all Purlin-branded web tools (CDD Dashboard). This anchor node establishes color tokens, typography, theme switching behavior, and logo placement that all visual tool features MUST adhere to.
+Defines the visual language for Purlin-branded web tools. This anchor node establishes color tokens, typography, theme switching behavior, and logo placement that all visual tool features MUST adhere to.
 
 This anchor is the project's **visual design anchor** -- the single source of truth for colors, fonts, spacing, and theme behavior. Features with Visual Specifications declare this anchor via `> **Design Anchor:** features/design_visual_standards.md`.
 

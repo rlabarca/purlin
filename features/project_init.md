@@ -102,20 +102,11 @@ The script MUST generate a `pl-init.sh` file at the project root with the follow
 *   **Self-Contained:** The shim MUST work without the submodule being initialized (that is its primary purpose for collaborators doing fresh clones).
 *   **Committed:** The shim is intended to be committed to the consumer project's repository.
 
-### 2.6 CDD Convenience Symlinks
+### 2.6 Full Init Output
 
-On both full init and refresh, the script MUST create these symlinks at the project root:
+The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (Architect), (3) what the Builder does. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
 
-*   `pl-cdd-start.sh` -> `<submodule>/tools/cdd/start.sh`
-*   `pl-cdd-stop.sh` -> `<submodule>/tools/cdd/stop.sh`
-
-The symlinks MUST use relative paths (not absolute) so they remain valid after repository relocation. If a symlink already exists and points to the correct target, leave it unchanged. If it exists but points to the wrong target, replace it. If a **regular file** (not a symlink) exists at the target path, replace it with the correct symlink — this handles the case where a file was inadvertently copied instead of symlinked (e.g., by an update agent or manual copy).
-
-### 2.7 Full Init Output
-
-The full init summary MUST be a structured "What's Next" narrative with numbered steps: (1) commit command, (2) which agent to start with and why -- distinguishing "have designs" (PM) vs "have requirements" (PM), (3) what Engineer mode does, (4) CDD dashboard command. The narrative MUST use box-drawing or separator characters to visually stand out from earlier init output. Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
-
-### 2.8 Refresh Output
+### 2.7 Refresh Output
 
 The refresh summary MUST be a single line when nothing special happened:
 
@@ -123,9 +114,9 @@ The refresh summary MUST be a single line when nothing special happened:
 Purlin refreshed. (N commands updated, M skipped)
 ```
 
-If CDD symlinks were repaired or the shim was updated, append a brief note.
+If the shim was updated, append a brief note.
 
-### 2.9 CLI Flags
+### 2.8 CLI Flags
 
 *   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `/pl-update-purlin`). Errors still print to stderr.
 
@@ -279,15 +270,6 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And features/ directory exists at the project root
     And pl-init.sh exists at the project root and is executable
 
-#### Scenario: Full Init Creates CDD Convenience Symlinks
-
-    Given Purlin is added as a submodule at "purlin/"
-    And no .purlin/ directory exists at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then pl-cdd-start.sh exists at the project root as a symlink to purlin/tools/cdd/start.sh
-    And pl-cdd-stop.sh exists at the project root as a symlink to purlin/tools/cdd/stop.sh
-    And both symlinks use relative paths
-
 #### Scenario: Shim Contains Repo URL, SHA, and Version
 
     Given Purlin is added as a submodule at "purlin/"
@@ -408,22 +390,6 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Then .purlin/config.json is unchanged
     And .purlin/PURLIN_OVERRIDES.md is unchanged
     And no file in .purlin/release/ is modified
-
-#### Scenario: CDD Symlinks Created on Refresh if Missing @auto
-
-    Given .purlin/ already exists at the project root
-    And pl-cdd-start.sh does NOT exist at the project root
-    When the user runs "purlin/tools/init.sh"
-    Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
-    And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
-
-#### Scenario: CDD Regular File Replaced with Symlink on Refresh @auto
-
-    Given .purlin/ already exists at the project root
-    And pl-cdd-start.sh exists at the project root as a regular file (not a symlink)
-    When the user runs "purlin/tools/init.sh"
-    Then pl-cdd-start.sh is replaced with a symlink to purlin/tools/cdd/start.sh
-    And the symlink uses a relative path
 
 #### Scenario: Launchers Always Regenerated on Refresh @auto
 
