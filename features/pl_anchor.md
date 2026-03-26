@@ -7,40 +7,44 @@
 
 ## 1. Overview
 
-The anchor node authoring skill shared by PM and PM roles. Provides a guided workflow for creating or updating anchor nodes (arch_*, design_*, policy_*) that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO).
+The anchor node authoring skill with dual-mode behavior. For `design_*` and `policy_*` anchors, it activates PM mode. For `arch_*` anchors, it activates Engineer mode. Provides a guided workflow for creating or updating anchor nodes that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO).
 
 ---
 
 ## 2. Requirements
 
-### 2.1 Role Gating
+### 2.1 Mode Activation
 
-- The command MUST only execute when invoked by the PM or PM role.
-- Non-PM agents MUST receive a redirect message.
-- PM prefix restriction: PM may only create or modify `design_*` and `policy_*` anchors. `arch_*` anchors are PM-only.
+- `design_*` and `policy_*` anchors activate PM mode.
+- `arch_*` anchors activate Engineer mode.
+- The skill determines the mode from the argument's prefix.
 
-### 2.2 Required Reading
+### 2.2 Prefix Disambiguation
+
+When the topic argument does not start with a recognized prefix (`arch_`, `design_`, `policy_`), the skill MUST prompt the user to choose the anchor type before proceeding. It MUST NOT default to any type silently. The prompt presents all three options with brief domain descriptions.
+
+### 2.3 Required Reading
 
 - Before creating or updating any anchor node, the agent MUST read `instructions/references/spec_authoring_guide.md` Section 3 for anchor classification guidance.
 
-### 2.3 Anchor Node Types
+### 2.4 Anchor Node Types
 
 - `arch_*.md` -- Technical constraints: system architecture, API contracts, dependency rules.
 - `design_*.md` -- Design constraints: visual language, typography, interaction patterns.
 - `policy_*.md` -- Governance rules: security baselines, compliance, process protocols.
 
-### 2.4 Template Compliance
+### 2.5 Template Compliance
 
 - Anchor nodes MUST use the canonical template from `tools/feature_templates/_anchor.md`.
 - Required section headings (scan checks): `purpose` and `invariants` (case-insensitive substring).
 - Heading `## 1. Overview` does NOT satisfy the `purpose` check.
 
-### 2.5 Cascade Awareness
+### 2.6 Cascade Awareness
 
 - Editing an anchor node resets ALL dependent features to TODO.
 - The agent MUST identify and present the impact list before committing changes.
 
-### 2.6 Post-Authoring
+### 2.7 Post-Authoring
 
 - After editing, commit the change and run `scan.sh` to refresh scan results and reset dependent features.
 
@@ -50,17 +54,21 @@ The anchor node authoring skill shared by PM and PM roles. Provides a guided wor
 
 ### Unit Tests
 
-#### Scenario: Role gate rejects non-PM invocation
+#### Scenario: Prefix disambiguation prompts when no recognized prefix
 
-    Given an Engineer agent session
-    When the agent invokes /pl-anchor
-    Then the command responds with a redirect message
+    Given the agent invokes /pl-anchor with argument "authentication"
+    And "authentication" does not start with arch_, design_, or policy_
+    When the skill processes the argument
+    Then the agent presents all three anchor type options with descriptions
+    And waits for the user's choice before proceeding
+    And does not default to any type
 
-#### Scenario: PM restricted from arch_ prefix
+#### Scenario: Recognized prefix skips disambiguation
 
-    Given a PM agent session
-    When the PM attempts to create an arch_data_layer.md anchor
-    Then the command responds that arch_ anchors are PM-only
+    Given the agent invokes /pl-anchor with argument "arch_data_layer"
+    When the skill processes the argument
+    Then Engineer mode is activated
+    And the skill proceeds directly without prompting for type
 
 #### Scenario: New anchor uses template structure
 
