@@ -293,8 +293,6 @@ def check_gitignore_template(project_root):
         '.purlin/cache/',
         '.purlin/runtime/',
         '.purlin/config.local.json',
-        'CRITIC_REPORT.md',
-        'tests/*/critic.json',
     ]
 
     if not os.path.exists(template_path):

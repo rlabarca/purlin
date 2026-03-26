@@ -93,17 +93,13 @@ class TestNoArgumentSelectsHighestPriority(unittest.TestCase):
     """Scenario: No-argument mode selects highest-priority action item
 
     Given a Builder agent session with no argument
-    And CRITIC_REPORT.md lists feature_a as highest-priority Builder action
+    And /pl-status lists feature_a as highest-priority Builder action
     When /pl-build is invoked
     Then the Builder selects feature_a for implementation
 
-    Structural test: the command file references CRITIC_REPORT.md and/or
-    status.sh for finding the highest-priority work item.
+    Structural test: the command file references status.sh or /pl-status
+    for finding the highest-priority work item.
     """
-
-    def test_references_critic_report(self):
-        content = read_command_file()
-        self.assertIn("CRITIC_REPORT.md", content)
 
     def test_references_status_sh(self):
         content = read_command_file()

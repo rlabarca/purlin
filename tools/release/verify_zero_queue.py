@@ -5,8 +5,7 @@ Checks that all features have architect: DONE, builder: DONE,
 and qa in [CLEAN, N/A].
 See features/release_audit_automation.md Section 2.5.
 
-Uses tools/cdd/status.sh JSON output for per-feature role status
-rather than reading critic.json files directly (M41 fix).
+Uses tools/cdd/status.sh JSON output for per-feature role status.
 """
 import json
 import os

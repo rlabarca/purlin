@@ -16,7 +16,7 @@
     *   (2026-03-18) Renamed from `/pl-aft-web` to `/pl-web-test`. `> AFT Web:` -> `> Web Test:`, `> AFT Start:` -> `> Web Start:`. AFT taxonomy removed.
 
 BUG -- Playwright MCP was not running headless; skill now detects headed configuration and instructs user to reconfigure with --headless flag before proceeding.
-DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .purlin/runtime/cdd.port for dynamic port resolution, validates server liveness, and starts server via /pl-cdd if not running.
+DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .purlin/runtime/server.port for dynamic port resolution, validates server liveness, and starts server via /pl-server if not running.
 
 **[CLARIFICATION]** PURLIN_BASE.md test assertion relaxed: the spec says "Add brief reference in Section 5.4" but PURLIN_BASE.md doesn't have a Section 5.4 subsection -- the visual verification protocol (including Section 5.4.7) is in the on-demand loaded `visual_verification_protocol.md`. Test verifies `/pl-web-test` appears in authorized commands instead. (Severity: INFO)
 
@@ -26,8 +26,8 @@ DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .pur
 
 **Source:** /pl-spec-code-audit --deep (item #24)
 **Severity:** MEDIUM
-**Details:** The spec defines specific behaviors for dynamic port resolution (reading `.purlin/runtime/cdd.port`), auto-starting the CDD server via `/pl-cdd`, and detecting/configuring Playwright MCP. These are implemented in the skill command file as agent instructions, but no automated tests verify these code paths. The existing tests focus on command file structure and keyword presence.
-**Suggested fix:** Add test scenarios that verify: (a) port resolution reads from `.purlin/runtime/cdd.port` and falls back correctly, (b) server auto-start is triggered when the port file is missing or server is not responding, (c) Playwright MCP detection logic (checking for `@playwright/mcp` availability). These could be structural tests verifying the command file contains the required logic references, consistent with the existing test pattern for agent skills.
+**Details:** The spec defines specific behaviors for dynamic port resolution (reading `.purlin/runtime/server.port`), auto-starting the server via `/pl-server`, and detecting/configuring Playwright MCP. These are implemented in the skill command file as agent instructions, but no automated tests verify these code paths. The existing tests focus on command file structure and keyword presence.
+**Suggested fix:** Add test scenarios that verify: (a) port resolution reads from `.purlin/runtime/server.port` and falls back correctly, (b) server auto-start is triggered when the port file is missing or server is not responding, (c) Playwright MCP detection logic (checking for `@playwright/mcp` availability). These could be structural tests verifying the command file contains the required logic references, consistent with the existing test pattern for agent skills.
 
 **[DISCOVERY] [ACKNOWLEDGED]** STALE verdict discovery format test too shallow
 **Source:** /pl-spec-code-audit --deep (M25)
