@@ -158,8 +158,14 @@ None
 """
 
 
-def _purlin_checkpoint_path(tmpdir):
-    """Return the unified Purlin checkpoint path."""
+def _pid_scoped_checkpoint_path(tmpdir, pid):
+    """Return a PID-scoped checkpoint path."""
+    return os.path.join(
+        tmpdir, '.purlin', 'cache', f'session_checkpoint_{pid}.md')
+
+
+def _unscoped_checkpoint_path(tmpdir):
+    """Return the unscoped (legacy migration) checkpoint path."""
     return os.path.join(
         tmpdir, '.purlin', 'cache', 'session_checkpoint_purlin.md')
 
@@ -177,8 +183,19 @@ def _make_cache_dir(tmpdir):
     return cache_dir
 
 
-def _write_purlin_checkpoint(tmpdir, content=None):
-    """Write the unified Purlin checkpoint file."""
+def _write_pid_scoped_checkpoint(tmpdir, pid, content=None):
+    """Write a PID-scoped checkpoint file."""
+    if content is None:
+        content = SAMPLE_CHECKPOINT_ENGINEER
+    cache_dir = _make_cache_dir(tmpdir)
+    path = os.path.join(cache_dir, f'session_checkpoint_{pid}.md')
+    with open(path, 'w') as f:
+        f.write(content)
+    return path
+
+
+def _write_unscoped_checkpoint(tmpdir, content=None):
+    """Write the unscoped (legacy migration) checkpoint file."""
     if content is None:
         content = SAMPLE_CHECKPOINT_ENGINEER
     cache_dir = _make_cache_dir(tmpdir)
@@ -232,11 +249,12 @@ def _map_legacy_role_to_mode(role):
 # =========================================================================
 
 class TestCheckpointFilePath(unittest.TestCase):
-    """Scenario: Checkpoint file path is correct
+    """Scenario: Checkpoint file path is PID-scoped
 
     Given the Purlin agent
+    And PURLIN_SESSION_ID is set
     When determining the checkpoint file path
-    Then the path is .purlin/cache/session_checkpoint_purlin.md
+    Then the path is .purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md
     """
 
     def setUp(self):
@@ -245,26 +263,37 @@ class TestCheckpointFilePath(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    def test_purlin_checkpoint_path_format(self):
-        """Path ends with session_checkpoint_purlin.md."""
-        path = _purlin_checkpoint_path(self.tmpdir)
+    def test_pid_scoped_checkpoint_path_format(self):
+        """PID-scoped path contains the session PID."""
+        path = _pid_scoped_checkpoint_path(self.tmpdir, '46946')
+        self.assertTrue(path.endswith(
+            os.path.join('.purlin', 'cache', 'session_checkpoint_46946.md')))
+
+    def test_unscoped_fallback_path_format(self):
+        """Unscoped fallback path ends with session_checkpoint_purlin.md."""
+        path = _unscoped_checkpoint_path(self.tmpdir)
         self.assertTrue(path.endswith(
             os.path.join('.purlin', 'cache', 'session_checkpoint_purlin.md')))
 
-    def test_purlin_checkpoint_created_at_correct_path(self):
-        """Writing a checkpoint creates the file at the expected path."""
-        path = _write_purlin_checkpoint(self.tmpdir)
+    def test_pid_scoped_checkpoint_created_at_correct_path(self):
+        """Writing a PID-scoped checkpoint creates the file at the expected path."""
+        path = _write_pid_scoped_checkpoint(self.tmpdir, '46946')
         self.assertTrue(os.path.isfile(path))
-        self.assertEqual(path, _purlin_checkpoint_path(self.tmpdir))
+        self.assertEqual(path, _pid_scoped_checkpoint_path(self.tmpdir, '46946'))
 
-    def test_checkpoint_is_single_file_not_role_scoped(self):
-        """Only one checkpoint file is created (no role suffixes)."""
-        _write_purlin_checkpoint(self.tmpdir)
+    def test_concurrent_terminals_produce_distinct_files(self):
+        """Two different PIDs produce two distinct checkpoint files."""
+        path_a = _write_pid_scoped_checkpoint(self.tmpdir, '11111')
+        path_b = _write_pid_scoped_checkpoint(self.tmpdir, '22222')
+        self.assertNotEqual(path_a, path_b)
+        self.assertTrue(os.path.isfile(path_a))
+        self.assertTrue(os.path.isfile(path_b))
         cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
-        checkpoint_files = [f for f in os.listdir(cache_dir)
-                           if f.startswith('session_checkpoint_')]
-        self.assertEqual(len(checkpoint_files), 1)
-        self.assertEqual(checkpoint_files[0], 'session_checkpoint_purlin.md')
+        checkpoint_files = sorted(f for f in os.listdir(cache_dir)
+                                  if f.startswith('session_checkpoint_'))
+        self.assertEqual(len(checkpoint_files), 2)
+        self.assertIn('session_checkpoint_11111.md', checkpoint_files)
+        self.assertIn('session_checkpoint_22222.md', checkpoint_files)
 
 
 # =========================================================================
@@ -275,7 +304,7 @@ class TestLegacyCheckpointRecognition(unittest.TestCase):
     """Scenario: Legacy checkpoint files are recognized
 
     Given .purlin/cache/session_checkpoint_builder.md exists
-    And .purlin/cache/session_checkpoint_purlin.md does not exist
+    And no PID-scoped or unscoped checkpoint exists
     When the agent checks for checkpoints
     Then the legacy builder checkpoint is found
     And the mode is mapped to "engineer"
@@ -287,11 +316,11 @@ class TestLegacyCheckpointRecognition(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    def test_legacy_builder_detected_when_purlin_absent(self):
-        """Legacy builder checkpoint is found when purlin checkpoint is absent."""
+    def test_legacy_builder_detected_when_no_higher_priority(self):
+        """Legacy builder checkpoint is found when no PID-scoped or unscoped exists."""
         _write_legacy_checkpoint(self.tmpdir, role='builder')
-        purlin_path = _purlin_checkpoint_path(self.tmpdir)
-        self.assertFalse(os.path.exists(purlin_path))
+        unscoped = _unscoped_checkpoint_path(self.tmpdir)
+        self.assertFalse(os.path.exists(unscoped))
         cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
         legacy = _detect_legacy_checkpoints(cache_dir)
         self.assertEqual(len(legacy), 1)
@@ -313,13 +342,26 @@ class TestLegacyCheckpointRecognition(unittest.TestCase):
         """Legacy 'pm' role maps to 'pm' mode."""
         self.assertEqual(_map_legacy_role_to_mode('pm'), 'pm')
 
-    def test_purlin_checkpoint_takes_precedence_over_legacy(self):
-        """When both purlin and legacy exist, purlin is preferred."""
-        _write_purlin_checkpoint(self.tmpdir)
+    def test_pid_scoped_takes_precedence_over_unscoped(self):
+        """PID-scoped checkpoint takes precedence over unscoped."""
+        _write_pid_scoped_checkpoint(self.tmpdir, '46946')
+        _write_unscoped_checkpoint(self.tmpdir)
+        pid_path = _pid_scoped_checkpoint_path(self.tmpdir, '46946')
+        self.assertTrue(os.path.isfile(pid_path))
+
+    def test_pid_scoped_takes_precedence_over_legacy(self):
+        """PID-scoped checkpoint takes precedence over legacy."""
+        _write_pid_scoped_checkpoint(self.tmpdir, '46946')
         _write_legacy_checkpoint(self.tmpdir, role='builder')
-        purlin_path = _purlin_checkpoint_path(self.tmpdir)
-        self.assertTrue(os.path.exists(purlin_path))
-        # The restore logic checks purlin first
+        pid_path = _pid_scoped_checkpoint_path(self.tmpdir, '46946')
+        self.assertTrue(os.path.isfile(pid_path))
+
+    def test_unscoped_takes_precedence_over_legacy(self):
+        """Unscoped checkpoint takes precedence over legacy."""
+        _write_unscoped_checkpoint(self.tmpdir)
+        _write_legacy_checkpoint(self.tmpdir, role='builder')
+        unscoped_path = _unscoped_checkpoint_path(self.tmpdir)
+        self.assertTrue(os.path.isfile(unscoped_path))
 
     def test_legacy_checkpoint_contains_role_field(self):
         """Legacy checkpoint uses **Role:** instead of **Mode:**."""
@@ -347,8 +389,8 @@ class TestCheckpointFormat(unittest.TestCase):
 
     def test_checkpoint_contains_mode_field(self):
         """Purlin checkpoint has **Mode:** field (not Role)."""
-        _write_purlin_checkpoint(self.tmpdir)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999')
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         fields = _parse_checkpoint_fields(content)
         self.assertIn('Mode', fields)
@@ -356,31 +398,31 @@ class TestCheckpointFormat(unittest.TestCase):
 
     def test_checkpoint_mode_is_engineer(self):
         """Engineer checkpoint has mode=engineer."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_ENGINEER)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_ENGINEER)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertEqual(fields['Mode'], 'engineer')
 
     def test_checkpoint_contains_iso8601_timestamp(self):
         """Checkpoint has a valid ISO 8601 timestamp."""
-        _write_purlin_checkpoint(self.tmpdir)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999')
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Timestamp', fields)
         self.assertRegex(fields['Timestamp'], ISO_8601_PATTERN)
 
     def test_checkpoint_contains_branch(self):
         """Checkpoint has a Branch field."""
-        _write_purlin_checkpoint(self.tmpdir)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999')
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Branch', fields)
         self.assertEqual(fields['Branch'], 'main')
 
     def test_checkpoint_has_required_sections(self):
         """Checkpoint contains all required sections."""
-        _write_purlin_checkpoint(self.tmpdir)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999')
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         for section in ['# Session Checkpoint', '## Current Work',
                         '### Done', '### Next', '## Uncommitted Changes']:
@@ -388,8 +430,8 @@ class TestCheckpointFormat(unittest.TestCase):
 
     def test_checkpoint_has_feature_field(self):
         """Checkpoint has a Feature field."""
-        _write_purlin_checkpoint(self.tmpdir)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999')
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Feature', fields)
         self.assertTrue(fields['Feature'].startswith('features/'))
@@ -410,30 +452,30 @@ class TestEngineerModeFields(unittest.TestCase):
 
     def test_engineer_checkpoint_has_context_section(self):
         """Engineer checkpoint has ## Engineer Context section."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_ENGINEER)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_ENGINEER)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         self.assertIn('## Engineer Context', content)
 
     def test_engineer_has_protocol_step(self):
         """Engineer checkpoint has Protocol Step field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_ENGINEER)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_ENGINEER)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Protocol Step', fields)
         self.assertIn('Verify Locally', fields['Protocol Step'])
 
     def test_engineer_has_delivery_plan(self):
         """Engineer checkpoint has Delivery Plan field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_ENGINEER)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_ENGINEER)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Delivery Plan', fields)
 
     def test_engineer_has_work_queue(self):
         """Engineer checkpoint has Work Queue section."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_ENGINEER)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_ENGINEER)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         self.assertIn('**Work Queue:**', content)
         self.assertIn('pl_spec_code_audit.md', content)
@@ -450,30 +492,30 @@ class TestQAModeFields(unittest.TestCase):
 
     def test_qa_checkpoint_has_context_section(self):
         """QA checkpoint has ## QA Context section."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_QA)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_QA)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         self.assertIn('## QA Context', content)
 
     def test_qa_has_scenario_progress(self):
         """QA checkpoint has Scenario Progress field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_QA)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_QA)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Scenario Progress', fields)
         self.assertIn('5 of 8', fields['Scenario Progress'])
 
     def test_qa_has_verification_queue(self):
         """QA checkpoint has Verification Queue field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_QA)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_QA)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Verification Queue', fields)
 
     def test_qa_mode_value(self):
         """QA checkpoint has mode=qa."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_QA)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_QA)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertEqual(fields['Mode'], 'qa')
 
@@ -489,29 +531,29 @@ class TestPMModeFields(unittest.TestCase):
 
     def test_pm_checkpoint_has_context_section(self):
         """PM checkpoint has ## PM Context section."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_PM)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_PM)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             content = f.read()
         self.assertIn('## PM Context', content)
 
     def test_pm_has_spec_drafts(self):
         """PM checkpoint has Spec Drafts field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_PM)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_PM)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Spec Drafts', fields)
 
     def test_pm_has_figma_context(self):
         """PM checkpoint has Figma Context field."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_PM)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_PM)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertIn('Figma Context', fields)
 
     def test_pm_mode_value(self):
         """PM checkpoint has mode=pm."""
-        _write_purlin_checkpoint(self.tmpdir, SAMPLE_CHECKPOINT_PM)
-        with open(_purlin_checkpoint_path(self.tmpdir)) as f:
+        _write_pid_scoped_checkpoint(self.tmpdir, '99999', SAMPLE_CHECKPOINT_PM)
+        with open(_pid_scoped_checkpoint_path(self.tmpdir, '99999')) as f:
             fields = _parse_checkpoint_fields(f.read())
         self.assertEqual(fields['Mode'], 'pm')
 
@@ -527,8 +569,14 @@ class TestSkillFile(unittest.TestCase):
         """The skill file .claude/commands/pl-resume.md exists."""
         self.assertTrue(os.path.isfile(COMMAND_FILE))
 
-    def test_command_file_references_purlin_checkpoint(self):
-        """Skill file references session_checkpoint_purlin.md."""
+    def test_command_file_references_pid_scoped_checkpoint(self):
+        """Skill file references PID-scoped checkpoint pattern."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('session_checkpoint_${PURLIN_SESSION_ID}', content)
+
+    def test_command_file_references_unscoped_fallback(self):
+        """Skill file references unscoped checkpoint as fallback."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn('session_checkpoint_purlin.md', content)

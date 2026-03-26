@@ -48,7 +48,12 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
 
 ## Save Mode (`/pl-resume save`)
 
-Write a structured checkpoint to `.purlin/cache/session_checkpoint_purlin.md`. Compose the file based on your own understanding of your current session state. Do NOT commit the file (`.purlin/cache/` is gitignored).
+Write a structured checkpoint to a **PID-scoped** path so that concurrent terminals never collide:
+
+- If `PURLIN_SESSION_ID` is set (launcher session): `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`
+- If `PURLIN_SESSION_ID` is not set (manual `/pl-resume`): `.purlin/cache/session_checkpoint_purlin.md` (unscoped fallback)
+
+Compose the file based on your own understanding of your current session state. Do NOT commit the file (`.purlin/cache/` is gitignored).
 
 ### Checkpoint Format
 
@@ -115,7 +120,7 @@ Append these sections after the common fields:
 Print confirmation:
 
 ```
-Checkpoint saved to .purlin/cache/session_checkpoint_purlin.md
+Checkpoint saved to .purlin/cache/session_checkpoint_<session_id>.md
 Mode: <mode> | Branch: <branch> | Feature: <feature or "none">
 You can now /clear or close the terminal. Run /pl-resume to recover.
 ```
@@ -138,16 +143,30 @@ Execute this 7-step sequence:
 
 **Merge breadcrumb check:** Glob `.purlin/cache/merge_pending/*.json`. If any breadcrumbs exist, run the merge recovery protocol (see Merge Recovery Mode above) before proceeding. This check is essential because `/pl-resume` may be invoked standalone (after `/clear`) when no startup protocol ran.
 
-**Stale session state:** Clear any stale session state carried over from the previous session. If no such state exists, this is a no-op.
+**Stale checkpoint reaping:** Glob `.purlin/cache/session_checkpoint_*.md`. For each file:
+1. Extract the stem after `session_checkpoint_` (e.g., `46946` from `session_checkpoint_46946.md`).
+2. Skip known legacy names (`builder`, `architect`, `qa`, `pm`, `purlin`) — these are handled by the legacy compatibility path in Step 1.
+3. If the stem is numeric (a PID), check liveness: `kill -0 <pid> 2>/dev/null`.
+4. If the PID is dead, the checkpoint is orphaned (terminal crashed or closed without cleanup). **Delete the file** and log: `"Reaped stale checkpoint for PID <pid>."`
+5. If the PID is alive, leave the file — it belongs to a running terminal.
+
+This reaping runs BEFORE checkpoint detection (Step 1) so that stale files from crashed terminals don't interfere with the current restore.
+
+**Other stale session state:** Clear any additional stale session state carried over from the previous session. If no such state exists, this is a no-op.
 
 ### Step 1 -- Checkpoint Detection
 
-Use Bash `test -f .purlin/cache/session_checkpoint_purlin.md && echo EXISTS || echo MISSING`. Do NOT use the Read tool for this check — Read errors on missing files and cancels sibling parallel calls.
+Check for checkpoint files in priority order. Use Bash `test -f` for existence detection — do NOT use the Read tool, which errors on missing files and cancels sibling parallel tool calls.
 
-Also check for legacy role-scoped files (`session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). If a legacy file is found and no `session_checkpoint_purlin.md` exists, use the legacy file and map the role to the equivalent mode (`builder`/`architect` -> `engineer`, `qa` -> `qa`, `pm` -> `pm`).
+**Detection priority:**
+1. **PID-scoped:** If `PURLIN_SESSION_ID` is set, check `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`. This is the current terminal's own checkpoint.
+2. **Unscoped (migration):** Check `.purlin/cache/session_checkpoint_purlin.md`. This is the pre-PID-scoping format — treat as a one-time migration path.
+3. **Legacy role-scoped:** Check for `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`. Map role to mode (`builder`/`architect` -> `engineer`, `qa` -> `qa`, `pm` -> `pm`).
 
-- **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. The checkpoint's **Mode** field determines which mode to re-enter.
-- **MISSING:** Proceed silently to Step 2.
+Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never consumed — only the current terminal's PID matches.
+
+- **EXISTS (any level):** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. The checkpoint's **Mode** field determines which mode to re-enter. Record which file was matched (needed for deletion in Step 6).
+- **MISSING (all levels):** Proceed silently to Step 2.
 
 ### Step 2 -- Instruction Reload (Fresh Sessions Only)
 
@@ -243,6 +262,6 @@ Uncommitted:    <none | summary>
 ### Step 6 -- Update Terminal Identity, Cleanup, and Continue
 
 - **Update iTerm badge and title** to reflect the determined mode while preserving branch context. The launcher already set an initial badge (e.g., `Purlin (main)`). If a mode was resolved (from checkpoint, `default_mode`, or session message), update the badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. If `.purlin_worktree_label` exists, the worktree label replaces the branch (e.g., `Engineer (W1)`). If no mode was resolved, leave the launcher's initial badge in place. Do not set the badge earlier in the `/pl-resume` flow.
-- If a checkpoint file was read in Step 1, **delete it** (it has been consumed).
+- If a checkpoint file was read in Step 1, **delete whichever file was consumed** (PID-scoped, unscoped, or legacy). The checkpoint has been consumed and must not be restored again.
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.

@@ -159,6 +159,7 @@ cleanup() {
     type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
     rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"
+    rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_checkpoint_$$.md"
     # Clean up empty worktrees (no new commits + clean working tree)
     if [[ -n "${WORKTREE_DIR:-}" && -d "$WORKTREE_DIR" ]]; then
         local _new_commits _dirty
