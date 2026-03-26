@@ -1,6 +1,6 @@
 # Feature: /pl-remote Branch Collaboration
 
-> Label: "/pl-remote Branch Collaboration"
+> Label: "Agent Skills: Common: /pl-remote Branch Collaboration"
 > Category: "Agent Skills: Common"
 > Prerequisite: features/purlin_agent_launcher.md
 > Prerequisite: features/policy_branch_collab.md

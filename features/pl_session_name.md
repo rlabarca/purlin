@@ -1,6 +1,6 @@
 # Feature: Session Name Skill
 
-> Label: "Skill: Session Name"
+> Label: "Agent Skills: Common: /pl-session-name Session Name"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/terminal_identity.md
 
