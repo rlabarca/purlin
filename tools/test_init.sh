@@ -50,9 +50,6 @@ setup_sandbox() {
     # Overlay uncommitted scripts so tests exercise latest code
     cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
-    # Copy CDD scripts for symlink targets
-    cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/purlin/tools/cdd/start.sh"
-    cp "$SUBMODULE_SRC/tools/cdd/stop.sh" "$PROJECT/purlin/tools/cdd/stop.sh"
     # Copy requirements files
     cp "$SUBMODULE_SRC/requirements.txt" "$PROJECT/purlin/requirements.txt" 2>/dev/null || true
     cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
@@ -200,37 +197,6 @@ if [ -x "$PROJECT/pl-init.sh" ]; then
     log_pass "pl-init.sh exists and is executable"
 else
     log_fail "pl-init.sh missing or not executable"
-fi
-
-###############################################################################
-echo ""
-echo "[Scenario] Full Init Creates CDD Convenience Symlinks"
-###############################################################################
-
-if [ -L "$PROJECT/pl-cdd-start.sh" ]; then
-    log_pass "pl-cdd-start.sh is a symlink"
-else
-    log_fail "pl-cdd-start.sh is not a symlink"
-fi
-if [ -L "$PROJECT/pl-cdd-stop.sh" ]; then
-    log_pass "pl-cdd-stop.sh is a symlink"
-else
-    log_fail "pl-cdd-stop.sh is not a symlink"
-fi
-
-# Symlinks use relative paths
-START_TARGET="$(readlink "$PROJECT/pl-cdd-start.sh" 2>/dev/null || true)"
-STOP_TARGET="$(readlink "$PROJECT/pl-cdd-stop.sh" 2>/dev/null || true)"
-
-if [ -n "$START_TARGET" ] && [[ "$START_TARGET" != /* ]]; then
-    log_pass "pl-cdd-start.sh uses relative path: $START_TARGET"
-else
-    log_fail "pl-cdd-start.sh uses absolute path or missing: $START_TARGET"
-fi
-if [ -n "$STOP_TARGET" ] && [[ "$STOP_TARGET" != /* ]]; then
-    log_pass "pl-cdd-stop.sh uses relative path: $STOP_TARGET"
-else
-    log_fail "pl-cdd-stop.sh uses absolute path or missing: $STOP_TARGET"
 fi
 
 ###############################################################################
