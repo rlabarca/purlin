@@ -7,6 +7,9 @@ Purlin agent: This skill activates Engineer mode. If another mode is active, con
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **Commit format:** See `instructions/references/commit_conventions.md`.
+> **File ownership:** See `instructions/references/file_classification.md`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 

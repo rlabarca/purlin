@@ -7,6 +7,7 @@ Purlin agent: This skill activates PM mode. If another mode is active, confirm s
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 

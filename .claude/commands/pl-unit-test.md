@@ -7,7 +7,7 @@ Purlin agent: This skill activates Engineer mode. If QA mode is active, runs in 
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
-
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 > **Test infrastructure:** See `instructions/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 
 ---

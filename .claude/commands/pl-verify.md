@@ -7,7 +7,9 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
-
+> **Commit format:** See `instructions/references/commit_conventions.md`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
+> **Phased delivery:** See `instructions/references/phased_delivery.md`.
 > **Test infrastructure:** See `instructions/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 
 ---
@@ -51,7 +53,6 @@ Phase A and Phase B both respect this scope. In scoped mode, all steps target on
 Execute the applicable steps IN ORDER before assembling the manual checklist. This phase applies in both batch mode (all TESTING features) and scoped mode (single feature). In scoped mode, all steps target only the scoped feature.
 
 > **Canonical source:** QA_BASE Section 3.3 defines the Auto-First Protocol. This phase implements it. If they diverge, QA_BASE Section 3.3 is authoritative.
-
 > **Auto-start behavior:** When `auto_start` is `true` for the QA role,
 > execute ALL Phase A steps without user prompts. Do not present
 > approval gates or "shall I proceed?" questions — just execute.

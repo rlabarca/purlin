@@ -13,6 +13,8 @@ Reverse-engineer feature specs from an existing codebase. Scans source directori
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **Commit format:** See `instructions/references/commit_conventions.md`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 

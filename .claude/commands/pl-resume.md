@@ -130,6 +130,7 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`. This skill reads `config.local.json` first (launcher persists CLI overrides there).
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 

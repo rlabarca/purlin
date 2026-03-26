@@ -6,6 +6,7 @@ Available to all agents and modes.
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **File ownership:** See `instructions/references/file_classification.md`.
 
 ---
 

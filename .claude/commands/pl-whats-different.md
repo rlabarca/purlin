@@ -6,6 +6,7 @@ Available to all agents and modes.
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 

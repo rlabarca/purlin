@@ -17,6 +17,8 @@ Purlin agent: This skill activates Engineer mode. Exception: when invoked from Q
 ## Path Resolution
 
 > See `instructions/references/path_resolution.md`. Produces `TOOLS_ROOT`.
+> **Commit format:** See `instructions/references/commit_conventions.md`.
+> **Companion files:** See `instructions/references/active_deviations.md` for deviation format and PM review protocol.
 
 ---
 
