@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
 from tools.bootstrap import detect_project_root, atomic_write
+from tools.smoke.smoke import suggest_smoke_features
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 FEATURES_DIR = os.path.join(PROJECT_ROOT, "features")
@@ -777,6 +778,52 @@ def scan_worktrees():
 
 
 # ---------------------------------------------------------------------------
+# Smoke candidate detection
+# ---------------------------------------------------------------------------
+
+def _scan_smoke_candidates(features):
+    """Identify completed features that should be promoted to smoke tier.
+
+    Reuses suggest_smoke_features() from tools/smoke/smoke.py and filters
+    to only include features with COMPLETE lifecycle status.
+    """
+    try:
+        scan_data = {"features": features}
+        # Let suggest_smoke_features load the raw dep graph from disk
+        suggestions = suggest_smoke_features(
+            PROJECT_ROOT, scan_data=scan_data, dep_graph=None
+        )
+    except Exception:
+        return []
+
+    # Build lifecycle index from scanned features
+    lifecycle_by_name = {f["name"]: f.get("lifecycle") for f in features}
+
+    # Filter: only completed features with 3+ dependents (high fan-out)
+    candidates = []
+    for s in suggestions:
+        if lifecycle_by_name.get(s["feature"]) != "COMPLETE":
+            continue
+        dep_count = 0
+        for reason in s["reasons"]:
+            if reason.startswith("prerequisite for "):
+                try:
+                    dep_count = int(reason.split()[2])
+                except (IndexError, ValueError):
+                    pass
+                break
+        if dep_count < 3:
+            continue
+        candidates.append({
+            "feature": s["feature"],
+            "dependents": dep_count,
+            "reasons": s["reasons"],
+        })
+
+    return candidates
+
+
+# ---------------------------------------------------------------------------
 # Main scan orchestration
 # ---------------------------------------------------------------------------
 
@@ -786,15 +833,19 @@ def run_scan():
 
     git_state = scan_git_state()
 
+    features = scan_features()
+    dep_graph = scan_dependency_graph()
+
     result = {
         "scanned_at": now,
-        "features": scan_features(),
+        "features": features,
         "open_discoveries": [
             d for d in scan_discoveries() if d.get("status") == "OPEN"
         ],
         "unacknowledged_deviations": scan_unacknowledged_deviations(),
         "delivery_plan": scan_delivery_plan(),
-        "dependency_graph": scan_dependency_graph(),
+        "dependency_graph": dep_graph,
+        "smoke_candidates": _scan_smoke_candidates(features),
         "git_state": {
             "branch": git_state["branch"],
             "clean": git_state["clean"],

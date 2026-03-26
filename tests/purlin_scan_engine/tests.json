@@ -1,9 +1,9 @@
 {
   "feature": "purlin_scan_engine",
   "status": "PASS",
-  "passed": 20,
+  "passed": 23,
   "failed": 0,
-  "total": 20,
+  "total": 23,
   "test_file": "tools/test_purlin_scan.sh",
   "scenarios": [
     "Scan detects feature lifecycle from git log",
@@ -25,7 +25,10 @@
     "Scan reports null modification when never completed",
     "Scan uses current branch only for status commits",
     "Scan detects newly created spec as modified",
-    "Exemption check uses batched git calls"
+    "Exemption check uses batched git calls",
+    "Scan surfaces smoke candidates",
+    "Scan excludes already-classified smoke features",
+    "Scan excludes non-complete features from smoke candidates"
   ],
-  "ran_at": "2026-03-25T16:13:51Z"
+  "ran_at": "2026-03-26T13:22:50Z"
 }

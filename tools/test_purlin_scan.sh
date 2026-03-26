@@ -963,6 +963,238 @@ else
 fi
 
 ###############################################################################
+# Scenario 20: Scan surfaces smoke candidates for high-fan-out completed features
+###############################################################################
+echo "--- Scenario 20: Scan surfaces smoke candidates ---"
+
+setup_fixture
+
+# Create 4 features: hub_feature is a prerequisite for the other 3
+cat > "$FIXTURE_DIR/features/hub_feature.md" << 'FEATEOF'
+# Feature: Hub Feature
+
+> Label: "Core: Hub"
+> Category: "Install, Update & Scripts"
+
+## 1. Overview
+Central feature.
+
+## 2. Requirements
+Some requirements.
+FEATEOF
+
+for dep in dep_a dep_b dep_c; do
+cat > "$FIXTURE_DIR/features/${dep}.md" << FEATEOF
+# Feature: ${dep}
+
+> Prerequisite: features/hub_feature.md
+
+## 1. Overview
+Depends on hub.
+FEATEOF
+done
+
+# Create dependency graph (hub_feature has 3 dependents)
+mkdir -p "$FIXTURE_DIR/.purlin/cache"
+cat > "$FIXTURE_DIR/.purlin/cache/dependency_graph.json" << 'DEPEOF'
+{
+  "features": [
+    {"file": "features/hub_feature.md", "category": "Install, Update & Scripts", "label": "Core: Hub", "prerequisites": []},
+    {"file": "features/dep_a.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_b.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_c.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]}
+  ]
+}
+DEPEOF
+
+# Mark hub_feature as COMPLETE via git status commit
+git -C "$FIXTURE_DIR" add -A
+git -C "$FIXTURE_DIR" commit -q -m "status(hub_feature): [Complete features/hub_feature.md]"
+
+# No tier table — hub_feature should appear as candidate
+# No PURLIN_OVERRIDES.md with tier table
+
+run_scan_fixture "$FIXTURE_DIR"
+
+CANDIDATE_FEATURE=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+candidates = d.get('smoke_candidates', [])
+for c in candidates:
+    if c['feature'] == 'hub_feature':
+        print(c['feature'])
+        sys.exit(0)
+print('NOT_FOUND')
+" 2>/dev/null)
+
+CANDIDATE_DEPS=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for c in d.get('smoke_candidates', []):
+    if c['feature'] == 'hub_feature':
+        print(c['dependents'])
+        sys.exit(0)
+print(-1)
+" 2>/dev/null)
+
+if [ "$CANDIDATE_FEATURE" = "hub_feature" ] && [ "$CANDIDATE_DEPS" = "3" ]; then
+    log_pass "Scan surfaces smoke candidates"
+else
+    log_fail "Scan surfaces smoke candidates (feature=$CANDIDATE_FEATURE, deps=$CANDIDATE_DEPS)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 21: Scan excludes already-classified smoke features from candidates
+###############################################################################
+echo "--- Scenario 21: Scan excludes already-classified smoke features ---"
+
+setup_fixture
+
+# Same hub_feature setup
+cat > "$FIXTURE_DIR/features/hub_feature.md" << 'FEATEOF'
+# Feature: Hub Feature
+
+> Label: "Core: Hub"
+> Category: "Install, Update & Scripts"
+
+## 1. Overview
+Central feature.
+
+## 2. Requirements
+Some requirements.
+FEATEOF
+
+for dep in dep_a dep_b dep_c; do
+cat > "$FIXTURE_DIR/features/${dep}.md" << FEATEOF
+# Feature: ${dep}
+
+> Prerequisite: features/hub_feature.md
+
+## 1. Overview
+Depends on hub.
+FEATEOF
+done
+
+mkdir -p "$FIXTURE_DIR/.purlin/cache"
+cat > "$FIXTURE_DIR/.purlin/cache/dependency_graph.json" << 'DEPEOF'
+{
+  "features": [
+    {"file": "features/hub_feature.md", "category": "Install, Update & Scripts", "label": "Core: Hub", "prerequisites": []},
+    {"file": "features/dep_a.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_b.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_c.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]}
+  ]
+}
+DEPEOF
+
+# Mark as COMPLETE
+git -C "$FIXTURE_DIR" add -A
+git -C "$FIXTURE_DIR" commit -q -m "status(hub_feature): [Complete features/hub_feature.md]"
+
+# NOW add hub_feature to tier table as smoke — should be excluded
+cat > "$FIXTURE_DIR/.purlin/PURLIN_OVERRIDES.md" << 'TIEREOF'
+# Overrides
+
+## Test Priority Tiers
+
+| Feature | Tier |
+|---------|------|
+| hub_feature | smoke |
+TIEREOF
+
+git -C "$FIXTURE_DIR" add -A
+git -C "$FIXTURE_DIR" commit -q -m "add tier table"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+EXCLUDED=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+candidates = d.get('smoke_candidates', [])
+for c in candidates:
+    if c['feature'] == 'hub_feature':
+        print('FOUND')
+        sys.exit(0)
+print('EXCLUDED')
+" 2>/dev/null)
+
+if [ "$EXCLUDED" = "EXCLUDED" ]; then
+    log_pass "Scan excludes already-classified smoke features"
+else
+    log_fail "Scan excludes already-classified smoke features (hub_feature still in candidates)"
+fi
+
+cleanup_fixture
+
+###############################################################################
+# Scenario 22: Scan excludes non-complete features from smoke candidates
+###############################################################################
+echo "--- Scenario 22: Scan excludes non-complete features from smoke candidates ---"
+
+setup_fixture
+
+# hub_feature with 3 dependents but NOT marked Complete
+cat > "$FIXTURE_DIR/features/hub_feature.md" << 'FEATEOF'
+# Feature: Hub Feature
+
+> Label: "Core: Hub"
+> Category: "Install, Update & Scripts"
+
+## 1. Overview
+Central feature.
+FEATEOF
+
+for dep in dep_a dep_b dep_c; do
+cat > "$FIXTURE_DIR/features/${dep}.md" << FEATEOF
+# Feature: ${dep}
+
+> Prerequisite: features/hub_feature.md
+
+## 1. Overview
+Depends on hub.
+FEATEOF
+done
+
+mkdir -p "$FIXTURE_DIR/.purlin/cache"
+cat > "$FIXTURE_DIR/.purlin/cache/dependency_graph.json" << 'DEPEOF'
+{
+  "features": [
+    {"file": "features/hub_feature.md", "category": "Install, Update & Scripts", "label": "Core: Hub", "prerequisites": []},
+    {"file": "features/dep_a.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_b.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]},
+    {"file": "features/dep_c.md", "category": "", "label": "", "prerequisites": ["hub_feature.md"]}
+  ]
+}
+DEPEOF
+
+# Commit but NO status commit — lifecycle is TODO
+git -C "$FIXTURE_DIR" add -A
+git -C "$FIXTURE_DIR" commit -q -m "add features"
+
+run_scan_fixture "$FIXTURE_DIR"
+
+NON_COMPLETE=$(echo "$SCAN_OUTPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+candidates = d.get('smoke_candidates', [])
+for c in candidates:
+    if c['feature'] == 'hub_feature':
+        print('FOUND')
+        sys.exit(0)
+print('EXCLUDED')
+" 2>/dev/null)
+
+if [ "$NON_COMPLETE" = "EXCLUDED" ]; then
+    log_pass "Scan excludes non-complete features from smoke candidates"
+else
+    log_fail "Scan excludes non-complete features from smoke candidates (hub_feature in candidates despite TODO lifecycle)"
+fi
+
+cleanup_fixture
+
+###############################################################################
 # Summary and tests.json output
 ###############################################################################
 echo ""
@@ -1012,7 +1244,10 @@ cat > "$TESTS_OUTPUT_DIR/tests.json" << JSONEOF
     "Scan reports null modification when never completed",
     "Scan uses current branch only for status commits",
     "Scan detects newly created spec as modified",
-    "Exemption check uses batched git calls"
+    "Exemption check uses batched git calls",
+    "Scan surfaces smoke candidates",
+    "Scan excludes already-classified smoke features",
+    "Scan excludes non-complete features from smoke candidates"
   ],
   "ran_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
