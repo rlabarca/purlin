@@ -340,10 +340,17 @@ LOCKEOF
 fi
 
 # --- Set terminal identity (after worktree so label is available) ---
+# Badge includes branch or worktree label for immediate context.
+# Worktree label wins over branch when present.
 ROLE_DISPLAY="$MODE_NAME"
 if [[ -f "$PURLIN_PROJECT_ROOT/.purlin_worktree_label" ]]; then
     WORKTREE_LABEL=$(cat "$PURLIN_PROJECT_ROOT/.purlin_worktree_label")
     ROLE_DISPLAY="$MODE_NAME ($WORKTREE_LABEL)"
+else
+    _BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [[ -n "$_BRANCH" ]]; then
+        ROLE_DISPLAY="$MODE_NAME ($_BRANCH)"
+    fi
 fi
 _PROJECT_DISPLAY="${PROJECT_NAME:-$(basename "$PURLIN_PROJECT_ROOT")}"
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "$ROLE_DISPLAY" "$_PROJECT_DISPLAY"
