@@ -3,111 +3,130 @@
 
 Available to all agents and modes.
 
-Generate a structured, copy-paste-ready issue report for the Purlin framework itself. Collects Purlin version info, environment context, and workflow state. The report can be pasted directly into a Purlin Architect session for triage.
+Generate a structured, copy-paste-ready bug report for the Purlin framework. The output is designed to be pasted directly into a Purlin Engineer session as a debugging task prompt.
 
 This command is for reporting issues with the Purlin framework tooling, not for logging project-level bugs (use `/pl-discovery` for that).
 
 ## Steps
 
-### 1. Collect Issue Description
+### 1. Collect Issue Context
 
-If `$ARGUMENTS` is non-empty, use it as the issue description.
+If `$ARGUMENTS` is non-empty, use it as the issue description. Otherwise, ask: **"Describe the Purlin framework issue you encountered."**
 
-Otherwise, ask the user: **"Describe the Purlin framework issue you encountered."** Do not proceed until a description is provided.
+Then gather the debugging essentials. If any of these are visible in the current conversation, extract them directly and confirm with the user. Otherwise, ask:
 
-### 2. Detect Purlin Version Info
+1. **Command/skill**: "What command or skill were you running?" (e.g., `/pl-build notifications`, `pl-run.sh --auto-build`)
+2. **Error output**: "Paste or describe the error output (traceback, unexpected result, or wrong behavior)." If the error is visible in conversation context, extract it and ask: "Is this the error? [show extracted text]"
+3. **Expected behavior**: "What should have happened instead?"
 
-Determine deployment mode and collect version information:
+### 2. Gather Automatic Context
 
-1. Run `git rev-parse --show-toplevel` to get project root.
-2. Check if `.purlin/.upstream_sha` exists at project root.
+Collect all of the following without user input:
 
-**If `.purlin/.upstream_sha` exists (consumer project):**
-- Purlin SHA: `cat <project_root>/.purlin/.upstream_sha`
-- Purlin remote: `git -C <tools_root>/.. remote get-url origin`, fallback to reading the `# Repo:` line from `pl-init.sh` in project root, fallback to "unknown"
-- Version tag: `git -C <tools_root>/.. describe --tags --abbrev=0 HEAD`, fallback "untagged"
-- Deployment: `consumer`
-- Consumer project remote: `git remote get-url origin`, fallback "unknown"
-- Consumer branch: `git rev-parse --abbrev-ref HEAD`
-- Consumer HEAD: `git rev-parse --short HEAD`
+**Purlin version:**
+1. Check if `.purlin/.upstream_sha` exists at project root (`git rev-parse --show-toplevel`).
+2. **Consumer project** (`.upstream_sha` exists):
+   - Purlin SHA: `cat <project_root>/.purlin/.upstream_sha`
+   - Purlin remote: `git -C <tools_root>/.. remote get-url origin`, fallback "unknown"
+   - Version tag: `git -C <tools_root>/.. describe --tags --abbrev=0 HEAD`, fallback "untagged"
+   - Deployment: `consumer`
+   - Consumer remote: `git remote get-url origin`, fallback "unknown"
+   - Consumer branch: `git rev-parse --abbrev-ref HEAD`
+   - Consumer HEAD: `git rev-parse --short HEAD`
+3. **Standalone** (no `.upstream_sha`):
+   - Purlin SHA: `git rev-parse HEAD`
+   - Purlin remote: `git remote get-url origin`, fallback "unknown"
+   - Version tag: `git describe --tags --abbrev=0 HEAD`, fallback "untagged"
+   - Deployment: `standalone`
 
-**If `.purlin/.upstream_sha` does NOT exist (standalone / inside Purlin repo):**
-- Purlin SHA: `git rev-parse HEAD`
-- Purlin remote: `git remote get-url origin`, fallback "unknown"
-- Version tag: `git describe --tags --abbrev=0 HEAD`, fallback "untagged"
-- Deployment: `standalone`
-- No consumer project fields (omit from report)
-
-### 3. Gather Environment Context
-
-- Date: today's date from system context
+**Environment:**
+- Date: today's date
 - OS: `uname -s -r`
-- Agent role: detect from system prompt markers:
-  - "Role Definition: PM mode" -> `Architect`
-  - "Role Definition: Engineer mode" -> `Builder`
-  - "Role Definition: The QA" -> `QA`
-  - "Role Definition: The PM" -> `PM`
-  - If no marker found -> `unknown`
-- `tools_root`: read from `.purlin/config.json` (default `"tools"`)
+- Mode: current Purlin mode from session state (Engineer, PM, QA, or "none")
+- `tools_root`: from resolved config
 
-### 4. Gather Workflow Context
+**Config state:**
+- Read `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`
+- Include only the `agents.purlin` section (not the full file)
 
-- Recent git history: `git log --oneline -5`
-- Working tree state: `git status --short` (first 20 lines max)
-- If `.purlin/cache/scan.json` exists, extract any features with failing tests or open discoveries and summarize them briefly (do not dump the entire file).
-- Compose a brief summary (2-5 sentences) of the conversation context that led to the issue -- what the user was trying to do, what agent was running, and what went wrong. Draw this from your own conversation memory, not a tool.
+**Relevant files:**
+- If the failing command is a `/pl-*` skill, note the skill path: `.claude/commands/pl-<name>.md`
+- If a feature was being worked on, note the feature spec path
+- If a specific tool/script failed, note its path
 
-### 5. Compose and Present Bug Report
+**Git state:**
+- `git log --oneline -5`
+- `git status --short` (first 20 lines)
 
-Assemble all collected information and present between clear dividers. Use the branch from the deployment where the user is working (consumer branch for consumer projects, current branch for standalone).
+**Conversation context:**
+- Compose a 2-3 sentence summary of what led to the issue: what was being attempted, what mode was active, what sequence of actions preceded the failure. Draw from conversation memory.
+
+### 3. Compose and Present Bug Report
+
+Assemble the report with the Reproduction Block first (what the receiving agent needs to start debugging) and the Environment Snapshot second (reference context).
 
 ```
 -------- PURLIN ISSUE REPORT (COPY THIS) ---------
 
-## Purlin Issue Report
+## Reproduction
+
+**Command:** <the command/skill that failed>
+
+**Error Output:**
+```
+<error traceback, unexpected output, or description of wrong behavior>
+```
+
+**Expected:** <what should have happened>
+
+**Steps to Reproduce:**
+1. <step 1 — include mode, branch, and any setup>
+2. <step 2>
+3. <step 3>
+
+**Relevant Files:**
+- <file path 1> — <why it's relevant>
+- <file path 2> — <why it's relevant>
+
+**Context:** <agent-composed summary of what led to the issue>
+
+---
+
+## Environment
 
 | Field | Value |
 |-------|-------|
 | Date | <date> |
+| Mode | <Engineer / PM / QA / none> |
+| Branch | <branch> |
 | Purlin SHA | <full-sha> |
 | Purlin Version | <version-tag> |
 | Purlin Remote | <remote-url> |
 | Deployment | <consumer / standalone> |
 | OS | <os-info> |
-| Agent Role | <role> |
-| Branch | <branch> |
 | Consumer Project | <consumer-remote or "N/A (standalone)"> |
 | Consumer HEAD | <short-sha or "N/A"> |
 
-### Issue Description
-
-<user's description>
-
-### Context
-
-<agent-composed summary of what led to the issue>
-
-### Recent Git Activity
-
-```
-<git log --oneline -5 output>
+**Agent Config (`agents.purlin`):**
+```json
+<agents.purlin section from resolved config>
 ```
 
-### Working Tree State
-
+**Recent Git Activity:**
 ```
-<git status --short output, or "clean">
+<git log --oneline -5>
 ```
 
-### Active Issues
-
-<Failing tests or open discoveries summary, or "None">
+**Working Tree:**
+```
+<git status --short, or "clean">
+```
 
 -------- END PURLIN ISSUE REPORT ---------
 ```
 
-### 6. User Instructions
+### 4. User Instructions
 
 After the closing divider, print:
 
-> Copy the text between the dividers above and send it to the Purlin developer, or post it to the project's issue tracker. The developer can paste this directly into a Purlin Architect session for triage.
+> Copy the text between the dividers and paste it into a Purlin Engineer session. The reproduction block gives the agent everything it needs to find and fix the issue.

@@ -23,6 +23,8 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-update-purlin          Update Purlin submodule
   /pl-whats-different        Compare branches
   /pl-worktree <cmd>         Worktree management (list | cleanup-stale)
+  /pl-merge                  Merge worktree back to source branch
+  /pl-purlin-issue           Report a Purlin framework bug
 
   Engineer Mode
   ──────
@@ -53,6 +55,7 @@ Activate a mode with /pl-mode or invoke a mode-specific skill.
   /pl-discovery              Record/manage discoveries
   /pl-qa-report              QA session summary
   /pl-regression <cmd>       Regression suite (run | author | evaluate)
+  /pl-smoke <feature>        Promote tests to smoke tier
   /pl-fixture                Test fixture management
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
