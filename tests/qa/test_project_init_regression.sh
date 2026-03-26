@@ -44,9 +44,6 @@ setup_sandbox() {
     # Overlay latest uncommitted code
     cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh" 2>/dev/null || true
-    mkdir -p "$PROJECT/purlin/tools/cdd"
-    cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/purlin/tools/cdd/start.sh" 2>/dev/null || true
-    cp "$SUBMODULE_SRC/tools/cdd/stop.sh" "$PROJECT/purlin/tools/cdd/stop.sh" 2>/dev/null || true
     mkdir -p "$PROJECT/purlin/tools/mcp"
     [ -f "$SUBMODULE_SRC/tools/mcp/manifest.json" ] && cp "$SUBMODULE_SRC/tools/mcp/manifest.json" "$PROJECT/purlin/tools/mcp/manifest.json"
     mkdir -p "$PROJECT/purlin/purlin-config-sample"
@@ -268,41 +265,6 @@ if grep -q "CUSTOM OVERRIDE CONTENT" "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" 2
     log_pass "S7: ARCHITECT_OVERRIDES.md preserved on refresh"
 else
     log_fail "S7: ARCHITECT_OVERRIDES.md was modified on refresh"
-fi
-teardown_sandbox
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Scenario 8: CDD Symlinks Created on Refresh if Missing
-# ─────────────────────────────────────────────────────────────────────────────
-echo "[S8] CDD Symlinks Created on Refresh if Missing"
-setup_sandbox
-
-PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
-rm -f "$PROJECT/pl-cdd-start.sh" "$PROJECT/pl-cdd-stop.sh"
-PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
-
-if [ -L "$PROJECT/pl-cdd-start.sh" ] && [ -L "$PROJECT/pl-cdd-stop.sh" ]; then
-    log_pass "S8: CDD symlinks recreated on refresh"
-else
-    log_fail "S8: CDD symlinks not recreated on refresh"
-fi
-teardown_sandbox
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Scenario 9: CDD Regular File Replaced with Symlink on Refresh
-# ─────────────────────────────────────────────────────────────────────────────
-echo "[S9] CDD Regular File Replaced with Symlink on Refresh"
-setup_sandbox
-
-PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
-rm -f "$PROJECT/pl-cdd-start.sh"
-echo "# regular file not a symlink" > "$PROJECT/pl-cdd-start.sh"
-PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
-
-if [ -L "$PROJECT/pl-cdd-start.sh" ]; then
-    log_pass "S9: regular file replaced with symlink"
-else
-    log_fail "S9: regular file NOT replaced with symlink"
 fi
 teardown_sandbox
 
