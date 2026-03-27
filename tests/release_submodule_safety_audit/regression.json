@@ -1,0 +1,17 @@
+{
+  "status": "FAIL",
+  "passed": 0,
+  "failed": 1,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/release_submodule_safety_audit.json",
+  "details": [
+    {
+      "name": "release_submodule_safety_audit_suite:submodule safety audit detection suite ran to completion",
+      "status": "FAIL",
+      "scenario_ref": "features/release_submodule_safety_audit.md:release_submodule_safety_audit_suite",
+      "expected": "submodule safety audit detection suite ran to completion",
+      "assertion_tier": 2,
+      "actual_excerpt": "=== QA Regression: release_submodule_safety_audit ===\n\nPASS: SA1: tools/release/submodule_safety_audit.py exists\nFAIL: SA2: violations-present fixture: no CRITICAL findings (expected violations)\nFAIL: SA3: no output to validate\nFAIL: SA5: clean-submodule fixture: audit crashed or produced invalid JSON\nPASS: SA6: audit script references both Python (.py) and shell (.sh) files\nFAIL: SA7: warning-only fixture: unexpected result (no warnings or has criticals)\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nResult"
+    }
+  ]
+}
