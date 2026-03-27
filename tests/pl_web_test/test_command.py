@@ -42,7 +42,7 @@ These tests verify the underlying behaviors that the command depends on:
 - Triangulated verification verdict logic (PASS, BUG, STALE, DRIFT)
 - Three-source report format with per-item attribution
 - Role-based completion gate behavior
-- Instruction file references across 7 files
+- Instruction file references across 5 files (unified agent architecture)
 """
 import os
 import re
@@ -57,6 +57,8 @@ COMMAND_FILE = os.path.join(
     PROJECT_ROOT, '.claude', 'commands', 'pl-web-test.md')
 
 # Instruction files that must reference /pl-web-test per Section 2.13
+# Updated for unified agent architecture: QA_BASE/BUILDER_BASE -> PURLIN_BASE,
+# qa_commands/builder_commands -> purlin_commands
 INSTRUCTION_FILES = {
     'feature_format': os.path.join(
         PROJECT_ROOT, 'instructions', 'references', 'feature_format.md'),
@@ -66,14 +68,10 @@ INSTRUCTION_FILES = {
     'visual_verification_protocol': os.path.join(
         PROJECT_ROOT, 'instructions', 'references',
         'visual_verification_protocol.md'),
-    'qa_base': os.path.join(
-        PROJECT_ROOT, 'instructions', 'QA_BASE.md'),
-    'builder_base': os.path.join(
-        PROJECT_ROOT, 'instructions', 'BUILDER_BASE.md'),
-    'qa_commands': os.path.join(
-        PROJECT_ROOT, 'instructions', 'references', 'qa_commands.md'),
-    'builder_commands': os.path.join(
-        PROJECT_ROOT, 'instructions', 'references', 'builder_commands.md'),
+    'purlin_base': os.path.join(
+        PROJECT_ROOT, 'instructions', 'PURLIN_BASE.md'),
+    'purlin_commands': os.path.join(
+        PROJECT_ROOT, 'instructions', 'references', 'purlin_commands.md'),
 }
 
 # Sample feature spec with Web Test metadata and Web Start
@@ -1538,9 +1536,9 @@ class TestBuilderCompletionGate(unittest.TestCase):
         with open(COMMAND_FILE) as f:
             self.command_content = f.read()
 
-    def test_skill_detects_builder_role(self):
-        """Skill file checks for Engineer role identity marker."""
-        self.assertIn('Role Definition: The Engineer', self.command_content)
+    def test_skill_detects_engineer_mode(self):
+        """Skill file declares Engineer mode (unified agent architecture)."""
+        self.assertIn('Purlin mode: Engineer', self.command_content)
 
     def test_builder_does_not_mark_complete(self):
         """Skill file states Engineer does NOT mark complete."""
@@ -1566,53 +1564,31 @@ class TestInstructionFilesUpdated(unittest.TestCase):
     And visual_spec_convention.md references the automated alternative
     And visual_verification_protocol.md has Section 5.4.7 for Playwright MCP
 
-    Test: Verifies all 7 instruction files contain required references.
+    Test: Verifies all 5 instruction files contain required references.
+    (Unified agent: QA_BASE/BUILDER_BASE -> PURLIN_BASE,
+     qa_commands/builder_commands -> purlin_commands)
     """
 
-    def test_all_seven_instruction_files_exist(self):
-        """All 7 instruction files from Section 2.13 exist."""
+    def test_all_five_instruction_files_exist(self):
+        """All 5 instruction files from Section 2.13 exist."""
         for name, path in INSTRUCTION_FILES.items():
             self.assertTrue(os.path.isfile(path),
                             f'Instruction file not found: {name} at {path}')
 
-    def test_qa_base_authorized_commands(self):
-        """QA_BASE.md authorized commands include /pl-web-test."""
-        with open(INSTRUCTION_FILES['qa_base']) as f:
+    def test_purlin_base_references_web_test(self):
+        """PURLIN_BASE.md references /pl-web-test (QA cross-mode + Engineer)."""
+        with open(INSTRUCTION_FILES['purlin_base']) as f:
             content = f.read()
-        # Find the authorized commands line
-        for line in content.split('\n'):
-            if 'Authorized commands:' in line and '/pl-web-test' in line:
-                break
-        else:
-            self.fail('/pl-web-test not in QA_BASE authorized commands')
+        self.assertIn('/pl-web-test', content)
 
-    def test_builder_base_authorized_commands(self):
-        """BUILDER_BASE.md authorized commands include /pl-web-test."""
-        with open(INSTRUCTION_FILES['builder_base']) as f:
-            content = f.read()
-        for line in content.split('\n'):
-            if 'Authorized commands:' in line and '/pl-web-test' in line:
-                break
-        else:
-            self.fail('/pl-web-test not in BUILDER_BASE authorized commands')
-
-    def test_qa_commands_both_variants(self):
-        """qa_commands.md has /pl-web-test in both table variants."""
-        with open(INSTRUCTION_FILES['qa_commands']) as f:
+    def test_purlin_commands_both_sections(self):
+        """purlin_commands.md has /pl-web-test in both QA and Engineer sections."""
+        with open(INSTRUCTION_FILES['purlin_commands']) as f:
             content = f.read()
         occurrences = content.count('/pl-web-test')
         self.assertGreaterEqual(
             occurrences, 2,
-            f'Expected >= 2 occurrences in qa_commands.md, found {occurrences}')
-
-    def test_builder_commands_both_variants(self):
-        """builder_commands.md has /pl-web-test in both table variants."""
-        with open(INSTRUCTION_FILES['builder_commands']) as f:
-            content = f.read()
-        occurrences = content.count('/pl-web-test')
-        self.assertGreaterEqual(
-            occurrences, 2,
-            f'Expected >= 2 in builder_commands.md, found {occurrences}')
+            f'Expected >= 2 occurrences in purlin_commands.md, found {occurrences}')
 
     def test_feature_format_documents_web_test(self):
         """feature_format.md documents > Web Test: metadata."""
@@ -1639,7 +1615,6 @@ class TestInstructionFilesUpdated(unittest.TestCase):
         """visual_verification_protocol.md on-demand loader includes cmd."""
         with open(INSTRUCTION_FILES['visual_verification_protocol']) as f:
             content = f.read()
-        # The loader notice at the top should mention /pl-web-test
         lines = content.split('\n')[:5]
         loader_text = '\n'.join(lines)
         self.assertIn('/pl-web-test', loader_text)
@@ -1651,19 +1626,6 @@ class TestInstructionFilesUpdated(unittest.TestCase):
         lines = content.split('\n')[:5]
         loader_text = '\n'.join(lines)
         self.assertIn('/pl-web-test', loader_text)
-
-    def test_qa_base_references_web_test_in_section_54(self):
-        """QA_BASE.md references /pl-web-test in authorized commands."""
-        with open(INSTRUCTION_FILES['qa_base']) as f:
-            content = f.read()
-        self.assertIn('/pl-web-test', content)
-
-    def test_builder_base_references_web_test(self):
-        """BUILDER_BASE.md references Web Test verification."""
-        with open(INSTRUCTION_FILES['builder_base']) as f:
-            content = f.read()
-        self.assertIn('Web Test', content)
-        self.assertIn('/pl-web-test', content)
 
 
 class TestDynamicPortResolution(unittest.TestCase):

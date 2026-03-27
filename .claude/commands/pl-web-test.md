@@ -122,7 +122,7 @@ When a feature has both `> Web Test:` and `> Test Fixtures: <repo-url>` metadata
 **For each scenario with a fixture tag reference:**
 
 1. **Checkout:** Run `${TOOLS_ROOT}/test_support/fixture.sh checkout <repo-url> <tag>` via Bash to obtain the fixture state in a temp directory. The command prints the checkout path to stdout.
-2. **Start server:** Run the feature's `> Web Start:` command with the fixture directory as working directory (background). If the command supports `--port 0`, use it to bind an ephemeral port. Read the actual port from the server's stdout.
+2. **Start server:** Run the feature's `> Web Start:` command with `--project-root <fixture-dir> --port 0` to serve from the fixture state and bind an ephemeral port. Read the actual port from the server's stdout.
 3. **URL construction:** Use `http://localhost:<ephemeral-port>` as the test URL for this scenario. This overrides both the `> Web Test:` URL and runtime port file resolution entirely.
 4. **Execute scenario:** Run the scenario's When/Then steps against the fixture-backed server using Steps 5-6 below.
 5. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `${TOOLS_ROOT}/test_support/fixture.sh cleanup <fixture-dir>` via Bash.
