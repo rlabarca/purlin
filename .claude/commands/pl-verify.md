@@ -250,6 +250,7 @@ Smoke gate:      [ran M smoke scenarios / skipped (no tier table)]
 Classified:      A scenarios (B → @auto, C → @manual, D skipped)
 Visual smoke:    E items checked
 Regression:      R authored this session, S pre-existing
+Unit tests:      P features PASS, Q features FAIL
 
 Remaining for manual verification: F items across G features.
 Proceeding to Phase B.
@@ -314,14 +315,16 @@ Regression gaps: T features without harness JSON
 
 ### Strategy Dispatch
 
-After the Phase A Summary, regression table, and gap table, dispatch based on flags:
+After the Phase A Summary, regression table, and gap table, dispatch based on flags.
+
+**"Automated failures" definition:** The union of (1) regression suite failures (`regression.json` with `status: "FAIL"` or `"STALE"`), (2) @auto scenario failures from Phase A Step 3, AND (3) unit test failures (`tests.json` with `status: "FAIL"` for any in-scope feature). All three sources MUST be checked — if any single source has failures, the dispatch enters Phase A.5.
 
 **When `--auto-verify` or `auto_start: true`:**
-*   If any automated test failures OR regression gaps exist: proceed to Phase A.5 auto-fix loop.
-*   If zero failures and zero gaps: skip to Phase B (or skip Phase B if zero manual items).
+*   If any automated failures exist (per definition above): proceed to Phase A.5 auto-fix loop.
+*   If zero failures across all three sources and zero gaps: skip to Phase B (or skip Phase B if zero manual items).
 
 **When interactive (`auto_start: false`, no `--auto-verify`):**
-*   If Phase A had zero failures AND zero gaps: skip to Phase B directly (or skip Phase B if zero manual items).
+*   If Phase A had zero failures (across all three sources) AND zero gaps: skip to Phase B directly (or skip Phase B if zero manual items).
 *   If failures or gaps exist, present the strategy menu:
 
 ```
