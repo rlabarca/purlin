@@ -64,12 +64,14 @@ def _get_command_content():
     return _command_content
 
 
-# Known stale artifacts from the spec (Section 2.9)
+# Known stale artifacts from the spec (Section 2.11)
 KNOWN_STALE_ARTIFACTS = {
     'run_architect.sh': 'pl-run-architect.sh',
     'run_builder.sh': 'pl-run-builder.sh',
     'run_qa.sh': 'pl-run-qa.sh',
     'purlin_init.sh': 'pl-init.sh',
+    'pl-cdd-start.sh': 'CDD dashboard (discontinued)',
+    'pl-cdd-stop.sh': 'CDD dashboard (discontinued)',
 }
 
 # Top-level scripts tracked by the update skill

@@ -313,9 +313,11 @@ setup_sandbox
 
 PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
 touch "$PROJECT/run_architect.sh" "$PROJECT/run_builder.sh" "$PROJECT/run_qa.sh"
+touch "$PROJECT/pl-cdd-start.sh" "$PROJECT/pl-cdd-stop.sh"
 PATH="$SAFE_PATH" "$INIT_SH" > /dev/null 2>&1
 
-if [ ! -f "$PROJECT/run_architect.sh" ] && [ ! -f "$PROJECT/run_builder.sh" ] && [ ! -f "$PROJECT/run_qa.sh" ]; then
+if [ ! -f "$PROJECT/run_architect.sh" ] && [ ! -f "$PROJECT/run_builder.sh" ] && [ ! -f "$PROJECT/run_qa.sh" ] \
+   && [ ! -f "$PROJECT/pl-cdd-start.sh" ] && [ ! -f "$PROJECT/pl-cdd-stop.sh" ]; then
     log_pass "S12: stale launchers removed on refresh"
 else
     log_fail "S12: stale launchers NOT removed on refresh"

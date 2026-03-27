@@ -114,8 +114,9 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - If neither condition is met, skip silently
 
 8. **Stale Artifact Cleanup:**
-   - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`)
+   - **Known stale root scripts:** Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `pl-cdd-start.sh`, `pl-cdd-stop.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
+   - **Orphaned command files:** After init refresh, compare `.claude/commands/pl-*.md` files against `<submodule>/.claude/commands/`. Any local `pl-*.md` file not present in the submodule is orphaned. Auto-delete unmodified orphans (report "Removed orphaned command: <file>"). Prompt before deleting modified orphans. Non-`pl-` prefixed command files are consumer-owned and not touched.
    - Check if `.purlin/release/` still exists AND `.purlin/toolbox/.migrated_from_release` exists (migration completed). If both true, prompt: `"Found legacy release config at .purlin/release/. This has been migrated to .purlin/toolbox/. Delete the old directory?"` Only delete on explicit user confirmation.
    - In `--dry-run` mode, list stale artifacts but do not delete
 

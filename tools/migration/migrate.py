@@ -727,6 +727,7 @@ def run_migration(project_root, dry_run=False, skip_overrides=False,
     _OLD_LAUNCHERS = [
         'pl-run-architect.sh', 'pl-run-builder.sh',
         'pl-run-qa.sh', 'pl-run-pm.sh',
+        'pl-cdd-start.sh', 'pl-cdd-stop.sh',
     ]
     for name in _OLD_LAUNCHERS:
         old_path = os.path.join(project_root, name)

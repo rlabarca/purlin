@@ -746,7 +746,7 @@ else
     # 4.4 Launcher Regeneration (always regenerate on refresh)
     generate_purlin_launcher "$PROJECT_ROOT/pl-run.sh"
     # Remove stale launchers from previous naming conventions
-    for stale in run_architect.sh run_builder.sh run_qa.sh; do
+    for stale in run_architect.sh run_builder.sh run_qa.sh pl-cdd-start.sh pl-cdd-stop.sh; do
         rm -f "$PROJECT_ROOT/$stale"
     done
     # Stale worktrees from previous sessions
