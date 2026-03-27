@@ -14,6 +14,14 @@ if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
     source "$CORE_DIR/tools/terminal/identity.sh"
 fi
 
+# Prevent Warp's shell integration from auto-overwriting the tab title after
+# each command completion. Without this, Warp resets OSC 0 titles on prompt
+# redraw, breaking mid-session mode-switch identity updates.
+# ref: warp-dev/Warp#8330
+if [ "${_PURLIN_ENV_WARP:-false}" = true ]; then
+    export WARP_DISABLE_AUTO_TITLE=true
+fi
+
 # --- Parse arguments ---
 PURLIN_MODE=""
 PURLIN_AUTO_START=""
