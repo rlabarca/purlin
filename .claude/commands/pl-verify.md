@@ -215,7 +215,7 @@ For features in scope that have visual specification sections:
 
 This is a smoke check -- it clears visual items that can be verified now, reducing the Phase B manual list. Items that cannot be verified from a screenshot remain in the Phase B checklist.
 
-**Feature completion via Step 5a:** For features (both AUTO and TODO) where all items are automated/web-test, this step completes their verification — if all pass, they are eligible for finalization at the next Step 5a checkpoint. No Phase B items are generated for these features.
+**Feature completion via Step 5a:** For features (both AUTO and TODO) where all automated work passed (unit tests, regression, @auto scenarios) AND zero @manual scenarios remain, this step completes their verification — they are eligible for finalization at the next Step 5a checkpoint. No Phase B items are generated for these features. Features with passing automated work but pending @manual scenarios get their artifacts committed but proceed to Phase B for manual verification before finalization.
 
 ### Step 5a -- Phase A Checkpoint (MANDATORY HARD GATE)
 
@@ -232,7 +232,7 @@ At each checkpoint, execute this sequence IN ORDER for all newly-clean features 
 > **CRITICAL: Committing regression artifacts is NOT finalization.** The lifecycle tracks status via commit messages containing `[Complete]`. Committing regression JSON files, scenario tags, or test results does NOT change lifecycle status. You MUST commit the explicit `[Complete] [Verified]` status tag commits (step 2 below) or the features remain in TODO/AUTO state.
 
 1.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
-2.  **Commit status tags:** For each feature where all automated QA work passed, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit.
+2.  **Commit status tags:** For each feature where all automated work passed (unit tests in `tests.json`, regression suites, @auto scenarios) AND zero @manual scenarios remain unverified, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit. Features with passing automated work but pending @manual scenarios are NOT finalized here — they proceed to Phase B.
 3.  **Update scan (HARD GATE):** Run `${TOOLS_ROOT}/cdd/scan.sh` once to refresh project state. Do NOT proceed to Phase B until this completes.
 4.  **Verify finalization:** Check scan results — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
 5.  **Verify clean workspace:** Confirm no uncommitted changes remain.
@@ -389,7 +389,7 @@ Maintain a session-local tracker (in conversation context, not a file) for each 
 ━━━ Auto-Fix Iteration N of 5 ━━━
 ```
 
-1.  **Collect failures.** Read all `regression.json` for in-scope features. Gather `[BUG]` discoveries from Phase A. Skip tests with status PASS or ESCALATED in the tracker. Skip scenario files where ALL scenarios passed (do not re-run passed tests).
+1.  **Collect failures.** Read all `regression.json` AND `tests.json` for in-scope features. Gather `[BUG]` discoveries from Phase A. Skip tests with status PASS or ESCALATED in the tracker. Skip scenario files where ALL scenarios passed (do not re-run passed tests). Unit test failures (`tests.json` with `status: "FAIL"`) are included because the internal mode switch to Engineer (step 4) provides write access to fix Engineer-owned test code.
 
 2.  **If zero failures remain:** exit the loop (success).
 
@@ -402,25 +402,25 @@ Maintain a session-local tracker (in conversation context, not a file) for each 
 
 4.  **Engineer fix phase.** Internal switch to Engineer.
     For each feature with failures:
-    a.  Read `regression.json` details: `expected`, `actual_excerpt`, `scenario_ref`.
-    b.  Read the source code referenced by `scenario_ref`.
-    c.  Read the test scenario assertions from `tests/qa/scenarios/<feature>.json`.
-    d.  **Diagnose:**
+    a.  For regression failures: read `regression.json` details (`expected`, `actual_excerpt`, `scenario_ref`). Read the source code referenced by `scenario_ref`. Read the test scenario assertions from `tests/qa/scenarios/<feature>.json`.
+    b.  For unit test failures (`tests.json` FAIL): re-run the feature's unit test suite to capture detailed failure output, then read the failing test source code and application code under test.
+    c.  **Diagnose:**
         *   **Code bug** (actual behavior diverges from spec intent): fix the source code. Commit: `fix(<scope>): resolve regression failure in <scenario_name>`.
         *   **Stale test** (assertion pattern is wrong/brittle): do NOT modify QA-owned scenario JSON. Flag for QA fix by recording `[BUG] test-scenario: <assertion context>` with `Action Required: QA` in the discovery sidecar.
         *   **Spec issue** (intent mismatch between spec and scenario): ESCALATE. Record `[SPEC_DISPUTE]` or `[INTENT_DRIFT]` discovery routed to PM. Mark test as ESCALATED in tracker.
         *   **External dependency** (fix requires system outside project): ESCALATE with reason `external_dependency`.
-    e.  Update companion file with `[CLARIFICATION]` auto-fix entry: `"Auto-fix iteration N: fixed <what> to resolve regression failure in <scenario>."`
-    f.  **Scope is minimal:** Fix ONLY the specific failure. No refactoring, no feature additions, no extras.
+    d.  Update companion file with `[CLARIFICATION]` auto-fix entry: `"Auto-fix iteration N: fixed <what> to resolve <failure description>."`
+    e.  **Scope is minimal:** Fix ONLY the specific failure. No refactoring, no feature additions, no extras.
 
 5.  **QA fix phase.** Internal switch to QA.
-    *   Fix any test scenarios flagged as stale by Engineer in step 4d: update assertion patterns, remove brittle Tier-1 checks, adjust expected output. Commit: `qa(<scope>): fix stale regression assertion`.
+    *   Fix any test scenarios flagged as stale by Engineer in step 4c: update assertion patterns, remove brittle Tier-1 checks, adjust expected output. Commit: `qa(<scope>): fix stale regression assertion`.
     *   If no stale tests were flagged, this phase is a no-op.
 
 6.  **Re-run failed tests only.** For each scenario file that had at least one failure (and was not escalated):
     ```bash
     python3 ${TOOLS_ROOT}/test_support/harness_runner.py tests/qa/scenarios/<feature>.json
     ```
+    For features with unit test failures, re-run the unit test suite via `/pl-unit-test` and read the updated `tests.json`.
     Read the updated `regression.json`. Update the failure tracker:
     *   New PASS → mark as resolved.
     *   Same failure (signature matches previous iteration) → increment attempt count. If this is the 2nd identical failure, mark ESCALATED with reason `same_failure`.
