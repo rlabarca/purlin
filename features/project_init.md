@@ -63,7 +63,7 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 1b. **Agent File Refresh:** Copy/update `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. Same skip logic as command files: skip locally modified (newer) files, overwrite older or same-age files. If the destination directory does not exist, create it.
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
-4.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
+4.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) and discontinued feature launchers (`pl-cdd-start.sh`, `pl-cdd-stop.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
 6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both session-recovery hooks (Section 2.15).
 6b. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root (same marker-based protocol as full init step 13). The refresh path MUST also stage `CLAUDE.md` via `git add`.
 7.  **Gitignore Pattern Sync:** Read `<submodule>/purlin-config-sample/gitignore.purlin`. For each pattern not already present in the consumer's `.gitignore`, append it under a `# Added by Purlin refresh` header. Never remove or modify existing entries.
@@ -409,8 +409,10 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 
     Given .purlin/ already exists at the project root
     And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
+    And discontinued launchers pl-cdd-start.sh, pl-cdd-stop.sh exist at the project root
     When the user runs "purlin/tools/init.sh"
     Then run_architect.sh, run_builder.sh, run_qa.sh are removed
+    And pl-cdd-start.sh, pl-cdd-stop.sh are removed
     And only pl-run.sh, pl-run.sh, pl-run.sh exist as launchers
 
 #### Scenario: --quiet Flag Suppresses Output @auto

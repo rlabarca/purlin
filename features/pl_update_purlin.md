@@ -173,14 +173,37 @@ After the config sync step (Section 2.9), the skill MUST invoke the Purlin migra
 
 ### 2.11 Stale Artifact Cleanup
 
+Two cleanup mechanisms run in sequence:
+
+#### A. Known Stale Root Scripts
+
 Check for legacy-named scripts at the consumer project root:
 - `run_architect.sh` (renamed to `pl-run.sh`)
 - `run_builder.sh` (renamed to `pl-run.sh`)
 - `run_qa.sh` (renamed to `pl-run.sh`)
 - `purlin_init.sh` (renamed to `pl-init.sh`)
+- `pl-cdd-start.sh` (removed — CDD dashboard discontinued)
+- `pl-cdd-stop.sh` (removed — CDD dashboard discontinued)
 
 If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
 if none found. In `--dry-run` mode, list but do not delete.
+
+#### B. Orphaned Command Files
+
+After the init refresh (Section 2.7), compare the consumer's `.claude/commands/` against
+the current submodule's `.claude/commands/`. For each local file matching the Purlin
+naming pattern (`pl-*.md`):
+- If a file with the same name does NOT exist in `<submodule>/.claude/commands/`: it is
+  an orphaned Purlin command from a past upstream deletion.
+- Unmodified orphans (content matches the last known upstream version, or no upstream
+  version is recoverable): auto-delete, report "Removed orphaned command: <filename>".
+- Modified orphans (consumer has local modifications): prompt before deleting, preserve
+  if declined.
+- Non-Purlin command files (no `pl-` prefix) are consumer-owned and MUST NOT be touched.
+
+This mechanism catches command files removed in releases prior to the current update range,
+which the "Deleted-upstream commands" logic in Section 2.8 cannot detect (Section 2.8 only
+covers deletions within the old→new SHA diff).
 
 ### 2.12 Summary Report
 
@@ -397,6 +420,39 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And prompts the user to remove it
     When the user confirms
     Then the stale file is deleted
+
+#### Scenario: CDD Launchers Cleaned Up
+    Given the consumer project has pl-cdd-start.sh and pl-cdd-stop.sh at the project root
+    And the current Purlin version no longer includes the CDD dashboard
+    When /pl-update-purlin completes the update
+    Then the skill detects pl-cdd-start.sh and pl-cdd-stop.sh as stale artifacts
+    And prompts the user to remove them
+    When the user confirms
+    Then the stale files are deleted
+
+#### Scenario: Orphaned Command File Auto-Removed
+    Given .claude/commands/pl-cdd.md exists in the consumer project
+    And pl-cdd.md does not exist in the current submodule's .claude/commands/
+    And the consumer's pl-cdd.md has not been locally modified
+    When /pl-update-purlin completes the update
+    Then the orphaned command detection compares local pl-*.md files against the submodule
+    And pl-cdd.md is auto-deleted
+    And the report shows "Removed orphaned command: pl-cdd.md"
+
+#### Scenario: Modified Orphaned Command File Requires Confirmation
+    Given .claude/commands/pl-old-tool.md exists in the consumer project with local modifications
+    And pl-old-tool.md does not exist in the current submodule's .claude/commands/
+    When /pl-update-purlin completes the update
+    Then the skill prompts the user before deleting pl-old-tool.md
+    When the user declines
+    Then pl-old-tool.md is preserved
+
+#### Scenario: Non-Purlin Command Files Not Touched by Orphan Detection
+    Given .claude/commands/my-custom-tool.md exists in the consumer project
+    And my-custom-tool.md does not match the pl-*.md pattern
+    When /pl-update-purlin completes the update
+    Then my-custom-tool.md is not flagged as orphaned
+    And no prompt is shown for it
 
 #### Scenario: Explicit Version Targets Specific Tag
     Given the submodule's local HEAD is at v0.8.4
