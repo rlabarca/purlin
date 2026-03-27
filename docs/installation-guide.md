@@ -108,19 +108,21 @@ The init shim handles everything:
 Inside any agent session:
 
 ```
-/pl-update-purlin
+/pl-update-purlin                    # Update to latest release tag
+/pl-update-purlin v0.8.6             # Update to a specific version
+/pl-update-purlin --dry-run          # Preview without modifying anything
 ```
 
-This performs:
+By default, this targets the latest release tag on `origin/main` — not the latest commit. Pass a specific tag or branch as the first argument to override.
 
-1. Fetches the latest version and shows what changed.
+The agent:
+
+1. Fetches the latest version and resolves the target release tag.
 2. Scans for conflicts with your local customizations.
-3. Advances the submodule.
+3. Advances the submodule to the resolved tag.
 4. Refreshes commands and config.
 5. Resolves conflicts with three-way diffs.
 6. Cleans up stale artifacts from previous versions.
-
-Use `--dry-run` to preview changes without modifying anything.
 
 ### Manual Update
 

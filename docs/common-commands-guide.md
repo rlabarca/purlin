@@ -207,20 +207,23 @@ Tools are independent, agent-executable units — scripts, checklists, or instru
 ## Updating Purlin
 
 ```
-/pl-update-purlin
-/pl-update-purlin --dry-run
+/pl-update-purlin                    # Update to latest release tag
+/pl-update-purlin v0.8.6             # Update to a specific version
+/pl-update-purlin --dry-run          # Preview changes without modifying anything
 ```
 
-Updates the Purlin submodule to the latest version. The agent:
+Updates the Purlin submodule to the latest release tag on `origin/main` — not the latest commit. This ensures you only pull tagged releases, never unreleased work-in-progress. To target a specific tag or branch, pass it as the first argument.
 
-1. Fetches the latest version and shows what changed.
+The agent:
+
+1. Fetches the latest version and resolves the target release tag.
 2. Scans for conflicts with your local customizations.
-3. Advances the submodule.
+3. Advances the submodule to the resolved tag.
 4. Refreshes commands and config.
 5. Resolves conflicts with three-way diffs.
 6. Cleans up stale artifacts from previous versions.
 
-Use `--dry-run` to preview changes without modifying anything. See the [Installation Guide](installation-guide.md) for manual update steps.
+See the [Installation Guide](installation-guide.md) for manual update steps.
 
 ---
 

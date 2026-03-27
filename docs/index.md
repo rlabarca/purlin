@@ -43,7 +43,7 @@ Skills are slash commands that trigger specific workflows. Run `/pl-help` inside
 | `/pl-help` | Prints the command table for your current mode. |
 | `/pl-find <topic>` | Searches all specs for coverage of a topic. |
 | `/pl-resume [save]` | Saves or restores session state across context clears. |
-| `/pl-update-purlin` | Updates the Purlin submodule and refreshes artifacts. |
+| `/pl-update-purlin [version]` | Updates the Purlin submodule to the latest release tag (or a specified version) and refreshes artifacts. |
 
 ### PM Mode
 
