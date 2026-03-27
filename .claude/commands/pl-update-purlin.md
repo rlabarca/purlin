@@ -5,7 +5,7 @@ Available to all agents and modes.
 
 **Intelligent Purlin Update**
 
-Update the Purlin submodule to the latest version with automatic artifact refresh and conflict detection.
+Update the Purlin submodule to the latest release tag (or a specified version) with automatic artifact refresh and conflict detection.
 
 **Path Resolution:**
 
@@ -24,12 +24,16 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 
 1. **Fetch and Version Check:**
    - Run `git -C <submodule_dir> fetch --tags`
-   - Compare local submodule HEAD against remote tracking branch (`origin/main`)
-   - If already current AND `.purlin/.upstream_sha` matches HEAD:
+   - **Resolve the update target:**
+     - If `<version>` argument was provided (first positional arg, not a flag): use it directly as the target ref. Validate: `git -C <submodule_dir> rev-parse --verify <version>`. If invalid, abort: `"Version '<version>' not found in submodule. Check the tag or branch name."`
+     - If no `<version>` argument: find the latest release tag reachable from `origin/main`: `git -C <submodule_dir> describe --tags --abbrev=0 origin/main`. This targets the most recent tag — NOT `origin/main` HEAD. Consumer projects only pull tagged releases by default.
+     - Resolve the target to a SHA: `git -C <submodule_dir> rev-parse <resolved_target>`
+   - Compare local submodule HEAD against the resolved target SHA
+   - If already at the resolved target AND `.purlin/.upstream_sha` matches HEAD:
      - Check if migration is pending: run migration detection per `features/purlin_migration.md` §2.1 (check `_migration_version`, `agents.purlin` completeness, old agent deprecation status)
      - If migration state is `needed` or `partial`: print "Already at latest version. Running pending migration..." and skip to step 6 (Config Sync)
      - Otherwise: print "Already up to date." and exit
-   - If behind: show current version -> target version (from `git describe --tags --abbrev=0`) and commit count
+   - If behind: show current version -> target version and commit count. If `<version>` was explicitly provided, note: `"(explicit target: <version>)"`
    - Prompt: "Update to <version>? (y/n)" (skip if `--auto-approve`)
 
 2. **Pre-Update Conflict Scan:**
@@ -47,7 +51,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
      - Only check if launcher-relevant paths appeared in the diff-tree output
      - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
 3. **Advance Submodule:**
-   - `git -C <submodule_dir> checkout <remote_sha>` (detached HEAD)
+   - `git -C <submodule_dir> checkout <resolved_target_sha>` (detached HEAD to the tag SHA or explicit version from step 1)
    - If this fails, abort with error
 
 3b. **Post-Advance Prerequisite Validation (init_preflight_checks.md §2.6):**
@@ -142,13 +146,16 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - This step is safe in `--dry-run` mode (read-only analysis).
 
 **Options:**
+- `<version>` (optional, positional): A specific tag (e.g., `v0.8.5`) or branch (e.g., `origin/feature-xyz`) to update to. If omitted, targets the latest release tag on `origin/main`.
 - `--dry-run`: Show what would change without modifying files
 - `--auto-approve`: Skip confirmation prompts for non-conflicting changes
 
 **Example usage:**
 ```
-/pl-update-purlin
-/pl-update-purlin --dry-run
+/pl-update-purlin                    # Update to latest release tag
+/pl-update-purlin v0.8.5             # Update to specific version
+/pl-update-purlin --dry-run          # Preview what would change
+/pl-update-purlin v0.8.6 --dry-run   # Preview update to specific version
 ```
 
 **Implementation:** See `features/pl_update_purlin.md`
