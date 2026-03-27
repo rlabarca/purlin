@@ -8,13 +8,14 @@
 > Prerequisite: features/purlin_migration.md
 > Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
 
-[Complete] <!-- re-verified 2026-03-23 after metadata-only spec edits -->
+[TODO]
 
 ## 1. Overview
 
 The `/pl-update-purlin` agent skill updates the Purlin submodule in consumer projects.
-It fetches the latest upstream, advances the submodule, runs `init.sh --quiet` to refresh
-all project-root artifacts, syncs config, and handles conflicts only when they exist.
+It fetches the latest upstream, advances the submodule to the latest release tag (or an
+explicitly specified version), runs `init.sh --quiet` to refresh all project-root artifacts,
+syncs config, and handles conflicts only when they exist.
 
 Design principle: **fast path first**. The common case (no conflicts, no local modifications)
 should complete in seconds with minimal agent reasoning. Heavy analysis (three-way diffs,
@@ -27,9 +28,10 @@ merge strategies) only activates when locally modified files conflict with upstr
 ### 2.1 Command Interface
 
 ```
-/pl-update-purlin [--dry-run] [--auto-approve]
+/pl-update-purlin [<version>] [--dry-run] [--auto-approve]
 ```
 
+- **\<version\>** (optional): A specific tag (e.g., `v0.8.5`) or branch (e.g., `origin/feature-xyz`) to update to. If omitted, the skill targets the **latest release tag reachable from `origin/main`** — not the latest commit. This ensures consumer projects only pull tagged releases by default, never unreleased work-in-progress commits.
 - **--dry-run** (optional): Show what would be updated without making changes
 - **--auto-approve** (optional): Skip confirmation prompts for non-conflicting changes (conflicts still require approval)
 
@@ -45,16 +47,20 @@ The skill MUST detect when invoked in the standalone Purlin repo (not a consumer
 
 The skill MUST:
 1. Run `git -C <submodule_dir> fetch --tags` to retrieve latest upstream commits and tags
-2. Compare local submodule HEAD against remote tracking branch (e.g., `origin/main`)
-3. Determine how many commits behind the local submodule is
-4. If already current with remote AND `.purlin/.upstream_sha` matches HEAD:
+2. **Resolve the update target:**
+   - If `<version>` argument was provided: use it directly as the target ref. Validate it exists: `git -C <submodule_dir> rev-parse --verify <version>`. If invalid, abort with error: `"Version '<version>' not found in submodule. Check the tag or branch name."`
+   - If no `<version>` argument: find the latest release tag reachable from `origin/main`: `git -C <submodule_dir> describe --tags --abbrev=0 origin/main`. This returns the most recent tag on the main branch — NOT `origin/main` HEAD. Consumer projects only pull tagged releases by default.
+   - Resolve the target to a SHA: `git -C <submodule_dir> rev-parse <resolved_target>`
+3. Compare local submodule HEAD against the resolved target SHA. Determine how many commits behind.
+4. If already at the resolved target AND `.purlin/.upstream_sha` matches HEAD:
    - Run migration detection (see `features/purlin_migration.md` §2.1)
    - If migration state is `needed` or `partial`: print "Already at latest version. Running pending migration..." and skip to Section 2.9 (Config Sync). This handles the v0.8.4 upgrade gap where the old skill advanced the submodule but lacked the migration step.
    - Otherwise: print "Already up to date." and exit
 5. If behind:
    - Detect current version: `git -C <submodule_dir> describe --tags --abbrev=0 HEAD`
-   - Detect target version: `git -C <submodule_dir> describe --tags --abbrev=0 origin/main`
+   - Detect target version: the resolved tag or ref from step 2
    - Display: `"Current: <current_version> -> Latest: <target_version> (<N> commits)"`
+   - If `<version>` was explicitly provided, note: `"(explicit target: <version>)"`
    - Prompt: "Update? (y/n)" (skip if `--auto-approve`)
 6. If user declines: print "Skipping update." and exit
 
@@ -65,7 +71,7 @@ conflict with upstream changes. This scan is lightweight -- it only flags files,
 full analysis to Section 2.8.
 
 1. Read old SHA from `.purlin/.upstream_sha`
-2. Read new SHA (the target remote commit determined in Section 2.3)
+2. Read new SHA (the resolved target SHA from Section 2.3)
 3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify upstream-changed command and agent files in a single invocation. Also check launcher-relevant paths (`tools/init.sh`) in the same or a second `diff-tree` call.
 4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/`, `.claude/agents/`, and no launcher-relevant paths changed, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
 5. For each `.claude/commands/pl-*.md` or `.claude/agents/*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
@@ -77,8 +83,8 @@ full analysis to Section 2.8.
 
 ### 2.5 Advance Submodule
 
-Advance the submodule to the latest remote commit:
-- Detached HEAD: `git -C <submodule_dir> checkout <remote_sha>`
+Advance the submodule to the resolved target (the tag SHA or explicit version determined in Section 2.3):
+- Detached HEAD: `git -C <submodule_dir> checkout <resolved_target_sha>`
 - If this fails, abort with error and leave the submodule unchanged
 
 ### 2.6 Post-Advance Prerequisite Validation
@@ -312,19 +318,20 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 ### Unit Tests
 
 #### Scenario: Auto-Fetch and Update When Behind
-    Given the submodule's local HEAD is behind the remote tracking branch by 3 commits
+    Given the submodule's local HEAD is behind the latest release tag on origin/main by 3 commits
     And .purlin/.upstream_sha contains the old SHA
     When /pl-update-purlin is invoked
-    Then the skill fetches from the submodule's remote
+    Then the skill fetches from the submodule's remote (including tags)
+    And resolves the latest release tag via git describe --tags --abbrev=0 origin/main
     And displays current version, target version, and commit count
     And prompts for confirmation
     When the user confirms
-    Then the submodule is advanced to the latest remote commit
+    Then the submodule is advanced to the resolved tag SHA
     And init.sh --quiet is executed
     And config sync runs
 
 #### Scenario: Already Up to Date
-    Given the submodule's local HEAD matches the remote tracking branch
+    Given the submodule's local HEAD matches the latest release tag on origin/main
     And .purlin/.upstream_sha matches current HEAD
     And migration state is "complete" or "fresh"
     When /pl-update-purlin is invoked
@@ -391,8 +398,33 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     When the user confirms
     Then the stale file is deleted
 
+#### Scenario: Explicit Version Targets Specific Tag
+    Given the submodule's local HEAD is at v0.8.4
+    And tags v0.8.5 and v0.8.6 exist on origin/main
+    When /pl-update-purlin v0.8.5 is invoked
+    Then the skill validates v0.8.5 exists via git rev-parse --verify
+    And displays "Current: v0.8.4 -> Latest: v0.8.5 (explicit target: v0.8.5)"
+    And prompts for confirmation
+    When the user confirms
+    Then the submodule is advanced to the v0.8.5 tag SHA (not v0.8.6)
+
+#### Scenario: Explicit Version Rejects Invalid Ref
+    Given the submodule is at any version
+    When /pl-update-purlin v99.99.99 is invoked
+    Then the skill attempts git rev-parse --verify v99.99.99
+    And prints: "Version 'v99.99.99' not found in submodule. Check the tag or branch name."
+    And exits without modifying any files
+
+#### Scenario: Default Resolution Targets Tag Not HEAD
+    Given origin/main HEAD is 10 commits ahead of the latest tag v0.8.5
+    And the submodule's local HEAD is at v0.8.4
+    When /pl-update-purlin is invoked (no version argument)
+    Then the skill resolves the target as v0.8.5 (the latest tag), not origin/main HEAD
+    And displays "Current: v0.8.4 -> Latest: v0.8.5"
+    And does NOT offer to advance to the 10 unreleased commits
+
 #### Scenario: Dry Run Shows Changes Without Applying
-    Given the submodule is behind the remote
+    Given the submodule is behind the latest release tag
     When /pl-update-purlin --dry-run is invoked
     Then the version difference is shown
     And locally modified files are identified
@@ -444,10 +476,10 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And waits for user decision
 
 #### Scenario: Fast Path Completes Without Conflict Analysis
-    Given the submodule is behind by 5 commits
+    Given the submodule is behind the latest release tag by 5 commits
     And no command files or launcher scripts have been locally modified
     When /pl-update-purlin is invoked and the user confirms
-    Then the submodule is advanced
+    Then the submodule is advanced to the resolved tag SHA
     And init.sh --quiet runs
     And config sync runs
     And the conflict resolution step (Section 2.8) is skipped entirely
@@ -662,10 +694,7 @@ After update, optionally run `/pl-verify` to ensure system still works.
 ### 5.2 Update Notifications
 Check for updates on startup and notify user if behind (non-blocking).
 
-### 5.3 Version Pinning
-Allow pinning to specific Purlin versions to prevent auto-updates.
-
-### 5.4 Automatic Go-Deeper on Breaking Changes
+### 5.3 Automatic Go-Deeper on Breaking Changes
 When upstream includes a `BREAKING_CHANGES.md` file covering the update range, automatically
 trigger the customization impact analysis (Section 2.15) without prompting. The breaking
 changes file would serve as a signal that the update warrants deeper inspection.
