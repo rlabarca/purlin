@@ -94,7 +94,7 @@ The old `/pl-update-purlin` skill predates the migration module, so the upgrade 
 1. **From your current agent session** (any old launcher), run `/pl-update-purlin`. This advances the submodule and installs the new skill files.
 2. **Exit the session.**
 3. **Start a new session with `./pl-run.sh`** — the unified launcher that init created during step 1.
-4. **Run `/pl-update-purlin` again.** The new skill detects the pending migration and runs it automatically:
+4. **Run `/pl-update-purlin` again.** This time, the skill will ask you to finalize the update. That's when it converts your project:
    - Creates the unified agent config (cloned from your existing settings)
    - Consolidates your override files into one `PURLIN_OVERRIDES.md`
    - Renames role references in your feature specs (Architect → PM, Builder → Engineer)

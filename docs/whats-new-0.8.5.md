@@ -220,4 +220,4 @@ This happens inside a single QA session — no manual mode switching needed. A *
 
 **Concurrent builds still work.** `/pl-delivery-plan` groups independent features into parallel phases. `/pl-build` spawns worktree sub-agents to build them simultaneously.
 
-**Upgrading?** Run `/pl-update-purlin` from your old session, exit, then relaunch with `./pl-run.sh`. The migration script handles config consolidation, role renames, and old launcher cleanup automatically.
+**Upgrading?** Run `/pl-update-purlin` from your old session, exit, then relaunch with `./pl-run.sh`. Run `/pl-update-purlin` a second time — it will ask you to finalize the update. That's when it converts your project: consolidating config, renaming roles, and cleaning up old launchers.
