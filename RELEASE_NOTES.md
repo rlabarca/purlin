@@ -1,5 +1,67 @@
 # Release Notes
 
+### v0.8.5 — 2026-03-26
+
+**Unified Agent**
+- One agent, three modes. `pl-run.sh` replaces the four separate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). Switch modes mid-session with `/pl-mode pm|engineer|qa`
+- Automated migration from v0.8.4: run `/pl-update-purlin` twice (once from old launcher, once from new) and the migration module handles config consolidation, file renames, and artifact cleanup
+- Strict write boundaries enforced per mode -- open mode (no mode active) blocks all file writes until a mode is activated
+
+**CDD Dashboard & Critic Retired**
+- The CDD Dashboard server and Critic coordination engine have been fully removed. The scan engine and `/pl-status` now handle all project state assessment directly
+- Simpler, faster feedback loop -- no background server to manage
+
+**Agentic Toolbox**
+- The old release checklist is replaced by independent, reusable tools that run in any order at any time
+- Ships with two built-in Purlin tools (Spec Check, Spec Map) and four project tools (Record Version Notes, Docs Update, Push to Bitbucket, Push to GitHub)
+- Create your own tools, share them via git repos, or copy and customize Purlin's built-ins
+- `/pl-toolbox list|run|create|edit|copy|delete|add|pull|push`
+
+**Spec-Code Audit**
+- `/pl-spec-code-audit` now detects circular dependencies in the prerequisite graph and recommends which link to break
+- Spec Check tool provides a comprehensive integrity scan: stale references, naming consistency, category grouping
+
+**QA Improvements**
+- `/pl-verify` adds an auto-fix iteration loop -- QA finds a bug, internal mode switch lets Engineer fix it, QA re-verifies, repeat until clean
+- Strategy menu for verification: choose targeted, full, or regression-only verification runs
+- QA mode now speaks like Michelangelo from Teenage Mutant Ninja Turtles -- same technical accuracy, surfer-dude delivery
+
+**Worktree Management**
+- `/pl-worktree` for listing, creating, and cleaning up isolated git worktrees
+- Session locks prevent concurrent agents from colliding in the same worktree
+- Merge serialization via lock file prevents race conditions between parallel merges
+- Automatic merge-back on session exit (SessionEnd hook)
+
+**Session & Terminal**
+- Terminal badge always includes branch context: `Engineer (main)`, `QA (feature-xyz)`, `PM (W1)` for worktrees
+- PID-scoped checkpoint files so concurrent terminals never collide
+- Startup and resume unified into a single `/pl-resume` flow -- no separate startup protocol
+- Warp terminal support for tab naming alongside iTerm2 badges
+
+**New & Consolidated Skills**
+- `/pl-mode` -- switch modes or check current mode status without arguments
+- `/pl-remote` -- consolidates `/pl-remote-push`, `/pl-remote-pull`, and `/pl-remote-add` into one skill
+- `/pl-regression` -- consolidates `/pl-regression-author`, `/pl-regression-run`, and `/pl-regression-evaluate`
+- `/pl-smoke` -- smoke-first verification gate for QA
+- `/pl-whats-different` -- now includes companion staleness detection and mode-aware impact briefing
+
+**Scan Engine**
+- Tombstone scanning surfaces retired features in `/pl-status`
+- Spec modification detection flags features whose spec changed after completion
+- `--only` flag for focused output (e.g., `/pl-status --only engineer`)
+- Exemption tags (`[Migration]`) suppress false positives during bulk operations
+
+**Documentation**
+- All documentation rewritten for the unified agent model
+- Clear upgrade path from v0.8.4 with step-by-step instructions in README
+
+**Removed**
+- CDD Dashboard (server, tests, all related specs and code)
+- Critic coordination engine (replaced by scan engine)
+- Four legacy agent launchers (replaced by `pl-run.sh`)
+- Release checklist system (replaced by Agentic Toolbox)
+- 17 legacy feature specs tombstoned
+
 ### v0.8.4 — 2026-03-24
 
 **Extended Context Models**
