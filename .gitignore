@@ -17,6 +17,11 @@ venv/
 .purlin/config.local.json
 tests/.purlin/
 
+# Project-local toolbox (not distributed via submodule)
+.purlin/toolbox/project_tools.json
+.purlin/toolbox/community_tools.json
+.purlin/toolbox/community/
+
 # Generated digests (per-machine, not committed)
 features/digests/
 
