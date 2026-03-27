@@ -21,3 +21,5 @@
 **[IMPL]** Updated `.claude/commands/pl-spec-code-audit.md` — added dimension 13 (Companion coverage) to Gap Dimensions Table, updated triage and deep mode protocols to extract `[IMPL]` entries as code map and check companion debt/stale notes. Updated all "12 dimensions" references to "13".
 
 **[IMPL]** Added `scan_companion_debt()` to `tools/cdd/scan.py` — compares git log timestamps for feature test directories against companion file mtimes. Detects "missing" (no companion file) and "stale" (companion older than code) debt. Wired into `run_scan()` with new `companion_debt` section and `--only companion_debt` support.
+
+**[IMPL]** Unit tests for scan_companion_debt() at tools/cdd/test_scan_companion_debt.py (9 tests). Covers: missing companion → "missing" debt, stale companion → "stale" debt, up-to-date companion → no debt, feature without code → no debt, anchor features (arch_*, design_*, policy_*) skipped, empty features dir, .impl.md and .discoveries.md files not treated as feature specs, return structure validation for both debt types.
