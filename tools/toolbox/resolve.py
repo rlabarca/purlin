@@ -56,8 +56,15 @@ def _extract_tools(data):
     return []
 
 
-def _make_resolved_entry(tool_def, category):
-    """Build a resolved tool entry from a tool definition."""
+def _make_resolved_entry(tool_def, category, warnings=None):
+    """Build a resolved tool entry from a tool definition.
+
+    Args:
+        tool_def: Tool definition dict from a registry file.
+        category: One of "purlin", "project", "community".
+        warnings: Optional list to append warning strings to when
+                  unrecognized fields are encountered.
+    """
     entry = {
         "id": tool_def.get("id", ""),
         "friendly_name": tool_def.get("friendly_name", ""),
@@ -68,12 +75,16 @@ def _make_resolved_entry(tool_def, category):
         "metadata": tool_def.get("metadata"),
         "category": category,
     }
-    # Preserve any unrecognized fields
+    # Preserve any unrecognized fields and emit warnings
     known_keys = {"id", "friendly_name", "description", "code",
                   "agent_instructions", "version", "metadata"}
     for key, value in tool_def.items():
         if key not in known_keys:
             entry[key] = value
+            if warnings is not None:
+                warnings.append(
+                    f"Tool '{tool_def.get('id', 'unknown')}' has unrecognized field '{key}' (preserved)"
+                )
     return entry
 
 
@@ -188,7 +199,7 @@ def resolve_toolbox(purlin_path=None, project_path=None,
     for tool in purlin_tools:
         tool_id = tool.get("id", "")
         if tool_id:
-            resolved.append(_make_resolved_entry(tool, "purlin"))
+            resolved.append(_make_resolved_entry(tool, "purlin", warnings))
             seen_ids.add(tool_id)
 
     for tool in project_tools:
@@ -199,7 +210,7 @@ def resolve_toolbox(purlin_path=None, project_path=None,
                 warnings.append(
                     f"Project tool '{tool_id}' shadows an existing tool"
                 )
-            resolved.append(_make_resolved_entry(tool, "project"))
+            resolved.append(_make_resolved_entry(tool, "project", warnings))
             seen_ids.add(tool_id)
 
     for tool in community_tools:
@@ -210,7 +221,7 @@ def resolve_toolbox(purlin_path=None, project_path=None,
                     f"Community tool '{tool_id}' conflicts with an existing tool ID"
                 )
                 continue
-            resolved.append(_make_resolved_entry(tool, "community"))
+            resolved.append(_make_resolved_entry(tool, "community", warnings))
             seen_ids.add(tool_id)
 
     return resolved, warnings, errors

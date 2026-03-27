@@ -264,6 +264,31 @@ class TestResolveToolbox(unittest.TestCase):
         )
         self.assertEqual(len(resolved), 1)
         self.assertEqual(resolved[0].get("custom_field"), "value")
+        # Spec 2.1: unrecognized fields must produce a warning
+        self.assertTrue(
+            any("unrecognized field" in w for w in warnings),
+            f"Expected an unrecognized-field warning, got: {warnings}",
+        )
+
+    def test_unrecognized_fields_warning(self):
+        """Verify warning message content for unrecognized fields (spec 2.1)."""
+        with open(self.purlin_path, 'w') as f:
+            json.dump({"schema_version": "2.0", "tools": [
+                {"id": "purlin.warn_test", "friendly_name": "W", "description": "d",
+                 "extra_a": 1, "extra_b": 2},
+            ]}, f)
+        resolved, warnings, errors = resolve_toolbox(
+            self.purlin_path, "/nonexistent", "/nonexistent", "/nonexistent",
+        )
+        # Two unrecognized fields should produce two warnings
+        unrecognized_warnings = [w for w in warnings if "unrecognized field" in w]
+        self.assertEqual(len(unrecognized_warnings), 2)
+        # Each warning must identify the tool and the field name
+        self.assertTrue(any("'extra_a'" in w and "'purlin.warn_test'" in w for w in unrecognized_warnings))
+        self.assertTrue(any("'extra_b'" in w and "'purlin.warn_test'" in w for w in unrecognized_warnings))
+        # Fields are still preserved in the resolved output
+        self.assertEqual(resolved[0]["extra_a"], 1)
+        self.assertEqual(resolved[0]["extra_b"], 2)
 
     def test_corrupt_purlin_json(self):
         corrupt = os.path.join(self.tmpdir, "corrupt.json")
@@ -312,8 +337,9 @@ class TestFuzzyMatch(unittest.TestCase):
         self.assertEqual(len(matches), 0)
 
     def test_case_insensitive(self):
-        matches = fuzzy_match("ZERO", self.tools)
+        matches = fuzzy_match("DEPENDENCY", self.tools)
         self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["id"], "purlin.verify_dependency_integrity")
 
     def test_exact_match_wins_over_substring(self):
         matches = fuzzy_match("my_audit", self.tools)
