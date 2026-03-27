@@ -6,6 +6,8 @@
 |-----------|-------------------|-----|-----------|
 | Spec has 9 unit test scenarios | Tests cover 10 scenarios (added idempotent re-run) | CLARIFICATION | PENDING |
 
+*   **[IMPL]** Added scenario section heading renames (§2.2.3b): `### Automated Scenarios` → `### Unit Tests`, `### Manual Scenarios (...)` → `### QA Scenarios`. Regex-based, case-insensitive, applied only to spec files (not `.impl.md` or `.discoveries.md`). Runs inside `rename_spec_roles()` gated by `--skip-specs`. 5 unit tests added to `test_migrate.py`.
+
 ## Notes
 
 **[CLARIFICATION]** The spec lists 9 unit test scenarios but the implementation has 10. The 10th ("Idempotent re-run") was already in the spec as scenario 9 — the count in the test header comment was simply off by one relative to the actual scenario list.

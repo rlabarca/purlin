@@ -8,6 +8,7 @@ import unittest
 from tools.migration.migrate import (
     detect_migration_needed,
     migrate_config,
+    rename_spec_roles,
     run_migration,
     _stamp_migration_version,
 )
@@ -338,6 +339,62 @@ class TestRunMigrationPartial(unittest.TestCase):
         result = run_migration(self.proj.tmpdir)
         self.assertEqual(result['status'], 'complete')
         self.assertEqual(result['changes'], ['Migration already complete'])
+
+
+class TestScenarioHeadingRenames(unittest.TestCase):
+
+    def setUp(self):
+        self.proj = _TempProject()
+        self.features_dir = os.path.join(self.proj.tmpdir, 'features')
+        os.makedirs(self.features_dir, exist_ok=True)
+
+    def tearDown(self):
+        self.proj.cleanup()
+
+    def _write_spec(self, name, content):
+        path = os.path.join(self.features_dir, name)
+        with open(path, 'w') as f:
+            f.write(content)
+
+    def _read_spec(self, name):
+        path = os.path.join(self.features_dir, name)
+        with open(path, 'r') as f:
+            return f.read()
+
+    def test_automated_renamed_to_unit_tests(self):
+        self._write_spec('auth.md', '## Scenarios\n\n### Automated Scenarios\n\n#### Scenario: Login\n')
+        rename_spec_roles(self.proj.tmpdir)
+        result = self._read_spec('auth.md')
+        self.assertIn('### Unit Tests', result)
+        self.assertNotIn('Automated Scenarios', result)
+
+    def test_manual_renamed_to_qa_scenarios(self):
+        self._write_spec('auth.md', '### Manual Scenarios (Human Verification Required)\n\n#### Scenario: Check\n')
+        rename_spec_roles(self.proj.tmpdir)
+        result = self._read_spec('auth.md')
+        self.assertIn('### QA Scenarios', result)
+        self.assertNotIn('Manual Scenarios', result)
+
+    def test_already_renamed_not_modified(self):
+        content = '### Unit Tests\n\n#### Scenario: Login\n\n### QA Scenarios\n'
+        self._write_spec('auth.md', content)
+        rename_spec_roles(self.proj.tmpdir)
+        result = self._read_spec('auth.md')
+        self.assertEqual(result, content)
+
+    def test_impl_files_not_affected(self):
+        content = '### Automated Scenarios\n'
+        self._write_spec('auth.impl.md', content)
+        rename_spec_roles(self.proj.tmpdir)
+        result = self._read_spec('auth.impl.md')
+        self.assertEqual(result, content)
+
+    def test_discovery_files_not_affected(self):
+        content = '### Automated Scenarios\n'
+        self._write_spec('auth.discoveries.md', content)
+        rename_spec_roles(self.proj.tmpdir)
+        result = self._read_spec('auth.discoveries.md')
+        self.assertEqual(result, content)
 
 
 if __name__ == '__main__':

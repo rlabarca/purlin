@@ -386,6 +386,15 @@ _DISCOVERY_REPLACEMENTS = [
     ('Action Required: Builder', 'Action Required: Engineer'),
 ]
 
+# Scenario section heading renames (spec files only, §2.2.3b)
+# scan.py matches "unit\s+tests" and "qa\s+scenarios" — old headings are invisible
+_SCENARIO_HEADING_REPLACEMENTS = [
+    (re.compile(r'^(###\s+)Automated\s+Scenarios\b.*$', re.MULTILINE | re.IGNORECASE),
+     r'\g<1>Unit Tests'),
+    (re.compile(r'^(###\s+)Manual\s+Scenarios\b.*$', re.MULTILINE | re.IGNORECASE),
+     r'\g<1>QA Scenarios'),
+]
+
 
 def rename_roles_in_text(text, is_discovery=False):
     """Apply role renames to text content.
@@ -438,6 +447,11 @@ def rename_spec_roles(project_root, dry_run=False):
             continue
 
         modified = rename_roles_in_text(original, is_discovery=is_discovery)
+
+        # Scenario heading renames (spec files only, §2.2.3b)
+        if is_spec:
+            for pattern, replacement in _SCENARIO_HEADING_REPLACEMENTS:
+                modified = pattern.sub(replacement, modified)
 
         if modified != original:
             if not dry_run:
