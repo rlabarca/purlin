@@ -2,7 +2,6 @@
 
 > Label: "Shared Agent Definitions: Impl Notes Companion"
 > Category: "Shared Agent Definitions"
-> Prerequisite: features/policy_spec_code_sync.md
 
 ## Overview
 

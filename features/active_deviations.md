@@ -3,7 +3,6 @@
 > Label: "Shared Agent Definitions: Active Deviations Protocol"
 > Category: "Shared Agent Definitions"
 > Prerequisite: features/purlin_mode_system.md
-> Prerequisite: features/policy_spec_code_sync.md
 
 ## 1. Overview
 
