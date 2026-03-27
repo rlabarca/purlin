@@ -151,14 +151,14 @@ Regression suites:
 
   pre-release:
     [NOT_RUN] skill_behavior_regression (agent_behavior, 9 scenarios)
-
-Run regression suites? [all / per-feature / skip]
 ```
 
-6. **Run all suites in-session.** All harness types — including `agent_behavior` — run directly via the harness runner. The `agent_behavior` harness invokes `claude --print` as a non-interactive subprocess; this is safe because `claude --print` is stateless and does not conflict with the parent Claude Code session.
+6. **`auto_start` gate (BEFORE prompting).** Check `auto_start` immediately after printing the table — do NOT print a prompt or wait for user input:
+   - **When `auto_start: true`:** Print `"auto_start: running N per-feature suites (smoke first). Skipped M pre-release suites (run manually before release)."` Proceed directly to execution (step 8) with all STALE and NOT_RUN per-feature suites. Skip pre-release suites silently.
+   - **When `auto_start: false`:** Print the interactive prompt: `"Run regression suites? [all / per-feature / skip]"`. Wait for user selection. Under `auto_start: false`, also prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
 7. **Early background launch in `/pl-verify`.** During `/pl-verify`, slow regression suites (multi-scenario `agent_behavior`, estimated >30s) are launched in background at the START of Phase A (Step 0b), before auto-pass/smoke/classification. This overlaps test execution with other Phase A work so results are ready by the regression checkpoint. Smoke-tier suites are excluded from early launch (they run synchronously in the smoke gate).
-8. **Foreground execution for fast suites.** `web_test`, `custom_script`, and single-scenario `agent_behavior` suites run synchronously for immediate feedback.
-9. **`auto_start` behavior:** Run STALE and NOT_RUN suites automatically (smoke first, then standard). Skip pre-release suites silently — log `"Skipped N pre-release suites (run manually before release)."` Pre-release suites are for release time, not every verify pass. Under `auto_start: false`, prompt for pre-release suites.
+8. **Run all selected suites in-session.** All harness types — including `agent_behavior` — run directly via the harness runner. The `agent_behavior` harness invokes `claude --print` as a non-interactive subprocess; this is safe because `claude --print` is stateless and does not conflict with the parent Claude Code session.
+9. **Foreground execution for fast suites.** `web_test`, `custom_script`, and single-scenario `agent_behavior` suites run synchronously for immediate feedback.
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 

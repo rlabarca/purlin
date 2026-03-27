@@ -282,24 +282,22 @@ Regression suites:
 
   pre-release:
     [NOT_RUN] skill_behavior_regression (agent_behavior, 9 scenarios)
-
-Run regression suites? [all / per-feature / skip]
 ```
 
-8. **Execute remaining suites in-session.** Skip suites already launched in Step 0b (background). All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
+8. **`auto_start` gate (BEFORE prompting — do NOT print a prompt or wait for input when `auto_start: true`).**
+   - **When `auto_start: true`:** Print `"auto_start: running N per-feature suites (smoke first). Skipped M pre-release suites (run manually before release)."` Proceed directly to step 9 with all STALE and NOT_RUN per-feature suites selected. Do NOT print a prompt. Do NOT wait for user input.
+   - **When `auto_start: false`:** Print `"Run regression suites? [all / per-feature / skip]"` and wait for user selection. If the user says "skip": skip regression execution, proceed to Phase B, and record skipped suites in the QA report. Also prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
+
+9. **Execute selected suites in-session.** Skip suites already launched in Step 0b (background). All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
    - **Fast suites** (`web_test`, `custom_script`, single-scenario `agent_behavior`): run synchronously for immediate feedback.
    - **Already-launched suites** (from Step 0b): check if background results have arrived. If yes, evaluate immediately. If not, note "waiting for N background suites" and proceed — they'll be evaluated at the regression checkpoint.
-   - When `auto_start` is `true`: run STALE and NOT_RUN suites automatically (smoke first, then standard). Skip pre-release suites silently — log `"Skipped N pre-release suites (run manually before release)."` Pre-release suites are for release time, not every verify pass.
-   - When `auto_start` is `false`: prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
 
-9. **Auto-evaluate on completion.** When each suite finishes (foreground or background notification), immediately read `regression.json` and evaluate:
+10. **Auto-evaluate on completion.** When each suite finishes (foreground or background notification), immediately read `regression.json` and evaluate:
    - PASS: record pass, no action needed.
    - FAIL: create `[BUG]` discovery in companion file with `scenario_ref`, `expected`, and `actual_excerpt`.
    - Report a summary after all suites complete.
 
-10. **Step 5a(B) — Regression checkpoint:** After all regression suites complete and are evaluated, execute Step 5a checkpoint (B). Finalize features whose regression suites passed — commit `[Complete] [Verified]` status tags, commit regression artifacts, run scan.sh. Then proceed to Phase B.
-
-If the user says "skip" at the prompt in step 7: skip regression execution, proceed to Phase B, and record skipped suites in the QA report.
+11. **Step 5a(B) — Regression checkpoint:** After all regression suites complete and are evaluated, execute Step 5a checkpoint (B). Finalize features whose regression suites passed — commit `[Complete] [Verified]` status tags, commit regression artifacts, run scan.sh. Then proceed to Phase B.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 
