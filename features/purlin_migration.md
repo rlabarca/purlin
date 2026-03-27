@@ -79,6 +79,15 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 - In `features/*.impl.md`: replace role references in prose (not in Active Deviations table).
 - ALL commits MUST include the `[Migration]` tag to prevent lifecycle resets.
 
+#### 2.2.3b Scenario Section Heading Renames
+
+- In all `features/*.md` (specs only, not `.impl.md` or `.discoveries.md`):
+  - `### Automated Scenarios` → `### Unit Tests` (any casing/whitespace variation)
+  - `### Manual Scenarios` (including suffix like `(Human Verification Required)`) → `### QA Scenarios`
+- This rename is required because `scan.py` matches `unit\s+tests` and `qa\s+scenarios` — old headings are invisible to the scanner and cause missing section warnings.
+- Idempotent: headings already using the new names are not modified.
+- Covered by the `[Migration]` exemption tag (non-behavioral — scenarios themselves are unchanged).
+
 #### 2.2.4 Companion File Restructuring
 
 - For each `features/*.impl.md`, insert Active Deviations table if absent.
@@ -171,6 +180,22 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
     And migration renames role references with [Migration] tag
     When scan.py runs
     Then auth_flow has spec_modified_after_completion false
+
+#### Scenario: Scenario section headings renamed
+
+    Given features/auth_flow.md contains "### Automated Scenarios"
+    And features/auth_flow.md contains "### Manual Scenarios (Human Verification Required)"
+    When migration runs spec rename step
+    Then features/auth_flow.md contains "### Unit Tests"
+    And features/auth_flow.md contains "### QA Scenarios"
+    And the commit message contains "[Migration]"
+
+#### Scenario: Already-renamed scenario headings not modified
+
+    Given features/auth_flow.md already contains "### Unit Tests"
+    And features/auth_flow.md already contains "### QA Scenarios"
+    When migration runs spec rename step
+    Then features/auth_flow.md is not modified by this step
 
 #### Scenario: Companion file gets Active Deviations table
 
