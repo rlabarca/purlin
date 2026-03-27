@@ -8,16 +8,19 @@
 #
 # Flags:
 #   --quiet                 Suppress all non-error output (errors still go to stderr)
+#   --preflight-only        Run preflight checks only and exit (pl_update_purlin.md §2.6)
 set -euo pipefail
 
 ###############################################################################
 # 0. CLI Flag Parsing
 ###############################################################################
 QUIET=false
+PREFLIGHT_ONLY=false
 
 for arg in "$@"; do
     case "$arg" in
         --quiet) QUIET=true ;;
+        --preflight-only) PREFLIGHT_ONLY=true ;;
         *) echo "Unknown flag: $arg" >&2; exit 1 ;;
     esac
 done
@@ -98,6 +101,11 @@ if [ "$PREFLIGHT_FAILED" = true ]; then
     echo "" >&2
     echo "Fix these and re-run: $SUBMODULE_NAME/tools/init.sh" >&2
     exit 1
+fi
+
+# Preflight-only mode: exit after checks (pl_update_purlin.md §2.6)
+if [ "$PREFLIGHT_ONLY" = true ]; then
+    exit 0
 fi
 
 ###############################################################################
