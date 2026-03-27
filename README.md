@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/purlin-logo.svg" alt="Purlin" width="400">
+</p>
+
 # Purlin
 
 ## Current Release: v0.8.5 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
@@ -79,13 +83,7 @@ From inside an agent session, run:
 /pl-update-purlin
 ```
 
-This fetches the latest version, advances the submodule, refreshes commands and config, and resolves any conflicts with your customizations. Use `--dry-run` to preview changes first. See the [Installation Guide](docs/installation-guide.md) for manual update steps.
-
-If `git pull` advances the Purlin submodule pointer (you'll see `purlin` in `git status` as modified), sync it with:
-
-```bash
-git submodule update --init purlin
-```
+This fetches the latest release tag, advances the submodule, refreshes commands and config, and resolves any conflicts with your customizations. Use `--dry-run` to preview changes first, or pass a specific version like `/pl-update-purlin v0.8.6`. See the [Installation Guide](docs/installation-guide.md) for manual update steps.
 
 #### Upgrading from v0.8.4 or earlier
 

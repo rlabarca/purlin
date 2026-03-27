@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../assets/purlin-logo.svg" alt="Purlin" width="400">
+</p>
+
 # Purlin Documentation
 
 Purlin is a spec-first framework where one AI agent operates in three modes — PM, Engineer, and QA — to take features from idea to verified implementation. These guides cover how to use each mode, end-to-end workflows, and project setup.
