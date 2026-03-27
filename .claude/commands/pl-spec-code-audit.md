@@ -60,6 +60,18 @@ Parent loads project state, builds the transitive prerequisite constraint map, a
 2. Read `.purlin/cache/dependency_graph.json` -- note all prerequisite relationships and root anchor nodes.
 3. For each feature, read the feature spec directly to check section completeness and scenario count.
 
+### Step 0.1b -- Circular Dependency Detection
+
+Check the `cycles` array in the dependency graph JSON. If any cycles exist:
+
+1. For each cycle, read every spec in the cycle to understand WHY each prerequisite link exists.
+2. Identify the **weakest link** — the prerequisite that is informational rather than structural. Signals: inline comments on the prerequisite line (e.g., `(optional context)`), the spec only mentions the other in passing, or the prerequisite is a policy spec (policies inform but don't block implementation).
+3. Add a CRITICAL gap entry to the findings for each cycle with a concrete resolution recommendation:
+   - Which prerequisite link to remove
+   - Why it's the weakest (cite the specific text in the spec that references the other)
+   - What alternative options exist (list all removable links in the cycle)
+4. Cycles MUST be resolved before the transitive prerequisite map can be reliably built — a cycle means the BFS in Step 0.2 could loop. If cycles exist, log a warning and exclude cyclic edges from the transitive map computation.
+
 ### Step 0.2 -- Build Transitive Prerequisite Map
 
 For each feature in the dependency graph, walk all `> Prerequisite:` chains recursively (BFS) to collect the full set of ancestor anchor nodes. Output: `{feature_name: [list of all ancestor anchor filenames]}`.
@@ -373,6 +385,15 @@ On re-invocation: if state file exists, report resume status, skip Phase 0, resu
 ## Phase 3: Remediation (After User Approval)
 
 After the user approves the plan, execute the remediation. Process FIX items first, then ESCALATE items.
+
+### Circular Dependency Resolution (Either Role)
+
+If CRITICAL cycle gaps were found in Step 0.1b, resolve them FIRST (before other remediations):
+1. For each cycle, remove the recommended prerequisite link from the spec file.
+2. Commit: `spec(deps): break circular dependency <A> → <B> → <A>`
+3. Re-run the scan to confirm the cycle is resolved and the dependency graph is acyclic.
+
+Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM-owned. If running as Engineer, escalate cycle resolution to PM via a companion file `[DISCOVERY]` entry — do NOT edit the spec directly.
 
 ### If Running as PM
 
