@@ -22,3 +22,5 @@
 
 **[CLARIFICATION]** M35 fix: The completion gate logic is tested as a pure function (`_evaluate_completion_gate`) that mirrors the gate semantics described in the spec -- FAIL status blocks completion, PASS allows it, and absence of regression results does not gate. Status table rendering tests verify the format matches the meta-runner's summary output pattern. (Severity: INFO)
 
+**[IMPL]** Spec §2.2.5 restructured: `auto_start` gate is now an explicit step (step 6) between the regression table and execution, checked BEFORE any prompt is rendered. The interactive prompt only appears in the `auto_start: false` branch. Corresponding change applied to `/pl-verify` skill (step 8). Fixes: agent previously printed the prompt from the code block example and waited for input even under `auto_start: true`. (Severity: WARN)
+
