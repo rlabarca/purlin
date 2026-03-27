@@ -37,7 +37,7 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 
 ## Skill Reference
 
-Skills are slash commands that trigger specific workflows. Run `/pl-help` inside any session for the full list. Here are the most commonly used ones:
+Skills are slash commands that trigger specific workflows. Run `/pl-help` inside any session for the full list.
 
 ### All Modes
 
@@ -49,6 +49,13 @@ Skills are slash commands that trigger specific workflows. Run `/pl-help` inside
 | `/pl-find <topic>` | Searches all specs for coverage of a topic. |
 | `/pl-resume [save]` | Saves or restores session state across context clears. |
 | `/pl-update-purlin [version]` | Updates the Purlin submodule to the latest release tag (or a specified version) and refreshes artifacts. |
+| `/pl-remote <cmd>` | Branch collaboration — push, pull, add, or manage remotes. |
+| `/pl-override-edit` | Edit PURLIN_OVERRIDES.md sections. |
+| `/pl-whats-different` | Compare current branch against main with mode-aware impact briefing. |
+| `/pl-session-name [label]` | Update the terminal session display name. |
+| `/pl-worktree <cmd>` | Worktree management — list active worktrees or clean up stale ones. |
+| `/pl-merge` | Merge a worktree branch back to the source branch. |
+| `/pl-purlin-issue` | Report a bug or feature request in the Purlin framework. |
 
 ### PM Mode
 
@@ -67,8 +74,14 @@ Skills are slash commands that trigger specific workflows. Run `/pl-help` inside
 | `/pl-unit-test [name]` | Runs unit tests with the quality rubric. |
 | `/pl-web-test [name]` | Runs Playwright visual verification for web features. |
 | `/pl-delivery-plan` | Creates a phased delivery plan for multiple features. |
+| `/pl-toolbox <cmd>` | Agentic Toolbox — list, run, create, edit, and share project tools. |
+| `/pl-server` | Start, stop, or restart the dev server. |
 | `/pl-infeasible <name>` | Escalates a feature that cannot be implemented as specified. |
 | `/pl-propose <topic>` | Suggests a spec change to PM mode. |
+| `/pl-spec-code-audit` | Audits alignment between feature specs and implementation. |
+| `/pl-spec-from-code` | Reverse-engineers feature specs from existing code. |
+| `/pl-anchor arch_*` | Creates or updates technical architecture anchors. |
+| `/pl-tombstone` | Retires a feature with a tombstone record. |
 
 ### QA Mode
 
@@ -80,3 +93,4 @@ Skills are slash commands that trigger specific workflows. Run `/pl-help` inside
 | `/pl-regression` | Manages regression suites — author, run, or evaluate. |
 | `/pl-smoke <feature>` | Promotes a feature to the smoke testing tier. |
 | `/pl-qa-report` | Summarizes open discoveries and verification status. |
+| `/pl-fixture` | Manages test fixtures — create, list, verify, or push to remote. |
