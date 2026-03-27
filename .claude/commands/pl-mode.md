@@ -29,11 +29,17 @@ When invoked with no arguments, display current mode status. No mode change, no 
    - If yes, commit with mode-appropriate prefix, then switch.
    - If no, warn that changes will carry into the new mode.
 
-2. **Activate the new mode.**
+2. **Companion file gate (Engineer mode exit only).** When switching OUT of Engineer mode:
+   - Check: were code commits made for any feature during this session without a corresponding companion file update?
+   - If companion debt exists: **BLOCK the switch.** List the features with debt. There is no "skip" option.
+   - The engineer MUST write at least `[IMPL]` entries for each feature with debt before the switch proceeds.
+   - This is a mechanical check (did the companion file get new entries?), not a judgment call about deviation.
+
+3. **Activate the new mode.**
    - Print the mode's command subset from `instructions/references/purlin_commands.md`.
    - Update terminal identity: `source ${TOOLS_ROOT}/terminal/identity.sh && update_session_identity "<mode>" "<project>"`. This sets badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. Worktree label replaces branch when present (e.g., `Engineer (W1)`). Branch context is never dropped.
 
-3. **Announce:** "Switched to [Mode] mode."
+4. **Announce:** "Switched to [Mode] mode."
 
 ## Mode Quick Reference
 

@@ -87,12 +87,13 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 
 Process ALL features in-agent (no subagents). For each feature:
 
-1. Read the feature file -- check spec completeness across all 12 gap dimensions (see Gap Dimensions Table below).
-2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth.
+1. Read the feature file -- check spec completeness across all 13 gap dimensions (see Gap Dimensions Table below).
+2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth. **Extract `[IMPL]` entries as an implementation index** mapping what was built to spec requirements. A feature with only `[IMPL]` entries (no deviation tags) signals spec conformance — deprioritize deep code comparison.
 3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
 5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
-6. Skip scenario-by-scenario deep comparison.
+6. **Companion coverage check (dimension 13)**: Compare companion file modification timestamp against code commit timestamps for the feature. Flag companion debt (no companion entries for recent code) as HIGH. Flag stale notes as MEDIUM.
+7. Skip scenario-by-scenario deep comparison.
 
 After processing all features individually, perform a **cross-feature requirement hygiene pass** (dimension 11):
 - **Duplicate detection:** Compare scenario titles and Given/When/Then signatures across all features. Flag pairs where two scenarios in different features target the same endpoint, function, or UI element with the same preconditions and assertions.
@@ -194,7 +195,7 @@ Each subagent receives the following in its prompt, plus the transitive constrai
 
 For each assigned feature:
 1. **Read spec**: `features/<name>.md` -- extract all `#### Scenario:` entries with Given/When/Then.
-2. **Read companion**: `features/<name>.impl.md` -- note Tool Location, source mappings, decision tags.
+2. **Read companion**: `features/<name>.impl.md` -- note Tool Location, source mappings, decision tags. **Extract `[IMPL]` entries as an implementation index** — these map what the engineer built to spec requirements. Use this index to accelerate scenario-by-scenario comparison by knowing which code paths correspond to which requirements before reading source.
 3. **Read scan data**: `.purlin/cache/scan.json` features data -- gate statuses, traceability, action items.
 4. **Discover source files**: Extract import paths from test files in `tests/<name>/`, fall back to Tool Location in companion file, fall back to directory convention mapping from feature label.
 5. **Read source**: Up to 5 primary implementation files per feature.
@@ -202,13 +203,15 @@ For each assigned feature:
    - Find the corresponding test function.
    - Trace to the code path it exercises.
    - Verify the Given/When/Then assertions match actual code logic.
+   - **When `[IMPL]` entries reference specific spec sections, use those references to guide the trace** rather than relying solely on code-path heuristics.
    - Flag: contradictions, missing logic, extra behavior, hardcoded values.
 7. **Transitive anchor constraint validation**: For each ancestor anchor node (from the payload):
    - **FORBIDDEN scan**: Grep all source files for each FORBIDDEN pattern. Report violations with file:line.
    - **Invariant coverage**: For each invariant statement, determine if any scenario or code path addresses it. Flag invariants with zero coverage in both scenarios and code.
    - **Constraint compliance**: For each named constraint, check if the code's behavior aligns. Flag contradictions.
 8. **Undocumented behavior scan**: Error handlers, config branches, edge cases in code with no scenario coverage.
-9. **Spec completeness**: All 12 gap dimensions (see Gap Dimensions Table).
+9. **Companion coverage check (dimension 13)**: Compare companion file entries against git log of code changes. Flag companion debt (code commits with no companion entries) as HIGH. Flag stale notes (entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note as a positive signal of spec conformance.
+10. **Spec completeness**: All 13 gap dimensions (see Gap Dimensions Table).
 
 ### Spec-Only Subagent Protocol
 
@@ -343,6 +346,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Anchor invariant drift** | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | **Requirement hygiene** | Duplicate scenarios across features targeting the same endpoint/function with identical assertions; conflicting assertions across features sharing a prerequisite anchor or targeting the same component; orphaned specs with no implementation, no test coverage, and not listed as a prerequisite by any other feature |
 | **Code ownership** | Orphaned code files in audit scope not referenced by any feature spec, companion file, or test import chain; orphaned skill files (`.claude/commands/pl-*.md` with no corresponding `features/pl_*.md`); shared infrastructure (3+ importers, no dedicated spec); dead code candidates (zero imports, zero owners). Deep mode provides per-file analysis; triage mode reports summary counts only. Symmetric complement of Requirement hygiene's "unused spec" detection: Requirement hygiene finds specs without code; Code ownership finds code without specs. |
+| **Companion coverage** | Per `features/policy_spec_code_sync.md`. **Companion debt**: features with code commits more recent than the last companion file update (HIGH severity). **Stale notes**: companion file exists but most recent entries predate significant code changes (MEDIUM severity). **Impl-to-spec tracing**: `[IMPL]` entries referencing spec sections provide a mapping from code to requirements — use to accelerate scenario-by-scenario comparison. Features with only `[IMPL]` entries (no deviation tags) signal spec-conformant implementation — MAY deprioritize deep code comparison in triage mode. |
 
 ---
 

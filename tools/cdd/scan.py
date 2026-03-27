@@ -11,7 +11,7 @@ Usage:
     python3 tools/cdd/scan.py --only features,git        # focused output (skip other sections)
     python3 tools/cdd/scan.py --cached --only features   # filter cached output
 
-Sections for --only: features, discoveries, deviations, plan, deps, git, smoke
+Sections for --only: features, discoveries, deviations, companion_debt, plan, deps, git, smoke
 """
 
 import json
@@ -43,6 +43,7 @@ SECTION_MAP = {
     "features": "features",
     "discoveries": "open_discoveries",
     "deviations": "unacknowledged_deviations",
+    "companion_debt": "companion_debt",
     "plan": "delivery_plan",
     "deps": "dependency_graph",
     "git": "git_state",
@@ -668,6 +669,94 @@ def scan_unacknowledged_deviations():
 
 
 # ---------------------------------------------------------------------------
+# 4b. Companion debt (per policy_spec_code_sync.md)
+# ---------------------------------------------------------------------------
+
+def scan_companion_debt():
+    """Detect features with code commits more recent than companion file updates.
+
+    Compares git log timestamps for feature-related code against the companion
+    file's last modification time.  Returns a list of dicts with feature, file,
+    and debt_type ('missing' or 'stale').
+    """
+    debt = []
+    if not os.path.isdir(FEATURES_DIR):
+        return debt
+
+    # Build set of feature stems that have companion files and their mtimes.
+    companion_mtimes = {}
+    for filename in os.listdir(FEATURES_DIR):
+        if filename.endswith(".impl.md"):
+            stem = filename.replace(".impl.md", "")
+            filepath = os.path.join(FEATURES_DIR, filename)
+            try:
+                companion_mtimes[stem] = os.path.getmtime(filepath)
+            except OSError:
+                continue
+
+    # For each feature spec, check if there are code commits more recent
+    # than the companion file.  We use the tests/<stem>/ directory and
+    # the companion file's Tool Location / Source Mapping as proxies for
+    # "code files that belong to this feature."
+    for filename in sorted(os.listdir(FEATURES_DIR)):
+        if not filename.endswith(".md"):
+            continue
+        if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
+            continue
+        stem = filename[:-3]
+
+        # Skip anchors — they don't have code.
+        if stem.startswith(("arch_", "design_", "policy_")):
+            continue
+
+        # Check if tests directory exists (proxy for "has implementation").
+        test_dir = os.path.join(TESTS_DIR, stem)
+        if not os.path.isdir(test_dir):
+            continue
+
+        # Get the latest code commit timestamp for this feature's test dir.
+        try:
+            result = subprocess.run(
+                ["git", "log", "-1", "--format=%ct", "--", test_dir],
+                capture_output=True, text=True, timeout=5,
+                cwd=PROJECT_ROOT,
+            )
+            if result.returncode != 0 or not result.stdout.strip():
+                continue
+            latest_code_ts = float(result.stdout.strip())
+        except Exception:
+            continue
+
+        companion_mtime = companion_mtimes.get(stem)
+
+        if companion_mtime is None:
+            # No companion file at all — companion debt (missing).
+            debt.append({
+                "feature": stem,
+                "file": f"features/{stem}.impl.md",
+                "debt_type": "missing",
+                "latest_code_commit": datetime.fromtimestamp(
+                    latest_code_ts, tz=timezone.utc
+                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            })
+        elif latest_code_ts > companion_mtime:
+            # Companion exists but is older than latest code commit — stale.
+            debt.append({
+                "feature": stem,
+                "file": _relpath(os.path.join(FEATURES_DIR, f"{stem}.impl.md")),
+                "debt_type": "stale",
+                "latest_code_commit": datetime.fromtimestamp(
+                    latest_code_ts, tz=timezone.utc
+                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "companion_mtime": datetime.fromtimestamp(
+                    companion_mtime, tz=timezone.utc
+                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            })
+
+    return debt
+
+
+# ---------------------------------------------------------------------------
 # 5. Delivery plan
 # ---------------------------------------------------------------------------
 
@@ -900,6 +989,8 @@ def run_scan(only=None):
         ]
     if only is None or "deviations" in only:
         result["unacknowledged_deviations"] = scan_unacknowledged_deviations()
+    if only is None or "companion_debt" in only:
+        result["companion_debt"] = scan_companion_debt()
     if only is None or "plan" in only:
         result["delivery_plan"] = scan_delivery_plan()
     if only is None or "deps" in only:

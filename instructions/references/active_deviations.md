@@ -49,15 +49,18 @@ Engineer is not building. They want to suggest a spec change or new feature. Wri
 
 Use these in companion files:
 
-| Tag | Severity | Meaning |
-|-----|----------|---------|
-| `[CLARIFICATION]` | INFO | Interpreted ambiguous spec language |
-| `[AUTONOMOUS]` | WARN | Spec was silent; Engineer filled the gap |
-| `[DEVIATION]` | HIGH | Intentionally diverged from spec |
-| `[DISCOVERY]` | HIGH | Found unstated requirement |
-| `[INFEASIBLE]` | CRITICAL | Cannot implement as specced |
+| Tag | Severity | Meaning | PM review? |
+|-----|----------|---------|------------|
+| `[IMPL]` | NONE | Implemented as specced | No |
+| `[CLARIFICATION]` | INFO | Interpreted ambiguous spec language | No |
+| `[AUTONOMOUS]` | WARN | Spec was silent; Engineer filled the gap | Yes |
+| `[DEVIATION]` | HIGH | Intentionally diverged from spec | Yes |
+| `[DISCOVERY]` | HIGH | Found unstated requirement | Yes |
+| `[INFEASIBLE]` | CRITICAL | Cannot implement as specced | Yes |
 
-Format: `**[TAG]** <description> (Severity: <level>)`
+Format: `**[TAG]** <description> (Severity: <level>)` — severity line omitted for `[IMPL]` since severity is NONE.
+
+`[IMPL]` is the low-friction tag for work that matches the spec. It does NOT appear in the Active Deviations table, is NOT surfaced by the scan as a PM action item, and does NOT require PM acknowledgment. Per `features/policy_spec_code_sync.md`, every code commit must have at least an `[IMPL]` entry in the companion file.
 
 Cross-feature discoveries go in the **target feature's** companion file, not the originating feature.
 

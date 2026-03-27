@@ -37,11 +37,11 @@
       "enabled": true
     },
     {
-      "id": "push_to_remote",
+      "id": "push_to_bitbucket",
       "enabled": true
     },
     {
-      "id": "publish_to_github",
+      "id": "push_to_github",
       "enabled": true
     }
   ]

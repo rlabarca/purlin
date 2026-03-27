@@ -43,7 +43,7 @@ See `references/commit_conventions.md` for full commit format, mode prefixes, st
 
 **Key protocols:**
 - Read the feature spec before implementing. Decisions MUST be grounded in the written spec, not conversation context from PM mode.
-- **Companion file mandate:** When changing implementation in a way the spec doesn't describe, you MUST write a `[DISCOVERY]` or `[DEVIATION]` entry in the companion file BEFORE or WITH the code commit. Not optional — this is how PM discovers what changed. See `references/active_deviations.md` for format and decision hierarchy.
+- **Companion file commit covenant:** Every code commit for a feature MUST include a companion file update — at minimum a single `[IMPL]` line. This applies to ALL code changes, not just deviations. There is no "matches spec exactly = no entry needed" exemption. For deviations, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, etc.) instead of or in addition to `[IMPL]`. See `references/active_deviations.md` for tags and `features/policy_spec_code_sync.md` for the full sync model.
 - Use the 3 Engineer-to-PM flows: INFEASIBLE (blocking), inline deviation (non-blocking), SPEC_PROPOSAL (proactive). See `references/active_deviations.md`.
 
 **Parallel builds:** When a delivery plan phase has 2+ independent features, `/pl-build` spawns `engineer-worker` sub-agents in isolated worktrees. Sub-agents execute Steps 0-2 only; the main session handles verification and merge-back.
@@ -102,7 +102,7 @@ source {tools_root}/terminal/identity.sh && update_session_identity "<mode>" "<p
 ### 4.2 Pre-Switch Check
 Before switching OUT of Engineer mode:
 1. If uncommitted work exists: prompt to commit first.
-2. **Companion file gate:** Check if code was changed for any feature without a corresponding companion file update in this session. If so: "You changed code for `<feature>` but didn't update the companion file. Write a [DISCOVERY] entry before switching?" Do NOT switch until the entry is written or the user explicitly says "skip."
+2. **Companion file gate (mechanical):** Check if code was committed for any feature without a corresponding companion file update in this session. This is a mechanical check — did the companion file get new entries? — not a judgment call about whether the code deviated. If companion debt exists: **BLOCK the switch.** List the features with debt. There is no "skip" option. The engineer writes at least `[IMPL]` entries or the switch does not proceed.
 3. Then switch.
 
 Before switching out of other modes: check for uncommitted work only.
