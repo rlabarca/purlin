@@ -10,7 +10,7 @@
 *   **No Manual Scenarios (Intentional):** This feature automates the execution of Manual Scenarios and Visual Spec checks via Playwright MCP. It has no manual scenarios of its own because the feature's behavior is fully testable through automated scenarios exercising the skill's logic.
 *   **Playwright MCP Dependency:** The skill depends on the `@playwright/mcp` npm package being available via `npx`. Auto-setup creates an MCP server entry via `claude mcp add`. A session restart is required after MCP server addition since Claude Code loads MCP servers at startup.
 *   **Skill File Ownership:** Shared between Engineer and QA. PM mode role guard in the skill file prevents accidental invocation by PM mode.
-*   **Instruction File Updates (Section 2.13):** Engineer mode MUST update 7 instruction files to reference `/pl-web-test`. These are listed exhaustively in the spec to ensure nothing is missed.
+*   **Instruction File Updates (Section 2.13):** Updated for unified agent architecture — now 5 files (PURLIN_BASE.md + purlin_commands.md replace QA_BASE/BUILDER_BASE + qa_commands/builder_commands). Spec Section 2.13 still lists old files (PM needs to update).
 *   **Rename History:**
     *   (2026-03-15) Renamed from `/pl-web-verify` to `/pl-aft-web`. `> Web Testable:` -> `> AFT Web:`, `> Web Start:` -> `> AFT Start:`.
     *   (2026-03-18) Renamed from `/pl-aft-web` to `/pl-web-test`. `> AFT Web:` -> `> Web Test:`, `> AFT Start:` -> `> Web Start:`. AFT taxonomy removed.
@@ -34,4 +34,6 @@ DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .pur
 **Severity:** MEDIUM
 **Details:** The test `test_stale_not_recorded_as_bug_discovery` only checks that the word "STALE" appears in the command file. It does not validate the 6-field discovery format, sidecar file creation, or the distinct STALE commit message pattern (`discovery(scope): [STALE] web-test findings for PM re-ingestion`).
 **Suggested fix:** Add assertions for all 6 required STALE discovery fields and the commit message format.
+
+**[IMPL]** Fixed 8 test failures from unified agent migration: replaced INSTRUCTION_FILES dict references from old QA_BASE/BUILDER_BASE/qa_commands/builder_commands to PURLIN_BASE/purlin_commands. Updated role detection assertion from 'Role Definition: The Engineer' to 'Purlin mode: Engineer'. Added --project-root flag to skill fixture section. 154/154 PASS.
 
