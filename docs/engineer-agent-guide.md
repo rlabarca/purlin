@@ -153,7 +153,7 @@ Engineer mode has three ways to flag issues for PM:
 | `/pl-delivery-plan` | Create or review a phased delivery plan. |
 | `/pl-infeasible <name>` | Escalate a feature that can't be built as specified. |
 | `/pl-propose <topic>` | Suggest a spec change to PM. |
-| `/pl-spec-code-audit` | Audit alignment between specs and code. |
+| `/pl-spec-code-audit` | Audit alignment between specs and code. Detects circular dependencies. |
 | `/pl-status` | Check feature states and what needs building. |
 | `/pl-find <topic>` | Search specs for a topic. |
 | `/pl-help` | Full command list for Engineer mode. |

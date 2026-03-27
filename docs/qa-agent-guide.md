@@ -36,6 +36,14 @@ At startup, QA mode finds features in TESTING state and presents a verification 
 
 Verification has two phases: automated first, then manual.
 
+### Choosing a Strategy
+
+At the start of verification, the agent presents a strategy menu:
+
+- **Targeted** — Verify specific features you name.
+- **Full** — Verify everything in TESTING state.
+- **Regression-only** — Re-run regression suites without full verification.
+
 ### Phase A — Automated
 
 The agent works through these steps without needing you:
@@ -51,7 +59,9 @@ The agent works through these steps without needing you:
    - If it can't, the agent tags it `@manual` and moves it to the manual checklist.
    - After this step, every scenario is tagged.
 
-5. **Visual smoke check.** For features with visual specs, runs a quick Playwright check.
+5. **Auto-fix loop.** When automated scenarios fail, the agent can fix them without leaving QA mode. An internal mode switch gives Engineer write access to fix the failing code, then QA re-verifies. This repeats until clean or a retry limit is reached.
+
+6. **Visual smoke check.** For features with visual specs, runs a quick Playwright check.
 
 **Phase A Checkpoint:** Before any manual work, the agent finalizes and commits status tags for every feature that passed automated verification.
 
