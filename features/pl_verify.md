@@ -65,7 +65,7 @@ The menu is presented when Phase A has failures, regression gaps, or remaining m
 | Skip to manual | Proceed directly to Phase B |
 | Exit | Save checkpoint via `/pl-resume save`, end session |
 
-If Phase A had zero failures and zero gaps, the menu is skipped — proceed directly to Phase B (or skip Phase B if zero manual items).
+If Phase A had zero failures (across all three sources defined in Section 2.3.1) and zero gaps, the menu is skipped — proceed directly to Phase B (or skip Phase B if zero manual items).
 
 ### 2.3 Phase A -- Automated Execution
 
@@ -81,10 +81,13 @@ If Phase A had zero failures and zero gaps, the menu is skipped — proceed dire
 
 ### 2.3.1 Phase A Summary and Strategy Dispatch
 
-After Phase A Steps 0c–5a complete, print a summary of automated results (auto-passed, smoke gate, @auto results, classifications, visual checks, regression suite status).
+After Phase A Steps 0c–5a complete, print a summary of automated results (auto-passed, smoke gate, @auto results, classifications, visual checks, regression suite status, unit test status from `tests.json`).
 
 **Dispatch logic:**
-- If `--auto-verify` or `auto_start: true`: auto-proceed to Phase A.5 if any automated failures exist. Skip to Phase B if zero failures.
+
+"Automated failures" means the union of: (1) regression suite failures (`regression.json` with `status: "FAIL"` or `"STALE"`), (2) @auto scenario failures from Phase A Step 3, AND (3) unit test failures (`tests.json` with `status: "FAIL"` for any in-scope feature). All three sources MUST be checked — if any single source has failures, the dispatch enters Phase A.5.
+
+- If `--auto-verify` or `auto_start: true`: auto-proceed to Phase A.5 if any automated failures exist (per definition above). Skip to Phase B if zero failures across all three sources.
 - If interactive (`auto_start: false`, no `--auto-verify`): present the strategy menu (Section 2.2.3) if failures or gaps exist. If zero failures and zero gaps, skip directly to Phase B.
 
 ### 2.3.2 Phase A.5 -- Auto-Fix Iteration Loop
