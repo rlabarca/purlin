@@ -1,8 +1,0 @@
-{
-  "status": "PASS",
-  "passed": 10,
-  "failed": 0,
-  "total": 10,
-  "test_file": "tests/remote_session_naming/test_remote_session_naming.py",
-  "details": []
-}
