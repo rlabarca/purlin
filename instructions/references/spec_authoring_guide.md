@@ -30,9 +30,12 @@ PM mode writes feature specs and must produce artifacts that are:
 |---|---|---|
 | `design_*` | **Can create and modify** -- PM owns the design language | Read-only |
 | `policy_*` | **Can create and modify** -- PM may define governance rules | Read-only |
+| `ops_*` | **Can create and modify** -- PM owns operational mandates | Read-only |
+| `prodbrief_*` | **Can create and modify** -- PM owns product goals | Read-only |
 | `arch_*` | Read-only | **Can create and modify** -- technical architecture is Engineer-owned |
+| `i_*` | Read-only (use `/pl-invariant`) | Read-only (use `/pl-invariant`) |
 
-PM runs `/pl-anchor` for `design_*` and `policy_*` nodes. Engineer runs `/pl-anchor` for `arch_*` nodes.
+PM runs `/pl-anchor` for `design_*`, `policy_*`, `ops_*`, and `prodbrief_*` nodes. Engineer runs `/pl-anchor` for `arch_*` nodes. Neither mode can directly edit `i_*` invariant files.
 
 ## 3. Anchor Node Classification Guide
 
@@ -126,7 +129,47 @@ Some concerns span multiple anchor types. Split them by the nature of the constr
 - A designer reviewing the UI → `design_*`
 - A compliance officer, security auditor, or manager reviewing process → `policy_*`
 
-### 3.5 One Anchor, One Domain
+### 3.5 `ops_*` — Operational Integration
+
+**Question:** "How must the system integrate with existing operations?"
+
+These define CI/CD, deployment, monitoring, and infrastructure mandates that ensure the software works within the organization's operational environment. PM-owned.
+
+| Domain | What Goes Here | Examples |
+|---|---|---|
+| **CI/CD** | Pipeline requirements, build steps, artifact standards | "All builds must pass linting before merge", "Docker images tagged with git SHA" |
+| **Deployment** | Deployment targets, rollback requirements, blue-green/canary | "Zero-downtime deploys required", "Canary to 5% before full rollout" |
+| **Monitoring** | Required metrics, alerting thresholds, dashboard standards | "P95 latency dashboard for every service", "Alert on error rate > 1%" |
+| **Infrastructure** | Resource limits, scaling policies, network constraints | "Max 512MB memory per container", "Must run in us-east-1 and eu-west-1" |
+
+**Key signal:** If the constraint comes from an ops team, SRE, or infrastructure requirement, it belongs in `ops_*`.
+
+### 3.6 `prodbrief_*` — Product Goals
+
+**Question:** "What outcomes must the product achieve?"
+
+These define user stories, KPIs, and success criteria from product management. They describe what the product must accomplish, not how it's built. PM-owned.
+
+| Domain | What Goes Here | Examples |
+|---|---|---|
+| **User Stories** | User goals and benefits in story format | "As a new user, I want guided onboarding so I can start quickly" |
+| **Success Criteria** | Measurable KPIs and acceptance thresholds | "User onboarding completes in <2 minutes", "NPS score > 40" |
+| **Acceptance Scenarios** | Concrete scenarios demonstrating story completion | Gherkin scenarios mapping stories to testable behavior |
+
+**Key signal:** If the constraint comes from a product manager defining what success looks like, it belongs in `prodbrief_*`.
+
+### 3.7 Invariant Anchors
+
+Any anchor type (`arch_*`, `design_*`, `policy_*`, `ops_*`, `prodbrief_*`) can also exist as an **invariant** — an externally-sourced, immutable version prefixed with `i_` (e.g., `i_policy_gdpr.md`).
+
+Invariants are added via `/pl-invariant add` (git repos) or `/pl-invariant add-figma` (Figma). They cannot be modified locally. See `instructions/references/invariant_model.md` for the full model and `instructions/references/invariant_format.md` for the canonical file format.
+
+When authoring specs, PM should:
+- Check for applicable global invariants (auto-apply to all features).
+- Declare scoped invariants via `> Prerequisite:` just like regular anchors.
+- Read Figma invariant annotations as advisory input for scenarios.
+
+### 3.8 One Anchor, One Domain
 
 Each anchor node covers **one coherent domain** — not one per concern. Prefer fewer, broader anchors over many narrow ones.
 

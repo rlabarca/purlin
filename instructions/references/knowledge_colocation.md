@@ -15,8 +15,14 @@ The dependency graph uses three types of anchor nodes, distinguished by filename
 | `arch_*.md` | Technical constraints — architecture, data flow, dependency rules, code patterns | Engineer |
 | `design_*.md` | Design constraints — visual language, typography, spacing, interaction patterns | PM |
 | `policy_*.md` | Governance rules — process policies, security baselines, compliance requirements | PM |
+| `ops_*.md` | Operational integration — CI/CD, deployment, monitoring, infrastructure mandates | PM |
+| `prodbrief_*.md` | Product goals — user stories, outcomes, KPIs, success criteria | PM |
 
 Every feature MUST anchor to relevant node(s) via `> Prerequisite:` links.
+
+### Invariant Anchor Nodes
+
+Any anchor type can also exist as an **invariant** — an externally-sourced, locally-immutable version prefixed with `i_` (e.g., `i_policy_security.md`, `i_design_visual_standards.md`). Invariants originate from external git repos or Figma and cannot be modified locally. See `instructions/references/invariant_model.md` for the full model.
 
 ## Cross-Cutting Standards Pattern
 
