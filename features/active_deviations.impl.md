@@ -8,7 +8,7 @@
 
 ## Notes
 
-Reference document feature — the implementation IS `instructions/references/active_deviations.md`.
+Reference document feature — the implementation IS `references/active_deviations.md`.
 Tests follow the established reference-doc verification pattern.
 
 ### Test Quality Audit

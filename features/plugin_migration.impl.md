@@ -72,3 +72,9 @@
 - [IMPL] Updated `templates/CLAUDE.md` — removed legacy agent references (`Architect`, `Builder`, legacy role boundaries), replaced `/pl-resume` → `purlin:start`, `/pl-help` → `purlin:help`, added plugin-model language and mode guard reference.
 - [IMPL] Updated `skills/upgrade/SKILL.md` Step 7 — now references `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md` instead of hardcoded markdown block.
 - [IMPL] Upgrade verification results: submodule removed (PASS), pl-run.sh deleted (PASS), 9 old commands deleted (PASS), 2 old agents deleted (PASS), .upstream_sha deleted (PASS), settings.json hooks removed + plugin declared + permissions preserved (PASS), config.json tools_root/models/deprecated agents removed + agents.purlin preserved (PASS), CLAUDE.md updated (PASS), .gitignore cleaned (PASS), features/ byte-identical (PASS).
+
+### Phase 7 (partial): Stale Path Cleanup
+- [IMPL] Fixed 28 stale `instructions/references/` → `references/` paths in 14 PM-owned feature spec files.
+- [IMPL] Fixed 5 current-state `instructions/references/` → `references/` paths in 5 companion files (commit_conventions, file_classification, knowledge_colocation, active_deviations, pl_help).
+- [IMPL] Left 15 historical log entries in companion files as-is (plugin_migration.impl.md, pl_invariant.impl.md, policy_spec_code_sync.impl.md, skill_behavior_regression.impl.md) — these document migration transforms and pre-move file operations.
+- [RESOLVED] Phase 5 DISCOVERY "47 stale paths" is now resolved: 33 fixed, 15 historical (intentionally preserved).

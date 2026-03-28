@@ -8,7 +8,7 @@
 
 ## Notes
 
-Reference document feature — the implementation IS `instructions/references/commit_conventions.md`.
+Reference document feature — the implementation IS `references/commit_conventions.md`.
 Tests follow the established reference-doc verification pattern.
 
 ### Test Quality Audit

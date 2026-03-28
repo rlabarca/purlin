@@ -8,7 +8,7 @@
 
 ## Notes
 
-Reference document feature — the implementation IS `instructions/references/knowledge_colocation.md`.
+Reference document feature — the implementation IS `references/knowledge_colocation.md`.
 Tests follow the established reference-doc verification pattern.
 
 ### Test Quality Audit

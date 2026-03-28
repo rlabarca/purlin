@@ -8,7 +8,7 @@
 
 ## Notes
 
-Reference document feature — the implementation IS `instructions/references/file_classification.md`.
+Reference document feature — the implementation IS `references/file_classification.md`.
 Tests follow the established reference-doc verification pattern (`test_purlin_instructions.sh`).
 
 ### Test Quality Audit
