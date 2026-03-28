@@ -26,8 +26,12 @@ _MERMAID_TOKENS = {
     "hardware_fill": "e8f5e9", "hardware_stroke": "2e7d32",
     "ui_fill": "f3e5f5",      "ui_stroke": "7b1fa2",
     "process_fill": "f1f8e9", "process_stroke": "558b2f",
+    "invariant_fill": "fff3e0", "invariant_stroke": "e65100",
     "title_color": "111",
 }
+
+# Virtual category for global invariants — rendered as the first subgraph.
+_GLOBAL_INVARIANTS_CATEGORY = "Global Invariants"
 
 # Artifact isolation (Section 2.12): write outputs to .purlin/cache/
 CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")
@@ -240,11 +244,18 @@ def generate_mermaid_content(features):
 
     grouped_categories = defaultdict(list)
     for node_id, data in features.items():
-        grouped_categories[data["category"]].append(node_id)
+        # Global invariants get their own top-level category.
+        if data.get("invariant") and data.get("scope") == "global":
+            grouped_categories[_GLOBAL_INVARIANTS_CATEGORY].append(node_id)
+        else:
+            grouped_categories[data["category"]].append(node_id)
 
     style_apps = []
 
-    for category, node_ids in sorted(grouped_categories.items()):
+    # Sort categories but ensure Global Invariants renders first.
+    sorted_categories = sorted(grouped_categories.items(),
+                               key=lambda x: (x[0] != _GLOBAL_INVARIANTS_CATEGORY, x[0]))
+    for category, node_ids in sorted_categories:
         category_id = category.replace(' ', '_').replace(':', '')
         lines.append(f'\n    subgraph {category_id} [" "]')
 
@@ -257,7 +268,9 @@ def generate_mermaid_content(features):
             clean_label = data["label"].replace('"', "'")
 
             css_class = ""
-            if "Release" in category:
+            if data.get("invariant"):
+                css_class = "invariant"
+            elif "Release" in category:
                 css_class = "release"
             elif "Hardware" in category:
                 css_class = "hardware"
@@ -308,6 +321,10 @@ def generate_mermaid_content(features):
         f"    classDef process "
         f"fill:#{t['process_fill']},stroke:#{t['process_stroke']},"
         f"stroke-width:1px,color:black;")
+    lines.append(
+        f"    classDef invariant "
+        f"fill:#{t['invariant_fill']},stroke:#{t['invariant_stroke']},"
+        f"stroke-width:2px,color:black,stroke-dasharray:5 3;")
     lines.append(
         f"    classDef subgraphTitle "
         f"fill:none,stroke:none,color:#{t['title_color']},"

@@ -78,6 +78,10 @@
 
 [IMPL] Fixed `instructions/references/invariant_model.md:83` — corrected stale reference to `invariant_constraints.json` (which was never implemented). Now correctly states invariant scan state is stored within `.purlin/cache/scan.json`.
 
+## Mermaid Graph: Invariant Visualization
+
+[IMPL] Updated `tools/cdd/graph.py` — invariant nodes now render with distinct visual treatment in the Mermaid dependency graph. Global invariants (`Scope: global`) are placed in a dedicated "Global Invariants" subgraph that renders first (top of the graph). All invariant nodes (global and scoped) receive the `invariant` CSS class: orange fill (`#fff3e0`), dark orange border (`#e65100`), 2px stroke width, dashed stroke pattern. Scoped invariants remain in their declared category but still get the invariant styling. Added `invariant_fill`, `invariant_stroke` tokens and `_GLOBAL_INVARIANTS_CATEGORY` constant.
+
 ## Cross-Cutting: Spec & Plan Alignment Audit (End Gate)
 
 [IMPL] Updated `.claude/commands/pl-build.md` Step 4 — added "Pre-check -- Spec & Plan Alignment Audit" gate between Web Test Gate and tag determination. Two-part check: (1) Spec audit re-reads the feature spec and walks each requirement and scenario, verifying implementation coverage and logging unimplemented requirements as `[DISCOVERY]`, missing scenario coverage as blocking until addressed or `[DEVIATION]`-tagged, and undocumented deviations as requiring companion file entries. (2) Plan audit (when a design plan was used) re-reads the plan section and verifies each deliverable exists, logs skipped/partial items as `[DISCOVERY]`, and notes out-of-scope work as `[CLARIFICATION]`. Gate is non-blocking for clean results but blocks on unlogged gaps — requires zero undocumented deviations, not zero deviations.
