@@ -140,3 +140,25 @@ When creating or updating any feature file, check each row and declare `> Prereq
 | Modifies module dependencies or communication | All relevant `arch_*.md` anchors |
 | Participates in a governed process (security, compliance, release) | All relevant `policy_*.md` anchors |
 | Has design artifacts in `features/design/` | `design_artifact_pipeline.md` |
+| Is governed by an operational mandate | All relevant `ops_*.md` or `i_ops_*.md` anchors/invariants |
+| Has product brief requirements | All relevant `prodbrief_*.md` or `i_prodbrief_*.md` anchors/invariants |
+
+---
+
+## Invariant Advisory (Pre-Commit)
+
+Before committing a new or updated spec, check for applicable invariants:
+
+1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants`. If any exist, display:
+   ```
+   This feature is subject to N global invariant(s):
+   - i_policy_security.md (v2.1.0)
+   - i_arch_coding_standards.md (v1.0.0)
+   - i_ops_monitoring.md (v1.2.0)
+   ```
+2. **Scoped invariant suggestions:** Check for `i_*` files whose domain overlaps with this feature (e.g., a feature with a Visual Specification should consider `i_design_*` invariants). If relevant scoped invariants are not already declared as prerequisites, suggest them:
+   ```
+   Consider adding prerequisite:
+   - features/i_design_accessibility.md (this feature has a Visual Specification)
+   ```
+3. This is **advisory only** -- it does not block the spec commit. The audit (`/pl-spec-code-audit`) catches gaps later.

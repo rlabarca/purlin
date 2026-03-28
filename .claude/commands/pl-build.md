@@ -73,6 +73,25 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     4. If declined: STOP — do not implement without a spec.
 *   **Re-Verification Detection:** Check scan results for this feature's `reset_context`. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
 *   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
+*   **Invariant Preflight:** Collect all invariants applicable to this feature:
+    1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants` list. Read each file.
+    2. **Scoped invariants:** From the feature's transitive `> Prerequisite:` chain, collect any `i_*` files.
+    3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each applicable invariant. For each pattern entry, grep the feature's code files (scoped to feature files only). If violations found, **block the build** with an actionable message:
+       ```
+       INVARIANT VIOLATION -- build blocked
+       i_policy_security.md (INV-3): No eval() in user-facing code
+       Pattern: eval\(
+       Found: tools/auth/handler.py:42
+       Fix: Replace eval() with ast.literal_eval() or json.loads()
+       ```
+       Do NOT proceed to Step 1 until all FORBIDDEN violations are resolved.
+    4. **Behavioral reminders:** Surface non-FORBIDDEN invariant statements as awareness reminders (not blockers):
+       ```
+       Applicable invariants (for awareness during implementation):
+       - i_arch_api_standards.md: All endpoints must return structured error responses (INV-2)
+       - i_policy_gdpr.md: User data access must be logged (INV-5)
+       ```
+    5. **Figma brief staleness** (design invariants only): If the feature has a `brief.json` at `features/design/<stem>/brief.json`, compare its version against the Figma invariant pointer's `> Version:`. Warn if stale.
 *   **Visual Design Sources:** When the feature has a `## Visual Specification`, read in priority: Token Map (in spec) -> `brief.json` (at `features/design/<stem>/brief.json`) -> Figma MCP (last resort, read-only).
 *   **Web Test Readiness:** When the feature has `## Visual Specification` AND web test metadata (`> Web Test:` or `> AFT Web:`), check for Playwright MCP availability now (look for `browser_navigate` in the available tool list). If MCP is not available, attempt auto-setup: verify package via `npx @playwright/mcp@latest --help`, then run `claude mcp add playwright -- npx @playwright/mcp --headless`. If setup succeeds, inform the user a session restart is needed and HALT -- do not begin implementation without MCP ready. If the feature has `## Visual Specification` but NO web test metadata, log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file and continue.
 *   **Companion File:** Read `features/<name>.impl.md` if it exists. Also read prerequisite companion files.
@@ -98,6 +117,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     *   `[INFEASIBLE]` (CRITICAL) -- Cannot implement as specced. Halt work, skip to next feature.
     Format: `**[TAG]** <description> (Severity: <level>)`
     Cross-feature: file `[DISCOVERY]` in the **target feature's** companion file, not the originating feature.
+*   **Invariant References in Companion Entries:** When code addresses a specific invariant constraint, companion entries SHOULD reference it: `[IMPL] Implemented correlation ID header per i_arch_api_standards.md INV-2`. When code deviates from an invariant, use `[DEVIATION]` referencing the invariant — but note that invariant deviations escalate as **invariant conflict** (harder than regular spec deviation, since invariants are immutable and externally-sourced). The deviation is surfaced to PM as "invariant conflict" rather than "spec deviation."
 *   **Bug Fix Resolution:** When fixing an OPEN `[BUG]` in the discovery sidecar, update status from `OPEN` to `RESOLVED` in the same commit.
 *   **Commit:** `git commit -m "feat(scope): implement FEATURE_NAME"`. No status tag in this commit.
 

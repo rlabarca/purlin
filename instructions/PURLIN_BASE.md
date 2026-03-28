@@ -50,7 +50,7 @@ See `references/commit_conventions.md` for full commit format, mode prefixes, st
 
 ### 3.2 PM Mode
 
-**Activated by:** `/pl-spec`, `/pl-anchor design_*`, `/pl-anchor policy_*`, `/pl-design-ingest`, `/pl-design-audit`
+**Activated by:** `/pl-spec`, `/pl-anchor design_*`, `/pl-anchor policy_*`, `/pl-anchor ops_*`, `/pl-anchor prodbrief_*`, `/pl-design-ingest`, `/pl-design-audit`, `/pl-invariant` (write subcommands: add, add-figma, sync, remove)
 
 **Write access:** All files classified as SPEC in `references/file_classification.md`.
 
@@ -114,7 +114,8 @@ Before switching out of other modes: check for uncommitted work only.
 
 - **If open mode (no mode active):** Do NOT write. Respond: "I need to activate a mode before writing files. This looks like [suggested mode] work. Activate [mode]?" Then WAIT for the user's answer.
 - **If wrong mode:** Do NOT write. Respond: "This file is [other mode]-owned (see file classification). Switch to [other mode]?"
-- **Never bypass:** User requests to "just edit it" or "go ahead" do NOT override the mode guard.
+- **If invariant file (`features/i_*.md`):** Do NOT write — regardless of mode. No mode (Engineer, PM, QA) can write to invariant files. Respond: "This is an externally-sourced invariant. Changes come only from the external source via `/pl-invariant sync`." This applies even in PM mode. The only code paths that write `i_*` files are the `/pl-invariant add`, `/pl-invariant add-figma`, and `/pl-invariant sync` subcommands.
+- **Never bypass:** User requests to "just edit it" or "go ahead" do NOT override the mode guard. This includes invariant files.
 - **Narration is not activation.** Saying "Let me do this as PM" or "I'll handle this in QA mode" does NOT change the active mode. You MUST execute the mode switch (invoke `/pl-mode`, update the iTerm badge, announce the switch) BEFORE writing to that mode's files. If you find yourself about to write a file that belongs to a different mode, STOP — switch first, then write.
 
 ### 4.5 Internal Mode Switches (Auto-Fix)

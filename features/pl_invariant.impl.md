@@ -29,3 +29,17 @@
 [IMPL] Updated `tools/test_support/harness_runner.py` — `scan_fixture_features()` skip tuple extended with `ops_`, `prodbrief_`, and `i_` prefixes.
 
 [IMPL] Updated `tools/smoke/smoke.py` — `suggest_smoke_features()` anchor detection extended with `ops_` and `i_` prefixes for foundational constraint reasoning.
+
+## Phase 3: Command & Enforcement
+
+[IMPL] Created `.claude/commands/pl-invariant.md` — full skill file with all 9 subcommands: `add` (git import), `add-figma` (Figma-sourced design invariant), `sync` (pull latest from source with semver-gated cascade), `check-updates` (fast remote check via `git ls-remote`), `check-conflicts` (semantic contradiction analysis), `check-feature` (per-feature adherence with FORBIDDEN grep and coverage check), `validate` (format/metadata/section validation), `list` (tabular summary), `remove` (delete with prerequisite cleanup). Mode enforcement: write subcommands require PM mode, read-only subcommands run in any mode. Includes P1/P5 performance notes for combined regex and inverted iteration.
+
+[IMPL] Updated `.claude/commands/pl-build.md` — extended Step 0 Pre-Flight with Invariant Preflight subsection. Collects global invariants from `dependency_graph.json` -> `global_invariants` and scoped invariants from transitive prerequisites. Runs FORBIDDEN pre-scan that greps feature code files for pattern violations and blocks the build with actionable messages (file:line evidence + fix suggestion). Surfaces behavioral invariant statements as non-blocking awareness reminders. Checks Figma brief staleness for design invariants.
+
+[IMPL] Updated `.claude/commands/pl-spec.md` — added Invariant Advisory (Pre-Commit) section. Before committing a spec, shows applicable global invariants and suggests scoped invariant prerequisites based on domain overlap. Added `ops_*`/`i_ops_*` and `prodbrief_*`/`i_prodbrief_*` rows to the Prerequisite Checklist table. Advisory only — does not block spec commit.
+
+[IMPL] Updated `.claude/commands/pl-anchor.md` — extended Anchor Node Types table with `ops_*.md` (Operational) and `prodbrief_*.md` (Product) prefixes including mode ownership column. Added Invariant Anchors subsection explaining `i_*` prefix immutability with redirect message for local creation attempts. Updated prefix prompt to include all 5 types. Updated scaffold instruction for prodbrief-specific sections (`## User Stories`, `## Success Criteria`). Added `i_*` prefix detection to redirect to `/pl-invariant`.
+
+[IMPL] Updated `instructions/PURLIN_BASE.md` — added `/pl-invariant` (write subcommands) and `/pl-anchor ops_*`, `/pl-anchor prodbrief_*` to PM mode's "Activated by" list (§3.2). Added invariant immutability rule to Mode Guard (§4.3): no mode can write `features/i_*.md` files, with redirect message to `/pl-invariant sync`. Applies even in PM mode — only the `/pl-invariant` skill's add/add-figma/sync code paths write invariant files.
+
+[IMPL] Updated `.claude/commands/pl-build.md` Step 2 — added Invariant References in Companion Entries guidance. Companion entries SHOULD reference invariant constraint IDs (e.g., `per i_arch_api_standards.md INV-2`). Invariant deviations escalate as "invariant conflict" rather than "spec deviation" since invariants are immutable and externally-sourced. Per plan Section 5.5.
