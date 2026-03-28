@@ -1,6 +1,6 @@
 # Feature: Help Command
 
-> Label: "Agent Skills: Common: /pl-help Purlin Help"
+> Label: "Agent Skills: Common: purlin:help Purlin Help"
 > Category: "Agent Skills: Common"
 
 [TODO]
@@ -21,7 +21,7 @@ The Purlin agent does NOT print the command table at startup — it shows `Use /
 
 ### 2.2 Help Output Convention
 
-- Every `pl-*.sh` script in the project root MUST respond to `--help`.
+- Every `pl-*.sh` script in the project root (if any exist) MUST respond to `--help`.
 - The `--help` block MUST print a compact help block to stdout: script name (via `basename "$0"`), one-line description, and options list.
 - The script MUST exit 0 immediately after printing help.
 - The `--help` check MUST appear before any initialization (no Python, no config, no env setup).
@@ -70,8 +70,8 @@ The Purlin agent does NOT print the command table at startup — it shows `Use /
 
 #### Scenario: CLI scripts respond to --help
 
-    Given pl-run.sh exists in the project root
-    When pl-run.sh is invoked with --help
+    Given a pl-*.sh script exists in the project root
+    When the script is invoked with --help
     Then it exits with code 0
     And the output contains "Usage"
 
