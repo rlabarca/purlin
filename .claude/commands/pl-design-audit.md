@@ -18,6 +18,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - Checklist item count
    Also check for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
    If Figma MCP tools are available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
+   **Invariant inventory:** Also glob `features/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata. These are checked in steps 3.2 and 4.1.
 
 2. **Reference integrity:** For each screen:
    - Local file references: verify the file exists on disk. Missing = CRITICAL.
@@ -35,11 +36,25 @@ Audit all design artifacts and visual specifications across the project for inte
    - If the brief is newer: STALE (Figma was updated since last ingestion).
    - If `brief.json` is missing and screen has Figma reference: WARNING ("No brief.json found").
 
-4. **Anchor consistency:** Read all `features/design_*.md` anchor nodes. Scan Token Map entries and checklists for:
-   - Token Map right-side values that don't match any anchor token.
+3.2. **Invariant pointer sync status:** For each `i_design_*.md` invariant pointer found in step 1:
+   - **Figma-sourced** (`> Source: figma`): If Figma MCP is available, fetch the current Figma file version ID and compare against the pointer's `> Version:`. If different: STALE_INVARIANT. If MCP unavailable: report as UNKNOWN.
+   - **Git-sourced** (`> Source:` is a URL): Run `git ls-remote <source-url> HEAD` and compare SHA against `> Source-SHA:`. If different: STALE_INVARIANT.
+   - For each stale invariant, check how many features depend on it (via `> Prerequisite:` or global scope). Report cascade impact.
+   - **Brief vs pointer version:** For features with a `brief.json` referencing a Figma invariant, compare `brief.json`'s `figma_version_id` against the pointer's `> Version:`. If pointer is newer than brief: STALE_BRIEF (brief needs regeneration via `/pl-spec`).
+
+4. **Anchor consistency:** Read all `features/design_*.md` local anchor nodes AND `features/i_design_*.md` invariant pointers. Scan Token Map entries and checklists for:
+   - Token Map right-side values that don't match any anchor or invariant token.
    - Hardcoded hex colors or literal values in Token Map entries that should reference anchor tokens.
    - Hardcoded values in checklist items that should use token references.
    - Flag each as WARNING with the suggested token name.
+
+4.1. **Invariant-governed design compliance:** For features with `> Prerequisite:` links to `i_design_*.md` invariants:
+   - Check enforcement weight per the invariant system's design enforcement tiers:
+     - **Colors / design tokens:** Strict — hardcoded hex values that should be design tokens flagged as HIGH.
+     - **Typography:** Strict — font families, weights, sizes must match brief.json. Flagged as HIGH.
+     - **Spacing / layout:** Moderate — warned as MEDIUM, not blocked.
+   - If the invariant has `## FORBIDDEN Patterns`, grep feature code for violations. Flag as INVARIANT_VIOLATION (HIGH).
+   - Surface the invariant's `## Design Invariants` statements as compliance context.
 
 5. **Figma staleness (MCP):** For screens referencing Figma URLs:
    - If Figma MCP tools are available: read the design's `lastModified` timestamp via MCP.
@@ -66,13 +81,28 @@ Audit all design artifacts and visual specifications across the project for inte
 
 7. **Report:** Print a summary table. The Annotations column is optional — show it when Figma MCP is available, omit otherwise. Annotation count is informational metadata only (not a pass/fail check).
    ```
-   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Dev Status | Annotations
-   ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------|------------
-   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A        | N/A
-   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | DRIFT      | 3
+   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Dev Status | Invariant       | Annotations
+   ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------|-----------------|------------
+   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A        | N/A             | N/A
+   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | DRIFT      | STALE_INVARIANT | 3
+   local_feature        | Dashboard        | OK          | CURRENT   | N/A     | CLEAN  | N/A             | N/A        | N/A             | N/A
    ```
 
-8. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.
+   **Invariant column values:** CURRENT (pointer version matches source), STALE_INVARIANT (source has newer version), STALE_BRIEF (brief older than pointer), INVARIANT_VIOLATION (FORBIDDEN pattern hit), N/A (no design invariant).
+
+7.1. **Invariant status summary:** After the per-feature table, print a separate invariant summary:
+   ```
+   DESIGN INVARIANTS (N total)
+   Invariant                          Source  Version  Sync Status   Dependent Features
+   i_design_visual_standards.md       figma   v456     STALE         3 features
+   i_design_tokens.md                 git     v1.2.0   CURRENT       5 features
+   ```
+
+8. **Offer remediation:**
+   - For STALE items (local artifacts): offer to update the Visual Specification via `/pl-spec <feature>`.
+   - For STALE_INVARIANT: offer to sync via `/pl-invariant sync <invariant-file>`.
+   - For STALE_BRIEF: offer to regenerate brief via `/pl-spec <feature>` (re-read Figma frames).
+   - For INVARIANT_VIOLATION: report file:line evidence and suggest fix.
 
 9. **Summary:** Report overall status:
    - CRITICAL issues found: "CRITICAL issues found -- resolve before release."
