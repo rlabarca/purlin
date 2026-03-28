@@ -2,8 +2,8 @@
 
 ### [INTENT_DRIFT] Entire suite tests legacy role-specific agents, not Purlin unified agent (Discovered: 2026-03-25)
 - **Scenario:** ALL 9 scenarios (architect-startup-command-table, builder-startup-identifies-todo, qa-startup-identifies-testing, architect-refuses-code, builder-refuses-spec-edit, qa-refuses-code, status-skill-structured-summary, architect-help-correct-commands, builder-help-correct-commands)
-- **Observed Behavior:** All scenarios construct 4-layer system prompts for legacy roles (ARCHITECT, BUILDER, QA) using `instructions/<ROLE>_BASE.md`. These role-specific agents have been replaced by the Purlin unified agent with modes (PM, Engineer, QA). Fixtures use the old instruction stack (`HOW_WE_WORK_BASE.md` + `<ROLE>_BASE.md` + overrides). 4 scenarios now fail because legacy instruction files no longer produce correct behavior; 5 pass by coincidence (QA role overlap, refusal patterns are similar, pre-loaded context compensates).
-- **Expected Behavior:** Suite should test the Purlin unified agent in PM mode (replaces PM), Engineer mode (replaces Engineer), and QA mode. Fixtures should use `PURLIN_BASE.md` + `PURLIN_OVERRIDES.md` instruction stack. Prompts should be "Begin Purlin session" with mode activation, not "Begin PM session."
+- **Observed Behavior:** All scenarios construct 4-layer system prompts for legacy roles (ARCHITECT, BUILDER, QA) using legacy `instructions/<ROLE>_BASE.md` (now `agents/purlin.md`). These role-specific agents have been replaced by the Purlin unified agent with modes (PM, Engineer, QA). Fixtures use the old instruction stack (`HOW_WE_WORK_BASE.md` + `<ROLE>_BASE.md` + overrides, now replaced by `agents/purlin.md`). 4 scenarios now fail because legacy instruction files no longer produce correct behavior; 5 pass by coincidence (QA role overlap, refusal patterns are similar, pre-loaded context compensates).
+- **Expected Behavior:** Suite should test the Purlin unified agent in PM mode (replaces PM), Engineer mode (replaces Engineer), and QA mode. Fixtures should use `agents/purlin.md` + `PURLIN_OVERRIDES.md` instruction stack. Prompts should be "Begin Purlin session" with mode activation, not "Begin PM session."
 - **Action Required:** PM (re-spec entire feature around Purlin unified agent modes) + Engineer (update fixtures, scenario JSON, and harness `construct_system_prompt()` for unified agent)
 - **Status:** OPEN
 
@@ -79,7 +79,7 @@
 ### [BUG] Startup work discovery skipped (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:builder-startup-identifies-todo, qa-startup-identifies-testing
 - **Observed Behavior:** Engineer startup doesn't identify TODO features by name (assertion fails). QA startup doesn't identify TESTING features (assertion fails). Both agents respond with generic role-aware prompts instead of running `scan.sh` and reporting actual work items.
-- **Expected Behavior:** Engineer startup identifies TODO features; QA startup identifies TESTING features after running `{tools_root}/cdd/scan.sh --startup <role>`
+- **Expected Behavior:** Engineer startup identifies TODO features; QA startup identifies TESTING features after running the `purlin_scan` MCP tool
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** `scan_fixture_features()` + `build_print_mode_context()` pre-load feature status (TODO/TESTING/COMPLETE with feature names) into the system prompt.
@@ -134,7 +134,7 @@
 - **Scenario:** features/skill_behavior_regression.md:architect-refuses-code
 - **Observed Behavior:** PM asked to fix code responded: "There's no `main.py` file in this repository. Could you provide the path?" -- did not refuse or reference zero-code mandate.
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
-- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without PURLIN_BASE.md, the agent has no zero-code mandate.
+- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without agents/purlin.md, the agent has no zero-code mandate.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -143,7 +143,7 @@
 - **Scenario:** features/skill_behavior_regression.md:qa-refuses-code
 - **Observed Behavior:** QA asked to fix code responded: "There's no `utils.py` file in this repository. Could you provide the correct path?" -- did not refuse or reference zero-code mandate.
 - **Expected Behavior:** Output refuses the request and references the zero-code mandate
-- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without PURLIN_BASE.md, the agent has no code refusal instructions.
+- **Root Cause:** Same as architect-startup-command-table -- harness_runner.py missing 4-layer system prompt construction. Without agents/purlin.md, the agent has no code refusal instructions.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -152,7 +152,7 @@
 - **Scenario:** features/skill_behavior_regression.md:status-skill-structured-summary
 - **Observed Behavior:** "Unknown skill: pl-status" -- skill not recognized in test fixture environment.
 - **Expected Behavior:** Output contains feature counts by lifecycle status
-- **Root Cause:** Fixture checkout does not include `.claude/commands/` skill files. Skills require interactive environment files to dispatch.
+- **Root Cause:** Fixture checkout does not include `skills/` skill files. Skills require interactive environment files to dispatch.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -161,7 +161,7 @@
 - **Scenario:** features/skill_behavior_regression.md:architect-help-correct-commands
 - **Observed Behavior:** "Unknown skill: pl-help" -- skill not recognized in test fixture environment.
 - **Expected Behavior:** Output contains /pl-spec and /pl-anchor
-- **Root Cause:** Same as status-skill-structured-summary -- fixture missing `.claude/commands/` skill files.
+- **Root Cause:** Same as status-skill-structured-summary -- fixture missing `skills/` skill files.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -170,7 +170,7 @@
 - **Scenario:** features/skill_behavior_regression.md:builder-help-correct-commands
 - **Observed Behavior:** "Unknown skill: pl-help" -- skill not recognized in test fixture environment.
 - **Expected Behavior:** Output contains /pl-build
-- **Root Cause:** Same as status-skill-structured-summary -- fixture missing `.claude/commands/` skill files.
+- **Root Cause:** Same as status-skill-structured-summary -- fixture missing `skills/` skill files.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Source:** Regression test (auto-detected)
@@ -180,5 +180,5 @@
 - **Expected Behavior:** PM/QA refuse code requests; startup prints Unicode command table; all skills dispatch correctly from fixture
 - **Action Required:** Engineer
 - **Status:** RESOLVED
-- **Resolution:** All root causes addressed in harness_runner.py: (1) `construct_system_prompt()` builds the 4-layer prompt from fixture instruction files matching dev/test_agent_behavior.sh; (2) `execute_agent_behavior()` passes prompt via `--append-system-prompt-file` with `--no-session-persistence`, `--model`, `--output-format json`, and `.result` extraction; (3) `copy_skill_files()` copies `.claude/commands/` from project root to fixture dir when absent.
+- **Resolution:** All root causes addressed in harness_runner.py: (1) `construct_system_prompt()` builds the 4-layer prompt from fixture instruction files matching dev/test_agent_behavior.sh; (2) `execute_agent_behavior()` passes prompt via `--append-system-prompt-file` with `--no-session-persistence`, `--model`, `--output-format json`, and `.result` extraction; (3) `copy_skill_files()` copies `skills/` from project root to fixture dir when absent.
 - **Source:** Spec-code audit (deep mode). See skill_behavior_regression.impl.md for full context.

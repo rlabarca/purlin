@@ -2,7 +2,7 @@
 
 ### [BUG] M33: Runner doesn't capture stderr (Discovered: 2026-03-23)
 - **Scenario:** features/regression_testing.md:Once mode runs single harness invocation
-- **Observed Behavior:** No `stderr_excerpt` was included in the result when claude is unavailable or produces errors. The `execute_harness()` function in `dev/regression_runner.sh` did not redirect stderr to a capture file, so stderr output was lost from the result JSON.
+- **Observed Behavior:** No `stderr_excerpt` was included in the result when claude is unavailable or produces errors. The `execute_harness()` function in `scripts/test_support/regression_runner.sh` did not redirect stderr to a capture file, so stderr output was lost from the result JSON.
 - **Expected Behavior:** The runner should capture stderr output and include a `stderr_excerpt` field in the result object, per spec Section 2.1 ("record exit_code and include the stderr excerpt in regression_result.json").
 - **Action Required:** Engineer
 - **Status:** RESOLVED

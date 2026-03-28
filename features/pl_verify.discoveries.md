@@ -1,7 +1,7 @@
 # User Testing Discoveries: PL Verify
 
 ### [BUG] Hardcoded tools/test_support/harness_runner.py paths (Discovered: 2026-03-23)
-- **Observed Behavior:** Hardcoded tools/test_support/harness_runner.py paths at pl-verify.md lines 206-207.
+- **Observed Behavior:** Hardcoded scripts/test_support/harness_runner.py paths at pl-verify.md lines 206-207.
 - **Expected Behavior:** Should use ${TOOLS_ROOT}/test_support/harness_runner.py.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
@@ -41,8 +41,8 @@
 
 ### [BUG] QA agent commits regression artifacts but skips status tag commits in Step 5a (Discovered: 2026-03-24)
 - **Scenario:** Phase A Checkpoint — Step 5a
-- **Observed Behavior:** QA agent runs 5 AUTO web tests (all PASS), commits regression artifacts and scenario JSON files, then moves to the manual checklist. It does NOT commit `[Complete] [Verified]` status tags and does NOT run `scan.sh`. Features remain AUTO in scan output because lifecycle is tracked via status commit messages, not file changes.
-- **Expected Behavior:** Step 5a in the skill file must enforce the full sequence: (1) commit artifacts, (2) commit one `--allow-empty` status tag per feature, (3) run `scan.sh` as a HARD GATE before Phase B, (4) verify features cleared from AUTO/TODO in scan output. Add the "CRITICAL: Committing regression artifacts is NOT finalization" callout from PURLIN_BASE. The scan update is a hard gate — do NOT present the manual checklist until it completes.
+- **Observed Behavior:** QA agent runs 5 AUTO web tests (all PASS), commits regression artifacts and scenario JSON files, then moves to the manual checklist. It does NOT commit `[Complete] [Verified]` status tags and does NOT run the `purlin_scan` MCP tool. Features remain AUTO in scan output because lifecycle is tracked via status commit messages, not file changes.
+- **Expected Behavior:** Step 5a in the skill file must enforce the full sequence: (1) commit artifacts, (2) commit one `--allow-empty` status tag per feature, (3) run the `purlin_scan` MCP tool as a HARD GATE before Phase B, (4) verify features cleared from AUTO/TODO in scan output. Add the "CRITICAL: Committing regression artifacts is NOT finalization" callout from PURLIN_BASE. The scan update is a hard gate — do NOT present the manual checklist until it completes.
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** Restructured Step 5a: reordered to artifacts-first then status tags, added CRITICAL callout about artifacts not being finalization, added --allow-empty with ONE COMMIT PER FEATURE mandate, made CDD update a HARD GATE, added verify-finalization step checking AUTO/TODO clearing.

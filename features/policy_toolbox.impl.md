@@ -5,9 +5,9 @@
 | Spec says | Implementation does | Tag | PM status |
 |-----------|-------------------|-----|-----------|
 
-**[IMPL]** Tool ID namespacing: reserved prefix check (purlin., community.) in manage.py and resolve.py. Purlin tool immutability: no write functions for purlin_tools.json. Shadowing behavior: project tool shadows purlin tool (documented in resolve.py). Forward compatibility: unrecognized fields preserved with warning. Old-format backward compatibility via schema version detection.
+**[IMPL]** Tool ID namespacing: reserved prefix check (purlin., community.) in manage.py and resolve.py. Purlin tool immutability: no write functions for purlin_tools.json. Shadowing behavior: project tool shadows purlin tool (documented in scripts/toolbox/resolve.py). Forward compatibility: unrecognized fields preserved with warning. Old-format backward compatibility via schema version detection.
 
-**[IMPL]** Community tool integrity tracking now implemented in tools/toolbox/community.py: `cmd_add()` records source_repo, version, author, last_pull_sha at registration time. `cmd_pull()` checks upstream SHA, detects local edits, preserves divergence info. `cmd_push()` updates version and last_pull_sha in registry.
+**[IMPL]** Community tool integrity tracking now implemented in scripts/toolbox/community.py: `cmd_add()` records source_repo, version, author, last_pull_sha at registration time. `cmd_pull()` checks upstream SHA, detects local edits, preserves divergence info. `cmd_push()` updates version and last_pull_sha in registry.
 
 **[IMPL]** Destructive operation safety: manage.py delete supports `--dry-run`. community.py add/pull/push all support `--dry-run`. The skill file (pl-toolbox.md) instructs the agent to show a preview and confirm before executing destructive operations.
 

@@ -26,7 +26,7 @@ before completion are correctly ignored.
 
 The scan now includes a `smoke_candidates` field that surfaces completed features
 with 3+ dependents that aren't already smoke-classified. Implementation reuses
-`suggest_smoke_features()` from `tools/smoke/smoke.py` and applies two additional
+`suggest_smoke_features()` from `scripts/smoke/smoke.py` and applies two additional
 filters: lifecycle must be COMPLETE, and dependents must be >= 3. This is the
 scan-level signal described in `features/pl_smoke.md` Section 2.7.
 

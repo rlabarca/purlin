@@ -36,4 +36,4 @@ The `_cli_role()` function outputs two additional shell variables: `AGENT_MODEL_
 
 ## Migration from llm_providers Schema (COMPLETED)
 
-All migration work is done: `llm_providers` wrapper removed, provider probe scripts deleted (`tools/providers/`, `tools/detect-providers.sh`), config files updated to flat `models` array, `provider` fields removed from agent entries, and test directory renamed to `tests/models_configuration/`.
+All migration work is done: `llm_providers` wrapper removed, provider probe scripts deleted (legacy `tools/providers/`, `tools/detect-providers.sh` -- now removed), config files updated to flat `models` array, `provider` fields removed from agent entries, and test directory renamed to `tests/models_configuration/`.
