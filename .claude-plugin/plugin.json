@@ -2,14 +2,20 @@
   "name": "purlin",
   "version": "0.9.0",
   "description": "Purlin — a unified workflow agent with three operating modes (Engineer, PM, QA) for spec-driven development. Enforces continuous design-driven development: specs before code, mode-gated writes, deviation tracking, structured QA, and phased delivery.",
-  "author": "rlabarca",
+  "author": {
+    "name": "rlabarca"
+  },
   "userConfig": {
     "figma_access_token": {
+      "title": "Figma Access Token",
       "description": "Figma personal access token for design system integration (optional)",
+      "type": "string",
       "required": false
     },
     "default_model": {
+      "title": "Default Model",
       "description": "Default Claude model for Purlin sessions (e.g., claude-opus-4-6[1m])",
+      "type": "string",
       "required": false
     }
   }

@@ -58,3 +58,7 @@
 - [IMPL] Updated dev/setup_behavior_fixtures.sh and dev/setup_fixture_repo.sh to copy from `references/` instead of `instructions/references/`.
 - [IMPL] Updated tests/qa/test_pl_help_regression.sh to reference `references/purlin_commands.md`.
 - [IMPL] Updated docs/index.md cross-reference to `references/testing_lifecycle.md`.
+- [BUG] MCP server `handle_purlin_scan` passed `skip_fields` kwarg to `run_scan()` which only accepts `only`. Fixed to apply skip_fields as post-processing.
+- [BUG] `config_engine.py` `set_mode`/`get_mode` were in-memory only — mode guard hook runs in a separate process and always saw `None`. Fixed: mode now persists to `.purlin/runtime/current_mode`.
+- [IMPL] Fixed YAML frontmatter in `skills/server/SKILL.md` and `skills/web-test/SKILL.md` — unquoted colons caused parse failures.
+- [IMPL] Fixed `plugin.json` schema: `author` must be an object, `userConfig` entries need `type` and `title`.

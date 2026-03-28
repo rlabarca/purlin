@@ -1,6 +1,6 @@
 ---
 name: web-test
-description: This skill activates Engineer mode. Exception: when invoked from QA mode, runs in verify-only cross-mode (can execute...
+description: "This skill activates Engineer mode. Exception: when invoked from QA mode, runs in verify-only cross-mode (can execute..."
 ---
 
 **Purlin mode: Engineer (QA cross-mode: verify-only)**

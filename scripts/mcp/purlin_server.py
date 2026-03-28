@@ -212,8 +212,8 @@ def handle_purlin_scan(params):
     tombstones = params.get("tombstones", False)
     skip_fields = params.get("skip_fields")
 
-    only_list = [s.strip() for s in only.split(",")] if only else None
-    skip_list = [s.strip() for s in skip_fields.split(",")] if skip_fields else None
+    only_set = set(s.strip() for s in only.split(",")) if only else None
+    skip_set = set(s.strip() for s in skip_fields.split(",")) if skip_fields else None
 
     if cached:
         result = _get_cached_scan()
@@ -221,15 +221,21 @@ def handle_purlin_scan(params):
             return result
 
     engine = _get_scan_engine()
-    result = engine.run_scan(only=only_list, skip_fields=skip_list)
+    result = engine.run_scan(only=only_set)
 
     # Cache full scans
-    if only_list is None and skip_list is None:
+    if only_set is None and skip_set is None:
         _set_scan_cache(result)
 
     # Filter tombstones from output unless requested
     if not tombstones and "features" in result:
         result["features"] = [f for f in result["features"] if not f.get("tombstone")]
+
+    # Strip per-feature fields if requested
+    if skip_set and "features" in result:
+        for feat in result["features"]:
+            for field in skip_set:
+                feat.pop(field, None)
 
     return result
 

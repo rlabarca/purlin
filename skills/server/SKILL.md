@@ -1,6 +1,6 @@
 ---
 name: server
-description: This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop...
+description: "This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop..."
 ---
 
 **Purlin mode: Engineer (QA cross-mode: run-only)**

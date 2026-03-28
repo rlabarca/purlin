@@ -395,19 +395,48 @@ def main():
 # File classification for mode guard (plugin model)
 # ---------------------------------------------------------------------------
 
-# Mode state (in-memory, set by MCP server)
+# Mode state — persisted to .purlin/runtime/current_mode so hook scripts
+# (which run in separate processes) can read it.
 _current_mode = None
+
+
+def _mode_file_path():
+    """Return path to the mode state file."""
+    project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
+    return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
 
 
 def get_mode():
     """Return current operating mode or None."""
-    return _current_mode
+    global _current_mode
+    if _current_mode is not None:
+        return _current_mode
+    # Read from persisted state
+    try:
+        path = _mode_file_path()
+        if os.path.isfile(path):
+            with open(path, 'r') as f:
+                mode = f.read().strip()
+            if mode in ('engineer', 'pm', 'qa'):
+                _current_mode = mode
+                return mode
+    except (IOError, OSError):
+        pass
+    return None
 
 
 def set_mode(mode):
     """Set current operating mode (engineer, pm, qa, or None)."""
     global _current_mode
     _current_mode = mode
+    # Persist to file for cross-process access (hooks)
+    try:
+        path = _mode_file_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(mode or '')
+    except (IOError, OSError):
+        pass
 
 
 def classify_file(filepath):
