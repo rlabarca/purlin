@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
 from tools.bootstrap import detect_project_root
+from tools.cdd.invariant import is_invariant_node
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
@@ -73,8 +74,8 @@ def parse_features(features_dir):
             "prerequisites": [],
         }
 
-        # Detect invariant by i_ prefix.
-        is_invariant = filename.startswith("i_")
+        # Detect invariant using validated prefix check.
+        is_invariant = is_invariant_node(filename)
         if is_invariant:
             feature_data["invariant"] = True
 

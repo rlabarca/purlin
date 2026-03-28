@@ -70,6 +70,14 @@
 
 [IMPL] Updated `purlin-config-sample/PURLIN_OVERRIDES.md` — added invariant-aware placeholder comments under Engineer, PM, and QA mode sections guiding consumer projects on what invariant-specific notes to add (submodule safety, external source context, sync verification).
 
+## Post-Audit Fixes
+
+[IMPL] Fixed `tools/smoke/smoke.py:287` — anchor detection tuple was missing `design_` and `prodbrief_` prefixes for smoke tier promotion. Added both to match the full anchor prefix set.
+
+[IMPL] Fixed `tools/cdd/graph.py:77` — replaced loose `filename.startswith("i_")` with `is_invariant_node(filename)` imported from `invariant.py`. Prevents false invariant classification for files like `i_unknown_foo.md` that have `i_` prefix but no valid anchor type.
+
+[IMPL] Fixed `instructions/references/invariant_model.md:83` — corrected stale reference to `invariant_constraints.json` (which was never implemented). Now correctly states invariant scan state is stored within `.purlin/cache/scan.json`.
+
 ## Cross-Cutting: Spec & Plan Alignment Audit (End Gate)
 
 [IMPL] Updated `.claude/commands/pl-build.md` Step 4 — added "Pre-check -- Spec & Plan Alignment Audit" gate between Web Test Gate and tag determination. Two-part check: (1) Spec audit re-reads the feature spec and walks each requirement and scenario, verifying implementation coverage and logging unimplemented requirements as `[DISCOVERY]`, missing scenario coverage as blocking until addressed or `[DEVIATION]`-tagged, and undocumented deviations as requiring companion file entries. (2) Plan audit (when a design plan was used) re-reads the plan section and verifies each deliverable exists, logs skipped/partial items as `[DISCOVERY]`, and notes out-of-scope work as `[CLARIFICATION]`. Gate is non-blocking for clean results but blocks on unlogged gaps — requires zero undocumented deviations, not zero deviations.

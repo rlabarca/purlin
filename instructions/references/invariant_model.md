@@ -78,9 +78,9 @@ Annotations extracted from Figma are **advisory, not binding**. They are stored 
 | Spacing / layout | Moderate — warned, not blocked |
 | Annotations | Advisory — informs spec only |
 
-## Constraint Cache
+## Scan State
 
-Parsed invariant constraint data is cached at `.purlin/cache/invariant_constraints.json` (gitignored). Invalidated by SHA-256 comparison — since invariant files only change via explicit sync, cache hit rate approaches 100%.
+Invariant tamper detection hashes and validation results are stored within `.purlin/cache/scan.json` alongside other scan data. Invalidated by SHA-256 comparison — since invariant files only change via explicit sync, cache hit rate approaches 100%.
 
 ## Format Reference
 
