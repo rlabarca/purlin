@@ -30,7 +30,7 @@ A shared Python module providing canonical implementations of project root detec
 ### 2.2 Config Loading
 
 - The module MUST export a `load_config(project_root)` function.
-- The function MUST delegate to `tools/config/resolve_config.py` for the actual resolution logic (layered config: `config.local.json` over `config.json`).
+- The function MUST delegate to `scripts/mcp/config_engine.py` for the actual resolution logic (layered config: `config.local.json` over `config.json`).
 - If the import fails (e.g., broken Python path), the function MUST return a default empty dict rather than raising.
 
 ### 2.3 Atomic File Writing
@@ -51,7 +51,7 @@ A shared Python module providing canonical implementations of project root detec
 
 ### 2.5 Submodule Compatibility
 
-- The module MUST live at `tools/bootstrap.py` (inside the `tools/` directory) to preserve submodule compatibility.
+- The module MUST live at `scripts/mcp/bootstrap.py` to preserve layout compatibility.
 - No generated artifacts may be written inside `tools/`.
 - The module MUST NOT introduce any new external dependencies.
 

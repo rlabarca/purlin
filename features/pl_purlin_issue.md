@@ -62,7 +62,7 @@ The report is bounded by clear copy dividers. Everything between the dividers is
 
 ### 2.5 Command File
 
-The skill definition lives at `.claude/commands/pl-purlin-issue.md`. The first line declares `**Purlin command: shared (all roles)**`.
+The skill definition lives at `skills/purlin-issue/SKILL.md`. The first line declares `**Purlin command: shared (all roles)**`.
 
 ---
 

@@ -14,7 +14,10 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
 
 ## 2. Requirements
 
-### 2.1 Shared Python Resolution Helper (`tools/resolve_python.sh`)
+### 2.1 Shared Python Resolution Helper (`tools/resolve_python.sh`) [SUPERSEDED]
+
+> **Note:** The `tools/resolve_python.sh` helper has been superseded by the MCP server model, which handles Python resolution internally. This section is retained for historical reference.
+
 *   **File Location:** `tools/resolve_python.sh` at the submodule/framework root, alongside `init.sh`.
 *   **Sourceable Design:** The script MUST be designed to be sourced (`. resolve_python.sh` or `source resolve_python.sh`), not executed directly. It MUST NOT contain `set -e`, `set -u`, `exit`, or any construct that would terminate the sourcing script.
 *   **Output Variable:** After sourcing, `$PYTHON_EXE` MUST be set to the resolved Python interpreter path.

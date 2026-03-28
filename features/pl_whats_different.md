@@ -9,7 +9,7 @@
 
 The `/pl-whats-different` agent command generates a plain-English summary of what's different between local main and the remote collab branch. It is a standalone command usable by any role from the main checkout. When invoked with an active Purlin mode (PM, Engineer, or QA), it produces a **role-specific briefing** that answers what the reader specifically needs to care about, followed by the standard file-level digest.
 
-This spec owns the full pipeline: the agent command interface, the extraction tool (`tools/collab/extract_whats_different.py`), the generation script (`tools/collab/generate_whats_different.sh`), and the digest output format.
+This spec owns the full pipeline: the agent command interface, the extraction tool (`scripts/collab/extract_whats_different.py`), the generation script (`scripts/collab/generate_whats_different.sh`), and the digest output format.
 
 ---
 
@@ -35,7 +35,7 @@ This spec owns the full pipeline: the agent command interface, the extraction to
 
 ### 2.4 Generation
 
-- The command executes `tools/collab/generate_whats_different.sh <branch>` with an optional `--role <mode>` parameter.
+- The command executes `scripts/collab/generate_whats_different.sh <branch>` with an optional `--role <mode>` parameter.
 - When the agent has an active Purlin mode (PM, Engineer, or QA), it passes `--role <mode>` to produce a role-specific briefing prepended to the standard digest.
 - When no mode is active, it runs without `--role` (standard digest only).
 - The script runs the extraction tool and invokes the LLM to produce the digest.
