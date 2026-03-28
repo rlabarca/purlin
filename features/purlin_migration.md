@@ -15,7 +15,7 @@ All spec modifications during migration use the `[Migration]` exemption tag to p
 
 | `_migration_version` | Upgrade | Source → Target | What changes |
 |---|---|---|---|
-| 1 | Unified Agent Model | v0.8.x → v0.9.x | 4-role config → single `agents.purlin`; 5 override files → 1; role renames in specs; companion restructuring; old launchers removed |
+| 1 | Unified Agent Model | v0.8.x → v0.9.x | 4-role config → single `agents.purlin`; 5 override files → 1; role renames in specs; companion restructuring; all launchers removed (replaced by plugin model) |
 | _(future)_ | | | |
 
 ---
@@ -101,9 +101,8 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 
 #### 2.2.6 Launcher Cleanup
 
-- Generate `pl-run.sh` at project root (or trigger init.sh refresh).
-- Delete old launchers: `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
-- After migration, `pl-run.sh` is the only launcher.
+- Delete all legacy launcher scripts: `pl-run.sh`, `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
+- After migration, no launcher scripts remain. Sessions are started via `claude` with the plugin auto-activating. The `purlin:start` skill handles session entry.
 
 ### 2.3 CLI Flags
 
@@ -279,7 +278,8 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
     And PURLIN_OVERRIDES.md is created
     And BUILDER_OVERRIDES.md and ARCHITECT_OVERRIDES.md are deleted
     And pl-run-architect.sh and pl-run-builder.sh are deleted
-    And pl-run.sh is the only launcher at project root
+    And pl-run.sh is also deleted (all launchers are retired)
+    And no launcher scripts remain at the project root
 
 #### Scenario: End-to-end migration preserves feature completeness @auto
 
@@ -292,7 +292,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 ## Regression Guidance
 - Verify [Migration] tag is recognized by scan.py exemption logic
 - Verify migration does not modify spec behavioral content (only role names)
-- Verify old launchers are deleted after migration (only pl-run.sh remains)
+- Verify all launchers are deleted after migration (no launcher scripts remain)
 - Verify old override files are deleted after consolidation
 - Verify old config entries are removed (not just deprecated)
 - Verify config.local.json is handled (not just config.json)
