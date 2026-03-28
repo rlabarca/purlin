@@ -1,5 +1,0 @@
-# Implementation Notes: Engineer Agent Launcher
-
-*   **Permission Bypass:** The Engineer launcher uses `--dangerouslySkipPermissions` (or equivalent `bypass_permissions` config) to enable autonomous code execution without per-tool approval prompts. This is intentional -- the Engineer needs unrestricted tool access for implementation work. The spec's original "no --allowedTools" phrasing was imprecise; the intent is that the Engineer has full tool access, not that it uses the default restricted set.
-*   **QA Mode:** When `qa_mode: true` is set in the resolved config, the launcher passes the QA mode flag. The Engineer then operates in a verification-focused mode per `builder_qa_mode.md`.
-*   **Test Harness:** `tools/test_per_role_launchers.sh` (shared across all four launcher features).
