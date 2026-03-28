@@ -39,7 +39,7 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 
 ### 2.2 Identity on Agent Start
 
-- All four root launchers (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) and all generated launchers (via `init.sh`) set both title and badge to their display name on startup.
+- The `purlin:start` skill and `purlin:mode` skill set both title and badge to the mode display name on startup and mode switch, using `identity.sh`.
 - The helper script is sourced from `$CORE_DIR/tools/terminal/identity.sh`.
 
 ### 2.3 Identity Cleanup
@@ -60,7 +60,7 @@ The badge MUST always include the current branch name (or worktree label) in par
 
 The branch is detected via `git rev-parse --abbrev-ref HEAD`. The worktree label is read from `.purlin_worktree_label` if present.
 
-This rule applies everywhere the badge is set: launcher startup, `/pl-resume` Step 6, `/pl-mode` switches, and Engineer phase transitions.
+This rule applies everywhere the badge is set: `purlin:start` initialization, `purlin:resume` Step 6, `purlin:mode` switches, and Engineer phase transitions.
 
 ### 2.5 Engineer Phase Transitions (Continuous Mode)
 
@@ -122,11 +122,11 @@ A single function `update_session_identity <mode_display> [project]` encapsulate
 2. Format the badge: `<mode_display> (<context>)` — or bare `<mode_display>` if no context is available.
 3. Format the title: `<project> - <badge>` when project is given, or bare `<badge>`.
 4. Dispatch to all detected environments: `set_term_title`, `set_iterm_badge`, `set_warp_tab_name`.
-5. Store the computed values in shell variables `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., the launcher uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for `--name`/`--remote-control`). These variables are set by every call to `update_session_identity` and persist in the calling shell's environment.
+5. Store the computed values in shell variables `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., `purlin:start` uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for the session name). These variables are set by every call to `update_session_identity` and persist in the calling shell's environment.
 
-This function replaces the scattered inline badge-computation + dispatch logic in `pl-run.sh`, `PURLIN_BASE.md` section 4.1.1, `/pl-mode`, `/pl-resume` Step 6, and `/pl-merge` step 7.
+This function replaces the scattered inline badge-computation + dispatch logic in `purlin:start`, `PURLIN_BASE.md` section 4.1.1, `purlin:mode`, `purlin:resume` Step 6, and `/pl-merge` step 7.
 
-**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., `pl-run-builder.sh` phase transitions like `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
+**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., Engineer phase transitions like `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
 
 ---
 
@@ -284,7 +284,7 @@ This function replaces the scattered inline badge-computation + dispatch logic i
 
     Given iTerm2 is the active terminal
     And the current branch is "main"
-    When the user runs ./pl-run.sh and the agent session starts
+    When the user starts a Purlin session via purlin:start
     Then the terminal tab title shows "Purlin (main)"
     And the iTerm2 badge overlay shows "Purlin (main)"
     When the agent session exits normally
@@ -294,7 +294,7 @@ This function replaces the scattered inline badge-computation + dispatch logic i
 #### @manual Scenario: Title and badge clear on Ctrl+C
 
     Given iTerm2 is the active terminal
-    And an agent session is running via ./pl-run.sh
+    And an agent session is running via purlin:start
     When the user presses Ctrl+C
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -304,7 +304,7 @@ This function replaces the scattered inline badge-computation + dispatch logic i
     Given iTerm2 is the active terminal
     And the current branch is "main"
     And a delivery plan exists with at least 3 phases
-    When the user runs ./pl-run.sh --continuous
+    When the user runs purlin:start --build with continuous mode enabled
     Then the title and badge show "Engineer (main)" at startup
     And the title and badge show "Engineer: Bootstrap (main)" during the bootstrap phase
     And the title and badge update to "Engineer: Phase N/M (main)" during sequential phase execution
