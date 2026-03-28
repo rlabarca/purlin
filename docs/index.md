@@ -20,6 +20,8 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 * [Testing Workflow Guide](testing-workflow-guide.md) — The complete journey from idea through spec, implementation, verification, and regression coverage.
 * [Testing Lifecycle Reference](../instructions/references/testing_lifecycle.md) — Who defines, implements, runs, and verifies each test type across PM, Engineer, and QA modes. Includes the auto-fix iteration loop and failure routing.
 * [Spec-Code Sync Guide](spec-code-sync-guide.md) — How specs and code stay in sync through companion files, decision tags, and enforcement gates.
+* [Invariants Guide](invariants-guide.md) — Import external rules (architecture standards, security policies, design systems) and enforce them automatically across all features.
+* [Figma Integration Guide](figma-guide.md) — Turn Figma designs into verified implementations with Token Maps, design briefs, and three-source verification.
 * [Worktree Guide](worktree-guide.md) — Running multiple agents in parallel with isolated worktrees, merging work back, and recovering from crashes.
 * [Parallel Execution Guide](parallel-execution-guide.md) — How the agent builds independent features in parallel using git worktrees.
 * [Agentic Toolbox Guide](toolbox-guide.md) — How to use, create, and share project tools.
@@ -65,6 +67,7 @@ Skills are slash commands that trigger specific workflows. Run `/pl-help` inside
 | `/pl-anchor <name>` | Creates or updates a design or policy anchor node. |
 | `/pl-design-ingest <source>` | Ingests a Figma URL or live web page into a visual specification. |
 | `/pl-design-audit` | Audits design artifacts for consistency with specs and anchors. |
+| `/pl-invariant <cmd>` | Imports, syncs, and manages externally-sourced invariant constraints. |
 
 ### Engineer Mode
 

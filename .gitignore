@@ -11,16 +11,19 @@ __pycache__/
 env/
 venv/
 
-# Purlin Runtime & Cache (generated artifacts outside tools/)
+# Purlin Runtime & Cache
 .purlin/cache/
 .purlin/runtime/
 .purlin/config.local.json
 tests/.purlin/
 
-# Project-local toolbox (not distributed via submodule)
+# Project-local toolbox
 .purlin/toolbox/project_tools.json
 .purlin/toolbox/community_tools.json
 .purlin/toolbox/community/
+
+# Plugin data (persists across updates)
+.claude-plugin-data/
 
 # Generated digests (per-machine, not committed)
 features/digests/
@@ -49,4 +52,3 @@ tmp/
 dist/
 build/
 .playwright-mcp/
-.mcp.json
