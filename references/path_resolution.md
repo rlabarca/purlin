@@ -13,5 +13,5 @@ All skills that need the project root or tools directory MUST use this protocol.
 Reference this file instead of repeating the protocol:
 
 ```
-> **Path resolution:** See `instructions/references/path_resolution.md`.
+> **Path resolution:** See `references/path_resolution.md`.
 ```

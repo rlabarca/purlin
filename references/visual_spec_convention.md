@@ -59,7 +59,7 @@ When Figma MCP is available during ingestion, the PM also generates a `brief.jso
 *   There is no mandatory storage location -- projects choose what fits their workflow.
 
 ## 9.5 Verification Methods
-Visual checklist items are verified by the QA Agent during the visual verification pass (see `instructions/references/visual_verification_protocol.md`). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.
+Visual checklist items are verified by the QA Agent during the visual verification pass (see `references/visual_verification_protocol.md`). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.
 
 For features with `> Web Test: <url>` metadata, `/pl-web-test` provides fully automated visual verification using Playwright MCP browser control. The agent navigates to the page, takes screenshots, executes interactions, and judges each checklist item via vision analysis -- no manual screenshot provision required.
 

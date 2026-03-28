@@ -76,8 +76,9 @@ create_base_project() {
     done
 
     # Copy reference files needed by startup protocol
-    if [[ -d "$PROJECT_ROOT/instructions/references" ]]; then
-        cp -r "$PROJECT_ROOT/instructions/references/"* "instructions/references/" 2>/dev/null || true
+    if [[ -d "$PROJECT_ROOT/references" ]]; then
+        mkdir -p "references/"
+        cp -r "$PROJECT_ROOT/references/"* "references/" 2>/dev/null || true
     fi
 
     # Copy override templates

@@ -162,7 +162,7 @@ These define user stories, KPIs, and success criteria from product management. T
 
 Any anchor type (`arch_*`, `design_*`, `policy_*`, `ops_*`, `prodbrief_*`) can also exist as an **invariant** — an externally-sourced, immutable version prefixed with `i_` (e.g., `i_policy_gdpr.md`).
 
-Invariants are added via `/pl-invariant add` (git repos) or `/pl-invariant add-figma` (Figma). They cannot be modified locally. See `instructions/references/invariant_model.md` for the full model and `instructions/references/invariant_format.md` for the canonical file format.
+Invariants are added via `/pl-invariant add` (git repos) or `/pl-invariant add-figma` (Figma). They cannot be modified locally. See `references/invariant_model.md` for the full model and `references/invariant_format.md` for the canonical file format.
 
 When authoring specs, PM should:
 - Check for applicable global invariants (auto-apply to all features).

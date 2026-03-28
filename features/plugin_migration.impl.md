@@ -51,3 +51,10 @@
 - [IMPL] Created `output-styles/purlin-status.md`.
 - [IMPL] Updated CLAUDE.md for plugin model (purlin:start, purlin:help).
 - [IMPL] Updated `.gitignore`: un-ignored `.mcp.json`, added `.claude-plugin-data/` pattern.
+
+### Phase 5: Stale Path Cleanup & Integration Testing
+- [IMPL] Fixed stale `instructions/references/` cross-references in 7 reference docs: file_classification.md, knowledge_colocation.md, invariant_model.md, visual_spec_convention.md, path_resolution.md, feature_format.md, spec_authoring_guide.md.
+- [IMPL] Fixed stale `{tools_root}/feature_templates/` in feature_format.md → `scripts/feature_templates/`.
+- [IMPL] Updated dev/setup_behavior_fixtures.sh and dev/setup_fixture_repo.sh to copy from `references/` instead of `instructions/references/`.
+- [IMPL] Updated tests/qa/test_pl_help_regression.sh to reference `references/purlin_commands.md`.
+- [IMPL] Updated docs/index.md cross-reference to `references/testing_lifecycle.md`.

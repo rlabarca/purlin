@@ -84,4 +84,4 @@ Invariant tamper detection hashes and validation results are stored within `.pur
 
 ## Format Reference
 
-See `instructions/references/invariant_format.md` for the canonical file format, templates, and versioning rules.
+See `references/invariant_format.md` for the canonical file format, templates, and versioning rules.

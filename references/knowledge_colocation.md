@@ -22,7 +22,7 @@ Every feature MUST anchor to relevant node(s) via `> Prerequisite:` links.
 
 ### Invariant Anchor Nodes
 
-Any anchor type can also exist as an **invariant** — an externally-sourced, locally-immutable version prefixed with `i_` (e.g., `i_policy_security.md`, `i_design_visual_standards.md`). Invariants originate from external git repos or Figma and cannot be modified locally. See `instructions/references/invariant_model.md` for the full model.
+Any anchor type can also exist as an **invariant** — an externally-sourced, locally-immutable version prefixed with `i_` (e.g., `i_policy_security.md`, `i_design_visual_standards.md`). Invariants originate from external git repos or Figma and cannot be modified locally. See `references/invariant_model.md` for the full model.
 
 ## Cross-Cutting Standards Pattern
 

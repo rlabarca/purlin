@@ -63,7 +63,7 @@ Externally-sourced constraint documents that no local mode can modify.
 - The mode guard blocks ALL write attempts with:
   "This is an externally-sourced invariant. Changes come only from the external source via /pl-invariant sync."
 
-See `instructions/references/invariant_model.md` for the full invariant model.
+See `references/invariant_model.md` for the full invariant model.
 
 ## Quick Reference for Mode Guard
 

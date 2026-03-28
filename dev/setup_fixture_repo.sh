@@ -419,8 +419,9 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
         cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
     fi
 done
-if [[ -d "$PROJECT_ROOT/instructions/references" ]]; then
-    cp -r "$PROJECT_ROOT/instructions/references/"* "instructions/references/" 2>/dev/null || true
+if [[ -d "$PROJECT_ROOT/references" ]]; then
+    mkdir -p "references/"
+    cp -r "$PROJECT_ROOT/references/"* "references/" 2>/dev/null || true
 fi
 
 # architect-main-branch
@@ -449,8 +450,9 @@ for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
         cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
     fi
 done
-if [[ -d "$PROJECT_ROOT/instructions/references" ]]; then
-    cp -r "$PROJECT_ROOT/instructions/references/"* "instructions/references/" 2>/dev/null || true
+if [[ -d "$PROJECT_ROOT/references" ]]; then
+    mkdir -p "references/"
+    cp -r "$PROJECT_ROOT/references/"* "references/" 2>/dev/null || true
 fi
 
 # builder-mid-feature

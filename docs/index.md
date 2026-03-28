@@ -18,7 +18,7 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 ## Workflows
 
 * [Testing Workflow Guide](testing-workflow-guide.md) — The complete journey from idea through spec, implementation, verification, and regression coverage.
-* [Testing Lifecycle Reference](../instructions/references/testing_lifecycle.md) — Who defines, implements, runs, and verifies each test type across PM, Engineer, and QA modes. Includes the auto-fix iteration loop and failure routing.
+* [Testing Lifecycle Reference](../references/testing_lifecycle.md) — Who defines, implements, runs, and verifies each test type across PM, Engineer, and QA modes. Includes the auto-fix iteration loop and failure routing.
 * [Spec-Code Sync Guide](spec-code-sync-guide.md) — How specs and code stay in sync through companion files, decision tags, and enforcement gates.
 * [Invariants Guide](invariants-guide.md) — Import external rules (architecture standards, security policies, design systems) and enforce them automatically across all features.
 * [Figma Integration Guide](figma-guide.md) — Turn Figma designs into verified implementations with Token Maps, design briefs, and three-source verification.

@@ -17,11 +17,11 @@ echo "=== QA Regression: pl_help ==="
 echo ""
 
 # PH1: Command table file exists
-CMD_TABLE="$PURLIN_ROOT/instructions/references/purlin_commands.md"
+CMD_TABLE="$PURLIN_ROOT/references/purlin_commands.md"
 if [ -f "$CMD_TABLE" ]; then
     log_pass "PH1: purlin_commands.md exists"
 else
-    log_fail "PH1: purlin_commands.md not found at instructions/references/"
+    log_fail "PH1: purlin_commands.md not found at references/"
 fi
 
 # PH2: Command table contains all mode sections
