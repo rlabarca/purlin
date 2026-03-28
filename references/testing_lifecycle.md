@@ -14,7 +14,7 @@ For result schemas, harness types, and assertion tiers, see `test_infrastructure
 | QA Scenarios (@auto) | PM (spec `### QA Scenarios`) | QA (regression JSON) | QA (harness runner, auto) | QA (regression.json eval) | `tests/<f>/regression.json` |
 | QA Scenarios (@manual) | PM (spec `### QA Scenarios`) | N/A (human protocol) | QA (presents to user) | User + QA (checklist) | Discovery sidecars |
 | Smoke Regressions | QA (promotes critical-path) | QA (`_smoke.json`) | QA (Phase A Step 2, auto) | QA (halt-on-fail gate) | `tests/<f>/regression.json` |
-| Visual Spec | PM (spec `## Visual Specification`) | Engineer (web test setup) | QA (`/pl-web-test`, auto) | QA (screenshot + Figma) | Screenshots, discoveries |
+| Visual Spec | PM (spec `## Visual Specification`) | Engineer (web test setup) | QA (`purlin:web-test`, auto) | QA (screenshot + Figma) | Screenshots, discoveries |
 | Web Tests | Engineer (spec `> Web Test:`) | Engineer (Playwright) | Engineer (build) + QA (verify) | Both (different phases) | Web test results |
 
 **Key distinction:** PM defines WHAT to test (abstract scenarios in Gherkin). QA decides HOW to test (harness type, assertions, @auto/@manual classification). Engineer writes code that makes tests pass. PM does not need to know harness capabilities; QA does not need to understand implementation details.
@@ -82,7 +82,7 @@ PATHS       |     intent drift    |     from QA          |     from Engineer
 
 **DEFINE (PM):** PM writes QA Scenarios in Gherkin in the feature spec. Scenarios describe observable behavior, not implementation. PM optionally writes Regression Guidance suggesting what to focus on. PM writes Visual Specification with design references for UI features.
 
-**IMPLEMENT (Engineer):** Engineer reads the spec and writes code + unit tests. Unit tests run automatically during build Step 3 and produce `tests.json`. For features with visual specs and `> Web Test:` metadata, Engineer also runs `/pl-web-test` during build. Engineer marks the feature `[Testing]` when implementation is complete.
+**IMPLEMENT (Engineer):** Engineer reads the spec and writes code + unit tests. Unit tests run automatically during build Step 3 and produce `tests.json`. For features with visual specs and `> Web Test:` metadata, Engineer also runs `purlin:web-test` during build. Engineer marks the feature `[Testing]` when implementation is complete.
 
 **PREPARE (QA):** QA classifies PM's scenarios as `@auto` (automatable via harness) or `@manual` (requires human verification). QA authors regression JSON (`tests/qa/scenarios/<feature>.json`) with harness type, assertions, and fixture tags. For smoke-tier features, QA authors `_smoke.json` with a subset of critical scenarios. Step 0c validates all @auto scenarios have regression JSON before tests begin.
 
@@ -160,7 +160,7 @@ Flag for QA fix         ESCALATE to PM
 
 ### Internal Mode Switch
 
-The auto-fix loop uses lightweight internal mode switches (defined in `/pl-verify`):
+The auto-fix loop uses lightweight internal mode switches (defined in `purlin:verify`):
 - Terminal badge stays "QA" throughout — rapid mode flips are invisible to the user.
 - Write-boundary enforcement remains active. Mode guard still checks file classification.
 - Companion file gate runs when leaving Engineer (fixes must be documented).
@@ -229,9 +229,9 @@ Test fails --> Diagnose
 ### Escalation Re-Entry
 
 Tests escalated to PM during the auto-fix loop are not abandoned. The lifecycle continues:
-1. PM receives the discovery via scan results / `/pl-status`.
+1. PM receives the discovery via scan results / `purlin:status`.
 2. PM resolves the spec (updates scenario, clarifies intent, or confirms current behavior is correct).
-3. In a future session, QA re-runs `/pl-verify` — the resolved spec guides new assertions.
+3. In a future session, QA re-runs `purlin:verify` — the resolved spec guides new assertions.
 
 ---
 

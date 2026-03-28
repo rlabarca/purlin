@@ -16,7 +16,7 @@
 | `tests/*/tests.json` | AFT test definitions |
 | `pl-init.sh` | Submodule bootstrap shim |
 | `pl-run-*.sh` | Agent launcher scripts (regenerated on refresh) |
-| `.claude/commands/pl-*.md` | Purlin slash commands |
+| `.claude/commandspurlin:*.md` | Purlin slash commands |
 | `.claude/settings.json` | Claude Code hooks/settings |
 
 ## Gitignored (not tracked)

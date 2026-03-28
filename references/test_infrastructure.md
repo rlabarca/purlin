@@ -76,8 +76,8 @@ All harness types run in-session. `agent_behavior` invokes `claude --print` as a
 |--------|---------|--------|
 | `PASS` | All assertions succeeded | None |
 | `FAIL` | One or more assertions failed | Engineer fixes code; QA re-runs |
-| `NOT_RUN` | Scenario file exists but never executed | Run via `/pl-regression` |
-| `STALE` | Source changed since results were generated | Re-run via `/pl-regression` |
+| `NOT_RUN` | Scenario file exists but never executed | Run via `purlin:regression` |
+| `STALE` | Source changed since results were generated | Re-run via `purlin:regression` |
 
 A feature with STALE or FAIL regression results MUST NOT be marked `[Complete]`.
 
@@ -104,7 +104,7 @@ A feature is a smoke candidate if ALL of:
 - Not already classified as smoke
 - Has `[Complete]` lifecycle status
 
-Additional signals (used by `/pl-smoke suggest`):
+Additional signals (used by `purlin:smoke suggest`):
 - `arch_*` or `policy_*` prefix (foundational constraint)
 - Category: "Install, Update & Scripts" or "Coordination & Lifecycle"
 - Name contains: launcher, init, config, status, scan

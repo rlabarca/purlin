@@ -1,6 +1,6 @@
 # Phased Delivery Protocol
 
-> This file is loaded on-demand by `/pl-delivery-plan`, `/pl-build`, and `/pl-verify`
+> This file is loaded on-demand by `purlin:delivery-plan`, `purlin:build`, and `purlin:verify`
 > commands when a delivery plan exists or phased delivery is being considered.
 
 ## 10.1 Purpose
@@ -89,7 +89,7 @@ Each delivery phase has an internal three-step structure that separates implemen
 
 ### B1 (Build Sub-Phase)
 
-Existing per-feature implementation loop (Steps 0-3 of the Engineer build protocol). Each feature is implemented and locally tested including web tests. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort) for implementation decisions. Web test verification (`/pl-web-test`) uses Figma MCP for three-source comparison when available, regardless of this priority. The Engineer iterates per-feature until `/pl-web-test` passes. Fast iteration.
+Existing per-feature implementation loop (Steps 0-3 of the Engineer build protocol). Each feature is implemented and locally tested including web tests. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort) for implementation decisions. Web test verification (`purlin:web-test`) uses Figma MCP for three-source comparison when available, regardless of this priority. The Engineer iterates per-feature until `purlin:web-test` passes. Fast iteration.
 
 ### B2 (Test Sub-Phase)
 
@@ -98,10 +98,10 @@ After B1 completes for all features in the phase, re-run the full test suite AND
 **B2 Visual Design Verification:** During B2, the Engineer's visual verification priority INVERTS from B1. Implementation is complete -- accuracy matters more than iteration speed. For features with a `## Visual Specification` section:
 
 1. **Reference images** (in `features/design/`): During B1, these are audit references, not Engineer inputs. During B2, they become verification inputs. The Engineer takes a Playwright screenshot and compares it against the reference image. This is fast (local, multimodal) and catches obvious visual drift.
-2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Engineer uses the same three-source triangulated verification that `/pl-web-test` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
+2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Engineer uses the same three-source triangulated verification that `purlin:web-test` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
 3. **Token Map + checklists**: Always verified, both in B1 and B2.
 
-This means `/pl-web-test` is invoked with its full capability during B2 -- including Figma comparison and reference image comparison -- not the lighter-weight version used during B1 Step 3. The speed cost (~5-10 seconds per screen for Figma MCP) is acceptable in a dedicated verification phase.
+This means `purlin:web-test` is invoked with its full capability during B2 -- including Figma comparison and reference image comparison -- not the lighter-weight version used during B1 Step 3. The speed cost (~5-10 seconds per screen for Figma MCP) is acceptable in a dedicated verification phase.
 
 ### B3 (Fix Sub-Phase) -- Analyze-First Protocol
 
@@ -139,7 +139,7 @@ The `--continuous` flag has been removed from the Engineer launcher. Use `auto_s
 
 Every delivery plan MUST be validated before being committed. The Engineer reads `.purlin/cache/dependency_graph.json` and checks that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
 
-**When the Engineer creates a plan** (via `/pl-delivery-plan`): The Engineer reads `dependency_graph.json` to inform phase assignment, then validates the plan after writing it. If cycles are detected, the Engineer fixes the plan before committing.
+**When the Engineer creates a plan** (via `purlin:delivery-plan`): The Engineer reads `dependency_graph.json` to inform phase assignment, then validates the plan after writing it. If cycles are detected, the Engineer fixes the plan before committing.
 
 **Common cycle cause:** A feature placed in Phase N that depends on a feature in Phase M (where M > N). The fix is to move the dependent feature to Phase M or later.
 
@@ -154,7 +154,7 @@ Execution groups combine phasing and parallelization into a single scheduling mo
 - Group 2: Phases 2, 3 (parallel -- no cross-dependencies)
 - Group 3: Phase 4 (depends on Group 2)
 
-For the complete dispatch protocol, see `/pl-build` (Execution Group Dispatch section). For plan creation and validation, see `/pl-delivery-plan`.
+For the complete dispatch protocol, see `purlin:build` (Execution Group Dispatch section). For plan creation and validation, see `purlin:delivery-plan`.
 
 ### Cross-References
 

@@ -1,13 +1,13 @@
 # Invariant Format Reference
 
 > Format-Version: 1.0
-> Referenced by `/pl-invariant validate` and external invariant authors.
+> Referenced by `purlin:invariant validate` and external invariant authors.
 
 This document defines the canonical format for Purlin invariant files. External teams authoring invariants for consumption by Purlin projects MUST conform to this format.
 
 ## Overview
 
-An invariant is an externally-sourced, locally-immutable constraint document. It lives in a project's `features/` directory with an `i_` prefix (e.g., `i_policy_security.md`). The project cannot modify it — changes come only from the external source via `/pl-invariant sync`.
+An invariant is an externally-sourced, locally-immutable constraint document. It lives in a project's `features/` directory with an `i_` prefix (e.g., `i_policy_security.md`). The project cannot modify it — changes come only from the external source via `purlin:invariant sync`.
 
 ## Required Metadata
 

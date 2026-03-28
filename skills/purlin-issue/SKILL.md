@@ -55,7 +55,7 @@ Collect all of the following without user input:
 - Include only the `agents.purlin` section (not the full file)
 
 **Relevant files:**
-- If the failing command is a `/pl-*` skill, note the skill path: `.claude/commands/pl-<name>.md`
+- If the failing command is a `purlin:*` skill, note the skill path: `skills/<name>/SKILL.md`
 - If a feature was being worked on, note the feature spec path
 - If a specific tool/script failed, note its path
 

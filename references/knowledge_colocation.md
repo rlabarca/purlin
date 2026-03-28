@@ -66,4 +66,4 @@ User testing discoveries in `features/<name>.discoveries.md`. QA owns lifecycle.
 
 `OPEN → SPEC_UPDATED → RESOLVED → PRUNED`
 
-Use `/pl-discovery` for the full recording and lifecycle protocol.
+Use `purlin:discovery` for the full recording and lifecycle protocol.

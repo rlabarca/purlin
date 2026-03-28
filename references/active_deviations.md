@@ -1,6 +1,6 @@
 # Active Deviations Protocol
 
-> Referenced by PURLIN_BASE.md spec ownership model and by /pl-build.
+> Referenced by PURLIN_BASE.md spec ownership model and by purlin:build.
 
 ## Companion File Format
 
@@ -35,7 +35,7 @@ When implementing in Engineer mode:
 
 ### Flow 1: INFEASIBLE (blocking)
 
-Engineer hits a wall. Cannot implement as written. Halts work on that requirement, documents why, proposes alternative. Use `/pl-infeasible`.
+Engineer hits a wall. Cannot implement as written. Halts work on that requirement, documents why, proposes alternative. Use `purlin:infeasible`.
 
 ### Flow 2: Inline Deviation (non-blocking)
 
@@ -43,7 +43,7 @@ Engineer makes decisions during build: interprets ambiguity, chooses different a
 
 ### Flow 3: SPEC_PROPOSAL (proactive)
 
-Engineer is not building. They want to suggest a spec change or new feature. Writes a `[SPEC_PROPOSAL]` to companion file. Use `/pl-propose`.
+Engineer is not building. They want to suggest a spec change or new feature. Writes a `[SPEC_PROPOSAL]` to companion file. Use `purlin:propose`.
 
 ## Engineer Decision Tags
 
@@ -66,7 +66,7 @@ Cross-feature discoveries go in the **target feature's** companion file, not the
 
 ## PM Review
 
-PM reviews unacknowledged entries via `/pl-status` (scan.py surfaces them). For each entry, PM either:
+PM reviews unacknowledged entries via `purlin:status` (scan.py surfaces them). For each entry, PM either:
 - Marks `[ACKNOWLEDGED]` and accepts the deviation
 - Marks `[ACKNOWLEDGED]` and rejects (updates spec to override)
 - Requests clarification from Engineer

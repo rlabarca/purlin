@@ -1,6 +1,6 @@
 # Feature File Format Reference
 
-> This file is loaded on-demand by `/pl-spec` and `/pl-anchor` commands.
+> This file is loaded on-demand by `purlin:spec` and `purlin:anchor` commands.
 > It contains heading format rules and parser requirements.
 
 The scan parser enforces specific Markdown heading formats. Wrong heading levels or
@@ -23,10 +23,10 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Label: "Human-Readable Name"` -- display name for status reports.
 - `> Category: "Category Name"` -- grouping for status reports.
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
-- `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `/pl-web-test`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
-- `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-server`. Legacy `> AFT Start:` is accepted for backward compatibility.
+- `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `purlin:web-test`. Features without this annotation use `purlin:verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
+- `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: purlin:server`. Legacy `> AFT Start:` is accepted for backward compatibility.
 - `> Owner: PM` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: PM. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always PM-owned. The Owner tag is sticky -- it persists through edits by any agent. This tag is used to route SPEC_DISPUTEs.
-- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Engineer work queue: a LOW-priority PM action item is generated when a feature is in Engineer TODO state with `Figma Status: Design`.
+- `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `purlin:design-ingest`. Advisory gate for Engineer work queue: a LOW-priority PM action item is generated when a feature is in Engineer TODO state with `Figma Status: Design`.
 - `> Test Fixtures: <url>` -- non-default fixture repo URL (local path or remote URL). Most features use the convention path (`.purlin/runtime/fixture-repo`) and do not need this field. Only add when the feature's fixtures live in a different repo.
 
 ## Category and Label Consistency
@@ -43,7 +43,7 @@ to the best-fitting category.
 
 | Category | Label Pattern | Example |
 |---|---|---|
-| Agent Skills | `/pl-<command> Descriptive Name` | `/pl-help Purlin Help` |
+| Agent Skills | `purlin:<command> Descriptive Name` | `purlin:help Purlin Help` |
 | Tools | `Tool: <Descriptive Name>` | `Tool: Config Layering` |
 | Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Handoff Checklist System` |
 | Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
@@ -55,7 +55,7 @@ to the best-fitting category.
 **Rules:**
 1. **Prefer existing categories.** Only create a new category when no existing one fits.
 2. **Match the label prefix pattern** of the chosen category (e.g., Agent Skills labels always start with the slash command name).
-3. **Slash command features** (`/pl-*`) always belong in "Agent Skills" with the label format `/pl-<command> Descriptive Name`.
+3. **Slash command features** (`purlin:*`) always belong in "Agent Skills" with the label format `purlin:<command> Descriptive Name`.
 4. If unsure between two categories, choose the one with more existing members (higher gravity).
 
 ## Regular Feature Files

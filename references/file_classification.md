@@ -51,7 +51,7 @@ Some files are OWNED by one mode but can be RECORDED TO by others:
 | `features/*.impl.md` | Engineer | Engineer writes; PM reads and acknowledges |
 | `features/*.discoveries.md` | QA (lifecycle) | Any mode can add new OPEN entries |
 | `features/*.md` QA Scenarios section | PM (initial) | QA adds `@auto`/`@manual` tags |
-| `.purlin/PURLIN_OVERRIDES.md` | Engineer | Any mode can edit any section via `/pl-override-edit` |
+| `.purlin/PURLIN_OVERRIDES.md` | Engineer | Any mode can edit any section via `purlin:override-edit` |
 
 ## INVARIANT (External, immutable)
 
@@ -59,9 +59,9 @@ Externally-sourced constraint documents that no local mode can modify.
 
 - Invariant files (`features/i_*.md`)
 - NO mode (Engineer, PM, QA) can write to these files
-- Changes ONLY via `/pl-invariant sync`, `/pl-invariant add`, or `/pl-invariant add-figma`
+- Changes ONLY via `purlin:invariant sync`, `purlin:invariant add`, or `purlin:invariant add-figma`
 - The mode guard blocks ALL write attempts with:
-  "This is an externally-sourced invariant. Changes come only from the external source via /pl-invariant sync."
+  "This is an externally-sourced invariant. Changes come only from the external source via purlin:invariant sync."
 
 See `references/invariant_model.md` for the full invariant model.
 
@@ -74,5 +74,5 @@ Before writing a file, check:
 | Any CODE pattern above | Engineer |
 | Any SPEC pattern above | PM |
 | Any QA-OWNED pattern above | QA |
-| Any INVARIANT pattern above | **BLOCKED** — use `/pl-invariant` |
+| Any INVARIANT pattern above | **BLOCKED** — use `purlin:invariant` |
 | Cross-mode recording exception | Current mode OK |

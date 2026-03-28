@@ -1,10 +1,10 @@
 # Invariant Model Reference
 
-> Referenced by `/pl-invariant`, `/pl-build`, `/pl-spec`, `/pl-spec-code-audit`, and PURLIN_BASE.md mode guard.
+> Referenced by `purlin:invariant`, `purlin:build`, `purlin:spec`, `purlin:spec-code-audit`, and PURLIN_BASE.md mode guard.
 
 ## What Is an Invariant?
 
-An invariant is an externally-sourced, locally-immutable anchor node. It originates from an external git repo or Figma and cannot be modified by the project team. Changes come only from the external source via `/pl-invariant sync`.
+An invariant is an externally-sourced, locally-immutable anchor node. It originates from an external git repo or Figma and cannot be modified by the project team. Changes come only from the external source via `purlin:invariant sync`.
 
 Invariants extend the anchor node system. They participate in the dependency graph, trigger cascade resets, and are validated by the scan — just like regular anchors. The difference: regular anchors are locally authored and editable; invariants are externally governed and immutable.
 
@@ -28,7 +28,7 @@ Tools that need the full constraint set for a feature combine: explicit prerequi
 
 ## Immutability
 
-No agent mode (Engineer, PM, QA) can write to `features/i_*.md` files. The mode guard blocks all write attempts. Changes come only via `/pl-invariant add`, `/pl-invariant add-figma`, or `/pl-invariant sync`.
+No agent mode (Engineer, PM, QA) can write to `features/i_*.md` files. The mode guard blocks all write attempts. Changes come only via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
 
 The scan detects tampered files via SHA-256 comparison against cached hashes.
 
@@ -48,11 +48,11 @@ For global invariants, "all dependents" means every non-anchor feature in the pr
 
 | Where | What | Blocks? |
 |-------|------|---------|
-| `/pl-build` Step 0 | FORBIDDEN pattern grep (combined regex per scope glob) | Yes — build blocked |
-| `/pl-build` Step 0 | Behavioral invariant reminders | No — advisory |
-| `/pl-build` Step 3 | Design token/style comparison (colors strict, spacing warned) | Colors block, spacing warn |
-| `/pl-spec` commit | Global invariant reminder, scoped prerequisite suggestions | No — advisory |
-| `/pl-spec-code-audit` | Dimension 14: full invariant compliance check | No — audit finding |
+| `purlin:build` Step 0 | FORBIDDEN pattern grep (combined regex per scope glob) | Yes — build blocked |
+| `purlin:build` Step 0 | Behavioral invariant reminders | No — advisory |
+| `purlin:build` Step 3 | Design token/style comparison (colors strict, spacing warned) | Colors block, spacing warn |
+| `purlin:spec` commit | Global invariant reminder, scoped prerequisite suggestions | No — advisory |
+| `purlin:spec-code-audit` | Dimension 14: full invariant compliance check | No — audit finding |
 | `purlin.invariant_audit` | Project-wide invariant adherence report | No — report |
 
 ## Design Invariant Tiers
