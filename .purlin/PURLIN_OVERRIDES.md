@@ -37,6 +37,12 @@ This repository contains two distinct categories of scripts, stored in two separ
 
 > Core-specific rules for the Purlin framework repository itself.
 
+## Invariant Submodule Safety
+Invariant system files (`tools/cdd/invariant.py`, invariant-related scan/graph code) are consumer-facing and MUST comply with the Submodule Compatibility Mandate. Specifically:
+*   `invariant.py` uses project-root-relative paths for `features/i_*.md` globbing — verify these resolve correctly when `tools/` is at `<project_root>/<submodule>/tools/`.
+*   The constraint cache (`.purlin/cache/invariant_constraints.json`) is written to `.purlin/cache/`, not inside `tools/`.
+*   Invariant hash state in `scan.json` follows the same cache path conventions as all other scan data.
+
 ## Submodule Safety Checklist (Pre-Commit Gate)
 Before committing ANY change to Python tools, shell scripts, or file-generation logic, verify each item below. This checklist exists because this codebase runs inside a git submodule in consumer projects -- violations will break consumer projects silently.
 
@@ -93,6 +99,9 @@ When updating a feature spec, the `Ownership` section and all scenario invocatio
 > Project-specific PM agent rules. This file is concatenated after `instructions/PM_BASE.md` at runtime.
 > Add project-specific design conventions, Figma workspace references, or domain context here.
 
+## Invariant Advisory During Spec Authoring
+When writing or modifying feature specs in this repository, be aware that the invariant system itself is a Purlin framework feature. Invariant files (`features/i_*.md`) do not exist in this repo as active constraints — they exist as templates and test fixtures. When authoring specs that reference invariant behavior (e.g., `pl_invariant.md`, `pl_build.md` invariant preflight), verify the spec describes the *framework's handling* of invariants, not invariant content itself. Consumer projects are where `i_*` files carry real constraints.
+
 ## Feature Scope Restriction (Core-Specific)
 Feature files (`features/*.md`) in this repository define the framework's own DevOps tooling. They are distinct from consumer project features. When modifying a feature spec, verify it does not introduce consumer-project assumptions.
 
@@ -109,6 +118,14 @@ The base instruction SKILL FILE LIFECYCLE (PURLIN_BASE Section 3.1) establishes 
 # QA Overrides (Purlin)
 
 > Core-specific rules for the Purlin framework repository itself.
+
+## Invariant Sync Verification in Submodule Mode
+When verifying invariant-related features (`pl_invariant`, invariant preflight in `pl_build`, invariant audit), test that `/pl-invariant sync` and `/pl-invariant add` resolve source paths and write `features/i_*.md` files correctly in BOTH standalone and submodule deployments. Specifically verify:
+*   `invariant.py` functions (`validate_invariant`, `compute_content_hash`, `extract_metadata`) operate on files at the consumer project's `features/` directory, not the submodule's.
+*   Hash comparisons in `scan_invariant_integrity()` use the constraint cache from `.purlin/cache/`, not a path inside the submodule.
+*   The invariant audit toolbox tool discovers invariants in the consumer project's `features/` directory.
+
+Report invariant-specific submodule failures as `[BUG]` with the tag "invariant-submodule-compat".
 
 ## Submodule Environment Verification
 When verifying manual scenarios for any tool feature, always test in BOTH deployment modes:
