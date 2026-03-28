@@ -41,10 +41,60 @@ Execution modes do NOT change what gets committed — a mode that skips steps si
 
 ## Scope
 
-If a feature argument was provided, scope verification to `features/<arg>.md` only.
-If no feature argument was provided, run `${TOOLS_ROOT}/cdd/scan.sh --only features` and read the JSON output. Batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
+Run `${TOOLS_ROOT}/cdd/scan.sh --only features` and read the JSON output.
+
+If a feature argument was provided, extract that feature's entry from the scan results.
+  - If the feature is not found in scan output, error: `"Feature <arg> not found in features/."`
+  - Use the scan entry's `lifecycle`, `test_status`, `regression_status`, and other fields as the authoritative source for all subsequent steps.
+
+If no feature argument was provided, batch the union of: (1) ALL features in TESTING lifecycle, and (2) features with QA scenarios that need automated re-verification (visual_verification or regression_run categories). Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
+
+---
+
+## Lifecycle Diagnostic
+
+After the scan, check for lifecycle mismatches that indicate cross-session branch divergence. This diagnostic detects when Engineer committed status tags on a different branch than the one QA is on.
+
+**`--auto-verify` / `auto_start: true` compatibility:** This diagnostic MUST NOT block automation. When it fires in an automated mode (`--auto-verify` flag active OR `auto_start: true`), log the diagnostic message and proceed directly to Session Conclusion (exit cleanly with zero items verified). Do NOT wait for user input. Do NOT enter Phase A/B with stale data. The diagnostic output is still printed so it appears in logs — it just doesn't block.
+
+**Scoped mode (feature argument provided):**
+If the scoped feature's lifecycle from scan is TODO:
+1. Run: `git log --all --oneline --grep='status(' | grep '<feature_stem>'`
+2. If matches found on other branches:
+   ```
+   ━━━ Branch Mismatch ━━━
+   <feature> is [TODO] on current branch (<current_branch>).
+   Status commits found on other branches:
+     <commit_hash> <branch_decoration> <message>
+
+   Merge or switch branches before verifying.
+   ━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+   - **Interactive mode:** STOP — do not proceed with verification.
+   - **`auto_start` / `--auto-verify`:** Log the above, then exit to Session Conclusion.
+3. If no matches anywhere: the feature is genuinely TODO. Print:
+   `"<feature> is in TODO lifecycle — not yet marked for verification."`
+   Same stop/exit behavior per mode.
+
+**Batch mode (no feature argument):**
+If zero TESTING features found in scan:
+1. Run: `git log --all --oneline --grep='Ready for Verification' | head -10`
+2. Filter to commits not reachable from HEAD.
+3. If matches found:
+   ```
+   ━━━ Nothing to Verify ━━━
+   No TESTING features on current branch (<current_branch>).
+   Status commits found on other branches:
+     <list>
+   Merge or switch branches to access these features.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+4. If no matches: `"No features in TESTING lifecycle anywhere. Nothing to verify."`
+5. Same stop/exit behavior per mode as scoped.
+
+**When TESTING features ARE found:** This diagnostic is a no-op. Normal Phase A/B flow proceeds unmodified. The scan invocation is the only change — it provides data, not gates.
 
 ---
 
