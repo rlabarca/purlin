@@ -11,7 +11,7 @@ Usage:
     python3 tools/cdd/scan.py --only features,git        # focused output (skip other sections)
     python3 tools/cdd/scan.py --cached --only features   # filter cached output
 
-Sections for --only: features, discoveries, deviations, companion_debt, plan, deps, git, smoke
+Sections for --only: features, discoveries, deviations, companion_debt, plan, deps, git, smoke, invariants
 """
 
 import json
@@ -25,6 +25,11 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
 from tools.bootstrap import detect_project_root, atomic_write
+from tools.cdd.invariant import (
+    is_invariant_node, is_anchor_node as _invariant_is_anchor,
+    ANCHOR_PREFIXES as _ALL_ANCHOR_PREFIXES, extract_metadata as _extract_inv_metadata,
+    compute_content_hash, validate_invariant,
+)
 from tools.smoke.smoke import suggest_smoke_features
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
@@ -48,6 +53,7 @@ SECTION_MAP = {
     "deps": "dependency_graph",
     "git": "git_state",
     "smoke": "smoke_candidates",
+    "invariants": "invariants",
 }
 
 
@@ -388,12 +394,24 @@ _RE_VISUAL_SPEC = re.compile(r'^##\s+(\d+\.\s*)?visual\s+specification\b', re.IG
 _RE_PURPOSE = re.compile(r'^##\s+(\d+\.\s*)?purpose\b', re.IGNORECASE)
 _RE_INVARIANTS = re.compile(r'^##\s+(\d+\.\s*)?\w*\s*invariants\b', re.IGNORECASE)
 
-_ANCHOR_PREFIXES = ('arch_', 'design_', 'policy_')
+_ANCHOR_PREFIXES = ('arch_', 'design_', 'policy_', 'ops_', 'prodbrief_')
+
+
+def _is_invariant_node(filename):
+    """Check if a filename is an invariant node (i_<anchor_type>_*)."""
+    return is_invariant_node(filename)
 
 
 def _is_anchor_node(filename):
-    """Check if a filename is an anchor node (arch_*, design_*, policy_*)."""
-    return any(filename.startswith(p) for p in _ANCHOR_PREFIXES)
+    """Check if a filename is an anchor node (regular or invariant).
+
+    Handles: arch_*, design_*, policy_*, ops_*, prodbrief_*, and their i_* variants.
+    """
+    return _invariant_is_anchor(filename)
+
+
+_RE_USER_STORIES = re.compile(r'^##\s+(\d+\.\s*)?user\s+stories\b', re.IGNORECASE)
+_RE_SUCCESS_CRITERIA = re.compile(r'^##\s+(\d+\.\s*)?success\s+criteria\b', re.IGNORECASE)
 
 
 def _check_sections(feature_file):
@@ -401,9 +419,13 @@ def _check_sections(feature_file):
 
     For regular features: checks Requirements, Unit Tests, QA Scenarios, Visual Spec.
     For anchor nodes: checks Purpose and Invariants instead of Requirements.
+    For prodbrief nodes: checks Purpose, User Stories, and Success Criteria.
     """
     filename = os.path.basename(feature_file)
     is_anchor = _is_anchor_node(filename)
+    # Detect prodbrief type (with or without i_ prefix).
+    stripped_name = filename[2:] if _is_invariant_node(filename) else filename
+    is_prodbrief = stripped_name.startswith('prodbrief_')
 
     sections = {
         "requirements": False,
@@ -415,7 +437,13 @@ def _check_sections(feature_file):
         with open(feature_file, 'r', encoding='utf-8') as f:
             for line in f:
                 stripped = line.strip()
-                if is_anchor:
+                if is_prodbrief:
+                    # Prodbrief uses Purpose + User Stories + Success Criteria.
+                    if (_RE_PURPOSE.match(stripped)
+                            or _RE_USER_STORIES.match(stripped)
+                            or _RE_SUCCESS_CRITERIA.match(stripped)):
+                        sections["requirements"] = True
+                elif is_anchor:
                     # Anchor nodes use Purpose + Invariants instead of Requirements
                     if _RE_PURPOSE.match(stripped) or _RE_INVARIANTS.match(stripped):
                         sections["requirements"] = True
@@ -490,6 +518,8 @@ def scan_features():
             "spec_modified_after_completion": _check_spec_modified_after_completion(filepath),
             "sections": _check_sections(filepath),
         }
+        if _is_invariant_node(filename):
+            feature_entry["invariant"] = True
         if regression_failed is not None:
             feature_entry["regression_failed"] = regression_failed
             feature_entry["regression_passed"] = regression_passed
@@ -705,8 +735,8 @@ def scan_companion_debt():
             continue
         stem = filename[:-3]
 
-        # Skip anchors — they don't have code.
-        if stem.startswith(("arch_", "design_", "policy_")):
+        # Skip anchors and invariants — they don't have code.
+        if _is_anchor_node(filename):
             continue
 
         # Check if tests directory exists (proxy for "has implementation").
@@ -919,6 +949,86 @@ def scan_worktrees():
 
 
 # ---------------------------------------------------------------------------
+# Invariant integrity
+# ---------------------------------------------------------------------------
+
+# Commit tag that marks legitimate invariant updates via /pl-invariant sync.
+_INVARIANT_SYNC_RE = re.compile(r'invariant-sync\(')
+
+
+def scan_invariant_integrity():
+    """Scan features/i_*.md for integrity and metadata.
+
+    For each invariant file:
+    - Compute SHA-256 of content.
+    - Compare against cached hash from previous scan.
+    - Flag as tampered if hash changed without a recent invariant-sync commit.
+    - Extract key metadata (version, scope, source).
+
+    Returns a list of invariant dicts.
+    """
+    invariants = []
+    if not os.path.isdir(FEATURES_DIR):
+        return invariants
+
+    # Load previous scan hashes for tamper detection.
+    prev_hashes = {}
+    prev_scan = _read_json_safe(CACHE_FILE)
+    if prev_scan and "invariants" in prev_scan:
+        for inv in prev_scan["invariants"]:
+            prev_hashes[inv.get("file", "")] = inv.get("content_hash", "")
+
+    # Check for recent invariant-sync commits (last 20 commits).
+    recent_sync_files = set()
+    log_output = _run_git("log", "-20", "--format=%s")
+    if log_output:
+        for line in log_output.splitlines():
+            if _INVARIANT_SYNC_RE.search(line):
+                # Extract filename from invariant-sync(features/i_xxx.md)
+                m = re.search(r'invariant-(?:sync|add)\((features/[^)]+)\)', line)
+                if m:
+                    recent_sync_files.add(m.group(1))
+
+    for filename in sorted(os.listdir(FEATURES_DIR)):
+        if not filename.endswith(".md"):
+            continue
+        if not is_invariant_node(filename):
+            continue
+        filepath = os.path.join(FEATURES_DIR, filename)
+        if not os.path.isfile(filepath):
+            continue
+
+        relpath = _relpath(filepath)
+        content_hash = compute_content_hash(filepath)
+        metadata = _extract_inv_metadata(filepath)
+
+        # Tamper detection.
+        prev_hash = prev_hashes.get(relpath, "")
+        tampered = False
+        if prev_hash and content_hash and prev_hash != content_hash:
+            # Hash changed — check if there's a recent sync commit for this file.
+            if relpath not in recent_sync_files:
+                tampered = True
+
+        # Validation issues.
+        issues = validate_invariant(filepath)
+
+        invariants.append({
+            "file": relpath,
+            "name": filename[:-3],  # strip .md
+            "version": metadata.get("Version", ""),
+            "scope": metadata.get("Scope", ""),
+            "source": metadata.get("Source", ""),
+            "format_version": metadata.get("Format-Version", ""),
+            "content_hash": content_hash or "",
+            "tampered": tampered,
+            "validation_issues": issues,
+        })
+
+    return invariants
+
+
+# ---------------------------------------------------------------------------
 # Smoke candidate detection
 # ---------------------------------------------------------------------------
 
@@ -997,6 +1107,8 @@ def run_scan(only=None):
         result["dependency_graph"] = scan_dependency_graph()
     if only is None or "smoke" in only:
         result["smoke_candidates"] = _scan_smoke_candidates(features)
+    if only is None or "invariants" in only:
+        result["invariants"] = scan_invariant_integrity()
     if only is None or "git" in only:
         git_state = scan_git_state()
         result["git_state"] = {

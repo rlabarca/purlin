@@ -49,6 +49,8 @@ def parse_features(features_dir):
     label_pattern = re.compile(r'^>\s*Label:\s*"(.*)"')
     category_pattern = re.compile(r'^>\s*Category:\s*"(.*)"')
     prereq_pattern = re.compile(r'^>\s*Prerequisite:\s*(.*)')
+    scope_pattern = re.compile(r'^>\s*Scope:\s*(.*)')
+    invariant_pattern = re.compile(r'^>\s*Invariant:\s*(.*)')
 
     if not os.path.exists(features_dir):
         return features
@@ -68,8 +70,13 @@ def parse_features(features_dir):
             "filename": filename,
             "label": filename,
             "category": "Uncategorized",
-            "prerequisites": []
+            "prerequisites": [],
         }
+
+        # Detect invariant by i_ prefix.
+        is_invariant = filename.startswith("i_")
+        if is_invariant:
+            feature_data["invariant"] = True
 
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
@@ -92,6 +99,16 @@ def parse_features(features_dir):
                             prereq_id = prereq_filename.replace(
                                 ".md", "").replace(".", "_")
                             feature_data["prerequisites"].append(prereq_id)
+
+                scope_match = scope_pattern.match(line)
+                if scope_match:
+                    feature_data["scope"] = scope_match.group(1).strip().strip('"')
+
+                inv_match = invariant_pattern.match(line)
+                if inv_match:
+                    val = inv_match.group(1).strip().strip('"').lower()
+                    if val == "true":
+                        feature_data["invariant"] = True
 
         features[node_id] = feature_data
     return features
@@ -147,15 +164,20 @@ def build_features_json(features, features_dir):
             features[p]["filename"] if p in features else p + ".md"
             for p in data["prerequisites"]
         ])
-        feature_list.append({
+        entry = {
             "file": os.path.relpath(
                 os.path.join(features_dir, data["filename"]),
                 PROJECT_ROOT
             ),
             "label": data["label"],
             "category": data["category"],
-            "prerequisites": prereq_files
-        })
+            "prerequisites": prereq_files,
+        }
+        if data.get("invariant"):
+            entry["invariant"] = True
+        if "scope" in data:
+            entry["scope"] = data["scope"]
+        feature_list.append(entry)
     return feature_list
 
 
@@ -178,12 +200,22 @@ def generate_dependency_graph(features, features_dir=None, output_file=None):
     all_cycles = detect_cycles(features)
     all_orphans = find_orphans(features)
 
+    # Collect global invariants (scope == "global").
+    global_invariants = sorted([
+        os.path.relpath(
+            os.path.join(features_dir, data["filename"]), PROJECT_ROOT
+        )
+        for data in features.values()
+        if data.get("invariant") and data.get("scope") == "global"
+    ])
+
     graph = {
         "generated_at": datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ"),
         "features": build_features_json(features, features_dir),
         "cycles": sorted(all_cycles),
-        "orphans": sorted(all_orphans)
+        "global_invariants": global_invariants,
+        "orphans": sorted(all_orphans),
     }
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)

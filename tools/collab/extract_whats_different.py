@@ -115,9 +115,12 @@ def categorize_file(path):
             return 'companion'
         if path.startswith('features/design/'):
             return 'visual_spec'
-        if basename.startswith('arch_'):
+        # Invariant files (i_* prefix).
+        if basename.startswith('i_'):
             return 'anchor_node'
-        if basename.startswith('design_'):
+        if basename.startswith(('arch_', 'ops_')):
+            return 'anchor_node'
+        if basename.startswith(('design_', 'prodbrief_')):
             return 'anchor_node'
         if basename.startswith('policy_'):
             return 'policy_node'

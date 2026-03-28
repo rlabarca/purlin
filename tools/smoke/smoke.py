@@ -283,8 +283,8 @@ def suggest_smoke_features(project_root, scan_data=None, dep_graph=None):
         if dep_count >= 3:
             reasons.append(f'prerequisite for {dep_count} features')
 
-        # Anchor nodes
-        if feature.startswith('arch_') or feature.startswith('policy_'):
+        # Anchor nodes (including invariants and new types).
+        if feature.startswith(('arch_', 'policy_', 'ops_', 'i_')):
             reasons.append('foundational constraint (anchor node)')
 
         # Core categories

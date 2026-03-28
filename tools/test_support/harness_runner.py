@@ -325,7 +325,7 @@ def scan_fixture_features(fixture_dir):
             continue
         if fname.endswith(('.impl.md', '.discoveries.md')):
             continue
-        if fname.startswith(('arch_', 'design_', 'policy_')):
+        if fname.startswith(('arch_', 'design_', 'policy_', 'ops_', 'prodbrief_', 'i_')):
             continue
 
         fpath = os.path.join(features_dir, fname)
