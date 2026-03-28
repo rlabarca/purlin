@@ -62,3 +62,5 @@
 - [BUG] `config_engine.py` `set_mode`/`get_mode` were in-memory only — mode guard hook runs in a separate process and always saw `None`. Fixed: mode now persists to `.purlin/runtime/current_mode`.
 - [IMPL] Fixed YAML frontmatter in `skills/server/SKILL.md` and `skills/web-test/SKILL.md` — unquoted colons caused parse failures.
 - [IMPL] Fixed `plugin.json` schema: `author` must be an object, `userConfig` entries need `type` and `title`.
+- [IMPL] Integration test results: plugin validate PASS, MCP server 6/6 tools functional, mode guard hook correct across all mode+classification combos, YOLO hook functional, pre-compact checkpoint functional, session hooks functional.
+- [DISCOVERY] 47 stale `instructions/references/` paths remain in 24 feature spec files (PM-owned). Non-blocking — deferred to Phase 6/7 PM mode pass.
