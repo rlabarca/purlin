@@ -6,9 +6,9 @@
 |-----------|-------------------|-----|-----------|
 | (see prose) | [ACKNOWLEDGED]** Missing Local Reference severity mismatch | DISCOVERY | PENDING |
 
-*   **Helper Functions:** `parse_visual_spec()`, `validate_visual_references()`, `check_figma_staleness()`, `detect_design_conflicts()`, `detect_identity_tokens()` — in `tools/test_pl_design_audit.py` (shared test helpers). Production validators formerly in `tools/critic/critic.py` were deleted with the Critic system.
-*   **Skill File:** `.claude/commands/pl-design-audit.md` — shared PM command.
-*   **Test File:** `tools/test_pl_design_audit.py` — 12 test classes covering all unit scenarios.
+*   **Helper Functions:** `parse_visual_spec()`, `validate_visual_references()`, `check_figma_staleness()`, `detect_design_conflicts()`, `detect_identity_tokens()` — in `scripts/test_pl_design_audit.py` (shared test helpers). Production validators formerly in `tools/critic/critic.py` were deleted with the Critic system.
+*   **Skill File:** `skills/design-audit/SKILL.md` — shared PM command.
+*   **Test File:** `scripts/test_pl_design_audit.py` — 12 test classes covering all unit scenarios.
 
 ### Audit Finding -- 2026-03-23
 

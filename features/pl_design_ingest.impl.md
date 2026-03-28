@@ -10,8 +10,8 @@
 
 This is a Claude skill/command feature. The implementation consists of:
 
-1. **Skill definition** (`.claude/commands/pl-design-ingest.md`): PM-only workflow guiding the LLM through artifact ingestion, token mapping, and feature file updates.
-2. **Helper functions** (`tools/test_pl_design_ingest.py`): Self-contained helpers that implement the underlying operations the skill depends on. These are defined inline in the test file per the project's convention for skill features.
+1. **Skill definition** (`skills/design-ingest/SKILL.md`): PM-only workflow guiding the LLM through artifact ingestion, token mapping, and feature file updates.
+2. **Helper functions** (`scripts/test_pl_design_ingest.py`): Self-contained helpers that implement the underlying operations the skill depends on. These are defined inline in the test file per the project's convention for skill features.
 3. **Visual spec validation**: `parse_visual_spec` validates Visual Specification sections including reference type detection (local, figma, live). Originally in the critic module; validation is now inline in the design audit helpers.
 
 ### Key Helper Functions
