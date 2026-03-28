@@ -25,7 +25,7 @@ testing. Fixture states are immutable git tags in a dedicated bare repo. See
 
 Fixtures are needed when a test scenario requires specific, controlled project state that cannot be constructed reliably at test time (specific git history, branch topologies, config combinations, database states). If a scenario's Given steps can be satisfied by simple inline setup (create a file, set an env var), fixtures are overkill.
 
-**Decision tree for QA (during `purlin:regression-author`):**
+**Decision tree for QA (during `purlin:regression`):**
 1. Does the scenario need controlled project state? No -> use inline `setup_commands` in scenario JSON.
 2. Is the state simple (one file, one config value)? Yes -> use inline `setup_commands`.
 3. Is the state complex (git history, multiple branches, full project snapshot)? Yes -> needs a fixture.

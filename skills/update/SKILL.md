@@ -25,7 +25,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 0. **Standalone Mode Guard:**
    - Before any work, check if this is the Purlin repository itself (not a consumer project)
    - Detection: `.purlin/.upstream_sha` does not exist AND `purlin-config-sample/` exists at the project root
-   - If both true, print: `purlin:update-purlin is only for consumer projects using Purlin as a submodule.` and exit
+   - If both true, print: `purlin:update is only for consumer projects using Purlin as a submodule.` and exit
 
 1. **Fetch and Version Check:**
    - Run `git -C <submodule_dir> fetch --tags`
@@ -158,10 +158,10 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 
 **Example usage:**
 ```
-purlin:update-purlin                    # Update to latest release tag
-purlin:update-purlin v0.8.5             # Update to specific version
-purlin:update-purlin --dry-run          # Preview what would change
-purlin:update-purlin v0.8.6 --dry-run   # Preview update to specific version
+purlin:update                    # Update to latest release tag
+purlin:update v0.8.5             # Update to specific version
+purlin:update --dry-run          # Preview what would change
+purlin:update v0.8.6 --dry-run   # Preview update to specific version
 ```
 
 **Implementation:** See `features/pl_update_purlin.md`

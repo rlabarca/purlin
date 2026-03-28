@@ -136,7 +136,7 @@ Before any tests run, ensure all in-scope @auto scenarios have regression JSON. 
 2.  Check smoke-tier features for missing `_smoke.json` files.
 3.  **If `--auto-verify` or `auto_start: true`:**
     *   Use an internal mode switch to Engineer (see Phase A.5 Internal Mode Switch Protocol).
-    *   Author ALL missing regression JSON and smoke JSON upfront using `purlin:regression-author` logic.
+    *   Author ALL missing regression JSON and smoke JSON upfront using `purlin:regression` logic.
     *   Commit authored files: `engineer(<scope>): author regression scenarios`
     *   Switch back to QA.
     *   Output: `"Readiness: authored N regression files, M smoke files."`
@@ -198,7 +198,7 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
 
 1.  **Check for regression JSON:** Look for `tests/qa/scenarios/<feature_name>.json`.
     *   If found: proceed to invocation.
-    *   If missing: invoke `purlin:regression-author` to create the regression JSON for this feature. Then proceed to invocation.
+    *   If missing: invoke `purlin:regression` to create the regression JSON for this feature. Then proceed to invocation.
 
 2.  **Start servers if needed:** If the scenario requires a running server (e.g., feature has `> Web Test:` metadata or regression JSON has `setup_commands`):
     *   Check target port is not in use.
