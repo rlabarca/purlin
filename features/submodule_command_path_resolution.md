@@ -5,6 +5,8 @@
 
 ## 1. Overview
 
+> **Superseded (Sections 2.1-2.3):** The plugin migration (`features/plugin_migration.md`) replaces the submodule distribution model. Skills move from `.claude/commands/pl-*.md` to `skills/*/SKILL.md` with `${CLAUDE_PLUGIN_ROOT}/scripts/` paths, eliminating the `{tools_root}/` resolution mechanism entirely. Sections 2.1-2.3 below describe the legacy submodule path resolution. Sections 2.4-2.5 (web test gates) remain active and migrate into the `purlin:build` and `purlin:web-test` plugin skills.
+
 When Purlin is consumed as a git submodule, command files (`.claude/commands/*.md`) reference `tools/cdd/scan.sh` and similar paths that do not exist at the consumer project root. The correct path is `<tools_root>/cdd/scan.sh` where `tools_root` is read from `.purlin/config.json` (default: `tools`). This feature updates all command files to use `{tools_root}/` notation with an explicit resolution step, matching the pattern already established in `pl-spec-code-audit.md`.
 
 ---

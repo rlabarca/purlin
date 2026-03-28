@@ -5,6 +5,9 @@
 > Prerequisite: features/project_init.md
 
 ## 1. Overview
+
+> **Superseded:** The plugin migration (`features/plugin_migration.md`) replaces per-invocation Python resolution with a persistent MCP server (`scripts/mcp/purlin_server.py`). The MCP server starts once per session and the Python interpreter is resolved at server startup — `resolve_python.sh` and the shell script sourcing pattern are no longer needed. The dependency manifests (`requirements.txt`, `requirements-optional.txt`) remain valid as documentation of the stdlib-only constraint.
+
 Standardizes how all shell scripts in the framework discover and invoke Python. Shell scripts that invoke Python use bare `python3`, which ignores any project-level `.venv/`. If a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), scripts silently use system Python instead.
 
 This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates shell scripts to the unified resolution path.

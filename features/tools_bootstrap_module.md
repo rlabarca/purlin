@@ -6,7 +6,9 @@
 
 ## 1. Overview
 
-A shared Python module (`tools/bootstrap.py`) providing canonical implementations of project root detection, config loading, and atomic file writing. These three patterns are currently duplicated across 24+ files in `tools/`, each containing a near-identical 10-20 line block that can independently drift. The module centralizes the logic so that a fix or enhancement applies everywhere simultaneously.
+> **Migrating:** The plugin migration (`features/plugin_migration.md`) moves this module from `tools/bootstrap.py` to `scripts/mcp/bootstrap.py` and simplifies path detection. The submodule climbing fallback (§2.1 nearer/further disambiguation) is no longer needed — the plugin model provides `${CLAUDE_PLUGIN_ROOT}` directly. The module retains `detect_project_root()`, `load_config()`, and `atomic_write()` APIs but the climbing logic is replaced with a direct `PURLIN_PROJECT_ROOT` or `CLAUDE_PLUGIN_ROOT` lookup.
+
+A shared Python module providing canonical implementations of project root detection, config loading, and atomic file writing. These three patterns are currently duplicated across 24+ files in `tools/`, each containing a near-identical 10-20 line block that can independently drift. The module centralizes the logic so that a fix or enhancement applies everywhere simultaneously.
 
 ---
 

@@ -6,7 +6,13 @@
 
 ## 1. Overview
 
-The scan engine (`tools/cdd/scan.py` + `scan.sh`) is a lightweight status scanner that replaces the heavy Critic codebase (~4100 lines) for the Purlin unified agent. It gathers structured facts about the project — features, discoveries, deviations, delivery plan, git state — and outputs JSON. The agent interprets the data and decides what to do. This inverts the current model where the Critic pre-computes role-specific action items.
+The scan engine is a lightweight status scanner that gathers structured facts about the project — features, discoveries, deviations, delivery plan, git state — and outputs JSON. The agent interprets the data and decides what to do. This inverts the current model where the Critic pre-computes role-specific action items.
+
+**Invocation models (transition):**
+- **Submodule model (legacy):** `tools/cdd/scan.py` + `scan.sh` shell wrapper invoked via Bash tool. Each call spawns a Python process (~100-150ms startup).
+- **Plugin model (target):** `scripts/mcp/scan_engine.py` as an importable module wrapped by the Purlin MCP server (`scripts/mcp/purlin_server.py`). The MCP server runs as a persistent process, exposing `purlin_scan`, `purlin_status`, `purlin_graph` tools. Zero startup overhead per call, in-memory caching. See `features/plugin_migration.md` Section 2.3 for MCP server requirements.
+
+All scanning behavior (what is scanned, output format, caching semantics, `--only`/`--skip-fields` flags) is identical across both invocation models. The refactored module MUST be importable (expose `run_scan()` function) AND retain CLI compatibility for the transition period.
 
 ---
 
@@ -159,7 +165,7 @@ Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl
 - Git calls MUST be batched. The scan uses at most 4 git log calls regardless of feature count (status index, spec mod index, exemption index, git state).
 - Focused scan (`--only`) MUST skip computation for sections not requested — e.g., `--only features` does not run discovery or deviation scanning.
 - `--skip-fields` MUST skip the underlying computation, not just strip output — e.g., `--skip-fields spec_modified` skips the spec modification index and exemption index git log calls entirely.
-- The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback.
+- The script MUST use `PURLIN_PROJECT_ROOT` env var first, then climbing fallback. In plugin model, the MCP server sets this automatically from `${CLAUDE_PLUGIN_ROOT}`.
 
 ### 2.17 Feature Field Filtering (`--skip-fields`)
 
