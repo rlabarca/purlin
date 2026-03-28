@@ -20,9 +20,20 @@ The primary QA skill that executes interactive feature verification. Operates in
 
 ### 2.2 Scope Selection
 
-- If an argument is provided, scope verification to that single feature.
+- Both scoped mode (feature argument) and batch mode (no argument) MUST run `scan.sh --only features` and use the scan results as the authoritative source for lifecycle, test status, regression status, and delivery plan data. The agent MUST NOT determine lifecycle by reading inline file tags alone — lifecycle is git-commit-based (status commits).
+- If an argument is provided, extract that feature's entry from the scan results. If the feature is not found in scan output, error: "Feature <arg> not found in features/."
 - If no argument is provided, batch the union of: (1) ALL TESTING features from `testing_features`, and (2) features from QA action items with `visual_verification` or `regression_run` categories (these are AUTO features that may not be in the TESTING lifecycle but still need automated re-verification). Do NOT limit to `testing_features` alone.
 - Per-feature scoped verification modes: `full` (default), `targeted:Scenario A,Scenario B`, `cosmetic` (skip), `dependency-only`.
+
+### 2.2.0 Lifecycle Diagnostic
+
+When the scan resolves a feature's lifecycle to TODO (scoped mode) or finds zero TESTING features (batch mode), `/pl-verify` MUST check for status commits on other local branches before concluding the feature is not ready. This detects cross-session branch divergence where Engineer committed status tags on a different branch than the one QA is on.
+
+- **Scoped mode:** When the scoped feature's lifecycle from scan is TODO, run `git log --all --oneline --grep='status(' | grep '<feature>'` to check for status commits on other branches. If found, print a branch mismatch diagnostic naming the other branch(es) and do not proceed with verification against stale state.
+- **Batch mode:** When zero TESTING features are found in the scan, run the same cross-branch check for any `Ready for Verification` commits. If found, report them with merge/checkout suggestions.
+- **Genuinely TODO:** If no cross-branch status commits are found, the feature is genuinely TODO. Print that the feature is not yet marked for verification. Do not proceed.
+- **`--auto-verify` / `auto_start: true` compatibility:** The diagnostic MUST NOT block automated workflows. In automated modes, log the diagnostic message and exit to Session Conclusion (zero items verified). Do NOT wait for user input or enter Phase A/B with stale data.
+- **No-op when features found:** When TESTING features ARE found (scoped or batch), this diagnostic does not fire. Normal Phase A/B flow proceeds unmodified.
 
 ### 2.2.1 Execution Modes
 
@@ -329,6 +340,49 @@ This protocol is defined within `/pl-verify` only. It does NOT modify `/pl-mode`
     When the auto-fix loop re-runs after fixing the failure
     Then only the 1 previously-failing scenario is re-executed
     And the 4 passing scenarios are not re-run
+
+#### Scenario: Scoped mode uses scan for lifecycle resolution
+
+    Given feature_a has a [Ready for Verification] status commit on the current branch
+    And the feature file has no inline lifecycle tag
+    When /pl-verify is invoked with argument "feature_a"
+    Then scan.sh --only features is executed
+    And feature_a's lifecycle is resolved as TESTING from the git status commit
+    And Phase A proceeds normally
+
+#### Scenario: Scoped mode detects cross-branch status mismatch
+
+    Given feature_a has a [Ready for Verification] status commit on branch "feature/a"
+    And the current branch is "main" which lacks that commit
+    When /pl-verify is invoked with argument "feature_a"
+    Then a branch mismatch diagnostic is printed naming branch "feature/a"
+    And verification does NOT proceed to Phase A
+
+#### Scenario: Batch mode diagnoses empty TESTING set with cross-branch hints
+
+    Given no features are in TESTING state on the current branch
+    And feature_a has a [Ready for Verification] status commit on branch "feature/a"
+    When /pl-verify is invoked without arguments
+    Then the diagnostic reports status commits found on branch "feature/a"
+    And suggests merging or switching branches
+    And verification does NOT proceed to Phase A
+
+#### Scenario: Auto-verify exits cleanly on branch mismatch
+
+    Given feature_a has a [Ready for Verification] status commit on branch "feature/a"
+    And the current branch is "main" which lacks that commit
+    When /pl-verify is invoked with argument "feature_a" and --auto-verify
+    Then the branch mismatch diagnostic is printed
+    And verification exits to Session Conclusion without entering Phase A
+    And no user prompt is displayed
+
+#### Scenario: Auto-start batch exits cleanly with zero TESTING features
+
+    Given auto_start is true
+    And no features are in TESTING state on the current branch
+    When /pl-verify is invoked without arguments
+    Then the diagnostic is logged
+    And the session exits to Session Conclusion without blocking
 
 #### Scenario: Interactive strategy menu presented when failures exist
 
