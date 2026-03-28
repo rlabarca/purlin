@@ -1,7 +1,0 @@
-{
-  "status": "PASS",
-  "passed": 18,
-  "failed": 0,
-  "total": 18,
-  "test_file": "tools/test_bootstrap.py"
-}
