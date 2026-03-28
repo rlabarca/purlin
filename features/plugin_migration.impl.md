@@ -32,3 +32,22 @@
 - [IMPL] Moved supporting scripts: `terminal/identity.sh`, `toolbox/*.py`, `worktree/manage.sh`, `test_support/*`, `smoke/` to `scripts/`.
 - [IMPL] Updated `.mcp.json` with purlin MCP server entry pointing to `scripts/mcp/purlin_server.py`.
 - [IMPL] Deleted old `tools/` files: scan.py, graph.py, invariant.py, scan.sh, resolve_config.py, bootstrap.py, resolve_python.sh, init.sh, toolbox scripts, terminal/identity.sh, worktree/manage.sh, smoke/smoke.py.
+
+### Phase 3: Hook Implementation
+- [IMPL] Created `hooks/hooks.json` declaring 6 hook events: SessionStart (clear + compact matchers), SessionEnd, PreToolUse (Write|Edit|NotebookEdit matcher), PermissionRequest, PreCompact, FileChanged.
+- [IMPL] Created 6 hook scripts: session-start.sh (context reminder), session-end-merge.sh (worktree merge adapted from old merge-worktrees.sh), mode-guard.sh (mechanical PreToolUse enforcement with MCP + JSON fallback), permission-manager.sh (YOLO auto-approve from config), pre-compact-checkpoint.sh (auto-save checkpoint), companion-debt-tracker.sh (FileChanged tracking).
+- [IMPL] Created `references/file_classification.json` — machine-readable pattern-to-classification rules for mode guard fallback.
+- [IMPL] Deleted `tools/hooks/merge-worktrees.sh` (moved to hooks/scripts/).
+- [IMPL] Cleared old SessionStart/SessionEnd hooks from `.claude/settings.json`.
+
+### Phase 4: References, Templates, Agent Defs, Cleanup
+- [IMPL] Moved 16 reference docs from `instructions/references/` to `references/`.
+- [IMPL] Deleted `instructions/PURLIN_BASE.md` and entire `instructions/` directory.
+- [IMPL] Moved `purlin-config-sample/` to `templates/` (CLAUDE.md.purlin → CLAUDE.md). Deleted `purlin-config-sample/`.
+- [IMPL] Moved `engineer-worker.md` and `verification-runner.md` from `.claude/agents/` to `agents/`. Deleted `.claude/commands/`.
+- [IMPL] Deleted `pl-run.sh` (replaced by purlin:start).
+- [IMPL] Moved `feature_templates/`, `collab/`, `release/`, `mcp/manifest.json` from `tools/` to `scripts/`.
+- [IMPL] Deleted entire `tools/` directory (including all remaining test scripts — these tested old paths and need rewriting for Phase 5).
+- [IMPL] Created `output-styles/purlin-status.md`.
+- [IMPL] Updated CLAUDE.md for plugin model (purlin:start, purlin:help).
+- [IMPL] Updated `.gitignore`: un-ignored `.mcp.json`, added `.claude-plugin-data/` pattern.
