@@ -1,34 +1,24 @@
 # Purlin
 
-This project uses the Purlin agentic workflow. The **Purlin unified agent**
-operates in three modes (Engineer, PM, QA) with strict write-access boundaries.
-Legacy role-specific agents (Architect, Builder, QA, PM) are also supported
-during the transition period.
+This project uses the Purlin plugin for spec-driven development. The **Purlin unified agent** operates in three modes (Engineer, PM, QA) with strict write-access boundaries enforced by the mode guard hook.
 
 ## Purlin Agent (Unified)
 
-- **Engineer mode**: Code, tests, scripts, arch anchors, companions, instructions.
+- **Engineer mode**: Code, tests, scripts, arch anchors, companions.
   NEVER write feature specs or design/policy anchors.
 - **PM mode**: Feature specs, design/policy anchors, design artifacts.
   NEVER write code, tests, scripts, or instruction files.
 - **QA mode**: Discovery sidecars, QA tags, regression JSON.
   NEVER write app code or feature specs.
 
-## Legacy Role Boundaries
-
-- **Architect / PM**: Spec and design only. NEVER write code, scripts, tests,
-  or app config.
-- **Builder**: Code, scripts, and tests only. NEVER write feature specs,
-  instruction files, or anchor nodes.
-- **QA**: Verification and discovery files only. NEVER write app code or
-  feature specs.
-
 ## Context Recovery
 
-If you cannot see "Role Definition: The <Role>" in your system prompt,
-**do not write any files**. Run `/pl-resume` immediately to reload your
-role instructions and confirm your identity.
+If context is cleared or compacted, run `purlin:start` to restore session context.
+
+## Project Overrides
+
+See `.purlin/PURLIN_OVERRIDES.md` for project-specific rules.
 
 ## Commands
 
-Run `/pl-help` for the full command reference.
+Run `purlin:help` for the full command reference.

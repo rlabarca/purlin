@@ -65,3 +65,10 @@
 - [IMPL] Integration test results: plugin validate PASS, MCP server 6/6 tools functional, mode guard hook correct across all mode+classification combos, YOLO hook functional, pre-compact checkpoint functional, session hooks functional.
 - [DISCOVERY] 47 stale `instructions/references/` paths remain in 24 feature spec files (PM-owned). Non-blocking — deferred to Phase 6/7 PM mode pass.
 - [IMPL] Created `dev/setup_upgrade_fixture.sh` — generates a test consumer project with real git submodule, 3 feature specs + 1 companion, old-style config (tools_root, deprecated agents, models array), 9 old skill files, 2 old agent defs, pl-run.sh launcher, settings.json with submodule hooks, .upstream_sha. Output: `/tmp/purlin-upgrade-fixture`.
+
+### Phase 6: Consumer Upgrade Testing
+- [IMPL] Executed upgrade fixture generation and simulated full `purlin:upgrade` flow against `/tmp/purlin-upgrade-fixture`.
+- [BUG] `git rm` of last submodule leaves empty `.gitmodules` (0 bytes). Upgrade skill Step 3 did not account for this. Fixed: added conditional `git rm .gitmodules` when file is empty after submodule removal.
+- [IMPL] Updated `templates/CLAUDE.md` — removed legacy agent references (`Architect`, `Builder`, legacy role boundaries), replaced `/pl-resume` → `purlin:start`, `/pl-help` → `purlin:help`, added plugin-model language and mode guard reference.
+- [IMPL] Updated `skills/upgrade/SKILL.md` Step 7 — now references `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md` instead of hardcoded markdown block.
+- [IMPL] Upgrade verification results: submodule removed (PASS), pl-run.sh deleted (PASS), 9 old commands deleted (PASS), 2 old agents deleted (PASS), .upstream_sha deleted (PASS), settings.json hooks removed + plugin declared + permissions preserved (PASS), config.json tools_root/models/deprecated agents removed + agents.purlin preserved (PASS), CLAUDE.md updated (PASS), .gitignore cleaned (PASS), features/ byte-identical (PASS).

@@ -43,6 +43,10 @@ Verify these project-owned files are NOT in the submodule (they stay untouched):
 git submodule deinit -f <submodule_path>
 git rm -f <submodule_path>
 rm -rf .git/modules/<submodule_path>
+# Remove .gitmodules if empty (last submodule removed)
+if [ -f .gitmodules ] && [ ! -s .gitmodules ]; then
+  git rm -f .gitmodules
+fi
 ```
 
 ### Step 4 -- Clean Stale Artifacts
@@ -85,14 +89,7 @@ Update `.purlin/config.json`:
 
 ### Step 7 -- Update CLAUDE.md
 
-Replace the Purlin submodule block in `CLAUDE.md` with the plugin reference:
-
-```markdown
-# Purlin
-
-This project uses the Purlin plugin for spec-driven development.
-See .purlin/PURLIN_OVERRIDES.md for project-specific rules.
-```
+Replace the Purlin section in `CLAUDE.md` with the contents of `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md`. Preserve any non-Purlin content in the file.
 
 ### Step 8 -- Update .gitignore
 
