@@ -23,14 +23,16 @@ import time
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root, atomic_write
-from tools.cdd.invariant import (
+sys.path.insert(0, SCRIPT_DIR)
+# Add scripts/ parent for smoke module access
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
+from bootstrap import detect_project_root, atomic_write
+from invariant_engine import (
     is_invariant_node, is_anchor_node as _invariant_is_anchor,
     ANCHOR_PREFIXES as _ALL_ANCHOR_PREFIXES, extract_metadata as _extract_inv_metadata,
     compute_content_hash, validate_invariant,
 )
-from tools.smoke.smoke import suggest_smoke_features
+from smoke.smoke import suggest_smoke_features
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 FEATURES_DIR = os.path.join(PROJECT_ROOT, "features")

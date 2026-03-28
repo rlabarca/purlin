@@ -12,9 +12,9 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root
-from tools.cdd.invariant import is_invariant_node
+sys.path.insert(0, SCRIPT_DIR)
+from bootstrap import detect_project_root
+from invariant_engine import is_invariant_node
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 

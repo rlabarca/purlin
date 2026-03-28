@@ -19,28 +19,27 @@ import sys
 
 
 def _find_project_root(start_dir=None):
-    """Detect project root using PURLIN_PROJECT_ROOT or climbing fallback.
+    """Detect project root using PURLIN_PROJECT_ROOT or cwd climbing.
 
-    Uses PURLIN_PROJECT_ROOT env var if set, otherwise climbs from start_dir
-    (defaulting to this script's location) looking for .purlin/ directory.
-    Submodule-aware: tries further path first (3 levels up), then nearer
-    (2 levels up).
+    In the plugin model, PURLIN_PROJECT_ROOT is the primary mechanism.
+    Climbing fallback walks up from cwd looking for .purlin/ marker.
     """
     env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
     if env_root and os.path.isdir(env_root):
         return env_root
 
-    if start_dir is None:
-        start_dir = os.path.dirname(os.path.abspath(__file__))
+    # Climb from cwd looking for .purlin/ marker
+    current = os.path.abspath(start_dir or os.getcwd())
+    while True:
+        if os.path.isdir(os.path.join(current, '.purlin')):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
 
-    # Climbing fallback: try submodule path (further) first, then standalone (nearer)
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(start_dir, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            return candidate
-
-    # Last resort: 2 levels up from script
-    return os.path.abspath(os.path.join(start_dir, '../../'))
+    # Last resort: current working directory
+    return os.path.abspath(os.getcwd())
 
 
 def resolve_config(project_root):
@@ -390,6 +389,54 @@ def main():
         print("Usage: resolve_config.py [--dump | --key <name> | <role> | has_agent_config <role> | set_agent_config <role> <key> <value> | acknowledge_warning <model_id>]",
               file=sys.stderr)
         sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# File classification for mode guard (plugin model)
+# ---------------------------------------------------------------------------
+
+# Mode state (in-memory, set by MCP server)
+_current_mode = None
+
+
+def get_mode():
+    """Return current operating mode or None."""
+    return _current_mode
+
+
+def set_mode(mode):
+    """Set current operating mode (engineer, pm, qa, or None)."""
+    global _current_mode
+    _current_mode = mode
+
+
+def classify_file(filepath):
+    """Classify a file as CODE, SPEC, QA, or INVARIANT for mode guard.
+
+    This is a simplified version of the classification logic from
+    references/file_classification.md. Returns one of:
+    CODE, SPEC, QA, INVARIANT, or UNKNOWN.
+    """
+    path = filepath.replace('\\', '/')
+
+    # Invariant files — no mode can write
+    if '/features/i_' in path or path.startswith('features/i_'):
+        return 'INVARIANT'
+
+    # QA-owned files
+    if '.discoveries.md' in path:
+        return 'QA'
+    if '/tests/' in path and path.endswith('regression.json'):
+        return 'QA'
+
+    # Spec files (PM-owned)
+    if '/features/' in path or path.startswith('features/'):
+        if path.endswith('.impl.md'):
+            return 'CODE'  # Companion files are Engineer-owned
+        return 'SPEC'
+
+    # Everything else is CODE (Engineer-owned)
+    return 'CODE'
 
 
 if __name__ == '__main__':
