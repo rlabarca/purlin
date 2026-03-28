@@ -16,5 +16,5 @@
 **[DISCOVERY] [ACKNOWLEDGED]** Refresh path missing git add CLAUDE.md
 **Source:** /pl-spec-code-audit --deep (M48)
 **Severity:** MEDIUM
-**Details:** `tools/init.sh` refresh path calls `install_claude_md()` but does not follow up with `git add CLAUDE.md`. The full init path correctly stages CLAUDE.md at line 856.
+**Details:** `scripts/mcp/bootstrap.py` refresh path calls `install_claude_md()` but does not follow up with `git add CLAUDE.md`. The full init path correctly stages CLAUDE.md at line 856.
 **Suggested fix:** Add `git add "$PROJECT_ROOT/CLAUDE.md"` to the refresh path after the `install_claude_md` call.

@@ -21,4 +21,4 @@
 
 **Remaining:**
 
--   tools/cdd/graph.py lines 250-265: 16 hardcoded hex colors in SVG generation
+-   scripts/mcp/graph_engine.py lines 250-265: 16 hardcoded hex colors in SVG generation
