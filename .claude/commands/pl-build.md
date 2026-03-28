@@ -148,6 +148,16 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 *   **Pre-check -- Web Test Gate:**
     *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `/pl-web-test` first.
     *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.
+*   **Pre-check -- Spec & Plan Alignment Audit:**
+    *   **Spec audit (always, when a feature spec exists):** Re-read `features/<name>.md`. Walk through each requirement in the Requirements section and each scenario in the Scenarios section. For each, verify the implementation addresses it. Check:
+        *   **Unimplemented requirements:** Any requirement with no corresponding code or test. Log as `[DISCOVERY]` in the companion file if found.
+        *   **Scenario coverage:** Each scenario's Given/When/Then should be exercised by a test. Missing coverage = block until addressed or logged as `[DEVIATION]` with justification.
+        *   **Undocumented deviations:** Any implementation behavior that contradicts or extends the spec without a companion file entry. If found, write the appropriate tag (`[DEVIATION]`, `[AUTONOMOUS]`, `[CLARIFICATION]`) before proceeding.
+    *   **Plan audit (when a design plan was used for this work):** If the session used a design plan document (e.g., a `*_PLAN.md` file, a delivery plan phase spec, or a plan referenced in the checkpoint), re-read the plan's relevant section. For each deliverable listed in the plan:
+        *   Verify the deliverable exists and matches the plan's description.
+        *   Check for items the plan specified that were skipped or only partially done. Log gaps as `[DISCOVERY]` in the companion file.
+        *   Check for work done beyond the plan's scope — not a blocker, but note in companion as `[CLARIFICATION]` if non-trivial.
+    *   This audit is **non-blocking** for clean results but **blocks on unlogged gaps.** The gate ensures every deviation between intent (spec/plan) and outcome (code) is documented in the companion file before the status tag. It does NOT require zero deviations — it requires zero *undocumented* deviations.
 *   **A. Determine tag:**
     *   Zero manual scenarios + all verification passes: `[Complete features/FILENAME.md]` (COMPLETE). Do NOT include `[Verified]` -- reserved for QA.
     *   Has manual scenarios: `[Ready for Verification features/FILENAME.md]` (TESTING).
