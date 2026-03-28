@@ -119,7 +119,7 @@ Upgrade complete: submodule -> plugin
 
 Removed:
   <submodule_path>/ (submodule)
-  pl-run.sh, .claude/commands/pl-*.md, .claude/agents/*.md
+  pl-run.sh (launcher), .claude/commands/pl-*.md, .claude/agents/*.md
 
 Added:
   .claude/settings.json (plugin declaration)

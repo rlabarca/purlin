@@ -1,11 +1,11 @@
 ---
 name: start
-description: Session entry point — replaces pl-run.sh launcher. Handles checkpoint recovery, mode activation, worktree entry, YOLO toggling, and session naming
+description: Session entry point. Handles checkpoint recovery, mode activation, worktree entry, YOLO toggling, and session naming
 ---
 
 **Purlin command: shared (all roles)**
 
-Purlin agent: Session entry point that replaces the pl-run.sh launcher. Handles everything the launcher did, from within the running session.
+Purlin agent: Session entry point. Handles checkpoint recovery, mode activation, worktree entry, and session configuration.
 
 ---
 

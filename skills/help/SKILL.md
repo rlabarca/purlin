@@ -8,7 +8,7 @@ description: Available to all agents and modes
 
 Available to all agents and modes.
 
-Display the Purlin unified command table and list available CLI launcher scripts. Invoke this when the user asks "how do I run...", "what commands are available", or needs help with any Purlin command.
+Display the Purlin unified command table. Invoke this when the user asks "how do I run...", "what commands are available", or needs help with any Purlin command.
 
 No side effects. Output only.
 
@@ -20,17 +20,6 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md` and print the Default
 
 No role detection is needed — the Purlin agent uses one unified command table showing all modes (Engineer, PM, QA) and common commands.
 
-### 2. List CLI Scripts
+### 2. Done
 
-1. Determine project root: use `$PURLIN_PROJECT_ROOT` if set, else `git rev-parse --show-toplevel`.
-2. Glob `pl-*.sh` in the project root.
-3. After the slash command table, print:
-
-```
----
-
-## CLI Scripts (run from terminal)
-```
-
-4. List each discovered script by filename (e.g., `pl-run.sh`). Do NOT attempt to run the scripts or fetch `--help` output.
-5. If no `pl-*.sh` scripts were found in the project root, print: `(no CLI scripts found in project root)`
+No additional output after the command table. The plugin model has no CLI launcher scripts.
