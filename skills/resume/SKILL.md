@@ -174,7 +174,7 @@ Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never co
 
 ### Step 2 -- Instruction Reload (Fresh Sessions Only)
 
-This step runs ONLY when the system prompt does NOT contain the Purlin agent instructions (i.e., the agent was started without `pl-run.sh`).
+This step runs ONLY when the system prompt does NOT contain the Purlin agent instructions (i.e., the session was started with `claude` directly and the plugin has not yet injected context).
 
 When instruction reload is needed:
 1. Read the instruction layers in order:
