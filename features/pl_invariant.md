@@ -37,9 +37,10 @@ All invariant files MUST conform to the canonical format defined in `instruction
 - Git-sourced invariants additionally require: `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`.
 - Figma-sourced invariants additionally require: `> Figma-URL:`, `> Synced-At:`.
 - Required sections vary by type (see `instructions/references/invariant_format.md`):
-  - arch/policy/ops/design: `## Purpose` + `## <Domain> Invariants`
+  - arch/policy/ops: `## Purpose` + `## <Domain> Invariants`
+  - design (including Figma-sourced): `## Purpose` + either `## <Domain> Invariants` or `## Figma Source`
   - prodbrief: `## Purpose` + `## User Stories` + `## Success Criteria`
-  - Figma design: `## Purpose` + `## Figma Source` + `## Annotations`
+  - `## Annotations` is optional for Figma design invariants (advisory content, not structurally required)
 
 ### 2.4 Format Versioning
 
@@ -79,11 +80,13 @@ All invariant files MUST conform to the canonical format defined in `instruction
 ### 2.9 Storage
 
 - Invariant files live in `features/` alongside regular anchors.
-- The constraint cache `.purlin/cache/invariant_constraints.json` is gitignored and regenerated from source files.
+- Tamper detection hashes and scan state for invariants are stored within `.purlin/cache/scan.json` (no separate constraint cache file).
 
 ---
 
 ## 3. Subcommands
+
+If no subcommand is provided, print the usage table and stop.
 
 ### 3.1 `add <repo-url> [file-path]`
 
@@ -95,7 +98,7 @@ Import an invariant from an external git repo.
 2. Locate the target file in the repo's `features/` directory (or specified path).
 3. Validate format: required sections and `> Version:` metadata present.
 4. If `> Scope:` is missing, prompt PM to choose global or scoped.
-5. Inject/verify invariant metadata (`> Invariant: true`, `> Source:`, `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`).
+5. Inject/verify invariant metadata (`> Format-Version: 1.0` if not present, `> Invariant: true`, `> Source:`, `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`).
 6. Copy to `features/` with `i_` prefix prepended to the filename.
 7. Commit with tag: `invariant-add(features/i_<type>_<name>.md): v<version> from <repo>`.
 8. Run `scan.sh` to integrate into dependency graph and trigger cascade if global.

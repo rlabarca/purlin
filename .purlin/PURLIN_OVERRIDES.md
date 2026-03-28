@@ -40,7 +40,7 @@ This repository contains two distinct categories of scripts, stored in two separ
 ## Invariant Submodule Safety
 Invariant system files (`tools/cdd/invariant.py`, invariant-related scan/graph code) are consumer-facing and MUST comply with the Submodule Compatibility Mandate. Specifically:
 *   `invariant.py` uses project-root-relative paths for `features/i_*.md` globbing — verify these resolve correctly when `tools/` is at `<project_root>/<submodule>/tools/`.
-*   The constraint cache (`.purlin/cache/invariant_constraints.json`) is written to `.purlin/cache/`, not inside `tools/`.
+*   Invariant scan state and tamper hashes are stored within `.purlin/cache/scan.json`, not inside `tools/`.
 *   Invariant hash state in `scan.json` follows the same cache path conventions as all other scan data.
 
 ## Submodule Safety Checklist (Pre-Commit Gate)

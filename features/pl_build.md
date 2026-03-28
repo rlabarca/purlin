@@ -69,11 +69,21 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
 
 ### 2.6 Per-Feature Implementation Protocol
 
-- **Step 0 (Pre-Flight):** Re-verification detection (skip re-implementation when tests pass and scenarios unchanged), anchor review, visual design source loading, web test readiness check, companion file reading, prerequisite stability check, new scenario detection.
+- **Step 0 (Pre-Flight):** Re-verification detection (skip re-implementation when tests pass and scenarios unchanged), anchor review, visual design source loading, web test readiness check, companion file reading, prerequisite stability check, new scenario detection, invariant preflight (see 2.6.1).
 - **Step 1 (Plan):** State the feature being implemented and outline the plan referencing companion file notes.
-- **Step 2 (Implement):** Write code and tests. Record discoveries in companion files using Engineer Decision Tags (`[CLARIFICATION]`, `[AUTONOMOUS]`, `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`). Commit implementation work.
+- **Step 2 (Implement):** Write code and tests. Record discoveries in companion files using Engineer Decision Tags (`[CLARIFICATION]`, `[AUTONOMOUS]`, `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`). Companion entries SHOULD reference specific invariant constraint IDs when code addresses them (e.g., `per i_arch_api_standards.md INV-2`). Invariant deviations escalate as "invariant conflict" rather than "spec deviation" since invariants are immutable and externally-sourced. Commit implementation work.
 - **Step 3 (Verify):** Invoke `/pl-unit-test` for the complete testing protocol. For features with `> Web Test:` metadata, run `/pl-web-test`.
-- **Step 4 (Status Tag):** Determine tag (`[Complete]` for zero manual scenarios, `[Ready for Verification]` for features with manual scenarios). Declare scope (`full`, `targeted`, `cosmetic`, `dependency-only`). Commit as a SEPARATE commit from implementation. Run `scan.sh` to confirm state.
+- **Step 4 (Status Tag):** Pre-check: run a Spec & Plan Alignment Audit — re-read the feature spec and walk each requirement and scenario verifying implementation coverage; log unimplemented requirements as `[DISCOVERY]`, missing scenario coverage blocks until addressed or `[DEVIATION]`-tagged, undocumented deviations require companion file entries. When a design plan was used, re-read the plan section and verify each deliverable exists. Gate blocks on undocumented gaps, not on deviations themselves. Then determine tag (`[Complete]` for zero manual scenarios, `[Ready for Verification]` for features with manual scenarios). Declare scope (`full`, `targeted`, `cosmetic`, `dependency-only`). Commit as a SEPARATE commit from implementation. Run `scan.sh` to confirm state.
+
+### 2.6.1 Invariant Preflight (Step 0)
+
+During pre-flight, the build collects and enforces invariant constraints:
+
+1. **Collect global invariants:** Read `dependency_graph.json` → `global_invariants` list. Read each `i_*` file to extract constraints.
+2. **Collect scoped invariants:** Read scoped `i_*` files from the feature's transitive `> Prerequisite:` chain.
+3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each collected invariant. Grep feature code files for pattern violations. If any match: **block the build** with an actionable message (invariant ID, pattern, file:line location, fix suggestion). The agent MUST NOT proceed to Step 1 until all FORBIDDEN violations are resolved.
+4. **Behavioral awareness reminders:** Surface non-FORBIDDEN invariant statements as non-blocking awareness context for the engineer.
+5. **Figma brief staleness:** For design invariants, check the Figma invariant pointer's `> Version:` against brief.json version. Warn if stale.
 
 ### 2.7 Bright-Line Rules
 
@@ -159,6 +169,29 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
     When /pl-build processes the feature
     Then existing tests are run without re-implementing code
     And the feature is re-tagged upon test passage
+
+#### Scenario: FORBIDDEN invariant pattern blocks build
+
+    Given a global invariant i_arch_api_standards.md contains a FORBIDDEN pattern "eval("
+    And the feature code contains a call to eval(
+    When /pl-build runs Step 0 invariant preflight
+    Then the build is blocked with an actionable message citing the invariant ID and file:line
+    And the agent does not proceed to Step 1
+
+#### Scenario: Invariant behavioral reminders are non-blocking
+
+    Given a scoped invariant prerequisite contains behavioral constraints but no FORBIDDEN patterns
+    When /pl-build runs Step 0 invariant preflight
+    Then the constraints are surfaced as awareness reminders
+    And the build proceeds to Step 1
+
+#### Scenario: Spec & plan alignment audit catches undocumented gaps
+
+    Given Engineer mode completes implementation of a feature
+    And the spec contains a requirement with no corresponding implementation
+    And no [DEVIATION] or [DISCOVERY] tag exists in the companion file
+    When /pl-build runs Step 4 pre-check
+    Then the audit blocks status tag commit until the gap is documented
 
 ### QA Scenarios
 

@@ -57,6 +57,7 @@ Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IM
 - For each feature, the command MUST read `tests/<name>/tests.json` to extract scenario count and test results.
 - The command MUST build a transitive prerequisite map by walking all `> Prerequisite:` chains recursively (BFS) for every feature in the dependency graph. Output: `{feature_name: [list of all ancestor anchor filenames]}`.
 - The command MUST collect anchor constraints from each unique anchor node in the transitive map: all `FORBIDDEN:` patterns (line + pattern text), numbered invariant statements, and named constraints. Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...]}}`.
+- **Global invariant injection:** Read `dependency_graph.json` → `global_invariants`. Auto-include ALL global invariants (`> Scope: global`) in the constraint payload regardless of prerequisite links. For each `i_*` anchor, also extract source metadata (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
 - Phase 0 reads only metadata and anchor node constraint sections -- never feature scenarios or source code.
 
 ### 2.7 Cross-Session Resume
@@ -72,7 +73,7 @@ Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IM
 ### 2.8 Deep Mode (Default)
 
 - Deep mode MUST classify features into three processing tracks:
-  - **Spec-only track:** Anchor nodes (`arch_*`, `design_*`, `policy_*`) and features with zero automated scenarios.
+  - **Spec-only track:** Anchor nodes (`arch_*`, `design_*`, `policy_*`, `ops_*`, `prodbrief_*`) and features with zero automated scenarios.
   - **Code-comparison track:** All features with automated scenarios.
   - **Orphan scan track:** All "orphaned executable" and "orphaned skill file" entries from Phase 0.5 (Section 2.17). These are grouped into one or more orphan scan batches.
 - Deep mode MUST batch features using first-fit-decreasing bin packing: 50-75 scenarios per code-comparison batch, max 4-5 features per batch. Features with 50+ scenarios get a solo batch (solo takes precedence over batch grouping when a feature meets the threshold). All spec-only features go in a single batch.
@@ -96,7 +97,8 @@ Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IM
   - Perform transitive anchor constraint validation: grep all source files for each FORBIDDEN pattern from ancestor anchors, check invariant coverage, and check constraint compliance.
   - Scan for undocumented behavior (error handlers, config branches, edge cases with no scenario coverage).
   - **Companion coverage check (dimension 13):** Compare the companion file's `[IMPL]`/deviation entries against the git log of code changes. Flag companion debt (code commits with no companion entries) as HIGH. Flag stale notes (companion entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note this as a positive signal of spec conformance.
-  - Check spec completeness across all 13 gap dimensions.
+  - Check spec completeness across all 14 gap dimensions.
+  - For `i_*` invariants in the constraint payload, flag staleness if `Synced-At` is older than 90 days. Flag violations with invariant provenance (`i_<name> INV-N`). Check design Token Map compliance against invariant token tables.
 - **Spec-only subagents** MUST:
   - Read the feature file and companion.
   - Check spec completeness, policy anchoring, builder decisions, and notes depth.
@@ -125,7 +127,7 @@ Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IM
 - Each gap MUST be classified by severity (CRITICAL, HIGH, MEDIUM, LOW), owner (ARCHITECT or BUILDER), and action (FIX if owner matches acting role, ESCALATE otherwise). See Section 2.14 for severity criteria.
 - The command MUST build an audit table sorted CRITICAL to LOW, then alphabetically by feature name. Rows are numbered sequentially.
 - The audit table MUST include columns: #, Feature, Severity, Dimension, Gap Description, Evidence, Anchor Source, Action, Planned Remediation.
-- The table header MUST include: Role, Mode, Total features scanned, Transitive anchor constraints checked (N invariants across M anchors), Gaps found (with per-severity counts), Will fix count, and Will escalate count.
+- The table header MUST include: Role, Mode, Total features scanned, Transitive anchor constraints checked (N invariants across M anchors), Invariant constraints included (N global + K scoped invariants, M FORBIDDEN patterns), Gaps found (with per-severity counts), Will fix count, and Will escalate count.
 
 ### 2.11 Role-Scoped Remediation Plan
 
@@ -138,7 +140,7 @@ Per `features/policy_spec_code_sync.md`, the audit leverages companion file `[IM
 
 ### 2.12 Gap Dimensions
 
-The command MUST assess each feature against these 13 dimensions (dimensions 1-10 are per-feature; dimensions 11-13 are cross-feature/project-wide or structural):
+The command MUST assess each feature against these 14 dimensions (dimensions 1-10 are per-feature; dimensions 11-14 are cross-feature/project-wide or structural):
 
 | # | Dimension | Description |
 |---|---|---|
@@ -155,15 +157,16 @@ The command MUST assess each feature against these 13 dimensions (dimensions 1-1
 | 11 | Requirement hygiene | Cross-feature analysis: **Duplicate** -- two or more features define scenarios or requirements that specify the same behavior for the same component (identical or near-identical Given/When/Then targeting the same endpoint, function, or UI element). **Conflicting** -- two features specify contradictory behavior for the same component (e.g., feature A says endpoint returns 200, feature B says it returns 404; or two anchors define incompatible invariants for the same domain). **Unused** -- a feature or scenario that has no implementation code, no test, and is not a prerequisite of any other feature (orphaned spec with no path to implementation). |
 | 12 | Code ownership | **Orphaned code** -- code files in audit scope not referenced by any feature spec, companion file, or test import chain. **Orphaned skills** -- `.claude/commands/pl-*.md` command files with no corresponding `features/pl_*.md` feature spec. **Shared infrastructure** -- heavily-imported code (3+ feature importers) with no dedicated spec. **Dead code candidates** -- zero imports from any file AND zero feature owners. Per-file analysis with classification and nearest-feature suggestions. This is the symmetric complement of Dimension 11's "unused spec" detection: Dimension 11 finds specs without code; Dimension 12 finds code without specs. |
 | 13 | Companion coverage | Per `features/policy_spec_code_sync.md`. **Companion debt** -- features with code commits more recent than the last companion file update (HIGH severity). **Stale notes** -- companion file exists but its most recent entries predate significant code changes (MEDIUM severity). **Impl-to-spec tracing** -- `[IMPL]` entries that reference spec sections provide a mapping from code to requirements; the audit uses these to accelerate scenario-by-scenario comparison. A feature with only `[IMPL]` entries (no deviation tags) signals spec-conformant implementation — the audit MAY deprioritize deep code comparison for these features in triage mode. |
+| 14 | Invariant source compliance | (a) FORBIDDEN pattern violations from invariant constraints (`i_*` files) — HIGH. (b) Behavioral invariants with zero scenario or code coverage — MEDIUM. (c) Design Token Map values contradicting invariant token tables — MEDIUM. (d) Invariant version staleness (`Synced-At` older than 90 days) — LOW. Evidence includes invariant provenance (`i_<name> INV-N`). Global invariants apply to ALL features regardless of prerequisite links. |
 
 ### 2.13 Severity Classification
 
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions for the same component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec); **companion debt** (code commits without any companion file entries — per policy_spec_code_sync.md) |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor or invariant; conflicting requirements across features (contradictory assertions for the same component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec); **companion debt** (code commits without any companion file entries — per policy_spec_code_sync.md); FORBIDDEN pattern violation from `i_*` invariant constraints (Dimension 14) |
 | MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places); orphaned executable code with significant behavior (entry points, state mutation, I/O operations); **stale companion notes** (companion file exists but most recent entries predate significant code changes) |
-| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec) |
+| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec); invariant version staleness (`Synced-At` older than 90 days) |
 
 ### 2.14 Phase 3 -- Remediation (Post-Approval)
 
@@ -176,6 +179,10 @@ The command MUST assess each feature against these 13 dimensions (dimensions 1-1
   - **PM FIX:** Create a new feature spec (via `/pl-spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
   - **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
   - **Engineer ESCALATE to PM:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
+- **Dimension 14 (Invariant Source Compliance) remediation:**
+  - **Engineer FIX:** Eliminate FORBIDDEN violations from invariant constraints. Add tests for uncovered behavioral invariants.
+  - **PM FIX:** Add missing `> Prerequisite:` links to scoped invariants. Run `/pl-invariant sync` for stale invariants. Update Token Map for design token mismatches against invariant token tables.
+  - Neither role can edit `i_*` files directly. Wrong invariants must be escalated to the external source owner.
 - Post-remediation: run `${TOOLS_ROOT}/cdd/scan.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
 ### 2.15 Integration Test Fixture Tags
@@ -641,6 +648,36 @@ The command MUST maximize subagent parallelism throughout all phases to minimize
     When Phase 3 remediation processes the FIX item
     Then the engineer creates features/rate_limiting.impl.md with [IMPL] entries for recent code changes
     And the companion file documents what was implemented
+
+#### Scenario: Global invariants auto-included in constraint payload
+
+    Given dependency_graph.json contains global_invariants ["i_arch_api_standards.md"]
+    And feature "webhook_delivery" does not list i_arch_api_standards.md as a prerequisite
+    When Phase 0 collects anchor constraints
+    Then i_arch_api_standards.md constraints are included in the payload for all features
+    And invariant source metadata (Version, Source, Source-SHA, Synced-At) is extracted
+
+#### Scenario: Invariant FORBIDDEN violation classified as Dimension 14
+
+    Given a global invariant i_arch_api_standards.md contains a FORBIDDEN pattern "eval("
+    And feature code contains a call to eval(
+    When a code-comparison subagent processes the feature
+    Then a gap is recorded with dimension "Invariant source compliance" and severity HIGH
+    And the evidence includes invariant provenance "i_arch_api_standards.md INV-N"
+
+#### Scenario: Invariant staleness flagged as LOW severity
+
+    Given invariant i_policy_gdpr.md has Synced-At older than 90 days
+    When the audit evaluates dimension 14 (Invariant source compliance)
+    Then a gap is recorded with severity LOW
+    And the gap description identifies invariant version staleness
+
+#### Scenario: Dimension 14 remediation routes stale invariants to /pl-invariant sync
+
+    Given the audit finds invariant staleness for i_policy_gdpr.md
+    And the audit is running as PM
+    When Phase 3 remediation processes the FIX item
+    Then the remediation plan directs PM to run /pl-invariant sync i_policy_gdpr.md
 
 ### QA Scenarios
 

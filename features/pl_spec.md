@@ -47,8 +47,18 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 - Features rendering UI MUST declare relevant `design_*.md` anchor prerequisites.
 - Features accessing/transforming data MUST declare relevant `arch_*.md` anchor prerequisites.
 - Features in governed processes MUST declare relevant `policy_*.md` anchor prerequisites.
+- Features governed by operational mandates MUST declare relevant `ops_*.md` or `i_ops_*.md` anchor/invariant prerequisites.
+- Features with product brief requirements MUST declare relevant `prodbrief_*.md` or `i_prodbrief_*.md` anchor/invariant prerequisites.
 
-### 2.7 Post-Authoring
+### 2.7 Invariant Advisory (Pre-Commit)
+
+Before committing a spec, the command MUST:
+
+1. Read `dependency_graph.json` → `global_invariants` and display any applicable global invariants.
+2. Check for scoped `i_*` files whose domain overlaps the feature's domain. Suggest them as prerequisites if not already declared.
+3. This advisory is **non-blocking** — it does not prevent the spec commit. It informs the PM of relevant invariant constraints during authoring.
+
+### 2.8 Post-Authoring
 
 - After editing, commit the change and run `scan.sh` to refresh scan results.
 
@@ -92,6 +102,28 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
     Given the new feature renders HTML/CSS output
     When /pl-spec creates the spec
     Then relevant design_*.md anchors are declared as prerequisites
+
+#### Scenario: Invariant advisory shows global invariants before commit
+
+    Given dependency_graph.json contains global_invariants ["i_arch_api_standards.md"]
+    When /pl-spec is about to commit a new feature spec
+    Then the command displays applicable global invariant constraints
+    And the advisory is non-blocking
+
+#### Scenario: Invariant advisory suggests scoped invariant as prerequisite
+
+    Given invariant i_policy_gdpr.md exists with Scope: scoped
+    And the new feature handles user data but does not declare i_policy_gdpr.md as a prerequisite
+    When /pl-spec runs the invariant advisory
+    Then the command suggests adding i_policy_gdpr.md as a prerequisite
+    And the suggestion is non-blocking
+
+#### Scenario: Prerequisite checklist includes ops_* and prodbrief_* anchors
+
+    Given the new feature is governed by an operational CI/CD mandate
+    And ops_ci_pipeline.md exists as an anchor
+    When /pl-spec creates the spec
+    Then relevant ops_*.md anchors are declared as prerequisites
 
 ### QA Scenarios
 

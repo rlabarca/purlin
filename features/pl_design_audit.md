@@ -21,6 +21,7 @@ The `/pl-design-audit` command provides the PM and PM with a comprehensive audit
 ### 2.2 Inventory Scan
 - Scan all `features/*.md` files for `## Visual Specification` sections.
 - For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Token Map:**` presence and entries, and checklist items (`- [ ]` / `- [x]`).
+- Also glob `features/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata.
 - Also scan for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
 - If Figma MCP is available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
 
@@ -51,8 +52,28 @@ The `/pl-design-audit` command provides the PM and PM with a comprehensive audit
 - Flag discrepancies as `DESIGN_CONFLICT` warnings with specific differences listed (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
 - Also compare Figma design variable resolved values against `brief.json` token values (if present) to detect drift between the two caches.
 
+### 2.6.1 Invariant Pointer Sync Status
+For each design invariant (`features/i_design_*.md`) collected in the inventory scan:
+- **Figma-sourced:** Fetch current version ID via MCP and compare against the pointer's `> Version:`. If different: `STALE_INVARIANT`.
+- **Git-sourced:** Run `git ls-remote` and compare SHA against `> Source-SHA:`. If different: `STALE_INVARIANT`.
+- For each stale invariant, check cascade impact: how many features depend on it (directly or transitively).
+- Compare `brief.json` version against pointer version: if the pointer is newer than the brief, flag as `STALE_BRIEF`.
+
+### 2.6.2 Invariant-Governed Design Compliance
+Enforce a three-tier weight model for invariant design constraints:
+
+| Aspect | Weight | Rationale |
+|--------|--------|-----------|
+| Colors / design tokens | **Strict** — hardcoded hex values flagged as HIGH | Colors are objective, machine-verifiable |
+| Typography (font families, weights, sizes) | **Strict** — must match brief.json, flagged as HIGH | Measurable properties from design data |
+| Spacing / layout | **Moderate** — warned as MEDIUM, not blocked | Subjective tolerance acceptable |
+
+- Scan feature code for FORBIDDEN patterns from design invariants.
+- Surface invariant `## Design Invariants` statements as compliance context.
+- Violations are reported as `INVARIANT_VIOLATION` in the audit report.
+
 ### 2.7 Anchor Consistency Check
-- Read the project's `design_*.md` anchor nodes.
+- Read the project's `design_*.md` anchor nodes and `i_design_*.md` invariant pointers.
 - Scan all Token Map entries for consistency with the anchor's token system:
   - Token Map right-side values (project tokens) that do not match any token declared in the anchor.
   - Hardcoded hex colors or literal values on the right side of Token Map entries that should reference anchor token names.
@@ -60,13 +81,15 @@ The `/pl-design-audit` command provides the PM and PM with a comprehensive audit
 - Flag each inconsistency as WARNING with a suggestion to use the corresponding anchor token name.
 
 ### 2.8 Audit Report
-- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict, Dev Status, Annotations (optional -- shown when Figma MCP is available, otherwise omitted). The Dev Status column shows CURRENT, DRIFT, or N/A. The Annotations column shows the annotation count per screen or "N/A" when Figma MCP is not available. Both Dev Status and Annotations are informational metadata only -- they do not affect pass/fail status.
+- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Invariant, Anchor Consistency, Design Conflict, Dev Status, Annotations (optional -- shown when Figma MCP is available, otherwise omitted). The Dev Status column shows CURRENT, DRIFT, or N/A. The Annotations column shows the annotation count per screen or "N/A" when Figma MCP is not available. Both Dev Status and Annotations are informational metadata only -- they do not affect pass/fail status.
 - Reference Status values: OK, MISSING (critical), MALFORMED_URL, NO_REF, UNPROCESSED.
 - Staleness values: CURRENT, STALE, N/A (URL reference or no processed date).
 - Brief Status values: CURRENT, STALE, MISSING, N/A (non-Figma reference).
+- Invariant values: CURRENT, STALE_INVARIANT, STALE_BRIEF, INVARIANT_VIOLATION, N/A.
 - Anchor Consistency values: CLEAN, N warnings.
 - Dev Status values: CURRENT, DRIFT, N/A (no Figma Status metadata, no MCP, or no Figma reference).
-- For STALE items, offer to re-ingest by running `/pl-design-ingest` with the re-process flag.
+- After the per-feature table, print a **Design Invariants** summary table showing each invariant's source, version, sync status, and dependent feature count.
+- For STALE items, offer to re-process via `/pl-spec <feature>` (update Visual Specification). For STALE_INVARIANT items, offer `/pl-invariant sync <invariant-file>`. For STALE_BRIEF items, offer `/pl-spec <feature>` (regenerate brief). For INVARIANT_VIOLATION items, report file:line evidence and suggest fix.
 
 ### 2.10 Figma Dev Status Consistency Check
 For features with `> Figma Status:` metadata and a Figma reference, check the current dev status via Figma MCP (when available).
@@ -141,7 +164,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
     When /pl-design-audit runs
     Then the screen is flagged as STALE
     And the Brief Status column shows STALE
-    And remediation suggests /pl-design-ingest reprocess
+    And remediation suggests /pl-spec to update the Visual Specification
 
 #### Scenario: Missing Brief Warning
 
@@ -157,7 +180,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
     And Figma MCP reports the design was last modified 2026-02-20
     When /pl-design-audit runs
     Then the screen is flagged as STALE
-    And remediation suggests /pl-design-ingest reprocess
+    And remediation suggests /pl-spec to update the Visual Specification
 
 #### Scenario: Design-Spec Conflict Detected via MCP
 
@@ -188,6 +211,29 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
     When PM mode runs /pl-design-audit
     Then the audit reports "All design artifacts clean"
     And no CRITICAL or WARNING items are listed
+
+#### Scenario: Invariant pointer sync detects stale git-sourced invariant
+
+    Given a design invariant i_design_visual_standards.md has Source-SHA "abc123"
+    And git ls-remote reports the source repo HEAD is "def456"
+    When /pl-design-audit runs
+    Then the Invariant column shows STALE_INVARIANT
+    And remediation suggests /pl-invariant sync i_design_visual_standards.md
+
+#### Scenario: Invariant-governed compliance flags hardcoded color as HIGH
+
+    Given a design invariant defines color token "--brand-primary: #2196F3"
+    And feature code contains a hardcoded hex value "#2196F3" instead of the token reference
+    When /pl-design-audit runs invariant-governed compliance checks
+    Then the violation is flagged as INVARIANT_VIOLATION
+    And the severity is HIGH (strict tier: colors)
+
+#### Scenario: Design invariants summary table shown after per-feature table
+
+    Given the project has 2 design invariants (1 git-sourced, 1 Figma-sourced)
+    When /pl-design-audit completes the report
+    Then a Design Invariants summary table follows the per-feature table
+    And each row shows the invariant source, version, sync status, and dependent feature count
 
 ### Manual Scenarios (Human Verification Required)
 

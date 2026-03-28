@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-The anchor node authoring skill with dual-mode behavior. For `design_*` and `policy_*` anchors, it activates PM mode. For `arch_*` anchors, it activates Engineer mode. Provides a guided workflow for creating or updating anchor nodes that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO).
+The anchor node authoring skill with dual-mode behavior. For `design_*`, `policy_*`, `ops_*`, and `prodbrief_*` anchors, it activates PM mode. For `arch_*` anchors, it activates Engineer mode. Provides a guided workflow for creating or updating anchor nodes that define cross-cutting constraints, patterns, and invariants. Enforces template compliance, correct prefix selection, and cascade awareness (editing an anchor resets all dependent features to TODO). Arguments starting with `i_` are redirected to `/pl-invariant` since invariant files are externally-sourced and locally immutable.
 
 ---
 
@@ -15,13 +15,18 @@ The anchor node authoring skill with dual-mode behavior. For `design_*` and `pol
 
 ### 2.1 Mode Activation
 
-- `design_*` and `policy_*` anchors activate PM mode.
+- `design_*`, `policy_*`, `ops_*`, and `prodbrief_*` anchors activate PM mode.
 - `arch_*` anchors activate Engineer mode.
 - The skill determines the mode from the argument's prefix.
 
+### 2.1.1 Invariant Prefix Redirect
+
+If the topic argument starts with `i_`, the skill MUST NOT create or edit the file. Instead, redirect to `/pl-invariant`:
+- "This is an invariant anchor (externally-sourced, locally immutable). Use `/pl-invariant add` to import it from a source repo, or `/pl-invariant add-figma` for Figma-sourced design invariants."
+
 ### 2.2 Prefix Disambiguation
 
-When the topic argument does not start with a recognized prefix (`arch_`, `design_`, `policy_`), the skill MUST prompt the user to choose the anchor type before proceeding. It MUST NOT default to any type silently. The prompt presents all three options with brief domain descriptions.
+When the topic argument does not start with a recognized prefix (`arch_`, `design_`, `policy_`, `ops_`, `prodbrief_`), the skill MUST prompt the user to choose the anchor type before proceeding. It MUST NOT default to any type silently. The prompt presents all five options with brief domain descriptions.
 
 ### 2.3 Required Reading
 
@@ -29,9 +34,17 @@ When the topic argument does not start with a recognized prefix (`arch_`, `desig
 
 ### 2.4 Anchor Node Types
 
-- `arch_*.md` -- Technical constraints: system architecture, API contracts, dependency rules.
-- `design_*.md` -- Design constraints: visual language, typography, interaction patterns.
-- `policy_*.md` -- Governance rules: security baselines, compliance, process protocols.
+- `arch_*.md` -- Technical constraints: system architecture, API contracts, dependency rules. (Engineer mode)
+- `design_*.md` -- Design constraints: visual language, typography, interaction patterns. (PM mode)
+- `policy_*.md` -- Governance rules: security baselines, compliance, process protocols. (PM mode)
+- `ops_*.md` -- Operational constraints: CI/CD, deployment, monitoring, infrastructure mandates. (PM mode)
+- `prodbrief_*.md` -- Product goals: user stories, outcomes, KPIs, success criteria. (PM mode)
+
+All five types can also exist as invariants via the `i_` prefix (e.g., `i_arch_*.md`), managed by `/pl-invariant`.
+
+### 2.4.1 Prodbrief Template Override
+
+`prodbrief_*` anchors use a modified template structure: `## User Stories` and `## Success Criteria` sections replace the standard `## <Domain> Invariants` section.
 
 ### 2.5 Template Compliance
 
@@ -57,9 +70,9 @@ When the topic argument does not start with a recognized prefix (`arch_`, `desig
 #### Scenario: Prefix disambiguation prompts when no recognized prefix
 
     Given the agent invokes /pl-anchor with argument "authentication"
-    And "authentication" does not start with arch_, design_, or policy_
+    And "authentication" does not start with arch_, design_, policy_, ops_, or prodbrief_
     When the skill processes the argument
-    Then the agent presents all three anchor type options with descriptions
+    Then the agent presents all five anchor type options with descriptions
     And waits for the user's choice before proceeding
     And does not default to any type
 
@@ -83,6 +96,27 @@ When the topic argument does not start with a recognized prefix (`arch_`, `desig
     When /pl-anchor modifies arch_api.md
     Then the agent presents the list of 3 features that will reset to TODO
     And asks for confirmation before committing
+
+#### Scenario: Invariant prefix redirects to /pl-invariant
+
+    Given the agent invokes /pl-anchor with argument "i_arch_api_standards"
+    When the skill processes the argument
+    Then the agent does not create or edit any file
+    And redirects to /pl-invariant with an explanatory message
+
+#### Scenario: ops_* anchor activates PM mode
+
+    Given the agent invokes /pl-anchor with argument "ops_ci_pipeline"
+    When the skill processes the argument
+    Then PM mode is activated
+    And the skill proceeds with anchor creation
+
+#### Scenario: prodbrief_* anchor uses modified template
+
+    Given the agent invokes /pl-anchor with argument "prodbrief_q2_goals"
+    When the skill creates a new anchor node
+    Then the file contains User Stories and Success Criteria sections
+    And does not contain a Domain Invariants section
 
 ### QA Scenarios
 
