@@ -64,3 +64,4 @@
 - [IMPL] Fixed `plugin.json` schema: `author` must be an object, `userConfig` entries need `type` and `title`.
 - [IMPL] Integration test results: plugin validate PASS, MCP server 6/6 tools functional, mode guard hook correct across all mode+classification combos, YOLO hook functional, pre-compact checkpoint functional, session hooks functional.
 - [DISCOVERY] 47 stale `instructions/references/` paths remain in 24 feature spec files (PM-owned). Non-blocking — deferred to Phase 6/7 PM mode pass.
+- [IMPL] Created `dev/setup_upgrade_fixture.sh` — generates a test consumer project with real git submodule, 3 feature specs + 1 companion, old-style config (tools_root, deprecated agents, models array), 9 old skill files, 2 old agent defs, pl-run.sh launcher, settings.json with submodule hooks, .upstream_sha. Output: `/tmp/purlin-upgrade-fixture`.
