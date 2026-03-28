@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Ensures that role-restricted Purlin agents recover their identity and write-access boundaries after Claude Code context compaction. The primary mechanism is a `compact` matcher on the `SessionStart` hook that echoes role guard rails and a `/pl-resume` directive. A project-root `CLAUDE.md` provides defense-in-depth (always in context, survives all compression). As cleanup, the unused `.purlin/runtime/agent_role` file write is removed from all launchers.
+Ensures that role-restricted Purlin agents recover their identity and write-access boundaries after Claude Code context compaction. The primary mechanism is a `compact` matcher on the `SessionStart` hook that echoes role guard rails and a `purlin:resume` directive. A project-root `CLAUDE.md` provides defense-in-depth (always in context, survives all compression). As cleanup, the unused `.purlin/runtime/agent_role` file write is removed from the `purlin:start` skill.
 
 ---
 
@@ -45,7 +45,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 
 ### 2.5 agent_role File Removal
 
-- All four launcher scripts (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`) MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
+- The `purlin:start` skill MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
 - The `generate_launcher()` function in `tools/init.sh` (if it contains agent_role write logic) MUST also be updated to remove the line.
 - The `AGENT_ROLE` environment variable export MUST remain unchanged -- it is actively used by config resolution.
 
@@ -140,12 +140,12 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     When the user runs "purlin/tools/init.sh"
     Then CLAUDE.md appears in the git staging area
 
-#### Scenario: Launcher Scripts No Longer Write agent_role
+#### Scenario: purlin:start No Longer Writes agent_role
 
-    Given Purlin launcher scripts exist (pl-run.sh, pl-run.sh, pl-run.sh, pl-run.sh)
-    When inspecting each launcher script
-    Then none of them contain a line writing to .purlin/runtime/agent_role
-    And each still exports AGENT_ROLE as an environment variable
+    Given the purlin:start skill exists
+    When inspecting the session initialization logic
+    Then it does not write to .purlin/runtime/agent_role
+    And AGENT_ROLE is still exported as an environment variable
 
 #### Scenario: Generated Launchers Omit agent_role Write
 

@@ -30,7 +30,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 ### 2.3 SessionEnd Hook
 
-- `tools/hooks/merge-worktrees.sh` MUST be registered as a `SessionEnd` hook in `.claude/settings.json`. The hook is always registered (not dynamically added by `pl-run.sh`) — it is a safe no-op when not running in a worktree.
+- `tools/hooks/merge-worktrees.sh` MUST be registered as a `SessionEnd` hook in `.claude/settings.json`. The hook is always registered (not dynamically added by `purlin:start`) — it is a safe no-op when not running in a worktree.
 - The hook MUST fire on all exit types including Ctrl+C (`prompt_input_exit`).
 - The hook MUST auto-commit pending changes before merge, including both tracked modifications and untracked files (`git ls-files --others --exclude-standard`).
 - The hook MUST NOT use `set -e`. Intermediate failures (e.g., `git add`) must not prevent the merge attempt from being reached. All git commands in the auto-commit block MUST use `|| true` for resilience.
@@ -40,7 +40,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 ### 2.4 Session Lock
 
-On worktree creation, the launcher MUST write `.purlin_session.lock` in the worktree root:
+On worktree creation, `purlin:start` MUST write `.purlin_session.lock` in the worktree root:
 
 ```json
 {
@@ -51,7 +51,7 @@ On worktree creation, the launcher MUST write `.purlin_session.lock` in the work
 }
 ```
 
-- Written by `pl-run.sh` immediately after `git worktree add`.
+- Written by `purlin:start` immediately after `git worktree add`.
 - Deleted by the SessionEnd hook after successful merge, or by `/pl-merge` after cleanup.
 - `.purlin_session.lock` MUST be gitignored (per-machine runtime artifact, not committed).
 - One agent per worktree. The lock establishes ownership.
@@ -138,13 +138,13 @@ The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invoca
 
 #### Scenario: Worktree branch naming convention
 
-    Given pl-run.sh invoked with --worktree --mode engineer
+    Given purlin:start invoked with --worktree --mode engineer
     When the worktree is created
     Then the branch name matches pattern "purlin-engineer-YYYYMMDD-HHMMSS"
 
 #### Scenario: Worktree directory location
 
-    Given pl-run.sh invoked with --worktree
+    Given purlin:start invoked with --worktree
     When the worktree is created
     Then the worktree directory is under .purlin/worktrees/
 
@@ -191,7 +191,7 @@ The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invoca
 #### Scenario: Startup intercepts pending merge before scan
 
     Given .purlin/cache/merge_pending/purlin-engineer-20260325-143022.json exists
-    When pl-run.sh is invoked with --auto-build
+    When purlin:start is invoked with --auto-build
     Then the agent displays the pending merge before running scan.sh
     And the agent attempts to merge purlin-engineer-20260325-143022
     And scan.sh does not run until the merge is resolved or deferred
@@ -218,7 +218,7 @@ The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invoca
 
 #### Scenario: Session lock written on worktree creation
 
-    Given pl-run.sh invoked with --worktree --mode engineer
+    Given purlin:start invoked with --worktree --mode engineer
     When the worktree is created
     Then .purlin_session.lock exists in the worktree root
     And the lock contains the current PID, mode "engineer", and ISO timestamp
@@ -280,7 +280,7 @@ The `/pl-resume` skill MUST implement a `merge-recovery` subcommand (also invoca
 
 #### Scenario: Concurrent worktrees do not share directories @auto
 
-    Given two pl-run.sh processes both invoked with --worktree --mode engineer
+    Given two purlin:start processes both invoked with --worktree --mode engineer
     When both create worktrees
     Then each has a unique branch name
     And each operates in a separate directory
