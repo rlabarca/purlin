@@ -83,7 +83,11 @@ For each unique anchor node in the transitive map, read the anchor file and extr
 - All numbered invariant statements (from `## Invariants` or numbered subsections under requirements)
 - All named constraints (conditional rules from subsections)
 
-Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...]}}`
+**Global invariant injection:** Read `dependency_graph.json` -> `global_invariants`. Auto-include ALL global invariants (`> Scope: global`) in the constraint payload regardless of prerequisite links. These apply to every feature.
+
+**Invariant metadata extraction:** For each `i_*` anchor, also extract source metadata (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
+
+Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...], source_meta?: {version, source, source_sha, synced_at}}}`
 
 ### Step 0.4 -- Check Resume State
 
@@ -99,11 +103,11 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 
 Process ALL features in-agent (no subagents). For each feature:
 
-1. Read the feature file -- check spec completeness across all 13 gap dimensions (see Gap Dimensions Table below).
+1. Read the feature file -- check spec completeness across all 14 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth. **Extract `[IMPL]` entries as an implementation index** mapping what was built to spec requirements. A feature with only `[IMPL]` entries (no deviation tags) signals spec conformance — deprioritize deep code comparison.
 3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
-4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
-5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
+4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map — including auto-injected global invariants — verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage. For `i_*` invariants, also flag staleness if `Synced-At` is older than 90 days.
+5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors and all global invariants (auto-included in Step 0.3). Flag violations with invariant provenance (`i_<name> INV-N`).
 6. **Companion coverage check (dimension 13)**: Compare companion file modification timestamp against code commit timestamps for the feature. Flag companion debt (no companion entries for recent code) as HIGH. Flag stale notes as MEDIUM.
 7. Skip scenario-by-scenario deep comparison.
 
@@ -217,13 +221,14 @@ For each assigned feature:
    - Verify the Given/When/Then assertions match actual code logic.
    - **When `[IMPL]` entries reference specific spec sections, use those references to guide the trace** rather than relying solely on code-path heuristics.
    - Flag: contradictions, missing logic, extra behavior, hardcoded values.
-7. **Transitive anchor constraint validation**: For each ancestor anchor node (from the payload):
-   - **FORBIDDEN scan**: Grep all source files for each FORBIDDEN pattern. Report violations with file:line.
-   - **Invariant coverage**: For each invariant statement, determine if any scenario or code path addresses it. Flag invariants with zero coverage in both scenarios and code.
+7. **Transitive anchor constraint validation**: For each ancestor anchor node (from the payload), including auto-injected global invariants:
+   - **FORBIDDEN scan**: Grep all source files for each FORBIDDEN pattern (including invariant FORBIDDEN patterns from `i_*` files). Report violations with file:line and invariant provenance (`i_<name> INV-N`).
+   - **Invariant coverage**: For each invariant statement, determine if any scenario or code path addresses it. Flag invariants with zero coverage in both scenarios and code. For `i_*` invariants, also check design Token Map compliance against invariant token tables.
    - **Constraint compliance**: For each named constraint, check if the code's behavior aligns. Flag contradictions.
+   - **Invariant staleness**: For `i_*` anchors, check `Synced-At` metadata. Flag as LOW if stale (> 90 days since last sync).
 8. **Undocumented behavior scan**: Error handlers, config branches, edge cases in code with no scenario coverage.
 9. **Companion coverage check (dimension 13)**: Compare companion file entries against git log of code changes. Flag companion debt (code commits with no companion entries) as HIGH. Flag stale notes (entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note as a positive signal of spec conformance.
-10. **Spec completeness**: All 13 gap dimensions (see Gap Dimensions Table).
+10. **Spec completeness**: All 14 gap dimensions (see Gap Dimensions Table).
 
 ### Spec-Only Subagent Protocol
 
@@ -293,7 +298,7 @@ Nearest feature: <feature_name> (by directory proximity / name similarity)
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
 | HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec) |
 | MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (identical scenarios targeting same endpoint/function); orphaned executable code with significant behavior (entry points, state mutation, I/O operations) |
-| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec) |
+| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec); invariant version staleness (`Synced-At` older than 90 days) |
 
 **Owner:** Assign based on what needs to change, not who is running the command:
 - `ARCHITECT` -- the spec needs to be updated (to match reality, clarify ambiguity, add missing anchors, revise scenarios)
@@ -317,6 +322,7 @@ Write the following to the plan file:
 **Mode:** triage | deep
 **Total features scanned:** N
 **Transitive anchor constraints checked:** N invariants across M anchors
+**Invariant constraints included:** N global + K scoped invariants (M FORBIDDEN patterns)
 **Gaps found:** N (CRITICAL: N . HIGH: N . MEDIUM: N . LOW: N)
 **Will fix:** N | **Will escalate:** N
 
@@ -359,6 +365,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Requirement hygiene** | Duplicate scenarios across features targeting the same endpoint/function with identical assertions; conflicting assertions across features sharing a prerequisite anchor or targeting the same component; orphaned specs with no implementation, no test coverage, and not listed as a prerequisite by any other feature |
 | **Code ownership** | Orphaned code files in audit scope not referenced by any feature spec, companion file, or test import chain; orphaned skill files (`.claude/commands/pl-*.md` with no corresponding `features/pl_*.md`); shared infrastructure (3+ importers, no dedicated spec); dead code candidates (zero imports, zero owners). Deep mode provides per-file analysis; triage mode reports summary counts only. Symmetric complement of Requirement hygiene's "unused spec" detection: Requirement hygiene finds specs without code; Code ownership finds code without specs. |
 | **Companion coverage** | Per `features/policy_spec_code_sync.md`. **Companion debt**: features with code commits more recent than the last companion file update (HIGH severity). **Stale notes**: companion file exists but most recent entries predate significant code changes (MEDIUM severity). **Impl-to-spec tracing**: `[IMPL]` entries referencing spec sections provide a mapping from code to requirements — use to accelerate scenario-by-scenario comparison. Features with only `[IMPL]` entries (no deviation tags) signal spec-conformant implementation — MAY deprioritize deep code comparison in triage mode. |
+| **Invariant source compliance** | For features governed by invariants (`i_*` files): (a) FORBIDDEN pattern violations from invariant constraints (HIGH — same weight as anchor FORBIDDEN), (b) behavioral invariants with zero scenario or code coverage (MEDIUM), (c) design Token Map values that contradict invariant token tables (MEDIUM), (d) invariant version staleness per `Synced-At` metadata older than 90 days (LOW). Evidence includes invariant provenance: `i_<name> INV-N`. Global invariants apply to ALL features regardless of prerequisite links. |
 
 ---
 
@@ -441,6 +448,12 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 
 3. Commit all escalation entries together.
 4. The scan will surface these as PM action items at the next PM session.
+
+### Dimension 14 (Invariant Source Compliance) Remediation
+
+- **Engineer FIX:** Fix code to eliminate FORBIDDEN pattern violations — replace prohibited patterns with compliant alternatives (evidence in the gap table shows file:line and the invariant constraint ID). Add or update tests to cover behavioral invariants with zero coverage.
+- **PM FIX:** Add missing `> Prerequisite:` links to applicable scoped invariants. For stale invariants, run `/pl-invariant sync <file>` to pull the latest version. For design Token Map mismatches, update the Token Map or run `/pl-invariant sync` for the design invariant.
+- **Neither role can edit `i_*` files directly.** If an invariant itself is wrong, escalate externally to the invariant source owner. Record the conflict as `[DISCOVERY]` with tag "invariant-conflict" in the companion file.
 
 ### Dimension 12 (Code Ownership) Remediation
 

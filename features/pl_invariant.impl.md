@@ -52,6 +52,18 @@
 
 [IMPL] Verified `/pl-invariant` Figma workflows (add-figma, sync Figma-sourced) against plan Section 6: end-to-end Figma flow (6.3), annotation model (6.4 — advisory not binding, stored in `## Annotations`), enforcement weight (6.5 — colors strict, typography strict, spacing moderate, annotations advisory), staleness detection (6.6 — covered in pl-build Step 0 and pl-design-audit step 3.2), briefs as mutable caches (6.7 — created during `/pl-spec`, not invariants). No gaps found.
 
+## Phase 5: Audit & Reporting
+
+[IMPL] Updated `.claude/commands/pl-spec-code-audit.md` — extended Phase 0.3 (Collect Anchor Constraints) with global invariant injection: auto-includes ALL global invariants from `dependency_graph.json` -> `global_invariants` in the constraint payload regardless of prerequisite links. Added invariant metadata extraction (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
+
+[IMPL] Updated `.claude/commands/pl-spec-code-audit.md` — extended triage mode items 4-5 and deep mode subagent item 7 to include auto-injected global invariants in anchor constraint surface checks and FORBIDDEN scans. Added invariant provenance (`i_<name> INV-N`) to violation reporting. Added design Token Map compliance checks against invariant token tables. Added invariant staleness detection (> 90 days since `Synced-At`).
+
+[IMPL] Updated `.claude/commands/pl-spec-code-audit.md` — added Dimension 14 (Invariant Source Compliance) to Gap Dimensions Table. Covers FORBIDDEN pattern violations (HIGH), behavioral invariant coverage gaps (MEDIUM), design Token Map contradictions (MEDIUM), and version staleness (LOW). Updated dimension count references from 13 to 14 in triage and deep mode protocols.
+
+[IMPL] Updated `.claude/commands/pl-spec-code-audit.md` — added invariant stats line to Phase 2 audit table header (`Invariant constraints included: N global + K scoped invariants (M FORBIDDEN patterns)`). Added Dimension 14 remediation section in Phase 3 with role-specific guidance and invariant-conflict escalation path. Added invariant version staleness to LOW severity criteria.
+
+[IMPL] Added `purlin.invariant_audit` toolbox tool to `tools/toolbox/purlin_tools.json` — Purlin-level tool that produces structured invariant audit report with three sections: Invariant Status (sync freshness per invariant), Feature Compliance (per-feature × per-invariant matrix), and Violations (numbered actionable findings with severity, evidence, fix, and owner). Supports git and Figma source types. Assigns HIGH for FORBIDDEN violations, MEDIUM for coverage/token gaps, LOW for staleness.
+
 ## Cross-Cutting: Spec & Plan Alignment Audit (End Gate)
 
 [IMPL] Updated `.claude/commands/pl-build.md` Step 4 — added "Pre-check -- Spec & Plan Alignment Audit" gate between Web Test Gate and tag determination. Two-part check: (1) Spec audit re-reads the feature spec and walks each requirement and scenario, verifying implementation coverage and logging unimplemented requirements as `[DISCOVERY]`, missing scenario coverage as blocking until addressed or `[DEVIATION]`-tagged, and undocumented deviations as requiring companion file entries. (2) Plan audit (when a design plan was used) re-reads the plan section and verifies each deliverable exists, logs skipped/partial items as `[DISCOVERY]`, and notes out-of-scope work as `[CLARIFICATION]`. Gate is non-blocking for clean results but blocks on unlogged gaps — requires zero undocumented deviations, not zero deviations.
