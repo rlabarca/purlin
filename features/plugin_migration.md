@@ -161,7 +161,78 @@ Files NOT deleted in Phase 2 (handled in later phases):
 - `tools/hooks/merge-worktrees.sh` (moved to `hooks/scripts/` in Phase 3)
 - `tools/mcp/manifest.json`, `tools/feature_templates/` (moved in Phase 4)
 
-### 2.4 Transition Period Constraints
+### 2.4 Phase 3: Hook Implementation
+
+Seven hook scripts provide mechanical enforcement and lifecycle automation that was previously prompt-level or launcher-managed.
+
+#### 2.4.1 Hook Manifest
+
+- `hooks/hooks.json` MUST declare all hook handlers with correct event types and script paths.
+- Required hook events: `SessionStart`, `SessionEnd`, `PreToolUse`, `PermissionRequest`, `PreCompact`, `FileChanged`.
+
+#### 2.4.2 Hook Scripts
+
+| Script | Event | Purpose |
+|---|---|---|
+| `hooks/scripts/session-start.sh` | SessionStart (clear + compact) | Inject context reminder: "Purlin active, run purlin:start" |
+| `hooks/scripts/session-end-merge.sh` | SessionEnd | Merge worktrees, cleanup session state |
+| `hooks/scripts/mode-guard.sh` | PreToolUse (Write/Edit/NotebookEdit) | Query MCP `purlin_classify`, block wrong-mode writes with exit code 2 |
+| `hooks/scripts/permission-manager.sh` | PermissionRequest | Read YOLO flag from config, auto-approve if set |
+| `hooks/scripts/pre-compact-checkpoint.sh` | PreCompact | Auto-save session checkpoint before context compaction |
+| `hooks/scripts/companion-debt-tracker.sh` | FileChanged | Track companion file debt when code files change |
+
+- `hooks/scripts/session-end-merge.sh` is adapted from `tools/hooks/merge-worktrees.sh` with updated paths for the plugin layout.
+- `hooks/scripts/mode-guard.sh` MUST query the Purlin MCP server's `purlin_classify` tool to classify files. If the MCP server is unavailable, it MUST fall back to reading `references/file_classification.json` (machine-readable classification).
+- All hook scripts MUST be executable (`chmod +x`).
+- All hook scripts MUST exit 0 on success. `mode-guard.sh` MUST exit 2 to block forbidden writes.
+
+#### 2.4.3 Machine-Readable File Classification
+
+- `references/file_classification.json` MUST provide a JSON representation of file classification rules for the mode guard hook fallback.
+- The JSON MUST contain pattern-to-classification mappings sufficient for the mode guard to enforce write boundaries without the MCP server.
+
+#### 2.4.4 Old Hook Cleanup
+
+- `.claude/settings.json` MUST have old SessionStart/SessionEnd hook entries removed (plugin hooks replace them).
+
+### 2.5 Phase 4: References, Templates, Agent Defs, Cleanup
+
+Final structural migration: move remaining files to plugin-standard locations and delete the old directory structure.
+
+#### 2.5.1 Reference Documents
+
+- All 15 files from `instructions/references/*.md` MUST be moved to `references/` at repo root.
+- `instructions/PURLIN_BASE.md` MUST be deleted (content is now in `agents/purlin.md`).
+- The `instructions/` directory MUST be deleted entirely after all contents are moved.
+
+#### 2.5.2 Templates
+
+- `purlin-config-sample/` contents MUST be moved to `templates/`:
+  - `config.json` → `templates/config.json`
+  - `PURLIN_OVERRIDES.md` → `templates/PURLIN_OVERRIDES.md`
+  - `CLAUDE.md.purlin` → `templates/CLAUDE.md` (renamed)
+  - `gitignore.purlin` → `templates/gitignore.purlin`
+- The `purlin-config-sample/` directory MUST be deleted.
+
+#### 2.5.3 Agent Definitions
+
+- `.claude/agents/engineer-worker.md` and `.claude/agents/verification-runner.md` MUST be moved to `agents/` and updated with plugin-context paths.
+- `.claude/agents/` directory MUST be empty after the move.
+- `.claude/commands/` directory MUST be deleted (empty since Phase 1).
+
+#### 2.5.4 Launcher and Old Structure Cleanup
+
+- `pl-run.sh` MUST be deleted (replaced by `purlin:start` skill).
+- Remaining `tools/` contents MUST be moved to `scripts/` or deleted. Only `dev/`-specific test files may remain in the project (under `dev/` or `tests/`, not `tools/`).
+- The `tools/` directory MUST be deleted or reduced to only `__pycache__` artifacts.
+
+#### 2.5.5 Configuration Updates
+
+- `CLAUDE.md` MUST be updated to reference the plugin model (remove submodule/launcher references).
+- `.gitignore` MUST be updated: remove submodule entries, un-ignore `.mcp.json`, add plugin cache patterns.
+- `.mcp.json` MUST be finalized with the purlin MCP server entry.
+
+### 2.6 Transition Period Constraints
 
 During the transition (Phases 0-4), both old and new structures coexist:
 
@@ -322,6 +393,81 @@ During the transition (Phases 0-4), both old and new structures coexist:
     When running as a CLI script with --help or standard arguments
     Then it produces the same output format as the original tools/cdd/scan.py
 
+#### Scenario: Hook manifest declares all handlers
+
+    Given hooks/hooks.json exists
+    When parsed as JSON
+    Then it declares handlers for SessionStart, SessionEnd, PreToolUse, PermissionRequest, PreCompact, and FileChanged
+
+#### Scenario: All hook scripts exist and are executable
+
+    Given hooks/scripts/ directory exists
+    When listing all .sh files
+    Then session-start.sh, session-end-merge.sh, mode-guard.sh, permission-manager.sh, pre-compact-checkpoint.sh, and companion-debt-tracker.sh all exist
+    And all are executable
+
+#### Scenario: Mode guard hook blocks wrong-mode writes
+
+    Given mode-guard.sh is invoked with a SPEC file path
+    And the current mode is "engineer"
+    When the hook evaluates the write
+    Then it exits with code 2 (blocking error)
+
+#### Scenario: Machine-readable file classification exists
+
+    Given references/file_classification.json exists
+    When parsed as JSON
+    Then it contains pattern-to-classification mappings
+    And it classifies features/*.md as SPEC
+    And it classifies features/i_*.md as INVARIANT
+    And it classifies features/*.impl.md as CODE
+
+#### Scenario: Old hooks removed from settings
+
+    Given .claude/settings.json exists
+    When checking for SessionStart/SessionEnd hook entries referencing old tools/ paths
+    Then zero such entries are found
+
+#### Scenario: All reference docs moved to references/
+
+    Given references/ directory exists
+    When listing *.md files
+    Then at least 15 files exist (file_classification.md, active_deviations.md, commit_conventions.md, etc.)
+    And instructions/references/ directory does not exist
+
+#### Scenario: Templates moved from purlin-config-sample
+
+    Given templates/ directory exists
+    When listing contents
+    Then config.json, PURLIN_OVERRIDES.md, CLAUDE.md, and gitignore.purlin exist
+    And purlin-config-sample/ directory does not exist
+
+#### Scenario: Agent definitions moved to agents/
+
+    Given agents/ directory exists
+    When listing *.md files
+    Then purlin.md, engineer-worker.md, and verification-runner.md exist
+    And .claude/agents/ directory is empty or does not exist
+
+#### Scenario: Old launcher deleted
+
+    Given Phase 4 is complete
+    When checking for pl-run.sh at project root
+    Then the file does not exist
+
+#### Scenario: instructions/ directory is gone
+
+    Given Phase 4 is complete
+    When checking instructions/ directory
+    Then the directory does not exist
+
+#### Scenario: .gitignore updated for plugin model
+
+    Given .gitignore exists
+    When reading the file
+    Then .mcp.json is NOT in the ignore list
+    And .purlin/cache/ IS in the ignore list
+
 ### QA Scenarios
 
 #### Scenario: Plugin validates with claude plugin validate @auto
@@ -352,6 +498,23 @@ During the transition (Phases 0-4), both old and new structures coexist:
     Given all skills/*/SKILL.md files
     When extracting all purlin:<name> cross-references
     Then every referenced skill name corresponds to an existing skills/<name>/SKILL.md file
+
+#### Scenario: Complete old structure cleanup @auto
+
+    Given Phases 0-4 are complete
+    When checking the repository structure
+    Then instructions/ directory does not exist
+    And purlin-config-sample/ directory does not exist
+    And .claude/commands/ directory is empty or does not exist
+    And .claude/agents/ directory is empty or does not exist
+    And pl-run.sh does not exist at project root
+    And tools/ contains only __pycache__ and dev-only test files (if any)
+
+#### Scenario: Hook scripts reference correct paths @auto
+
+    Given hooks/scripts/*.sh files exist
+    When searching for "tools/" path references
+    Then zero matches are found (all paths use scripts/ or ${CLAUDE_PLUGIN_ROOT})
 
 ## Regression Guidance
 - Verify skill frontmatter `name` field matches the directory name exactly
