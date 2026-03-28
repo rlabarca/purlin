@@ -36,7 +36,7 @@ No additional top-level fields are required by the schema at this time. Tooling 
 
 ### 2.2 Purlin Tools Registry
 
-*   **Path:** `<tools_root>/toolbox/purlin_tools.json` (resolved via `tools_root` in `.purlin/config.json`; default `tools/toolbox/purlin_tools.json`).
+*   **Path:** `<tools_root>/toolbox/purlin_tools.json` (resolved via `tools_root` in `.purlin/config.json`; default `scripts/toolbox/purlin_tools.json`).
 *   **Format:**
     ```json
     {
@@ -118,7 +118,7 @@ All subcommands that accept a tool name support fuzzy matching against both IDs 
 ### 2.7 File Layout
 
 ```
-tools/toolbox/
+scripts/toolbox/
   purlin_tools.json           # Framework-distributed tool registry
   resolve.py                  # Resolution algorithm
   manage.py                   # CLI tool management

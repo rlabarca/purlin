@@ -43,7 +43,7 @@ The Purlin agent does NOT print the command table at startup — it shows `Use /
 
 ### 2.5 Distribution
 
-- The skill file lives at `.claude/commands/pl-help.md` and is copied to consumer projects by `tools/init.sh` (glob-based copy of all `*.md` files in `.claude/commands/`). No changes to init or update-purlin are required.
+- The skill file lives at `skills/help/SKILL.md` and is copied to consumer projects by `scripts/init.sh` (glob-based copy of all `*.md` files in `.claude/commands/`). No changes to init or update-purlin are required.
 
 ---
 

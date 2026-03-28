@@ -15,7 +15,7 @@ When multiple agent sessions run in separate terminal tabs, there is no visual i
 
 ## 2. Requirements
 
-### 2.1 Helper Script (`tools/terminal/identity.sh`)
+### 2.1 Helper Script (`scripts/terminal/identity.sh`)
 
 A sourceable bash library (not directly executable) providing two tiers of functions:
 
@@ -40,7 +40,7 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 ### 2.2 Identity on Agent Start
 
 - The `purlin:start` skill and `purlin:mode` skill set both title and badge to the mode display name on startup and mode switch, using `identity.sh`.
-- The helper script is sourced from `$CORE_DIR/tools/terminal/identity.sh`.
+- The helper script is sourced from `$CORE_DIR/scripts/terminal/identity.sh`.
 
 ### 2.3 Identity Cleanup
 

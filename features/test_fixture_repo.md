@@ -57,7 +57,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 ### 2.4 Fixture Tool
 
-**Location:** `tools/test_support/fixture.sh` -- consumer-facing, submodule-safe.
+**Location:** `scripts/test_support/fixture.sh` -- consumer-facing, submodule-safe.
 
 **Subcommands:**
 

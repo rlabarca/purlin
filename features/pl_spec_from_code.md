@@ -53,12 +53,12 @@ When Purlin is installed into a project with an existing codebase, there is no s
 ### 2.6 Phase 3 -- Feature Generation
 
 - Anchor nodes MUST be generated before features (dependency graph roots first).
-- Each anchor node MUST be created from the canonical `_anchor.md` template (`tools/feature_templates/_anchor.md`).
+- Each anchor node MUST be created from the canonical `_anchor.md` template (`scripts/feature_templates/_anchor.md`).
 - Each anchor node MUST include a proper heading (`# Architecture:`, `# Policy:`, or `# Design:` matching its prefix type), Label and Category metadata, Purpose section, and Invariants section.
 - Each anchor node MUST be committed individually.
 - Features MUST be generated one category at a time, ordered by dependency (categories with fewer anchor node dependencies first).
 - For categories spanning more than 5 source files, the command MUST use an Explore sub-agent to read the relevant source; otherwise it MAY read directly.
-- Each feature file MUST be created from the canonical `_feature.md` template (`tools/feature_templates/_feature.md`).
+- Each feature file MUST be created from the canonical `_feature.md` template (`scripts/feature_templates/_feature.md`).
 - Each feature file MUST include: `> Label:`, `> Category:`, and `> Prerequisite:` metadata linking to relevant anchor nodes; an Overview paragraph; Requirements organized into numbered subsections; and Gherkin scenarios describing current code behavior.
 - The Scenarios section of every generated feature MUST include the note: `> **[Draft]** These scenarios were auto-generated from existing code by /pl-spec-from-code. Review and refine before marking as final.`
 - All generated features MUST have status marker `[TODO]`.

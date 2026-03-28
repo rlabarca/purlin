@@ -30,7 +30,7 @@ Multiple Purlin agents can run concurrently by using git worktrees for isolation
 
 ### 2.3 SessionEnd Hook
 
-- `tools/hooks/merge-worktrees.sh` MUST be registered as a `SessionEnd` hook in `.claude/settings.json`. The hook is always registered (not dynamically added by `purlin:start`) — it is a safe no-op when not running in a worktree.
+- `hooks/scripts/session-end-merge.sh` MUST be registered as a `SessionEnd` hook in `.claude/settings.json`. The hook is always registered (not dynamically added by `purlin:start`) — it is a safe no-op when not running in a worktree.
 - The hook MUST fire on all exit types including Ctrl+C (`prompt_input_exit`).
 - The hook MUST auto-commit pending changes before merge, including both tracked modifications and untracked files (`git ls-files --others --exclude-standard`).
 - The hook MUST NOT use `set -e`. Intermediate failures (e.g., `git add`) must not prevent the merge attempt from being reached. All git commands in the auto-commit block MUST use `|| true` for resilience.

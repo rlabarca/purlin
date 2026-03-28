@@ -48,7 +48,7 @@ All five types can also exist as invariants via the `i_` prefix (e.g., `i_arch_*
 
 ### 2.5 Template Compliance
 
-- Anchor nodes MUST use the canonical template from `tools/feature_templates/_anchor.md`.
+- Anchor nodes MUST use the canonical template from `scripts/feature_templates/_anchor.md`.
 - Required section headings (scan checks): `purpose` and `invariants` (case-insensitive substring).
 - Heading `## 1. Overview` does NOT satisfy the `purpose` check.
 

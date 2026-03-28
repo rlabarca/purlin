@@ -13,13 +13,13 @@ This policy replaces `policy_release.md`. The "release checklist" concept is ret
 
 ### 2.1 Tool ID Namespacing
 *   All toolbox tool IDs MUST be unique across the Purlin, Project, and Community namespaces within a given project.
-*   Purlin tool IDs MUST use the `purlin.` prefix. This namespace is reserved exclusively for tools defined in Purlin's own `tools/toolbox/purlin_tools.json`.
+*   Purlin tool IDs MUST use the `purlin.` prefix. This namespace is reserved exclusively for tools defined in Purlin's own `scripts/toolbox/purlin_tools.json`.
 *   Community tool IDs MUST use the `community.` prefix. This namespace is reserved for tools installed from external git repositories.
 *   Project tool IDs MUST NOT use the `purlin.` or `community.` prefix. Consumer projects SHOULD use a short project-specific namespace (e.g., `myproject.deploy_staging`) or a plain name (e.g., `deploy_staging`).
 *   Attempting to define a project tool with a `purlin.` or `community.` ID is an error; the tooling MUST reject it with a clear message explaining the reserved prefix.
 
 ### 2.2 Immutability of Purlin Tools in Consumer Projects
-*   Consumer projects MUST NOT modify `tools/toolbox/purlin_tools.json`. In a submodule deployment, this file resides inside the submodule directory and is subject to the Submodule Immutability Mandate.
+*   Consumer projects MUST NOT modify `scripts/toolbox/purlin_tools.json`. In a submodule deployment, this file resides inside the submodule directory and is subject to the Submodule Immutability Mandate.
 *   Only Purlin's own PM agent modifies purlin tools. Consumer-project agents create and manage project and community tools exclusively.
 *   To customize a purlin tool, users copy it to the project category via `/pl-toolbox copy`, which creates an editable project tool with a new (non-reserved) ID.
 
@@ -58,7 +58,7 @@ This policy replaces `policy_release.md`. The "release checklist" concept is ret
 
 *   `purlin.` prefix in project tool IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"purlin\.[^"]*"` in `.purlin/toolbox/project_tools.json`.
 *   `community.` prefix in project tool IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"community\.[^"]*"` in `.purlin/toolbox/project_tools.json`.
-*   Direct modification of `tools/toolbox/purlin_tools.json` in consumer projects (Invariant 2.2).
+*   Direct modification of `scripts/toolbox/purlin_tools.json` in consumer projects (Invariant 2.2).
 *   Silent overwrite of locally-edited community tools during `pull` (Invariant 2.4).
 
 ## Scenarios

@@ -11,8 +11,8 @@
 Provides infrastructure for running full regression suites outside the build cycle. The system has three tiers:
 
 1. **Declarative scenarios** -- QA authors JSON scenario declarations in `tests/qa/scenarios/`. Each file describes what to test, not how to test it.
-2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Engineer never touches it.
-3. **Meta-runner** -- A shell script in `tools/test_support/` discovers all scenario files, runs each via the harness runner, continues past failures, and prints a summary.
+2. **Framework-provided harness runner** -- A Python harness in `scripts/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Engineer never touches it.
+3. **Meta-runner** -- A shell script in `scripts/test_support/` discovers all scenario files, runs each via the harness runner, continues past failures, and prints a summary.
 
 Engineer mode focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. **QA is the test design authority for regression and smoke tests.** QA decides what to test, how to test it, what harness type to use, and what constitutes the critical path. QA authors the scenario declarations from multiple sources: their own verification experience, the feature spec's QA Scenarios, PM's optional Regression Guidance (if provided), and their judgment about failure modes and fragility. PM's Regression Guidance is helpful context — not a prerequisite. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so Engineer mode can batch-fix failures without re-running the suite.
 
@@ -67,7 +67,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Purpose:** Create scenario JSON files from feature specs. Infrequent -- only needed when new features reach Engineer DONE status with no scenario file.
 
-**Command file:** `.claude/commands/pl-regression-author.md`
+**Command file:** `skills/regression/SKILL.md`
 
 **Behavior:**
 
@@ -80,7 +80,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Purpose:** Execute existing regression scenarios. Routine -- the common operation.
 
-**Command file:** `.claude/commands/pl-regression-run.md`
+**Command file:** `skills/regression/SKILL.md`
 
 **Behavior:**
 
@@ -95,7 +95,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 **Purpose:** Process regression results after execution. Creates BUG discoveries for failures.
 
-**Command file:** `.claude/commands/pl-regression-evaluate.md`
+**Command file:** `skills/regression/SKILL.md`
 
 **Behavior:**
 
