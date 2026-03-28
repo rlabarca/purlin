@@ -1,34 +1,3 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "clear",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'IMPORTANT: Context was cleared. Run /pl-resume immediately to restore session context.'"
-          }
-        ]
-      },
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'IMPORTANT: Context was compacted. This project uses role-restricted Purlin agents. Role boundaries: Architect/PM never write code; Builder never writes specs; QA never writes app code. Run /pl-resume immediately to restore session context.'"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash tools/hooks/merge-worktrees.sh"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }

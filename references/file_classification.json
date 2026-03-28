@@ -1,0 +1,20 @@
+{
+  "_comment": "Machine-readable file classification for mode guard hook fallback. Patterns are evaluated in order; first match wins.",
+  "rules": [
+    {"pattern": "features/i_", "classification": "INVARIANT", "description": "Invariant files — no mode can write"},
+    {"pattern": "\\.discoveries\\.md$", "classification": "QA", "description": "Discovery sidecars"},
+    {"pattern": "tests/.*/regression\\.json$", "classification": "QA", "description": "Regression test results"},
+    {"pattern": "tests/.*/scenarios/", "classification": "QA", "description": "QA scenario results"},
+    {"pattern": "\\.impl\\.md$", "classification": "CODE", "description": "Companion files (Engineer-owned)"},
+    {"pattern": "^features/", "classification": "SPEC", "description": "Feature specs (PM-owned)"},
+    {"pattern": "^skills/", "classification": "CODE", "description": "Skill files (Engineer-owned)"},
+    {"pattern": "^scripts/", "classification": "CODE", "description": "Scripts (Engineer-owned)"},
+    {"pattern": "^hooks/", "classification": "CODE", "description": "Hook scripts (Engineer-owned)"},
+    {"pattern": "^agents/", "classification": "CODE", "description": "Agent definitions (Engineer-owned)"},
+    {"pattern": "^references/", "classification": "CODE", "description": "Reference docs (Engineer-owned for content)"},
+    {"pattern": "^templates/", "classification": "CODE", "description": "Template files (Engineer-owned)"},
+    {"pattern": "^tests/", "classification": "CODE", "description": "Test infrastructure (Engineer-owned)"},
+    {"pattern": "\\.purlin/PURLIN_OVERRIDES\\.md$", "classification": "SPEC", "description": "Project overrides (PM-owned)"},
+    {"pattern": "", "classification": "CODE", "description": "Default: everything else is CODE"}
+  ]
+}
