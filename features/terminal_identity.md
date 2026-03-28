@@ -126,7 +126,7 @@ A single function `update_session_identity <mode_display> [project]` encapsulate
 
 This function replaces the scattered inline badge-computation + dispatch logic in `pl-run.sh`, `PURLIN_BASE.md` section 4.1.1, `/pl-mode`, `/pl-resume` Step 6, and `/pl-merge` step 7.
 
-**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., `pl-run-builder.sh` phase transitions like `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
+**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
 
 ---
 

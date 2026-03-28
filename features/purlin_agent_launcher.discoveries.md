@@ -23,12 +23,12 @@
 - **Scenario:** Deprecation warning on old launcher @auto
 - **Observed Behavior:** Scenario and regression tests (T0a-T3) expect `pl-run-builder.sh` to exist and print a deprecation warning. The legacy role-specific launchers (`pl-run-builder.sh`, `pl-run-architect.sh`, etc.) were removed as part of the Purlin unified agent transition. The `project_init` regression (S10) also fails expecting these launchers to be regenerated on refresh. The spec (section 2.5) still requires deprecation wrappers but the system has moved past needing them.
 - **Expected Behavior:** Either (a) the spec should be updated to remove the deprecation warning requirement since legacy launchers are fully retired, or (b) init.sh should generate thin wrapper scripts that print a deprecation message and exit.
-- **Action Required:** PM (decide whether deprecation wrappers are still needed; if not, remove from spec)
-- **Status:** OPEN
+- **Action Required:** PM (remove spec section 2.6 and deprecation scenario from QA scenarios)
+- **Status:** RESOLVED — legacy launchers fully retired per user decision (2026-03-28). No deprecation wrappers needed.
 
 ### [BUG] Legacy launcher pl-run-builder.sh does not exist (Discovered: 2026-03-25)
 - **Scenario:** Deprecation warning on old launcher @auto
 - **Observed Behavior:** `pl-run-builder.sh` does not exist at project root. Regression tests T0a, T1, T2, T3 all fail. The spec (section 2.5) requires that old role-specific launchers exist and print a deprecation warning directing users to `pl-run.sh`. Without the file, the deprecation path is untestable.
 - **Expected Behavior:** `pl-run-builder.sh` exists, prints deprecation warning mentioning `pl-run.sh`, and starts the agent session.
-- **Action Required:** Engineer (create legacy launcher wrapper scripts that print deprecation warning and delegate to pl-run.sh) OR PM (if legacy launchers were intentionally removed, update spec to remove deprecation warning requirement)
-- **Status:** OPEN
+- **Action Required:** None — legacy launchers intentionally removed.
+- **Status:** RESOLVED — not a bug; legacy launchers are retired. Spec section 2.6 needs PM update to match.

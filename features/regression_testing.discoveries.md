@@ -20,5 +20,5 @@
 - **Scenario:** Harness runner result file persistence (all agent_behavior suites)
 - **Observed Behavior:** When `harness_runner.py` runs an `agent_behavior` suite externally (user terminal), it prints correct pass/fail counts and "Results: <path>" to stdout, but the regression.json file on disk retains the previous run's content. Verified via `stat` (mtime unchanged) and direct `python3 json.load()` (old data). Both the Claude Code session and the user's terminal see the stale file. The harness clearly executes `write_results()` (the print statements after it fire), yet the file is not updated.
 - **Expected Behavior:** `regression.json` reflects the latest run's results immediately after the harness exits.
-- **Action Required:** Engineer — investigate `write_results()` in `agent_behavior` code path. Possible causes: exception swallowed during write, OS-level buffering, or path mismatch between printed path and actual write target.
-- **Status:** OPEN
+- **Action Required:** None.
+- **Status:** RESOLVED — Root cause: OS-level buffering on macOS. `json.dump` + `close()` flushes Python buffers but doesn't guarantee disk persistence. Added `f.flush()` + `os.fsync(f.fileno())` to `write_results()` to force the write to disk before returning (2026-03-28).

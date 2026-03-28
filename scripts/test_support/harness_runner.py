@@ -882,6 +882,8 @@ def write_results(feature_name, details, passed, failed, project_root, test_file
 
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
 
     return output_path
 

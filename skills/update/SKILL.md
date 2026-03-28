@@ -52,9 +52,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - For agent files (`.claude/agents/*.md`) that appear in BOTH the consumer project AND the diff-tree output:
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/agents/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
-   - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
-     - Only check if launcher-relevant paths appeared in the diff-tree output
-     - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
+   - Legacy role-specific launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) are fully retired — skip launcher conflict checks.
 3. **Advance Submodule:**
    - `git -C <submodule_dir> checkout <resolved_target_sha>` (detached HEAD to the tag SHA or explicit version from step 1)
    - If this fails, abort with error
