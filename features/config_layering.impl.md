@@ -22,9 +22,8 @@ All Python consumers follow the Section 2.13 safe-read pattern (`try/except` wit
 
 | File | Current Pattern | Migration |
 |------|----------------|-----------|
-| `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py architect)` |
-| `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py builder)` |
-| `pl-run.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py qa)` |
+| `purlin:start` | MCP `purlin_config` tool call | Config resolved via `config_engine.py` at session entry |
+| `purlin:mode` | MCP `purlin_config` tool call | Config resolved via `config_engine.py` on mode switch |
 | `tools/cdd/scan.sh` | Inline `python3 -c "import json; ..."` for config | Replace with `resolve_config.py --key` calls |
 
 ### Writers
