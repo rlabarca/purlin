@@ -11,7 +11,7 @@
 The `/pl-resume` skill is the **entire startup flow** for the Purlin agent. The startup protocol (PURLIN_BASE.md §5) is a single line: "Run `/pl-resume`." All startup logic — merge recovery, terminal identity, command hints, scanning, work discovery, and mode activation — lives here. This prevents startup and resume flows from drifting apart.
 
 There are three entry points that all converge on `/pl-resume`:
-1. **Cold start from launcher** (`pl-run.sh` → §5 → `/pl-resume`): Fresh session, no checkpoint, instructions in system prompt.
+1. **Cold start via plugin** (`claude` launches with plugin auto-activated → `purlin:start` → `/pl-resume`): Fresh session, no checkpoint, instructions from agent definition.
 2. **After `/clear` → `/pl-resume`**: Mid-session recovery, no checkpoint, instructions may be compressed out.
 3. **After `/pl-resume save` → `/clear` → `/pl-resume`**: Warm resume, checkpoint exists, instructions may be compressed out.
 
@@ -168,15 +168,15 @@ Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never co
 
 #### 2.3.2 Step 2 -- Instruction Reload (Fresh Sessions Only)
 
-This step runs ONLY when the system prompt does not contain the Purlin agent instructions (i.e., the agent was started without `pl-run.sh`). This is the sole instruction-loading mechanism for `/pl-resume` — no separate "startup briefing" step exists.
+This step runs ONLY when the system prompt does not contain the Purlin agent instructions (i.e., the plugin agent definition was not loaded). This is the sole instruction-loading mechanism for `/pl-resume` — no separate "startup briefing" step exists.
 
 When instruction reload is needed:
 1. Read the instruction layers in order:
-   - `instructions/PURLIN_BASE.md`
+   - `agents/purlin.md` (plugin agent definition)
    - `.purlin/PURLIN_OVERRIDES.md` (if exists)
 2. Present a condensed "Mode Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules.
 
-When the system prompt already contains the Purlin instructions (agent was started via launcher), skip this step silently (no output).
+When the system prompt already contains the Purlin instructions (plugin auto-activated on session start), skip this step silently (no output).
 
 #### 2.3.3 Step 3 -- Command Hint
 
@@ -288,14 +288,14 @@ Resolve pending worktree merge failures. Called automatically by Step 0 of the r
 
 5. **Return control** to the caller (startup protocol continues).
 
-### 2.5 Launcher Cleanup Contract
+### 2.5 Session Cleanup Contract
 
-The launcher (`pl-run.sh`) is responsible for cleaning up PID-scoped files when the terminal session ends. Its EXIT trap MUST remove:
+The SessionEnd hook is responsible for cleaning up PID-scoped files when the session ends. It MUST remove:
 
-1. **Session overrides:** `rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_overrides_$$.json"` (already implemented)
-2. **Session checkpoint:** `rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/session_checkpoint_$$.md"`
+1. **Session overrides:** `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`
+2. **Session checkpoint:** `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`
 
-This ensures that normal terminal closure (including Ctrl+C) does not leave orphaned checkpoint files. The stale checkpoint reaping in Step 0 (Section 2.3.0) serves as a safety net for abnormal termination (kill -9, power loss) where the EXIT trap cannot run.
+This ensures that normal session closure does not leave orphaned checkpoint files. The stale checkpoint reaping in Step 0 (Section 2.3.0) serves as a safety net for abnormal termination (kill -9, power loss) where the hook cannot run.
 
 ---
 
@@ -520,13 +520,13 @@ This ensures that normal terminal closure (including Ctrl+C) does not leave orph
     Then Step 0 leaves session_checkpoint_12345.md in place
     And Step 1 does NOT read session_checkpoint_12345.md (wrong PID)
 
-#### Scenario: Launcher EXIT trap cleans up checkpoint file
+#### Scenario: SessionEnd hook cleans up checkpoint file
 
-    Given the launcher started with PID 46946
+    Given the session started with PURLIN_SESSION_ID 46946
     And the agent saved a checkpoint to session_checkpoint_46946.md
-    When the terminal session ends (EXIT trap fires)
+    When the session ends (SessionEnd hook fires)
     Then .purlin/cache/session_checkpoint_46946.md is deleted
-    And .purlin/cache/session_overrides_46946.md is deleted
+    And .purlin/cache/session_overrides_46946.json is deleted
 
 #### Scenario: Unscoped checkpoint consumed as migration path @auto
 
@@ -548,7 +548,7 @@ None.
 - Unscoped and legacy checkpoints are consumed as a migration path (one-time, then deleted)
 - Stale checkpoints (dead PIDs) are reaped in Step 0 before checkpoint detection
 - Live checkpoints from other terminals are never consumed or reaped
-- Launcher EXIT trap cleans up both session_overrides and session_checkpoint files
+- SessionEnd hook cleans up both session_overrides and session_checkpoint files
 - Checkpoint survives /clear and agent restarts within the same terminal (PID persists)
 - find_work=false respected during restore (no auto-generated work plan, no scan)
 - Session overrides are PID-scoped and read with liveness check
