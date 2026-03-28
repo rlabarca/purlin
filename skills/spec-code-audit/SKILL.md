@@ -61,7 +61,7 @@ Parent loads project state, builds the transitive prerequisite constraint map, a
 
 ### Step 0.1 -- Load Project State
 
-1. Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,deps` and read the JSON output.
+1. Run the MCP `purlin_scan` tool (with `only: "features,deps"`) and read the JSON result.
 2. Read `.purlin/cache/dependency_graph.json` -- note all prerequisite relationships and root anchor nodes.
 3. For each feature, read the feature spec directly to check section completeness and scenario count.
 
@@ -428,7 +428,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 ```
 
 3. Commit all escalation entries together.
-4. Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` after committing to refresh project state (the scan will surface these as Engineer action items).
+4. Run the MCP `purlin_scan` tool after committing to refresh project state (the scan will surface these as Engineer action items).
 
 ### If Running as Engineer
 
@@ -469,6 +469,6 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 ### Post-Remediation
 
 After all items are processed:
-1. Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to refresh project state.
+1. Run the MCP `purlin_scan` tool to refresh project state.
 2. Delete `.purlin/cache/audit_state.json` if it exists.
 3. Summarize what was done: N items fixed, N items escalated, any items deferred with rationale.

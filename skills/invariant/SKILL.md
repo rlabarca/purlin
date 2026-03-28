@@ -70,7 +70,7 @@ Import an invariant from an external git repo.
    - `> Format-Version: 1.0` (if not already present)
 6. **Copy to `features/`** with `i_` prefix prepended to the filename. If the source file is `policy_security.md`, the local file becomes `features/i_policy_security.md`.
 7. **Commit** with tag: `invariant-add(features/i_<type>_<name>.md): v<version> from <repo>`.
-8. **Run scan:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to integrate into dependency graph and trigger cascade if global.
+8. **Run scan:** Run the MCP `purlin_scan` tool to integrate into dependency graph and trigger cascade if global.
 9. **Clean up** the shallow clone.
 
 ---
@@ -123,7 +123,7 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
    - Update those references to point to the new `features/i_design_<name>.md`.
    - Delete the old `features/<existing-anchor>` file.
 7. **Commit** with tag: `invariant-add(features/i_design_<name>.md): Figma-sourced`.
-8. **Run scan:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to cascade-reset dependent features.
+8. **Run scan:** Run the MCP `purlin_scan` tool to cascade-reset dependent features.
 
 ---
 
@@ -147,7 +147,7 @@ Pull latest version from source.
    - Present cascade impact: list features that will reset to `[TODO]`.
 6. **On confirmation:** Overwrite local file, update embedded metadata (`> Version:`, `> Source-SHA:`, `> Synced-At:`).
 7. **Commit** with tag: `invariant-sync(features/i_<name>.md): v<old> -> v<new>`.
-8. **Run scan:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to trigger cascade (semver-gated per `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md`):
+8. **Run scan:** Run the MCP `purlin_scan` tool to trigger cascade (semver-gated per `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md`):
    - MAJOR bump: full cascade.
    - MINOR bump: cascade with warning.
    - PATCH bump: no cascade (informational only).
@@ -289,4 +289,4 @@ Remove an invariant from the project. Requires PM mode.
    - Remove the `> Prerequisite:` lines from dependent feature files.
    - Delete `features/<file-name>`.
 5. **Commit** with message: `pm(invariant): remove <file-name>`.
-6. **Run scan:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to update dependency graph.
+6. **Run scan:** Run the MCP `purlin_scan` tool to update dependency graph.

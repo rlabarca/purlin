@@ -17,12 +17,12 @@ Available to all agents and modes.
 
 ## Mode-Scoped Scan
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` with flags based on the current mode:
+Run the MCP `purlin_scan` tool with flags based on the current mode:
 
-- **PM mode:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,discoveries,deviations,git`
-- **Engineer mode:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,discoveries,plan,git --tombstones`
-- **QA mode:** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,discoveries,git,smoke`
-- **Open mode (no mode active):** `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --tombstones`
+- **PM mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,deviations,git"`)
+- **Engineer mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,plan,git"`, `tombstones: true`)
+- **QA mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,git,smoke"`)
+- **Open mode (no mode active):** Run the MCP `purlin_scan` tool (with `tombstones: true`)
 
 Interpret the scan results to present actionable work for the **current mode only**. In open mode, show work for all modes.
 

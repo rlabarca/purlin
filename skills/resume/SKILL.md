@@ -211,7 +211,7 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 **When a checkpoint exists (warm resume):**
 - Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted — the checkpoint is the authority for both mode and work plan.
-- Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` for fresh project state. The work plan comes from the checkpoint's "Next" list.
+- Run the MCP `purlin_scan` tool for fresh project state. The work plan comes from the checkpoint's "Next" list.
 - Re-enter the mode recorded in the checkpoint.
 
 **When no checkpoint exists (cold start):**
@@ -220,7 +220,7 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
    - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` Skip the scan. Skip work plan generation. Proceed directly to the recovery summary (Step 5) with no action items.
    - `find_work: true` -- continue to step 2.
 
-2. **Run scan and status:** Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to get the current project state. Run `purlin:status` to interpret the results and present work organized by mode.
+2. **Run scan and status:** Run the MCP `purlin_scan` tool to get the current project state. Run `purlin:status` to interpret the results and present work organized by mode.
 
 3. **Generate work plan:**
    - Use `purlin:status` output to generate a full work plan organized by mode.

@@ -92,7 +92,7 @@ Analyze the project and suggest features that should be smoke tier.
 
 ### Protocol
 
-1. **Run scan.** Execute `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,smoke,deps` and parse the JSON output.
+1. **Run scan.** Run the MCP `purlin_scan` tool (with `only: "features,smoke,deps"`) and parse the JSON result.
 
 2. **Identify smoke candidates.** A feature is a strong smoke candidate if:
    - It is a prerequisite for 3+ other features (high fan-out in dependency graph)
