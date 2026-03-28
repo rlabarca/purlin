@@ -6,7 +6,7 @@
 |-----------|-------------------|-----|-----------|
 | (see prose) | [ACKNOWLEDGED]** test_support test file missing 3 state fields | DISCOVERY | PENDING |
 
-*   **Tool Location:** `.claude/commands/pl-spec-code-audit.md` (agent skill command file)
+*   **Tool Location:** `skills/spec-code-audit/SKILL.md` (agent skill command file)
 *   **Test Location:** `tests/pl_spec_code_audit/test_command.py`
 *   The command is an agent instruction file, not executable code. Tests verify that the command file contains the correct instructions, keywords, structural elements, and referenced infrastructure for all 54 automated scenarios.
 *   The command file originally referenced "9 gap dimensions" in two places; corrected to "10", then extended to "12" with the addition of Requirement Hygiene (dimension 11) and Code Ownership (dimension 12). The spec's Gap Dimensions Table and all command file references now list 12 dimensions. Now updated to 12 dimensions with the addition of Dimension 12 (Code ownership).
@@ -40,5 +40,5 @@ Three independent mechanisms layer to reduce noise:
 **[DISCOVERY] [ACKNOWLEDGED]** test_support test file missing 3 state fields
 **Source:** /pl-spec-code-audit --deep (M15)
 **Severity:** MEDIUM
-**Details:** `tools/test_support/test_pl_spec_code_audit.py` `TestCrossSessionResume.test_state_file_tracks_required_fields` checks for 7 fields but omits `timestamp`, `code_inventory`, and `ownership_map_complete`. The newer `tests/pl_spec_code_audit/test_command.py` correctly checks all 10.
+**Details:** `scripts/test_support/test_pl_spec_code_audit.py` `TestCrossSessionResume.test_state_file_tracks_required_fields` checks for 7 fields but omits `timestamp`, `code_inventory`, and `ownership_map_complete`. The newer `tests/pl_spec_code_audit/test_command.py` correctly checks all 10.
 **Suggested fix:** Add the 3 missing fields to the older test file's assertion list.
