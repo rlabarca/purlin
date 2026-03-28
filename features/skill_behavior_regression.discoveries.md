@@ -70,7 +70,7 @@
 ### [BUG] Startup produces markdown lists instead of Unicode border tables (Discovered: 2026-03-24)
 - **Scenario:** features/skill_behavior_regression.md:architect-startup-command-table, builder-startup-identifies-todo, qa-startup-identifies-testing
 - **Observed Behavior:** Agents now have partial role awareness (know they're PM/Engineer/QA) but output markdown command lists (`- **pl-spec** — ...`) instead of Unicode border tables (`━━━`). All three assertion_tier-2 checks for "Unicode border characters" fail. Example architect actual: "Ready for PM session. What would you like to work on?\n\nI have access to Purlin framework commands, including those for PM roles like:\n- **pl-spec** — Define specifications"
-- **Expected Behavior:** Startup prints full Unicode border command table as defined in `instructions/references/architect_commands.md`, `builder_commands.md`, `qa_commands.md`
+- **Expected Behavior:** Startup prints full Unicode border command table as defined in `references/architect_commands.md`, `builder_commands.md`, `qa_commands.md`
 - **Action Required:** Engineer
 - **Status:** RESOLVED
 - **Resolution:** `build_print_mode_context()` pre-loads command table content into the system prompt so the model can print it verbatim in `--print` mode.
