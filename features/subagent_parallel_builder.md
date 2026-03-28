@@ -101,7 +101,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 6.  On merge conflict: same safe-file auto-resolve logic.
 7.  Only sequential fallback for actual code conflicts -- preserves already-merged features.
 
-**Source reference:** `try_auto_resolve_conflicts()` at `pl-run.sh:734`, rebase loop at lines 2084-2126.
+**Source reference:** The `try_auto_resolve_conflicts()` logic and rebase loop are implemented in the plugin's merge protocol handler.
 
 ### 2.5 Instruction Consolidation
 
@@ -190,8 +190,7 @@ When `auto_start: true` in Engineer mode's config:
 
 ### 2.8 Continuous Mode Deprecation
 
-*   `--continuous` flag in `pl-run.sh` prints a deprecation warning and exits.
-*   Warning message: "The --continuous flag is deprecated. Set `auto_start: true` in agent config and relaunch the interactive Engineer."
+*   The `--continuous` flag and shell launcher `pl-run.sh` are retired. Sessions are started via `claude` with the Purlin plugin auto-activating. Multi-phase auto-progression is handled by the `auto_start: true` config setting within the interactive session (see Section 2.7).
 *   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/tombstones/continuous_phase_builder.md`).
 *   Deprecated config keys: `continuous_evaluator_model`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
@@ -388,15 +387,15 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     When Engineer mode completes all 4 phases
     Then all phases are marked COMPLETE
     And the delivery plan is deleted
-    And no external bash orchestrator was involved
+    And no external orchestrator was involved
 
-#### Scenario: --continuous flag prints deprecation warning and exits
+#### Scenario: Continuous mode replaced by auto_start config
 
-    Given pl-run.sh exists
-    When the user invokes pl-run.sh --continuous
-    Then a deprecation warning is printed
-    And the warning includes: "Set auto_start: true in agent config and relaunch the interactive Engineer"
-    And the script exits without launching an Engineer session
+    Given the user wants continuous multi-phase building
+    When the user sets auto_start: true in agent config
+    And starts a session via claude (plugin auto-activates)
+    Then purlin:start reads the auto_start setting from resolved config
+    And Engineer mode auto-advances through phases without halting
 
 #### Scenario: Bright-line rules exist only in /pl-build skill
 

@@ -72,14 +72,13 @@ full analysis to Section 2.8.
 
 1. Read old SHA from `.purlin/.upstream_sha`
 2. Read new SHA (the resolved target SHA from Section 2.3)
-3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify upstream-changed command and agent files in a single invocation. Also check launcher-relevant paths (`tools/init.sh`) in the same or a second `diff-tree` call.
-4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/`, `.claude/agents/`, and no launcher-relevant paths changed, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
+3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify upstream-changed command and agent files in a single invocation.
+4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/` and `.claude/agents/`, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
 5. For each `.claude/commands/pl-*.md` or `.claude/agents/*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
    - Compare local file against old upstream version: `git -C <submodule> show <old_sha>:.claude/commands/<file>`
    - If they differ, flag as "locally modified"
-6. For each launcher script (`pl-run.sh`, `pl-run.sh`, `pl-run.sh`, `pl-run.sh`):
-   - Only check if launcher-relevant paths appeared in the diff-tree output
-   - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
+
+Note: Launcher scripts are retired. The pre-update conflict scan no longer checks launcher files.
 
 ### 2.5 Advance Submodule
 
@@ -115,7 +114,7 @@ project-root artifacts:
 
 *   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic)
 *   Agent files (new/updated `.claude/agents/*.md` are copied; locally modified files are preserved by init's timestamp logic)
-*   Launcher scripts (`pl-run-*.sh` regenerated)
+*   Stale launcher cleanup (legacy `pl-run.sh`, `pl-run-*.sh` removed if present)
 *   Project-root shim (`pl-init.sh` updated with new SHA and version)
 *   `.purlin/.upstream_sha` (updated to current submodule HEAD)
 
@@ -177,13 +176,14 @@ Two cleanup mechanisms run in sequence:
 
 #### A. Known Stale Root Scripts
 
-Check for legacy-named scripts at the consumer project root:
-- `run_architect.sh` (renamed to `pl-run.sh`)
-- `run_builder.sh` (renamed to `pl-run.sh`)
-- `run_qa.sh` (renamed to `pl-run.sh`)
+Check for legacy scripts at the consumer project root:
+- `run_architect.sh` (retired -- replaced by plugin model)
+- `run_builder.sh` (retired -- replaced by plugin model)
+- `run_qa.sh` (retired -- replaced by plugin model)
 - `purlin_init.sh` (renamed to `pl-init.sh`)
-- `pl-cdd-start.sh` (removed — CDD dashboard discontinued)
-- `pl-cdd-stop.sh` (removed — CDD dashboard discontinued)
+- `pl-cdd-start.sh` (removed -- CDD dashboard discontinued)
+- `pl-cdd-stop.sh` (removed -- CDD dashboard discontinued)
+- `pl-run.sh`, `pl-run-*.sh` (retired -- replaced by `purlin:start` skill and plugin hooks)
 
 If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
 if none found. In `--dry-run` mode, list but do not delete.
@@ -390,19 +390,11 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
     And waits for user decision
 
-#### Scenario: Top-Level Script Updated Automatically
-    Given pl-run.sh changed upstream
-    And the consumer's pl-run.sh matches the old version
-    When /pl-update-purlin is invoked
-    Then init.sh regenerates pl-run.sh
-
-#### Scenario: Top-Level Script with Local Changes
-    Given pl-run.sh changed upstream
-    And the consumer has modified pl-run.sh locally
-    When /pl-update-purlin is invoked
-    Then the skill shows the diff between user changes and upstream changes
-    And offers merge strategies
-    And waits for user approval
+#### Scenario: Stale Launcher Scripts Removed on Update
+    Given legacy launcher scripts (pl-run.sh, pl-run-*.sh) exist at the project root
+    When /pl-update-purlin is invoked and update completes
+    Then init.sh removes all legacy launcher scripts during refresh
+    And no new launcher scripts are generated
 
 #### Scenario: New Config Keys Added Upstream
     Given upstream added new config key "agents.architect.review_mode" in config.json
@@ -414,7 +406,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 #### Scenario: Stale Artifacts Detected and Cleaned
     Given the consumer project has run_builder.sh at the project root (legacy naming)
-    And the current Purlin version expects pl-run.sh instead
+    And the current Purlin version has retired all launcher scripts
     When /pl-update-purlin completes the update
     Then the skill detects run_builder.sh as a stale artifact
     And prompts the user to remove it
@@ -533,7 +525,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 #### Scenario: Fast Path Completes Without Conflict Analysis
     Given the submodule is behind the latest release tag by 5 commits
-    And no command files or launcher scripts have been locally modified
+    And no command files have been locally modified
     When /pl-update-purlin is invoked and the user confirms
     Then the submodule is advanced to the resolved tag SHA
     And init.sh --quiet runs
@@ -543,7 +535,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 #### Scenario: Diff-Tree Early Exit Skips Per-File Scan
     Given the submodule is behind by 2 commits
-    And upstream changed zero files in .claude/commands/ and zero launcher-relevant paths
+    And upstream changed zero files in .claude/commands/ and .claude/agents/
     When /pl-update-purlin runs the pre-update conflict scan
     Then git diff-tree is invoked once
     And no per-file git show comparisons are executed
