@@ -1,5 +1,7 @@
 # What's New in v0.8.5
 
+> **Note:** The `pl-run.sh` launcher introduced in this release was subsequently retired in v0.8.6 as part of the plugin migration. It has been replaced by the `purlin:start` skill, which runs inside an already-active Claude Code session. References to `./pl-run.sh` below are historical.
+
 Upgrading from v0.8.4 or earlier? Here's everything that changed.
 
 ---

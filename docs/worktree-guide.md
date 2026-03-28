@@ -6,17 +6,17 @@ How to run multiple Purlin agents in parallel using isolated git worktrees, and 
 
 ## Launching a Worktree Agent
 
-Add `--worktree` to any `pl-run.sh` invocation:
+Add `--worktree` to any `purlin:start` invocation:
 
-```bash
+```
 # Engineer in a worktree
-./pl-run.sh --worktree --mode engineer
+purlin:start --worktree --mode engineer
 
 # QA in a worktree
-./pl-run.sh --worktree --mode qa
+purlin:start --worktree --mode qa
 
 # Auto-build in a worktree
-./pl-run.sh --worktree --auto-build
+purlin:start --worktree --build
 ```
 
 Each `--worktree` launch creates an isolated copy of the repository under `.purlin/worktrees/` with a branch named `purlin-<mode>-<YYYYMMDD>-<HHMMSS>`. The agent works entirely inside this copy — it cannot modify the main working directory.

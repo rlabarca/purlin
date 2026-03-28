@@ -2,7 +2,7 @@
 
 ## Overview
 
-Purlin is added to your project as a git submodule. A single init script sets up everything: config files, the agent launcher, slash commands, and git hooks. When a new version is released, you update the submodule and the agent refreshes the rest.
+Purlin is a Claude Code plugin added to your project as a git submodule. A single init script sets up everything: config files, slash commands, and git hooks. You start sessions with `claude` and run `purlin:start` inside the session. When a new version is released, you update the submodule and the agent refreshes the rest.
 
 ---
 
@@ -42,7 +42,6 @@ This detects a first-time setup and runs **Full Init Mode**:
 
 - Copies config templates to `.purlin/` (config, overrides).
 - Sets `tools_root` to `"purlin/tools"` in your config.
-- Generates the agent launcher (`pl-run.sh`).
 - Distributes slash commands to `.claude/commands/`.
 - Creates the `features/` directory.
 - Updates `.gitignore` with Purlin-specific patterns.
@@ -57,7 +56,13 @@ git add -A && git commit -m "init purlin"
 **5. Start the agent:**
 
 ```bash
-./pl-run.sh
+claude
+```
+
+Then inside the Claude Code session:
+
+```
+purlin:start
 ```
 
 On first launch, the agent enters PM mode, asks what you're building, and creates your first spec.
@@ -77,8 +82,7 @@ my-project/
 │   └── agents/*.md              # Agent definitions
 ├── features/                    # Feature specs go here
 ├── purlin/                      # The submodule (do not edit)
-├── pl-init.sh                   # Init shim (committed)
-└── pl-run.sh                    # Agent launcher
+└── pl-init.sh                   # Init shim (committed)
 ```
 
 ---
@@ -138,7 +142,7 @@ git add purlin .purlin pl-init.sh .claude/commands .claude/agents
 git commit -m "update purlin to <version>"
 ```
 
-Refresh Mode updates commands and the launcher. It never touches:
+Refresh Mode updates commands. It never touches:
 
 - `.purlin/config.json` or `config.local.json`
 - `.purlin/PURLIN_OVERRIDES.md`

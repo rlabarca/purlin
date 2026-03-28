@@ -4,7 +4,7 @@
 
 # Purlin
 
-## Current Release: v0.8.5 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
+## Current Release: v0.8.6 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
 
 **Spec-First Collaborative Agentic Development**
 
@@ -45,12 +45,16 @@ git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 git add -A && git commit -m "init purlin"
 ```
 
-The init script checks for missing tools and tells you how to install them. It creates `features/`, `.purlin/` (config and overrides), `pl-run.sh` (the agent launcher), and slash commands (`.claude/commands/`).
+The init script checks for missing tools and tells you how to install them. It creates `features/`, `.purlin/` (config and overrides), and slash commands (`.claude/commands/`).
 
-Start the agent:
+Start the agent by launching Claude Code and running `purlin:start`:
 
 ```bash
-./pl-run.sh
+claude
+```
+
+```
+purlin:start
 ```
 
 On first launch, the agent enters PM mode and asks what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
@@ -58,9 +62,9 @@ On first launch, the agent enters PM mode and asks what you're building. If you 
 Switch modes inside the session:
 
 ```
-/pl-mode pm        # write specs, design features
-/pl-mode engineer  # implement code, run tests
-/pl-mode qa        # verify features, record discoveries
+purlin:mode pm        # write specs, design features
+purlin:mode engineer  # implement code, run tests
+purlin:mode qa        # verify features, record discoveries
 ```
 
 ### Collaborator Setup
@@ -87,25 +91,13 @@ This fetches the latest release tag, advances the submodule, refreshes commands 
 
 #### Upgrading from v0.8.4 or earlier
 
-v0.8.4 and earlier used separate agents per role (`pl-run-architect.sh`, `pl-run-builder.sh`, etc.). v0.8.5 uses a single unified agent (`pl-run.sh`) with three operating modes.
+v0.8.4 and earlier used separate agents per role (`pl-run-architect.sh`, `pl-run-builder.sh`, etc.). These were replaced by the `purlin:start` skill that runs inside an active Claude Code session.
 
-The old `/pl-update-purlin` skill predates the migration module, so the upgrade takes two passes:
-
-1. **From your current agent session** (any old launcher), run `/pl-update-purlin`. This advances the submodule and installs the new skill files.
-2. **Exit the session.**
-3. **Start a new session with `./pl-run.sh`** — the unified launcher that init created during step 1.
-4. **Run `/pl-update-purlin` again.** This time, the skill will ask you to finalize the update. That's when it converts your project:
-   - Creates the unified agent config (cloned from your existing settings)
-   - Consolidates your override files into one `PURLIN_OVERRIDES.md`
-   - Renames role references in your feature specs (Architect → PM, Builder → Engineer)
-   - Adds Active Deviations tables to companion files
-   - Deletes old launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`)
-
-After step 4, `./pl-run.sh` is the only launcher.
+To upgrade, run `/pl-update-purlin` from any agent session. The migration module handles config consolidation, role renames (Architect to PM, Builder to Engineer), and cleanup of old launcher scripts.
 
 ### Configuration
 
-**Startup controls:** Set `find_work: false` in `.purlin/config.local.json` to skip work discovery on launch. Set `auto_start: true` (with `find_work: true`) to begin executing immediately without waiting for approval. See the [Installation Guide](docs/installation-guide.md) for details.
+**Startup controls:** Set `find_work: false` in `.purlin/config.local.json` to skip work discovery on launch. Set `auto_start: true` (with `find_work: true`) to begin executing immediately without waiting for approval. Model selection is configured in `.purlin/config.json`. See the [Installation Guide](docs/installation-guide.md) for details.
 
 **Python environment:** Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) need: `python3 -m venv .venv && .venv/bin/pip install -r purlin/requirements-optional.txt`
 
@@ -151,5 +143,4 @@ Created by `pl-init.sh` in your project root:
 *   `purlin/` — The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` — Your project-specific overrides and config.
 *   `features/` — Your feature specifications.
-*   `pl-run.sh` — The agent launcher. Start all sessions here.
 *   `pl-init.sh` — Collaborator setup shim. Commit this.

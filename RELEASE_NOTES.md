@@ -3,8 +3,8 @@
 ### v0.8.5 — 2026-03-26
 
 **Unified Agent**
-- One agent, three modes. `pl-run.sh` replaces the four separate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). Switch modes mid-session with `/pl-mode pm|engineer|qa`
-- Automated migration from v0.8.4: run `/pl-update-purlin` twice (once from old launcher, once from new) and the migration module handles config consolidation, file renames, and artifact cleanup
+- One agent, three modes. The `purlin:start` skill replaces the four separate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). Switch modes mid-session with `purlin:mode pm|engineer|qa`
+- Automated migration from v0.8.4: run `/pl-update-purlin` and the migration module handles config consolidation, file renames, and artifact cleanup
 - Strict write boundaries enforced per mode -- open mode (no mode active) blocks all file writes until a mode is activated
 
 **CDD Dashboard & Critic Retired**
@@ -58,14 +58,14 @@
 **Removed**
 - CDD Dashboard (server, tests, all related specs and code)
 - Critic coordination engine (replaced by scan engine)
-- Four legacy agent launchers (replaced by `pl-run.sh`)
+- Four legacy agent launchers (replaced by `purlin:start`)
 - Release checklist system (replaced by Agentic Toolbox)
 - 17 legacy feature specs tombstoned
 
 ### v0.8.4 — 2026-03-24
 
 **Extended Context Models**
-- Agents can now use Opus 4.6 with a 1M token context window -- select it in the CDD Dashboard or launcher scripts
+- Agents can now use Opus 4.6 with a 1M token context window -- select it in config or at startup
 - A one-time cost warning prevents surprise charges on Pro plans; once acknowledged, it won't ask again
 
 **Parallel Feature Building**
@@ -106,8 +106,8 @@
 - Fixture repos can be pushed to a remote so every team member starts from the same test state
 
 **Config & Infrastructure**
-- Agent launchers register named sessions so Claude Code's remote control can target each role individually
-- Agent launchers automatically update Claude Code if the installed version is below the minimum required
+- Named sessions so Claude Code's remote control can target each role individually
+- Automatic Claude Code version check if the installed version is below the minimum required
 - When Purlin adds new models upstream, your local config overrides are preserved instead of replaced
 - Tools now correctly detect the project root when Purlin is nested as a submodule inside a larger repository
 
@@ -239,8 +239,7 @@
 
 **New Install and Update Process**
 - `pl-init.sh` replaces the old `init.sh` as the single entry point for both first-time setup and collaborator onboarding. It creates launchers, commands, symlinks, and the `.purlin/` directory.
-- Agent launchers renamed from `run_*.sh` to `pl-run-*.sh` for consistency. Running `pl-init.sh` on an existing project repairs missing launchers without overwriting config.
-- `--regenerate-launchers` flag removes stale launcher names during upgrades.
+- Running `pl-init.sh` on an existing project refreshes commands without overwriting config.
 - `/pl-update-purlin` provides intelligent submodule updates with semantic change analysis and conflict resolution for `.purlin/` customizations.
 
 ### v0.7.5 — 2026-02-26
