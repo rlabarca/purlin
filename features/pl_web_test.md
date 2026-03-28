@@ -221,13 +221,13 @@ The following legacy artifacts from prior naming conventions MUST be removed or 
 
 The following instruction files MUST be updated by Engineer mode to reference the new skill:
 
-- `instructions/references/feature_format.md` -- Add `> Web Test: <url>` and `> Web Start: <command>` to blockquote metadata documentation.
-- `instructions/references/visual_spec_convention.md` -- Document that `> Web Test:` enables automated visual verification via Playwright MCP. Update on-demand loader notice to include `/pl-web-test`.
-- `instructions/references/visual_verification_protocol.md` -- Add Section 5.4.7: Playwright MCP automated alternative referencing `/pl-web-test`. Update on-demand loader notice to include `/pl-web-test`.
+- `references/feature_format.md` -- Add `> Web Test: <url>` and `> Web Start: <command>` to blockquote metadata documentation.
+- `references/visual_spec_convention.md` -- Document that `> Web Test:` enables automated visual verification via Playwright MCP. Update on-demand loader notice to include `/pl-web-test`.
+- `references/visual_verification_protocol.md` -- Add Section 5.4.7: Playwright MCP automated alternative referencing `/pl-web-test`. Update on-demand loader notice to include `/pl-web-test`.
 - `instructions/PURLIN_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 3.0). Add brief reference in Section 5.4 noting the automated alternative for web-testable features.
 - `instructions/PURLIN_BASE.md` -- Add `/pl-web-test` to the authorized commands list (Section 2.0). Add brief reference in Section 5.3 (Verify Locally) noting web verification as a pre-TESTING validation option.
-- `instructions/references/qa_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-verify`.
-- `instructions/references/builder_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-propose`.
+- `references/qa_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-verify`.
+- `references/builder_commands.md` -- Add `/pl-web-test [name]` entry to both command table variants (Main, Collab), placed after `/pl-propose`.
 
 ### 2.14 Web Test Fixture Tags
 

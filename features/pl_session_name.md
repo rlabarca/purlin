@@ -50,7 +50,7 @@ Updated: terminal title, iTerm badge
 
 ### 2.5 Path Resolution
 
-The skill uses `{tools_root}/terminal/identity.sh` resolved per `instructions/references/path_resolution.md`.
+The skill uses `{tools_root}/terminal/identity.sh` resolved per `references/path_resolution.md`.
 
 ---
 

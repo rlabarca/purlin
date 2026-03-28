@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The commit conventions reference (`instructions/references/commit_conventions.md`) defines commit message format, mode attribution prefixes, status tag format, scope types, and lifecycle reset exemption tags. All skills and instruction files reference this single file for commit format.
+The commit conventions reference (`references/commit_conventions.md`) defines commit message format, mode attribution prefixes, status tag format, scope types, and lifecycle reset exemption tags. All skills and instruction files reference this single file for commit format.
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The knowledge colocation reference (`instructions/references/knowledge_colocation.md`) defines where implementation knowledge, architectural constraints, and verification findings are stored. It covers anchor nodes (arch/design/policy), companion files, discovery sidecars, the cross-cutting standards pattern, and discovery types with lifecycle.
+The knowledge colocation reference (`references/knowledge_colocation.md`) defines where implementation knowledge, architectural constraints, and verification findings are stored. It covers anchor nodes (arch/design/policy), companion files, discovery sidecars, the cross-cutting standards pattern, and discovery types with lifecycle.
 
 ---
 

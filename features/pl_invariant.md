@@ -31,12 +31,12 @@ The full anchor prefix set becomes: `('arch_', 'design_', 'policy_', 'ops_', 'pr
 
 ### 2.3 Invariant Format
 
-All invariant files MUST conform to the canonical format defined in `instructions/references/invariant_format.md`. Key requirements:
+All invariant files MUST conform to the canonical format defined in `references/invariant_format.md`. Key requirements:
 
 - Required metadata: `> Format-Version:`, `> Invariant: true`, `> Version:`, `> Source:`, `> Scope:`.
 - Git-sourced invariants additionally require: `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`.
 - Figma-sourced invariants additionally require: `> Figma-URL:`, `> Synced-At:`.
-- Required sections vary by type (see `instructions/references/invariant_format.md`):
+- Required sections vary by type (see `references/invariant_format.md`):
   - arch/policy/ops: `## Purpose` + `## <Domain> Invariants`
   - design (including Figma-sourced): `## Purpose` + either `## <Domain> Invariants` or `## Figma Source`
   - prodbrief: `## Purpose` + `## User Stories` + `## Success Criteria`

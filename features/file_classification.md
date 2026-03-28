@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The file classification reference (`instructions/references/file_classification.md`) defines which files are CODE (Engineer-owned), SPEC (PM-owned), or QA-OWNED. All mode write-access rules and the mode guard reference this single file. When a new file type is introduced, this is the only place to update — mode definitions in PURLIN_BASE.md do not maintain inline lists.
+The file classification reference (`references/file_classification.md`) defines which files are CODE (Engineer-owned), SPEC (PM-owned), or QA-OWNED. All mode write-access rules and the mode guard reference this single file. When a new file type is introduced, this is the only place to update — mode definitions in PURLIN_BASE.md do not maintain inline lists.
 
 ---
 

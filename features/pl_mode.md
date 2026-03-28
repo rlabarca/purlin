@@ -17,14 +17,14 @@ The `/pl-mode` skill explicitly switches the Purlin agent's operating mode (Engi
 - MUST accept one argument: `pm`, `engineer`, or `qa`.
 - MUST enforce the pre-switch check before switching (uncommitted work prompt, companion file gate for Engineer mode exit).
 - MUST update iTerm badge and terminal title to reflect the new mode, preserving the current branch context in parentheses (e.g., `Engineer (main)`, not bare `Engineer`). See `features/terminal_identity.md` §2.4.
-- MUST print the mode's command subset from `instructions/references/purlin_commands.md`.
+- MUST print the mode's command subset from `references/purlin_commands.md`.
 
 ### 2.2 No-Argument Status Display
 
 When invoked with no arguments, `/pl-mode` displays the current mode status instead of switching:
 
 - Current mode name (or "No mode active" if in open mode)
-- Available skills for the current mode (read from `instructions/references/purlin_commands.md`)
+- Available skills for the current mode (read from `references/purlin_commands.md`)
 - Hint: "Switch with `/pl-mode <pm|engineer|qa>`"
 
 This is read-only — no mode change, no terminal identity update.

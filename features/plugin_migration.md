@@ -39,7 +39,7 @@ Three files establish the plugin identity. No existing files are moved or delete
 
 - `agents/purlin.md` MUST contain the full Purlin agent system prompt (current content of `instructions/PURLIN_BASE.md`).
 - The file MUST include YAML frontmatter with: `name: purlin`, `description`, `model: claude-opus-4-6[1m]`, `effort: high`.
-- The agent body MUST update all internal references: `${TOOLS_ROOT}/` becomes `${CLAUDE_PLUGIN_ROOT}/scripts/`, `instructions/references/` becomes `${CLAUDE_PLUGIN_ROOT}/references/`, `/pl-*` skill references become `purlin:*`.
+- The agent body MUST update all internal references: `${TOOLS_ROOT}/` becomes `${CLAUDE_PLUGIN_ROOT}/scripts/`, `references/` becomes `${CLAUDE_PLUGIN_ROOT}/references/`, `/pl-*` skill references become `purlin:*`.
 - During the transition period (Phases 0-2), the old `instructions/PURLIN_BASE.md` is NOT deleted. Both exist in parallel.
 
 ### 2.2 Phase 1: Skill Migration
@@ -59,7 +59,7 @@ Four mechanical transforms MUST be applied to every migrated skill:
 1. **Frontmatter addition:** Add YAML frontmatter block (`---` delimited) with `name` and `description` fields before the existing content.
 2. **Cross-reference transform:** Replace all `/pl-<name>` skill references with `purlin:<name>` throughout the body. This includes inline references, usage examples, protocol steps, and cross-skill invocations.
 3. **Script path transform:** Replace `${TOOLS_ROOT}/` with `${CLAUDE_PLUGIN_ROOT}/scripts/` in all script path references.
-4. **Reference path transform:** Replace `instructions/references/` with `${CLAUDE_PLUGIN_ROOT}/references/` in all reference document paths.
+4. **Reference path transform:** Replace `references/` with `${CLAUDE_PLUGIN_ROOT}/references/` in all reference document paths.
 
 These transforms MUST be applied consistently -- no skill should retain old-style references after migration.
 
@@ -201,7 +201,7 @@ Final structural migration: move remaining files to plugin-standard locations an
 
 #### 2.5.1 Reference Documents
 
-- All 15 files from `instructions/references/*.md` MUST be moved to `references/` at repo root.
+- All 15 files from `references/*.md` MUST be moved to `references/` at repo root.
 - `instructions/PURLIN_BASE.md` MUST be deleted (content is now in `agents/purlin.md`).
 - The `instructions/` directory MUST be deleted entirely after all contents are moved.
 
@@ -282,7 +282,7 @@ During the transition (Phases 0-4), both old and new structures coexist:
     Given agents/purlin.md exists
     When searching for "${TOOLS_ROOT}"
     Then zero matches are found
-    When searching for "instructions/references/"
+    When searching for "references/"
     Then zero matches are found
     When searching for "/pl-" followed by a command name
     Then zero matches are found (all references use "purlin:" prefix)
@@ -317,7 +317,7 @@ During the transition (Phases 0-4), both old and new structures coexist:
 #### Scenario: No stale instruction reference paths in skills
 
     Given all skills/*/SKILL.md files
-    When searching for "instructions/references/"
+    When searching for "references/"
     Then zero matches are found
     And all reference paths use "${CLAUDE_PLUGIN_ROOT}/references/"
 
@@ -433,7 +433,7 @@ During the transition (Phases 0-4), both old and new structures coexist:
     Given references/ directory exists
     When listing *.md files
     Then at least 15 files exist (file_classification.md, active_deviations.md, commit_conventions.md, etc.)
-    And instructions/references/ directory does not exist
+    And references/ directory does not exist
 
 #### Scenario: Templates moved from purlin-config-sample
 

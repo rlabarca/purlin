@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The Active Deviations reference (`instructions/references/active_deviations.md`) defines the protocol for how Engineer mode records implementation decisions that diverge from the spec, and how PM mode reviews them. It defines the companion file table format, the decision hierarchy, the three Engineer-to-PM flows, and builder decision tags.
+The Active Deviations reference (`references/active_deviations.md`) defines the protocol for how Engineer mode records implementation decisions that diverge from the spec, and how PM mode reviews them. It defines the companion file table format, the decision hierarchy, the three Engineer-to-PM flows, and builder decision tags.
 
 ---
 

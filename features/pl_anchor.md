@@ -30,7 +30,7 @@ When the topic argument does not start with a recognized prefix (`arch_`, `desig
 
 ### 2.3 Required Reading
 
-- Before creating or updating any anchor node, the agent MUST read `instructions/references/spec_authoring_guide.md` Section 3 for anchor classification guidance.
+- Before creating or updating any anchor node, the agent MUST read `references/spec_authoring_guide.md` Section 3 for anchor classification guidance.
 
 ### 2.4 Anchor Node Types
 

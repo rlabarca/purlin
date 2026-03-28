@@ -27,7 +27,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
 ### 2.3 Command Reference
 
-- `instructions/references/purlin_commands.md` MUST provide a mode-organized command table.
+- `references/purlin_commands.md` MUST provide a mode-organized command table.
 - The table MUST list: Common skills, Engineer Mode skills, PM Mode skills, QA Mode skills.
 - The startup protocol MUST read and print this table.
 
@@ -76,7 +76,7 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 
 #### Scenario: Command reference organized by mode
 
-    Given instructions/references/purlin_commands.md exists
+    Given references/purlin_commands.md exists
     When the content is parsed
     Then it contains an "Engineer Mode" section
     And it contains a "PM Mode" section

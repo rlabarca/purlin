@@ -22,7 +22,7 @@ The core spec authoring skill shared by PM and PM roles. Provides a guided workf
 
 ### 2.2 Required Reading
 
-- Before authoring or refining any spec, the agent MUST read `instructions/references/spec_authoring_guide.md` for shared authoring principles.
+- Before authoring or refining any spec, the agent MUST read `references/spec_authoring_guide.md` for shared authoring principles.
 
 ### 2.3 Topic Discovery
 

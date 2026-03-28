@@ -15,7 +15,7 @@ The Purlin agent does NOT print the command table at startup — it shows `Use /
 
 ### 2.1 Command Table
 
-- The skill MUST read `instructions/references/purlin_commands.md` and print the Default Variant verbatim. This single table shows all modes (Engineer, PM, QA) and common commands.
+- The skill MUST read `references/purlin_commands.md` and print the Default Variant verbatim. This single table shows all modes (Engineer, PM, QA) and common commands.
 - No role detection is needed — the Purlin agent uses one unified command table regardless of active mode.
 - No arguments, no side effects. Output only.
 
@@ -54,7 +54,7 @@ The Purlin agent does NOT print the command table at startup — it shows `Use /
 #### Scenario: Command table file exists and is readable
 
     Given the project root directory
-    When checking for instructions/references/purlin_commands.md
+    When checking for references/purlin_commands.md
     Then the file exists
     And the file contains "Purlin Agent"
     And the file contains "Engineer Mode"
