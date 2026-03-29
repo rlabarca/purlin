@@ -1,0 +1,44 @@
+{
+  "feature": "plan_mode_guard",
+  "description": "Regression scenarios for plan mode guard hook: mode state clearing and idempotent safety.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "hook-clears-mode-state",
+      "script_path": "tests/plan_mode_guard/test_hook_logic.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "hook script checks for .purlin directory",
+          "context": "Hook guards on .purlin existence for non-Purlin project safety"
+        },
+        {
+          "tier": 2,
+          "pattern": "hook handles pid-scoped mode files",
+          "context": "Hook checks PURLIN_SESSION_ID for PID-scoped mode files"
+        },
+        {
+          "tier": 2,
+          "pattern": "hook clears mode state file",
+          "context": "Running the hook empties the current_mode file"
+        }
+      ]
+    },
+    {
+      "name": "hook-idempotent-safe",
+      "script_path": "tests/plan_mode_guard/test_hook_idempotent.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "hook succeeds with empty mode file",
+          "context": "Hook exits 0 when mode file is already empty"
+        },
+        {
+          "tier": 2,
+          "pattern": "hook succeeds with missing mode file",
+          "context": "Hook exits 0 when mode file does not exist"
+        }
+      ]
+    }
+  ]
+}
