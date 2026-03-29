@@ -30,7 +30,7 @@
         },
         {
           "tier": 1,
-          "pattern": "0 failed|passed$",
+          "pattern": "0 failed|\\d+ passed in",
           "context": "No unit test failures"
         }
       ]

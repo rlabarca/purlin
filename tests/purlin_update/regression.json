@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "passed": 4,
+  "failed": 0,
+  "total": 4,
+  "test_file": "tests/qa/scenarios/purlin_update.json",
+  "details": [
+    {
+      "name": "fixture-regression-suite:All fixture-based detection and migration tests pass",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_update.md:fixture-regression-suite",
+      "expected": "All fixture-based detection and migration tests pass",
+      "assertion_tier": 1
+    },
+    {
+      "name": "fixture-regression-suite:Expected test count matches (detection + paths + execution + idempotency)",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_update.md:fixture-regression-suite",
+      "expected": "Expected test count matches (detection + paths + execution + idempotency)",
+      "assertion_tier": 1
+    },
+    {
+      "name": "unit-tests-detector-and-registry:All 51 unit tests pass (14 detector + 37 registry)",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_update.md:unit-tests-detector-and-registry",
+      "expected": "All 51 unit tests pass (14 detector + 37 registry)",
+      "assertion_tier": 1
+    },
+    {
+      "name": "unit-tests-detector-and-registry:No unit test failures",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_update.md:unit-tests-detector-and-registry",
+      "expected": "No unit test failures",
+      "assertion_tier": 1
+    }
+  ]
+}
