@@ -107,10 +107,10 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
    <Extracted behavioral notes, marked as advisory>
    ```
 6. **Anchor upgrade** (if `existing-anchor` provided):
-   - Verify `features/<existing-anchor>` exists and is a `design_*.md` file.
-   - Find all feature files with `> Prerequisite: features/<existing-anchor>` or `> **Design Anchor:** <existing-anchor>`.
-   - Update those references to point to the new `features/_invariants/i_design_<name>.md`.
-   - Delete the old `features/<existing-anchor>` file.
+   - Resolve the existing anchor via `features/**/<existing-anchor>` and verify it is a `design_*.md` file.
+   - Find all feature files with `> Prerequisite: <existing-anchor>` or `> **Design Anchor:** <existing-anchor>`.
+   - Update those references to point to `i_design_<name>.md`.
+   - Delete the old anchor file.
 7. **Commit** with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
 8. **Run scan:** Run `purlin_scan` to cascade-reset dependent features.
 

@@ -23,8 +23,8 @@ You are a parallel feature builder sub-agent. You implement a single feature in 
 
 ## Workflow
 
-1. Read the assigned feature spec from `features/<name>.md`.
-2. Read the companion file `features/<name>.impl.md` if it exists.
+1. Resolve the assigned feature spec via `features/**/<name>.md` and read it.
+2. Read the companion file (`.impl.md` in the same folder as the spec) if it exists.
 3. Execute `purlin:build` Steps 0-2 (Pre-Flight, Plan, Implement).
 4. Commit your implementation.
 5. Return your results to the main Purlin session.

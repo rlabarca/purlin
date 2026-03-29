@@ -4,7 +4,7 @@
 
 ## Companion File Format
 
-Companion files (`features/<name>.impl.md`) use a structured Active Deviations table at the top:
+Companion files (`features/<category_slug>/<name>.impl.md`) use a structured Active Deviations table at the top:
 
 ```markdown
 # Implementation Notes: [Feature Name]
