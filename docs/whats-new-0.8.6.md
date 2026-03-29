@@ -133,14 +133,11 @@ claude                              # Plugin auto-activates, SessionStart hook r
 claude --plugin-dir ../purlin       # Or: load from a local clone
 ```
 
-Inside the session, start working immediately — no startup command needed:
+Inside the session, just tell the agent what you want in plain language:
 
-```
-purlin:mode engineer                # Activate a mode
-purlin:build login                  # Or just invoke a skill — it activates the mode for you
-purlin:spec login                   # Same for PM mode
-purlin:verify login                 # Same for QA mode
-```
+> "spec a login feature, then build and verify it"
+
+The agent switches modes automatically as the work progresses. You can also use explicit commands (`purlin:build`, `purlin:spec`, `purlin:verify`, `purlin:mode engineer`) when you want precision.
 
 ### When to Use `purlin:resume`
 
@@ -293,7 +290,7 @@ Configure credentials with `purlin:credentials` or when prompted at plugin enabl
 
 ## Tips and Tricks
 
-**Just run `claude`.** No launcher, no special startup command. The plugin handles everything. Use `--plugin-dir ../purlin` if loading from a local clone, or just `claude` if you registered the marketplace source. Invoke any skill directly to start working.
+**Just run `claude` and talk.** No launcher, no special startup command. The plugin handles everything. Use `--plugin-dir ../purlin` if loading from a local clone, or just `claude` if you registered the marketplace source. Tell the agent what you want in plain language — it switches modes automatically.
 
 **Let hooks do the work.** Session recovery, checkpoint saves, and mode enforcement all happen automatically. The `SessionStart` hook restores context on every launch. The `PreCompact` hook saves checkpoints before context compaction.
 

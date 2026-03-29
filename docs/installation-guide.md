@@ -142,13 +142,17 @@ git add -A && git commit -m "init purlin"
 
 On first launch in a new project, the agent enters PM mode and asks what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
 
-Switch modes inside the session, or invoke any mode-specific skill directly:
+Just tell the agent what you want in plain language:
+
+> "spec a login feature, then build and verify it"
+
+The agent switches modes automatically as the work progresses. You can also use explicit commands when you want precision:
 
 ```
-purlin:mode engineer          # switch to Engineer mode
-purlin:build login            # activates Engineer mode and starts building
-purlin:spec login             # activates PM mode and starts a spec
-purlin:verify login           # activates QA mode and starts verification
+purlin:spec login             # PM mode — create a spec
+purlin:build login            # Engineer mode — implement it
+purlin:verify login           # QA mode — verify it
+purlin:mode engineer          # switch modes without starting a workflow
 ```
 
 ---

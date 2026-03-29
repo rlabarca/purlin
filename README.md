@@ -22,7 +22,7 @@ One agent operates in three modes:
 - **Engineer mode** — reads specs and writes code, tests, and documentation.
 - **QA mode** — verifies that the code matches the specs and automates regression testing.
 
-You switch between modes as the work demands. Each mode can read everything but only writes to its own domain, so specs, code, and test results never get tangled.
+You describe what you want in plain language and the agent switches modes as the work demands. Each mode can read everything but only writes to its own domain, so specs, code, and test results never get tangled.
 
 ## Quick Start
 
@@ -38,13 +38,11 @@ mkdir my-app && cd my-app && git init
 claude --plugin-dir ../purlin
 ```
 
-Inside the session: `purlin:init`. Then start working — invoke any skill directly:
+Inside the session, run `purlin:init` to scaffold the project. Then just tell the agent what you want:
 
-```
-purlin:spec login             # PM mode — create a spec
-purlin:build login            # Engineer mode — implement it
-purlin:verify login           # QA mode — verify it
-```
+> "spec a login feature, then build and verify it"
+
+The agent switches modes automatically — PM to write the spec, Engineer to build, QA to verify. You can also use explicit commands like `purlin:spec`, `purlin:build`, `purlin:verify` when you want precision. Run `purlin:help` for the full list.
 
 Every session, pass `--plugin-dir` to load the plugin. Or register it once for automatic loading — see [Persistent Setup](#persistent-setup-optional) below.
 
