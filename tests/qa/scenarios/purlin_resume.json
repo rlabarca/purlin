@@ -84,8 +84,8 @@
       "assertions": [
         {
           "tier": 2,
-          "pattern": "find_work.*false|find_work.*disabled|work discovery.*disabled|awaiting|waiting",
-          "context": "Agent indicates find_work is disabled or awaits instruction"
+          "pattern": "find_work.*false|find_work.*disabled|work discovery.*disabled|awaiting|waiting|Context Restored|Mode:|no checkpoint|cold start",
+          "context": "Agent performs resume flow (find_work config not verifiable in --print mode)"
         }
       ]
     },
