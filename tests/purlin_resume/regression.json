@@ -1,0 +1,176 @@
+{
+  "status": "FAIL",
+  "passed": 1,
+  "failed": 20,
+  "total": 21,
+  "test_file": "tests/qa/scenarios/purlin_start_checkpoint.json",
+  "details": [
+    {
+      "name": "save-writes-checkpoint-confirmation:Save confirmation message is printed",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:save-writes-checkpoint-confirmation",
+      "expected": "Save confirmation message is printed",
+      "assertion_tier": 1,
+      "actual_excerpt": "I don't have a skill available to run `purlin:resume save` directly. Looking at the available skills, Purlin commands aren't exposed as invocable skills in this session.\n\nCould you clarify what you'd like to do?\n\n- If you want to **resume session context** after a conversation break, I can help you understand what state needs recovery from the current git and file status.\n- If you're looking to **save the current session state**, I can help you commit changes, checkpoint work, or prepare the pro"
+    },
+    {
+      "name": "save-writes-checkpoint-confirmation:Output references the checkpoint file path",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:save-writes-checkpoint-confirmation",
+      "expected": "Output references the checkpoint file path",
+      "assertion_tier": 2,
+      "actual_excerpt": "I don't have a skill available to run `purlin:resume save` directly. Looking at the available skills, Purlin commands aren't exposed as invocable skills in this session.\n\nCould you clarify what you'd like to do?\n\n- If you want to **resume session context** after a conversation break, I can help you understand what state needs recovery from the current git and file status.\n- If you're looking to **save the current session state**, I can help you commit changes, checkpoint work, or prepare the pro"
+    },
+    {
+      "name": "save-writes-checkpoint-confirmation:Confirmation includes the current mode",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:save-writes-checkpoint-confirmation",
+      "expected": "Confirmation includes the current mode",
+      "assertion_tier": 2,
+      "actual_excerpt": "I don't have a skill available to run `purlin:resume save` directly. Looking at the available skills, Purlin commands aren't exposed as invocable skills in this session.\n\nCould you clarify what you'd like to do?\n\n- If you want to **resume session context** after a conversation break, I can help you understand what state needs recovery from the current git and file status.\n- If you're looking to **save the current session state**, I can help you commit changes, checkpoint work, or prepare the pro"
+    },
+    {
+      "name": "save-writes-checkpoint-confirmation:Recovery instruction references purlin:resume, not purlin:resume",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_start_checkpoint.md:save-writes-checkpoint-confirmation",
+      "expected": "Recovery instruction references purlin:resume, not purlin:resume",
+      "assertion_tier": 2
+    },
+    {
+      "name": "save-no-resume-reference:Output references purlin:resume and never mentions retired purlin:resume",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:save-no-resume-reference",
+      "expected": "Output references purlin:resume and never mentions retired purlin:resume",
+      "assertion_tier": 3,
+      "actual_excerpt": "The `resume` skill doesn't appear to be available. Looking at the git status, I see that session-resume features were deleted in recent commits. \n\nWhat are you trying to accomplish? If you need to:\n- **Restore session context after a compaction**, that functionality may have been refactored or moved\n- **Resume work from a previous session**, there might be a different command or approach\n\nCan you clarify what you're trying to do with \"purlin:resume save\"?"
+    },
+    {
+      "name": "restore-with-checkpoint-shows-summary:Recovery summary banner is printed",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-with-checkpoint-shows-summary",
+      "expected": "Recovery summary banner is printed",
+      "assertion_tier": 1,
+      "actual_excerpt": "The `purlin resume` command requires your approval to execute. This will restore your session context. Should I proceed?"
+    },
+    {
+      "name": "restore-with-checkpoint-shows-summary:Recovery summary shows Engineer mode from checkpoint",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-with-checkpoint-shows-summary",
+      "expected": "Recovery summary shows Engineer mode from checkpoint",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin resume` command requires your approval to execute. This will restore your session context. Should I proceed?"
+    },
+    {
+      "name": "restore-with-checkpoint-shows-summary:Recovery summary indicates checkpoint was found",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-with-checkpoint-shows-summary",
+      "expected": "Recovery summary indicates checkpoint was found",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin resume` command requires your approval to execute. This will restore your session context. Should I proceed?"
+    },
+    {
+      "name": "restore-cold-start-no-checkpoint:Recovery summary banner is printed on cold start",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-cold-start-no-checkpoint",
+      "expected": "Recovery summary banner is printed on cold start",
+      "assertion_tier": 1,
+      "actual_excerpt": "The `purlin:resume` command requires approval. Would you like me to proceed with running it to restore session context?"
+    },
+    {
+      "name": "restore-cold-start-no-checkpoint:Cold start shows no checkpoint found",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-cold-start-no-checkpoint",
+      "expected": "Cold start shows no checkpoint found",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` command requires approval. Would you like me to proceed with running it to restore session context?"
+    },
+    {
+      "name": "restore-prints-command-hint:Command hint references purlin:help",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:restore-prints-command-hint",
+      "expected": "Command hint references purlin:help",
+      "assertion_tier": 1,
+      "actual_excerpt": "The `purlin:resume` command requires your approval to proceed. This will restore your session context from the last checkpoint. Shall I proceed?"
+    },
+    {
+      "name": "cold-start-find-work-false:Agent reports find_work is disabled",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:cold-start-find-work-false",
+      "expected": "Agent reports find_work is disabled",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` command needs your approval to execute. This command restores session context after it's been cleared or compacted.\n\nWould you like me to run it?"
+    },
+    {
+      "name": "cold-start-find-work-false:Agent waits for user instruction instead of auto-discovering work",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:cold-start-find-work-false",
+      "expected": "Agent waits for user instruction instead of auto-discovering work",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` command needs your approval to execute. This command restores session context after it's been cleared or compacted.\n\nWould you like me to run it?"
+    },
+    {
+      "name": "merge-recovery-reports-pending:Merge recovery reports on pending merge state",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:merge-recovery-reports-pending",
+      "expected": "Merge recovery reports on pending merge state",
+      "assertion_tier": 1,
+      "actual_excerpt": "I need your approval to run `purlin resume merge-recovery`. This command will restore the session context for \"merge-recovery\".\n\nWould you like me to proceed?"
+    },
+    {
+      "name": "invalid-subcommand-shows-error:Invalid argument produces an error message",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:invalid-subcommand-shows-error",
+      "expected": "Invalid argument produces an error message",
+      "assertion_tier": 2,
+      "actual_excerpt": "I don't see `purlin:resume` in the list of available skills I can invoke. Looking at the system reminders, `purlin:resume` is mentioned in CLAUDE.md as a command you can run to restore session context if it's cleared or compacted.\n\nAre you trying to:\n1. **Run this command in your terminal?** I can't execute CLI commands directly, but you can run it in your shell.\n2. **Use a Purlin skill?** If there's a specific Purlin skill you want to invoke, let me know which one and I can help.\n3. **Something"
+    },
+    {
+      "name": "invalid-subcommand-shows-error:Error lists save as a valid option",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:invalid-subcommand-shows-error",
+      "expected": "Error lists save as a valid option",
+      "assertion_tier": 1,
+      "actual_excerpt": "I don't see `purlin:resume` in the list of available skills I can invoke. Looking at the system reminders, `purlin:resume` is mentioned in CLAUDE.md as a command you can run to restore session context if it's cleared or compacted.\n\nAre you trying to:\n1. **Run this command in your terminal?** I can't execute CLI commands directly, but you can run it in your shell.\n2. **Use a Purlin skill?** If there's a specific Purlin skill you want to invoke, let me know which one and I can help.\n3. **Something"
+    },
+    {
+      "name": "invalid-subcommand-shows-error:Error lists merge-recovery as a valid option",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:invalid-subcommand-shows-error",
+      "expected": "Error lists merge-recovery as a valid option",
+      "assertion_tier": 1,
+      "actual_excerpt": "I don't see `purlin:resume` in the list of available skills I can invoke. Looking at the system reminders, `purlin:resume` is mentioned in CLAUDE.md as a command you can run to restore session context if it's cleared or compacted.\n\nAre you trying to:\n1. **Run this command in your terminal?** I can't execute CLI commands directly, but you can run it in your shell.\n2. **Use a Purlin skill?** If there's a specific Purlin skill you want to invoke, let me know which one and I can help.\n3. **Something"
+    },
+    {
+      "name": "resume-echoes-checkpoint-fields:Checkpoint feature name appears in recovery output",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:resume-echoes-checkpoint-fields",
+      "expected": "Checkpoint feature name appears in recovery output",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` command requires your approval to execute. This will restore session context from your previous Purlin work. Would you like me to proceed?"
+    },
+    {
+      "name": "resume-echoes-checkpoint-fields:Checkpoint progress information appears in recovery output",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:resume-echoes-checkpoint-fields",
+      "expected": "Checkpoint progress information appears in recovery output",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` command requires your approval to execute. This will restore session context from your previous Purlin work. Would you like me to proceed?"
+    },
+    {
+      "name": "qa-resume-echoes-checkpoint-fields:QA mode referenced in recovery output",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:qa-resume-echoes-checkpoint-fields",
+      "expected": "QA mode referenced in recovery output",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` skill isn't available in the current environment. This might be because:\n\n1. The skill isn't registered in the Purlin plugin\n2. The context recovery feature isn't enabled\n3. The plugin needs to be initialized\n\nWould you like me to:\n- Check the current project state with `purlin:scan`?\n- Look at what's changed in the current branch (`dev/0.8.6`)?\n- Help with something specific you need to restore or understand?"
+    },
+    {
+      "name": "qa-resume-echoes-checkpoint-fields:QA verification context appears in recovery output",
+      "status": "FAIL",
+      "scenario_ref": "features/purlin_start_checkpoint.md:qa-resume-echoes-checkpoint-fields",
+      "expected": "QA verification context appears in recovery output",
+      "assertion_tier": 2,
+      "actual_excerpt": "The `purlin:resume` skill isn't available in the current environment. This might be because:\n\n1. The skill isn't registered in the Purlin plugin\n2. The context recovery feature isn't enabled\n3. The plugin needs to be initialized\n\nWould you like me to:\n- Check the current project state with `purlin:scan`?\n- Look at what's changed in the current branch (`dev/0.8.6`)?\n- Help with something specific you need to restore or understand?"
+    }
+  ]
+}

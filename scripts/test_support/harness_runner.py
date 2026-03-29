@@ -257,7 +257,7 @@ def start_dev_server(project_root, port=None, target_dir=None):
 
 
 def stop_dev_server(project_root, target_dir=None):
-    """Stop the dev server for a target directory (no-op until /pl-server implemented)."""
+    """Stop the dev server for a target directory (no-op until purlin:server implemented)."""
     pass
 
 
@@ -301,12 +301,22 @@ def construct_system_prompt(fixture_dir, role):
 
 
 def copy_skill_files(project_root, fixture_dir):
-    """Copy .claude/commands/ from project root to fixture dir if absent."""
+    """Copy skill files from project root to fixture dir if absent.
+
+    Copies both legacy .claude/commands/ and plugin skills/ directories.
+    """
+    # Legacy: .claude/commands/
     src = os.path.join(project_root, '.claude', 'commands')
     dst = os.path.join(fixture_dir, '.claude', 'commands')
     if os.path.isdir(src) and not os.path.isdir(dst):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copytree(src, dst)
+
+    # Plugin: skills/
+    src_skills = os.path.join(project_root, 'skills')
+    dst_skills = os.path.join(fixture_dir, 'skills')
+    if os.path.isdir(src_skills) and not os.path.isdir(dst_skills):
+        shutil.copytree(src_skills, dst_skills)
 
 
 def scan_fixture_features(fixture_dir):
@@ -410,7 +420,7 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
                     '# Pre-loaded: Command Table & Status\n\n'
                     'Print the Main Branch Variant below VERBATIM '
                     '(including the ━━━ border characters) when starting '
-                    'a session or when /pl-help is invoked.'
+                    'a session or when purlin:help is invoked.'
                     + status_instruction + '\n\n'
                     + table_content)
             except (IOError, OSError):
@@ -423,32 +433,44 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
             f'# Pre-loaded: Project Status ({total} features)\n\n'
             + status_line)
 
-    # 3. Skill content (for skill-dispatch prompts like /pl-help, /pl-status)
+    # 3. Skill content (for skill-dispatch prompts like purlin:help, purlin:status)
+    # Handle both /skill and purlin:skill prompt formats
+    skill_name = None
     if prompt.startswith('/'):
         skill_name = prompt.split()[0].lstrip('/')
+    elif prompt.startswith('purlin:'):
+        skill_name = prompt.split()[0].split(':', 1)[1]
+
+    if skill_name:
+        # Search multiple locations: plugin skills/, legacy .claude/commands/
+        skill_found = False
         for base in (fixture_dir, project_root):
-            skill_path = os.path.join(
-                base, '.claude', 'commands', f'{skill_name}.md')
-            if os.path.isfile(skill_path):
-                try:
-                    with open(skill_path) as f:
-                        skill_content = f.read()
-                    # Override: tell model to skip tool steps and use
-                    # pre-loaded data instead of running commands
-                    override = (
-                        'IMPORTANT: You are in --print mode. Any steps in '
-                        'the skill that say to run shell commands, scripts, '
-                        'or tools (e.g., scan.sh, Bash) — SKIP '
-                        'those steps entirely. The data you need is already '
-                        'pre-loaded above. Use the pre-loaded feature status '
-                        'data to produce the output the skill describes.')
-                    sections.append(
-                        f'# Pre-loaded: Skill Content ({prompt})\n\n'
-                        f'{override}\n\n'
-                        f'The user invoked `{prompt}`. Execute the skill '
-                        f'instructions below.\n\n' + skill_content)
-                except (IOError, OSError):
-                    pass
+            candidates = [
+                os.path.join(base, 'skills', skill_name, 'SKILL.md'),
+                os.path.join(base, '.claude', 'commands', f'{skill_name}.md'),
+            ]
+            for skill_path in candidates:
+                if os.path.isfile(skill_path):
+                    try:
+                        with open(skill_path) as f:
+                            skill_content = f.read()
+                        override = (
+                            'IMPORTANT: You are in --print mode. Any steps in '
+                            'the skill that say to run shell commands, scripts, '
+                            'or tools (e.g., scan.sh, Bash) — SKIP '
+                            'those steps entirely. The data you need is already '
+                            'pre-loaded above. Use the pre-loaded feature status '
+                            'data to produce the output the skill describes.')
+                        sections.append(
+                            f'# Pre-loaded: Skill Content ({prompt})\n\n'
+                            f'{override}\n\n'
+                            f'The user invoked `{prompt}`. Execute the skill '
+                            f'instructions below.\n\n' + skill_content)
+                        skill_found = True
+                    except (IOError, OSError):
+                        pass
+                    break
+            if skill_found:
                 break
 
     # 4. Role enforcement reinforcement (compensates for missing
