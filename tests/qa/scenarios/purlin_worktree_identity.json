@@ -12,6 +12,27 @@
           "context": "worktree identity regression suite ran to completion"
         }
       ]
+    },
+    {
+      "name": "mode-shortening-exhaustive",
+      "script_path": "tests/purlin_worktree_identity/test_mode_shortening.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "case-insensitive mode shortening works",
+          "context": "Engineer/engineer/ENGINEER all produce Eng; PM/pm produce PM; QA/qa produce QA"
+        },
+        {
+          "tier": 2,
+          "pattern": "empty and none modes produce Purlin",
+          "context": "Empty string and 'none' both resolve to Purlin as default"
+        },
+        {
+          "tier": 2,
+          "pattern": "custom mode passes through unchanged",
+          "context": "Unknown mode names pass through without modification"
+        }
+      ]
     }
   ]
 }
