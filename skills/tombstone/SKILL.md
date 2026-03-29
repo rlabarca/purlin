@@ -5,18 +5,6 @@ description: This skill activates Engineer mode. If another mode is active, conf
 
 **Purlin mode: Engineer**
 
-Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
-
 Given the feature name provided as an argument:
 
 1. Resolve the feature file via `features/**/<name>.md` and read it to understand what the feature does.

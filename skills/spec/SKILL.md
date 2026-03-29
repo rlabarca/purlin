@@ -5,17 +5,7 @@ description: This skill activates PM mode. If another mode is active, confirm sw
 
 **Purlin mode: PM**
 
-Purlin agent: This skill activates PM mode. If another mode is active, confirm switch first.
-
 > **Hard gates (scenario format, required sections, prerequisite checklist, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides authoring guidance: templates, format details, category conventions, and invariant advisory.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

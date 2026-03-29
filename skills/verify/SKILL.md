@@ -5,23 +5,13 @@ description: This skill activates QA mode. If another mode is active, confirm sw
 
 **Purlin mode: QA**
 
-Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
-
 > **Hard gates (lifecycle diagnostic, regression readiness, auto-start silence, scoped verification modes, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: Phase A/B execution, auto-fix iteration loop, checklist assembly, and strategy dispatch.
 
 ---
 
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
 > **Phased delivery:** See `${CLAUDE_PLUGIN_ROOT}/references/phased_delivery.md`.
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 > **Testing lifecycle:** See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` for the complete lifecycle across all modes (define, implement, verify, complete).
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 ## Session Identity
 

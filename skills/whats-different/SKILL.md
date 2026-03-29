@@ -3,18 +3,7 @@ name: whats-different
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles) -- from main checkout only**
 **Purlin mode: shared**
-
-Available to all agents and modes.
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`). When a Purlin mode is active, produces a role-specific briefing followed by the standard digest.
 

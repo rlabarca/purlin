@@ -5,10 +5,6 @@ description: This skill activates QA mode
 
 **Purlin mode: QA**
 
-Purlin agent: This skill activates QA mode.
-
----
-
 ## Usage
 
 ```
@@ -16,13 +12,7 @@ purlin:smoke <feature>          — Promote a test to smoke tier
 purlin:smoke suggest             — Suggest features that should be smoke
 ```
 
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 ## Subcommand: `purlin:smoke <feature>`
 

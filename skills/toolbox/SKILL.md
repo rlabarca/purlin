@@ -3,12 +3,7 @@ name: toolbox
 description: This skill is shared across all modes. List and run are available in any mode. Write operations (create, edit, copy, ...
 ---
 
-**Purlin command: Purlin agent only**
 **Purlin mode: shared**
-
-Purlin agent: This skill is shared across all modes. List and run are available in any mode. Write operations (create, edit, copy, delete, add, pull, push) activate Engineer mode.
-
----
 
 ## Usage
 
@@ -24,11 +19,6 @@ purlin:toolbox pull [tool]         — Update community tool(s)
 purlin:toolbox push <tool> [url]   — Push tool to source repo
 purlin:toolbox delete <tool>       — Delete a project or community tool
 ```
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## Tool Resolution
 
@@ -120,6 +110,12 @@ See `features/toolbox_community.md` for the full community tool lifecycle. Key b
 - **add**: Clone repo, validate `tool.json`, register in `community_tools.json`, copy to `.purlin/toolbox/community/<tool_id>/`
 - **pull**: Check upstream for changes, auto-update if no local edits, offer three options if local edits exist
 - **push**: Use stored `source_repo` if available. If no repo stored (project tool), `git-url` arg is required. Shows dry-run preview before executing.
+
+## Commit
+
+After write operations (`create`, `edit`, `copy`, `delete`, `add`, `pull`, `push`), commit the changed tool files: `git commit -m "tools(<tool_id>): <create|edit|copy|delete|add|pull|push>"`.
+
+---
 
 ## Error Handling
 

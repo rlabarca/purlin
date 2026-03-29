@@ -3,18 +3,7 @@ name: status
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles)**
 **Purlin mode: shared**
-
-Available to all agents and modes.
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **File ownership:** See `${CLAUDE_PLUGIN_ROOT}/references/file_classification.md`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 ## Mode-Scoped Scan
 

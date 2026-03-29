@@ -5,10 +5,6 @@ description: "This skill activates Engineer mode. Exception: when invoked from Q
 
 **Purlin mode: Engineer (QA cross-mode: verify-only)**
 
-Purlin agent: This skill activates Engineer mode. Exception: when invoked from QA mode, runs in verify-only cross-mode (can execute tests but cannot modify app code).
-
----
-
 ## Arguments
 
 `purlin:web-test [feature_name ...] [url_override]`
@@ -16,15 +12,6 @@ Purlin agent: This skill activates Engineer mode. Exception: when invoked from Q
 - `feature_name` (optional, repeatable): One or more feature names (without `features/` prefix or `.md` suffix).
 - `url_override` (optional): A URL (starts with `http://` or `https://`) that overrides the `> Web Test:` URL from the feature spec. Applies to all specified features.
 - No arguments: auto-discover web-testable features in TESTING state.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

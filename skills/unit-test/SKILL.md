@@ -5,18 +5,7 @@ description: This skill activates Engineer mode. If QA mode is active, runs in v
 
 **Purlin mode: Engineer (QA cross-mode: verify-only)**
 
-Purlin agent: This skill activates Engineer mode. If QA mode is active, runs in verify-only cross-mode (can run tests and read results but cannot modify application code).
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 ## Scope
 
@@ -158,3 +147,9 @@ After the rubric passes, record in `features/<name>.impl.md` under `### Test Qua
 - AP scan: clean
 - Date: YYYY-MM-DD
 ```
+
+---
+
+## Section 7 -- Commit
+
+Commit test files, `tests.json`, and companion file updates: `git commit -m "test(<feature>): unit tests (<passed>/<total> pass)"`. When invoked standalone (not as a sub-step of `purlin:build`), run `purlin_scan` after commit.

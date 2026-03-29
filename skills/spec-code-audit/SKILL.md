@@ -5,7 +5,15 @@ description: This skill activates Engineer mode. If another mode is active, conf
 
 **Purlin mode: Engineer**
 
-Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
+## Session Identity
+
+You MUST update the terminal identity before starting audit work. Derive a short task label (3-4 words max) from the audit scope. Do NOT leave the label as the project name.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
+```
+
+Examples: `Eng(main) | spec-code audit`, `Eng(dev/0.8.6) | audit auth specs`.
 
 ---
 
@@ -29,14 +37,6 @@ Parse `$ARGUMENTS`:
 - **No argument or empty:** Mode is `triage`.
 - **`--deep`:** Mode is `deep`.
 - **Anything else:** Abort with: `Error: Unknown argument '<arg>'. Valid: --deep`
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 
@@ -172,7 +172,7 @@ For each code file, attempt to find an owning feature using a ranked heuristic c
 | H1 | Companion explicit reference | HIGH | Companion `.impl.md` contains `Tool Location:` or `### Source Mapping` referencing the file path |
 | H2 | Spec explicit reference | HIGH | Feature spec `.md` mentions the file path in requirements or overview |
 | H3 | Test import trace | HIGH | A test file in `tests/<feature>/` imports or executes the code file. **Deep mode only** -- requires reading source files. |
-| H4 | Command-to-feature naming | HIGH | `.claude/commands/pl-<name>.md` maps to `features/pl_<name>.md` (dash-to-underscore convention) |
+| H4 | Command-to-feature naming | HIGH | `skills/<name>/SKILL.md` maps to `features/purlin_<name>.md` (dash-to-underscore convention) |
 | H5 | Directory convention | MEDIUM | Feature name prefix maps to tool subdirectory (e.g., `pl_help` -> `tools/help/`) |
 | H6 | Name similarity | LOW | File stem substring-matches a feature name. **Deep mode only.** |
 
@@ -187,7 +187,7 @@ Files with zero owners are classified into sub-categories:
 | Classification | Criteria | Severity |
 |---|---|---|
 | **Orphaned executable** | Defines functions or entry points, no owner | MEDIUM |
-| **Orphaned skill file** | `.claude/commands/pl-*.md` with no `features/pl_*.md` | HIGH |
+| **Orphaned skill file** | `skills/*/SKILL.md` with no `features/purlin_*.md` | HIGH |
 | **Shared infrastructure** | Imported by 3+ features' test files but no dedicated spec | LOW |
 | **Dead code candidate** | Zero imports from any file AND zero owners | LOW |
 | **Infrastructure file** | Matches known patterns: `__init__.py`, `conftest.py`, `*_utils.*`, `setup.py`, `setup.cfg`, `pyproject.toml`, `Makefile`, `Dockerfile` | Excluded |
@@ -302,7 +302,7 @@ Nearest feature: <feature_name> (by directory proximity / name similarity)
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component); orphaned skill file (`.claude/commands/pl-*.md` with no corresponding feature spec) |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component); orphaned skill file (`skills/*/SKILL.md` with no corresponding feature spec) |
 | MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (identical scenarios targeting same endpoint/function); orphaned executable code with significant behavior (entry points, state mutation, I/O operations) |
 | LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents; dead code candidate (zero imports, zero owners); shared infrastructure code (3+ importers, no dedicated spec); invariant version staleness (`Synced-At` older than 90 days) |
 
@@ -369,7 +369,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Code divergence** | Scenario assertions not reflected in code; significant code paths with no scenario coverage; hardcoded values the spec says should be configurable |
 | **Anchor invariant drift** | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
 | **Requirement hygiene** | Duplicate scenarios across features targeting the same endpoint/function with identical assertions; conflicting assertions across features sharing a prerequisite anchor or targeting the same component; orphaned specs with no implementation, no test coverage, and not listed as a prerequisite by any other feature |
-| **Code ownership** | Orphaned code files in audit scope not referenced by any feature spec, companion file, or test import chain; orphaned skill files (`.claude/commands/pl-*.md` with no corresponding `features/pl_*.md`); shared infrastructure (3+ importers, no dedicated spec); dead code candidates (zero imports, zero owners). Deep mode provides per-file analysis; triage mode reports summary counts only. Symmetric complement of Requirement hygiene's "unused spec" detection: Requirement hygiene finds specs without code; Code ownership finds code without specs. |
+| **Code ownership** | Orphaned code files in audit scope not referenced by any feature spec, companion file, or test import chain; orphaned skill files (`skills/*/SKILL.md` with no corresponding `features/purlin_*.md`); shared infrastructure (3+ importers, no dedicated spec); dead code candidates (zero imports, zero owners). Deep mode provides per-file analysis; triage mode reports summary counts only. Symmetric complement of Requirement hygiene's "unused spec" detection: Requirement hygiene finds specs without code; Code ownership finds code without specs. |
 | **Companion coverage** | Per `features/policy_spec_code_sync.md`. **Companion debt**: features with code commits more recent than the last companion file update (HIGH severity). **Stale notes**: companion file exists but most recent entries predate significant code changes (MEDIUM severity). **Impl-to-spec tracing**: `[IMPL]` entries referencing spec sections provide a mapping from code to requirements — use to accelerate scenario-by-scenario comparison. Features with only `[IMPL]` entries (no deviation tags) signal spec-conformant implementation — MAY deprioritize deep code comparison in triage mode. |
 | **Invariant source compliance** | For features governed by invariants (`i_*` files): (a) FORBIDDEN pattern violations from invariant constraints (HIGH — same weight as anchor FORBIDDEN), (b) behavioral invariants with zero scenario or code coverage (MEDIUM), (c) design Token Map values that contradict invariant token tables (MEDIUM), (d) invariant version staleness per `Synced-At` metadata older than 90 days (LOW). Evidence includes invariant provenance: `i_<name> INV-N`. Global invariants apply to ALL features regardless of prerequisite links. |
 

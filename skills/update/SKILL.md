@@ -3,19 +3,11 @@ name: update
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles)**
 **Purlin mode: shared**
-
-Available to all agents and modes.
 
 **Version-Aware Purlin Update**
 
 Detects the consumer project's current Purlin installation model and version, computes the migration path to the current plugin version, and executes each step in order. Replaces the former submodule-only update and the one-time `purlin:upgrade` with a unified, version-aware flow.
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## Usage
 

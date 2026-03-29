@@ -5,22 +5,9 @@ description: This skill activates Engineer mode. If another mode is active, conf
 
 **Purlin mode: Engineer**
 
-Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
-
----
-
 ## Purpose
 
 Reverse-engineer feature specs from an existing codebase. Scans source directories, proposes a category taxonomy interactively, and generates feature files, anchor nodes, and companion files. Uses a 5-phase, context-managed approach with durable state artifacts for cross-session continuity.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 
