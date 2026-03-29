@@ -3,11 +3,6 @@ name: help
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles)**
-**Purlin mode: shared**
-
-Available to all agents and modes.
-
 Display the Purlin unified command table. Invoke this when the user asks "how do I run...", "what commands are available", or needs help with any Purlin command.
 
 No side effects. Output only.

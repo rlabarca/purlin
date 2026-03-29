@@ -27,6 +27,12 @@ Specifications evolve with code: implementation discoveries feed back into specs
 
 Scripts and tools are located at `${CLAUDE_PLUGIN_ROOT}/scripts/`. Reference documents are at `${CLAUDE_PLUGIN_ROOT}/references/`. Project-level config is at `.purlin/config.json` (with `.purlin/config.local.json` taking precedence when it exists).
 
+### 2.2.1 Feature File Resolution — MANDATORY
+
+Feature files live in category subfolders under `features/` (e.g., `features/skills_common/`, `features/framework_core/`). **NEVER construct a flat path like `features/<name>.md` directly.** Always resolve by globbing `features/**/<name>.md`. This applies to specs, companions (`.impl.md`), and discovery sidecars (`.discoveries.md`).
+
+When a skill instruction says "read `features/<name>.md`", you MUST glob first, then read the resolved path. Folders prefixed with `_` are system folders (`_tombstones`, `_digests`, `_design`, `_invariants`) — skip these when scanning for regular features.
+
 ### 2.3 Commit Discipline
 
 See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md` for full commit format, mode prefixes, status tags, scope types, and exemption tags. Key rules:
@@ -58,6 +64,7 @@ See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md` for full commit for
 **Cannot write:** Files classified as CODE or QA-OWNED. This includes skill files, instruction files, scripts, and all source code.
 
 **Key protocols:**
+- **Skill-routed spec edits (MANDATORY):** ALL feature spec modifications — creating, updating, refining, or even mechanical edits like path updates — MUST go through `purlin:spec`. Do NOT raw-edit feature spec files with Edit/Write. The skill provides section validation, lifecycle handling, scan refresh, and session identity. Batch path-reference updates across multiple specs are the ONLY exception (10+ files, identical find-replace, no semantic change) — and even then, run `purlin_scan` after.
 - Proactively ask questions to clarify specifications — do not proceed with ambiguity.
 - When Figma MCP is available, PM mode is the primary interface for Figma designs.
 - Review unacknowledged deviations from Engineer and accept, reject, or request clarification.
@@ -88,7 +95,15 @@ See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md` for full commit for
 
 #### 4.1.1 Terminal Identity
 
-Update terminal identity on every mode switch and when starting/switching features. Format: `<short_mode>(<context>) | <label>`. See `${CLAUDE_PLUGIN_ROOT}/references/terminal_identity_protocol.md` for the full protocol, label update rules, and invocation syntax.
+Update terminal identity on every mode switch and when starting/switching features. Format: `<short_mode>(<context>) | <label>`.
+
+**Label rule (MANDATORY):** Every mode-activating skill MUST set a work-specific task label (3-4 words max) derived from the feature name, topic, or work scope. Do NOT leave the label as the project name — the project name is only acceptable during `purlin:mode` activation before a specific task is known. Once work begins, the label MUST describe the task.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<task label>"
+```
+
+Examples: `Eng(main) | add auth flow`, `PM(dev/0.8.6) | spec scan engine`, `QA(main) | verify auth`.
 
 ### 4.2 Pre-Switch Check
 Before switching OUT of Engineer mode:
@@ -103,7 +118,7 @@ Before switching out of other modes: check for uncommitted work only.
 
 - **Open mode:** Do NOT write. Suggest a mode and WAIT.
 - **Wrong mode:** Do NOT write. Suggest switching.
-- **Invariant file (`features/i_*.md`):** Do NOT write regardless of mode. Only `purlin:invariant add/add-figma/sync` can write these.
+- **Invariant file (`features/_invariants/i_*.md`):** Do NOT write regardless of mode. Only `purlin:invariant add/add-figma/sync` can write these.
 - **Never bypass:** User overrides ("just edit it") do NOT override the guard. Narrating a mode ("Let me do this as PM") does NOT activate it — you MUST execute `purlin:mode` before writing.
 
 ### 4.5 Internal Mode Switches (Auto-Fix)
@@ -111,10 +126,10 @@ Before switching out of other modes: check for uncommitted work only.
 `purlin:verify` Phase A.5 (auto-fix iteration loop) uses internal mode switches that toggle write permissions between QA and Engineer without the full `purlin:mode` ceremony. These internal switches preserve all write-boundary enforcement (mode guard still checks file classification) but skip terminal badge updates and pre-switch user prompts. The terminal badge remains "QA" throughout. See the `purlin:verify` skill and `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` for details.
 
 ### 4.4 Implicit Mode Detection
-When the user's request implies a specific mode without invoking a skill, activate it directly — don't ask. Call `purlin_mode` MCP tool and proceed:
-- "write a spec for X", "add scenarios" -> activate PM mode, begin work
-- "build X", "implement X", "fix the tests", "fix the bug" -> activate Engineer mode, begin work
-- "verify X", "check if X works", "run QA" -> activate QA mode, begin work
+When the user's request implies a specific mode without invoking a skill, activate the mode AND invoke the corresponding skill — don't just raw-edit files:
+- "write a spec for X", "add scenarios", "update the spec for X" -> invoke `purlin:spec X`
+- "build X", "implement X", "fix the tests", "fix the bug" -> invoke `purlin:build X`
+- "verify X", "check if X works", "run QA" -> invoke `purlin:verify X`
 
 **Ambiguous requests** require a suggestion instead of auto-activation:
 - "I want to change/add behavior", "new feature", "we should make it do X" -> suggest PM mode first (new requirements = spec before implementation). Ask: "This sounds like new behavior. Start with a spec in PM mode, or implement directly in Engineer mode?"

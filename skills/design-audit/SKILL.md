@@ -5,18 +5,6 @@ description: This skill activates PM mode. If another mode is active, confirm sw
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md` before auditing.
 
-## Session Identity
-
-You MUST update the terminal identity before starting audit work. Derive a short task label (3-4 words max) from the audit scope. Do NOT leave the label as the project name.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
-```
-
-Examples: `PM(main) | design audit`, `PM(dev/0.8.6) | audit visual specs`.
-
----
-
 Audit all design artifacts and visual specifications across the project for integrity, staleness, anchor consistency, and Figma design-spec conflicts.
 
 **Workflow:**
@@ -53,7 +41,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - For each stale invariant, check how many features depend on it (via `> Prerequisite:` or global scope). Report cascade impact.
    - **Brief vs pointer version:** For features with a `brief.json` referencing a Figma invariant, compare `brief.json`'s `figma_version_id` against the pointer's `> Version:`. If pointer is newer than brief: STALE_BRIEF (brief needs regeneration via `purlin:spec`).
 
-4. **Anchor consistency:** Read all `features/design_*.md` local anchor nodes AND `features/_invariants/i_design_*.md` invariant pointers. Scan Token Map entries and checklists for:
+4. **Anchor consistency:** Read all `features/**/design_*.md` local anchor nodes AND `features/_invariants/i_design_*.md` invariant pointers. Scan Token Map entries and checklists for:
    - Token Map right-side values that don't match any anchor or invariant token.
    - Hardcoded hex colors or literal values in Token Map entries that should reference anchor tokens.
    - Hardcoded values in checklist items that should use token references.

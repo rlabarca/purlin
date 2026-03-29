@@ -3,8 +3,6 @@ name: smoke
 description: This skill activates QA mode
 ---
 
-**Purlin mode: QA**
-
 ## Usage
 
 ```
@@ -20,7 +18,7 @@ Promote a feature's test to smoke tier with an optional simplified fast-running 
 
 ### Protocol
 
-1. **Read the feature spec** at `features/<feature>.md`. Identify what type of tests exist:
+1. **Read the feature spec** (resolve via `features/**/<feature>.md`). Identify what type of tests exist:
    - Unit tests (`### Unit Tests`)
    - QA scenarios (`### QA Scenarios` — `@auto` or `@manual`)
    - Regression JSON (`tests/<feature>/regression.json` or `tests/qa/scenarios/<feature>.json`)
@@ -83,7 +81,7 @@ Analyze the project and suggest features that should be smoke tier.
 
 ### Protocol
 
-1. **Run scan.** Run the MCP `purlin_scan` tool (with `only: "features,smoke,deps"`) and parse the JSON result.
+1. **Run scan.** Run `purlin_scan` (with `only: "features,smoke,deps"`) and parse the JSON result.
 
 2. **Identify smoke candidates.** A feature is a strong smoke candidate if:
    - It is a prerequisite for 3+ other features (high fan-out in dependency graph)

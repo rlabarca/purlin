@@ -3,16 +3,6 @@ name: init
 description: Initialize a project for Purlin — creates .purlin/ directory structure, config, and override template
 ---
 
-**Purlin command: shared (all roles)**
-
-Purlin agent: Initialize a new project for use with Purlin. Creates the required directory structure and configuration files.
-
----
-
-## Path Resolution
-
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
 ## Usage
 
 ```
@@ -89,3 +79,7 @@ Next: Start working by invoking any skill directly:
   purlin:spec <topic>    — create your first feature spec
   purlin:status          — see what needs doing
 ```
+
+### Step 8 -- Commit
+
+Commit the initialized project structure: `git commit -m "chore: initialize purlin project"`.

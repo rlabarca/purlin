@@ -3,13 +3,6 @@ name: mode
 description: This skill switches the Purlin agent's operating mode, or shows current mode status when invoked with no arguments
 ---
 
-**Purlin command: Purlin agent only**
-**Purlin mode: shared**
-
-Purlin agent: This skill switches the Purlin agent's operating mode, or shows current mode status when invoked with no arguments.
-
----
-
 ## Usage
 
 ```
@@ -42,7 +35,7 @@ When invoked with no arguments, display current mode status. No mode change, no 
 
 3. **Activate the new mode.**
    - Print the mode's command subset from `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md`.
-   - Update terminal identity: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<project>"`. This sets badge to `<mode> (<branch>)` — e.g., `Engineer (main)`, `PM (feature-xyz)`. Worktree label replaces branch when present (e.g., `Engineer (W1)`). Branch context is never dropped.
+   - Update terminal identity: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<project>"`. This sets the unified format `<short_mode>(<branch>) | <project>` — e.g., `Eng(main) | purlin`, `PM(feature-xyz) | purlin`. Worktree label replaces branch when present (e.g., `Eng(W1) | purlin`). Branch context is never dropped.
 
 4. **Announce:** "Switched to [Mode] mode."
 

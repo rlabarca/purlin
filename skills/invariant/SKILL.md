@@ -3,20 +3,8 @@ name: invariant
 description: This skill activates PM mode for write operations (add, add-figma, sync, remove). Read-only subcommands (check-update...
 ---
 
-**Purlin mode: PM**
-
-Purlin agent: This skill activates PM mode for write operations (add, add-figma, sync, remove). Read-only subcommands (check-updates, check-conflicts, check-feature, validate, list) run in any mode.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
 > **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` for the canonical format.
 > **Invariant model:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md` for identification, scope, and cascade rules.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
 
 ## Usage
 
@@ -37,18 +25,6 @@ purlin:invariant <subcommand> [args]
 | `remove <file-name>` | PM | Remove an invariant from the project |
 
 If no subcommand is provided, print the usage table above and stop.
-
----
-
-## Session Identity
-
-For write subcommands (`add`, `add-figma`, `sync`, `remove`), you MUST update the terminal identity before starting work. Derive a short task label (3-4 words max) from the invariant being managed. Do NOT leave the label as the project name.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
-```
-
-Examples: `PM(main) | add security inv`, `PM(dev/0.8.6) | sync design inv`.
 
 ---
 
@@ -83,7 +59,7 @@ Import an invariant from an external git repo.
    - `> Format-Version: 1.0` (if not already present)
 6. **Copy to `features/_invariants/`** with `i_` prefix prepended to the filename. If the source file is `policy_security.md`, the local file becomes `features/_invariants/i_policy_security.md`. Create the `_invariants/` folder if it doesn't exist. If `features/_invariants/i_<name>.md` already exists, stop with: "Invariant file already exists at `features/_invariants/i_<name>.md`. Use `purlin:invariant sync` to update an existing invariant."
 7. **Commit** with tag: `invariant-add(features/_invariants/i_<type>_<name>.md): v<version> from <repo>`.
-8. **Run scan:** Run the MCP `purlin_scan` tool to integrate into dependency graph and trigger cascade if global.
+8. **Run scan:** Run `purlin_scan` to integrate into dependency graph and trigger cascade if global.
 9. **Clean up** the shallow clone.
 
 ---
@@ -136,7 +112,7 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
    - Update those references to point to the new `features/_invariants/i_design_<name>.md`.
    - Delete the old `features/<existing-anchor>` file.
 7. **Commit** with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
-8. **Run scan:** Run the MCP `purlin_scan` tool to cascade-reset dependent features.
+8. **Run scan:** Run `purlin_scan` to cascade-reset dependent features.
 
 ---
 
@@ -160,7 +136,7 @@ Pull latest version from source.
    - Present cascade impact: list features that will reset to `[TODO]`.
 6. **On confirmation:** Overwrite local file, update embedded metadata (`> Version:`, `> Source-SHA:`, `> Synced-At:`).
 7. **Commit** with tag: `invariant-sync(features/_invariants/i_<name>.md): v<old> -> v<new>`.
-8. **Run scan:** Run the MCP `purlin_scan` tool to trigger cascade (semver-gated per `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md`):
+8. **Run scan:** Run `purlin_scan` to trigger cascade (semver-gated per `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md`):
    - MAJOR bump: full cascade.
    - MINOR bump: cascade with warning.
    - PATCH bump: no cascade (informational only).
@@ -302,4 +278,4 @@ Remove an invariant from the project. Requires PM mode.
    - Remove the `> Prerequisite:` lines from dependent feature files.
    - Delete `features/_invariants/<file-name>`.
 5. **Commit** with message: `pm(invariant): remove <file-name>`.
-6. **Run scan:** Run the MCP `purlin_scan` tool to update dependency graph.
+6. **Run scan:** Run `purlin_scan` to update dependency graph.

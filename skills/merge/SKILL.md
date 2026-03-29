@@ -3,13 +3,6 @@ name: merge
 description: Merge the current worktree branch back to the source branch and clean up
 ---
 
-**Purlin command: Purlin agent only**
-**Purlin mode: shared**
-
-Purlin agent: Merge the current worktree branch back to the source branch and clean up.
-
----
-
 ## Usage
 
 ```
@@ -66,6 +59,6 @@ This command only works when the agent is running in a worktree (launched with `
    ```bash
    source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<project>"
    ```
-   Replace `<mode>` with the current active mode (Engineer, PM, QA) and `<project>` with the project name.
+   Replace `<mode>` with the current active mode (Engineer, PM, QA) and `<project>` with the project name. Produces unified format: `<short_mode>(<branch>) | <project>`.
 
 8. **Report:** "Merged [branch] into [source]. Worktree cleaned up. [N files changed]."

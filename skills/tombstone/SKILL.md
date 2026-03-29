@@ -3,8 +3,6 @@ name: tombstone
 description: This skill activates Engineer mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: Engineer**
-
 Given the feature name provided as an argument:
 
 1. Resolve the feature file via `features/**/<name>.md` and read it to understand what the feature does.
@@ -22,7 +20,7 @@ Given the feature name provided as an argument:
    - `git mv features/<category_slug>/<name>.impl.md features/_tombstones/<name>.impl.md` (if exists)
    - `git mv features/<category_slug>/<name>.discoveries.md features/_tombstones/<name>.discoveries.md` (if exists)
 6. Commit all changes: `git commit -m "retire(<scope>): tombstone <name>"`.
-7. Run the MCP `purlin_scan` tool (with `only: "features"`, `tombstones: true`) to verify tombstone state.
+7. Run `purlin_scan` (with `only: "features"`, `tombstones: true`) to verify tombstone state.
 
 **Canonical tombstone format:**
 

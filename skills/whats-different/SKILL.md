@@ -3,8 +3,6 @@ name: whats-different
 description: Available to all agents and modes
 ---
 
-**Purlin mode: shared**
-
 Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`). When a Purlin mode is active, produces a role-specific briefing followed by the standard digest.
 
 ## Steps

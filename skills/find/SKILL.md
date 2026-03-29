@@ -3,16 +3,7 @@ name: find
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles)**
-**Purlin mode: shared**
-
-Available to all agents and modes.
-
 Given the topic or concern provided as an argument, search the spec system and report findings.
-
-## Path Resolution
-
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## Search Protocol
 

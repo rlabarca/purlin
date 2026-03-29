@@ -3,10 +3,6 @@ name: propose
 description: This skill activates Engineer mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: Engineer**
-
----
-
 Given the topic provided as an argument, surface a structured spec change suggestion to PM mode:
 
 1. Search the current spec system for the relevant feature or anchor node.

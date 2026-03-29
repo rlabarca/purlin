@@ -5,7 +5,7 @@ description: This skill activates QA mode. If another mode is active, confirm sw
 
 ## Scope
 
-If an argument was provided, record a discovery for `features/<arg>.md`.
+If an argument was provided, resolve the feature file via `features/**/<arg>.md`.
 If no argument was provided, ask the user which feature the discovery belongs to.
 
 ---
@@ -25,7 +25,7 @@ Ask the user to describe the observed behavior and expected behavior.
 
 ## Recording Format
 
-Record the entry in `features/<name>.discoveries.md`, creating the file if absent. File heading: `# User Testing Discoveries: <Feature Label>`.
+Record the entry in the feature's `.discoveries.md` sidecar (in the same folder as the spec), creating the file if absent. File heading: `# User Testing Discoveries: <Feature Label>`.
 
 ```
 ### [TYPE] <title> (Discovered: YYYY-MM-DD)
@@ -53,11 +53,11 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 *   **OPEN:** Just recorded.
 *   **SPEC_UPDATED:** PM updated the spec to address it.
 *   **RESOLVED:** Fix complete or no fix needed. (Shortcut: PM/Engineer confirms no change needed -> skip to RESOLVED with resolution note.)
-*   **PRUNED:** QA removes entry from sidecar, adds one-liner to companion file (`features/<name>.impl.md`). Format: `<TYPE> -- <summary>` (NO bracket tags -- brackets are reserved for Engineer Decisions).
+*   **PRUNED:** QA removes entry from sidecar, adds one-liner to companion file (`.impl.md` in the same folder). Format: `<TYPE> -- <summary>` (NO bracket tags -- brackets are reserved for Engineer Decisions).
 
 ## Pruning Protocol
 
 When an entry reaches RESOLVED:
-1.  Remove from `features/<name>.discoveries.md`. If file becomes empty (heading only), delete it.
+1.  Remove from the feature's `.discoveries.md` sidecar. If file becomes empty (heading only), delete it.
 2.  Add one-liner to companion file: `<TYPE> -- <summary>`.
 3.  Git commit the pruning.

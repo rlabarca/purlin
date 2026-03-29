@@ -3,16 +3,14 @@ name: status
 description: Available to all agents and modes
 ---
 
-**Purlin mode: shared**
-
 ## Mode-Scoped Scan
 
-Run the MCP `purlin_scan` tool with flags based on the current mode:
+Run `purlin_scan` with flags based on the current mode:
 
-- **PM mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,deviations,git"`)
-- **Engineer mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,plan,git"`, `tombstones: true`)
-- **QA mode:** Run the MCP `purlin_scan` tool (with `only: "features,discoveries,git,smoke"`)
-- **Open mode (no mode active):** Run the MCP `purlin_scan` tool (with `tombstones: true`)
+- **PM mode:** Run `purlin_scan` (with `only: "features,discoveries,deviations,git"`)
+- **Engineer mode:** Run `purlin_scan` (with `only: "features,discoveries,plan,git"`, `tombstones: true`)
+- **QA mode:** Run `purlin_scan` (with `only: "features,discoveries,git,smoke"`)
+- **Open mode (no mode active):** Run `purlin_scan` (with `tombstones: true`)
 
 Interpret the scan results to present actionable work for the **current mode only**. In open mode, show work for all modes.
 

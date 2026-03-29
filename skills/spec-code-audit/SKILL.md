@@ -3,20 +3,6 @@ name: spec-code-audit
 description: This skill activates Engineer mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: Engineer**
-
-## Session Identity
-
-You MUST update the terminal identity before starting audit work. Derive a short task label (3-4 words max) from the audit scope. Do NOT leave the label as the project name.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
-```
-
-Examples: `Eng(main) | spec-code audit`, `Eng(dev/0.8.6) | audit auth specs`.
-
----
-
 Call the `EnterPlanMode` tool immediately before doing anything else. Do not read any files or run any commands until plan mode is active.
 
 ---
@@ -62,7 +48,7 @@ Parent loads project state, builds the transitive prerequisite constraint map, a
 
 ### Step 0.1 -- Load Project State
 
-1. Run the MCP `purlin_scan` tool (with `only: "features,deps"`) and read the JSON result.
+1. Run `purlin_scan` (with `only: "features,deps"`) and read the JSON result.
 2. Read `.purlin/cache/dependency_graph.json` -- note all prerequisite relationships and root anchor nodes.
 3. For each feature, read the feature spec directly to check section completeness and scenario count.
 
@@ -110,7 +96,7 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 Process ALL features in-agent (no subagents). For each feature:
 
 1. Read the feature file -- check spec completeness across all 14 gap dimensions (see Gap Dimensions Table below).
-2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth. **Extract `[IMPL]` entries as an implementation index** mapping what was built to spec requirements. A feature with only `[IMPL]` entries (no deviation tags) signals spec conformance — deprioritize deep code comparison.
+2. Read companion file (`.impl.md` in the same folder as the spec) if it exists -- check builder decisions, notes depth. **Extract `[IMPL]` entries as an implementation index** mapping what was built to spec requirements. A feature with only `[IMPL]` entries (no deviation tags) signals spec conformance — deprioritize deep code comparison.
 3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map — including auto-injected global invariants — verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage. For `i_*` invariants, also flag staleness if `Synced-At` is older than 90 days.
 5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors and all global invariants (auto-included in Step 0.3). Flag violations with invariant provenance (`i_<name> INV-N`).
@@ -216,8 +202,8 @@ Launch subagents wave by wave. All subagents in a wave are launched in a single 
 Each subagent receives the following in its prompt, plus the transitive constraint payload:
 
 For each assigned feature:
-1. **Read spec**: `features/<name>.md` -- extract all `#### Scenario:` entries with Given/When/Then.
-2. **Read companion**: `features/<name>.impl.md` -- note Tool Location, source mappings, decision tags. **Extract `[IMPL]` entries as an implementation index** — these map what the engineer built to spec requirements. Use this index to accelerate scenario-by-scenario comparison by knowing which code paths correspond to which requirements before reading source.
+1. **Read spec** (resolve via `features/**/<name>.md`) -- extract all `#### Scenario:` entries with Given/When/Then.
+2. **Read companion** (`.impl.md` in the same folder as the spec) -- note Tool Location, source mappings, decision tags. **Extract `[IMPL]` entries as an implementation index** — these map what the engineer built to spec requirements. Use this index to accelerate scenario-by-scenario comparison by knowing which code paths correspond to which requirements before reading source.
 3. **Read scan data**: `.purlin/cache/scan.json` features data -- gate statuses, traceability, action items.
 4. **Discover source files**: Extract import paths from test files in `tests/<name>/`, fall back to Tool Location in companion file, fall back to directory convention mapping from feature label.
 5. **Read source**: Up to 5 primary implementation files per feature.
@@ -342,7 +328,7 @@ Write the following to the plan file:
 **Remediation Plan:**
 
 For each FIX item, describe the specific edit scoped to the acting role's artifacts:
-- **PM FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
+- **PM FIX edits** target feature specs (`features/**/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only -- which section to add/revise, what scenario language to change, which prerequisite link to add.
 - **Engineer FIX edits** target source code and tests only -- which implementation file to modify, what logic to correct, which test to add or update.
 For each ESCALATE item, describe the companion file entry that will be written.
 
@@ -416,7 +402,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 3. Commit each logical group of spec fixes.
 
 **ESCALATE (code-side gaps for Engineer mode):**
-1. Open (or create) the companion file `features/<feature_name>.impl.md`.
+1. Open (or create) the companion file `<feature_name>.impl.md (in the same folder as the feature spec)`.
 2. Add a clearly tagged entry under the implementation notes:
 
 ```
@@ -429,7 +415,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 ```
 
 3. Commit all escalation entries together.
-4. Run the MCP `purlin_scan` tool after committing to refresh project state (the scan will surface these as Engineer action items).
+4. Run `purlin_scan` after committing to refresh project state (the scan will surface these as Engineer action items).
 
 ### If Running as Engineer
 
@@ -440,7 +426,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 4. Commit each logical group of code fixes.
 
 **ESCALATE (spec-side gaps for PM mode):**
-1. Open (or create) the companion file `features/<feature_name>.impl.md`.
+1. Open (or create) the companion file `<feature_name>.impl.md (in the same folder as the feature spec)`.
 2. Add a `[DISCOVERY]` or `[SPEC_PROPOSAL]` entry:
 
 ```
@@ -470,6 +456,6 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 ### Post-Remediation
 
 After all items are processed:
-1. Run the MCP `purlin_scan` tool to refresh project state.
+1. Run `purlin_scan` to refresh project state.
 2. Delete `.purlin/cache/audit_state.json` if it exists.
 3. Summarize what was done: N items fixed, N items escalated, any items deferred with rationale.

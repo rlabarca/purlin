@@ -3,8 +3,6 @@ name: session-name
 description: Update the terminal session display name. Available in all modes
 ---
 
-**Purlin mode: shared**
-
 ```
 purlin:session-name [label]
 ```

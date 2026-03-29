@@ -3,8 +3,6 @@ name: spec
 description: This skill activates PM mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: PM**
-
 > **Hard gates (scenario format, required sections, prerequisite checklist, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides authoring guidance: templates, format details, category conventions, and invariant advisory.
 
 ---
@@ -33,7 +31,7 @@ Given the topic provided as an argument:
 2. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
 3. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
 4. If creating: follow the template and format rules below.
-5. After editing, commit the change and run the MCP `purlin_scan` tool to refresh project state.
+5. After editing, commit the change and run `purlin_scan` to refresh project state.
 
 ---
 
@@ -116,7 +114,7 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 **Blockquote metadata fields:**
 - `> Label:` -- display name for CDD dashboard
 - `> Category:` -- grouping category
-- `> Prerequisite: features/<name>.md` -- dependency link
+- `> Prerequisite: <name>.md` -- dependency link (bare filename, scanner resolves across subfolders)
 - `> Web Test: <url>` -- web UI for automated web testing
 - `> Web Start: <command>` -- auto-start for web test target
 - `> Owner: PM` or `> Owner: PM` -- design authority (default: PM)
@@ -172,6 +170,6 @@ Before committing a new or updated spec, check for applicable invariants:
 2. **Scoped invariant suggestions:** Check for `i_*` files whose domain overlaps with this feature (e.g., a feature with a Visual Specification should consider `i_design_*` invariants). If relevant scoped invariants are not already declared as prerequisites, suggest them:
    ```
    Consider adding prerequisite:
-   - features/i_design_accessibility.md (this feature has a Visual Specification)
+   - i_design_accessibility.md (this feature has a Visual Specification)
    ```
 3. This is **advisory only** -- it does not block the spec commit. The audit (`purlin:spec-code-audit`) catches gaps later.

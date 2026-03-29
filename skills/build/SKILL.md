@@ -17,7 +17,7 @@ Examples: `Eng(main) | add auth flow`, `Eng(dev/0.8.6) | fix scan engine`.
 
 ## Scope
 
-If an argument was provided, implement the named feature from `features/<arg>.md`.
+If an argument was provided, resolve the feature file via `features/**/<arg>.md` and implement it.
 If no argument was provided, run `purlin:status` to get the current work list. Pick the highest-priority Engineer work item and begin implementing it.
 Check `features/_tombstones/` first and process any pending tombstones before regular feature work. Processing a tombstone: read it, delete all listed files (test directories, regression JSON, QA scenarios), delete the companion artifacts alongside it (`features/_tombstones/<name>.impl.md`, `features/_tombstones/<name>.discoveries.md`), delete the tombstone file itself, regenerate the dependency graph, and commit.
 
@@ -68,7 +68,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 ### Step 0 -- Pre-Flight (MANDATORY)
 
-*   **Spec Existence Check:** If a feature name was provided as an argument, verify `features/<name>.md` exists. If it does NOT exist:
+*   **Spec Existence Check:** If a feature name was provided as an argument, verify the spec exists (glob `features/**/<name>.md`). If it does NOT exist:
     1. Inform the user: `"No spec exists for '<name>'. In Purlin, specs come before code."`
     2. Offer: `"Switch to PM mode to create the spec? (purlin:spec <name>)"`
     3. If confirmed: switch to PM mode and invoke `purlin:spec <name>`. STOP — do not continue with purlin:build.
@@ -96,8 +96,8 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     5. **Figma brief staleness** (design invariants only): If the feature has a `brief.json` at `features/_design/<stem>/brief.json`, compare its version against the Figma invariant pointer's `> Version:`. Warn if stale.
 *   **Visual Design Sources:** When the feature has a `## Visual Specification`, read in priority: Token Map (in spec) -> `brief.json` (at `features/_design/<stem>/brief.json`) -> Figma MCP (last resort, read-only).
 *   **Web Test Readiness:** When the feature has `## Visual Specification` AND web test metadata (`> Web Test:` or `> AFT Web:`), check for Playwright MCP availability now (look for `browser_navigate` in the available tool list). If MCP is not available, attempt auto-setup: verify package via `npx @playwright/mcp@latest --help`, then run `claude mcp add playwright -- npx @playwright/mcp --headless`. If setup succeeds, inform the user a session restart is needed and HALT -- do not begin implementation without MCP ready. If the feature has `## Visual Specification` but NO web test metadata, log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file and continue.
-*   **Companion File:** Read `features/<name>.impl.md` if it exists. Also read prerequisite companion files.
-*   **Prerequisite Stability:** For each `> Prerequisite:` link to a non-anchor feature, check if that feature is in `[TODO]` status. If so, read its full spec (`features/<prereq>.md`) to understand the unstable contract. Log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
+*   **Companion File:** Read `<name>.impl.md (in the same folder as the spec)` if it exists. Also read prerequisite companion files.
+*   **Prerequisite Stability:** For each `> Prerequisite:` link to a non-anchor feature, check if that feature is in `[TODO]` status. If so, read its full spec (`the prereq's spec (resolve via glob)`) to understand the unstable contract. Log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
 *   **Verify Status:** Confirm the target feature is in the expected state per CDD status.
 *   **Role-Blocked Detection (delivery plan only):** When a delivery plan is active, check if the feature is role-blocked: `architect: TODO`, `builder: BLOCKED`, or `builder: INFEASIBLE`. If role-blocked, skip this feature with: `"Skipping <feature> -- <role> <status> (role-blocked)"`. Proceed to the next feature in the phase. See Phase Deferral Protocol below.
 *   **New Scenario Detection:** Diff `#### Scenario:` headings against existing tests. New headings without coverage = real work. When `tests.json` reports `total: 0` or is missing, treat as "no tests exist."
@@ -111,8 +111,8 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 ### Step 2 -- Implement and Document
 
 *   Write code and tests.
-*   **Knowledge Colocation:** Record non-obvious discoveries in `features/<name>.impl.md` (never in the feature `.md`). Create the companion file if needed.
-*   **Engineer Decision Tags:** Use these in companion files (`features/<name>.impl.md`):
+*   **Knowledge Colocation:** Record non-obvious discoveries in `<name>.impl.md (in the same folder as the spec)` (never in the feature `.md`). Create the companion file if needed.
+*   **Engineer Decision Tags:** Use these in companion files (`<name>.impl.md (in the same folder as the spec)`):
     *   `[CLARIFICATION]` (INFO) -- Interpreted ambiguous spec language.
     *   `[AUTONOMOUS]` (WARN) -- Spec was silent; you filled the gap.
     *   `[DEVIATION]` (HIGH) -- Intentionally diverged from spec. Blocks `[Complete]` until PM acknowledges.
@@ -145,14 +145,14 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     *   The status tag commit MUST be on a clean working tree. No dangling changes.
 *   **Pre-check -- Companion File Gate (Mechanical):**
     *   Check: were code commits made for this feature during this session?
-    *   If yes: does the companion file (`features/<name>.impl.md`) have new entries from this session? (Check file modification time or diff against the pre-build state.)
+    *   If yes: does the companion file (`<name>.impl.md (in the same folder as the spec)`) have new entries from this session? (Check file modification time or diff against the pre-build state.)
     *   If the companion file has NO new entries: **BLOCK the status tag commit.** Write at least `[IMPL]` entries describing what was implemented. For deviations from spec, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, etc.) instead of or in addition to `[IMPL]`.
     *   This is a mechanical check — "did the companion file get updated?" — not a judgment call about whether the code deviated from the spec. Every code change gets documented.
 *   **Pre-check -- Web Test Gate:**
     *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `purlin:web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `purlin:web-test` first.
     *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.
 *   **Pre-check -- Spec & Plan Alignment Audit:**
-    *   **Spec audit (always, when a feature spec exists):** Re-read `features/<name>.md`. Walk through each requirement in the Requirements section and each scenario in the Scenarios section. For each, verify the implementation addresses it. Check:
+    *   **Spec audit (always, when a feature spec exists):** Re-read `the feature spec`. Walk through each requirement in the Requirements section and each scenario in the Scenarios section. For each, verify the implementation addresses it. Check:
         *   **Unimplemented requirements:** Any requirement with no corresponding code or test. Log as `[DISCOVERY]` in the companion file if found.
         *   **Scenario coverage:** Each scenario's Given/When/Then should be exercised by a test. Missing coverage = block until addressed or logged as `[DEVIATION]` with justification.
         *   **Undocumented deviations:** Any implementation behavior that contradicts or extends the spec without a companion file entry. If found, write the appropriate tag (`[DEVIATION]`, `[AUTONOMOUS]`, `[CLARIFICATION]`) before proceeding.
@@ -174,7 +174,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     | `dependency-only` | Prerequisite update, no direct code changes. |
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
-*   **D. Verify:** Run the MCP `purlin_scan` tool with `only: "features,plan"` and confirm expected state.
+*   **D. Verify:** Run `purlin_scan` with `only: "features,plan"` and confirm expected state.
 *   **E. Group check:** If a delivery plan exists, check phase completion status:
     *   **Phase fully complete** (all features done): Mark phase COMPLETE, record commit hash, commit plan update.
     *   **Phase complete with deferrals** (all non-blocked features done, only role-blocked features remain): Apply the Phase Deferral Protocol -- mark phase COMPLETE with `**Deferred:**` annotation, re-queue blocked features to a later phase, announce the deferral. See `${CLAUDE_PLUGIN_ROOT}/references/phased_delivery.md` Section 10.14.

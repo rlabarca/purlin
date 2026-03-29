@@ -3,10 +3,6 @@ name: remote
 description: Branch collaboration — remote config, branch lifecycle, push/pull sync
 ---
 
-**Purlin mode: shared**
-
----
-
 ## Usage
 
 ```

@@ -3,23 +3,9 @@ name: spec-from-code
 description: This skill activates Engineer mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: Engineer**
-
 ## Purpose
 
 Reverse-engineer feature specs from an existing codebase. Scans source directories, proposes a category taxonomy interactively, and generates feature files, anchor nodes, and companion files. Uses a 5-phase, context-managed approach with durable state artifacts for cross-session continuity.
-
----
-
-## Session Identity
-
-You MUST update the terminal identity before starting spec-from-code work. Derive a short task label (3-4 words max) from the target codebase. Do NOT leave the label as the project name.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
-```
-
-Examples: `Eng(main) | spec from code`, `Eng(dev/0.8.6) | reverse spec auth`.
 
 ---
 
@@ -122,7 +108,7 @@ For each category:
      > **[Draft]** These scenarios were auto-generated from existing code by purlin:spec-from-code. Review and refine before marking as final.
      ```
    - Set status marker: `[TODO]`
-   - If significant code comments were found for this feature's source files (TODOs, architectural decisions, known issues), create a companion file at `features/<name>.impl.md` with:
+   - If significant code comments were found for this feature's source files (TODOs, architectural decisions, known issues), create a companion file (`.impl.md` in the same category folder as the spec) with:
      - A `### Source Mapping` section listing which source files implement the feature
      - Extracted comments with source file references
 4. Ask the user (via `AskUserQuestion`) to confirm the generated features look correct before proceeding.
@@ -134,7 +120,7 @@ For each category:
 
 ## Phase 4 — Finalization
 
-1. Run the MCP `purlin_scan` tool (with `only: "features,deps"`) to generate the initial scan results and dependency graph.
+1. Run `purlin_scan` (with `only: "features,deps"`) to generate the initial scan results and dependency graph.
 2. Summarize the results:
    - Total features created
    - Total anchor nodes created

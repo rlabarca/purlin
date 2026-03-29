@@ -5,10 +5,6 @@ description: Available in any mode. Does not switch modes. When invoked from QA 
 
 **Purlin mode: shared (QA cross-mode: setup-only)**
 
-Purlin agent: Available in any mode. Does not switch modes. When invoked from QA mode, runs in setup-only cross-mode (can create/manage fixtures but cannot modify application code).
-
----
-
 The test fixture system provides deterministic, reproducible project state for automated
 testing. Fixture states are immutable git tags in a dedicated bare repo. See
 `features/test_fixture_repo.md` for the full specification.
@@ -98,7 +94,7 @@ Check whether the feature spec contains a fixture tag section (a heading matchin
    - Convention path `.purlin/runtime/fixture-repo`
 2. If no fixture repo exists at any tier: check for a setup script.
    - **Purlin framework repo:** `dev/setup_fixture_repo.sh`
-   - **Consumer projects:** Check companion file (`features/<name>.impl.md`) or
+   - **Consumer projects:** Check companion file (`.impl.md` in the same folder as the spec) or
      `BUILDER_OVERRIDES.md` for the setup script location.
    - Run the setup script if found. If not found, create one (see below).
 3. Verify all declared fixture tags exist by running `fixture list` against the resolved repo.

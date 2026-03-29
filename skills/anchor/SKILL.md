@@ -9,18 +9,6 @@ Before creating or updating any anchor node, read `${CLAUDE_PLUGIN_ROOT}/referen
 
 ---
 
-## Session Identity
-
-You MUST update the terminal identity before starting anchor work. Derive a short task label (3-4 words max) from the anchor topic. Do NOT leave the label as the project name.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<task label>"
-```
-
-Use the mode that matches the anchor type: `"PM"` for design_*/policy_*/ops_*/prodbrief_*, `"Engineer"` for arch_*. Examples: `PM(main) | anchor visual std`, `Eng(dev/0.8.6) | anchor api contracts`.
-
----
-
 Given the topic provided as an argument, create or update an anchor node file in `features/`:
 
 ## Anchor Node Types
@@ -87,4 +75,4 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 2. If **updating**: read the existing anchor node, identify the constraint to add or revise, apply the change, and identify all dependent features whose status will be reset to TODO.
 3. If **creating**: scaffold using the template above. Replace `Policy:` with `Architecture:`, `Design:`, `Operational:`, or `Product Brief:` as appropriate. For `prodbrief_*` anchors, use `## User Stories` and `## Success Criteria` instead of `## <Domain> Invariants`.
 4. **Cascade awareness:** Editing an anchor node resets ALL dependent features to TODO. This triggers re-validation across the entire domain. Verify this is intended.
-5. After editing, commit the change and run the MCP `purlin_scan` tool. The scan resets dependents and surfaces them as Engineer action items.
+5. After editing, commit the change and run `purlin_scan`. The scan resets dependents and surfaces them as Engineer action items.

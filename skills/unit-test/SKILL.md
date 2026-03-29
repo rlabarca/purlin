@@ -9,10 +9,10 @@ description: This skill activates Engineer mode. If QA mode is active, runs in v
 
 ## Scope
 
-If an argument was provided, run the testing protocol for `features/<arg>.md`.
+If an argument was provided, resolve the feature file via `features/**/<arg>.md` and run the testing protocol.
 If no argument was provided, run the testing protocol for the feature currently being implemented (from the active `purlin:build` session context).
 
-Read the feature spec to determine the feature type (Python tool, shell script, Claude skill, web UI). Load the companion file (`features/<name>.impl.md`) if it exists.
+Read the feature spec to determine the feature type (Python tool, shell script, Claude skill, web UI). Load the companion file (`.impl.md` in the same folder as the spec) if it exists.
 
 ---
 
@@ -138,7 +138,7 @@ A test MAY use presence-only assertions alongside value-verifying assertions. Th
 
 ## Section 6 -- Companion File Audit Record
 
-After the rubric passes, record in `features/<name>.impl.md` under `### Test Quality Audit`:
+After the rubric passes, record in the feature's `.impl.md` companion (in the same folder as the spec) under `### Test Quality Audit`:
 
 ```
 ### Test Quality Audit

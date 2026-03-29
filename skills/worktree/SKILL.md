@@ -3,8 +3,6 @@ name: worktree
 description: Worktree management. Available in any mode without switching
 ---
 
-**Purlin mode: shared**
-
 ## Usage
 
 ```

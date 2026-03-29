@@ -3,10 +3,6 @@ name: regression
 description: This skill activates QA mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: QA**
-
----
-
 ## Usage
 
 ```
@@ -84,7 +80,7 @@ Evaluate regression results — read the result files, report status, and docume
    - **FAIL**: one or more scenarios failed. Document the failure (see step 3).
    - **NEW**: no prior baseline exists. Establish baseline from current results.
 
-3. **Document failures in companion file.** For each FAIL suite, append a `[DISCOVERY]` entry to `features/<feature>.impl.md` with:
+3. **Document failures in companion file.** For each FAIL suite, append a `[DISCOVERY]` entry to the feature's `.impl.md` companion (in the same folder as the spec) with:
    - The scenario name that failed
    - The assertion pattern that was expected
    - The actual output that was produced (quote the relevant portion)

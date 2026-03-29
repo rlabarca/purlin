@@ -3,8 +3,6 @@ name: verify
 description: This skill activates QA mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: QA**
-
 > **Hard gates (lifecycle diagnostic, regression readiness, auto-start silence, scoped verification modes, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: Phase A/B execution, auto-fix iteration loop, checklist assembly, and strategy dispatch.
 
 ---
@@ -51,7 +49,7 @@ Execution modes do NOT change what gets committed — a mode that skips steps si
 
 ## Scope
 
-Run the MCP `purlin_scan` tool (with `only: "features"`) and read the JSON result.
+Run `purlin_scan` (with `only: "features"`) and read the JSON result.
 
 If a feature argument was provided, extract that feature's entry from the scan results.
   - If the feature is not found in scan output, error: `"Feature <arg> not found in features/."`
@@ -126,7 +124,7 @@ Execute the applicable steps IN ORDER before assembling the manual checklist. Th
 
 ### Step 0 -- Scoped Verification Modes
 
-Before any execution, check each in-scope feature's regression scope by reading the feature spec directly (`features/<feature_name>.md`):
+Before any execution, check each in-scope feature's regression scope by reading the feature spec (resolve via `features/**/<feature_name>.md`):
 
 *   **`full`** (or missing/default) -- Verify all scenarios and all visual checklist items.
 *   **`targeted:Scenario A,Scenario B`** -- Verify ONLY the named scenarios. Skip all other scenarios and visual items unless explicitly named.
@@ -220,7 +218,7 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
 
 4.  **Process results:**
     *   Exit 0 (all passed): record pass. Feature's @auto scenarios are complete.
-    *   Non-zero (failures): record each failed assertion as a `[BUG]` discovery in `features/<feature_name>.discoveries.md`. Failed @auto scenarios do NOT enter the Phase B manual checklist -- they are already recorded as discoveries. These failures feed into Phase A.5 (auto-fix loop) when `--auto-verify` is active, rather than being deferred to a future session.
+    *   Non-zero (failures): record each failed assertion as a `[BUG]` discovery in the feature's `.discoveries.md` sidecar (in the same folder as the spec). Failed @auto scenarios do NOT enter the Phase B manual checklist -- they are already recorded as discoveries. These failures feed into Phase A.5 (auto-fix loop) when `--auto-verify` is active, rather than being deferred to a future session.
 
 5.  **Cleanup:** Stop any servers started in substep 2.
 
@@ -295,7 +293,7 @@ At each checkpoint, execute this sequence IN ORDER for all newly-clean features 
 
 1.  **Commit regression artifacts:** Commit all regression JSON files and scenario tag changes produced since the last checkpoint.
 2.  **Commit status tags:** For each feature where all automated work passed (unit tests in `tests.json`, regression suites, @auto scenarios) AND zero @manual scenarios remain unverified, commit ONE `--allow-empty` commit per feature: `git commit --allow-empty -m "status(<scope>): [Complete features/<FILENAME>.md] [Verified]"`. These are QA completions, so `[Verified]` is required. ONE COMMIT PER FEATURE — do not batch multiple features into a single status commit. Features with passing automated work but pending @manual scenarios are NOT finalized here — they proceed to Phase B.
-3.  **Update scan (HARD GATE):** Run the MCP `purlin_scan` tool once to refresh project state. Do NOT proceed to Phase B until this completes.
+3.  **Update scan (HARD GATE):** Run `purlin_scan` once to refresh project state. Do NOT proceed to Phase B until this completes.
 4.  **Verify finalization:** Check scan results — finalized features MUST no longer show AUTO/TODO in their QA column. If they do, a status tag commit was missed. Fix before continuing.
 5.  **Verify clean workspace:** Confirm no uncommitted changes remain.
 6.  **Zero manual items check:** If zero manual items remain AND no external tests are pending, skip Phase B entirely and proceed to Session Conclusion.
@@ -359,7 +357,7 @@ Regression suites:
    - FAIL: create `[BUG]` discovery in companion file with `scenario_ref`, `expected`, and `actual_excerpt`.
    - Report a summary after all suites complete.
 
-11. **Step 5a(B) — Regression checkpoint:** After all regression suites complete and are evaluated, execute Step 5a checkpoint (B). Finalize features whose regression suites passed — commit `[Complete] [Verified]` status tags, commit regression artifacts, run the MCP `purlin_scan` tool. Then proceed to Phase B.
+11. **Step 5a(B) — Regression checkpoint:** After all regression suites complete and are evaluated, execute Step 5a checkpoint (B). Finalize features whose regression suites passed — commit `[Complete] [Verified]` status tags, commit regression artifacts, run `purlin_scan`. Then proceed to Phase B.
 
 If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
 
@@ -597,7 +595,7 @@ For each failed item:
     *   **[INTENT_DRIFT]** -- Behavior matches spec literally but misses actual intent.
     *   **[SPEC_DISPUTE]** -- User disagrees with scenario's expected behavior.
     Confirm classification with the user.
-3.  **Record** entries to discovery sidecar files (`features/<name>.discoveries.md`). Format:
+3.  **Record** entries to discovery sidecar files (`.discoveries.md` in the same folder as the feature spec). Format:
     ```
     ### [TYPE] <title> (Discovered: YYYY-MM-DD)
     - **Scenario:** <which scenario, or NONE>
@@ -636,7 +634,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 3.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 4.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 5.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.
-6.  **Run scan once:** Run the MCP `purlin_scan` tool after all status commits to refresh project state. Do NOT run per-feature.
+6.  **Run scan once:** Run `purlin_scan` after all status commits to refresh project state. Do NOT run per-feature.
 7.  **Present batch summary:**
     *   Automated: N @auto executed, M passed, K failed.
     *   Manual: N passed, M failed, K disputed.

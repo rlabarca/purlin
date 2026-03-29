@@ -3,11 +3,7 @@ name: qa-report
 description: This skill activates QA mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: QA**
-
----
-
-Run the MCP `purlin_scan` tool (with `only: "features,discoveries,plan"`) and read the JSON result to get feature status. Then produce a QA-focused structured summary:
+Run `purlin_scan` (with `only: "features,discoveries,plan"`) and read the JSON result to get feature status. Then produce a QA-focused structured summary:
 
 **Output format:**
 

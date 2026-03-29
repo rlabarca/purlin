@@ -3,8 +3,6 @@ name: update
 description: Available to all agents and modes
 ---
 
-**Purlin mode: shared**
-
 **Version-Aware Purlin Update**
 
 Detects the consumer project's current Purlin installation model and version, computes the migration path to the current plugin version, and executes each step in order. Replaces the former submodule-only update and the one-time `purlin:upgrade` with a unified, version-aware flow.

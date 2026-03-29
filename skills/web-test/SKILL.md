@@ -20,12 +20,12 @@ description: "This skill activates Engineer mode. Exception: when invoked from Q
 ### Step 1 — Discovery
 
 **If explicit feature names were provided:**
-1. For each name, read `features/<name>.md`.
+1. For each name, resolve via `features/**/<name>.md` and read it.
 2. Check for `> Web Test: <url>` metadata. If absent, skip with: "Feature `<name>` has no `> Web Test:` metadata. Use `purlin:verify` for manual verification."
 3. Extract the base URL from the metadata (or use the URL override argument if provided).
 
 **If no arguments were provided:**
-1. Run the MCP `purlin_scan` tool (with `only: "features"`) and read the JSON result.
+1. Run `purlin_scan` (with `only: "features"`) and read the JSON result.
 2. Identify features in TESTING state.
 3. For each TESTING feature, read the spec and check for `> Web Test: <url>` metadata.
 4. Only features with `> Web Test:` are eligible. Skip all others silently.
@@ -71,7 +71,7 @@ description: "This skill activates Engineer mode. Exception: when invoked from Q
 
 For each eligible feature:
 
-1. Read the feature spec directly (`features/<feature_name>.md`) for regression scope metadata.
+1. Read the feature spec (resolve via `features/**/<feature_name>.md`) for regression scope metadata.
 2. **Scope filtering:**
    - `cosmetic` -> Skip with note: "Feature `<name>`: QA skip (cosmetic change)."
    - `dependency-only` with empty scenarios -> Skip with note: "Feature `<name>`: QA skip (dependency-only, no scenarios in scope)."
@@ -229,7 +229,7 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
    Visual Spec:      N passed, M failed / T total
    ```
 
-3. **For BUG failures:** Record each as a `[BUG]` discovery in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using this format:
+3. **For BUG failures:** Record each as a `[BUG]` discovery in the feature's discovery sidecar file (`<name>.discoveries.md (in the same folder as the feature spec)`) using this format:
    ```
    ### [BUG] <title> (Discovered: YYYY-MM-DD)
    - **Scenario:** <scenario name or visual checklist item>
@@ -240,7 +240,7 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
    ```
    Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - web-test findings"`
 
-4. **For STALE verdicts:** Automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`). Create the file if it does not exist. Use this format:
+4. **For STALE verdicts:** Automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`<name>.discoveries.md (in the same folder as the feature spec)`). Create the file if it does not exist. Use this format:
    ```
    ### [DISCOVERY] STALE: <checklist item text> (Discovered: YYYY-MM-DD)
    - **Screen:** <screen name from Visual Specification>

@@ -3,8 +3,6 @@ name: toolbox
 description: This skill is shared across all modes. List and run are available in any mode. Write operations (create, edit, copy, ...
 ---
 
-**Purlin mode: shared**
-
 ## Usage
 
 ```

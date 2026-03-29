@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "purlin": {
-      "command": "python3",
-      "args": ["scripts/mcp/purlin_server.py"]
-    }
-  }
-}
