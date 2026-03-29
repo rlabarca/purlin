@@ -36,7 +36,7 @@ Editing an anchor node file resets all dependent features to `[TODO]`, triggerin
 
 ## Companion Files
 
-Implementation knowledge in `features/<name>.impl.md`. Separate from feature specs.
+Implementation knowledge in `features/<category_slug>/<name>.impl.md`. Companion files live alongside their parent feature spec in the same category folder. Separate from feature specs.
 
 - **Standalone:** Companion files are standalone — feature files do NOT reference or link to them. The naming convention provides discoverability.
 - **Not a feature file:** Companion files do not appear in the dependency graph and are not tracked by the feature lifecycle.
@@ -47,7 +47,7 @@ For the Active Deviations table format and decision hierarchy, see `references/a
 
 ## Discovery Sidecars
 
-User testing discoveries in `features/<name>.discoveries.md`. QA owns lifecycle. Any mode can record new OPEN entries.
+User testing discoveries in `features/<category_slug>/<name>.discoveries.md`. Discovery sidecars live alongside their parent feature spec in the same category folder. QA owns lifecycle. Any mode can record new OPEN entries.
 
 - **Not a feature file:** Same exclusion rules as companion files.
 - **Status reset exemption:** Edits to `<name>.discoveries.md` do NOT reset lifecycle status.

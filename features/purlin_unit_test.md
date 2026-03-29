@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Engineer: purlin:unit-test Unit Test Protocol"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/arch_testing.md
+> Prerequisite: arch_testing.md
 
 [Complete]
 

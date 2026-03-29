@@ -3,7 +3,7 @@
 > Label: "Tool: Agentic Toolbox Core"
 > Category: "Install, Update & Scripts"
 > Owner: PM
-> Prerequisite: features/policy_toolbox.md
+> Prerequisite: policy_toolbox.md
 
 ## 1. Overview
 

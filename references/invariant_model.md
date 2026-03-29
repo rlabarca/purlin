@@ -10,7 +10,7 @@ Invariants extend the anchor node system. They participate in the dependency gra
 
 ## Identification
 
-All invariant files use the `i_` prefix: `features/i_<type>_<name>.md`.
+All invariant files use the `i_` prefix: `features/_invariants/i_<type>_<name>.md`.
 
 Valid type prefixes after `i_`: `arch_`, `design_`, `policy_`, `ops_`, `prodbrief_`.
 
@@ -28,7 +28,7 @@ Tools that need the full constraint set for a feature combine: explicit prerequi
 
 ## Immutability
 
-No agent mode (Engineer, PM, QA) can write to `features/i_*.md` files. The mode guard blocks all write attempts. Changes come only via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
+No agent mode (Engineer, PM, QA) can write to `features/_invariants/i_*.md` files. The mode guard blocks all write attempts. Changes come only via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
 
 The scan detects tampered files via SHA-256 comparison against cached hashes.
 

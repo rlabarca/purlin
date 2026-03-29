@@ -2,8 +2,8 @@
 
 > Label: "Agent Skills: PM: purlin:spec Spec Authoring"
 > Category: "Agent Skills: PM"
-> Prerequisite: features/impl_notes_companion.md
-> Prerequisite: features/purlin_find.md
+> Prerequisite: impl_notes_companion.md
+> Prerequisite: purlin_find.md
 
 [TODO]
 

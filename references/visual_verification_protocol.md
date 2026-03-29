@@ -15,7 +15,7 @@ When screenshot(s) are provided:
 
 1.  **Read each screenshot** via the Read tool.
 2.  **Validate the screenshot** appears to show the expected screen. If it does not match or is clearly cropped/low-quality, inform the user and ask for a corrected one, or proceed with what is visible.
-3.  **Design artifact comparison (optional):** If the screen has a local design artifact reference (`features/design/<stem>/<file>`), QA MAY read the artifact alongside the screenshot to compare the implementation against the original design intent. This enables detection of visual drift between the design artifact and the live implementation.
+3.  **Design artifact comparison (optional):** If the screen has a local design artifact reference (`features/_design/<stem>/<file>`), QA MAY read the artifact alongside the screenshot to compare the implementation against the original design intent. This enables detection of visual drift between the design artifact and the live implementation.
 4.  **Classify each checklist item** into one of two categories:
     *   **Screenshot-verifiable:** Static visible properties -- element presence, layout/positioning, typography, color, spacing, alignment, text content.
     *   **Not screenshot-verifiable:** Interaction behaviors (clicks, toggles, hovers), state persistence (survives refresh/reload), temporal behaviors (animations, auto-refresh stability, flicker), implementation details (CSS variables, localStorage), absence of negative behaviors ("does not re-load").

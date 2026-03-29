@@ -185,15 +185,15 @@ The auto-fix loop uses lightweight internal mode switches (defined in `purlin:ve
 | `tests/qa/scenarios/<f>.json` | Regression scenario declarations | QA (authored) |
 | `tests/qa/scenarios/<f>_smoke.json` | Smoke regression scenarios | QA (authored) |
 | `tests/<f>/regression.json` | Regression test results | Harness runner (auto-generated) |
-| `features/<f>.discoveries.md` | Discovery sidecars | QA (any mode can add OPEN entries) |
+| `features/**/<f>.discoveries.md` | Discovery sidecars | QA (any mode can add OPEN entries) |
 
 ### PM-Owned (SPEC)
 
 | File | Purpose |
 |------|---------|
-| `features/<f>.md` `### QA Scenarios` | Scenario definitions (what to test) |
-| `features/<f>.md` `## Visual Specification` | Visual design checklists |
-| `features/<f>.md` `## Regression Guidance` | Optional testing guidance for QA |
+| `features/**/<f>.md` `### QA Scenarios` | Scenario definitions (what to test) |
+| `features/**/<f>.md` `## Visual Specification` | Visual design checklists |
+| `features/**/<f>.md` `## Regression Guidance` | Optional testing guidance for QA |
 
 ### Cross-References
 

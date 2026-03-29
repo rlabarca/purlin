@@ -2,8 +2,8 @@
 
 > Label: "Agent Skills: Engineer: purlin:spec-code-audit Spec-Code Audit"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/impl_notes_companion.md
-> Prerequisite: features/policy_spec_code_sync.md
+> Prerequisite: impl_notes_companion.md
+> Prerequisite: policy_spec_code_sync.md
 
 [TODO]
 

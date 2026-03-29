@@ -2,8 +2,8 @@
 
 > Label: "Agent Skills: QA: purlin:web-test Web Test"
 > Category: "Agent Skills: QA"
-> Prerequisite: features/arch_testing.md
-> Prerequisite: features/design_artifact_pipeline.md
+> Prerequisite: arch_testing.md
+> Prerequisite: design_artifact_pipeline.md
 
 [Complete]
 

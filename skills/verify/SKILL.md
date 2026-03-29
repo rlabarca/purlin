@@ -7,6 +7,8 @@ description: This skill activates QA mode. If another mode is active, confirm sw
 
 Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
 
+> **Hard gates (lifecycle diagnostic, regression readiness, auto-start silence, scoped verification modes, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: Phase A/B execution, auto-fix iteration loop, checklist assembly, and strategy dispatch.
+
 ---
 
 ## Path Resolution
@@ -21,11 +23,23 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 
 ---
 
+## Session Identity
+
+You MUST update the terminal identity before starting verification work. Derive a short task label (3-4 words max) from the feature being verified or the batch scope. Do NOT leave the label as the project name — always derive a work-specific label.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "QA" "<task label>"
+```
+
+Examples: `QA(main) | verify auth flow`, `QA(dev/0.8.6) | batch verify`.
+
+---
+
 ## Argument Parsing
 
 Parse `$ARGUMENTS` for three orthogonal filters:
 
-- **Feature scope:** A bare word (no `--` prefix) scopes to `features/<arg>.md` only. If absent, batch all TESTING features + AUTO re-verification candidates.
+- **Feature scope:** A bare word (no `--` prefix) scopes to the feature file matching `<arg>` (resolve via `features/**/<arg>.md`). If absent, batch all TESTING features + AUTO re-verification candidates.
 - **Execution mode:** `--mode <auto|smoke|regression|manual>`. If absent, run the full pipeline.
 - **Auto-fix:** `--auto-verify`. Enables the Phase A.5 auto-fix iteration loop. Implies full pipeline (Phase A + Phase A.5 + Phase B). Mutually exclusive with `--mode`. Also activated when `auto_start: true` in session config.
 
@@ -105,6 +119,8 @@ If zero TESTING features found in scan:
 ---
 
 ## Phase A -- Automated Execution
+
+**Update terminal identity (MANDATORY):** Before any verification work, derive a short task label (3-4 words max) from the feature being verified or the batch scope. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "qa" "<task label>"`. Examples: `QA(main) | verify auth flow`, `QA(dev/0.8.6) | batch verify`. The label MUST describe the current work, not the project name.
 
 **Mode gate:** Skip this entire phase if `--mode manual`. If `--mode smoke`, execute only Step 2. If `--mode regression`, execute only Step 0b + regression checkpoint (Step 5a-B). If `--mode auto`, execute Steps 2-5 (skip Step 1 auto-pass and Step 4 classification). If no mode flag (full), execute all steps.
 
@@ -417,7 +433,7 @@ Phase A.5 crosses the QA/Engineer write boundary. This uses a lightweight intern
 
 **Invariants:**
 *   Write-boundary enforcement (mode guard) remains active. Engineer cannot write QA files; QA cannot write code files.
-*   Terminal badge stays `"QA (<branch>)"` throughout. The user is in a QA verification session; rapid mode flips are invisible.
+*   Terminal badge stays in QA format (`QA(<branch>) | <label>`) throughout. The user is in a QA verification session; rapid mode flips are invisible.
 *   Pending work is committed before each switch.
 
 **QA → Engineer:**

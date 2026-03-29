@@ -214,6 +214,42 @@ When the skill orchestrates step 3:
 
 ---
 
+## Post-Migration: Organize Features
+
+After all migration steps complete (or if already up to date), run feature file organization as permanent housekeeping. This step runs on every `purlin:update` invocation and is idempotent.
+
+### Organize Step -- Feature File Placement
+
+1. **Rename legacy special folders** (if old names exist):
+   - `features/tombstones/` → `features/_tombstones/`
+   - `features/digests/` → `features/_digests/`
+   - `features/design/` → `features/_design/`
+   - Delete `features/companions/` if empty (content should have been merged into `.impl.md` files)
+
+2. **Scan `features/` root** for any `.md` files not already in a category subfolder. Skip `_`-prefixed system folders and non-`.md` files.
+
+3. **For each root-level `.md` file** (excluding `.impl.md` and `.discoveries.md`):
+   a. If the file has an `i_*` prefix (invariant), target folder is `_invariants/`.
+   b. Otherwise, extract `> Category:` metadata from the file.
+   c. Look up the category slug from the canonical table in `references/feature_format.md`.
+   d. If the category is missing or unrecognized, print a warning and skip: `⚠ <filename>: unknown category "<category>" — skipped`
+   e. Create the target folder if it doesn't exist.
+   f. Move the file into the target folder.
+   g. Move companion files alongside it: if `<name>.impl.md` exists at root, move it too. Same for `<name>.discoveries.md`.
+
+4. **Report:**
+   - If files were moved: `Organized <N> feature(s) into category folders`
+   - If nothing to move: no output (silent)
+
+### Organize Step -- Drift Detection
+
+After organizing, scan all category subfolders for drift:
+- For each feature file in a subfolder, extract `> Category:` and look up its expected folder slug.
+- If the file is in the wrong folder (metadata says category X but file is in folder Y), print: `⚠ <path>: category "<category>" does not match folder "<folder>"`
+- Do NOT move these files automatically — drift requires investigation.
+
+---
+
 ## Idempotency
 
 - Each step checks `_migration_version` before running. Steps with `step_id <= migration_version` are skipped.

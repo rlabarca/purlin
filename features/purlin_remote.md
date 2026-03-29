@@ -2,8 +2,8 @@
 
 > Label: "Agent Skills: Common: purlin:remote Branch Collaboration"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/purlin_agent_launcher.md
-> Prerequisite: features/policy_branch_collab.md
+> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: policy_branch_collab.md
 
 [Complete]
 
@@ -188,7 +188,7 @@ If declined, abort without merging. Subsequent pulls (where a merge-base exists)
 After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-generate the "What's Different?" digest:
 
 1. Run: `bash ${CLAUDE_PLUGIN_ROOT}/scripts/collab/generate_whats_different.sh <branch>`
-2. Read `features/digests/whats-different.md` and display inline.
+2. Read `features/_digests/whats-different.md` and display inline.
 3. If the script fails or the file is not written, print a warning and continue. The digest is informational — it does NOT block or fail the pull.
 
 Skip this step when the merge result is SAME, AHEAD, or DIVERGED-with-conflicts.

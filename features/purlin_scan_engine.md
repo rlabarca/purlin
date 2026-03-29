@@ -2,7 +2,7 @@
 
 > Label: "Tool: Purlin Scan Engine"
 > Category: "Framework Core"
-> Prerequisite: features/agent_launchers_common.md
+> Prerequisite: agent_launchers_common.md
 
 ## 1. Overview
 
@@ -20,7 +20,7 @@ All scanning behavior (what is scanned, output format, caching semantics, `--onl
 
 ### 2.1 Feature Scanning
 
-- Scan all `features/*.md` files, excluding `*.impl.md`, `*.discoveries.md`, and `tombstones/`.
+- Scan all `features/**/*.md` files recursively across category subfolders, excluding `*.impl.md`, `*.discoveries.md`, and `_`-prefixed system folders (`_tombstones/`, `_digests/`, `_design/`, `_invariants/`).
 - For each feature, extract: lifecycle tag (from git log status commits), section headings presence, prerequisite links, and Owner tag.
 - **Section detection for regular features:** Check for `## Requirements`, `### Unit Tests`, `### QA Scenarios`, `## Visual Specification`.
 - **Section detection for anchor nodes** (`arch_*`, `design_*`, `policy_*`): Check for `## Purpose` and `## Invariants` (or variants like `## Design Invariants`, `## Testing Invariants`) instead of `## Requirements`. If either Purpose or any Invariants heading is found, report `sections.requirements: true`.
@@ -95,7 +95,7 @@ All scanning behavior (what is scanned, output format, caching semantics, `--onl
 
 ### 2.11 Tombstone Scanning
 
-- Scan `features/tombstones/*.md` for tombstone files (features queued for deletion by Engineer).
+- Scan `features/_tombstones/*.md` for tombstone files (features queued for deletion by Engineer).
 - Exclude companion artifacts (`*.impl.md`, `*.discoveries.md`) that may exist alongside tombstone files.
 - For each tombstone, emit a feature entry with `tombstone: true` and a hardcoded lifecycle of `"TOMBSTONE"`.
 - Tombstone entries do NOT need test_status, regression_status, sections, or spec_modified_after_completion — these fields should be `null`/`false` as appropriate.
@@ -320,33 +320,33 @@ Skills that refresh state for OTHER consumers (purlin:spec, purlin:anchor, purli
 
 #### Scenario: Scan includes tombstone files
 
-    Given features/tombstones/old_feature.md exists
+    Given features/_tombstones/old_feature.md exists
     When scan.py runs
     Then the features array contains an entry with name "old_feature" and tombstone true
     And the entry has lifecycle "TOMBSTONE"
 
 #### Scenario: Tombstone companion artifacts are excluded
 
-    Given features/tombstones/old_feature.md exists
-    And features/tombstones/old_feature.impl.md exists
+    Given features/_tombstones/old_feature.md exists
+    And features/_tombstones/old_feature.impl.md exists
     When scan.py runs
     Then only one entry for "old_feature" appears (the tombstone, not the companion)
 
 #### Scenario: No tombstones directory returns no tombstone entries
 
-    Given features/tombstones/ does not exist
+    Given features/_tombstones/ does not exist
     When scan.py runs
     Then no feature entries have tombstone true
 
 #### Scenario: Tombstones excluded from default output
 
-    Given features/tombstones/old_feature.md exists
+    Given features/_tombstones/old_feature.md exists
     When scan.py runs without --tombstones
     Then the features array does NOT contain entries with tombstone true
 
 #### Scenario: Tombstones included with --tombstones flag
 
-    Given features/tombstones/old_feature.md exists
+    Given features/_tombstones/old_feature.md exists
     When scan.py runs with --tombstones
     Then the features array contains an entry with name "old_feature" and tombstone true
 

@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: QA: purlin:fixture Test Fixture Reference"
 > Category: "Agent Skills: QA"
-> Prerequisite: features/test_fixture_repo.md
+> Prerequisite: test_fixture_repo.md
 
 [Complete]
 

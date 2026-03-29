@@ -39,11 +39,11 @@ This spec owns the full pipeline: the agent command interface, the extraction to
 - When the agent has an active Purlin mode (PM, Engineer, or QA), it passes `--role <mode>` to produce a role-specific briefing prepended to the standard digest.
 - When no mode is active, it runs without `--role` (standard digest only).
 - The script runs the extraction tool and invokes the LLM to produce the digest.
-- Output is written to `features/digests/whats-different.md`.
+- Output is written to `features/_digests/whats-different.md`.
 
 ### 2.5 Output
 
-- The command reads and displays the contents of `features/digests/whats-different.md` inline.
+- The command reads and displays the contents of `features/_digests/whats-different.md` inline.
 
 ### 2.6 Role-Aware Briefing
 
@@ -159,7 +159,7 @@ This is conversational — no script or endpoint is needed. The IDs make it easy
     And origin/collab/v0.6-sprint has 2 commits not in local main
     When the agent runs purlin:whats-different
     Then the generation script is executed with "v0.6-sprint" as argument
-    And features/digests/whats-different.md is written to disk
+    And features/_digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
 #### Scenario: End-to-End Generation via Agent Command
@@ -168,7 +168,7 @@ This is conversational — no script or endpoint is needed. The IDs make it easy
     And an active branch exists in BEHIND state
     When the agent runs purlin:whats-different
     Then the generation script is executed with the active branch name as argument
-    And features/digests/whats-different.md is written to disk
+    And features/_digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
 #### Scenario: PM Mode Produces PM Briefing

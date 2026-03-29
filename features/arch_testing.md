@@ -23,7 +23,7 @@ A test tool:
 
 Tests that target visual systems (web UI, mobile apps) SHOULD compare their output against original design references when available:
 
-- **Reference images** (`features/design/` artifacts) -- fast, local multimodal comparison
+- **Reference images** (`features/_design/` artifacts) -- fast, local multimodal comparison
 - **Figma MCP** (when available) -- authoritative three-source triangulated verification (design + spec + app)
 - This is the primary mechanism for Engineer mode to "look at the designs" like a real developer, ensuring what was built matches the intended look and feel
 
@@ -34,12 +34,12 @@ Tests operate in three tiers with different triggers, owners, and performance pr
 | Tier | When | Who | What Runs | Speed |
 |------|------|-----|-----------|-------|
 | Unit | During build (Step 3) | Engineer (auto) | pytest/jest, in-process | Seconds |
-| Spot Check | During build (Step 3) | Engineer (selective) | `/pl-web-test` for visual web features only | Minutes |
+| Spot Check | During build (Step 3) | Engineer (selective) | `purlin:web-test` for visual web features only | Minutes |
 | Regression | User-chosen intervals | QA (end-to-end) | All regression tests (agent, web, full) | External terminal |
 
 **Tier rules:**
 
-- **Unit:** Always runs during Engineer Step 3. Covers import-and-call, exit code, and value assertions. Protocol: `/pl-unit-test`.
+- **Unit:** Always runs during Engineer Step 3. Covers import-and-call, exit code, and value assertions. Protocol: `purlin:unit-test`.
 - **Fixture scope:** Engineer mode does NOT set up fixtures during unit testing (Step 3). Fixture-backed testing is regression-tier (QA-owned).
 - **Spot Check:** Runs during Engineer Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features skip spot checks during build.
 - **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `regression.json`. Engineer mode's only role in regression is consuming results to fix code.
@@ -112,15 +112,15 @@ Record a `[SPEC_PROPOSAL]` entry in the feature's companion file:
 Proposed anchor: No new anchor (arch_testing.md Section "Test Classification Heuristic")
 ```
 
-This is surfaced as a PM action item via `/pl-status`. PM mode then updates the feature spec's scenario sections accordingly.
+This is surfaced as a PM action item via `purlin:status`. PM mode then updates the feature spec's scenario sections accordingly.
 
-**Timing:** Engineer mode runs this heuristic after completing `/pl-unit-test` for a feature AND when first reading a feature spec during `/pl-build`. It is a checkpoint, not a gate -- Engineer mode does not halt work. The proposal routes through the normal deviation cycle.
+**Timing:** Engineer mode runs this heuristic after completing `purlin:unit-test` for a feature AND when first reading a feature spec during `purlin:build`. It is a checkpoint, not a gate -- Engineer mode does not halt work. The proposal routes through the normal deviation cycle.
 
 **Relationship to Section Classification Contract:** The heuristic is the detection mechanism for violations of the Section Classification Contract (above). The contract defines what belongs where; the heuristic tells Engineer mode when to flag a mismatch.
 
 ### Backward Compatibility
 
-During the transition from `> AFT Web:` to `> Web Test:` metadata, the scan and `/pl-web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.
+During the transition from `> AFT Web:` to `> Web Test:` metadata, the scan and `purlin:web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.
 
 ### FORBIDDEN
 

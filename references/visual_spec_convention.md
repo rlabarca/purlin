@@ -17,7 +17,7 @@ The section is placed at the end of the feature file (discoveries are stored in 
 > **Inheritance:** Colors, typography, and theme switching per anchor.
 
 ### Screen: <Screen Name>
-- **Reference:** `features/design/<stem>/<file>` | [Figma](<url>) | Figma node <node-id> (file <file-key>) | [Live](<url>) | N/A
+- **Reference:** `features/_design/<stem>/<file>` | [Figma](<url>) | Figma node <node-id> (file <file-key>) | [Live](<url>) | N/A
 - **Processed:** YYYY-MM-DD | N/A
 - **Token Map:**
   - `<figma-token>` -> `<project-token>`
@@ -51,7 +51,7 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   The scan detects visual spec sections and generates separate QA action items for visual verification.
 
 ## 9.3.1 Design Brief Cache
-When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
+When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/_design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
 
 ## 9.4 Design Asset Storage
 *   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).
@@ -74,10 +74,10 @@ The goal is to **minimize manual QA Scenarios** by moving all static visual chec
 ## 9.7 Design Artifact Pipeline
 Design artifacts (images, PDFs, Figma exports, live web page captures) are stored within the `features/` directory tree using a structured convention:
 
-*   **Per-feature storage:** `features/design/<feature_stem>/` where `<feature_stem>` is the feature filename without `.md`.
-*   **Shared storage:** `features/design/_shared/` for cross-feature design standards (brand guides, global style references).
-*   **Naming:** `features/design/<feature_stem>/<descriptive-name>.<ext>` -- lowercase, hyphen-separated.
-*   **Design brief:** `features/design/<feature_stem>/brief.json` -- machine-readable design data generated from Figma MCP during ingestion.
+*   **Per-feature storage:** `features/_design/<feature_stem>/` where `<feature_stem>` is the feature filename without `.md`.
+*   **Shared storage:** `features/_design/_shared/` for cross-feature design standards (brand guides, global style references).
+*   **Naming:** `features/_design/<feature_stem>/<descriptive-name>.<ext>` -- lowercase, hyphen-separated.
+*   **Design brief:** `features/_design/<feature_stem>/brief.json` -- machine-readable design data generated from Figma MCP during ingestion.
 
 **Processing mandate:** Every referenced artifact MUST have a corresponding `- **Token Map:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the Token Map and checklists are the working documents agents use. The `purlin:design-ingest` command automates this processing workflow.
 

@@ -2,7 +2,7 @@
 
 > Label: "Test Infrastructure: Regression Testing"
 > Category: "Test Infrastructure"
-> Prerequisite: features/arch_testing.md
+> Prerequisite: arch_testing.md
 
 [TODO] <!-- PM reset 2026-03-23: new sections 2.2.4, 2.8.1 not yet implemented by Engineer -->
 
@@ -57,13 +57,13 @@ A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-
 
 ### 2.2 QA Regression Skills
 
-Three QA-owned slash commands that replace the former unified `/pl-regression` skill. Each command has a single, clear purpose. QA owns the regression tier end-to-end: authoring scenario declarations, executing regression sets, and evaluating results.
+Three QA-owned slash commands that replace the former unified `purlin:regression` skill. Each command has a single, clear purpose. QA owns the regression tier end-to-end: authoring scenario declarations, executing regression sets, and evaluating results.
 
 **Harness authorship:** QA writes and maintains the harness scripts that test behavioral scenarios (agent interaction flows, web UI regression, API contract checks). Harness scripts are behavioral verification artifacts, not application code. They live alongside other QA verification scripts. Engineer mode does NOT write regression harnesses.
 
 **UX invariant:** Whenever the QA agent asks the user to run anything in an external terminal -- whether through any regression skill or ad-hoc during triage -- it MUST print the exact, complete command. Never describe what to run; print the literal command. The user should never have to assemble a command from prose.
 
-#### 2.2.1 `/pl-regression-author` (QA-owned)
+#### 2.2.1 `purlin:regression-author` (QA-owned)
 
 **Purpose:** Create scenario JSON files from feature specs. Infrequent -- only needed when new features reach Engineer DONE status with no scenario file.
 
@@ -76,7 +76,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 3. Per feature (one at a time, sequential): read spec, evaluate fixture needs (see Section 2.10.1), write scenario JSON to `tests/qa/scenarios/<feature_name>.json`, commit.
 4. Print handoff message with next steps (see Section 2.12).
 
-#### 2.2.2 `/pl-regression-run` (QA-owned)
+#### 2.2.2 `purlin:regression-run` (QA-owned)
 
 **Purpose:** Execute existing regression scenarios. Routine -- the common operation.
 
@@ -91,7 +91,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 5. Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification.
 6. Offer productive wait: "While tests run, I can author scenarios for other features or review open discoveries."
 
-#### 2.2.3 `/pl-regression-evaluate` (QA-owned)
+#### 2.2.3 `purlin:regression-evaluate` (QA-owned)
 
 **Purpose:** Process regression results after execution. Creates BUG discoveries for failures.
 
@@ -108,7 +108,7 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 
 #### 2.2.4 First-Time Orientation
 
-When `/pl-verify` runs on a project with **zero regression scenario files** in `tests/qa/scenarios/`, display a one-time orientation block before proceeding to Phase B:
+When `purlin:verify` runs on a project with **zero regression scenario files** in `tests/qa/scenarios/`, display a one-time orientation block before proceeding to Phase B:
 
 ```
 ━━━ Regression Testing ━━━
@@ -116,12 +116,12 @@ No regression scenarios found.
 Regression tests protect completed features from breaking.
 
 How it works:
-  /pl-regression           — auto-detects the next step
-  /pl-regression author    — write test scenarios
-  /pl-regression run       — execute tests
-  /pl-regression evaluate  — check results
+  purlin:regression           — auto-detects the next step
+  purlin:regression author    — write test scenarios
+  purlin:regression run       — execute tests
+  purlin:regression evaluate  — check results
 
-Start with: /pl-regression
+Start with: purlin:regression
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -129,9 +129,9 @@ Start with: /pl-regression
 
 **Placement:** After Phase A summary, before the regression status table (or in place of it when no scenarios exist).
 
-#### 2.2.5 Regression Suite Status in `/pl-verify` Phase A Summary
+#### 2.2.5 Regression Suite Status in `purlin:verify` Phase A Summary
 
-After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification), `/pl-verify` MUST scan for existing regression scenario JSON files and present a status table showing outstanding regression suites. This ensures the user is aware of regression tests that exist but haven't been run (or have stale results).
+After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification), `purlin:verify` MUST scan for existing regression scenario JSON files and present a status table showing outstanding regression suites. This ensures the user is aware of regression tests that exist but haven't been run (or have stale results).
 
 **Behavior:**
 
@@ -156,11 +156,11 @@ Regression suites:
 6. **`auto_start` gate (BEFORE prompting).** Check `auto_start` immediately after printing the table — do NOT print a prompt or wait for user input:
    - **When `auto_start: true`:** Print `"auto_start: running N per-feature suites (smoke first). Skipped M pre-release suites (run manually before release)."` Proceed directly to execution (step 8) with all STALE and NOT_RUN per-feature suites. Skip pre-release suites silently.
    - **When `auto_start: false`:** Print the interactive prompt: `"Run regression suites? [all / per-feature / skip]"`. Wait for user selection. Under `auto_start: false`, also prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
-7. **Early background launch in `/pl-verify`.** During `/pl-verify`, slow regression suites (multi-scenario `agent_behavior`, estimated >30s) are launched in background at the START of Phase A (Step 0b), before auto-pass/smoke/classification. This overlaps test execution with other Phase A work so results are ready by the regression checkpoint. Smoke-tier suites are excluded from early launch (they run synchronously in the smoke gate).
+7. **Early background launch in `purlin:verify`.** During `purlin:verify`, slow regression suites (multi-scenario `agent_behavior`, estimated >30s) are launched in background at the START of Phase A (Step 0b), before auto-pass/smoke/classification. This overlaps test execution with other Phase A work so results are ready by the regression checkpoint. Smoke-tier suites are excluded from early launch (they run synchronously in the smoke gate).
 8. **Run all selected suites in-session.** All harness types — including `agent_behavior` — run directly via the harness runner. The `agent_behavior` harness invokes `claude --print` as a non-interactive subprocess; this is safe because `claude --print` is stateless and does not conflict with the parent Claude Code session.
 9. **Foreground execution for fast suites.** `web_test`, `custom_script`, and single-scenario `agent_behavior` suites run synchronously for immediate feedback.
 
-#### 2.2.5 `/pl-regression` -- RETIRED
+#### 2.2.5 `purlin:regression` -- RETIRED
 
 The former unified state-machine skill is deleted. The three explicit skills above replace it entirely. No auto-detect alias is provided.
 
@@ -259,7 +259,7 @@ QA authors JSON scenario files in `tests/qa/scenarios/<feature_name>.json`. Each
 The optional `frequency` field at the scenario file level controls when the suite is eligible for execution:
 
 - **`per-feature`** (default when absent): Standard regression -- eligible whenever results are STALE/FAIL/NOT_RUN.
-- **`pre-release`**: Long-running suites (e.g., skill behavior tests using `claude --print`) that run only during pre-release verification or manual trigger. `/pl-regression-run` skips `pre-release` suites unless invoked with `--frequency pre-release`.
+- **`pre-release`**: Long-running suites (e.g., skill behavior tests using `claude --print`) that run only during pre-release verification or manual trigger. `purlin:regression-run` skips `pre-release` suites unless invoked with `--frequency pre-release`.
 
 ### 2.8 Harness Runner Framework
 
@@ -316,13 +316,13 @@ The harness runner manages dev server lifecycle for `web_test` scenarios. The be
 **No fixture (testing against live project state):**
 
 1. Check if a dev server is already running: read `.purlin/runtime/server.port`. If the file exists and the port is responsive (HTTP GET returns 200), reuse the existing server — do NOT start a new one, do NOT stop it after the test.
-2. If no server is running: start one via `/pl-server` (use the port from `web_test_url`, or auto-select if not specified). Track the PID for cleanup. After all scenarios in this file complete, stop the server.
+2. If no server is running: start one via `purlin:server` (use the port from `web_test_url`, or auto-select if not specified). Track the PID for cleanup. After all scenarios in this file complete, stop the server.
 3. **Readiness polling:** After starting a server, poll for readiness (HTTP GET to `http://localhost:<port>/`) with retries: 10 attempts, 1 second apart. If the server is not responsive after 10 attempts, fail the scenario with `"Error: dev server did not become ready within 10 seconds"`. Do NOT use a fixed `sleep`.
 
 **With fixture (testing against controlled project state):**
 
 1. Check if a dev server is already running on the `web_test_url` port. If yes, start the fixture server on a DIFFERENT port (auto-select via OS) to avoid conflict. Update the `web_test_url` for assertions to use the new port.
-2. Start the dev server against the fixture directory via `/pl-server --project-root <fixture_dir> --port <port>`. This serves the fixture's feature files, config, and test artifacts — providing the controlled state the fixture was designed for.
+2. Start the dev server against the fixture directory via `purlin:server --project-root <fixture_dir> --port <port>`. This serves the fixture's feature files, config, and test artifacts — providing the controlled state the fixture was designed for.
 3. **Readiness polling:** Same as above (10 attempts, 1 second apart).
 4. After all scenarios using this fixture complete, stop the fixture server. The pre-existing server (if any) is left untouched.
 
@@ -382,7 +382,7 @@ exec "$(git rev-parse --show-toplevel)/purlin/tools/test_support/run_regression.
 
 ### 2.10 QA Authoring Workflow
 
-QA authors scenario files one feature at a time during `/pl-regression-author`:
+QA authors scenario files one feature at a time during `purlin:regression-author`:
 
 1. Read the feature spec. Draw from all available sources: `### QA Scenarios` (PM-authored behavioral requirements), `## Regression Guidance` (PM's optional hints — harness type, fixture suggestions, critical paths), `> Web Test:` metadata, and QA's own knowledge of what's fragile or critical. QA is the test design authority — PM guidance is input, not a prerequisite.
 2. Evaluate fixture needs per the fixture integration protocol (Section 2.10.1).
@@ -406,7 +406,7 @@ Note: `### QA Scenarios` is sufficient — QA does not need PM to write `## Regr
 - Context per feature: ~300 lines consumed, then discardable.
 - Estimated capacity: 20-30 features per session before context pressure.
 - For larger projects: human re-runs QA, it continues where it left off.
-- Mid-session checkpoint via `/pl-resume save` captures regression authoring state.
+- Mid-session checkpoint via `purlin:resume save` captures regression authoring state.
 - If context runs out mid-feature (scenario file not yet committed), the next session re-authors from scratch (acceptable because authoring one file is fast).
 
 #### 2.10.1 Fixture Integration During Authoring
@@ -444,7 +444,7 @@ When Engineer mode encounters regression test failures, it follows this triage:
 - **Status:** OPEN
 ```
 
-QA picks this up in the next session via `/pl-status` action items. QA fixes the scenario JSON and commits.
+QA picks this up in the next session via `purlin:status` action items. QA fixes the scenario JSON and commits.
 
 **Scan routing:** The scan recognizes `Action Required: QA` on BUG discoveries and routes them to the QA work items instead of Engineer work items. This prevents Engineer mode from seeing its own feedback as a new action item.
 
@@ -579,7 +579,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     Given the project has 5 features with test metadata
     And 2 features have STALE test results
     And 1 feature has FAIL test results
-    When the QA agent invokes /pl-regression-run
+    When the QA agent invokes purlin:regression-run
     Then the skill lists 3 eligible features sorted by staleness
     And presents the interactive selection prompt
 
@@ -688,7 +688,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
     Given a feature has a Regression Testing section and builder status DONE
     And no scenario file exists at tests/qa/scenarios/<feature_name>.json
-    When the QA agent invokes /pl-regression-author
+    When the QA agent invokes purlin:regression-author
     Then the feature spec is read
     And a scenario JSON file is written to tests/qa/scenarios/<feature_name>.json
     And the file is committed
@@ -702,7 +702,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     Then the discovery title includes "test-scenario"
     And Action Required is set to "QA"
     And the discovery body includes scenario_ref and actual_excerpt
-    And /pl-status routes this to the QA work items
+    And purlin:status routes this to the QA work items
 
 #### Scenario: Harness runner writes enriched regression.json
 

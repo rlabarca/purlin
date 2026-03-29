@@ -2,11 +2,11 @@
 
 > Label: "Tool: Purlin Instruction Architecture"
 > Category: "Framework Core"
-> Prerequisite: features/agent_launchers_common.md
+> Prerequisite: agent_launchers_common.md
 
 ## 1. Overview
 
-The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces both `PURLIN_BASE.md` and the four role-specific instruction files. It contains the CDD philosophy, mode definitions with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, knowledge colocation rules, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces `PURLIN_OVERRIDES.md` and four role-specific overrides, organized by mode sections. The plugin agent definition (`agents/purlin.md`) incorporates `PURLIN_BASE.md` content, and `purlin:start` loads overrides — no separate HOW_WE_WORK file.
+The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces both `PURLIN_BASE.md` and the four role-specific instruction files. It contains the CDD philosophy, mode definitions with write-access boundaries, the mode-switching protocol, the Active Deviations protocol, knowledge colocation rules, the startup work-discovery flow, and commit attribution conventions. A single override file (`PURLIN_OVERRIDES.md`) replaces `PURLIN_OVERRIDES.md` and four role-specific overrides, organized by mode sections. The plugin agent definition (`agents/purlin.md`) incorporates `PURLIN_BASE.md` content, and `purlin:resume` loads overrides — no separate HOW_WE_WORK file.
 
 ---
 
@@ -48,10 +48,10 @@ The Purlin agent uses a single instruction file (`PURLIN_BASE.md`) that replaces
 - PURLIN_BASE.md MUST contain: philosophy, mode definitions, write-access boundaries, mode switching protocol, ownership model, knowledge colocation, lifecycle, testing split.
 - PURLIN_BASE.md MUST NOT contain: detailed step-by-step workflow protocols, interpretation logic, or decision trees for specific operations. These belong in skill files.
 - **Skills first:** When deciding where logic belongs, default to putting it in a skill. Only put it in the base file if it needs to be active across ALL states of the agent (e.g., the mode guard must always be on, regardless of which skill is running).
-- The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol (`/pl-verify`).
-- The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol (`/pl-build`).
-- Work interpretation logic (how to classify scan results into mode-specific work items) is a SKILL protocol (`/pl-status`). The startup protocol in PURLIN_BASE.md invokes `/pl-status`, it does not duplicate its logic.
-- **Work discovery delegation:** `/pl-status` is the single source of "what work exists." Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) delegate to `/pl-status` for their work list — they do not call `scan.sh` directly or re-implement detection logic.
+- The verify workflow (Phase A/B, smoke gate, regression gate) is a SKILL protocol (`purlin:verify`).
+- The build workflow (pre-flight, plan, implement, verify, status tag) is a SKILL protocol (`purlin:build`).
+- Work interpretation logic (how to classify scan results into mode-specific work items) is a SKILL protocol (`purlin:status`). The startup protocol in PURLIN_BASE.md invokes `purlin:status`, it does not duplicate its logic.
+- **Work discovery delegation:** `purlin:status` is the single source of "what work exists." Workflow skills (`purlin:build`, `purlin:verify`, `purlin:spec`) delegate to `purlin:status` for their work list — they do not call `scan.sh` directly or re-implement detection logic.
 - Base instructions set BOUNDARIES. Skills carry PROTOCOLS and LOGIC.
 
 ---

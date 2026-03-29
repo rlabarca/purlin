@@ -2,7 +2,7 @@
 
 > Label: "Shared Agent Definitions: Knowledge Colocation"
 > Category: "Shared Agent Definitions"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 
@@ -42,7 +42,7 @@ The knowledge colocation reference (`references/knowledge_colocation.md`) define
 
 - MUST define: `[BUG]`, `[DISCOVERY]`, `[INTENT_DRIFT]`, `[SPEC_DISPUTE]` with meanings.
 - MUST define lifecycle: `OPEN → SPEC_UPDATED → RESOLVED → PRUNED`.
-- MUST reference `/pl-discovery` for the full recording protocol.
+- MUST reference `purlin:discovery` for the full recording protocol.
 
 ---
 

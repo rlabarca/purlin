@@ -2,7 +2,7 @@
 
 > Label: "Tool: Diagnostic Logging"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/test_fixture_repo.md
+> Prerequisite: test_fixture_repo.md
 
 ## 1. Overview
 

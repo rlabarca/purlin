@@ -18,7 +18,7 @@ This is a Claude skill/command feature. The implementation consists of:
 
 | Function | Purpose |
 |----------|---------|
-| `store_local_artifact` | Copies local image/PDF to `features/design/<stem>/` |
+| `store_local_artifact` | Copies local image/PDF to `features/_design/<stem>/` |
 | `create_visual_spec_section` | Inserts/updates `## Visual Specification` with screen block |
 | `read_design_anchors` | Parses `design_*.md` files to extract token tables |
 | `map_color_to_token` | Reverse-maps hex color to anchor token name |

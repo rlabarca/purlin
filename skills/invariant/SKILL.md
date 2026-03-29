@@ -40,6 +40,18 @@ If no subcommand is provided, print the usage table above and stop.
 
 ---
 
+## Session Identity
+
+For write subcommands (`add`, `add-figma`, `sync`, `remove`), you MUST update the terminal identity before starting work. Derive a short task label (3-4 words max) from the invariant being managed. Do NOT leave the label as the project name.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
+```
+
+Examples: `PM(main) | add security inv`, `PM(dev/0.8.6) | sync design inv`.
+
+---
+
 ## Mode Enforcement
 
 - **Write subcommands** (`add`, `add-figma`, `sync`, `remove`): Require PM mode. If the current mode is not PM, prompt: `"This subcommand modifies invariant files. Switch to PM mode?"` Do not proceed without PM mode active.
@@ -69,8 +81,8 @@ Import an invariant from an external git repo.
    - `> Source-SHA: <git-commit-sha>`
    - `> Synced-At: <ISO-8601-timestamp>`
    - `> Format-Version: 1.0` (if not already present)
-6. **Copy to `features/`** with `i_` prefix prepended to the filename. If the source file is `policy_security.md`, the local file becomes `features/i_policy_security.md`.
-7. **Commit** with tag: `invariant-add(features/i_<type>_<name>.md): v<version> from <repo>`.
+6. **Copy to `features/_invariants/`** with `i_` prefix prepended to the filename. If the source file is `policy_security.md`, the local file becomes `features/_invariants/i_policy_security.md`. Create the `_invariants/` folder if it doesn't exist. If `features/_invariants/i_<name>.md` already exists, stop with: "Invariant file already exists at `features/_invariants/i_<name>.md`. Use `purlin:invariant sync` to update an existing invariant."
+7. **Commit** with tag: `invariant-add(features/_invariants/i_<type>_<name>.md): v<version> from <repo>`.
 8. **Run scan:** Run the MCP `purlin_scan` tool to integrate into dependency graph and trigger cascade if global.
 9. **Clean up** the shallow clone.
 
@@ -90,7 +102,7 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
 2. **Fetch Figma metadata** via MCP: version ID, last modified, design variables.
 3. **Extract annotations** via `get_design_context`: behavioral notes, interaction descriptions, edge cases.
 4. **Prompt PM** for the invariant name and Purpose section content.
-5. **Create pointer file** `features/i_design_<name>.md` with:
+5. **Create pointer file** `features/_invariants/i_design_<name>.md` with:
    ```markdown
    # Design: <Name>
 
@@ -121,9 +133,9 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
 6. **Anchor upgrade** (if `existing-anchor` provided):
    - Verify `features/<existing-anchor>` exists and is a `design_*.md` file.
    - Find all feature files with `> Prerequisite: features/<existing-anchor>` or `> **Design Anchor:** <existing-anchor>`.
-   - Update those references to point to the new `features/i_design_<name>.md`.
+   - Update those references to point to the new `features/_invariants/i_design_<name>.md`.
    - Delete the old `features/<existing-anchor>` file.
-7. **Commit** with tag: `invariant-add(features/i_design_<name>.md): Figma-sourced`.
+7. **Commit** with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
 8. **Run scan:** Run the MCP `purlin_scan` tool to cascade-reset dependent features.
 
 ---
@@ -133,7 +145,7 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
 Pull latest version from source.
 
 - If `file-name` is provided, sync that single invariant.
-- If `--all`, sync all `i_*` files in `features/`.
+- If `--all`, sync all `i_*` files in `features/_invariants/`.
 - If neither, list invariants and ask which to sync.
 
 ### Git-sourced invariants
@@ -147,7 +159,7 @@ Pull latest version from source.
    - Report version delta: PATCH (informational), MINOR (cascade with warning), MAJOR (full cascade -- flag prominently).
    - Present cascade impact: list features that will reset to `[TODO]`.
 6. **On confirmation:** Overwrite local file, update embedded metadata (`> Version:`, `> Source-SHA:`, `> Synced-At:`).
-7. **Commit** with tag: `invariant-sync(features/i_<name>.md): v<old> -> v<new>`.
+7. **Commit** with tag: `invariant-sync(features/_invariants/i_<name>.md): v<old> -> v<new>`.
 8. **Run scan:** Run the MCP `purlin_scan` tool to trigger cascade (semver-gated per `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md`):
    - MAJOR bump: full cascade.
    - MINOR bump: cascade with warning.
@@ -171,7 +183,7 @@ Pull latest version from source.
 
 Check all invariants for new versions. Fast -- no clone.
 
-For each `i_*` file in `features/`:
+For each `i_*` file in `features/_invariants/`:
 - **Git-sourced:** Run `git ls-remote <source-url> HEAD` to get remote HEAD SHA. Compare against local `> Source-SHA:`. If different: `"Update may be available: <file> (local: <sha-short>, remote: <sha-short>)"`.
 - **Figma-sourced:** If Figma MCP available, fetch file version ID. Compare against stored `> Version:`. If different: `"Figma updated: <file>"`. If MCP not available: `"Skipped (no Figma MCP): <file>"`.
 - **Report summary:** `N invariants checked, M have updates available.`
@@ -234,9 +246,9 @@ When `--all` is used, invert the check: iterate over patterns (O(patterns)) rath
 
 ## Subcommand: `validate`
 
-Validate all `i_*` files in `features/` for format compliance.
+Validate all `i_*` files in `features/_invariants/` for format compliance.
 
-For each `i_*` file:
+For each `i_*` file in `features/_invariants/`:
 1. **Required metadata:** Check for `> Format-Version:`, `> Invariant: true`, `> Version:`, `> Source:`, `> Scope:`.
 2. **Format version compatibility:** Warn if file's format version exceeds Purlin's supported version (currently `1.0`).
 3. **Required sections per type:**
@@ -263,7 +275,7 @@ For each `i_*` file:
 
 List all active invariants.
 
-Glob `features/i_*.md` and read metadata from each file. Display:
+Glob `features/_invariants/i_*.md` and read metadata from each file. Display:
 
 ```
 INVARIANTS (N total: M global, K scoped)
@@ -283,11 +295,11 @@ i_prodbrief_q2_goals.md            prodbrief  v1.0.0   scoped  git
 
 Remove an invariant from the project. Requires PM mode.
 
-1. **Verify** `features/<file-name>` exists and starts with `i_`.
-2. **Find dependents:** Grep all feature files for `> Prerequisite: features/<file-name>`.
+1. **Verify** `features/_invariants/<file-name>` exists and starts with `i_`.
+2. **Find dependents:** Grep all feature files for `> Prerequisite: features/_invariants/<file-name>`.
 3. **Show impact:** List dependent features and ask for confirmation.
 4. **On confirmation:**
    - Remove the `> Prerequisite:` lines from dependent feature files.
-   - Delete `features/<file-name>`.
+   - Delete `features/_invariants/<file-name>`.
 5. **Commit** with message: `pm(invariant): remove <file-name>`.
 6. **Run scan:** Run the MCP `purlin_scan` tool to update dependency graph.

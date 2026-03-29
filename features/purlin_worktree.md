@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Common: purlin:worktree Worktree Management"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/purlin_worktree_concurrency.md
+> Prerequisite: purlin_worktree_concurrency.md
 
 [Complete]
 

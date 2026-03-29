@@ -83,9 +83,9 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 ### 2.5 Pruning and Lifecycle
 
-**Prune command:** `fixture prune <repo-url>` scans all tags via `git ls-remote --tags`, extracts the `<feature-name>` component from each tag path, and checks whether a matching `features/<feature-name>.md` exists in the current project. Tags whose feature file is missing or has a tombstone (`features/tombstones/<feature-name>.md`) are listed as orphans.
+**Prune command:** `fixture prune <repo-url>` scans all tags via `git ls-remote --tags`, extracts the `<feature-name>` component from each tag path, and checks whether a matching `features/<feature-name>.md` exists in the current project. Tags whose feature file is missing or has a tombstone (`features/_tombstones/<feature-name>.md`) are listed as orphans.
 
-**Tombstone integration:** When PM mode retires a feature via `/pl-tombstone`, and the feature spec has `> Test Fixtures:` metadata, the tombstone protocol gains a reminder step: "Run `fixture prune <repo-url>` to flag this feature's fixture tags for deletion."
+**Tombstone integration:** When PM mode retires a feature via `purlin:tombstone`, and the feature spec has `> Test Fixtures:` metadata, the tombstone protocol gains a reminder step: "Run `fixture prune <repo-url>` to flag this feature's fixture tags for deletion."
 
 ### 2.6 Fixture Trigger Decision Matrix
 
@@ -95,8 +95,8 @@ Fixtures are recommended and created by different agents at different stages. Th
 |------|---------|--------|
 | **PM** | Writing a spec where scenarios need controlled project state (multi-feature interactions, specific lifecycle states, config variations) | Declare `### Integration Test Fixture Tags` section with tag table and state descriptions in the feature spec |
 | **Engineer** | Feature spec contains a fixture tag section (`### 2.x ... Fixture Tags`) | Create setup script, run `fixture init` + `fixture add-tag` for each declared tag. When `fixture_repo_url` is configured, `add-tag` auto-pushes to the remote. If push fails, Engineer uses `fixture push <url>` manually. |
-| **QA** (during `/pl-regression-author`) | Scenario needs state beyond inline `setup_commands` | Create fixtures directly via `fixture add-tag`; record in `fixture_usage.json` |
-| **QA** (during `/pl-regression-author`) | Feature has NO PM-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
+| **QA** (during `purlin:regression-author`) | Scenario needs state beyond inline `setup_commands` | Create fixtures directly via `fixture add-tag`; record in `fixture_usage.json` |
+| **QA** (during `purlin:regression-author`) | Feature has NO PM-declared fixture tags but controlled state would improve test determinism | Assess need: create directly via `fixture add-tag` if moderate complexity |
 
 **Key principle:** QA is authorized to create fixtures without PM pre-declaration. PM mode declares fixture needs when obvious at spec time; QA discovers needs during regression authoring. Both paths are valid. PM mode path provides upfront planning; the QA path captures discoveries made during test design.
 
@@ -123,7 +123,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 
 ### 2.6.3 QA Workflow
 
-QA MAY create and manage fixtures directly during regression authoring (`/pl-regression-author`). This eliminates the handoff delay between QA discovering a fixture need and Engineer creating it.
+QA MAY create and manage fixtures directly during regression authoring (`purlin:regression-author`). This eliminates the handoff delay between QA discovering a fixture need and Engineer creating it.
 
 1. During regression authoring, QA evaluates fixture needs per the decision logic in `regression_testing.md` Section 2.10.1.
 2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.
@@ -325,7 +325,7 @@ When a feature needs a fixture repo and no remote URL is configured:
 #### Scenario: Prune detects tombstoned features
 
     Given a fixture repo has tags main/old_feature/s1
-    And the current project has features/tombstones/old_feature.md
+    And the current project has features/_tombstones/old_feature.md
     When `fixture prune <repo-url>` is run
     Then main/old_feature/s1 is listed as an orphan
 

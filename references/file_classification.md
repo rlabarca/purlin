@@ -16,8 +16,8 @@ Executable, interpreted, or controls agent behavior at runtime.
 - Agent definitions (`agents/*.md`)
 - Hooks (`hooks/scripts/*.sh`)
 - Build/CI configuration (`.github/`, `Makefile`, `Dockerfile`, etc.)
-- Technical anchors (`features/arch_*.md`)
-- Companion files (`features/*.impl.md`)
+- Technical anchors (`features/**/arch_*.md`)
+- Companion files (`features/**/*.impl.md`)
 - Process config (`.purlin/config.json`, `.purlin/toolbox/*.json`)
 - Override files (`.purlin/PURLIN_OVERRIDES.md`)
 
@@ -25,9 +25,9 @@ Executable, interpreted, or controls agent behavior at runtime.
 
 Defines WHAT the system should do, not HOW.
 
-- Feature specs (`features/*.md`, excluding `*.impl.md`, `*.discoveries.md`, `arch_*.md`)
-- Design anchors (`features/design_*.md`)
-- Policy anchors (`features/policy_*.md`)
+- Feature specs (`features/**/*.md`, excluding `*.impl.md`, `*.discoveries.md`, `arch_*.md`)
+- Design anchors (`features/**/design_*.md`)
+- Policy anchors (`features/**/policy_*.md`)
 - Visual design artifacts (Figma exports, design images)
 - Prose documentation (`README.md`)
 
@@ -35,7 +35,7 @@ Defines WHAT the system should do, not HOW.
 
 Verification artifacts and test lifecycle management.
 
-- Discovery sidecars (`features/*.discoveries.md`) — QA owns lifecycle (OPEN → RESOLVED → PRUNED)
+- Discovery sidecars (`features/**/*.discoveries.md`) — QA owns lifecycle (OPEN → RESOLVED → PRUNED)
 - QA scenario tags (`@auto`/`@manual` suffixes on scenario headings)
 - Regression test JSON (`tests/qa/scenarios/*.json`, `tests/*/regression.json`)
 - QA verification scripts (`tests/qa/*.sh`)
@@ -46,16 +46,16 @@ Some files are OWNED by one mode but can be RECORDED TO by others:
 
 | File | Owner | Who can record |
 |------|-------|---------------|
-| `features/*.impl.md` | Engineer | Engineer writes; PM reads and acknowledges |
-| `features/*.discoveries.md` | QA (lifecycle) | Any mode can add new OPEN entries |
-| `features/*.md` QA Scenarios section | PM (initial) | QA adds `@auto`/`@manual` tags |
+| `features/**/*.impl.md` | Engineer | Engineer writes; PM reads and acknowledges |
+| `features/**/*.discoveries.md` | QA (lifecycle) | Any mode can add new OPEN entries |
+| `features/**/*.md` QA Scenarios section | PM (initial) | QA adds `@auto`/`@manual` tags |
 | `.purlin/PURLIN_OVERRIDES.md` | Engineer | Any mode can edit any section via `purlin:override-edit` |
 
 ## INVARIANT (External, immutable)
 
 Externally-sourced constraint documents that no local mode can modify.
 
-- Invariant files (`features/i_*.md`)
+- Invariant files (`features/_invariants/i_*.md`)
 - NO mode (Engineer, PM, QA) can write to these files
 - Changes ONLY via `purlin:invariant sync`, `purlin:invariant add`, or `purlin:invariant add-figma`
 - The mode guard blocks ALL write attempts with:

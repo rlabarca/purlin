@@ -24,6 +24,18 @@ Reverse-engineer feature specs from an existing codebase. Scans source directori
 
 ---
 
+## Session Identity
+
+You MUST update the terminal identity before starting spec-from-code work. Derive a short task label (3-4 words max) from the target codebase. Do NOT leave the label as the project name.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
+```
+
+Examples: `Eng(main) | spec from code`, `Eng(dev/0.8.6) | reverse spec auth`.
+
+---
+
 ## Resume Check
 
 Before starting, check for an existing state file at `.purlin/cache/sfc_state.json`.
@@ -74,7 +86,7 @@ Before starting, check for an existing state file at `.purlin/cache/sfc_state.js
 ## Phase 2 — Taxonomy Review
 
 1. Read `.purlin/cache/sfc_inventory.md`.
-2. **Check for existing features:** If `features/*.md` files already exist, read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns. The proposed taxonomy MUST reuse existing category names where applicable and follow established label naming conventions (see `${CLAUDE_PLUGIN_ROOT}/references/feature_format.md` "Category and Label Consistency"). Only propose new categories when no existing one fits.
+2. **Check for existing features:** If feature files already exist (glob `features/**/*.md`, excluding `_`-prefixed system folders), read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns. The proposed taxonomy MUST reuse existing category names where applicable and follow established label naming conventions (see `${CLAUDE_PLUGIN_ROOT}/references/feature_format.md` "Category and Label Consistency"). Only propose new categories when no existing one fits.
 3. Propose a category taxonomy grouping feature candidates into logical categories. For each category, present: name, feature count, and per-feature name + one-line description.
 4. Ask the user (via `AskUserQuestion`, in batches of 2-3 categories) to validate each category: confirm the name, confirm feature membership, and identify missed features. Adjust based on feedback.
 5. Propose anchor nodes derived from detected cross-cutting concerns, classified by type:

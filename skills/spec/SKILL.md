@@ -7,6 +7,8 @@ description: This skill activates PM mode. If another mode is active, confirm sw
 
 Purlin agent: This skill activates PM mode. If another mode is active, confirm switch first.
 
+> **Hard gates (scenario format, required sections, prerequisite checklist, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides authoring guidance: templates, format details, category conventions, and invariant advisory.
+
 ---
 
 ## Path Resolution
@@ -25,22 +27,23 @@ Before authoring or refining any spec, read `${CLAUDE_PLUGIN_ROOT}/references/sp
 
 ## Session Identity
 
-When starting spec work, update the terminal identity with a short task label (3-4 words max) derived from the topic:
+When starting spec work, you MUST update the terminal identity with a short task label (3-4 words max) derived from the topic. Do NOT leave the label as the project name — always derive a work-specific label.
 
 ```bash
 source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
 ```
 
-Examples: `PM(main) | spec auth flow`, `PM(dev/0.8.6) | refine scan engine`. If no clear task label can be derived, use the project name.
+Examples: `PM(main) | spec auth flow`, `PM(dev/0.8.6) | refine scan engine`.
 
 ---
 
 Given the topic provided as an argument:
 
-1. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
-2. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
-3. If creating: follow the template and format rules below.
-4. After editing, commit the change and run the MCP `purlin_scan` tool to refresh project state.
+1. **Update terminal identity (MANDATORY):** Derive a short task label (3-4 words max) from the topic. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "pm" "<task label>"`. Examples: `PM(main) | spec auth flow`, `PM(dev/0.8.6) | refine scan engine`. The label MUST describe the current work, not the project name.
+2. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
+3. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
+4. If creating: follow the template and format rules below.
+5. After editing, commit the change and run the MCP `purlin_scan` tool to refresh project state.
 
 ---
 
@@ -54,7 +57,7 @@ When creating a new feature file, use this structure:
 > Label: "<Category>: <Label>"
 > Category: "<Category>"
 > Owner: <PM -- default if omitted>
-> Prerequisite: features/<anchor_node>.md
+> Prerequisite: <anchor_node>.md
 
 ## 1. Overview
 
@@ -86,7 +89,9 @@ When creating a new feature file, use this structure:
 None.
 ```
 
-**No Implementation Notes section.** Feature files do NOT contain `## Implementation Notes`. All implementation knowledge belongs in companion files (`features/<name>.impl.md`).
+**No Implementation Notes section.** Feature files do NOT contain `## Implementation Notes`. All implementation knowledge belongs in companion files (`features/<category_slug>/<name>.impl.md`).
+
+**File placement:** New feature files MUST be placed in the category subfolder matching their `> Category:` metadata. See `references/feature_format.md` "Category Folder Mapping" for the slug table.
 
 ---
 
@@ -157,7 +162,7 @@ When creating or updating any feature file, check each row and declare `> Prereq
 | Accesses, stores, or transforms data | All relevant `arch_*.md` anchors |
 | Modifies module dependencies or communication | All relevant `arch_*.md` anchors |
 | Participates in a governed process (security, compliance, release) | All relevant `policy_*.md` anchors |
-| Has design artifacts in `features/design/` | `design_artifact_pipeline.md` |
+| Has design artifacts in `features/_design/` | `design_artifact_pipeline.md` |
 | Is governed by an operational mandate | All relevant `ops_*.md` or `i_ops_*.md` anchors/invariants |
 | Has product brief requirements | All relevant `prodbrief_*.md` or `i_prodbrief_*.md` anchors/invariants |
 

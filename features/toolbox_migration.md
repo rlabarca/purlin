@@ -3,7 +3,7 @@
 > Label: "Tool: Toolbox Migration"
 > Category: "Install, Update & Scripts"
 > Owner: PM
-> Prerequisite: features/toolbox_core.md
+> Prerequisite: toolbox_core.md
 
 ## 1. Overview
 

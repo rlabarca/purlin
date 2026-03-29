@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Common: purlin:session-name Session Name"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/terminal_identity.md
+> Prerequisite: terminal_identity.md
 
 [TODO]
 

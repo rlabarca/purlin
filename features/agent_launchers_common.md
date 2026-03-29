@@ -2,15 +2,15 @@
 
 > Label: "Tool: Agent Session Entry (Shared)"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/models_configuration.md (config drives model selection)
-> Prerequisite: features/config_layering.md (purlin:start reads resolved config, not raw config.json)
+> Prerequisite: models_configuration.md (config drives model selection)
+> Prerequisite: config_layering.md (purlin:resume reads resolved config, not raw config.json)
 
 
 ## 1. Overview
 
 Defines the shared mechanical requirements for Purlin agent session entry and mode switching. Shell launcher scripts (`pl-run-<role>.sh`) are retired. Sessions are now started by running `claude` directly -- the Purlin plugin auto-activates via MCP hooks (SessionStart, SessionEnd, PreToolUse, etc.).
 
-Session entry is handled by the `purlin:start` skill, which detects project state and performs context setup. Mode switching is handled by the `purlin:mode` skill.
+Session entry is handled by the `purlin:resume` skill, which detects project state and performs context setup. Mode switching is handled by the `purlin:mode` skill.
 
 **Retired:** `pl-run.sh`, `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`. These shell launcher scripts are no longer generated or used. Init and refresh modes remove them if found.
 
@@ -20,7 +20,7 @@ Session entry is handled by the `purlin:start` skill, which detects project stat
 ### 2.1 Session Entry via Plugin
 
 *   **Entry point:** Users start sessions by running `claude`. The Purlin plugin auto-activates via the MCP server registered in `.claude/settings.json`.
-*   **`purlin:start` skill:** On session start, this skill reads resolved config, detects project state (scan, delivery plan, pending work), and sets the operating mode.
+*   **`purlin:resume` skill:** On session start, this skill reads resolved config, detects project state (scan, delivery plan, pending work), and sets the operating mode.
 *   **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise detects from `.purlin/` directory presence.
 *   **Agent role:** The operating mode (Engineer, PM, QA) is managed by plugin state rather than an `AGENT_ROLE` env var exported by a shell launcher.
 
@@ -34,13 +34,13 @@ Session entry is handled by the `purlin:start` skill, which detects project stat
 ### 2.3 Config Reading
 
 *   Read agent settings (`model`, `effort`, `bypass_permissions`, `find_work`, `auto_start`, `model_warning`, `model_warning_dismissed`) from the **resolved config** using the config resolver (see `config_layering.md` Section 2.1 and 2.2).
-*   The `purlin:start` skill calls the config resolver and applies the resolved settings.
+*   The `purlin:resume` skill calls the config resolver and applies the resolved settings.
 *   **Role fallback:** When the requested role (e.g., `purlin`) is absent from `agents` in the resolved config, the resolver falls back to `agents.builder` if present. This supports consumer projects that have not yet added an `agents.purlin` block.
 *   Default values when the resolver is unavailable or config is absent: empty model, empty effort, bypass false, find_work true, auto_start false, empty model_warning, model_warning_dismissed false.
 
 ### 2.4 Model Warning Display
 
-*   When the assigned model has a non-empty warning field AND the warning has not been dismissed, the `purlin:start` skill MUST display the warning before proceeding.
+*   When the assigned model has a non-empty warning field AND the warning has not been dismissed, the `purlin:resume` skill MUST display the warning before proceeding.
 *   Auto-acknowledge the warning by calling the config resolver's `acknowledge_warning` function, which adds the model ID to `acknowledged_warnings` in `config.local.json`. This ensures the warning is shown only once per model.
 *   When the warning has been acknowledged, no warning is displayed.
 
@@ -54,7 +54,7 @@ Session entry is handled by the `purlin:start` skill, which detects project stat
 
 The Purlin plugin registers hooks that replace launcher-based mechanisms:
 
-*   **SessionStart:** Triggers `purlin:start` for context setup and work discovery.
+*   **SessionStart:** Triggers `purlin:resume` for context setup and work discovery.
 *   **SessionEnd:** Handles cleanup (server shutdown, state persistence).
 *   **PreToolUse:** Enforces mode-specific write-access boundaries (mode guard).
 
@@ -74,32 +74,32 @@ Each mode's behavior is defined by:
     Given a consumer project has Purlin configured with .purlin/ and .claude/settings.json
     When the user runs "claude" to start a session
     Then the Purlin plugin auto-activates via the registered MCP server
-    And purlin:start runs to set up session context
+    And purlin:resume runs to set up session context
 
-#### Scenario: purlin:start Reads Resolved Config
+#### Scenario: purlin:resume Reads Resolved Config
     Given config.json and config.local.json exist with agent settings
-    When purlin:start runs during session entry
+    When purlin:resume runs during session entry
     Then it reads agent settings from the resolved config
     And it does not read config.json directly
 
-#### Scenario: purlin:start Displays Warning and Auto-Acknowledges on First Run
+#### Scenario: purlin:resume Displays Warning and Auto-Acknowledges on First Run
     Given the agent's assigned model has a non-empty warning field with warning_dismissible true
     And the model ID is not in the acknowledged_warnings array
-    When purlin:start runs during session entry
+    When purlin:resume runs during session entry
     Then it displays the warning text before proceeding
     And the model ID is added to acknowledged_warnings in config.local.json
 
-#### Scenario: purlin:start Suppresses Warning on Subsequent Runs
+#### Scenario: purlin:resume Suppresses Warning on Subsequent Runs
     Given the agent's assigned model has a non-empty warning field
     And the model ID appears in the acknowledged_warnings array
     And the model has warning_dismissible true
-    When purlin:start runs during session entry
+    When purlin:resume runs during session entry
     Then no warning is displayed
 
-#### Scenario: purlin:start Falls Back When Config is Absent
+#### Scenario: purlin:resume Falls Back When Config is Absent
     Given config.json does not contain an agents section
     And the config resolver returns defaults
-    When purlin:start runs during session entry
+    When purlin:resume runs during session entry
     Then it uses default values (empty model, empty effort, bypass false)
 
 #### Scenario: purlin:mode Switches Operating Mode

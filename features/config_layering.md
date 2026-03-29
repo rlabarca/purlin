@@ -2,7 +2,7 @@
 
 > Label: "Tool: Config Layering"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/project_init.md
+> Prerequisite: project_init.md
 
 [TODO]
 
@@ -19,7 +19,7 @@ This feature introduces a two-file config system with copy-on-first-use semantic
 
 **Resolution rule:** Read `config.local.json` if it exists, otherwise fall back to `config.json`. No merging.
 
-**First-use copy:** On first session start (via `purlin:start`), or any tool that reads config -- if `config.local.json` doesn't exist, copy `config.json` to `config.local.json` automatically.
+**First-use copy:** On first session start (via `purlin:resume`), or any tool that reads config -- if `config.local.json` doesn't exist, copy `config.json` to `config.local.json` automatically.
 
 **Tradeoff:** Team config changes to `config.json` don't auto-propagate to collaborators who already have a local copy. They delete their local file to pick up new defaults. This is rare and the simplicity is worth it.
 
@@ -54,7 +54,7 @@ All existing config consumers MUST be updated to use the resolver instead of dir
 - Any other Python file that reads `.purlin/config.json` directly.
 
 **Shell consumers** (call `resolve_config.py` CLI):
-- `purlin:start` skill (reads config via the resolver during session entry). Shell launcher scripts (`pl-run.sh`) are retired; the plugin and `purlin:start` skill replace them.
+- `purlin:resume` skill (reads config via the resolver during session entry). Shell launcher scripts (`pl-run.sh`) are retired; the plugin and `purlin:resume` skill replace them.
 - `tools/cdd/scan.sh`
 - Any other shell script that reads `.purlin/config.json` via inline `python3 -c`.
 
@@ -183,8 +183,8 @@ When `purlin:update` runs (pulling a new Purlin version), the resolver's `sync_c
 
 #### Scenario: Shell Consumer Reads Resolved Config via CLI
 
-    Given the purlin:start skill calls the config resolver for the active mode
-    When purlin:start runs during session entry
+    Given the purlin:resume skill calls the config resolver for the active mode
+    When purlin:resume runs during session entry
     Then agent settings come from the resolved config
 
 #### Scenario: Update Sync Creates Local Config When Missing

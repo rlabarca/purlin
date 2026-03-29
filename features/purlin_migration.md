@@ -2,12 +2,12 @@
 
 > Label: "Tool: Purlin Migration Module"
 > Category: "Framework Core"
-> Prerequisite: features/purlin_agent_launcher.md
-> Prerequisite: features/purlin_scan_engine.md
+> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_scan_engine.md
 
 ## 1. Overview
 
-The migration module manages version-to-version upgrades for consumer projects using Purlin as a submodule. When `/pl-update-purlin` runs, it detects the project's current migration state and applies any pending upgrades. Each upgrade is tracked by a `_migration_version` integer in config — the module only runs upgrades newer than the current version.
+The migration module manages version-to-version upgrades for consumer projects using Purlin as a submodule. When `purlin:update` runs, it detects the project's current migration state and applies any pending upgrades. Each upgrade is tracked by a `_migration_version` integer in config — the module only runs upgrades newer than the current version.
 
 All spec modifications during migration use the `[Migration]` exemption tag to prevent lifecycle resets.
 
@@ -24,7 +24,7 @@ All spec modifications during migration use the `[Migration]` exemption tag to p
 
 ### 2.1 Detection Framework
 
-On `/pl-update-purlin`, determine migration state by checking `.purlin/config.local.json` first, then `.purlin/config.json`:
+On `purlin:update`, determine migration state by checking `.purlin/config.local.json` first, then `.purlin/config.json`:
 
 - **Fast path:** If `_migration_version` key exists and equals the latest version → `complete`, skip.
 - **Version gap:** If `_migration_version` exists but is less than the latest → run upgrades from current+1 to latest.
@@ -45,7 +45,7 @@ This upgrade converts the 4-role agent model (Architect, Builder, QA, PM with se
   - `agents.purlin` missing required fields (`find_work`, `auto_start`, or `default_mode`) → `partial`.
   - Otherwise → `complete` (stamp `_migration_version: 1`).
 
-**Why partial detection is needed:** Users on v0.8.4 have a `/pl-update-purlin` skill that predates migration. Their first update advances the submodule and generates `pl-run.sh`, whose first-run flow creates a minimal `agents.purlin` (only `model` + `effort`). Without partial detection, this minimal entry permanently prevents the full migration from running. The fix: `/pl-update-purlin` checks migration state before its "Already up to date" early exit — if migration is pending, it skips to config sync and runs migration even when the submodule is current.
+**Why partial detection is needed:** Users on v0.8.4 have a `purlin:update` skill that predates migration. Their first update advances the submodule and generates `pl-run.sh`, whose first-run flow creates a minimal `agents.purlin` (only `model` + `effort`). Without partial detection, this minimal entry permanently prevents the full migration from running. The fix: `purlin:update` checks migration state before its "Already up to date" early exit — if migration is pending, it skips to config sync and runs migration even when the submodule is current.
 
 **Steps (all idempotent):**
 
@@ -102,7 +102,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 #### 2.2.6 Launcher Cleanup
 
 - Delete all legacy launcher scripts: `pl-run.sh`, `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`.
-- After migration, no launcher scripts remain. Sessions are started via `claude` with the plugin auto-activating. The `purlin:start` skill handles session entry.
+- After migration, no launcher scripts remain. Sessions are started via `claude` with the plugin auto-activating. The `purlin:resume` skill handles session entry.
 
 ### 2.3 CLI Flags
 
@@ -140,13 +140,13 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 #### Scenario: Migration detected when old config present
 
     Given config.json has agents.builder but no agents.purlin
-    When /pl-update-purlin runs
+    When purlin:update runs
     Then migration is detected as needed
 
 #### Scenario: Migration skipped when already migrated
 
     Given config.json has agents.purlin
-    When /pl-update-purlin runs
+    When purlin:update runs
     Then migration is skipped
 
 #### Scenario: Config migration creates purlin section and removes old
@@ -215,7 +215,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 #### Scenario: Dry run shows changes without modifying
 
     Given config.json needs migration
-    When /pl-update-purlin --dry-run runs
+    When purlin:update --dry-run runs
     Then output describes what would change
     And no files are modified
     And no commits are created
@@ -223,7 +223,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 #### Scenario: Skip flags exclude steps
 
     Given config.json needs migration
-    When /pl-update-purlin --skip-specs --skip-companions runs
+    When purlin:update --skip-specs --skip-companions runs
     Then config is migrated
     And override files are consolidated
     And spec files are NOT modified
@@ -232,7 +232,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 #### Scenario: Idempotent re-run
 
     Given migration has already run once
-    When /pl-update-purlin runs again
+    When purlin:update runs again
     Then no duplicate Active Deviations tables are created
     And no duplicate config entries are created
     And PURLIN_OVERRIDES.md is not duplicated
@@ -242,7 +242,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
     Given config.local.json has agents.purlin with only model and effort keys
     And config.local.json has agents.builder still present
     And no _migration_version key exists in config
-    When /pl-update-purlin runs migration step
+    When purlin:update runs migration step
     Then detect_migration_needed returns "partial"
     And agents.purlin is enriched with find_work, auto_start, default_mode, bypass_permissions
     And agents.builder is removed from config
@@ -252,7 +252,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
 
     Given config.local.json has _migration_version set to 1
     And agents.purlin has full key set
-    When /pl-update-purlin runs migration step
+    When purlin:update runs migration step
     Then detect_migration_needed returns "complete"
     And migration is skipped
 
@@ -261,7 +261,7 @@ Merge five role-specific override files into `.purlin/PURLIN_OVERRIDES.md`:
     Given agents.purlin has full 6-key config (model, effort, bypass_permissions, find_work, auto_start, default_mode)
     And no old agent entries remain in config
     And no _migration_version key exists
-    When /pl-update-purlin runs migration step
+    When purlin:update runs migration step
     Then detect_migration_needed returns "complete"
     And _migration_version is stamped as 1 for future fast path
 

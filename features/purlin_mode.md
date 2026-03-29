@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Common: purlin:mode Mode Switch"
 > Category: "Agent Skills: Common"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 
@@ -46,7 +46,7 @@ This is read-only — no mode change, no terminal identity update.
     And the current branch is "main"
     When purlin:mode engineer is invoked
     Then Engineer mode is activated
-    And the iTerm badge shows "Engineer (main)"
+    And the terminal identity shows "Eng(main) | <project>"
 
 #### Scenario: Switch prompts for uncommitted work
 

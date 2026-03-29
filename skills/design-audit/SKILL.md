@@ -9,21 +9,37 @@ Purlin agent: This skill activates PM mode. If another mode is active, confirm s
 
 ---
 
+## Path Resolution
+
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
+
 Read `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md` before auditing.
+
+## Session Identity
+
+You MUST update the terminal identity before starting audit work. Derive a short task label (3-4 words max) from the audit scope. Do NOT leave the label as the project name.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
+```
+
+Examples: `PM(main) | design audit`, `PM(dev/0.8.6) | audit visual specs`.
+
+---
 
 Audit all design artifacts and visual specifications across the project for integrity, staleness, anchor consistency, and Figma design-spec conflicts.
 
 **Workflow:**
 
-1. **Inventory scan:** Glob for all `features/*.md` files. Read each one and extract `## Visual Specification` sections. For each `### Screen:` subsection, extract:
+1. **Inventory scan:** Glob for all `features/**/*.md` files (excluding `_`-prefixed system folders, `.impl.md`, and `.discoveries.md`). Read each one and extract `## Visual Specification` sections. For each `### Screen:` subsection, extract:
    - Screen name
    - Reference path/URL (from `- **Reference:**`)
    - Processed date (from `- **Processed:**`)
    - Whether a Token Map exists (from `- **Token Map:**`)
    - Checklist item count
-   Also check for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
+   Also check for `brief.json` at `features/_design/<feature_stem>/brief.json` for each feature with a Figma reference.
    If Figma MCP tools are available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
-   **Invariant inventory:** Also glob `features/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata. These are checked in steps 3.2 and 4.1.
+   **Invariant inventory:** Also glob `features/_invariants/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata. These are checked in steps 3.2 and 4.1.
 
 2. **Reference integrity:** For each screen:
    - Local file references: verify the file exists on disk. Missing = CRITICAL.
@@ -47,7 +63,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - For each stale invariant, check how many features depend on it (via `> Prerequisite:` or global scope). Report cascade impact.
    - **Brief vs pointer version:** For features with a `brief.json` referencing a Figma invariant, compare `brief.json`'s `figma_version_id` against the pointer's `> Version:`. If pointer is newer than brief: STALE_BRIEF (brief needs regeneration via `purlin:spec`).
 
-4. **Anchor consistency:** Read all `features/design_*.md` local anchor nodes AND `features/i_design_*.md` invariant pointers. Scan Token Map entries and checklists for:
+4. **Anchor consistency:** Read all `features/design_*.md` local anchor nodes AND `features/_invariants/i_design_*.md` invariant pointers. Scan Token Map entries and checklists for:
    - Token Map right-side values that don't match any anchor or invariant token.
    - Hardcoded hex colors or literal values in Token Map entries that should reference anchor tokens.
    - Hardcoded values in checklist items that should use token references.

@@ -97,7 +97,7 @@ After B1 completes for all features in the phase, re-run the full test suite AND
 
 **B2 Visual Design Verification:** During B2, the Engineer's visual verification priority INVERTS from B1. Implementation is complete -- accuracy matters more than iteration speed. For features with a `## Visual Specification` section:
 
-1. **Reference images** (in `features/design/`): During B1, these are audit references, not Engineer inputs. During B2, they become verification inputs. The Engineer takes a Playwright screenshot and compares it against the reference image. This is fast (local, multimodal) and catches obvious visual drift.
+1. **Reference images** (in `features/_design/`): During B1, these are audit references, not Engineer inputs. During B2, they become verification inputs. The Engineer takes a Playwright screenshot and compares it against the reference image. This is fast (local, multimodal) and catches obvious visual drift.
 2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Engineer uses the same three-source triangulated verification that `purlin:web-test` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
 3. **Token Map + checklists**: Always verified, both in B1 and B2.
 

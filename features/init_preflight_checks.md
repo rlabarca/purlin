@@ -2,7 +2,7 @@
 
 > Label: "Tool: Init Preflight Checks"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/project_init.md
+> Prerequisite: project_init.md
 
 ## 1. Overview
 
@@ -110,8 +110,8 @@ Before running any initialization logic, `tools/init.sh` validates that required
     When init.sh completes full initialization
     Then the output includes a numbered "What's Next" section
     And step 1 mentions "git commit"
-    And step 2 mentions "purlin:start" with a "designs" context
-    And step 2 also mentions "purlin:start" with a "requirements" context
+    And step 2 mentions "purlin:resume" with a "designs" context
+    And step 2 also mentions "purlin:resume" with a "requirements" context
 
 #### Scenario: Post-init narrative on refresh
 

@@ -3,7 +3,7 @@
 > Label: "Agent Skills: Common: purlin:toolbox Agentic Toolbox"
 > Category: "Agent Skills: Common"
 > Owner: PM
-> Prerequisite: features/toolbox_core.md
+> Prerequisite: toolbox_core.md
 
 ## 1. Overview
 

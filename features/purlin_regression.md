@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: QA: purlin:regression Regression Testing"
 > Category: "Agent Skills: QA"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 

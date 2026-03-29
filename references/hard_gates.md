@@ -5,7 +5,7 @@ These mechanical checks apply **regardless of how work started** — skill invoc
 ## Engineer Gates
 
 **Before implementation:**
-- **Spec existence:** `features/<name>.md` MUST exist. If missing, offer PM mode switch. STOP if declined.
+- **Spec existence:** Feature spec MUST exist (resolve via `features/**/<name>.md`). If missing, offer PM mode switch. STOP if declined.
 - **FORBIDDEN pre-scan:** Collect invariants (global from `dependency_graph.json` + scoped from `> Prerequisite:` chain). Extract `## FORBIDDEN Patterns`. Grep feature code files. Any match **blocks the build** with file:line and fix guidance.
 - **Re-verification fast path:** If scan shows `has_passing_tests: true` AND no scenario diff AND no requirements changed, run existing tests and re-tag. Do NOT re-implement.
 - **Role-blocked skip:** In delivery plans, skip features with `architect: TODO`, `builder: BLOCKED`, or `builder: INFEASIBLE`. Log skip and proceed to next.
@@ -31,7 +31,7 @@ These mechanical checks apply **regardless of how work started** — skill invoc
 
 - **Scenario heading format:** MUST use `#### Scenario: Title` (four hashes). NOT `###`, NOT bold, NOT list items. The scan parser depends on this exact format.
 - **Required sections:** Every feature file MUST contain headings matching `overview`, `requirements`, and `scenarios` (case-insensitive). Without these, the scan cannot parse the feature.
-- **No Implementation Notes:** Feature files MUST NOT contain `## Implementation Notes`. Implementation knowledge belongs in companion files (`features/<name>.impl.md`).
+- **No Implementation Notes:** Feature files MUST NOT contain `## Implementation Notes`. Implementation knowledge belongs in companion files (`features/<category_slug>/<name>.impl.md`).
 - **Prerequisite checklist:** Before committing a new or updated spec, check: renders UI -> design anchors; accesses data -> arch anchors; governed process -> policy anchors; design artifacts -> `design_artifact_pipeline.md`; operational mandate -> ops anchors.
 - **Scenarios are untagged:** Write scenarios without `@auto`/`@manual` tags. Tags are QA-owned.
 

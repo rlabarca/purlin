@@ -2,9 +2,9 @@
 
 > Label: "Tool: Skill Behavior Regression"
 > Category: "Test Infrastructure"
-> Prerequisite: features/arch_testing.md
-> Prerequisite: features/regression_testing.md
-> Prerequisite: features/test_fixture_repo.md
+> Prerequisite: arch_testing.md
+> Prerequisite: regression_testing.md
+> Prerequisite: test_fixture_repo.md
 > Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
 
 [TODO]
@@ -79,7 +79,7 @@ All scenarios use `"role": "PURLIN"` for instruction stack selection. The `"mode
 
 - **Frequency:** Pre-release verification, after instruction file changes, or manual trigger. NOT per-feature.
 - **Invocation options:**
-  1. QA invokes `/pl-regression-run --frequency pre-release` to include this suite in the eligible list
+  1. QA invokes `purlin:regression-run --frequency pre-release` to include this suite in the eligible list
   2. User runs `dev/run_skill_regression.sh` directly from CLI
   3. Direct harness invocation: `python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json`
 - **Results:** Written to `tests/skill_behavior_regression/regression.json` (standard enriched format per `regression_testing.md` Section 2.3)
@@ -103,7 +103,7 @@ All assertions MUST be Tier 2 or higher (structural patterns, not keyword-only):
 - **Command table detection:** `(?s)━+.*━+` (Unicode border characters spanning content)
 - **Mode boundary refusal patterns:** `(?i)(never|must not|cannot|can.t|don.t|mode.guard|PM.owned|spec.files|do not write|Engineer.owned|code.changes|not help|activate.*mode)`
 - **Status summary patterns:** `(?i)(TODO|TESTING|COMPLETE).*\d+`
-- **Skill-specific patterns:** `/pl-spec`, `/pl-build`, `/pl-verify` presence in unified command table
+- **Skill-specific patterns:** `purlin:spec`, `purlin:build`, `purlin:verify` presence in unified command table
 - **Work identification:** Mode-appropriate work vocabulary (TODO for Engineer, TESTING/verification for QA)
 
 ### 2.8 Regression Testing
@@ -193,7 +193,7 @@ The command table is the same for all modes (unified agent shows all commands). 
     Given the fixture tag main/skill_behavior/purlin-unified is checked out
     And the system prompt is constructed for the PURLIN role
     And build_print_mode_context is configured for engineer mode
-    When claude --print is invoked with "/pl-status"
+    When claude --print is invoked with "purlin:status"
     Then the output contains feature counts by lifecycle status
     And the output references TODO, TESTING, or COMPLETE states
 
@@ -202,10 +202,10 @@ The command table is the same for all modes (unified agent shows all commands). 
     Given the fixture tag main/skill_behavior/purlin-unified is checked out
     And the system prompt is constructed for the PURLIN role
     And build_print_mode_context is configured for qa mode
-    When claude --print is invoked with "/pl-help"
-    Then the output contains /pl-spec (PM commands visible in unified table)
-    And the output contains /pl-build (Engineer commands visible in unified table)
-    And the output contains /pl-verify (QA commands visible in unified table)
+    When claude --print is invoked with "purlin:help"
+    Then the output contains purlin:spec (PM commands visible in unified table)
+    And the output contains purlin:build (Engineer commands visible in unified table)
+    And the output contains purlin:verify (QA commands visible in unified table)
 
 ### QA Scenarios
 

@@ -2,7 +2,7 @@
 
 > Label: "Shared Agent Definitions: File Classification"
 > Category: "Shared Agent Definitions"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 

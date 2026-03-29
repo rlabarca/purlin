@@ -2,8 +2,8 @@
 
 > Label: "Dev: Agent Behavior Tests"
 > Category: "Test Infrastructure"
-> Prerequisite: features/test_fixture_repo.md
-> Prerequisite: features/pl_session_resume.md
+> Prerequisite: test_fixture_repo.md
+> Prerequisite: purlin_agent_launcher.md
 
 [TODO]
 
@@ -11,7 +11,7 @@
 
 A Purlin-internal test harness that automates verification of agent startup, resume, and help behavior using `claude --print` in single-turn mode against fixture repo states. The harness constructs system prompts using the same 4-layer concatenation as the launcher scripts, runs Claude against them, and asserts expected output patterns.
 
-This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not need to test framework-level agent behavior -- they benefit from the fixture repo and `/pl-aft-web` instead.
+This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not need to test framework-level agent behavior -- they benefit from the fixture repo and `purlin:aft-web` instead.
 
 ---
 
@@ -49,7 +49,7 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 ### 2.4 Test Execution
 
 - Each scenario runs: `claude --print --no-session-persistence --append-system-prompt-file <prompt-file> --output-format json "<trigger-message>"`
-- The trigger message simulates a session start (e.g., `"Begin Engineer session."`) or a command invocation (e.g., `"/pl-help"`).
+- The trigger message simulates a session start (e.g., `"Begin Engineer session."`) or a command invocation (e.g., `"purlin:help"`).
 - The `--output-format json` flag enables structured parsing of Claude's response.
 - Each test invocation is independent (no session state carries between tests).
 - The test runner uses `jq` for JSON response parsing (extracting the result field from Claude's `--output-format json` output). If `jq` is unavailable, the runner falls back to raw output string matching.
@@ -83,13 +83,13 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 
 The following manual scenarios are automated by this harness:
 
-**From `pl_session_resume.md` (startup controls):**
+**From `pl_start.md` (startup controls):**
 1. Startup Print Sequence Appears First
 2. Expert Mode Bypasses Orientation (find_work: false)
 3. Guided Mode Presents Work Plan (find_work: true, auto_start: false)
 4. Auto Mode Begins Executing Immediately (find_work: true, auto_start: true)
 
-**From `pl_session_resume.md` (resume scenarios):**
+**From `pl_start.md` (resume scenarios):**
 5. Engineer Mid-Feature Resume
 6. QA Mid-Verification Resume
 7. Full Reboot Without Launcher
@@ -115,9 +115,9 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 | `main/agent_behavior_tests/expert-mode` | Config with find_work: false, auto_start: false |
 | `main/agent_behavior_tests/guided-mode` | Config with find_work: true, auto_start: false |
 | `main/agent_behavior_tests/auto-mode` | Config with find_work: true, auto_start: true |
-| `main/pl_session_resume/builder-mid-feature` | Checkpoint file showing builder at protocol step 2 for a feature |
-| `main/pl_session_resume/qa-mid-verification` | Checkpoint file showing QA at scenario 6 of 8 for a feature |
-| `main/pl_session_resume/full-reboot-no-launcher` | Project state with checkpoint but no system prompt (simulating non-launcher start) |
+| `main/pl_start/builder-mid-feature` | Checkpoint file showing builder at protocol step 2 for a feature |
+| `main/pl_start/qa-mid-verification` | Checkpoint file showing QA at scenario 6 of 8 for a feature |
+| `main/pl_start/full-reboot-no-launcher` | Project state with checkpoint but no system prompt (simulating non-launcher start) |
 | `main/pl_help/architect-main-branch` | Project on main branch, default config |
 | `main/pl_help/builder-collab-branch` | Project with .purlin/runtime/active_branch containing "collab/feat1" |
 | `main/pl_help/qa-collab-branch` | Project with .purlin/runtime/active_branch containing "collab/v2" |
@@ -151,9 +151,9 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
 #### Scenario: Resume test echoes checkpoint fields
 
-    Given the fixture tag "main/pl_session_resume/builder-mid-feature" is checked out
+    Given the fixture tag "main/pl_start/builder-mid-feature" is checked out
     And the checkpoint contains feature "my_feature" at step 2
-    When claude --print is invoked with "/pl-resume"
+    When claude --print is invoked with "purlin:resume"
     Then the output contains "my_feature"
     And the output references step 2 or the saved protocol position
 
@@ -161,7 +161,7 @@ Engineer mode MUST create these fixture tags in the Purlin fixture repo:
 
     Given the fixture tag "main/pl_help/builder-collab-branch" is checked out
     And the project has .purlin/runtime/active_branch containing "collab/feat1"
-    When claude --print is invoked with "/pl-help"
+    When claude --print is invoked with "purlin:help"
     Then the output contains the Branch Collaboration Variant table
     And the output contains "feat1"
 

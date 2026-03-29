@@ -2,7 +2,7 @@
 
 > Label: "Tool: Sub-Agent Parallel Engineer"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/purlin_agent_launcher.md
+> Prerequisite: purlin_agent_launcher.md
 
 ## 1. Overview
 
@@ -191,7 +191,7 @@ When `auto_start: true` in Engineer mode's config:
 ### 2.8 Continuous Mode Deprecation
 
 *   The `--continuous` flag and shell launcher `pl-run.sh` are retired. Sessions are started via `claude` with the Purlin plugin auto-activating. Multi-phase auto-progression is handled by the `auto_start: true` config setting within the interactive session (see Section 2.7).
-*   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/tombstones/continuous_phase_builder.md`).
+*   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/_tombstones/continuous_phase_builder.md`).
 *   Deprecated config keys: `continuous_evaluator_model`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
 
@@ -394,7 +394,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Given the user wants continuous multi-phase building
     When the user sets auto_start: true in agent config
     And starts a session via claude (plugin auto-activates)
-    Then purlin:start reads the auto_start setting from resolved config
+    Then purlin:resume reads the auto_start setting from resolved config
     And Engineer mode auto-advances through phases without halting
 
 #### Scenario: Bright-line rules exist only in purlin:build skill

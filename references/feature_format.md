@@ -14,15 +14,55 @@ Copy from `scripts/feature_templates/`:
 - `_feature.md` -- regular feature file
 - `_anchor.md` -- anchor node (arch_*, design_*, policy_*)
 
-**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See `references/knowledge_colocation.md` for the companion file convention.
+**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<category_slug>/<name>.impl.md`). See `references/knowledge_colocation.md` for the companion file convention.
+
+## Category Folder Mapping
+
+Each feature file lives in a subfolder of `features/` determined by its category. The canonical mapping from category string to folder slug is:
+
+| Category String | Folder |
+|---|---|
+| Agent Skills: Common | `skills_common` |
+| Agent Skills: Engineer | `skills_engineer` |
+| Agent Skills: PM | `skills_pm` |
+| Agent Skills: QA | `skills_qa` |
+| Common Design Standards | `design_standards` |
+| Framework Core | `framework_core` |
+| Infrastructure | `infrastructure` |
+| Install, Update & Scripts | `install_update` |
+| Policy | `policy` |
+| Shared Agent Definitions | `shared_definitions` |
+| Test Infrastructure | `test_infrastructure` |
+
+**Rules:**
+- One category per feature. The folder IS the category.
+- `> Category:` metadata MUST match the containing folder. The scan uses this for drift detection.
+- New categories MUST have a slug added to this table before the category can be used.
+- `_` prefix folders are system folders, not categories: `_invariants`, `_tombstones`, `_digests`, `_design`.
+- Invariant files (`i_*` prefix) always go in `_invariants/` regardless of category metadata.
+- `purlin:update` automatically organizes misplaced files (e.g., files at the `features/` root) into the correct category folder based on `> Category:` metadata.
+
+## Feature File Resolution
+
+Feature files live in category subfolders under `features/`. When a skill or instruction references `features/<name>.md`, resolve the actual path by globbing `features/**/<name>.md`. Never construct a flat path like `features/<name>.md` directly — always search recursively.
+
+**Resolution rules:**
+- Primary specs: `features/**/<name>.md` (excluding `_`-prefixed system folders for general scans)
+- Companion files: `features/**/<name>.impl.md` (always in the same folder as the parent spec)
+- Discovery sidecars: `features/**/<name>.discoveries.md` (always in the same folder as the parent spec)
+- Invariants: `features/_invariants/i_<name>.md`
+- Tombstones: `features/_tombstones/<name>.md`
+- Design artifacts: `features/_design/<feature_stem>/`
+
+When scanning all features (e.g., for `purlin:status` or `purlin:find`), recurse into category subfolders but skip `_`-prefixed system folders (`_tombstones`, `_digests`, `_design`, `_invariants`).
 
 ## Blockquote Metadata
 
 Feature files use `>` blockquote lines at the top for metadata. Supported metadata fields:
 
 - `> Label: "Human-Readable Name"` -- display name for status reports.
-- `> Category: "Category Name"` -- grouping for status reports.
-- `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
+- `> Category: "Category Name"` -- grouping for status reports. Must match a category in the Category Folder Mapping table above.
+- `> Prerequisite: <name>.md` -- dependency link to an anchor node or foundation feature. Use the bare filename only (not a path); the scanner resolves it by searching all category subfolders.
 - `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `purlin:web-test`. Features without this annotation use `purlin:verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
 - `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: purlin:server`. Legacy `> AFT Start:` is accepted for backward compatibility.
 - `> Owner: PM` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: PM. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always PM-owned. The Owner tag is sticky -- it persists through edits by any agent. This tag is used to route SPEC_DISPUTEs.

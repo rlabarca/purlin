@@ -2,11 +2,11 @@
 
 > Label: "Tool: Purlin Mode System"
 > Category: "Framework Core"
-> Prerequisite: features/purlin_agent_launcher.md
+> Prerequisite: purlin_agent_launcher.md
 
 ## 1. Overview
 
-The mode system is the core behavioral mechanism of the Purlin unified agent. Three modes (Engineer, PM, QA) define write-access boundaries and workflow protocols. Modes are activated by skill invocations or the explicit `/pl-mode` command. A mode guard prevents file writes outside the active mode's access list. Cross-mode capabilities allow QA to run tests without switching to Engineer mode.
+The mode system is the core behavioral mechanism of the Purlin unified agent. Three modes (Engineer, PM, QA) define write-access boundaries and workflow protocols. Modes are activated by skill invocations or the explicit `purlin:mode` command. A mode guard prevents file writes outside the active mode's access list. Cross-mode capabilities allow QA to run tests without switching to Engineer mode.
 
 ---
 
@@ -16,7 +16,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 - Skills MUST declare their mode via `**Purlin mode: <mode>**` header.
 - Invoking a mode-activating skill MUST activate that mode.
-- `/pl-mode <pm|engineer|qa>` MUST explicitly switch mode.
+- `purlin:mode <pm|engineer|qa>` MUST explicitly switch mode.
 - Until a mode is activated (open mode), the agent MUST NOT write to any file.
 
 ### 2.2 Mode Write Access
@@ -40,7 +40,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 ### 2.5 Cross-Mode Test Execution
 
-- QA mode MUST be able to invoke `/pl-unit-test`, `/pl-web-test`, `/pl-fixture`, `/pl-server` for verification without activating Engineer mode.
+- QA mode MUST be able to invoke `purlin:unit-test`, `purlin:web-test`, `purlin:fixture`, `purlin:server` for verification without activating Engineer mode.
 - QA cross-mode execution MUST NOT allow modifying application code.
 - If QA discovers a test failure, it MUST record a `[BUG]` discovery, not fix the code.
 
@@ -53,9 +53,9 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 
 ### 2.7 Work Discovery Delegation
 
-- `/pl-status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
-- Workflow skills (`/pl-build`, `/pl-verify`, `/pl-spec`) MUST delegate work discovery to `/pl-status`, not call `scan.sh` directly or implement their own detection logic.
-- Only `/pl-status`, `/pl-resume` (startup protocol), and audit skills (`/pl-spec-code-audit`, `/pl-verify`) call `scan.sh` directly.
+- `purlin:status` is the SINGLE SOURCE of work discovery. It calls `scan.sh` and interprets the results into mode-specific work items.
+- Workflow skills (`purlin:build`, `purlin:verify`, `purlin:spec`) MUST delegate work discovery to `purlin:status`, not call `scan.sh` directly or implement their own detection logic.
+- Only `purlin:status`, `purlin:resume` (startup protocol), and audit skills (`purlin:spec-code-audit`, `purlin:verify`) call `scan.sh` directly.
 - **Mode-specific routing rules:**
   - `spec_modified_after_completion: true` → Engineer ONLY. QA MUST NOT treat this as a blocker or show it in QA work items. If the Engineer has re-validated and re-tagged, QA proceeds normally.
   - `regression_status: FAIL` → Engineer (fix the code). QA blocks completion but does not fix.
@@ -63,7 +63,7 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
   - Features in TESTING with QA scenarios → QA.
   - Unacknowledged deviations → PM.
   - Incomplete spec sections → PM.
-- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `scan.sh`, or `tests/<name>/critic.json`. These are old Critic system artifacts replaced by `scan.sh` and `/pl-status`.
+- Skill files MUST NOT reference `CRITIC_REPORT.md`, `critic.json`, `scan.sh`, or `tests/<name>/critic.json`. These are old Critic system artifacts replaced by `scan.sh` and `purlin:status`.
 - Action items use mode-based naming: "PM action items", "Engineer action items", "QA action items".
 
 ### 2.8 Companion File Commit Covenant (Engineer)
@@ -72,10 +72,10 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 
 - This is NOT optional. It is how PM discovers what was built. Skipping it creates silent spec drift.
 - For deviations, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, `[INFEASIBLE]`) instead of or in addition to `[IMPL]`.
-- Scan.py surfaces unacknowledged deviation entries to PM via `/pl-status`. `[IMPL]` entries are informational and are not surfaced to PM.
+- Scan.py surfaces unacknowledged deviation entries to PM via `purlin:status`. `[IMPL]` entries are informational and are not surfaced to PM.
 - **Four mechanical enforcement gates:**
-  1. `/pl-build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
-  2. `/pl-build` Step 4 — Companion File Gate: Mechanical check — did the companion file get new entries this session? If code was committed for a feature and the companion file has no new entries: **BLOCK.** No judgment call about whether the change "matches the spec."
+  1. `purlin:build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
+  2. `purlin:build` Step 4 — Companion File Gate: Mechanical check — did the companion file get new entries this session? If code was committed for a feature and the companion file has no new entries: **BLOCK.** No judgment call about whether the change "matches the spec."
   3. Mode switch out of Engineer: Mechanical check — does companion debt exist for any feature? If yes: **BLOCK.** No skip escape. The engineer writes entries (at minimum `[IMPL]` lines) or the switch does not proceed.
   4. Scan — `scan_companion_debt()`: Compares code commit timestamps against companion file modification timestamps. Surfaces debt missed by Gates 1-3 (session crashes, manual git commits).
 
@@ -101,7 +101,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 #### Scenario: Skill activates correct mode
 
     Given the agent is in open mode (no mode active)
-    When the user invokes /pl-build
+    When the user invokes purlin:build
     Then Engineer mode is activated
     And the agent can write to code files
 
@@ -115,7 +115,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 #### Scenario: Cross-mode QA runs tests without switching
 
     Given the agent is in QA mode
-    When the user invokes /pl-unit-test
+    When the user invokes purlin:unit-test
     Then tests are executed
     And QA mode remains active (not switched to Engineer)
     And no application code files are modified
@@ -124,7 +124,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 
     Given the agent is in Engineer mode
     And code was committed for feature "auth_flow" without updating the companion file
-    When the user invokes /pl-spec (PM mode skill)
+    When the user invokes purlin:spec (PM mode skill)
     Then the mode switch is BLOCKED
     And the agent lists "auth_flow" as having companion debt
     And no "skip" option is offered
@@ -134,7 +134,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 
     Given the agent completed code changes for feature "scan_engine"
     And a new file tools/cdd/scan_helper.py exists but is untracked
-    When /pl-build reaches Step 4 (status tag commit)
+    When purlin:build reaches Step 4 (status tag commit)
     Then the status tag commit is BLOCKED
     And the agent either adds the file to git or adds it to .gitignore
 
@@ -142,7 +142,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 
     Given the agent completed code changes for feature "auth_flow"
     And no companion file entry was written (regardless of whether changes deviate from spec)
-    When /pl-build reaches Step 4 (status tag commit)
+    When purlin:build reaches Step 4 (status tag commit)
     Then the status tag commit is BLOCKED
     And the agent requires at least [IMPL] entries before proceeding
 
@@ -150,7 +150,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 
     Given the agent is in Engineer mode
     And the user asks to update a feature spec
-    When the agent says "Let me do this as PM" but does not execute /pl-mode pm
+    When the agent says "Let me do this as PM" but does not execute purlin:mode pm
     Then the agent MUST NOT write to features/*.md
     And the mode guard blocks the write
     And the iTerm badge still shows "Engineer"
@@ -158,7 +158,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 #### Scenario: Pre-switch commit prompt
 
     Given the agent is in Engineer mode with uncommitted changes
-    When the user invokes /pl-spec (PM mode skill)
+    When the user invokes purlin:spec (PM mode skill)
     Then the agent prompts to commit the uncommitted work
     And waits for user confirmation before switching
 
@@ -179,20 +179,20 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 #### Scenario: Consolidated toolbox skill subcommands
 
     Given the agent is in any mode
-    When the user invokes /pl-toolbox list
+    When the user invokes purlin:toolbox list
     Then the toolbox list protocol executes
-    And old /pl-release file does not exist
+    And old purlin:release file does not exist
 
 #### Scenario: pl-anchor dual-mode activation
 
     Given the agent is in open mode
-    When the user invokes /pl-anchor arch_data_layer
+    When the user invokes purlin:anchor arch_data_layer
     Then Engineer mode is activated (arch_* target)
 
 #### Scenario: pl-anchor activates PM for design anchors
 
     Given the agent is in open mode
-    When the user invokes /pl-anchor design_visual_standards
+    When the user invokes purlin:anchor design_visual_standards
     Then PM mode is activated (design_* target)
 
 #### Scenario: Commit attribution with mode trailer
@@ -202,30 +202,27 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     Then the commit message starts with "feat(" or "fix(" or "test("
     And the commit body contains "Purlin-Mode: Engineer"
 
-#### Scenario: iTerm badge set on mode activation
+#### Scenario: Terminal identity set on mode activation
 
-    Given the agent is in open mode
+    Given the agent is in open mode on branch "main"
     When the user activates Engineer mode
-    Then the iTerm badge is set to "Engineer"
-    And the iTerm remote control name is set to "<project> - Engineer"
+    Then the terminal identity is set to "Eng(main) | <project>"
 
-#### Scenario: iTerm badge reset to Purlin in open mode
+#### Scenario: Terminal identity in open mode
 
-    Given the agent has just started with no mode active
-    Then the iTerm badge is "Purlin"
-    And the iTerm remote control name is "<project> - Purlin"
+    Given the agent has just started with no mode active on branch "main"
+    Then the terminal identity is "Purlin(main) | <project>"
 
-#### Scenario: iTerm badge updates on mode switch
+#### Scenario: Terminal identity updates on mode switch
 
-    Given the agent is in PM mode with iTerm badge "PM"
+    Given the agent is in PM mode on branch "main"
     When the user switches to QA mode
-    Then the iTerm badge changes to "QA"
-    And the iTerm remote control name changes to "<project> - QA"
+    Then the terminal identity changes to "QA(main) | <project>"
 
 #### Scenario: Regression evaluate documents failure in companion file
 
     Given feature "skill_behavior_regression" has regression_status FAIL
-    When /pl-regression evaluate is invoked
+    When purlin:regression evaluate is invoked
     Then features/skill_behavior_regression.impl.md contains a [DISCOVERY] entry
     And the entry includes the scenario name that failed
     And the entry includes the expected assertion pattern
@@ -243,7 +240,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 #### Scenario: No skill references old Critic system @auto
 
     Given the project after scan.sh migration
-    When searching all .claude/commands/pl-*.md files
+    When searching all skills/*/SKILL.md files
     Then no file contains "status.sh" (except tombstones)
     And no file contains "CRITIC_REPORT.md"
     And no file contains "critic.json"
@@ -268,7 +265,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - Verify all 33 skill files have both legacy and new headers
 - Verify no skill file has ONLY the new header (breaks legacy agents)
 - Verify cross-mode test execution does not leave QA in Engineer mode
-- Verify /pl-anchor mode activation depends on target prefix, not the skill itself
+- Verify purlin:anchor mode activation depends on target prefix, not the skill itself
 - Verify iTerm badge and remote control name update on every mode switch
 - Verify open mode sets badge to "Purlin", not blank
 - Verify the agent cannot write to another mode's files by narrating a switch without executing it

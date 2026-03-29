@@ -26,7 +26,7 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
 
 - If an argument is provided, implement the named feature from `features/<arg>.md`.
 - If no argument is provided, run `purlin:status` to identify the highest-priority Engineer work item.
-- Tombstones in `features/tombstones/` MUST be processed before regular feature work (see Section 2.4).
+- Tombstones in `features/_tombstones/` MUST be processed before regular feature work (see Section 2.4).
 - If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only.
 
 ### 2.3.1 Missing Spec Redirect
@@ -42,9 +42,9 @@ This creates the natural first-feature workflow: user tries `purlin:build my-fea
 
 ### 2.4 Tombstone Processing Protocol
 
-When `features/tombstones/` contains tombstone files, process ALL of them before any regular feature work:
+When `features/_tombstones/` contains tombstone files, process ALL of them before any regular feature work:
 
-1. **Read the tombstone:** Parse `features/tombstones/<name>.md` for the "Files to Delete" and "Dependencies to Check" sections.
+1. **Read the tombstone:** Parse `features/_tombstones/<name>.md` for the "Files to Delete" and "Dependencies to Check" sections.
 2. **Delete listed files:** Remove every file and directory listed in "Files to Delete":
    - Implementation code files
    - `tests/<name>/` directory (unit tests, tests.json, regression.json)
@@ -53,9 +53,9 @@ When `features/tombstones/` contains tombstone files, process ALL of them before
    - Any other paths listed in the tombstone
 3. **Check dependencies:** For each entry in "Dependencies to Check", verify the referencing code/spec still works without the deleted feature. Fix import errors, remove dead references, update prerequisite lists.
 4. **Delete the tombstone and its artifacts:** Remove the tombstone file itself and any companion artifacts that were moved alongside it:
-   - `features/tombstones/<name>.md` (the tombstone)
-   - `features/tombstones/<name>.impl.md` (if exists)
-   - `features/tombstones/<name>.discoveries.md` (if exists)
+   - `features/_tombstones/<name>.md` (the tombstone)
+   - `features/_tombstones/<name>.impl.md` (if exists)
+   - `features/_tombstones/<name>.discoveries.md` (if exists)
 5. **Regenerate dependency graph:** Run the MCP `purlin_graph` tool to update `.purlin/cache/dependency_graph.json`.
 6. **Commit:** `git commit -m "chore: process tombstone <name> — delete retired code and tests"`
 7. **Repeat** for each remaining tombstone.
@@ -131,20 +131,20 @@ During pre-flight, the build collects and enforces invariant constraints:
 
 #### Scenario: Tombstones processed before regular features
 
-    Given features/tombstones/old_feature.md exists
+    Given features/_tombstones/old_feature.md exists
     And features/new_feature.md is in TODO state
     When purlin:build is invoked without arguments
     Then old_feature tombstone is processed before new_feature implementation begins
 
 #### Scenario: Tombstone processing deletes all listed artifacts
 
-    Given features/tombstones/old_feature.md lists tests/old_feature/ and src/old.py
-    And features/tombstones/old_feature.impl.md exists
+    Given features/_tombstones/old_feature.md lists tests/old_feature/ and src/old.py
+    And features/_tombstones/old_feature.impl.md exists
     When purlin:build processes the tombstone
     Then tests/old_feature/ is deleted
     And src/old.py is deleted
-    And features/tombstones/old_feature.md is deleted
-    And features/tombstones/old_feature.impl.md is deleted
+    And features/_tombstones/old_feature.md is deleted
+    And features/_tombstones/old_feature.impl.md is deleted
     And the dependency graph is regenerated
 
 #### Scenario: Delivery plan scopes to current phase

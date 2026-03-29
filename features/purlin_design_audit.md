@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: PM: purlin:design-audit Design Audit"
 > Category: "Agent Skills: PM"
-> Prerequisite: features/design_artifact_pipeline.md
+> Prerequisite: design_artifact_pipeline.md
 
 [TODO]
 
@@ -22,7 +22,7 @@ The `purlin:design-audit` command provides the PM and PM with a comprehensive au
 - Scan all `features/*.md` files for `## Visual Specification` sections.
 - For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Token Map:**` presence and entries, and checklist items (`- [ ]` / `- [x]`).
 - Also glob `features/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata.
-- Also scan for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
+- Also scan for `brief.json` at `features/_design/<feature_stem>/brief.json` for each feature with a Figma reference.
 - If Figma MCP is available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
 
 ### 2.3 Reference Integrity
@@ -42,7 +42,7 @@ The `purlin:design-audit` command provides the PM and PM with a comprehensive au
 - When Figma MCP is not available, Figma URL screens report staleness as N/A (no connectivity check).
 
 ### 2.5.1 Brief Staleness Detection
-- For features with a Figma reference, check for `brief.json` at `features/design/<feature_stem>/brief.json`.
+- For features with a Figma reference, check for `brief.json` at `features/_design/<feature_stem>/brief.json`.
 - If `brief.json` exists, compare `figma_last_modified` in the brief against the spec's `- **Processed:**` date. If the brief is newer, flag the spec as STALE (the Figma design has been updated since last ingestion).
 - If `brief.json` is missing and the screen has a Figma reference, report as WARNING: "No brief.json found -- Engineer has no local design data cache."
 
@@ -127,7 +127,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 
 #### Scenario: Missing Local Reference Detected
 
-    Given a feature has a Visual Specification screen referencing "features/design/my_feature/mockup.png"
+    Given a feature has a Visual Specification screen referencing "features/_design/my_feature/mockup.png"
     And the file does not exist on disk
     When PM mode runs purlin:design-audit
     Then the screen is reported with Reference Status MISSING
@@ -169,7 +169,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 #### Scenario: Missing Brief Warning
 
     Given a feature has a Figma reference
-    And no brief.json exists at features/design/<feature_stem>/brief.json
+    And no brief.json exists at features/_design/<feature_stem>/brief.json
     When purlin:design-audit runs
     Then the Brief Status column shows MISSING
     And a WARNING is reported: "No brief.json found"

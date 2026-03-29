@@ -2,12 +2,12 @@
 
 > Label: "Tool: Purlin Worktree Identity"
 > Category: "Framework Core"
-> Prerequisite: features/purlin_mode_system.md
-> Prerequisite: features/purlin_worktree_concurrency.md
+> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_worktree_concurrency.md
 
 ## 1. Overview
 
-When the Purlin agent runs in a worktree (via `--worktree`), it needs a short, human-readable label (W1, W2, etc.) to distinguish concurrent sessions at a glance. This label appears in the iTerm badge, terminal title, and Claude session name. The label applies only to the main Purlin agent's worktrees created by `purlin:start` -- not to sub-agent worktrees created by the Agent tool's `isolation: "worktree"` mechanism for parallel builds.
+When the Purlin agent runs in a worktree (via `--worktree`), it needs a short, human-readable label (W1, W2, etc.) to distinguish concurrent sessions at a glance. This label appears in the iTerm badge, terminal title, and Claude session name. The label applies only to the main Purlin agent's worktrees created by `purlin:resume` -- not to sub-agent worktrees created by the Agent tool's `isolation: "worktree"` mechanism for parallel builds.
 
 This feature also standardizes the badge format: the badge displays the mode name alone (e.g., `Engineer`, not `Purlin: Engineer`), with the worktree label appended in parentheses when running in a worktree.
 
@@ -18,7 +18,7 @@ This feature also standardizes the badge format: the badge displays the mode nam
 ### 2.1 Worktree Label Assignment
 
 - Each main-agent worktree MUST be assigned a sequential label: `W1`, `W2`, `W3`, etc.
-- The label MUST be assigned at worktree creation time in `purlin:start`.
+- The label MUST be assigned at worktree creation time in `purlin:resume`.
 - The next available number MUST be computed by finding the lowest unused positive integer among active purlin worktrees. Active worktrees are those listed by `git worktree list` with branches matching `purlin-*`.
 - Numbers from cleaned-up worktrees MUST be reused (gap-filling), keeping labels small and dense.
 - The label MUST be persisted in a file `.purlin_worktree_label` at the worktree root directory, containing only the label string (e.g., `W1`).
@@ -26,46 +26,41 @@ This feature also standardizes the badge format: the badge displays the mode nam
 
 ### 2.2 Label Scope
 
-- Worktree labels apply only to main Purlin agent worktrees created by `purlin:start --worktree` under `.purlin/worktrees/`.
+- Worktree labels apply only to main Purlin agent worktrees created by `purlin:resume --worktree` under `.purlin/worktrees/`.
 - Sub-agent worktrees (created by the Claude Agent tool with `isolation: "worktree"` for parallel builds, located under `.claude/worktrees/`) MUST NOT receive worktree labels or label files.
 - The distinction is directory-based: `.purlin/worktrees/` = labeled, `.claude/worktrees/` = unlabeled.
 
-### 2.3 Badge Format
+### 2.3 Unified Identity Format
 
-- The iTerm badge MUST display only the mode name: `Engineer`, `PM`, `QA`, or `Purlin` (open mode).
-- The badge MUST NOT prefix the mode name with "Purlin:" or any other qualifier.
-- When running in a labeled worktree, the badge MUST append the label in parentheses: e.g., `Engineer (W1)`, `Purlin (W2)`, `QA (W1)`.
-- When NOT in a worktree, the badge is the mode name alone: `Engineer`, `PM`, `QA`, `Purlin`.
+All terminal environments (badge, title, Warp tab) and the remote session name use the unified format:
 
-### 2.4 Terminal Title Format
+```
+<short_mode>(<context>) | <label>
+```
 
-- The terminal title MUST follow the pattern `<project> - <badge>`.
-- `<badge>` is the full badge string including any worktree label.
-- Examples: `purlin - Engineer`, `myapp - QA (W1)`, `purlin - Purlin (W2)`.
+- **Mode shortening:** `Engineer` -> `Eng`; `PM`, `QA`, `Purlin` unchanged.
+- **Context:** Worktree label when in a worktree (e.g., `W1`), otherwise the branch name.
+- **Label:** Project name by default; long-running skills may replace with a task description.
+- **Worktree examples:** `Eng(W1) | purlin`, `QA(W2) | purlin`, `Purlin(W1) | purlin`.
+- **Non-worktree examples:** `Eng(main) | purlin`, `PM(feature-xyz) | purlin`.
 
-### 2.5 Claude Session Name
+### 2.4 Identity Updates on Mode Switch
 
-- The `--name` argument passed to the `claude` CLI MUST use the same string as the badge.
-- Examples: `Engineer`, `Engineer (W1)`, `Purlin`, `Purlin (W2)`.
-- This name appears in the Claude Code resume picker and remote control interfaces.
-
-### 2.6 Identity Updates on Mode Switch
-
-- When the agent switches modes (via `/pl-mode` or skill activation), the badge, title, and session name MUST update to reflect the new mode while preserving the worktree label.
+- When the agent switches modes (via `purlin:mode` or skill activation), all identity layers MUST update to reflect the new mode while preserving the worktree label or branch context.
 - The agent MUST detect whether it is running in a worktree by checking for `.purlin_worktree_label` in the project root directory.
 - If the label file exists, read the label and append ` (<label>)` to the mode name in all identity calls.
 - If the label file does not exist, the identity is the mode name alone.
 
 ### 2.7 Session Entry Point Identity Sequencing
 
-- `purlin:start` MUST compute the display identity AFTER worktree creation so the label is available.
+- `purlin:resume` MUST compute the display identity AFTER worktree creation so the label is available.
 - The identity computation is: `<mode_name>` + (if in worktree: ` (<label>)`).
 - `<mode_name>` is `Engineer`, `PM`, `QA`, or `Purlin` (no "Purlin:" prefix).
 - The session entry point MUST pass this identity to both `set_agent_identity` and the session name mechanism.
 
 ### [RETIRED] 2.8 Legacy Launcher Exemption
 
-This section described exemptions for the old role-specific shell launchers. Those launchers have been fully retired. The `purlin:start` skill is the sole session entry point and implements worktree labels and the updated badge format.
+This section described exemptions for the old role-specific shell launchers. Those launchers have been fully retired. The `purlin:resume` skill is the sole session entry point and implements worktree labels and the updated badge format.
 
 ---
 
@@ -76,57 +71,53 @@ This section described exemptions for the old role-specific shell launchers. Tho
 #### Scenario: First worktree gets label W1
 
     Given no active purlin worktrees exist
-    When purlin:start is invoked with --worktree
+    When purlin:resume is invoked with --worktree
     Then the file .purlin_worktree_label in the worktree root contains "W1"
 
 #### Scenario: Second concurrent worktree gets label W2
 
     Given one active purlin worktree with label W1
-    When purlin:start is invoked with --worktree again
+    When purlin:resume is invoked with --worktree again
     Then the new worktree's .purlin_worktree_label contains "W2"
 
 #### Scenario: Gap-filling reuses cleaned-up numbers
 
     Given active worktrees with labels W1 and W3 (W2 was cleaned up)
-    When purlin:start is invoked with --worktree
+    When purlin:resume is invoked with --worktree
     Then the new worktree's .purlin_worktree_label contains "W2"
 
 #### Scenario: Badge format without worktree
 
-    Given purlin:start is invoked with --mode engineer (no --worktree)
+    Given purlin:resume is invoked with --mode engineer (no --worktree)
+    And the current branch is "main" and project is "purlin"
     When the session entry point sets terminal identity
-    Then set_agent_identity is called with "Engineer"
-    And --name is passed as "Engineer"
+    Then the terminal identity is "Eng(main) | purlin"
 
-#### Scenario: Badge format with worktree
+#### Scenario: Identity format with worktree
 
-    Given purlin:start is invoked with --worktree --mode engineer
-    And the worktree is assigned label W1
+    Given purlin:resume is invoked with --worktree --mode engineer
+    And the worktree is assigned label W1 and project is "purlin"
     When the session entry point sets terminal identity
-    Then set_agent_identity is called with "Engineer (W1)"
-    And --name is passed as "Engineer (W1)"
+    Then the terminal identity is "Eng(W1) | purlin"
 
-#### Scenario: Open mode badge in worktree
+#### Scenario: Open mode identity in worktree
 
-    Given purlin:start is invoked with --worktree (no --mode)
-    And the worktree is assigned label W1
+    Given purlin:resume is invoked with --worktree (no --mode)
+    And the worktree is assigned label W1 and project is "purlin"
     When the session entry point sets terminal identity
-    Then set_agent_identity is called with "Purlin (W1)"
-    And --name is passed as "Purlin (W1)"
+    Then the terminal identity is "Purlin(W1) | purlin"
 
 #### Scenario: Mode switch preserves worktree label
 
     Given the agent is in a worktree labeled W1 in Engineer mode
-    When the user switches to QA mode via /pl-mode qa
-    Then the iTerm badge changes to "QA (W1)"
-    And the terminal title changes to "<project> - QA (W1)"
+    When the user switches to QA mode via purlin:mode qa
+    Then the terminal identity changes to "QA(W1) | <project>"
 
-#### Scenario: Mode switch without worktree has no label
+#### Scenario: Mode switch without worktree uses branch
 
-    Given the agent is running without --worktree in Engineer mode
-    When the user switches to QA mode via /pl-mode qa
-    Then the iTerm badge changes to "QA"
-    And the terminal title changes to "<project> - QA"
+    Given the agent is running without --worktree in Engineer mode on branch "main"
+    When the user switches to QA mode via purlin:mode qa
+    Then the terminal identity changes to "QA(main) | <project>"
 
 #### Scenario: Sub-agent worktrees do not get label files
 
@@ -134,32 +125,32 @@ This section described exemptions for the old role-specific shell launchers. Tho
     When the sub-agent worktree is created under .claude/worktrees/
     Then no .purlin_worktree_label file exists in the sub-agent worktree
 
-#### Scenario: Terminal title includes project and badge
+#### Scenario: Terminal identity includes project in worktree
 
-    Given purlin:start is invoked with --worktree --mode qa in project "myapp"
+    Given purlin:resume is invoked with --worktree --mode qa in project "myapp"
     And the worktree is assigned label W1
     When the session entry point sets terminal identity
-    Then the terminal title is "myapp - QA (W1)"
+    Then the terminal identity is "QA(W1) | myapp"
 
 ### QA Scenarios
 
 #### Scenario: Badge never uses "Purlin:" prefix @auto
 
     Given any Purlin agent session (worktree or non-worktree)
-    When inspecting purlin:start for ROLE_DISPLAY values
-    Then no ROLE_DISPLAY value starts with "Purlin:"
-    And all values are one of: Purlin, Engineer, PM, QA (optionally followed by " (W<N>)")
+    When inspecting purlin:resume for ROLE_DISPLAY values
+    Then no identity string starts with "Purlin:"
+    And all identity strings match the unified format "<short_mode>(<context>) | <label>"
 
 #### Scenario: Worktree label file exists in worktree sessions @auto
 
-    Given purlin:start was invoked with --worktree
+    Given purlin:resume was invoked with --worktree
     When the worktree is created
     Then .purlin_worktree_label exists in the worktree root
     And its content matches the pattern "W[0-9]+"
 
 #### Scenario: No label file in non-worktree sessions @auto
 
-    Given purlin:start was invoked without --worktree
+    Given purlin:resume was invoked without --worktree
     When checking the project root
     Then .purlin_worktree_label does NOT exist
 
@@ -167,14 +158,12 @@ This section described exemptions for the old role-specific shell launchers. Tho
 
     Given a running Purlin session in a worktree labeled W1
     When switching from Engineer to PM mode
-    Then the badge updates to "PM (W1)"
-    And the terminal title updates to "<project> - PM (W1)"
+    Then the terminal identity updates to "PM(W1) | <project>"
 
 ## Regression Guidance
-- Verify badge never shows "Purlin: Engineer" (old format) in purlin:start or PURLIN_BASE.md
+- Verify identity uses unified format `<short_mode>(<context>) | <label>` everywhere
+- Verify `Engineer` is shortened to `Eng`; `PM`, `QA`, `Purlin` unchanged
 - Verify worktree label survives mode switches within the same session
 - Verify label file is NOT created in the main repo when running without --worktree
-- Verify role-specific launchers are unaffected (no label files, existing badge format unchanged)
-- Verify --name argument to claude CLI matches the badge text exactly
 - Verify gap-filling works when middle worktrees are cleaned up
 - Verify sub-agent worktrees under .claude/worktrees/ never contain label files

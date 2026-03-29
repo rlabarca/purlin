@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Engineer: purlin:propose Spec Change Proposal"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/impl_notes_companion.md
+> Prerequisite: impl_notes_companion.md
 
 [TODO]
 

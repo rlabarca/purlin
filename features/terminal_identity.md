@@ -2,14 +2,14 @@
 
 > Label: "Tool: Terminal Identity (Title + Badge)"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/agent_launchers_common.md
-> Prerequisite: features/project_init.md
+> Prerequisite: agent_launchers_common.md
+> Prerequisite: project_init.md
 
 [TODO]
 
 ## 1. Overview
 
-When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature provides multi-environment terminal identity: a terminal title (universal), an iTerm2 badge (iTerm2 only), and a Warp tab name (Warp only, best-effort). All layers show the agent mode name with the current branch (or worktree label) in parentheses — e.g., `PM (main)`, `Engineer (W1)`. The branch context persists across mode switches so users always know which branch they're on. Engineer mode shows additional state during continuous-mode phase execution. All layers are cleaned up on normal exit and Ctrl+C. A centralized `update_session_identity` function handles context detection and dispatch to all environments, replacing scattered inline logic.
+When multiple agent sessions run in separate terminal tabs, there is no visual indicator of which agent is running where. This feature provides multi-environment terminal identity: a terminal title (universal), an iTerm2 badge (iTerm2 only), and a Warp tab name (Warp only, best-effort). All layers use a unified format: `<short_mode>(<branch>) | <label>` — e.g., `Eng(main) | purlin`, `QA(W1) | verify auth`. Mode names are shortened (`Engineer` -> `Eng`; `PM`, `QA`, `Purlin` unchanged). The branch context persists across mode switches so users always know which branch they're on. The label is typically the project name, but long-running skills (build, spec, verify) replace it with a short task description (3-4 words). Engineer mode shows additional state during continuous-mode phase execution via the label. All layers are cleaned up on normal exit and Ctrl+C. A centralized `update_session_identity` function handles context detection and dispatch to all environments, replacing scattered inline logic.
 
 ---
 
@@ -39,7 +39,7 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 
 ### 2.2 Identity on Agent Start
 
-- The `purlin:start` skill and `purlin:mode` skill set both title and badge to the mode display name on startup and mode switch, using `identity.sh`.
+- The `purlin:resume` skill and `purlin:mode` skill set both title and badge to the mode display name on startup and mode switch, using `identity.sh`.
 - The helper script is sourced from `$CORE_DIR/scripts/terminal/identity.sh`.
 
 ### 2.3 Identity Cleanup
@@ -50,30 +50,40 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 - All clear functions are idempotent (multiple calls are safe).
 - Cleanup calls are guarded: `type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity` so that cleanup is safe when the helper was not sourced.
 
-### 2.4 Persistent Branch Context in Badge
+### 2.4 Unified Naming Format
 
-The badge MUST always include the current branch name (or worktree label) in parentheses. This applies at startup, on mode switches, and during phase transitions — the branch context is never dropped.
+All terminal environments (title, badge, Warp tab) and the remote session name use a single unified format:
 
-- **Non-worktree:** `<mode-text> (<branch>)` — e.g., `PM (main)`, `Engineer (feature-xyz)`.
-- **Worktree:** `<mode-text> (<worktree-label>)` — e.g., `Engineer (W1)`. Worktree label takes priority over branch name.
-- **Open mode:** `Purlin (<branch>)` or `Purlin (<worktree-label>)`.
+```
+<short_mode>(<context>) | <label>
+```
 
-The branch is detected via `git rev-parse --abbrev-ref HEAD`. The worktree label is read from `.purlin_worktree_label` if present.
+**Mode shortening:** `Engineer` -> `Eng`. `PM`, `QA`, and `Purlin` are unchanged.
 
-This rule applies everywhere the badge is set: `purlin:start` initialization, `purlin:resume` Step 6, `purlin:mode` switches, and Engineer phase transitions.
+**Context** is the current branch name or worktree label. Worktree label takes priority over branch name. The branch is detected via `git rev-parse --abbrev-ref HEAD`. The worktree label is read from `.purlin_worktree_label` if present. Context MUST always be present — it is never dropped.
+
+**Label** is the project name by default. Long-running skills (`purlin:build`, `purlin:spec`, `purlin:verify`) replace it with a short task description (3-4 words max). The label is optional — when omitted, the format is just `<short_mode>(<context>)`.
+
+Examples:
+- **Non-worktree:** `Eng(main) | purlin`, `PM(feature-xyz) | purlin`
+- **Worktree:** `Eng(W1) | purlin`, `QA(W2) | verify auth`
+- **Open mode:** `Purlin(main) | purlin`
+- **Task label:** `Eng(dev/0.8.6) | add auth flow`, `QA(main) | verify login`
+
+This format applies everywhere: `purlin:resume` initialization and Step 11, `purlin:mode` switches, `purlin:build`/`purlin:spec`/`purlin:verify` task start, and Engineer phase transitions.
 
 ### 2.5 Engineer Phase Transitions (Continuous Mode)
 
-Both title and badge update together via `set_agent_identity` at each phase transition. Branch context is always appended:
+Both title and badge update together via `update_session_identity` at each phase transition. Phase info is placed in the label (after the `|`):
 
-| State | Title / Badge Text |
-|-------|-----------|
-| Startup / non-continuous | `Engineer (<branch>)` |
-| Bootstrap phase | `Engineer: Bootstrap (<branch>)` |
-| Sequential phase execution | `Engineer: Phase N/M (<branch>)` |
-| Parallel group execution | `Engineer: Phases 2,3,5 (<branch>)` |
-| Evaluator running | `Engineer: Evaluating (<branch>)` |
-| Between phases | `Engineer (<branch>)` |
+| State | Display |
+|-------|---------|
+| Startup / non-continuous | `Eng(<branch>) \| <project>` |
+| Bootstrap phase | `Eng(<branch>) \| Bootstrap: <task>` |
+| Sequential phase execution | `Eng(<branch>) \| Phase N/M: <task>` |
+| Parallel group execution | `Eng(<branch>) \| Phases 2,3,5: <task>` |
+| Evaluator running | `Eng(<branch>) \| Evaluating: <task>` |
+| Between phases | `Eng(<branch>) \| <project>` |
 | Exit / Ctrl+C | (cleared) |
 
 ### 2.6 Generated Launcher Integration (`tools/init.sh`)
@@ -116,17 +126,17 @@ The convenience wrappers `set_agent_identity` and `clear_agent_identity` dispatc
 
 ### 2.10 Centralized Session Identity
 
-A single function `update_session_identity <mode_display> [project]` encapsulates the full identity update flow:
+A single function `update_session_identity <mode_display> [label]` encapsulates the full identity update flow:
 
-1. Detect branch or worktree context via `_purlin_detect_context` (reads `.purlin_worktree_label` first, falls back to `git rev-parse --abbrev-ref HEAD`).
-2. Format the badge: `<mode_display> (<context>)` — or bare `<mode_display>` if no context is available.
-3. Format the title: `<project> - <badge>` when project is given, or bare `<badge>`.
-4. Dispatch to all detected environments: `set_term_title`, `set_iterm_badge`, `set_warp_tab_name`.
-5. Store the computed values in shell variables `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` for callers that need the formatted strings (e.g., `purlin:start` uses `$_PURLIN_LAST_BADGE` to build the `SESSION_NAME` for the session name). These variables are set by every call to `update_session_identity` and persist in the calling shell's environment.
+1. Shorten the mode name via `_purlin_short_mode` (`Engineer` -> `Eng`; `PM`, `QA`, `Purlin` unchanged).
+2. Detect branch or worktree context via `_purlin_detect_context` (reads `.purlin_worktree_label` first, falls back to `git rev-parse --abbrev-ref HEAD`).
+3. Format the unified string: `<short_mode>(<context>) | <label>` — or `<short_mode>(<context>)` if no label is given.
+4. Dispatch to all detected environments: `set_term_title`, `set_iterm_badge`, `set_warp_tab_name` — all receive the same string.
+5. Store the computed value in both `$_PURLIN_LAST_BADGE` and `$_PURLIN_LAST_TITLE` (identical). These variables persist in the calling shell's environment.
 
-This function replaces the scattered inline badge-computation + dispatch logic in `purlin:start`, `PURLIN_BASE.md` section 4.1.1, `purlin:mode`, `purlin:resume` Step 6, and `/pl-merge` step 7.
+This function replaces the scattered inline badge-computation + dispatch logic in `purlin:resume`, `PURLIN_BASE.md` section 4.1.1, `purlin:mode`, and `purlin:merge` step 7.
 
-**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text (e.g., `set_agent_identity "Engineer: Bootstrap"`). `update_session_identity` is the preferred API for all new code that needs context detection.
+**Backward compatibility:** `set_agent_identity` retains its existing signature for callers that pass pre-formatted text. `update_session_identity` is the preferred API for all new code that needs context detection.
 
 ---
 
@@ -236,20 +246,41 @@ This function replaces the scattered inline badge-computation + dispatch logic i
     When set_warp_tab_name is called with "QA"
     Then no output is produced
 
-#### Scenario: update_session_identity computes badge with branch
+#### Scenario: update_session_identity computes unified format with branch
 
     Given a git repository with branch "main"
     And no .purlin_worktree_label file exists
     When update_session_identity is called with "Engineer" and "purlin"
-    Then _PURLIN_LAST_BADGE is "Engineer (main)"
-    And _PURLIN_LAST_TITLE is "purlin - Engineer (main)"
+    Then _PURLIN_LAST_BADGE is "Eng(main) | purlin"
+    And _PURLIN_LAST_TITLE is "Eng(main) | purlin"
+
+#### Scenario: update_session_identity shortens Engineer to Eng
+
+    Given a git repository with branch "main"
+    When update_session_identity is called with "Engineer" and "myproject"
+    Then _PURLIN_LAST_BADGE starts with "Eng("
+
+#### Scenario: update_session_identity preserves PM and QA
+
+    Given a git repository with branch "main"
+    When update_session_identity is called with "PM" and "myproject"
+    Then _PURLIN_LAST_BADGE starts with "PM("
+    When update_session_identity is called with "QA" and "myproject"
+    Then _PURLIN_LAST_BADGE starts with "QA("
 
 #### Scenario: update_session_identity uses worktree label over branch
 
     Given a .purlin_worktree_label file contains "W2"
     When update_session_identity is called with "QA" and "myproject"
-    Then _PURLIN_LAST_BADGE is "QA (W2)"
-    And _PURLIN_LAST_TITLE is "myproject - QA (W2)"
+    Then _PURLIN_LAST_BADGE is "QA(W2) | myproject"
+    And _PURLIN_LAST_TITLE is "QA(W2) | myproject"
+
+#### Scenario: update_session_identity without label omits pipe
+
+    Given a git repository with branch "main"
+    When update_session_identity is called with "Purlin" and no label
+    Then _PURLIN_LAST_BADGE is "Purlin(main)"
+    And _PURLIN_LAST_TITLE is "Purlin(main)"
 
 #### Scenario: update_session_identity dispatches to all environments
 
@@ -284,9 +315,9 @@ This function replaces the scattered inline badge-computation + dispatch logic i
 
     Given iTerm2 is the active terminal
     And the current branch is "main"
-    When the user starts a Purlin session via purlin:start
-    Then the terminal tab title shows "Purlin (main)"
-    And the iTerm2 badge overlay shows "Purlin (main)"
+    When the user starts a Purlin session via purlin:resume
+    Then the terminal tab title shows "Purlin(main) | purlin"
+    And the iTerm2 badge overlay shows "Purlin(main) | purlin"
     When the agent session exits normally
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -294,7 +325,7 @@ This function replaces the scattered inline badge-computation + dispatch logic i
 #### @manual Scenario: Title and badge clear on Ctrl+C
 
     Given iTerm2 is the active terminal
-    And an agent session is running via purlin:start
+    And an agent session is running via purlin:resume
     When the user presses Ctrl+C
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
@@ -304,47 +335,59 @@ This function replaces the scattered inline badge-computation + dispatch logic i
     Given iTerm2 is the active terminal
     And the current branch is "main"
     And a delivery plan exists with at least 3 phases
-    When the user runs purlin:start --build with continuous mode enabled
-    Then the title and badge show "Engineer (main)" at startup
-    And the title and badge show "Engineer: Bootstrap (main)" during the bootstrap phase
-    And the title and badge update to "Engineer: Phase N/M (main)" during sequential phase execution
-    And the title and badge show "Engineer: Evaluating (main)" when the evaluator runs
+    When the user runs purlin:resume --build with continuous mode enabled
+    Then the title and badge show "Eng(main) | purlin" at startup
+    And the title and badge show "Eng(main) | Bootstrap: <task>" during the bootstrap phase
+    And the title and badge update to "Eng(main) | Phase N/M: <task>" during sequential phase execution
+    And the title and badge show "Eng(main) | Evaluating: <task>" when the evaluator runs
     And the title and badge are cleared on exit
 
 #### @manual Scenario: Badge preserves branch context across mode switches
 
     Given iTerm2 is the active terminal
     And the current branch is "feature-xyz"
-    And the agent started with badge "Purlin (feature-xyz)"
-    When the user switches to Engineer mode via /pl-mode engineer
-    Then the badge updates to "Engineer (feature-xyz)"
-    When the user switches to PM mode via /pl-mode pm
-    Then the badge updates to "PM (feature-xyz)"
+    And the agent started with badge "Purlin(feature-xyz) | purlin"
+    When the user switches to Engineer mode via purlin:mode engineer
+    Then the badge updates to "Eng(feature-xyz) | purlin"
+    When the user switches to PM mode via purlin:mode pm
+    Then the badge updates to "PM(feature-xyz) | purlin"
 
 #### @manual Scenario: Warp tab name updates on mode switch
 
     Given Warp terminal is the active terminal
     And the current branch is "main"
     When the user starts a Purlin session
-    And switches to Engineer mode via /pl-mode engineer
-    Then the Warp tab title shows "purlin - Engineer (main)"
+    And switches to Engineer mode via purlin:mode engineer
+    Then the Warp tab title shows "Eng(main) | purlin"
 
-#### @manual Scenario: update_session_identity used by /pl-session-name skill
+#### @manual Scenario: update_session_identity used by purlin:session-name skill
 
     Given any terminal is active
     And the agent is in PM mode on branch "develop"
-    When the user runs /pl-session-name
-    Then the terminal title updates to "purlin - PM (develop)"
+    When the user runs purlin:session-name
+    Then the terminal title updates to "PM(develop) | purlin"
     And the output shows which environments were updated
 
+#### @manual Scenario: Task label replaces project during long-running skill
+
+    Given iTerm2 is the active terminal
+    And the current branch is "main"
+    When the user runs purlin:build for feature "auth_flow"
+    Then the badge updates to "Eng(main) | auth flow"
+    When the build completes or the user switches mode
+    Then the badge reverts to "Eng(main) | purlin"
+
 ## Regression Guidance
+- Unified format everywhere: `<short_mode>(<context>) | <label>` — badge, title, Warp tab, remote session name
+- `Engineer` shortened to `Eng`; `PM`, `QA`, `Purlin` unchanged
 - Cleanup on normal exit AND Ctrl+C (both title and badge cleared)
 - Non-iTerm2 terminals: badge functions are no-op, title still works
 - Escape sequences output to /dev/tty, not stdout (safe when piped)
-- Continuous mode: title updates through phase transitions (Bootstrap -> Phase N/M -> Evaluating)
-- Branch context in parentheses MUST persist across mode switches — never dropped to bare mode name
+- Continuous mode: phase info goes in the label side (e.g., `Eng(main) | Phase 2/5: auth flow`)
+- Branch context in parentheses MUST persist across mode switches — never dropped
 - Worktree label takes priority over branch name when both could apply
+- Long-running skills (build, spec, verify) replace project name with short task description in the label
 - Environment detection cached at source-time, consistent across all calls in session
 - Warp tab name best-effort (OSC 0 unreliable in some Warp versions)
-- `update_session_identity` always stores results in `$_PURLIN_LAST_BADGE` / `$_PURLIN_LAST_TITLE`
-- `set_agent_identity` backward compatible — still works with pre-formatted text, now also dispatches to Warp
+- `_PURLIN_LAST_BADGE` and `_PURLIN_LAST_TITLE` are always identical
+- `set_agent_identity` backward compatible — still works with pre-formatted text, dispatches to Warp

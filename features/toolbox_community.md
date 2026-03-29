@@ -3,7 +3,7 @@
 > Label: "Tool: Toolbox Community Lifecycle"
 > Category: "Install, Update & Scripts"
 > Owner: PM
-> Prerequisite: features/toolbox_core.md
+> Prerequisite: toolbox_core.md
 
 ## 1. Overview
 
@@ -26,7 +26,7 @@ The `id` field in `tool.json` SHOULD use the `community.` prefix. If the prefix 
 
 No other files are required or expected. Supporting files (scripts, templates) MAY be included alongside `tool.json`.
 
-### 2.2 Add (`/pl-toolbox add <git-url>`)
+### 2.2 Add (`purlin:toolbox add <git-url>`)
 
 1. Clone the repository to a temporary directory.
 2. Validate `tool.json` exists at the repository root. If absent: error with message explaining the expected format.
@@ -47,10 +47,10 @@ No other files are required or expected. Supporting files (scripts, templates) M
 
 **Error recovery:** If any step after step 6 fails, clean up the partially-created community directory and do not update the registry.
 
-### 2.3 Pull (`/pl-toolbox pull [tool]`)
+### 2.3 Pull (`purlin:toolbox pull [tool]`)
 
-**Single tool:** `/pl-toolbox pull community.deploy_vercel`
-**All tools:** `/pl-toolbox pull`
+**Single tool:** `purlin:toolbox pull community.deploy_vercel`
+**All tools:** `purlin:toolbox pull`
 
 For each community tool being updated:
 
@@ -67,21 +67,21 @@ For each community tool being updated:
 8. Clean up temporary directory.
 9. Report summary: `"Updated N tools. Skipped M (up to date). Conflicts: K."`
 
-### 2.4 Push (`/pl-toolbox push <tool> [git-url]`)
+### 2.4 Push (`purlin:toolbox push <tool> [git-url]`)
 
-**Community tool (update existing repo):** `/pl-toolbox push community.deploy_vercel`
-**Project tool (promote to community):** `/pl-toolbox push my_audit git@github.com:user/purlin-tool-my-audit.git`
+**Community tool (update existing repo):** `purlin:toolbox push community.deploy_vercel`
+**Project tool (promote to community):** `purlin:toolbox push my_audit git@github.com:user/purlin-tool-my-audit.git`
 
 1. Resolve tool name via fuzzy matching.
 2. **If community tool:**
     *   `git-url` argument is optional. If omitted, use the stored `source_repo` from the registry. If provided, use the argument (and update `source_repo`).
     *   Error if no `source_repo` is stored and no `git-url` is provided.
 3. **If project tool:**
-    *   `git-url` argument is REQUIRED. Error if missing: `"This is a project tool with no source repo. Specify a git URL: '/pl-toolbox push <tool> <git-url>'"`
+    *   `git-url` argument is REQUIRED. Error if missing: `"This is a project tool with no source repo. Specify a git URL: 'purlin:toolbox push <tool> <git-url>'"`
     *   Prompt for version number (suggest `"1.0.0"`).
     *   Set `author` from `git config user.email`. Confirm with user.
     *   Rename ID: strip any existing prefix, apply `community.` prefix.
-4. **Purlin tool:** Block with message: `"Purlin tools cannot be pushed. Use '/pl-toolbox copy' first to create a project tool, then push that."`
+4. **Purlin tool:** Block with message: `"Purlin tools cannot be pushed. Use 'purlin:toolbox copy' first to create a project tool, then push that."`
 5. **Dry-run preview:** Show what will be pushed (tool definition, version, target repo). Require confirmation.
 6. Create repository structure in a temporary directory:
     *   `tool.json` — full tool definition with community metadata.
@@ -98,7 +98,7 @@ For each community tool being updated:
 ### 2.5 Edit Community Tool
 
 See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavior:
-*   Warning displayed before editing: `"Local edits will diverge from upstream. Next '/pl-toolbox pull' will detect the conflict."`
+*   Warning displayed before editing: `"Local edits will diverge from upstream. Next 'purlin:toolbox pull' will detect the conflict."`
 *   Edits are written to `.purlin/toolbox/community/<tool_id>/tool.json`.
 *   `metadata.last_updated` is set to today.
 *   `last_pull_sha` in the registry is NOT updated (this is how pull detects local edits).
@@ -112,7 +112,7 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
 #### Scenario: Add community tool from valid repo
 
     Given a git repo at <url> contains a valid tool.json with id "deploy_vercel"
-    When the user runs "/pl-toolbox add <url>"
+    When the user runs "purlin:toolbox add <url>"
     Then a directory ".purlin/toolbox/community/community.deploy_vercel/" is created
     And tool.json is copied to that directory
     And community_tools.json contains an entry with id "community.deploy_vercel"
@@ -121,14 +121,14 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
 #### Scenario: Add auto-prefixes community ID
 
     Given a git repo contains tool.json with id "deploy_vercel" (no community. prefix)
-    When the user runs "/pl-toolbox add <url>"
+    When the user runs "purlin:toolbox add <url>"
     Then the tool is registered with id "community.deploy_vercel"
     And the user is informed of the ID rename
 
 #### Scenario: Add fails on missing tool.json
 
     Given a git repo does not contain tool.json at root
-    When the user runs "/pl-toolbox add <url>"
+    When the user runs "purlin:toolbox add <url>"
     Then an error is displayed explaining the required format
     And no files are created locally
 
@@ -136,7 +136,7 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
 
     Given a community tool with id "community.deploy_vercel" already exists
     And a git repo contains tool.json with id "deploy_vercel"
-    When the user runs "/pl-toolbox add <url>"
+    When the user runs "purlin:toolbox add <url>"
     Then an error is displayed naming the conflicting tool
 
 #### Scenario: Pull updates when no local edits
@@ -144,7 +144,7 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
     Given community tool "community.deploy_vercel" has last_pull_sha "abc123"
     And the source repo HEAD is "def456"
     And the local tool.json has not been edited since pull
-    When the user runs "/pl-toolbox pull community.deploy_vercel"
+    When the user runs "purlin:toolbox pull community.deploy_vercel"
     Then tool.json is updated with upstream content
     And last_pull_sha is updated to "def456"
 
@@ -153,7 +153,7 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
     Given community tool "community.deploy_vercel" has last_pull_sha "abc123"
     And the source repo HEAD is "def456"
     And the local tool.json has been edited since pull
-    When the user runs "/pl-toolbox pull community.deploy_vercel"
+    When the user runs "purlin:toolbox pull community.deploy_vercel"
     Then a diff is shown between local and upstream
     And the user is offered "Accept upstream / Keep local / Show diff"
 
@@ -161,20 +161,20 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
 
     Given community tool "community.deploy_vercel" has last_pull_sha "abc123"
     And the source repo HEAD is "abc123"
-    When the user runs "/pl-toolbox pull"
+    When the user runs "purlin:toolbox pull"
     Then the output shows "community.deploy_vercel: already up to date."
 
 #### Scenario: Pull handles unreachable repo gracefully
 
     Given community tool "community.deploy_vercel" has source_repo pointing to an unreachable URL
-    When the user runs "/pl-toolbox pull"
+    When the user runs "purlin:toolbox pull"
     Then a warning is shown for that tool
     And other community tools continue updating
 
 #### Scenario: Push project tool to new repo
 
     Given project tool "my_audit" exists in project_tools.json
-    When the user runs "/pl-toolbox push my_audit git@github.com:user/purlin-tool-my-audit.git"
+    When the user runs "purlin:toolbox push my_audit git@github.com:user/purlin-tool-my-audit.git"
     And provides version "1.0.0" and confirms author
     Then a dry-run preview is shown and confirmed
     And the tool is pushed to the git URL
@@ -185,18 +185,18 @@ See `pl_toolbox.md` Section 2.6 for the edit flow. Key community-specific behavi
 #### Scenario: Push community tool uses stored repo
 
     Given community tool "community.deploy_vercel" has source_repo "git@github.com:user/deploy.git"
-    When the user runs "/pl-toolbox push community.deploy_vercel" (no git-url)
+    When the user runs "purlin:toolbox push community.deploy_vercel" (no git-url)
     Then the tool is pushed to "git@github.com:user/deploy.git"
 
 #### Scenario: Push project tool without git-url errors
 
     Given project tool "my_audit" has no source_repo
-    When the user runs "/pl-toolbox push my_audit" (no git-url)
+    When the user runs "purlin:toolbox push my_audit" (no git-url)
     Then an error is displayed with the required syntax
 
 #### Scenario: Push purlin tool is blocked
 
-    Given the user runs "/pl-toolbox push purlin.verify_zero_queue"
+    Given the user runs "purlin:toolbox push purlin.verify_zero_queue"
     When the skill resolves the tool
     Then the message "Purlin tools cannot be pushed" is displayed
 

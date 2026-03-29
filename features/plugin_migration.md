@@ -2,14 +2,14 @@
 
 > Label: "Tool: Plugin Architecture Migration"
 > Category: "Framework Core"
-> Prerequisite: features/purlin_agent_launcher.md
-> Prerequisite: features/purlin_scan_engine.md
-> Prerequisite: features/purlin_instruction_architecture.md
-> Prerequisite: features/submodule_command_path_resolution.md
+> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_scan_engine.md
+> Prerequisite: purlin_instruction_architecture.md
+> Prerequisite: submodule_command_path_resolution.md
 
 ## 1. Overview
 
-Migrates Purlin from git submodule distribution to the Claude Code plugin system. The repo itself becomes the plugin -- no separate distribution repo. This eliminates the submodule onboarding friction (multi-step init, symlink management, path resolution), replaces the 504-line launcher with a `purlin:start` skill, wraps the scan engine in a persistent MCP server, and enables mechanical mode guard enforcement via hooks.
+Migrates Purlin from git submodule distribution to the Claude Code plugin system. The repo itself becomes the plugin -- no separate distribution repo. This eliminates the submodule onboarding friction (multi-step init, symlink management, path resolution), replaces the 504-line launcher with a `purlin:resume` skill, wraps the scan engine in a persistent MCP server, and enables mechanical mode guard enforcement via hooks.
 
 The migration is phased (0-7). This spec covers Phases 0-2: plugin scaffold, skill migration, and MCP server + script migration. Phases 3-7 (hooks, references/templates/cleanup, integration testing, consumer upgrade, release) are covered by subsequent spec updates.
 
@@ -67,7 +67,7 @@ These transforms MUST be applied consistently -- no skill should retain old-styl
 
 Three new skills MUST be created:
 
-- **`skills/start/SKILL.md`** -- Session entry point replacing `pl-run.sh`. See `PLUGIN_MIGRATION_ANALYSIS.md` Section 12 for the full `purlin:start` specification. Handles checkpoint recovery, mode activation, worktree entry, YOLO toggling, terminal identity, and session naming.
+- **`skills/resume/SKILL.md`** -- Session entry point replacing `pl-run.sh`. See `PLUGIN_MIGRATION_ANALYSIS.md` Section 12 for the full `purlin:resume` specification. Handles checkpoint recovery, mode activation, worktree entry, YOLO toggling, terminal identity, and session naming.
 - **`skills/init/SKILL.md`** -- Project initialization replacing `tools/init.sh`. Creates `.purlin/` directory structure, writes initial config, copies override template. Simplified from the 808-line init script because plugin paths eliminate submodule detection.
 - **`skills/upgrade/SKILL.md`** -- Submodule-to-plugin migration for consumer projects. See `PLUGIN_MIGRATION_ANALYSIS.md` Section 14 for the full `purlin:upgrade` specification. Removes submodule, cleans stale artifacts, declares plugin, migrates config.
 
@@ -174,7 +174,7 @@ Seven hook scripts provide mechanical enforcement and lifecycle automation that 
 
 | Script | Event | Purpose |
 |---|---|---|
-| `hooks/scripts/session-start.sh` | SessionStart (clear + compact) | Inject context reminder: "Purlin active, run purlin:start" |
+| `hooks/scripts/session-start.sh` | SessionStart (clear + compact) | Inject context reminder: "Purlin active, run purlin:resume" |
 | `hooks/scripts/session-end-merge.sh` | SessionEnd | Merge worktrees, cleanup session state |
 | `hooks/scripts/mode-guard.sh` | PreToolUse (Write/Edit/NotebookEdit) | Query MCP `purlin_classify`, block wrong-mode writes with exit code 2 |
 | `hooks/scripts/permission-manager.sh` | PermissionRequest | Read YOLO flag from config, auto-approve if set |
@@ -222,7 +222,7 @@ Final structural migration: move remaining files to plugin-standard locations an
 
 #### 2.5.4 Launcher and Old Structure Cleanup
 
-- `pl-run.sh` MUST be deleted (replaced by `purlin:start` skill).
+- `pl-run.sh` MUST be deleted (replaced by `purlin:resume` skill).
 - Remaining `tools/` contents MUST be moved to `scripts/` or deleted. Only `dev/`-specific test files may remain in the project (under `dev/` or `tests/`, not `tools/`).
 - The `tools/` directory MUST be deleted or reduced to only `__pycache__` artifacts.
 
@@ -239,7 +239,7 @@ During the transition (Phases 0-4), both old and new structures coexist:
 - The old `.claude/commands/` files are deleted after Phase 1 skill migration.
 - The old `tools/` scripts are deleted after Phase 2 script migration.
 - The old `instructions/PURLIN_BASE.md` stays until Phase 4 (when `agents/purlin.md` replaces it).
-- `pl-run.sh` stays until Phase 4 (when `purlin:start` fully replaces it).
+- `pl-run.sh` stays until Phase 4 (when `purlin:resume` fully replaces it).
 - Consumer projects using the submodule model are unaffected until they run `purlin:upgrade` (Phase 6).
 
 ### 2.5 Naming Convention
@@ -323,11 +323,11 @@ During the transition (Phases 0-4), both old and new structures coexist:
 
 #### Scenario: New start skill exists with correct content
 
-    Given skills/start/SKILL.md exists
+    Given skills/resume/SKILL.md exists
     When reading the content
     Then it describes session entry (checkpoint recovery, mode activation, worktree)
     And it references purlin:mode for mode switching
-    And it references purlin:resume for checkpoint recovery
+    And it references purlin:resume save for checkpoint save and purlin:resume merge-recovery for merge recovery
 
 #### Scenario: New init skill exists
 

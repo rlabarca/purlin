@@ -21,7 +21,7 @@ This spec documents the retirement redirect behavior. The command remains as a s
 | Token Map generation | `purlin:spec` (PM maps tokens when writing the Visual Specification) |
 | Visual acceptance checklists | `purlin:spec` (PM authors checklists from brief.json data) |
 | Design Anchor declaration | Standard `> Prerequisite:` to `i_design_*.md` invariant |
-| Local file ingestion (images, PDFs) | PM adds files to `features/design/` manually, references via `purlin:anchor` |
+| Local file ingestion (images, PDFs) | PM adds files to `features/_design/` manually, references via `purlin:anchor` |
 | Web URL references | PM adds references to local `design_*.md` anchors via `purlin:anchor` |
 | Staleness detection | `purlin:invariant sync` (version check) + scan (brief vs pointer version) |
 | Dev Resources linking | Dropped (low-value ceremony) |
@@ -45,7 +45,7 @@ This spec documents the retirement redirect behavior. The command remains as a s
 When invoked, the command detects the user's intent from the argument and redirects:
 
 1. **Figma URL argument:** Redirect to `purlin:invariant add-figma <url>`.
-2. **Local file argument (image, PDF):** Guide the user to copy the file to `features/design/<feature_stem>/`, reference it in a `design_*.md` anchor via `purlin:anchor`, and add the Visual Specification via `purlin:spec`.
+2. **Local file argument (image, PDF):** Guide the user to copy the file to `features/_design/<feature_stem>/`, reference it in a `design_*.md` anchor via `purlin:anchor`, and add the Visual Specification via `purlin:spec`.
 3. **"reprocess" keyword:** Redirect to `purlin:invariant sync` for Figma-sourced designs, or `purlin:spec` for local artifact re-processing.
 4. **No argument:** Print the retirement notice and responsibility split table.
 

@@ -2,7 +2,7 @@
 
 > Label: "Shared Agent Definitions: Commit Conventions"
 > Category: "Shared Agent Definitions"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 

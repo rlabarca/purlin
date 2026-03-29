@@ -23,7 +23,7 @@
 | `.purlin/config.local.json` | Per-developer config overrides |
 | `.purlin_session.lock` | Session lock file |
 | `.purlin_worktree_label` | Worktree label (e.g., W1) |
-| `features/digests/` | Per-machine generated digests |
+| `features/_digests/` | Per-machine generated digests |
 | `.playwright-mcp/` | Web verification screenshots |
 | `*.log` | Server and tool logs |
 | `*.pid` | Process ID files |

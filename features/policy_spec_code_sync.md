@@ -2,9 +2,9 @@
 
 > Label: "Policy: Spec-Code Synchronization"
 > Category: "Framework Core"
-> Prerequisite: features/purlin_mode_system.md
-> Prerequisite: features/active_deviations.md
-> Prerequisite: features/impl_notes_companion.md
+> Prerequisite: purlin_mode_system.md
+> Prerequisite: active_deviations.md
+> Prerequisite: impl_notes_companion.md
 
 [TODO]
 
@@ -78,7 +78,7 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
     │  ┌──────────────────────────────────────────────────────────┐
     │  │              ENFORCEMENT GATES                           │
     │  │                                                          │
-    │  │  Gate 1: /pl-build Step 4 (Status Tag Commit)           │
+    │  │  Gate 1: purlin:build Step 4 (Status Tag Commit)           │
     │  │  ─── Mechanical check: did impl file change? ───        │
     │  │  Code commits exist without companion update? BLOCK.     │
     │  │  No judgment call. No "matches spec exactly" exemption.  │
@@ -88,7 +88,7 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
     │  │  Code was committed without companion entries? BLOCK.    │
     │  │  No skip escape. Write at least [IMPL] lines first.     │
     │  │                                                          │
-    │  │  Gate 3: /pl-resume save (Session End)                  │
+    │  │  Gate 3: purlin:resume save (Session End)                    │
     │  │  ─── Companion debt warning before checkpoint ───       │
     │  │  Surfaces unwritten impl notes before session ends.      │
     │  │                                                          │
@@ -102,7 +102,7 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
               ┌──────────────────────────────────────────┐
               │         AUDIT READS IMPL NOTES           │
               │                                          │
-              │  /pl-spec-code-audit uses [IMPL] entries │
+              │  purlin:spec-code-audit uses [IMPL] entries │
               │  as a code map — traces what was built    │
               │  back to spec requirements. Detects:     │
               │                                          │
@@ -120,7 +120,7 @@ The companion file is Engineer-owned. It can be updated in the same commit as th
 
 1. **No information loss during the PM lag.** The companion file records exactly what was built, when, and why — even if the spec won't be updated for days.
 2. **PM has a complete delta when they return.** Instead of reverse-engineering code changes from git diffs, PM reads structured `[IMPL]`, `[DEVIATION]`, and `[DISCOVERY]` entries that explain intent.
-3. **The audit has a code map.** `/pl-spec-code-audit` uses impl entries as an index of what the engineer intended, making spec-code comparison faster and more accurate.
+3. **The audit has a code map.** `purlin:spec-code-audit` uses impl entries as an index of what the engineer intended, making spec-code comparison faster and more accurate.
 
 ---
 
@@ -132,7 +132,7 @@ Every engineer code commit for a feature MUST include a companion file update. N
 
 - The minimum entry is a single `[IMPL]` line: `**[IMPL]** <what was implemented and which spec requirement it addresses>`
 - If the change deviates from spec, the entry MUST use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, `[INFEASIBLE]`) instead of or in addition to `[IMPL]`.
-- Multiple commits for the same feature in rapid succession (implement + test + fix) MAY batch their entries into a single companion update committed with the last commit in the batch. The gate fires at `/pl-build` Step 4, not per-commit.
+- Multiple commits for the same feature in rapid succession (implement + test + fix) MAY batch their entries into a single companion update committed with the last commit in the batch. The gate fires at `purlin:build` Step 4, not per-commit.
 
 ### 2.2 The [IMPL] Tag
 
@@ -147,7 +147,7 @@ The `[IMPL]` tag is a new Engineer Decision Tag with severity NONE. It records w
 
 All enforcement gates MUST be **mechanical** (did the file change?) not **judgmental** (did the engineer deviate?). This removes the failure mode where the engineer decides "this matches the spec" and skips documentation.
 
-#### Gate 1: `/pl-build` Step 4 — Companion File Gate
+#### Gate 1: `purlin:build` Step 4 — Companion File Gate
 
 - The gate checks: were code commits made for this feature during this session?
 - If yes: does the companion file (`features/<name>.impl.md`) have new entries from this session?
@@ -161,7 +161,7 @@ All enforcement gates MUST be **mechanical** (did the file change?) not **judgme
 - The "skip" escape hatch is **removed**. The engineer MUST write at least `[IMPL]` entries or the switch does not proceed.
 - This is a hard block, not a prompt. There is no "are you sure?" — the entries must be written.
 
-#### Gate 3: `/pl-resume save` — Session Checkpoint
+#### Gate 3: `purlin:resume save` — Session Checkpoint
 
 - Before writing a checkpoint, check for companion debt (same logic as Gate 2).
 - If debt exists: warn and prompt to write entries before saving.
@@ -171,7 +171,7 @@ All enforcement gates MUST be **mechanical** (did the file change?) not **judgme
 
 - The scan compares code commit timestamps against companion file modification timestamps for each feature.
 - If a feature has code commits more recent than its last companion file update: surface as `companion_debt` in scan results.
-- `/pl-status` routes companion debt to Engineer action items.
+- `purlin:status` routes companion debt to Engineer action items.
 - This gate catches debt that slipped through Gates 1-3 (session crashes, manual git commits outside Purlin, etc.).
 
 ### 2.4 The Sync Guarantee
@@ -185,7 +185,7 @@ At any point in time, reading a feature's spec AND its companion file MUST provi
 
 ### 2.5 Audit Integration
 
-`/pl-spec-code-audit` MUST leverage companion file `[IMPL]` entries as a structured index of implementation work:
+`purlin:spec-code-audit` MUST leverage companion file `[IMPL]` entries as a structured index of implementation work:
 
 - **Companion debt detection**: Code commits without corresponding companion entries are a HIGH-severity gap (new dimension: "Companion coverage").
 - **Impl-to-spec tracing**: `[IMPL]` entries that reference spec sections provide a mapping from code to requirements, making scenario-by-scenario comparison faster.
@@ -197,7 +197,7 @@ At any point in time, reading a feature's spec AND its companion file MUST provi
 The companion file commit covenant MUST NOT significantly impact engineer velocity:
 
 - Writing a single `[IMPL]` line takes ~5 seconds. This is the minimum overhead per commit batch.
-- Batching is allowed within a single `/pl-build` session — multiple commits can share one companion update.
+- Batching is allowed within a single `purlin:build` session — multiple commits can share one companion update.
 - The removal of the "did I deviate?" judgment call is a net performance gain — no more deliberation overhead.
 - The mechanical gate check (did the file change?) is faster than the old judgmental check (review all diffs for deviation).
 
@@ -211,7 +211,7 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 
     Given Engineer mode has committed code changes for feature "webhook_delivery"
     And features/webhook_delivery.impl.md has no new entries from this session
-    When /pl-build Step 4 runs the Companion File Gate
+    When purlin:build Step 4 runs the Companion File Gate
     Then the status tag commit is BLOCKED
     And the message indicates companion file entries are required
 
@@ -219,7 +219,7 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 
     Given Engineer mode has committed code changes for feature "webhook_delivery"
     And features/webhook_delivery.impl.md contains a new [IMPL] entry from this session
-    When /pl-build Step 4 runs the Companion File Gate
+    When purlin:build Step 4 runs the Companion File Gate
     Then the status tag commit proceeds
 
 #### Scenario: Mode switch blocked by companion debt
@@ -244,12 +244,12 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
     And features/webhook_delivery.impl.md was last modified at 2026-03-25T15:00:00
     When scan_companion_debt() runs
     Then "webhook_delivery" is flagged with companion_debt
-    And /pl-status routes it to Engineer action items
+    And purlin:status routes it to Engineer action items
 
 #### Scenario: [IMPL] entries not surfaced to PM
 
     Given features/webhook_delivery.impl.md contains only [IMPL] entries (no deviations)
-    When /pl-status generates PM action items
+    When purlin:status generates PM action items
     Then no items appear for "webhook_delivery"
     And the [IMPL] entries are not listed as unacknowledged deviations
 
@@ -257,13 +257,13 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 
     Given Engineer makes 3 commits for feature "webhook_delivery" in quick succession
     And writes all companion entries in the third commit
-    When /pl-build Step 4 runs
+    When purlin:build Step 4 runs
     Then the gate passes (companion file was updated during the session)
 
 #### Scenario: Session save warns about companion debt
 
     Given Engineer mode has companion debt for feature "rate_limiting"
-    When /pl-resume save is invoked
+    When purlin:resume save is invoked
     Then a warning is displayed listing features with companion debt
     And the checkpoint is still saved (soft gate)
 
@@ -279,21 +279,21 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 #### Scenario: Audit uses [IMPL] entries as code map
 
     Given features/webhook_delivery.impl.md contains [IMPL] entries referencing spec §3.2 and §3.4
-    When /pl-spec-code-audit processes "webhook_delivery"
+    When purlin:spec-code-audit processes "webhook_delivery"
     Then the audit uses [IMPL] references to map code to spec sections
     And scenario-by-scenario comparison is informed by the impl-to-spec mapping
 
 #### Scenario: Audit flags companion debt as HIGH severity
 
     Given feature "rate_limiting" has code commits but no companion file entries
-    When /pl-spec-code-audit evaluates gap dimensions
+    When purlin:spec-code-audit evaluates gap dimensions
     Then a gap is recorded with dimension "Companion coverage"
     And the gap severity is HIGH
 
 #### Scenario: Audit flags stale companion notes as MEDIUM severity
 
     Given feature "webhook_delivery" has code modified after the last companion entry
-    When /pl-spec-code-audit evaluates gap dimensions
+    When purlin:spec-code-audit evaluates gap dimensions
     Then a gap is recorded with dimension "Companion coverage"
     And the gap description indicates stale companion notes
     And the gap severity is MEDIUM

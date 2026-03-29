@@ -400,7 +400,7 @@ Regression tests use the fixture-based harness (`scripts/test_support/harness_ru
     When purlin:update is run interactively
     Then all three migration steps execute in order
     And the project is fully functional as a plugin consumer
-    And purlin:start runs successfully in the migrated project
+    And purlin:resume runs successfully in the migrated project
 
 #### @manual Scenario: Full migration from v0.8.5 submodule to current plugin
 
@@ -408,7 +408,7 @@ Regression tests use the fixture-based harness (`scripts/test_support/harness_ru
     When purlin:update is run interactively
     Then steps 2 and 3 execute
     And the project has no submodule artifacts remaining
-    And purlin:start runs successfully
+    And purlin:resume runs successfully
 
 ## Regression Guidance
 

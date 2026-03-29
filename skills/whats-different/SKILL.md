@@ -77,11 +77,11 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/collab/generate_whats_different.sh <session> [--ro
 - If the agent has an active Purlin mode (PM, Engineer, or QA), pass `--role <mode>` to produce a role-specific briefing prepended to the standard digest.
 - If no mode is active (open mode), run without `--role` (standard digest only).
 
-This script runs the extraction tool and invokes the LLM to produce the digest. The output is written to `features/digests/whats-different.md`.
+This script runs the extraction tool and invokes the LLM to produce the digest. The output is written to `features/_digests/whats-different.md`.
 
 ### 5. Display Result
 
-Read and display the contents of `features/digests/whats-different.md`.
+Read and display the contents of `features/_digests/whats-different.md`.
 
 When a role briefing is present, the output has two sections separated by a horizontal rule:
 1. **Role briefing** — plain-language summary of what matters to this mode, with numbered IDs on each item.

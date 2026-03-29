@@ -2,13 +2,13 @@
 
 > Label: "Tool: Context Recovery Hook"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/project_init.md
+> Prerequisite: project_init.md
 
 [TODO]
 
 ## 1. Overview
 
-Ensures that role-restricted Purlin agents recover their identity and write-access boundaries after Claude Code context compaction. The primary mechanism is a `compact` matcher on the `SessionStart` hook that echoes role guard rails and a `purlin:resume` directive. A project-root `CLAUDE.md` provides defense-in-depth (always in context, survives all compression). As cleanup, the unused `.purlin/runtime/agent_role` file write is removed from the `purlin:start` skill.
+Ensures that role-restricted Purlin agents recover their identity and write-access boundaries after Claude Code context compaction. The primary mechanism is a `compact` matcher on the `SessionStart` hook that echoes role guard rails and a `purlin:resume` directive. A project-root `CLAUDE.md` provides defense-in-depth (always in context, survives all compression). As cleanup, the unused `.purlin/runtime/agent_role` file write is removed from the `purlin:resume` skill.
 
 ---
 
@@ -17,7 +17,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 ### 2.1 Compact Hook (This Repository)
 
 - `.claude/settings.json` MUST contain a `SessionStart` hook entry with `"matcher": "compact"` alongside the existing `"matcher": "clear"` entry.
-- The compact hook command MUST echo a message containing: (a) that context was compacted, (b) that this project uses role-restricted Purlin agents, (c) the role boundary summary (PM never write code, Engineer never writes specs, QA never writes app code), and (d) a directive to run `/pl-resume` immediately.
+- The compact hook command MUST echo a message containing: (a) that context was compacted, (b) that this project uses role-restricted Purlin agents, (c) the role boundary summary (PM never write code, Engineer never writes specs, QA never writes app code), and (d) a directive to run `purlin:resume` immediately.
 
 ### 2.2 Compact Hook (Consumer Projects via init.sh)
 
@@ -30,7 +30,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 
 - A new function `install_claude_md()` MUST be added to `tools/init.sh`.
 - The function reads content from `purlin-config-sample/CLAUDE.md.purlin` template.
-- Content is wrapped in `<!-- purlin:start -->` / `<!-- purlin:end -->` markers.
+- Content is wrapped in `<!-- purlin:resume -->` / `<!-- purlin:end -->` markers.
 - If no `CLAUDE.md` exists at the project root: create it with the marked block.
 - If `CLAUDE.md` exists with markers: replace content between markers (preserving user content outside markers).
 - If `CLAUDE.md` exists without markers: append the marked block.
@@ -40,12 +40,12 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 ### 2.4 CLAUDE.md.purlin Template
 
 - A template file MUST be created at `purlin-config-sample/CLAUDE.md.purlin`.
-- The template MUST contain: project identification (Purlin agentic workflow), role boundary summary for all four roles (PM, Engineer, QA, PM), a context recovery directive (run `/pl-resume` if role instructions are missing), and a pointer to `/pl-help`.
-- The template MUST NOT contain the `<!-- purlin:start/end -->` markers (those are added by `install_claude_md()`).
+- The template MUST contain: project identification (Purlin agentic workflow), role boundary summary for all four roles (PM, Engineer, QA, PM), a context recovery directive (run `purlin:resume` if role instructions are missing), and a pointer to `purlin:help`.
+- The template MUST NOT contain the `<!-- purlin:resume/end -->` markers (those are added by `install_claude_md()`).
 
 ### 2.5 agent_role File Removal
 
-- The `purlin:start` skill MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
+- The `purlin:resume` skill MUST no longer write `$AGENT_ROLE` to `.purlin/runtime/agent_role`.
 - The `generate_launcher()` function in `tools/init.sh` (if it contains agent_role write logic) MUST also be updated to remove the line.
 - The `AGENT_ROLE` environment variable export MUST remain unchanged -- it is actively used by config resolution.
 
@@ -71,7 +71,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     Given the Purlin repository .claude/settings.json exists
     When inspecting hooks.SessionStart
     Then an entry with matcher "compact" exists
-    And the hook command echoes role guard rails and a /pl-resume directive
+    And the hook command echoes role guard rails and a purlin:resume directive
     And an entry with matcher "clear" also exists (unchanged)
 
 #### Scenario: Consumer Full Init Installs Compact Hook
@@ -81,7 +81,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     When the user runs "purlin/tools/init.sh"
     Then .claude/settings.json contains a SessionStart hook with matcher "clear"
     And .claude/settings.json contains a SessionStart hook with matcher "compact"
-    And the compact hook echoes role guard rails and a /pl-resume directive
+    And the compact hook echoes role guard rails and a purlin:resume directive
 
 #### Scenario: Compact Hook Idempotent on Refresh
 
@@ -105,7 +105,7 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     And purlin-config-sample/CLAUDE.md.purlin exists in the submodule
     When the user runs "purlin/tools/init.sh"
     Then CLAUDE.md exists at the project root
-    And CLAUDE.md contains "<!-- purlin:start -->" and "<!-- purlin:end -->" markers
+    And CLAUDE.md contains "<!-- purlin:resume -->" and "<!-- purlin:end -->" markers
     And the content between markers matches the template
     And CLAUDE.md contains role boundary text for all four roles
 
@@ -140,9 +140,9 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     When the user runs "purlin/tools/init.sh"
     Then CLAUDE.md appears in the git staging area
 
-#### Scenario: purlin:start No Longer Writes agent_role
+#### Scenario: purlin:resume No Longer Writes agent_role
 
-    Given the purlin:start skill exists
+    Given the purlin:resume skill exists
     When inspecting the session initialization logic
     Then it does not write to .purlin/runtime/agent_role
     And AGENT_ROLE is still exported as an environment variable

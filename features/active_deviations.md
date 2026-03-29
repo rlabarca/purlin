@@ -2,7 +2,7 @@
 
 > Label: "Shared Agent Definitions: Active Deviations Protocol"
 > Category: "Shared Agent Definitions"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 ## 1. Overview
 
@@ -28,9 +28,9 @@ The Active Deviations reference (`references/active_deviations.md`) defines the 
 
 ### 2.3 Three Engineer-to-PM Flows
 
-- Flow 1 INFEASIBLE (blocking): halt work, document, propose alternative. Use `/pl-infeasible`.
+- Flow 1 INFEASIBLE (blocking): halt work, document, propose alternative. Use `purlin:infeasible`.
 - Flow 2 Inline Deviation (non-blocking): build continues, add row to table.
-- Flow 3 SPEC_PROPOSAL (proactive): suggest spec change. Use `/pl-propose`.
+- Flow 3 SPEC_PROPOSAL (proactive): suggest spec change. Use `purlin:propose`.
 
 ### 2.4 Engineer Decision Tags
 
@@ -41,7 +41,7 @@ The Active Deviations reference (`references/active_deviations.md`) defines the 
 
 ### 2.5 PM Review Protocol
 
-- PM reviews unacknowledged entries via `/pl-status` (scan.py surfaces them).
+- PM reviews unacknowledged entries via `purlin:status` (scan.py surfaces them).
 - PM marks `[ACKNOWLEDGED]` and accepts, rejects, or requests clarification.
 
 ---
@@ -85,5 +85,5 @@ The Active Deviations reference (`references/active_deviations.md`) defines the 
     And only AUTONOMOUS, DEVIATION, DISCOVERY, INFEASIBLE trigger PM review
 
 ## Regression Guidance
-- Verify companion file gate in /pl-build references this tag format
+- Verify companion file gate in purlin:build references this tag format
 - Verify scan.py deviation scanner recognizes all tags defined here

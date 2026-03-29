@@ -2,7 +2,7 @@
 
 > Label: "Tool: Bootstrap Module"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/test_fixture_repo.md
+> Prerequisite: test_fixture_repo.md
 
 ## 1. Overview
 

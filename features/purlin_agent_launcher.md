@@ -2,11 +2,11 @@
 
 > Label: "Tool: Purlin Unified Agent Session Entry Point"
 > Category: "Framework Core"
-> Prerequisite: features/agent_launchers_common.md
+> Prerequisite: agent_launchers_common.md
 
 ## 1. Overview
 
-The Purlin unified agent replaces four separate role-specific agent sessions (PM, Engineer, QA, PM) with a single session that uses three operating modes (Engineer, PM, QA) activated by skill invocations. The session entry point (`purlin:start`) provides flags for model selection, mode entry, auto-start, and worktree isolation. Users start sessions by running `claude` (the Purlin plugin auto-activates), and the `purlin:start` skill handles session initialization. Old role-specific launchers have been retired.
+The Purlin unified agent replaces four separate role-specific agent sessions (PM, Engineer, QA, PM) with a single session that uses three operating modes (Engineer, PM, QA) activated by skill invocations. The session entry point (`purlin:resume`) provides flags for model selection, mode entry, auto-start, and worktree isolation. Users start sessions by running `claude` (the Purlin plugin auto-activates), and the `purlin:resume` skill handles session initialization. Old role-specific launchers have been retired.
 
 ---
 
@@ -14,9 +14,9 @@ The Purlin unified agent replaces four separate role-specific agent sessions (PM
 
 ### 2.1 Session Entry Point Structure
 
-- `purlin:start` MUST be available as a skill within the Purlin plugin, invoked inside Claude Code.
+- `purlin:resume` MUST be available as a skill within the Purlin plugin, invoked inside Claude Code.
 - Users start sessions by running `claude` from the project root; the plugin auto-activates.
-- The `purlin:start` skill MUST load `PURLIN_BASE.md` as the sole base instruction file. Optional override: `PURLIN_OVERRIDES.md` (if exists).
+- The `purlin:resume` skill MUST load `PURLIN_BASE.md` as the sole base instruction file. Optional override: `PURLIN_OVERRIDES.md` (if exists).
 - The session entry point MUST export `AGENT_ROLE="purlin"` before initialization.
 - The session entry point MUST resolve config via `resolve_config.py purlin` with fallback to `agents.builder` if `agents.purlin` is absent.
 - The session entry point MUST handle graceful shutdown with terminal identity cleanup (via plugin hooks).
@@ -56,14 +56,14 @@ Ephemeral flags affect only the current session and are never written to config.
 #### 2.2.3 Meta Flags
 
 - `--help` — Show help and exit.
-- `--no-save` — Suppresses persistence for all sticky flags in this invocation. The flag values still apply to the current session but are NOT written to `config.local.json`. Has no effect on ephemeral flags. Has no effect on first-run interactive selection (which always persists). Example: `purlin:start --no-save --model haiku` uses Haiku this session without changing the stored default.
+- `--no-save` — Suppresses persistence for all sticky flags in this invocation. The flag values still apply to the current session but are NOT written to `config.local.json`. Has no effect on ephemeral flags. Has no effect on first-run interactive selection (which always persists). Example: `purlin:resume --no-save --model haiku` uses Haiku this session without changing the stored default.
 
 #### 2.2.4 Help Text Layout
 
 The `--help` output MUST visually separate sticky and ephemeral flags so users understand persistence at a glance. Required layout:
 
 ```
-Usage: purlin:start [OPTIONS]
+Usage: purlin:resume [OPTIONS]
 
 Start a Purlin agent session.
 
@@ -77,7 +77,7 @@ Saved preferences (written to .purlin/config.local.json):
 
   Use --no-save to apply any of the above for THIS SESSION ONLY
   without changing your saved config.
-  Example: purlin:start --no-save --model haiku
+  Example: purlin:resume --no-save --model haiku
 
 Session options (this run only, never saved):
   --mode <mode>        Set starting mode (pm, engineer, qa).
@@ -94,13 +94,13 @@ Other:
   --help               Show this help message and exit.
 
 Examples:
-  purlin:start                              # Interactive session
-  purlin:start --build                      # Engineer mode, auto-start
-  purlin:start --model opus                 # Use Opus (saved for next time)
-  purlin:start --no-save --model haiku      # Use Haiku just this once
-  purlin:start --yolo                       # YOLO mode on (saved)
-  purlin:start --no-save --yolo             # YOLO just this session
-  purlin:start --verify my_feature          # QA verify a specific feature
+  purlin:resume                              # Interactive session
+  purlin:resume --build                      # Engineer mode, auto-start
+  purlin:resume --model opus                 # Use Opus (saved for next time)
+  purlin:resume --no-save --model haiku      # Use Haiku just this once
+  purlin:resume --yolo                       # YOLO mode on (saved)
+  purlin:resume --no-save --yolo             # YOLO just this session
+  purlin:resume --verify my_feature          # QA verify a specific feature
 ```
 
 Requirements:
@@ -118,34 +118,34 @@ Requirements:
 
 ### 2.4 Terminal Identity and Remote Control Name
 
-The `purlin:start` skill MUST set the iTerm badge, terminal title, and remote control session name during session initialization. These provide immediate visual context and enable remote session management.
+The `purlin:resume` skill MUST set the iTerm badge, terminal title, and remote control session name during session initialization. These provide immediate visual context and enable remote session management.
 
 #### 2.4.1 Initial Badge and Title
 
-The session entry point sets the badge and title using `set_agent_identity` from `tools/terminal/identity.sh`. The badge MUST include the current git branch to provide useful context immediately:
+The session entry point sets all terminal environments using `update_session_identity` from `tools/terminal/identity.sh`. The unified format MUST include the current git branch:
 
-- **Badge format:** `<mode> (<branch>)` — e.g., `Purlin (main)`, `Engineer (feature-xyz)`.
-- **Worktree override:** If running in a worktree (`.purlin_worktree_label` exists), the worktree label replaces the branch — e.g., `Engineer (W1)`.
-- **Title format:** `<project> - <badge>` — e.g., `purlin - Purlin (main)`.
+- **Unified format (badge, title, remote — all identical):** `<short_mode>(<context>) | <label>` — e.g., `Purlin(main) | purlin`, `Eng(feature-xyz) | purlin`.
+- **Worktree override:** If running in a worktree (`.purlin_worktree_label` exists), the worktree label replaces the branch — e.g., `Eng(W1) | purlin`.
+- **Mode shortening:** `Engineer` -> `Eng`; `PM`, `QA`, `Purlin` unchanged.
 
-The branch is detected via `git rev-parse --abbrev-ref HEAD`. This badge is the user's first visual signal that the agent is starting. `purlin:resume` Step 6 updates the mode name but preserves the branch context — e.g., `Purlin (main)` becomes `PM (main)`, not bare `PM`.
+The branch is detected via `git rev-parse --abbrev-ref HEAD`. This is the user's first visual signal that the agent is starting. `purlin:resume` Step 11 updates the mode name but preserves the branch context — e.g., `Purlin(main) | purlin` becomes `PM(main) | purlin`.
 
 #### 2.4.2 Remote Control Session Name
 
-The `purlin:start` skill MUST configure the session name via the `/rename` command or equivalent mechanism. This sets the session name visible in claude.ai/code and the mobile app.
+The `purlin:resume` skill MUST configure the session name via the `/rename` command or equivalent mechanism. This sets the session name visible in claude.ai/code and the mobile app.
 
 - **Format:** `<project> | <badge>` — e.g., `purlin | Purlin (main)`, `purlin | Engineer (W1)`.
 - The session name persists for the lifetime of the session, even if the badge changes later.
 
 #### 2.4.3 Session Overrides File
 
-The `purlin:start` skill MUST write `.purlin/cache/session_overrides.json` with the resolved `find_work` and `auto_start` values during session initialization. This file bridges ephemeral CLI flags (`--no-save --find-work false`, `--auto-start`) to the agent.
+The `purlin:resume` skill MUST write `.purlin/cache/session_overrides.json` with the resolved `find_work` and `auto_start` values during session initialization. This file bridges ephemeral CLI flags (`--no-save --find-work false`, `--auto-start`) to the agent.
 
 - **Written:** After sticky flag persistence and validation, before mode activation.
 - **Format:** `{"find_work": <bool>, "auto_start": <bool>}` — JSON with boolean values matching the resolved state.
-- **Read by:** `purlin:resume` Step 4 (takes priority over `config.local.json`).
+- **Read by:** `purlin:resume` Step 9 (takes priority over `config.local.json`).
 - **Lifetime:** Persists for the terminal session. The SessionEnd hook deletes it on session end. `purlin:resume` does NOT delete it (so it survives `/clear`).
-- **Absent:** When `purlin:resume` is invoked outside a `purlin:start` session (e.g., user types it manually), the file does not exist and the agent falls back to `config.local.json`.
+- **Absent:** When `purlin:resume` is invoked outside a launcher session (e.g., user types it manually after `/clear`), the file does not exist and the agent falls back to `config.local.json`.
 
 ### 2.5 Session Message Encoding
 
@@ -156,7 +156,7 @@ The `purlin:start` skill MUST write `.purlin/cache/session_overrides.json` with 
 
 ### [RETIRED] 2.6 Legacy Launcher Deprecation
 
-This section described the deprecation period for old role-specific shell launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). These launchers have been fully retired and replaced by the `purlin:start` skill. Users now start sessions with `claude` and the plugin auto-activates.
+This section described the deprecation period for old role-specific shell launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). These launchers have been fully retired and replaced by the `purlin:resume` skill. Users now start sessions with `claude` and the plugin auto-activates.
 
 ### 2.7 Config Schema
 
@@ -187,11 +187,11 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 
 ### Unit Tests
 
-#### Scenario: purlin:start skill is available
+#### Scenario: purlin:resume skill is available
 
     Given the Purlin plugin is installed
     When checking available skills
-    Then purlin:start is available
+    Then purlin:resume is available
     And can be invoked within a Claude Code session
 
 #### Scenario: Consumer project initialization
@@ -199,11 +199,11 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
     Given a consumer project using Purlin as a submodule
     When init.sh runs a full initialization
     Then the Purlin plugin is configured
-    And purlin:start is available via the plugin
+    And purlin:resume is available via the plugin
 
 #### Scenario: Help output separates sticky and ephemeral flags
 
-    Given purlin:start is available
+    Given purlin:resume is available
     When invoked with --help
     Then the output contains a "Saved preferences" section with --model, --effort, --yolo, --no-yolo, --find-work
     And the output contains a "Session options" section with --mode, --build, --auto-verify, --pm, --qa, --verify, --auto-start, --worktree
@@ -226,7 +226,7 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 
 #### Scenario: CLI model short name resolution and persistence
 
-    Given purlin:start is invoked with --model opus
+    Given purlin:resume is invoked with --model opus
     When the session entry point resolves the model name
     Then AGENT_MODEL is set to "claude-opus-4-6"
     And config.local.json contains agents.purlin.model = "claude-opus-4-6"
@@ -234,40 +234,40 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: --yolo sets bypass_permissions true in config
 
     Given config.local.json has agents.purlin.bypass_permissions = false
-    When purlin:start is invoked with --yolo
+    When purlin:resume is invoked with --yolo
     Then --dangerously-skip-permissions is passed to Claude
     And config.local.json contains agents.purlin.bypass_permissions = true (boolean, not string)
 
 #### Scenario: --no-yolo sets bypass_permissions false in config
 
     Given config.local.json has agents.purlin.bypass_permissions = true
-    When purlin:start is invoked with --no-yolo
+    When purlin:resume is invoked with --no-yolo
     Then --dangerously-skip-permissions is NOT passed to Claude
     And config.local.json contains agents.purlin.bypass_permissions = false (boolean, not string)
 
 #### Scenario: --no-save prevents sticky flag persistence
 
     Given config.local.json has agents.purlin.model = "claude-opus-4-6"
-    When purlin:start is invoked with --no-save --model haiku
+    When purlin:resume is invoked with --no-save --model haiku
     Then the session uses model "claude-haiku-4-5-20251001"
     And config.local.json still contains agents.purlin.model = "claude-opus-4-6"
 
 #### Scenario: --no-save with --yolo does not persist bypass_permissions
 
     Given config.local.json has agents.purlin.bypass_permissions = false
-    When purlin:start is invoked with --no-save --yolo
+    When purlin:resume is invoked with --no-save --yolo
     Then --dangerously-skip-permissions is passed to Claude for this session
     And config.local.json still contains agents.purlin.bypass_permissions = false
 
 #### Scenario: --find-work persists to config
 
-    Given purlin:start is invoked with --find-work false
+    Given purlin:resume is invoked with --find-work false
     When the session entry point processes arguments
     Then config.local.json contains agents.purlin.find_work = false (boolean)
 
 #### Scenario: Multiple sticky flags persist together
 
-    Given purlin:start is invoked with --model sonnet --effort medium --yolo
+    Given purlin:resume is invoked with --model sonnet --effort medium --yolo
     When the session entry point processes arguments
     Then config.local.json contains agents.purlin.model = "claude-sonnet-4-6"
     And config.local.json contains agents.purlin.effort = "medium"
@@ -276,14 +276,14 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: Explicit contradiction exits with error
 
     Given config.local.json has agents.purlin.find_work = true
-    When purlin:start is invoked with --find-work false --auto-start --mode engineer
+    When purlin:resume is invoked with --find-work false --auto-start --mode engineer
     Then the session entry point exits with error "Error: --find-work false conflicts with --auto-start. Cannot auto-start without work discovery."
     And config.local.json still contains agents.purlin.find_work = true (not modified)
 
 #### Scenario: Auto-verify implies find_work when saved config has it false
 
     Given config.local.json has agents.purlin.find_work = false
-    When purlin:start is invoked with --auto-verify
+    When purlin:resume is invoked with --auto-verify
     Then find_work is temporarily set to true for this session
     And config.local.json still contains agents.purlin.find_work = false (not modified)
     And the session launches successfully with find_work=true and auto_start=true
@@ -291,7 +291,7 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: --build implies find_work when saved config has it false
 
     Given config.local.json has agents.purlin.find_work = false
-    When purlin:start is invoked with --build
+    When purlin:resume is invoked with --build
     Then find_work is temporarily set to true for this session
     And config.local.json still contains agents.purlin.find_work = false (not modified)
     And the session launches successfully with find_work=true and auto_start=true
@@ -299,19 +299,19 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: Config-only find_work/auto_start conflict exits with error
 
     Given config.local.json has agents.purlin.find_work = false and agents.purlin.auto_start = true
-    When purlin:start is invoked with no CLI flags
+    When purlin:resume is invoked with no CLI flags
     Then the session entry point exits with error about find_work=false with auto_start=true being invalid
 
 #### Scenario: Interactive --find-work selecting false with --auto-verify exits with error
 
-    Given purlin:start is invoked with --find-work --auto-verify (bare --find-work triggers menu)
+    Given purlin:resume is invoked with --find-work --auto-verify (bare --find-work triggers menu)
     When the user selects false in the interactive find-work menu
     Then the session entry point exits with error "--find-work false conflicts with --auto-start"
     And the interactive selection is treated as an explicit user choice, not a config default
 
 #### Scenario: CLI --build alias
 
-    Given purlin:start is invoked with --build
+    Given purlin:resume is invoked with --build
     When the session entry point parses arguments
     Then mode is "engineer"
     And auto_start is true
@@ -319,7 +319,7 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 
 #### Scenario: Session message for QA verify with feature
 
-    Given purlin:start is invoked with --verify notifications
+    Given purlin:resume is invoked with --verify notifications
     When the session entry point constructs the session message
     Then the message contains "Enter QA mode"
     And the message contains "Run purlin:verify notifications"
@@ -329,7 +329,7 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: First-run interactive model selection @manual
 
     Given no agents.purlin in config.local.json
-    When purlin:start is invoked without --model
+    When purlin:resume is invoked without --model
     Then the session entry point prompts for model selection
     And the session entry point prompts for effort selection
     And the selection is stored in config.local.json
@@ -337,20 +337,20 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 #### Scenario: Instruction stack assembly @auto
 
     Given PURLIN_BASE.md exists in instructions/
-    When purlin:start initializes the session
+    When purlin:resume initializes the session
     Then the system prompt contains PURLIN_BASE.md content
     And the system prompt contains PURLIN_OVERRIDES.md content if file exists
 
 #### Scenario: Help output includes yolo and no-save flags @auto
 
-    Given purlin:start is available
+    Given purlin:resume is available
     When invoked with --help
     Then the output contains "--yolo" and "--no-yolo" in the "Saved preferences" section
     And the output contains "--no-save" in the "Other" section
     And the output contains at least one --no-save example
 
 ## Regression Guidance
-- Verify purlin:start handles missing PURLIN_BASE.md gracefully (during partial setup)
+- Verify purlin:resume handles missing PURLIN_BASE.md gracefully (during partial setup)
 - Verify config.local.json is not corrupted by concurrent model selection writes
 - Verify --worktree flag creates worktree directory under .purlin/worktrees/
 - Verify sticky flag persistence uses correct JSON types (booleans for bypass_permissions/find_work, not strings)

@@ -2,7 +2,7 @@
 
 > Label: "Tool: Python Environment"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/project_init.md
+> Prerequisite: project_init.md
 
 ## 1. Overview
 

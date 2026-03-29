@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Engineer: purlin:tombstone Feature Retirement"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: features/purlin_mode_system.md
+> Prerequisite: purlin_mode_system.md
 
 [TODO]
 
@@ -28,13 +28,13 @@ Engineer mode's feature retirement skill that creates tombstone files before del
 
 - Tombstone MUST be created BEFORE the feature file is moved.
 - Canonical format includes: retired date, reason, files to delete, dependencies to check, and context.
-- Tombstone created at `features/tombstones/<name>.md`.
+- Tombstone created at `features/_tombstones/<name>.md`.
 
 ### 2.4 Companion and Discovery Artifact Handling
 
-- When creating a tombstone, move ALL associated artifacts to `features/tombstones/` alongside the spec:
-  - `features/<name>.impl.md` → `features/tombstones/<name>.impl.md`
-  - `features/<name>.discoveries.md` → `features/tombstones/<name>.discoveries.md`
+- When creating a tombstone, move ALL associated artifacts to `features/_tombstones/` alongside the spec:
+  - `features/<name>.impl.md` → `features/_tombstones/<name>.impl.md`
+  - `features/<name>.discoveries.md` → `features/_tombstones/<name>.discoveries.md`
 - These are moved (not deleted) so the tombstone processor has full context about implementation history and known issues.
 
 ### 2.5 Test Artifact Discovery
@@ -45,11 +45,11 @@ Engineer mode's feature retirement skill that creates tombstone files before del
   - `tests/qa/scenarios/<name>.json` (if it exists) — QA regression scenario
   - `tests/qa/test_<name>_regression.sh` (if it exists) — QA regression runner
 - These are listed in the tombstone for the Engineer to delete when processing. They are NOT auto-deleted at tombstone creation time.
-- **Tombstone processing** (by Engineer via `purlin:build`): Read the tombstone, delete all listed files and companion artifacts in `features/tombstones/`, then delete the tombstone file itself. Commit as a single cleanup commit.
+- **Tombstone processing** (by Engineer via `purlin:build`): Read the tombstone, delete all listed files and companion artifacts in `features/_tombstones/`, then delete the tombstone file itself. Commit as a single cleanup commit.
 
 ### 2.6 Feature File Handling
 
-- Move `features/<name>.md` to `features/tombstones/<name>.md` after tombstone content is written.
+- Move `features/<name>.md` to `features/_tombstones/<name>.md` after tombstone content is written.
 - Commit all moves together with the tombstone file.
 - Run `scan.sh` to refresh project state.
 
@@ -57,7 +57,7 @@ Engineer mode's feature retirement skill that creates tombstone files before del
 
 - Features specced but never implemented (no code exists): delete directly, no tombstone needed. Still move companions/discoveries if they exist.
 - Tombstone files are transient — they exist only until the Engineer processes them.
-- When processing a tombstone (deleting the listed files), the Engineer MUST also delete the tombstone file itself and any companion artifacts in `features/tombstones/`.
+- When processing a tombstone (deleting the listed files), the Engineer MUST also delete the tombstone file itself and any companion artifacts in `features/_tombstones/`.
 
 ---
 
@@ -75,15 +75,15 @@ Engineer mode's feature retirement skill that creates tombstone files before del
 
     Given the user confirms retirement of feature_a
     When the tombstone workflow executes
-    Then features/tombstones/feature_a.md is created with tombstone content
-    And features/feature_a.md is moved to features/tombstones/
+    Then features/_tombstones/feature_a.md is created with tombstone content
+    And features/feature_a.md is moved to features/_tombstones/
 
 #### Scenario: Companion files moved to tombstones
 
     Given feature_a has features/feature_a.impl.md and features/feature_a.discoveries.md
     When purlin:tombstone is invoked for feature_a
-    Then features/tombstones/feature_a.impl.md exists
-    And features/tombstones/feature_a.discoveries.md exists
+    Then features/_tombstones/feature_a.impl.md exists
+    And features/_tombstones/feature_a.discoveries.md exists
     And features/feature_a.impl.md does not exist
     And features/feature_a.discoveries.md does not exist
 
@@ -104,13 +104,13 @@ Engineer mode's feature retirement skill that creates tombstone files before del
 
 #### Scenario: Tombstone processing cleans up all artifacts
 
-    Given features/tombstones/feature_a.md lists tests/feature_a/ and src/feature_a.py
+    Given features/_tombstones/feature_a.md lists tests/feature_a/ and src/feature_a.py
     When the Engineer processes the tombstone
     Then tests/feature_a/ is deleted
     And src/feature_a.py is deleted
-    And features/tombstones/feature_a.md is deleted
-    And features/tombstones/feature_a.impl.md is deleted (if present)
-    And features/tombstones/feature_a.discoveries.md is deleted (if present)
+    And features/_tombstones/feature_a.md is deleted
+    And features/_tombstones/feature_a.impl.md is deleted (if present)
+    And features/_tombstones/feature_a.discoveries.md is deleted (if present)
 
 ### QA Scenarios
 
