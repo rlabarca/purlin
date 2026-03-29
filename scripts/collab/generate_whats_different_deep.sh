@@ -42,7 +42,12 @@ except Exception:
 ")
 
 EXTRACT_TOOL="${PROJECT_ROOT}/${TOOLS_ROOT}/collab/extract_whats_different.py"
-DIGEST_DIR="${PROJECT_ROOT}/features/digests"
+# Support both _digests (new) and digests (legacy) paths.
+if [[ -d "${PROJECT_ROOT}/features/_digests" ]]; then
+    DIGEST_DIR="${PROJECT_ROOT}/features/_digests"
+else
+    DIGEST_DIR="${PROJECT_ROOT}/features/digests"
+fi
 ANALYSIS_FILE="${DIGEST_DIR}/whats-different-analysis.md"
 
 # Ensure output directory exists

@@ -4,6 +4,7 @@
 .purlin/config.local.json
 
 # Generated feature digests
+features/_digests/
 features/digests/
 
 # Logs & process files

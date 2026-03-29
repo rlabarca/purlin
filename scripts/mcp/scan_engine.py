@@ -42,6 +42,46 @@ CACHE_FILE = os.path.join(CACHE_DIR, "scan.json")
 DELIVERY_PLAN = os.path.join(PROJECT_ROOT, ".purlin", "delivery_plan.md")
 DEP_GRAPH_FILE = os.path.join(CACHE_DIR, "dependency_graph.json")
 
+# System folders use _ prefix and are excluded from category-based scanning.
+_SYSTEM_FOLDER_PREFIX = "_"
+
+# Canonical category-to-folder slug mapping.
+CATEGORY_SLUGS = {
+    "Agent Skills: Common": "skills_common",
+    "Agent Skills: Engineer": "skills_engineer",
+    "Agent Skills: PM": "skills_pm",
+    "Agent Skills: QA": "skills_qa",
+    "Common Design Standards": "design_standards",
+    "Framework Core": "framework_core",
+    "Infrastructure": "infrastructure",
+    "Install, Update & Scripts": "install_update",
+    "Policy": "policy",
+    "Shared Agent Definitions": "shared_definitions",
+    "Test Infrastructure": "test_infrastructure",
+}
+
+
+def _iter_feature_files(features_dir, suffix=".md"):
+    """Yield (filename, filepath) for feature files across category subfolders.
+
+    Walks the features directory recursively, entering category subfolders
+    but skipping _-prefixed system folders (_tombstones, _digests, _design,
+    _invariants). Also scans the features root for backward compatibility
+    with flat layouts.
+    """
+    if not os.path.isdir(features_dir):
+        return
+    for dirpath, dirnames, filenames in os.walk(features_dir):
+        # Skip system folders (underscore-prefixed).
+        dirnames[:] = [
+            d for d in dirnames
+            if not d.startswith(_SYSTEM_FOLDER_PREFIX)
+        ]
+        for filename in sorted(filenames):
+            if not filename.endswith(suffix):
+                continue
+            yield filename, os.path.join(dirpath, filename)
+
 # Max age of cache in seconds before a rescan is required.
 CACHE_MAX_AGE = 60
 
@@ -464,22 +504,19 @@ def _check_sections(feature_file):
 
 
 def scan_features():
-    """Scan features/*.md for metadata. Returns list of feature dicts."""
+    """Scan features/**/*.md for metadata. Returns list of feature dicts.
+
+    Walks category subfolders recursively, skipping _-prefixed system folders.
+    """
     features = []
     if not os.path.isdir(FEATURES_DIR):
         return features
 
-    for filename in sorted(os.listdir(FEATURES_DIR)):
-        if not filename.endswith(".md"):
-            continue
-        # Skip companion, discovery, and tombstone files.
+    for filename, filepath in _iter_feature_files(FEATURES_DIR):
+        # Skip companion and discovery files.
         if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
             continue
-        filepath = os.path.join(FEATURES_DIR, filename)
         if not os.path.isfile(filepath):
-            continue
-        # Skip tombstones directory entries if any file somehow matches.
-        if "tombstones" in filepath:
             continue
 
         stem = filename[:-3]  # remove .md
@@ -530,9 +567,11 @@ def scan_features():
 
         features.append(feature_entry)
 
-    # Append tombstone entries.
-    tombstones_dir = os.path.join(FEATURES_DIR, "tombstones")
-    if os.path.isdir(tombstones_dir):
+    # Append tombstone entries (both legacy and _-prefixed paths).
+    for tname in ("_tombstones", "tombstones"):
+        tombstones_dir = os.path.join(FEATURES_DIR, tname)
+        if not os.path.isdir(tombstones_dir):
+            continue
         for filename in sorted(os.listdir(tombstones_dir)):
             if not filename.endswith(".md"):
                 continue
@@ -582,7 +621,7 @@ _ACTION_RE = re.compile(r'^\s*-\s*\*\*Action Required:\*\*\s*(.+)', re.IGNORECAS
 
 
 def scan_discoveries():
-    """Scan features/*.discoveries.md for open entries.
+    """Scan features/**/*.discoveries.md for open entries.
 
     Returns a list of discovery dicts with type, status, feature, and action.
     """
@@ -590,10 +629,8 @@ def scan_discoveries():
     if not os.path.isdir(FEATURES_DIR):
         return discoveries
 
-    for filename in sorted(os.listdir(FEATURES_DIR)):
-        if not filename.endswith(".discoveries.md"):
-            continue
-        filepath = os.path.join(FEATURES_DIR, filename)
+    for filename, filepath in _iter_feature_files(
+            FEATURES_DIR, suffix=".discoveries.md"):
         feature_stem = filename.replace(".discoveries.md", "")
 
         try:
@@ -655,7 +692,7 @@ _PM_PENDING_RE = re.compile(r'PM\s+status:\s*PENDING', re.IGNORECASE)
 
 
 def scan_unacknowledged_deviations():
-    """Scan features/*.impl.md for unacknowledged deviations.
+    """Scan features/**/*.impl.md for unacknowledged deviations.
 
     Returns a list of dicts with feature, file, tag, and line content.
     """
@@ -663,10 +700,8 @@ def scan_unacknowledged_deviations():
     if not os.path.isdir(FEATURES_DIR):
         return deviations
 
-    for filename in sorted(os.listdir(FEATURES_DIR)):
-        if not filename.endswith(".impl.md"):
-            continue
-        filepath = os.path.join(FEATURES_DIR, filename)
+    for filename, filepath in _iter_feature_files(
+            FEATURES_DIR, suffix=".impl.md"):
         feature_stem = filename.replace(".impl.md", "")
 
         try:
@@ -716,23 +751,23 @@ def scan_companion_debt():
         return debt
 
     # Build set of feature stems that have companion files and their mtimes.
+    # Walk subfolders to find .impl.md files in category directories.
     companion_mtimes = {}
-    for filename in os.listdir(FEATURES_DIR):
-        if filename.endswith(".impl.md"):
-            stem = filename.replace(".impl.md", "")
-            filepath = os.path.join(FEATURES_DIR, filename)
-            try:
-                companion_mtimes[stem] = os.path.getmtime(filepath)
-            except OSError:
-                continue
+    companion_paths = {}
+    for filename, filepath in _iter_feature_files(
+            FEATURES_DIR, suffix=".impl.md"):
+        stem = filename.replace(".impl.md", "")
+        try:
+            companion_mtimes[stem] = os.path.getmtime(filepath)
+            companion_paths[stem] = filepath
+        except OSError:
+            continue
 
     # For each feature spec, check if there are code commits more recent
     # than the companion file.  We use the tests/<stem>/ directory and
     # the companion file's Tool Location / Source Mapping as proxies for
     # "code files that belong to this feature."
-    for filename in sorted(os.listdir(FEATURES_DIR)):
-        if not filename.endswith(".md"):
-            continue
+    for filename, filepath in _iter_feature_files(FEATURES_DIR):
         if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
             continue
         stem = filename[:-3]
@@ -763,9 +798,11 @@ def scan_companion_debt():
 
         if companion_mtime is None:
             # No companion file at all — companion debt (missing).
+            # Suggest companion path alongside the feature spec.
+            spec_dir = os.path.dirname(filepath)
             debt.append({
                 "feature": stem,
-                "file": f"features/{stem}.impl.md",
+                "file": _relpath(os.path.join(spec_dir, f"{stem}.impl.md")),
                 "debt_type": "missing",
                 "latest_code_commit": datetime.fromtimestamp(
                     latest_code_ts, tz=timezone.utc
@@ -775,7 +812,7 @@ def scan_companion_debt():
             # Companion exists but is older than latest code commit — stale.
             debt.append({
                 "feature": stem,
-                "file": _relpath(os.path.join(FEATURES_DIR, f"{stem}.impl.md")),
+                "file": _relpath(companion_paths[stem]),
                 "debt_type": "stale",
                 "latest_code_commit": datetime.fromtimestamp(
                     latest_code_ts, tz=timezone.utc
@@ -991,41 +1028,52 @@ def scan_invariant_integrity():
                 if m:
                     recent_sync_files.add(m.group(1))
 
-    for filename in sorted(os.listdir(FEATURES_DIR)):
-        if not filename.endswith(".md"):
-            continue
-        if not is_invariant_node(filename):
-            continue
-        filepath = os.path.join(FEATURES_DIR, filename)
-        if not os.path.isfile(filepath):
-            continue
+    # Scan both _invariants/ subfolder and features root (backward compat).
+    inv_dirs = [FEATURES_DIR]
+    inv_subdir = os.path.join(FEATURES_DIR, "_invariants")
+    if os.path.isdir(inv_subdir):
+        inv_dirs.insert(0, inv_subdir)
+    seen_invariants = set()
+    for inv_dir in inv_dirs:
+        for filename in sorted(os.listdir(inv_dir)):
+            if not filename.endswith(".md"):
+                continue
+            if not is_invariant_node(filename):
+                continue
+            if filename in seen_invariants:
+                continue
+            seen_invariants.add(filename)
+            filepath = os.path.join(inv_dir, filename)
+            if not os.path.isfile(filepath):
+                continue
 
-        relpath = _relpath(filepath)
-        content_hash = compute_content_hash(filepath)
-        metadata = _extract_inv_metadata(filepath)
+            relpath = _relpath(filepath)
+            content_hash = compute_content_hash(filepath)
+            metadata = _extract_inv_metadata(filepath)
 
-        # Tamper detection.
-        prev_hash = prev_hashes.get(relpath, "")
-        tampered = False
-        if prev_hash and content_hash and prev_hash != content_hash:
-            # Hash changed — check if there's a recent sync commit for this file.
-            if relpath not in recent_sync_files:
-                tampered = True
+            # Tamper detection.
+            prev_hash = prev_hashes.get(relpath, "")
+            tampered = False
+            if prev_hash and content_hash and prev_hash != content_hash:
+                # Hash changed — check if there's a recent sync commit for
+                # this file.
+                if relpath not in recent_sync_files:
+                    tampered = True
 
-        # Validation issues.
-        issues = validate_invariant(filepath)
+            # Validation issues.
+            issues = validate_invariant(filepath)
 
-        invariants.append({
-            "file": relpath,
-            "name": filename[:-3],  # strip .md
-            "version": metadata.get("Version", ""),
-            "scope": metadata.get("Scope", ""),
-            "source": metadata.get("Source", ""),
-            "format_version": metadata.get("Format-Version", ""),
-            "content_hash": content_hash or "",
-            "tampered": tampered,
-            "validation_issues": issues,
-        })
+            invariants.append({
+                "file": relpath,
+                "name": filename[:-3],  # strip .md
+                "version": metadata.get("Version", ""),
+                "scope": metadata.get("Scope", ""),
+                "source": metadata.get("Source", ""),
+                "format_version": metadata.get("Format-Version", ""),
+                "content_hash": content_hash or "",
+                "tampered": tampered,
+                "validation_issues": issues,
+            })
 
     return invariants
 

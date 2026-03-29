@@ -45,8 +45,9 @@ README_FILE = os.path.join(PROJECT_ROOT, "README.md")
 def parse_features(features_dir):
     """Parse all feature .md files in a directory, extracting metadata.
 
-    Skips companion files (*.impl.md) -- only primary feature specs are
-    included as graph nodes.
+    Walks category subfolders recursively, skipping _-prefixed system
+    folders.  Skips companion files (*.impl.md) -- only primary feature
+    specs are included as graph nodes.
 
     Returns a dict keyed by node_id with feature metadata.
     """
@@ -60,62 +61,74 @@ def parse_features(features_dir):
     if not os.path.exists(features_dir):
         return features
 
-    for filename in os.listdir(features_dir):
-        if not filename.endswith(".md"):
-            continue
-        # Skip companion/implementation notes files and discovery sidecars
-        if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
-            continue
+    # Walk category subfolders, skipping _-prefixed system folders
+    # (except _invariants which contains graph-participating nodes).
+    for dirpath, dirnames, filenames in os.walk(features_dir):
+        dirnames[:] = [
+            d for d in dirnames
+            if not d.startswith("_") or d == "_invariants"
+        ]
+        for filename in sorted(filenames):
+            if not filename.endswith(".md"):
+                continue
+            # Skip companion/implementation notes files and discovery sidecars
+            if filename.endswith(".impl.md") or filename.endswith(
+                    ".discoveries.md"):
+                continue
 
-        filepath = os.path.join(features_dir, filename)
-        node_id = filename.replace(".md", "").replace(".", "_")
+            filepath = os.path.join(dirpath, filename)
+            node_id = filename.replace(".md", "").replace(".", "_")
 
-        feature_data = {
-            "id": node_id,
-            "filename": filename,
-            "label": filename,
-            "category": "Uncategorized",
-            "prerequisites": [],
-        }
+            feature_data = {
+                "id": node_id,
+                "filename": filename,
+                "filepath": filepath,
+                "label": filename,
+                "category": "Uncategorized",
+                "prerequisites": [],
+            }
 
-        # Detect invariant using validated prefix check.
-        is_invariant = is_invariant_node(filename)
-        if is_invariant:
-            feature_data["invariant"] = True
+            # Detect invariant using validated prefix check.
+            is_invariant = is_invariant_node(filename)
+            if is_invariant:
+                feature_data["invariant"] = True
 
-        with open(filepath, 'r', encoding='utf-8') as f:
-            for line in f:
-                label_match = label_pattern.match(line)
-                if label_match:
-                    feature_data["label"] = label_match.group(1)
+            with open(filepath, 'r', encoding='utf-8') as f:
+                for line in f:
+                    label_match = label_pattern.match(line)
+                    if label_match:
+                        feature_data["label"] = label_match.group(1)
 
-                cat_match = category_pattern.match(line)
-                if cat_match:
-                    feature_data["category"] = cat_match.group(1)
+                    cat_match = category_pattern.match(line)
+                    if cat_match:
+                        feature_data["category"] = cat_match.group(1)
 
-                prereq_match = prereq_pattern.match(line)
-                if prereq_match:
-                    prereq_str = prereq_match.group(1)
-                    prereq_files = [p.strip() for p in prereq_str.split(',')]
-                    for prereq_file in prereq_files:
-                        # Extract the filename from potential paths
-                        prereq_filename = os.path.basename(prereq_file)
-                        if prereq_filename.endswith(".md"):
-                            prereq_id = prereq_filename.replace(
-                                ".md", "").replace(".", "_")
-                            feature_data["prerequisites"].append(prereq_id)
+                    prereq_match = prereq_pattern.match(line)
+                    if prereq_match:
+                        prereq_str = prereq_match.group(1)
+                        prereq_files = [
+                            p.strip() for p in prereq_str.split(',')]
+                        for prereq_file in prereq_files:
+                            # Extract the filename from potential paths
+                            prereq_filename = os.path.basename(prereq_file)
+                            if prereq_filename.endswith(".md"):
+                                prereq_id = prereq_filename.replace(
+                                    ".md", "").replace(".", "_")
+                                feature_data["prerequisites"].append(
+                                    prereq_id)
 
-                scope_match = scope_pattern.match(line)
-                if scope_match:
-                    feature_data["scope"] = scope_match.group(1).strip().strip('"')
+                    scope_match = scope_pattern.match(line)
+                    if scope_match:
+                        feature_data["scope"] = (
+                            scope_match.group(1).strip().strip('"'))
 
-                inv_match = invariant_pattern.match(line)
-                if inv_match:
-                    val = inv_match.group(1).strip().strip('"').lower()
-                    if val == "true":
-                        feature_data["invariant"] = True
+                    inv_match = invariant_pattern.match(line)
+                    if inv_match:
+                        val = inv_match.group(1).strip().strip('"').lower()
+                        if val == "true":
+                            feature_data["invariant"] = True
 
-        features[node_id] = feature_data
+            features[node_id] = feature_data
     return features
 
 
@@ -171,7 +184,7 @@ def build_features_json(features, features_dir):
         ])
         entry = {
             "file": os.path.relpath(
-                os.path.join(features_dir, data["filename"]),
+                data.get("filepath", os.path.join(features_dir, data["filename"])),
                 PROJECT_ROOT
             ),
             "label": data["label"],

@@ -67,7 +67,7 @@ git config user.name "Purlin Fixture Engineer"
 
 # Create directory structure
 mkdir -p .purlin/runtime .purlin/cache
-mkdir -p features/tombstones
+mkdir -p features/_tombstones
 mkdir -p tests/api_endpoints tests/search tests/data_model tests/billing tests/reporting
 mkdir -p src/utils
 
@@ -164,7 +164,7 @@ This project uses the Purlin plugin for spec-driven development.
 
 ## Context Recovery
 
-If context is cleared, run `purlin:start` to restore session context.
+If context is cleared, run `purlin:resume` to restore session context.
 
 ## Project Overrides
 
@@ -1019,8 +1019,8 @@ for all code changes in the project.
 5. Auto-generated code MUST still go through review.
 ANCHOR
 
-# --- features/tombstones/legacy_auth.md --- (retired feature)
-cat > features/tombstones/legacy_auth.md <<'TOMBSTONE'
+# --- features/_tombstones/legacy_auth.md --- (retired feature)
+cat > features/_tombstones/legacy_auth.md <<'TOMBSTONE'
 # Feature: Legacy Authentication (RETIRED)
 
 > Label: "Legacy Auth"
@@ -1095,4 +1095,4 @@ echo ""
 echo "To use this fixture:"
 echo "  cd $OUTPUT_DIR"
 echo "  claude --plugin-dir $PROJECT_ROOT"
-echo "  # then run: purlin:start"
+echo "  # then run: purlin:resume"

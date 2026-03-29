@@ -113,7 +113,7 @@ def categorize_file(path):
         basename = os.path.basename(path)
         if basename.endswith('.impl.md') or basename.endswith('.discoveries.md'):
             return 'companion'
-        if path.startswith('features/design/'):
+        if path.startswith('features/design/') or path.startswith('features/_design/'):
             return 'visual_spec'
         # Invariant files (i_* prefix).
         if basename.startswith('i_'):
@@ -461,8 +461,16 @@ def _check_companion_staleness(inferred_features, changed_companions):
     staleness = []
     features_dir = os.path.join(PROJECT_ROOT, 'features')
     for stem, info in inferred_features.items():
-        companion_path = os.path.join(features_dir, f'{stem}.impl.md')
-        if not os.path.isfile(companion_path):
+        # Search for companion file in category subfolders.
+        companion_path = None
+        for dp, _, fns in os.walk(features_dir):
+            if os.path.basename(dp).startswith('_'):
+                continue
+            candidate = os.path.join(dp, f'{stem}.impl.md')
+            if os.path.isfile(candidate):
+                companion_path = candidate
+                break
+        if companion_path is None:
             continue
         if stem in updated_companions:
             continue

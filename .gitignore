@@ -26,6 +26,7 @@ tests/.purlin/
 .claude-plugin-data/
 
 # Generated digests (per-machine, not committed)
+features/_digests/
 features/digests/
 
 # Purlin Tool Logs & Artifacts
@@ -46,6 +47,11 @@ features/digests/
 
 # Transient planning artifacts
 PURLIN_AGENT_PLAN.md
+
+# Credential files (must never be committed)
+credentials.json
+*.credentials
+*.secret
 
 # Temp
 tmp/

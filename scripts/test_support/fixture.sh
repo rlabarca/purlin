@@ -539,8 +539,17 @@ cmd_prune() {
         local feature_name
         feature_name="$(echo "$tag" | cut -d'/' -f2)"
 
-        if [[ ! -f "$project_root/features/${feature_name}.md" ]] || \
-           [[ -f "$project_root/features/tombstones/${feature_name}.md" ]]; then
+        # Search category subfolders for the feature file.
+        local found_feature=""
+        found_feature="$(find "$project_root/features" -name "${feature_name}.md" \
+            -not -name "*.impl.md" -not -name "*.discoveries.md" \
+            -not -path "*/tombstones/*" -not -path "*/_tombstones/*" \
+            -not -path "*/_digests/*" -not -path "*/_design/*" \
+            -print -quit 2>/dev/null)"
+        local is_tombstoned=""
+        is_tombstoned="$(find "$project_root/features/_tombstones" "$project_root/features/tombstones" \
+            -name "${feature_name}.md" -print -quit 2>/dev/null)"
+        if [[ -z "$found_feature" ]] || [[ -n "$is_tombstoned" ]]; then
             orphans+=("$tag")
         fi
     done <<< "$tags"

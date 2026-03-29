@@ -273,8 +273,13 @@ def construct_system_prompt(fixture_dir, role):
     Caller must delete the temp file after use.
     """
     if role == 'PURLIN':
+        # Plugin model: agent definition is at agents/purlin.md
+        # Legacy/fixture model: instructions/PURLIN_BASE.md
+        agent_def = os.path.join(fixture_dir, 'agents', 'purlin.md')
+        legacy_base = os.path.join(fixture_dir, 'instructions', 'PURLIN_BASE.md')
+        base_path = agent_def if os.path.exists(agent_def) else legacy_base
         layers = [
-            os.path.join(fixture_dir, 'instructions', 'PURLIN_BASE.md'),
+            base_path,
             os.path.join(fixture_dir, '.purlin', 'PURLIN_OVERRIDES.md'),
         ]
     else:
@@ -330,30 +335,32 @@ def scan_fixture_features(fixture_dir):
 
     result = {'todo': [], 'testing': [], 'complete': []}
 
-    for fname in sorted(os.listdir(features_dir)):
-        if not fname.endswith('.md'):
-            continue
-        if fname.endswith(('.impl.md', '.discoveries.md')):
-            continue
-        if fname.startswith(('arch_', 'design_', 'policy_', 'ops_', 'prodbrief_', 'i_')):
-            continue
+    for dirpath, dirnames, filenames in os.walk(features_dir):
+        dirnames[:] = [d for d in dirnames if not d.startswith('_')]
+        for fname in sorted(filenames):
+            if not fname.endswith('.md'):
+                continue
+            if fname.endswith(('.impl.md', '.discoveries.md')):
+                continue
+            if fname.startswith(('arch_', 'design_', 'policy_', 'ops_', 'prodbrief_', 'i_')):
+                continue
 
-        fpath = os.path.join(features_dir, fname)
-        try:
-            with open(fpath) as f:
-                content = f.read(2000)
-        except (IOError, OSError):
-            continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath) as f:
+                    content = f.read(2000)
+            except (IOError, OSError):
+                continue
 
-        label_match = re.search(r'> Label:\s*"([^"]+)"', content)
-        label = label_match.group(1) if label_match else fname[:-3]
+            label_match = re.search(r'> Label:\s*"([^"]+)"', content)
+            label = label_match.group(1) if label_match else fname[:-3]
 
-        if '[TODO]' in content:
-            result['todo'].append(label)
-        elif '[TESTING]' in content:
-            result['testing'].append(label)
-        elif '[COMPLETE]' in content:
-            result['complete'].append(label)
+            if '[TODO]' in content:
+                result['todo'].append(label)
+            elif '[TESTING]' in content:
+                result['testing'].append(label)
+            elif '[COMPLETE]' in content:
+                result['complete'].append(label)
 
     return result
 
