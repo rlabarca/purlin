@@ -35,17 +35,21 @@ npm install -g @anthropic-ai/claude-code
 
 Already have Claude Code? Run `claude update` to make sure you're on the latest version.
 
-Then create your project. Copy and paste this block into your terminal:
+Then create your project and initialize Purlin:
 
 ```bash
 mkdir my-app && cd my-app
 git init
-git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
-./purlin/pl-init.sh
-git add -A && git commit -m "init purlin"
+claude
 ```
 
-The init script checks for missing tools and tells you how to install them. It creates `features/`, `.purlin/` (config and overrides), and slash commands (`.claude/commands/`).
+Inside the Claude Code session, run:
+
+```
+purlin:init
+```
+
+This creates `features/`, `.purlin/` (config and overrides), and registers the plugin skills.
 
 Start the agent by launching Claude Code and running `purlin:start`:
 
@@ -74,7 +78,7 @@ When a team member clones your repository, a single command handles everything:
 ```bash
 git clone <repo-url>
 cd <project-name>
-./pl-init.sh
+.purlin:init
 ```
 
 This initializes the submodule if needed, then refreshes commands and config without touching project-specific overrides.
@@ -84,16 +88,16 @@ This initializes the submodule if needed, then refreshes commands and config wit
 From inside an agent session, run:
 
 ```
-/pl-update-purlin
+purlin:update
 ```
 
-This fetches the latest release tag, advances the submodule, refreshes commands and config, and resolves any conflicts with your customizations. Use `--dry-run` to preview changes first, or pass a specific version like `/pl-update-purlin v0.8.6`. See the [Installation Guide](docs/installation-guide.md) for manual update steps.
+This fetches the latest release tag, advances the submodule, refreshes commands and config, and resolves any conflicts with your customizations. Use `--dry-run` to preview changes first, or pass a specific version like `purlin:update v0.8.6`. See the [Installation Guide](docs/installation-guide.md) for manual update steps.
 
 #### Upgrading from v0.8.4 or earlier
 
 v0.8.4 and earlier used separate agents per role (`pl-run-architect.sh`, `pl-run-builder.sh`, etc.). These were replaced by the `purlin:start` skill that runs inside an active Claude Code session.
 
-To upgrade, run `/pl-update-purlin` from any agent session. The migration module handles config consolidation, role renames (Architect to PM, Builder to Engineer), and cleanup of old launcher scripts.
+To upgrade, run `purlin:update` from any agent session. The migration module handles config consolidation, role renames (Architect to PM, Builder to Engineer), and cleanup of old launcher scripts.
 
 ### Configuration
 
@@ -132,15 +136,13 @@ One agent, three modes. Each mode can read everything but only writes to its own
 *   **Engineer mode** — Reads specs, writes code and tests, records implementation decisions. [Engineer Mode Guide](docs/engineer-agent-guide.md)
 *   **QA mode** — Verifies features against specs, records findings, builds regression suites. [QA Mode Guide](docs/qa-agent-guide.md)
 
-For the full command reference, run `/pl-help` inside a session.
+For the full command reference, run `purlin:help` inside a session.
 
 ---
 
 ## Directory Structure
 
-Created by `pl-init.sh` in your project root:
+Created by `purlin:init` in your project root:
 
-*   `purlin/` — The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` — Your project-specific overrides and config.
 *   `features/` — Your feature specifications.
-*   `pl-init.sh` — Collaborator setup shim. Commit this.

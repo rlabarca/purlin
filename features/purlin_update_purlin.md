@@ -1,0 +1,754 @@
+# Feature: Intelligent Purlin Update Agent Skill
+
+> Label: "Agent Skills: Common: purlin:update Intelligent Purlin Update"
+> Category: "Agent Skills: Common"
+> Prerequisite: features/project_init.md
+> Prerequisite: features/config_layering.md
+> Prerequisite: features/init_preflight_checks.md
+> Prerequisite: features/purlin_migration.md
+> Test Fixtures: git@github.com:rlabarca/purlin-fixtures.git
+
+[TODO]
+
+## 1. Overview
+
+The `purlin:update` agent skill updates the Purlin submodule in consumer projects.
+It fetches the latest upstream, advances the submodule to the latest release tag (or an
+explicitly specified version), runs `init.sh --quiet` to refresh all project-root artifacts,
+syncs config, and handles conflicts only when they exist.
+
+Design principle: **fast path first**. The common case (no conflicts, no local modifications)
+should complete in seconds with minimal agent reasoning. Heavy analysis (three-way diffs,
+merge strategies) only activates when locally modified files conflict with upstream changes.
+
+---
+
+## 2. Requirements
+
+### 2.1 Command Interface
+
+```
+purlin:update [<version>] [--dry-run] [--auto-approve]
+```
+
+- **\<version\>** (optional): A specific tag (e.g., `v0.8.5`) or branch (e.g., `origin/feature-xyz`) to update to. If omitted, the skill targets the **latest release tag reachable from `origin/main`** — not the latest commit. This ensures consumer projects only pull tagged releases by default, never unreleased work-in-progress commits.
+- **--dry-run** (optional): Show what would be updated without making changes
+- **--auto-approve** (optional): Skip confirmation prompts for non-conflicting changes (conflicts still require approval)
+
+### 2.2 Standalone Mode Guard
+
+The skill MUST detect when invoked in the standalone Purlin repo (not a consumer project) and refuse to proceed.
+
+*   **Detection:** Check that `.purlin/.upstream_sha` does not exist AND `purlin-config-sample/` exists at the project root. The combination confirms this IS the Purlin repo, not just an un-bootstrapped consumer project (which would lack `purlin-config-sample/`).
+*   **Error Message:** Print: `purlin:update is only for consumer projects using Purlin as a submodule.`
+*   **No Side Effects:** The guard MUST fire before any fetch, analysis, or file modification.
+
+### 2.3 Fetch and Version Check
+
+The skill MUST:
+1. Run `git -C <submodule_dir> fetch --tags` to retrieve latest upstream commits and tags
+2. **Resolve the update target:**
+   - If `<version>` argument was provided: use it directly as the target ref. Validate it exists: `git -C <submodule_dir> rev-parse --verify <version>`. If invalid, abort with error: `"Version '<version>' not found in submodule. Check the tag or branch name."`
+   - If no `<version>` argument: find the latest release tag reachable from `origin/main`: `git -C <submodule_dir> describe --tags --abbrev=0 origin/main`. This returns the most recent tag on the main branch — NOT `origin/main` HEAD. Consumer projects only pull tagged releases by default.
+   - Resolve the target to a SHA: `git -C <submodule_dir> rev-parse <resolved_target>`
+3. Compare local submodule HEAD against the resolved target SHA. Determine how many commits behind.
+4. If already at the resolved target AND `.purlin/.upstream_sha` matches HEAD:
+   - Run migration detection (see `features/purlin_migration.md` §2.1)
+   - If migration state is `needed` or `partial`: print "Already at latest version. Running pending migration..." and skip to Section 2.9 (Config Sync). This handles the v0.8.4 upgrade gap where the old skill advanced the submodule but lacked the migration step.
+   - Otherwise: print "Already up to date." and exit
+5. If behind:
+   - Detect current version: `git -C <submodule_dir> describe --tags --abbrev=0 HEAD`
+   - Detect target version: the resolved tag or ref from step 2
+   - Display: `"Current: <current_version> -> Latest: <target_version> (<N> commits)"`
+   - If `<version>` was explicitly provided, note: `"(explicit target: <version>)"`
+   - Prompt: "Update? (y/n)" (skip if `--auto-approve`)
+6. If user declines: print "Skipping update." and exit
+
+### 2.4 Pre-Update Conflict Scan
+
+Before advancing the submodule, the skill MUST identify locally modified files that may
+conflict with upstream changes. This scan is lightweight -- it only flags files, deferring
+full analysis to Section 2.8.
+
+1. Read old SHA from `.purlin/.upstream_sha`
+2. Read new SHA (the resolved target SHA from Section 2.3)
+3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify upstream-changed command and agent files in a single invocation.
+4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/` and `.claude/agents/`, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
+5. For each `skills/*/SKILL.md` or `.claude/agents/*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
+   - Compare local file against old upstream version: `git -C <submodule> show <old_sha>:.claude/commands/<file>`
+   - If they differ, flag as "locally modified"
+
+Note: Launcher scripts are retired. The pre-update conflict scan no longer checks launcher files.
+
+### 2.5 Advance Submodule
+
+Advance the submodule to the resolved target (the tag SHA or explicit version determined in Section 2.3):
+- Detached HEAD: `git -C <submodule_dir> checkout <resolved_target_sha>`
+- If this fails, abort with error and leave the submodule unchanged
+
+### 2.6 Post-Advance Prerequisite Validation
+
+After advancing the submodule (Section 2.5) and before running the init refresh (Section 2.7),
+the skill MUST run the preflight checks from the NEW init.sh version to surface any new tool
+requirements introduced by the update.
+
+1.  Execute the prerequisite detection logic (git, claude, node/npx) using the newly
+    checked-out version of init.sh. Use a check-only invocation that captures results
+    without blocking (e.g., sourcing just the preflight function, or running init.sh with
+    a `--preflight-only` flag if available).
+2.  If any **required** tool is missing: print a warning in the update output. Do NOT block
+    the update -- the submodule has already been advanced and the refresh must complete to
+    keep the project consistent. The warning MUST include the same installation instructions
+    specified in `init_preflight_checks.md` Section 2.2.
+3.  If any **recommended or optional** tool is missing: print a note with the installation
+    command and an explanation of what functionality is unavailable.
+4.  Include the prerequisite status in the summary report (Section 2.12).
+
+The key difference from init.sh's own preflight: during updates, missing required tools
+produce warnings rather than hard exits, because the submodule is already advanced.
+
+### 2.7 Init Refresh
+
+After prerequisite validation, run `<submodule>/tools/init.sh --quiet` to refresh all
+project-root artifacts:
+
+*   Command files (new/updated `skills/*/SKILL.md` are copied; locally modified files are preserved by init's timestamp logic)
+*   Agent files (new/updated `.claude/agents/*.md` are copied; locally modified files are preserved by init's timestamp logic)
+*   Stale launcher cleanup (legacy `pl-run.sh`, `pl-run-*.sh` removed if present)
+*   Project-root shim (`pl-init.sh` updated with new SHA and version)
+*   `.purlin/.upstream_sha` (updated to current submodule HEAD)
+
+This delegates the mechanical copy/shim work to the canonical init script.
+
+### 2.8 Conflict Resolution
+
+**This step runs ONLY if Section 2.4 flagged locally modified files.** If no files were
+flagged, skip this section entirely.
+
+For each flagged file:
+1. Retrieve old upstream version: `git -C <submodule> show <old_sha>:<path>`
+2. Retrieve new upstream version: `git -C <submodule> show HEAD:<path>` (or current file for commands already copied by init)
+3. If upstream did NOT change the file between old and new SHA: no action needed (local changes are safe)
+4. If upstream DID change the file (true conflict):
+   - Show three-way diff: old upstream, new upstream, local
+   - Offer merge strategies:
+     - "Accept upstream" -- Replace with new version
+     - "Keep current" -- Preserve user version
+     - "Smart merge" -- Agent proposes a merged version preserving user intent
+   - Wait for user decision
+
+**Deleted-upstream commands:**
+- If a command file exists locally but was deleted upstream:
+  - Unmodified locally: auto-delete, report "Removed: <filename>"
+  - Modified locally: prompt user before deleting
+
+**Exclusion:** `pl-edit-base.md` MUST NEVER be synced to consumer projects. Silently exclude it from all analysis and reports.
+
+### 2.9 Config Sync
+
+After init refresh, run the config resolver's `sync_config()` function:
+
+1. Import `sync_config` from `tools/config/resolve_config.py`
+2. Call `sync_config(project_root)` which:
+   - If `config.local.json` doesn't exist, creates it as a copy of `config.json` (shared)
+   - If `config.local.json` exists, walks `config.json` for missing keys and adds them with shared defaults
+3. Display the sync result
+
+This step runs unconditionally after every successful update.
+
+### 2.10 Migration Module Integration
+
+After the config sync step (Section 2.9), the skill MUST invoke the Purlin migration module (`tools/migration/migrate.py`) if migration is needed.
+
+1. Run migration detection per `features/purlin_migration.md` §2.1:
+   - **Fast path:** `_migration_version` present in config → `complete`, skip silently.
+   - **`needed`:** Old agents exist, no `agents.purlin` → run full migration.
+   - **`partial`:** `agents.purlin` exists but incomplete (v0.8.4 upgrade gap) → run repair pass (enrichment + deprecation + marker).
+   - **`fresh` or `complete`:** Skip silently.
+2. If migration is `needed` or `partial`: inform the user and run the migration workflow.
+3. Report migration results in the summary (Section 2.12).
+4. Migration CLI flags (`--dry-run`, `--skip-overrides`, `--skip-companions`, `--skip-specs`, `--auto-approve`, `--purlin-only`, `--complete-transition`) are passed through from `purlin:update` invocation.
+5. The `--dry-run` flag from Section 2.13 applies to migration as well — show what would migrate without modifying files.
+
+### 2.11 Stale Artifact Cleanup
+
+Two cleanup mechanisms run in sequence:
+
+#### A. Known Stale Root Scripts
+
+Check for legacy scripts at the consumer project root:
+- `run_architect.sh` (retired -- replaced by plugin model)
+- `run_builder.sh` (retired -- replaced by plugin model)
+- `run_qa.sh` (retired -- replaced by plugin model)
+- `purlin_init.sh` (renamed to `pl-init.sh`)
+- `pl-cdd-start.sh` (removed -- CDD dashboard discontinued)
+- `pl-cdd-stop.sh` (removed -- CDD dashboard discontinued)
+- `pl-run.sh`, `pl-run-*.sh` (retired -- replaced by `purlin:start` skill and plugin hooks)
+
+If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
+if none found. In `--dry-run` mode, list but do not delete.
+
+#### B. Orphaned Command Files
+
+After the init refresh (Section 2.7), compare the consumer's `.claude/commands/` against
+the current submodule's `.claude/commands/`. For each local file matching the Purlin
+naming pattern (`pl-*.md`):
+- If a file with the same name does NOT exist in `<submodule>/.claude/commands/`: it is
+  an orphaned Purlin command from a past upstream deletion.
+- Unmodified orphans (content matches the last known upstream version, or no upstream
+  version is recoverable): auto-delete, report "Removed orphaned command: <filename>".
+- Modified orphans (consumer has local modifications): prompt before deleting, preserve
+  if declined.
+- Non-Purlin command files (no `pl-` prefix) are consumer-owned and MUST NOT be touched.
+
+This mechanism catches command files removed in releases prior to the current update range,
+which the "Deleted-upstream commands" logic in Section 2.8 cannot detect (Section 2.8 only
+covers deletions within the old→new SHA diff).
+
+### 2.12 Summary Report
+
+After successful update, display a brief summary:
+
+```
+Purlin updated: <old_version> -> <new_version>
+* N command files updated, M skipped (locally modified)
+* Init refresh completed
+* Config sync: <result>
+```
+
+If conflicts were resolved in Section 2.8, note them. If stale artifacts were cleaned, note them.
+
+### 2.13 Dry Run Mode
+
+When `--dry-run` is specified:
+- Perform fetch and version check
+- Run conflict scan
+- Show what would be changed
+- Do NOT modify any files, advance the submodule, or update `.purlin/.upstream_sha`
+
+### 2.14 Project Root Detection
+
+The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with directory-climbing as fallback.
+
+### 2.15 Customization Impact Analysis (Optional)
+
+After the summary report (Section 2.12), the skill MUST offer an optional deep analysis of
+how the update affects consumer-specific customizations. This step is entirely opt-in and
+runs zero analysis unless accepted.
+
+**Trigger:** After the summary report is displayed, prompt: "Would you like me to check if
+this update affects your customizations?"
+
+**Skip conditions:**
+- `--auto-approve`: Skip the prompt entirely (automation contexts). Do not run analysis.
+- User declines: Exit immediately. Do not run analysis.
+- `--dry-run`: The prompt is still offered. Analysis is read-only and safe to run.
+
+**If accepted, run all four dimensions:**
+
+#### A. Override Header Drift
+
+For each `.purlin/*_OVERRIDES.md` that exists in the consumer project, extract all `## `
+headers referenced in the override content (e.g., section references, "see Section X" links).
+Compare the referenced headers against the old and new upstream base files to detect stale
+references where headers were renamed or removed.
+
+Override-to-base mapping:
+
+| Override file | Upstream base file |
+|---|---|
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+| `PURLIN_OVERRIDES.md` | `instructions/PURLIN_BASE.md` |
+
+For each mapping:
+1. Retrieve old base: `git -C <submodule> show <old_sha>:instructions/<base_file>`
+2. Retrieve new base: `git -C <submodule> show <new_sha>:instructions/<base_file>`
+3. Extract `## ` headings from both versions
+4. Identify headings present in old but absent in new (removed/renamed)
+5. Cross-reference against the override file's content
+6. Report any stale references found
+
+#### B. Config Key Drift
+
+Compare old vs new upstream `purlin-config-sample/config.json`:
+1. Retrieve old config: `git -C <submodule> show <old_sha>:purlin-config-sample/config.json`
+2. Retrieve new config: `git -C <submodule> show <new_sha>:purlin-config-sample/config.json`
+3. Identify keys removed or renamed between old and new
+4. Cross-reference against consumer's `.purlin/config.local.json`
+5. Report orphaned keys (keys in local config that no longer exist upstream)
+6. Note changed default values for existing keys
+
+#### C. Command Behavioral Changes (Informational)
+
+For locally modified command files where the user chose "Keep current" in Section 2.8 (or
+where upstream changed without conflict), summarize what changed upstream between old and
+new SHA. This is informational only -- no re-merge is offered.
+
+1. For each qualifying file, diff old vs new upstream versions
+2. Summarize the nature of the changes (new steps added, steps removed, behavioral shifts)
+3. Present as an informational list
+
+#### D. Feature Template Format Changes
+
+If the feature file format section in `instructions/PURLIN_BASE.md` changed between old
+and new SHA, report what shifted so the user can evaluate whether their existing feature
+files need alignment.
+
+1. Extract Section 10 ("Feature File Format") from old and new `PURLIN_BASE.md`
+2. If content differs, summarize the changes
+3. If no changes, omit this dimension from the report
+
+**Output format:**
+- Group findings by dimension (A through D)
+- Omit dimensions that found no issues
+- If all four dimensions are clean: "No customization impacts detected."
+
+### 2.16 Regression Testing
+
+Regression tests verify the update agent correctly handles submodule update scenarios.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures against external fixture repo)
+- **Scenarios covered:** Clean update, conflict detection, dry-run mode
+- **Fixture tags:** See Integration Test Fixture Tags section
+
+### 2.17 MCP Manifest Diff
+
+During the pre-update conflict scan (Section 2.4), the skill MUST also check if
+`tools/mcp/manifest.json` changed between the old and new submodule SHA.
+
+**Detection:**
+
+1.  Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- tools/mcp/manifest.json` to detect manifest changes.
+2.  If unchanged, skip this section entirely and produce no MCP-related output.
+
+**If the manifest changed:**
+
+1.  Read old manifest: `git -C <submodule> show <old_sha>:tools/mcp/manifest.json`
+2.  Read new manifest from disk (after submodule advance in Section 2.5, prerequisite check in Section 2.6).
+3.  Compute the diff between old and new server lists by `name`:
+    *   **Added servers:** Present in new manifest but not in old. These are installed automatically by `init.sh` during the init refresh step (Section 2.7). The update skill reports them in the summary.
+    *   **Removed servers:** Present in old manifest but not in new. Print an advisory: `"MCP server '<name>' was removed from Purlin manifest. Remove manually: claude mcp remove <name>"`. Do NOT auto-remove.
+    *   **Changed servers:** Present in both but with different `transport`, `command`, `args`, or `url`. Print an advisory with reconfiguration command: `"MCP server '<name>' config changed upstream. Reconfigure: claude mcp remove <name> && <new add command>"`. Where `<new add command>` is the appropriate `claude mcp add` invocation for the new server entry.
+
+**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.12): `"Restart Claude Code to load MCP changes."`
+
+---
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Auto-Fetch and Update When Behind
+    Given the submodule's local HEAD is behind the latest release tag on origin/main by 3 commits
+    And .purlin/.upstream_sha contains the old SHA
+    When purlin:update is invoked
+    Then the skill fetches from the submodule's remote (including tags)
+    And resolves the latest release tag via git describe --tags --abbrev=0 origin/main
+    And displays current version, target version, and commit count
+    And prompts for confirmation
+    When the user confirms
+    Then the submodule is advanced to the resolved tag SHA
+    And init.sh --quiet is executed
+    And config sync runs
+
+#### Scenario: Already Up to Date
+    Given the submodule's local HEAD matches the latest release tag on origin/main
+    And .purlin/.upstream_sha matches current HEAD
+    And migration state is "complete" or "fresh"
+    When purlin:update is invoked
+    Then "Already up to date." is printed
+    And the skill exits successfully
+
+#### Scenario: No Changes Since Last Sync
+    Given .purlin/.upstream_sha matches the current submodule HEAD
+    And migration state is "complete" or "fresh"
+    When purlin:update is invoked
+    Then "Already up to date." is printed
+    And the skill exits successfully
+
+#### Scenario: Unmodified Command Files Auto-Updated
+    Given pl-status.md changed upstream
+    And the consumer's .claude/commandspurlin:status.md matches the old upstream version
+    When purlin:update is invoked and update completes
+    Then init.sh auto-copies pl-status.md from submodule
+    And the report includes the updated file count
+
+#### Scenario: Modified Command File with No Upstream Change
+    Given the consumer modified .claude/commandspurlin:status.md locally
+    And upstream did NOT change pl-status.md between old and new SHA
+    When purlin:update is invoked and update completes
+    Then pl-status.md is preserved with local modifications
+    And no merge prompt is shown
+
+#### Scenario: Modified Command File with Upstream Conflict
+    Given pl-status.md changed upstream
+    And the consumer's .claude/commandspurlin:status.md has local modifications
+    When purlin:update is invoked and update completes
+    Then the skill shows a three-way diff (old upstream, new upstream, local)
+    And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
+    And waits for user decision
+
+#### Scenario: Stale Launcher Scripts Removed on Update
+    Given legacy launcher scripts (pl-run.sh, pl-run-*.sh) exist at the project root
+    When purlin:update is invoked and update completes
+    Then init.sh removes all legacy launcher scripts during refresh
+    And no new launcher scripts are generated
+
+#### Scenario: New Config Keys Added Upstream
+    Given upstream added new config key "agents.architect.review_mode" in config.json
+    And consumer's config.local.json doesn't have this key
+    When purlin:update is invoked and the update completes
+    Then the config sync step adds the new key to config.local.json with the shared default
+    And the user is informed: "Added new config keys: agents.architect.review_mode"
+    And existing local config values are preserved
+
+#### Scenario: Stale Artifacts Detected and Cleaned
+    Given the consumer project has run_builder.sh at the project root (legacy naming)
+    And the current Purlin version has retired all launcher scripts
+    When purlin:update completes the update
+    Then the skill detects run_builder.sh as a stale artifact
+    And prompts the user to remove it
+    When the user confirms
+    Then the stale file is deleted
+
+#### Scenario: CDD Launchers Cleaned Up
+    Given the consumer project has pl-cdd-start.sh and pl-cdd-stop.sh at the project root
+    And the current Purlin version no longer includes the CDD dashboard
+    When purlin:update completes the update
+    Then the skill detects pl-cdd-start.sh and pl-cdd-stop.sh as stale artifacts
+    And prompts the user to remove them
+    When the user confirms
+    Then the stale files are deleted
+
+#### Scenario: Orphaned Command File Auto-Removed
+    Given skills/cdd.md exists in the consumer project
+    And pl-cdd.md does not exist in the current submodule's .claude/commands/
+    And the consumer's pl-cdd.md has not been locally modified
+    When purlin:update completes the update
+    Then the orphaned command detection compares local pl-*.md files against the submodule
+    And pl-cdd.md is auto-deleted
+    And the report shows "Removed orphaned command: pl-cdd.md"
+
+#### Scenario: Modified Orphaned Command File Requires Confirmation
+    Given skills/old-tool.md exists in the consumer project with local modifications
+    And pl-old-tool.md does not exist in the current submodule's .claude/commands/
+    When purlin:update completes the update
+    Then the skill prompts the user before deleting pl-old-tool.md
+    When the user declines
+    Then pl-old-tool.md is preserved
+
+#### Scenario: Non-Purlin Command Files Not Touched by Orphan Detection
+    Given .claude/commands/my-custom-tool.md exists in the consumer project
+    And my-custom-tool.md does not match the pl-*.md pattern
+    When purlin:update completes the update
+    Then my-custom-tool.md is not flagged as orphaned
+    And no prompt is shown for it
+
+#### Scenario: Explicit Version Targets Specific Tag
+    Given the submodule's local HEAD is at v0.8.4
+    And tags v0.8.5 and v0.8.6 exist on origin/main
+    When purlin:update v0.8.5 is invoked
+    Then the skill validates v0.8.5 exists via git rev-parse --verify
+    And displays "Current: v0.8.4 -> Latest: v0.8.5 (explicit target: v0.8.5)"
+    And prompts for confirmation
+    When the user confirms
+    Then the submodule is advanced to the v0.8.5 tag SHA (not v0.8.6)
+
+#### Scenario: Explicit Version Rejects Invalid Ref
+    Given the submodule is at any version
+    When purlin:update v99.99.99 is invoked
+    Then the skill attempts git rev-parse --verify v99.99.99
+    And prints: "Version 'v99.99.99' not found in submodule. Check the tag or branch name."
+    And exits without modifying any files
+
+#### Scenario: Default Resolution Targets Tag Not HEAD
+    Given origin/main HEAD is 10 commits ahead of the latest tag v0.8.5
+    And the submodule's local HEAD is at v0.8.4
+    When purlin:update is invoked (no version argument)
+    Then the skill resolves the target as v0.8.5 (the latest tag), not origin/main HEAD
+    And displays "Current: v0.8.4 -> Latest: v0.8.5"
+    And does NOT offer to advance to the 10 unreleased commits
+
+#### Scenario: Dry Run Shows Changes Without Applying
+    Given the submodule is behind the latest release tag
+    When purlin:update --dry-run is invoked
+    Then the version difference is shown
+    And locally modified files are identified
+    But no files are modified
+    And .purlin/.upstream_sha remains unchanged
+
+#### Scenario: pl-edit-base.md Excluded from Sync
+    Given pl-edit-base.md changed upstream
+    When purlin:update is invoked
+    Then pl-edit-base.md is silently excluded
+    And does not appear in any reports or counts
+
+#### Scenario: Unmodified Deleted-Upstream Command Auto-Removed
+    Given pl-old-command.md exists in `.claude/commands/` and matches the old upstream version
+    And the new upstream version no longer includes pl-old-command.md
+    When purlin:update is invoked
+    Then pl-old-command.md is auto-deleted from `.claude/commands/`
+    And the report shows "Removed: pl-old-command.md"
+
+#### Scenario: Modified Deleted-Upstream Command Requires Confirmation
+    Given pl-old-command.md exists in `.claude/commands/` with local modifications
+    And the new upstream version no longer includes pl-old-command.md
+    When purlin:update is invoked
+    Then the skill prompts the user before deleting
+    When the user confirms
+    Then pl-old-command.md is deleted
+
+#### Scenario: Standalone Mode Guard Prevents Update in Purlin Repo
+    Given the current project IS the Purlin repository (not a consumer project)
+    And .purlin/.upstream_sha does not exist
+    And purlin-config-sample/ exists at the project root
+    When purlin:update is invoked
+    Then the skill prints: "purlin:update is only for consumer projects using Purlin as a submodule."
+    And the skill exits without making any changes
+
+#### Scenario: Unmodified Agent Files Auto-Updated
+    Given engineer-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/engineer-worker.md matches the old upstream version
+    When purlin:update is invoked and update completes
+    Then init.sh auto-copies engineer-worker.md from submodule
+    And the report includes the updated file count
+
+#### Scenario: Modified Agent File with Upstream Conflict
+    Given engineer-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/engineer-worker.md has local modifications
+    When purlin:update is invoked and update completes
+    Then the skill shows a three-way diff for the agent file
+    And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
+    And waits for user decision
+
+#### Scenario: Fast Path Completes Without Conflict Analysis
+    Given the submodule is behind the latest release tag by 5 commits
+    And no command files have been locally modified
+    When purlin:update is invoked and the user confirms
+    Then the submodule is advanced to the resolved tag SHA
+    And init.sh --quiet runs
+    And config sync runs
+    And the conflict resolution step (Section 2.8) is skipped entirely
+    And the summary is displayed
+
+#### Scenario: Diff-Tree Early Exit Skips Per-File Scan
+    Given the submodule is behind by 2 commits
+    And upstream changed zero files in .claude/commands/ and .claude/agents/
+    When purlin:update runs the pre-update conflict scan
+    Then git diff-tree is invoked once
+    And no per-file git show comparisons are executed
+    And the conflict scan completes with zero flagged files
+
+#### Scenario: Diff-Tree Narrows Per-File Scan
+    Given the submodule is behind by 5 commits
+    And upstream changed 2 of 30 command files
+    And the consumer has locally modified 3 command files
+    When purlin:update runs the pre-update conflict scan
+    Then only the 2 upstream-changed files are checked for local modifications
+    And the remaining 28 command files are not compared
+
+#### Scenario: Go-Deeper Offered After Summary
+    Given the update completed successfully
+    And the summary report has been displayed
+    When the skill reaches the customization impact check
+    Then it prompts: "Would you like me to check if this update affects your customizations?"
+
+#### Scenario: Go-Deeper Skipped When Declined
+    Given the update completed successfully
+    And the go-deeper prompt is displayed
+    When the user declines
+    Then no override, config, command, or template analysis is performed
+    And the skill exits
+
+#### Scenario: Go-Deeper Skipped With Auto-Approve
+    Given purlin:update is invoked with --auto-approve
+    And the update completed successfully
+    When the skill reaches the customization impact check
+    Then the go-deeper prompt is not displayed
+    And no impact analysis is performed
+
+#### Scenario: Go-Deeper Detects Override Header Drift
+    Given upstream renamed "## 7. Strategic Protocols" to "## 7. Operational Protocols" in PURLIN_BASE.md
+    And the consumer's PURLIN_OVERRIDES.md references "Strategic Protocols"
+    When the user accepts the go-deeper analysis
+    Then the report includes a stale reference warning for PURLIN_OVERRIDES.md
+    And identifies the renamed heading
+
+#### Scenario: Go-Deeper Detects Orphaned Config Keys
+    Given upstream removed the key "agents.builder.auto_test" from purlin-config-sample/config.json
+    And the consumer's config.local.json contains "agents.builder.auto_test"
+    When the user accepts the go-deeper analysis
+    Then the report flags "agents.builder.auto_test" as an orphaned key
+
+#### Scenario: Go-Deeper Summarizes Skipped Command Changes
+    Given the consumer kept their local version of pl-status.md during conflict resolution
+    And upstream changed pl-status.md between old and new SHA
+    When the user accepts the go-deeper analysis
+    Then the report includes an informational summary of what changed upstream in pl-status.md
+
+#### Scenario: Go-Deeper Available in Dry-Run Mode
+    Given purlin:update is invoked with --dry-run
+    And the dry-run summary has been displayed
+    When the skill reaches the customization impact check
+    Then it prompts the user for go-deeper analysis
+    And analysis runs read-only if accepted
+
+#### Scenario: Go-Deeper Reports No Impacts When Clean
+    Given no overrides reference changed headers
+    And no config keys were removed or renamed upstream
+    And no command files were skipped or kept locally
+    And the feature template format did not change
+    When the user accepts the go-deeper analysis
+    Then the report shows: "No customization impacts detected."
+
+#### Scenario: Update Surfaces Missing Prerequisite Warning
+
+    Given the consumer's environment does not have node/npx installed
+    And the submodule is behind by 3 commits
+    When purlin:update is invoked and the user confirms
+    Then the submodule is advanced (update is NOT blocked)
+    And the output includes a prerequisite warning for node
+    And the warning includes the platform-appropriate install command
+    And the warning explains what functionality is unavailable without node
+    And init.sh --quiet runs successfully after the warning
+
+#### Scenario: Update With All Prerequisites Met Shows No Warnings
+
+    Given git, claude, and node are all installed
+    And the submodule is behind by 2 commits
+    When purlin:update is invoked and the user confirms
+    Then no prerequisite warnings appear in the output
+    And the update completes normally
+
+#### Scenario: Missing Required Tool During Update Warns But Continues
+
+    Given claude CLI is not installed
+    And the submodule is behind by 1 commit
+    When purlin:update is invoked and the user confirms
+    Then the submodule is advanced successfully
+    And the output includes a warning about claude with install instructions
+    And the output notes MCP servers will not be installed
+    And init.sh still runs (with MCP installation skipped)
+    And the summary report includes the prerequisite status
+
+#### Scenario: New MCP Server Detected on Update
+
+    Given the submodule is behind by 3 commits
+    And the new upstream manifest adds a server "new-tool" not in the old manifest
+    When purlin:update is invoked and the update completes
+    Then init.sh installs "new-tool" during the refresh step
+    And the summary report includes "new-tool" as a newly available MCP server
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Removed MCP Server Generates Advisory
+
+    Given the submodule is behind by 2 commits
+    And the old manifest contains server "deprecated-tool" which is absent from the new manifest
+    When purlin:update is invoked and the update completes
+    Then the summary includes: "MCP server 'deprecated-tool' was removed from Purlin manifest. Remove manually: claude mcp remove deprecated-tool"
+    And "deprecated-tool" is NOT auto-removed
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Changed MCP Server Configuration Advisory
+
+    Given the submodule is behind by 1 commit
+    And server "playwright" exists in both old and new manifests
+    And the new manifest changes playwright's args from ["@playwright/mcp"] to ["@playwright/mcp", "--headless"]
+    When purlin:update is invoked and the update completes
+    Then the summary includes an advisory that "playwright" config changed upstream
+    And the advisory includes the reconfiguration command
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Already at Latest but Migration Pending
+
+    Given the submodule is already current with remote
+    And .purlin/.upstream_sha matches current HEAD
+    And config.local.json has agents.purlin with only model and effort keys
+    And no _migration_version key exists
+    When purlin:update is invoked
+    Then the skill prints "Already at latest version. Running pending migration..."
+    And does NOT exit early
+    And config sync runs (Section 2.9)
+    And migration detection returns "partial" (Section 2.10)
+    And the migration repair pass runs
+    And the summary reports migration results
+
+#### Scenario: No MCP Output When Manifest Unchanged
+
+    Given the submodule is behind by 5 commits
+    And tools/mcp/manifest.json is identical between old and new SHA
+    When purlin:update is invoked and the update completes
+    Then no MCP-related output appears in the summary
+    And no "Restart Claude Code" notice is shown for MCP reasons
+
+### QA Scenarios
+
+#### @manual Scenario: Complex Three-Way Merge
+    Given a command file has been modified both upstream and locally in conflicting ways
+    When purlin:update offers "Smart merge" option
+    Then a human must verify the proposed merge preserves intended functionality
+
+#### @manual Scenario: Go-Deeper Override Drift Analysis Accuracy
+    Given the consumer has multiple override files with various section references
+    And upstream renamed or removed several headings across base files
+    When the user accepts the go-deeper analysis
+    Then a human must verify the reported stale references are accurate
+    And confirm no false positives or missed references
+
+---
+
+## 4. Implementation Notes
+
+### 4.1 Agent Context
+The skill is implemented as a Claude Code slash command that:
+1. Uses bash tools for git operations and file detection
+2. Uses Read/Edit/Write tools for file manipulation
+3. Uses AI reasoning for merge strategies (only when conflicts exist)
+4. Uses interactive prompts for user decisions
+
+### 4.2 Three-Way Diff Algorithm
+For modified files:
+1. `old_upstream = git show <old_sha>:<path>`
+2. `new_upstream = git show HEAD:<path>`
+3. `current_local = cat <consumer_path>`
+4. Compare: if `current_local == old_upstream`, auto-update; else, offer merge
+
+### 4.3 Performance Principle
+The skill MUST minimize agent reasoning on the fast path. On the mandatory path (Sections 2.3 through 2.11):
+- Use `git diff-tree` to identify upstream-changed files before scanning local files. If upstream changed zero tracked files, skip the conflict scan entirely.
+- Do NOT analyze release notes or changelog content
+- Do NOT compare override files against defaults
+- Do NOT generate migration plans
+- Do NOT scan instruction file headers for structural changes
+- Let `init.sh` handle all mechanical file operations
+
+Heavy analysis activates ONLY when the conflict scan (Section 2.4) flags files.
+
+### 4.4 Go-Deeper Analysis Principle
+Section 2.15 is the only place where override-vs-base comparison, header scanning, config
+semantic analysis, and feature template format diffing occurs. These activities MUST NOT
+appear in the mandatory fast path (Sections 2.3 through 2.11). The go-deeper analysis is
+entirely opt-in and zero-cost when declined.
+
+---
+
+## 5. Future Enhancements
+
+### 5.1 Auto-Test After Update
+After update, optionally run `purlin:verify` to ensure system still works.
+
+### 5.2 Update Notifications
+Check for updates on startup and notify user if behind (non-blocking).
+
+### 5.3 Automatic Go-Deeper on Breaking Changes
+When upstream includes a `BREAKING_CHANGES.md` file covering the update range, automatically
+trigger the customization impact analysis (Section 2.15) without prompting. The breaking
+changes file would serve as a signal that the update warrants deeper inspection.
+
+## Regression Guidance
+- Standalone mode guard fires before any fetch or file modification
+- Fast path: already-current submodule exits immediately with no side effects
+- Conflict detection: locally modified files that conflict with upstream trigger analysis mode
+- init.sh --quiet refresh runs after submodule advance

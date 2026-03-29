@@ -1,3 +1,0 @@
-# Optional dependencies for Purlin.
-# Install with: pip install -r requirements-optional.txt
-anthropic>=0.18.0  # LLM-based analysis features (design ingest, spec audits)

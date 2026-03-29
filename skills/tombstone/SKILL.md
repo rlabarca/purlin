@@ -34,7 +34,7 @@ Given the feature name provided as an argument:
    - `git mv features/<name>.impl.md features/tombstones/<name>.impl.md` (if exists)
    - `git mv features/<name>.discoveries.md features/tombstones/<name>.discoveries.md` (if exists)
 6. Commit all changes: `git commit -m "retire(<scope>): tombstone <name>"`.
-7. Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features --tombstones` to verify tombstone state.
+7. Run the MCP `purlin_scan` tool (with `only: "features"`, `tombstones: true`) to verify tombstone state.
 
 **Canonical tombstone format:**
 

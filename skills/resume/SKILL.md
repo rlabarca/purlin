@@ -179,11 +179,11 @@ This step runs ONLY when the system prompt does NOT contain the Purlin agent ins
 
 When instruction reload is needed:
 1. Read the instruction layers in order:
-   - `instructions/PURLIN_BASE.md`
+   - Base instructions from the plugin agent definition (`agents/purlin.md`)
    - `.purlin/PURLIN_OVERRIDES.md` (if exists)
 2. Present a condensed "Mode Compact" -- key mandates, prohibitions, and protocol summaries. Not a full file dump; a focused digest of the most critical rules.
 
-When the system prompt already contains the Purlin instructions (agent was started via launcher), skip this step silently.
+When the system prompt already contains the Purlin instructions (plugin auto-activated), skip this step silently.
 
 ### Step 3 -- Command Hint
 
@@ -266,7 +266,7 @@ Uncommitted:    <none | summary>
 
 ### Step 6 -- Update Terminal Identity, Cleanup, and Continue
 
-- **Update terminal identity** to reflect the determined mode. If a mode was resolved (from checkpoint, `default_mode`, or session message), run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<project>"`. This detects branch/worktree context automatically and dispatches to all terminal environments. If no mode was resolved, leave the launcher's initial badge in place. Do not set the badge earlier in the `purlin:resume` flow.
+- **Update terminal identity** to reflect the determined mode. If a mode was resolved (from checkpoint, `default_mode`, or session message), run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"`. The `<label>` is the project name by default, or a short task description from the checkpoint's current work. This detects branch/worktree context automatically and produces the unified format `<short_mode>(<context>) | <label>`. If no mode was resolved, leave the launcher's initial badge in place. Do not set the badge earlier in the `purlin:resume` flow.
 - If a checkpoint file was read in Step 1, **delete whichever file was consumed** (PID-scoped, unscoped, or legacy). The checkpoint has been consumed and must not be restored again.
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 5) gives the user visibility; they can interrupt if needed.

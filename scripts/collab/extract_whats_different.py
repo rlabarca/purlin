@@ -16,8 +16,8 @@ import subprocess
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root, load_config
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'mcp')))
+from bootstrap import detect_project_root, load_config
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 _cfg = load_config(PROJECT_ROOT)
@@ -136,7 +136,7 @@ def categorize_file(path):
     basename = os.path.basename(path)
     if _PURLIN_LAUNCHER_RE.match(basename):
         return 'purlin_config'
-    if path.startswith('.claude/commands/pl-'):
+    if path.startswith('skills/') and path.endswith('/SKILL.md'):
         return 'purlin_config'
 
     # Everything else is code

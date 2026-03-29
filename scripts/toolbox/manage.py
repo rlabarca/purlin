@@ -2,7 +2,7 @@
 """Agentic Toolbox management CLI.
 
 Implements create, modify, and delete sub-commands for managing project tools
-per features/pl_toolbox.md.
+per features/purlin_toolbox.md.
 """
 import argparse
 import json
@@ -11,15 +11,12 @@ import sys
 from datetime import date
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'mcp')))
+from bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
-_config = load_config(PROJECT_ROOT)
 
-TOOLS_ROOT = _config.get("tools_root", "tools")
-
-PURLIN_TOOLS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "toolbox", "purlin_tools.json")
+PURLIN_TOOLS_PATH = os.path.join(SCRIPT_DIR, "purlin_tools.json")
 PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
 
 RESERVED_PREFIXES = ("purlin.", "community.")

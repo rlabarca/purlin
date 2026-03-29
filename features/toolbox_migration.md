@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This feature defines the automated migration from the old Release Steps system to the new Agentic Toolbox system. The migration runs during `/pl-update-purlin` (as step 7c) and converts `.purlin/release/` files into `.purlin/toolbox/` files. It is non-destructive: old files are preserved for one release cycle as a safety net.
+This feature defines the automated migration from the old Release Steps system to the new Agentic Toolbox system. The migration runs during `purlin:update` (as step 7c) and converts `.purlin/release/` files into `.purlin/toolbox/` files. It is non-destructive: old files are preserved for one release cycle as a safety net.
 
 The migration handles consumer projects that have existing release step configurations. The Purlin framework repository itself also migrates its own local steps.
 
@@ -63,7 +63,7 @@ The migration is skipped when:
 
 6. **Do NOT delete old files:**
     *   `.purlin/release/` is preserved for one release cycle.
-    *   The next `/pl-update-purlin` run (after the migration release) can prompt for deletion as a stale artifact.
+    *   The next `purlin:update` run (after the migration release) can prompt for deletion as a stale artifact.
 
 **Dry-run behavior:** When `--dry-run` is passed, print what would be created/written without modifying the filesystem. Exit with code 0.
 
@@ -77,12 +77,12 @@ The migration is skipped when:
 
 ### 2.4 Integration with pl-update-purlin
 
-The migration runs as step 7c in `/pl-update-purlin`, after config sync (step 6) and existing migration module (step 7):
+The migration runs as step 7c in `purlin:update`, after config sync (step 6) and existing migration module (step 7):
 
 ```
 Step 7c: Release-to-Toolbox Migration
   - Detection check per Section 2.1
-  - If needed: run python3 <tools_root>/migration/migrate_release_to_toolbox.py --project-root <project_root>
+  - If needed: run python3 ${CLAUDE_PLUGIN_ROOT}/scripts/migration/migrate_release_to_toolbox.py --project-root <project_root>
   - Report results in summary: "Migrated N tools from release steps to Agentic Toolbox."
   - If --dry-run: run with --dry-run flag, show what would change
 ```
@@ -100,7 +100,7 @@ For EXISTING projects (refresh mode):
 
 ### 2.6 Stale Artifact Cleanup
 
-After successful migration (marker exists), the next `/pl-update-purlin` run should:
+After successful migration (marker exists), the next `purlin:update` run should:
 *   Check if `.purlin/release/` still exists.
 *   If yes: include it in the stale artifact check (step 8). Prompt: `"Found legacy release config at .purlin/release/. This has been migrated to .purlin/toolbox/. Delete the old directory?"`
 *   Only delete on explicit user confirmation.
@@ -197,7 +197,7 @@ After successful migration (marker exists), the next `/pl-update-purlin` run sho
 
     Given a consumer project has .purlin/release/local_steps.json
     And the Purlin submodule is updated to a version with toolbox support
-    When /pl-update-purlin runs
+    When purlin:update runs
     Then step 7c detects the migration need
     And the migration script is executed
     And the update summary reports the migration

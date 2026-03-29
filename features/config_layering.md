@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-`.purlin/config.json` is committed and shared across all collaborators. It contains both team-level settings (`tools_root`, `fixture_repo_url`) and personal preferences (agent model/effort choices). When collaborators change their preferences, those changes get committed and cause merge conflicts or silently overwrite teammates' settings.
+`.purlin/config.json` is committed and shared across all collaborators. It contains both team-level settings (`fixture_repo_url`, `server_port`) and personal preferences (agent model/effort choices). When collaborators change their preferences, those changes get committed and cause merge conflicts or silently overwrite teammates' settings.
 
 This feature introduces a two-file config system with copy-on-first-use semantics:
 
@@ -64,12 +64,12 @@ The migration replaces boilerplate `json.load()` / inline `python3 -c "import js
 
 All config writers MUST target `config.local.json`:
 
-- **`/pl-agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
+- **`purlin:agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
 - **`init.sh`:** Creates `config.json` (shared template) during full-init mode. Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
 
 ### 2.4 Update-Time Config Sync
 
-When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sync_config()` function performs a one-directional sync:
+When `purlin:update` runs (pulling a new Purlin version), the resolver's `sync_config()` function performs a one-directional sync:
 
 - Any keys present in `config.json` (shared) but missing from `config.local.json` (local) are added to local with the shared default values.
 - Existing local values are never overwritten.
@@ -112,7 +112,7 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
 #### Scenario: Resolver Copies Shared to Local on First Access
 
-    Given only config.json exists with {"tools_root": "tools", "server_port": 8086}
+    Given only config.json exists with {"fixture_repo_url": "git@github.com:org/fixtures.git", "server_port": 8086}
     And config.local.json does not exist
     When the resolver is invoked
     Then config.local.json is created as a copy of config.json
@@ -152,14 +152,14 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 #### Scenario: Agent Config Command Writes to Local Not Shared
 
     Given config.local.json exists
-    When /pl-agent-config updates agents.architect.model
+    When purlin:agent-config updates agents.architect.model
     Then config.local.json contains the new value
     And config.json is unchanged
 
 #### Scenario: Agent Config Command Does Not Commit Changes
 
     Given config.local.json is gitignored
-    When /pl-agent-config updates a value
+    When purlin:agent-config updates a value
     Then no new git commit is created
 
 #### Scenario: Init Adds Local Config to Gitignore
@@ -189,17 +189,17 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
 #### Scenario: Update Sync Creates Local Config When Missing
 
-    Given /pl-update-purlin runs
+    Given purlin:update runs
     And config.local.json does not exist
-    And config.json exists with {"tools_root": "purlin/tools", "server_port": 8086}
+    And config.json exists with {"fixture_repo_url": "git@github.com:org/fixtures.git", "server_port": 8086}
     When the config sync step executes
     Then config.local.json is created as a copy of config.json
     And the user is informed: "Created config.local.json from team defaults"
 
 #### Scenario: Update Sync Adds New Keys Without Overwriting Existing
 
-    Given config.local.json exists with {"server_port": 9999, "tools_root": "tools"}
-    And config.json has been updated with a new key {"server_port": 8086, "tools_root": "tools", "find_work": true}
+    Given config.local.json exists with {"server_port": 9999, "fixture_repo_url": "git@github.com:org/fixtures.git"}
+    And config.json has been updated with a new key {"server_port": 8086, "fixture_repo_url": "git@github.com:org/fixtures.git", "find_work": true}
     When the config sync step executes
     Then config.local.json contains server_port: 9999 which is preserved
     And config.local.json contains find_work: true which is added from shared

@@ -23,12 +23,24 @@ Before authoring or refining any spec, read `${CLAUDE_PLUGIN_ROOT}/references/sp
 
 ---
 
+## Session Identity
+
+When starting spec work, update the terminal identity with a short task label (3-4 words max) derived from the topic:
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "PM" "<task label>"
+```
+
+Examples: `PM(main) | spec auth flow`, `PM(dev/0.8.6) | refine scan engine`. If no clear task label can be derived, use the project name.
+
+---
+
 Given the topic provided as an argument:
 
 1. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
 2. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
 3. If creating: follow the template and format rules below.
-4. After editing, commit the change and run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh` to refresh project state.
+4. After editing, commit the change and run the MCP `purlin_scan` tool to refresh project state.
 
 ---
 

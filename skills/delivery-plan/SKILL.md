@@ -26,7 +26,7 @@ If a delivery plan already exists at `.purlin/delivery_plan.md`:
 
 If no delivery plan exists:
 
-- Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,deps` to get current feature status.
+- Run the MCP `purlin_scan` tool (with `only: "features,deps"`) to get current feature status.
 - Read `.purlin/cache/dependency_graph.json` and build a map of each feature's prerequisite features (direct and transitive). This gives you concrete data for phase assignment instead of relying on judgment alone.
 - After proposing phases, read `.purlin/cache/dependency_graph.json` and check pairwise feature independence within each proposed phase. Report in the plan presentation which phases have parallel build opportunities (independent features that can build concurrently) and which are fully sequential. Also compute execution groups: identify which phases can execute in parallel (no cross-phase dependencies) and present them to the user (e.g., "Phases 2 and 3 will execute in parallel (Group 2). Phase 4 depends on Group 2.").
 - Assess scope using the heuristics below.

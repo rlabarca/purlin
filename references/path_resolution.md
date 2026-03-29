@@ -1,12 +1,27 @@
 # Path Resolution Protocol
 
-All skills that need the project root or tools directory MUST use this protocol.
+All skills and scripts that need to locate project or plugin resources MUST use this protocol.
 
-## Steps
+## Two Roots
 
-1. **Resolve config:** Read `.purlin/config.local.json` if it exists, otherwise `.purlin/config.json` (local file wins, no merging). Extract `tools_root` (default: `"tools"`).
-2. **Resolve project root:** Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, climb from CWD until a directory containing `.purlin/` is found.
-3. **Set TOOLS_ROOT:** `TOOLS_ROOT = <project_root>/<tools_root>`.
+| Root | Variable | Points to | Example |
+|---|---|---|---|
+| **Project root** | `PURLIN_PROJECT_ROOT` | Consumer project directory (contains `.purlin/`) | `/Users/dev/myapp` |
+| **Plugin root** | `CLAUDE_PLUGIN_ROOT` | Purlin plugin installation directory | `~/.claude/plugins/purlin` |
+
+## Resolving Project Root
+
+1. Use `PURLIN_PROJECT_ROOT` env var if set (MCP server and hooks set this automatically).
+2. Otherwise, climb from CWD until a directory containing `.purlin/` is found.
+
+## Resolving Plugin Resources
+
+Plugin scripts, references, and templates are at `${CLAUDE_PLUGIN_ROOT}/`:
+
+- Scripts: `${CLAUDE_PLUGIN_ROOT}/scripts/`
+- References: `${CLAUDE_PLUGIN_ROOT}/references/`
+- Templates: `${CLAUDE_PLUGIN_ROOT}/templates/`
+- MCP tools: Call `purlin_scan`, `purlin_config`, etc. directly (no script paths needed)
 
 ## Usage in Skills
 

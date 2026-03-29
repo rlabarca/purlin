@@ -135,7 +135,7 @@ For each category:
 
 ## Phase 4 — Finalization
 
-1. Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,deps` to generate the initial scan results and dependency graph.
+1. Run the MCP `purlin_scan` tool (with `only: "features,deps"`) to generate the initial scan results and dependency graph.
 2. Summarize the results:
    - Total features created
    - Total anchor nodes created

@@ -16,7 +16,7 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 
 ---
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh --only features,discoveries,plan` and read the JSON output to get feature status. Then produce a QA-focused structured summary:
+Run the MCP `purlin_scan` tool (with `only: "features,discoveries,plan"`) and read the JSON result to get feature status. Then produce a QA-focused structured summary:
 
 **Output format:**
 

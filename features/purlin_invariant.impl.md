@@ -1,0 +1,87 @@
+# Companion: purlin_invariant
+
+## Phase 1: Foundation — Data Model & Detection
+
+[IMPL] Created `scripts/feature_templates/_invariant.md` — base invariant template with all required metadata fields and sections. Follows the same structure as `_anchor.md` but adds Format-Version, Invariant, Version, Source, Source-Path, Source-SHA, Synced-At, Scope metadata.
+
+[IMPL] Created `references/invariant_format.md` — canonical format reference for external invariant authors. Documents all three template variants (base, prodbrief, Figma pointer), required metadata fields, required sections by type, and semver cascade rules. Carries `Format-Version: 1.0`.
+
+[IMPL] Created `references/invariant_model.md` — model reference documenting identification (`i_` prefix), scope (global/scoped), immutability enforcement, cascade behavior (semver-gated), enforcement points, design invariant tiers, Figma annotation model, and constraint cache.
+
+[IMPL] Updated `references/file_classification.md` — added INVARIANT classification section. No mode can write `i_*` files. Added INVARIANT row to the Quick Reference mode guard table.
+
+[IMPL] Updated `references/knowledge_colocation.md` — extended Anchor Node Taxonomy table with `ops_*` and `prodbrief_*` prefixes. Added Invariant Anchor Nodes subsection explaining the `i_` prefix convention.
+
+[IMPL] Updated `references/spec_authoring_guide.md` — added sections 3.5 (`ops_*`), 3.6 (`prodbrief_*`), and 3.7 (Invariant Anchors). Updated anchor authorship table with new types and `i_*` row. Renumbered existing 3.5 to 3.8.
+
+## Phase 2: Scanner & Graph Integration
+
+[IMPL] Created `scripts/mcp/invariant_engine.py` — core operations module. Provides `is_invariant_node()`, `strip_invariant_prefix()`, `get_anchor_type()`, `is_anchor_node()`, `extract_metadata()` (early-termination regex), `compute_content_hash()` (SHA-256), and `validate_invariant()` (metadata + section checks per anchor type including prodbrief). Filters out companion/discovery suffixes from invariant detection.
+
+[IMPL] Updated `scripts/mcp/scan_engine.py` — extended `_ANCHOR_PREFIXES` to include `ops_` and `prodbrief_`. Added `_is_invariant_node()` and updated `_is_anchor_node()` to delegate to `invariant.py` for full prefix coverage. Added `invariant: true` flag to feature entries for `i_*` files. Updated `_check_sections()` with prodbrief-specific section detection (`User Stories`, `Success Criteria`). Updated `scan_companion_debt()` to skip all anchor types (including `ops_`, `prodbrief_`, `i_*`) using the unified `_is_anchor_node()`. Added `scan_invariant_integrity()` — computes SHA-256 per invariant, compares against cached hashes, checks for `invariant-sync(...)` commit tags for tamper detection, runs `validate_invariant()`. Added `invariants` section to `SECTION_MAP` and `run_scan()`.
+
+[IMPL] Updated `scripts/mcp/graph_engine.py` — `parse_features()` now parses `> Scope:` and `> Invariant:` metadata, sets `invariant: true` flag (also detected by `i_` prefix). `build_features_json()` emits `invariant` and `scope` fields when present. `generate_dependency_graph()` collects global invariants (scope == "global") into a new top-level `global_invariants` key in the JSON output.
+
+[IMPL] Created `scripts/mcp/test_invariant.py` — 26 unit tests covering: invariant detection for all 5 anchor type prefixes and their `i_*` variants, prefix stripping, anchor type extraction, metadata extraction with early termination, content hash consistency and differentiation, format validation (valid arch, missing metadata, invalid scope, format version too new, prodbrief with/without required sections, Figma-sourced, non-invariant rejection).
+
+[IMPL] Updated `scripts/collab/extract_whats_different.py` — `categorize_file()` now recognizes `i_*` prefix as `anchor_node`, and added `ops_` and `prodbrief_` to anchor detection.
+
+[IMPL] Updated `scripts/test_support/harness_runner.py` — `scan_fixture_features()` skip tuple extended with `ops_`, `prodbrief_`, and `i_` prefixes.
+
+[IMPL] Updated `scripts/smoke/smoke.py` — `suggest_smoke_features()` anchor detection extended with `ops_` and `i_` prefixes for foundational constraint reasoning.
+
+## Phase 3: Command & Enforcement
+
+[IMPL] Created `skills/invariant/SKILL.md` — full skill file with all 9 subcommands: `add` (git import), `add-figma` (Figma-sourced design invariant), `sync` (pull latest from source with semver-gated cascade), `check-updates` (fast remote check via `git ls-remote`), `check-conflicts` (semantic contradiction analysis), `check-feature` (per-feature adherence with FORBIDDEN grep and coverage check), `validate` (format/metadata/section validation), `list` (tabular summary), `remove` (delete with prerequisite cleanup). Mode enforcement: write subcommands require PM mode, read-only subcommands run in any mode. Includes P1/P5 performance notes for combined regex and inverted iteration.
+
+[IMPL] Updated `skills/build/SKILL.md` — extended Step 0 Pre-Flight with Invariant Preflight subsection. Collects global invariants from `dependency_graph.json` -> `global_invariants` and scoped invariants from transitive prerequisites. Runs FORBIDDEN pre-scan that greps feature code files for pattern violations and blocks the build with actionable messages (file:line evidence + fix suggestion). Surfaces behavioral invariant statements as non-blocking awareness reminders. Checks Figma brief staleness for design invariants.
+
+[IMPL] Updated `skills/spec/SKILL.md` — added Invariant Advisory (Pre-Commit) section. Before committing a spec, shows applicable global invariants and suggests scoped invariant prerequisites based on domain overlap. Added `ops_*`/`i_ops_*` and `prodbrief_*`/`i_prodbrief_*` rows to the Prerequisite Checklist table. Advisory only — does not block spec commit.
+
+[IMPL] Updated `skills/anchor/SKILL.md` — extended Anchor Node Types table with `ops_*.md` (Operational) and `prodbrief_*.md` (Product) prefixes including mode ownership column. Added Invariant Anchors subsection explaining `i_*` prefix immutability with redirect message for local creation attempts. Updated prefix prompt to include all 5 types. Updated scaffold instruction for prodbrief-specific sections (`## User Stories`, `## Success Criteria`). Added `i_*` prefix detection to redirect to `purlin:invariant`.
+
+[IMPL] Updated `agents/purlin.md` — added `purlin:invariant` (write subcommands) and `purlin:anchor ops_*`, `purlin:anchor prodbrief_*` to PM mode's "Activated by" list (§3.2). Added invariant immutability rule to Mode Guard (§4.3): no mode can write `features/i_*.md` files, with redirect message to `purlin:invariant sync`. Applies even in PM mode — only the `purlin:invariant` skill's add/add-figma/sync code paths write invariant files.
+
+[IMPL] Updated `skills/build/SKILL.md` Step 2 — added Invariant References in Companion Entries guidance. Companion entries SHOULD reference invariant constraint IDs (e.g., `per i_arch_api_standards.md INV-2`). Invariant deviations escalate as "invariant conflict" rather than "spec deviation" since invariants are immutable and externally-sourced. Per plan Section 5.5.
+
+## Phase 4: Figma & Design Integration
+
+[IMPL] Updated `skills/design-ingest/SKILL.md` — retired per plan Section 6.1. Replaced full workflow with retirement notice showing responsibility split table (Figma -> `purlin:invariant add-figma`, briefs -> `purlin:spec`, Token Maps -> `purlin:spec`, local assets -> manual + `purlin:anchor`, staleness -> `purlin:invariant sync`, Dev Resources -> dropped). Added redirect logic that detects user intent (Figma URL, local file, reprocess keyword, no arg) and routes to the correct new command. Includes three-tier design model reference table.
+
+[IMPL] Updated `skills/design-audit/SKILL.md` — extended inventory scan (step 1) to glob `features/i_design_*.md` invariant pointers and read their metadata. Added step 3.2 (invariant pointer sync status) checking Figma version via MCP and git SHA via `ls-remote`, with cascade impact reporting and brief-vs-pointer version comparison. Added step 4.1 (invariant-governed design compliance) enforcing the three-tier weight model: colors/typography strict (HIGH), spacing moderate (MEDIUM), plus FORBIDDEN pattern grep for invariant violations. Updated report table with Invariant column (CURRENT, STALE_INVARIANT, STALE_BRIEF, INVARIANT_VIOLATION, N/A). Added step 7.1 (invariant status summary table). Updated remediation (step 8) to route STALE_INVARIANT to `purlin:invariant sync` and STALE_BRIEF to `purlin:spec`.
+
+[IMPL] Verified `purlin:invariant` Figma workflows (add-figma, sync Figma-sourced) against plan Section 6: end-to-end Figma flow (6.3), annotation model (6.4 — advisory not binding, stored in `## Annotations`), enforcement weight (6.5 — colors strict, typography strict, spacing moderate, annotations advisory), staleness detection (6.6 — covered in pl-build Step 0 and pl-design-audit step 3.2), briefs as mutable caches (6.7 — created during `purlin:spec`, not invariants). No gaps found.
+
+## Phase 5: Audit & Reporting
+
+[IMPL] Updated `skills/spec-code-audit/SKILL.md` — extended Phase 0.3 (Collect Anchor Constraints) with global invariant injection: auto-includes ALL global invariants from `dependency_graph.json` -> `global_invariants` in the constraint payload regardless of prerequisite links. Added invariant metadata extraction (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
+
+[IMPL] Updated `skills/spec-code-audit/SKILL.md` — extended triage mode items 4-5 and deep mode subagent item 7 to include auto-injected global invariants in anchor constraint surface checks and FORBIDDEN scans. Added invariant provenance (`i_<name> INV-N`) to violation reporting. Added design Token Map compliance checks against invariant token tables. Added invariant staleness detection (> 90 days since `Synced-At`).
+
+[IMPL] Updated `skills/spec-code-audit/SKILL.md` — added Dimension 14 (Invariant Source Compliance) to Gap Dimensions Table. Covers FORBIDDEN pattern violations (HIGH), behavioral invariant coverage gaps (MEDIUM), design Token Map contradictions (MEDIUM), and version staleness (LOW). Updated dimension count references from 13 to 14 in triage and deep mode protocols.
+
+[IMPL] Updated `skills/spec-code-audit/SKILL.md` — added invariant stats line to Phase 2 audit table header (`Invariant constraints included: N global + K scoped invariants (M FORBIDDEN patterns)`). Added Dimension 14 remediation section in Phase 3 with role-specific guidance and invariant-conflict escalation path. Added invariant version staleness to LOW severity criteria.
+
+[IMPL] Added `purlin.invariant_audit` toolbox tool to `scripts/toolbox/purlin_tools.json` — Purlin-level tool that produces structured invariant audit report with three sections: Invariant Status (sync freshness per invariant), Feature Compliance (per-feature × per-invariant matrix), and Violations (numbered actionable findings with severity, evidence, fix, and owner). Supports git and Figma source types. Assigns HIGH for FORBIDDEN violations, MEDIUM for coverage/token gaps, LOW for staleness.
+
+## Phase 6: Overrides & Polish
+
+[IMPL] Updated `.purlin/PURLIN_OVERRIDES.md` — added invariant-specific notes per mode. Engineer: "Invariant Submodule Safety" section covering `invariant.py` path resolution, constraint cache location, and scan hash conventions. PM: "Invariant Advisory During Spec Authoring" section clarifying that `i_*` files in this repo are templates/fixtures, not active constraints (consumer projects carry real constraints). QA: "Invariant Sync Verification in Submodule Mode" section with verification checklist for `invariant.py` functions, hash comparisons, and audit toolbox discovery in both standalone and submodule deployments.
+
+[IMPL] Updated `templates/PURLIN_OVERRIDES.md` — added invariant-aware placeholder comments under Engineer, PM, and QA mode sections guiding consumer projects on what invariant-specific notes to add (submodule safety, external source context, sync verification).
+
+## Post-Audit Fixes
+
+[IMPL] Fixed `scripts/smoke/smoke.py:287` — anchor detection tuple was missing `design_` and `prodbrief_` prefixes for smoke tier promotion. Added both to match the full anchor prefix set.
+
+[IMPL] Fixed `scripts/mcp/graph_engine.py:77` — replaced loose `filename.startswith("i_")` with `is_invariant_node(filename)` imported from `invariant.py`. Prevents false invariant classification for files like `i_unknown_foo.md` that have `i_` prefix but no valid anchor type.
+
+[IMPL] Fixed `references/invariant_model.md:83` — corrected stale reference to `invariant_constraints.json` (which was never implemented). Now correctly states invariant scan state is stored within `.purlin/cache/scan.json`.
+
+## Mermaid Graph: Invariant Visualization
+
+[IMPL] Updated `scripts/mcp/graph_engine.py` — invariant nodes now render with distinct visual treatment in the Mermaid dependency graph. Global invariants (`Scope: global`) are placed in a dedicated "Global Invariants" subgraph that renders first (top of the graph). All invariant nodes (global and scoped) receive the `invariant` CSS class: orange fill (`#fff3e0`), dark orange border (`#e65100`), 2px stroke width, dashed stroke pattern. Scoped invariants remain in their declared category but still get the invariant styling. Added `invariant_fill`, `invariant_stroke` tokens and `_GLOBAL_INVARIANTS_CATEGORY` constant.
+
+## Cross-Cutting: Spec & Plan Alignment Audit (End Gate)
+
+[IMPL] Updated `skills/build/SKILL.md` Step 4 — added "Pre-check -- Spec & Plan Alignment Audit" gate between Web Test Gate and tag determination. Two-part check: (1) Spec audit re-reads the feature spec and walks each requirement and scenario, verifying implementation coverage and logging unimplemented requirements as `[DISCOVERY]`, missing scenario coverage as blocking until addressed or `[DEVIATION]`-tagged, and undocumented deviations as requiring companion file entries. (2) Plan audit (when a design plan was used) re-reads the plan section and verifies each deliverable exists, logs skipped/partial items as `[DISCOVERY]`, and notes out-of-scope work as `[CLARIFICATION]`. Gate is non-blocking for clean results but blocks on unlogged gaps — requires zero undocumented deviations, not zero deviations.

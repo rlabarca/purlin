@@ -125,7 +125,7 @@ All scanning behavior (what is scanned, output format, caching semantics, `--onl
 - The cache always stores the full result including tombstones (so `--cached --tombstones` works without re-scanning).
 - When `--only features --tombstones` is used, tombstones appear in the features array.
 - When neither `--only` nor `--tombstones` is specified, tombstones are excluded from stdout but written to cache.
-- Skills that need tombstones (e.g., `/pl-tombstone`, `/pl-status` in Engineer mode for tombstone priority) must pass `--tombstones` explicitly.
+- Skills that need tombstones (e.g., `purlin:tombstone`, `purlin:status` in Engineer mode for tombstone priority) must pass `--tombstones` explicitly.
 
 ### 2.14 Design Constraint: Facts Only
 
@@ -142,22 +142,22 @@ Skills that call scan.sh SHOULD use `--only` to request only the sections they n
 
 | Skill | `--only` | `--skip-fields` | Rationale |
 |-------|----------|-----------------|-----------|
-| `/pl-status` (PM) | `features,discoveries,deviations,git` | `spec_modified,test_status,regression_status` | PM work items don't use any of these fields |
-| `/pl-status` (Engineer) | `features,discoveries,plan,git --tombstones` | *(none)* | Engineer needs all fields |
-| `/pl-status` (QA) | `features,discoveries,git,smoke` | `spec_modified` | spec_modified is Engineer-only concern |
-| `/pl-status` (open) | `--tombstones` | *(none)* | Full scan for cross-mode overview |
-| `/pl-build` (verify) | `features,plan` | `spec_modified` | Verifying lifecycle + phase, not spec drift |
-| `/pl-verify` | `features` | `spec_modified` | Just identifying TESTING features |
-| `/pl-smoke` | `features,smoke,deps` | `spec_modified` | Smoke is about dependency fan-out |
-| `/pl-web-test` | `features` | `spec_modified` | Finding TESTING features with web test metadata |
-| `/pl-tombstone` | `features --tombstones` | `spec_modified,test_status,regression_status` | Tombstones don't need computed fields |
-| `/pl-qa-report` | `features,discoveries,plan` | `spec_modified` | QA report doesn't use spec_modified |
-| `/pl-delivery-plan` | `features,deps` | `spec_modified` | Phase planning uses lifecycle + deps |
-| `/pl-complete` | `features` | `spec_modified` | Just verifying lifecycle state |
-| `/pl-spec-code-audit` (initial) | `features,deps` | `spec_modified` | Audit needs feature list + deps |
-| `/pl-spec-from-code` (final) | `features,deps` | `spec_modified` | Feature list + deps |
+| `purlin:status` (PM) | `features,discoveries,deviations,git` | `spec_modified,test_status,regression_status` | PM work items don't use any of these fields |
+| `purlin:status` (Engineer) | `features,discoveries,plan,git --tombstones` | *(none)* | Engineer needs all fields |
+| `purlin:status` (QA) | `features,discoveries,git,smoke` | `spec_modified` | spec_modified is Engineer-only concern |
+| `purlin:status` (open) | `--tombstones` | *(none)* | Full scan for cross-mode overview |
+| `purlin:build` (verify) | `features,plan` | `spec_modified` | Verifying lifecycle + phase, not spec drift |
+| `purlin:verify` | `features` | `spec_modified` | Just identifying TESTING features |
+| `purlin:smoke` | `features,smoke,deps` | `spec_modified` | Smoke is about dependency fan-out |
+| `purlin:web-test` | `features` | `spec_modified` | Finding TESTING features with web test metadata |
+| `purlin:tombstone` | `features --tombstones` | `spec_modified,test_status,regression_status` | Tombstones don't need computed fields |
+| `purlin:qa-report` | `features,discoveries,plan` | `spec_modified` | QA report doesn't use spec_modified |
+| `purlin:delivery-plan` | `features,deps` | `spec_modified` | Phase planning uses lifecycle + deps |
+| `purlin:complete` | `features` | `spec_modified` | Just verifying lifecycle state |
+| `purlin:spec-code-audit` (initial) | `features,deps` | `spec_modified` | Audit needs feature list + deps |
+| `purlin:spec-from-code` (final) | `features,deps` | `spec_modified` | Feature list + deps |
 
-Skills that refresh state for OTHER consumers (pl-spec, pl-anchor, pl-resume, pl-infeasible, pl-spec-code-audit final step) SHOULD use a full scan (no `--only`, no `--skip-fields`) to populate the cache with complete data.
+Skills that refresh state for OTHER consumers (purlin:spec, purlin:anchor, purlin:resume, purlin:infeasible, purlin:spec-code-audit final step) SHOULD use a full scan (no `only`, no `skip_fields`) to populate the cache with complete data.
 
 ### 2.16 Performance
 

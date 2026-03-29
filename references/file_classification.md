@@ -9,15 +9,13 @@
 Executable, interpreted, or controls agent behavior at runtime.
 
 - Source code (`*.py`, `*.sh`, `*.js`, `*.ts`, `*.go`, etc.)
-- Scripts and DevOps tooling (`tools/`, `dev/`)
+- Scripts and DevOps tooling (`scripts/`, `dev/`)
 - Tests and test infrastructure (`tests/`)
 - Application config (`package.json`, `pyproject.toml`, `tsconfig.json`, etc.)
-- Skill files (`.claude/commands/*.md`) — agent instructions that are code
-- Instruction files (`instructions/*.md`)
-- Agent definitions (`.claude/agents/*.md`)
-- Hooks (`tools/hooks/*.sh`)
+- Skill files (`skills/*/SKILL.md`) — agent instructions that are code
+- Agent definitions (`agents/*.md`)
+- Hooks (`hooks/scripts/*.sh`)
 - Build/CI configuration (`.github/`, `Makefile`, `Dockerfile`, etc.)
-- Launcher scripts (`pl-run*.sh`)
 - Technical anchors (`features/arch_*.md`)
 - Companion files (`features/*.impl.md`)
 - Process config (`.purlin/config.json`, `.purlin/toolbox/*.json`)

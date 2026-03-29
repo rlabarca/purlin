@@ -19,7 +19,7 @@ Users start sessions with `claude` (the plugin auto-activates via MCP). Session 
 ### 2.1 Script Location and Ergonomic Access
 
 *   **Canonical Location:** `tools/init.sh` (executable, `chmod +x`).
-*   **Submodule Root Symlink:** A symlink at `<submodule>/pl-init.sh` MUST point to `tools/init.sh` for ergonomic access (e.g., `purlin/pl-init.sh`). The `pl-` prefix follows the same naming convention used by consumer-facing symlinks.
+*   **Submodule Root Symlink:** A symlink at `purlin:init` skill MUST point to `tools/init.sh` for ergonomic access (e.g., `purlin:init`). The `purlin:` prefix follows the same naming convention used by consumer-facing symlinks.
 *   **Project Root Detection:** The script MUST detect the consumer project root as the parent of the submodule directory. Detection MUST work when invoked from any working directory.
 *   **Submodule Path:** The script MUST detect the submodule directory name dynamically from its own location.
 
@@ -35,15 +35,15 @@ The script MUST auto-detect the current project state and select the appropriate
 When `.purlin/` is missing, the script MUST perform all of the following in order:
 
 1.  **Override Directory Initialization:** Copy all files from `purlin-config-sample/` (in the submodule root) to `<project_root>/.purlin/`.
-2.  **Config Patching:** Set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `purlin/tools`). MUST use precise `sed` that replaces only the value portion and validate with `python3 json.load()`.
+2.  **Config Patching:** [RETIRED] The `tools_root` config key is no longer used in the plugin model. Plugin scripts are at `${CLAUDE_PLUGIN_ROOT}/scripts/`.
 3.  **Provider Detection:** If `tools/detect-providers.sh` exists, run it and merge available providers into config. For each provider reported as `available: true`, merge its `models` array into the installed config under `llm_providers.<provider>`. Non-blocking — skip silently if the script is missing or fails.
 4.  **Upstream SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha` (40-character SHA, single line).
 5.  **[Retired]** Launcher script generation is no longer performed. Sessions are started via `claude` with the plugin auto-activating. The `purlin:start` skill handles session entry; `purlin:mode` handles mode switching.
-6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
+6.  **Command File Distribution:** Copy `skills/*/SKILL.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 6b. **Agent File Distribution:** Copy `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. If the destination directory does not exist, create it. If a destination file is newer than the source (local modification), skip it. Same skip logic as command files.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
 8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. When no `.gitignore` exists, copy the template file `purlin-config-sample/gitignore.purlin` verbatim (including comments) as the consumer's `.gitignore`. When `.gitignore` already exists, use additive pattern merging: read `purlin-config-sample/gitignore.purlin` and for each non-comment, non-blank line in the template, append it if not already present.
-9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
+9.  **Shim Generation:** Generate `purlin:init` at the project root (Section 2.5).
 10. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
 12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both the `clear` and `compact` session-recovery hooks (Section 2.15). The `compact` hook handles auto-compaction events by reminding the agent to check role guard-rails.
 13. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root using marker-based block insertion (`<!-- purlin:start -->` / `<!-- purlin:end -->`). Source template is `purlin-config-sample/CLAUDE.md.purlin`. Preserves user content outside the markers. See `context_recovery_hook.md` Section 2.3 for the full protocol.
@@ -55,14 +55,14 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 
 When `.purlin/` already exists, the script MUST perform only these updates:
 
-1.  **Command File Refresh:** Copy/update `.claude/commands/pl-*.md` from the submodule to the project root. For each file:
+1.  **Command File Refresh:** Copy/update `skills/*/SKILL.md` from the submodule to the project root. For each file:
     *   If the destination file does not exist: copy it.
     *   If the destination file exists AND is newer than the source (local modification): skip it.
     *   If the destination file exists AND is older than or same age as the source: overwrite it.
     *   `pl-edit-base.md` MUST NEVER be copied.
 1b. **Agent File Refresh:** Copy/update `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. Same skip logic as command files: skip locally modified (newer) files, overwrite older or same-age files. If the destination directory does not exist, create it.
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
-3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
+3.  **Shim Self-Update:** If `purlin:init` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **Stale Launcher Cleanup:** Remove any legacy launcher scripts (`pl-run.sh`, `pl-run-*.sh`, `run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `pl-cdd-start.sh`, `pl-cdd-stop.sh`) if they exist at the project root. Launcher scripts are retired; sessions are started via `claude` with the plugin auto-activating.
 6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains both session-recovery hooks (Section 2.15).
 6b. **CLAUDE.md Installation:** Install or update `CLAUDE.md` at the project root (same marker-based protocol as full init step 13). The refresh path MUST also stage `CLAUDE.md` via `git add`.
@@ -81,9 +81,9 @@ Refresh mode MUST NEVER modify:
 
 Note: `.gitignore` is governed by the additive-only rule in Section 2.4 Step 7 -- Purlin may append missing recommended patterns but MUST NOT remove or alter existing entries.
 
-### 2.5 Project-Root Shim (`pl-init.sh`)
+### 2.5 Project-Root Shim (`purlin:init`)
 
-The script MUST generate a `pl-init.sh` file at the project root with the following properties:
+The script MUST generate a `purlin:init` file at the project root with the following properties:
 
 *   **Executable:** Marked `chmod +x`.
 *   **Header Metadata:** The file header MUST embed:
@@ -116,7 +116,7 @@ If the shim was updated, append a brief note.
 
 ### 2.8 CLI Flags
 
-*   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `/pl-update-purlin`). Errors still print to stderr.
+*   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `purlin:update`). Errors still print to stderr.
 
 ### 2.10 Idempotency
 
@@ -126,9 +126,9 @@ Running the script multiple times MUST produce the same result. Specifically:
 *   Refresh mode followed by another refresh MUST produce no file changes (verified by `git diff` showing nothing new).
 *   Command files and SHA marker MUST be stable across repeated runs when the submodule has not changed.
 
-### 2.11 Integration with `/pl-update-purlin`
+### 2.11 Integration with `purlin:update`
 
-After a successful submodule update (step 10 in the `/pl-update-purlin` workflow: atomic update), the skill MUST run `tools/init.sh --quiet` to refresh commands, symlinks, shim, and SHA. This replaces the skill's manual post-update copy logic with the canonical refresh mechanism. The skill's step 7 (command file changes with three-way diff) remains for conflict resolution on modified files. The skill's step 12 summary MUST note that init/refresh ran.
+After a successful submodule update (step 10 in the `purlin:update` workflow: atomic update), the skill MUST run `tools/init.sh --quiet` to refresh commands, symlinks, shim, and SHA. This replaces the skill's manual post-update copy logic with the canonical refresh mechanism. The skill's step 7 (command file changes with three-way diff) remains for conflict resolution on modified files. The skill's step 12 summary MUST note that init/refresh ran.
 
 ### 2.12 Unit Test Script
 
@@ -157,7 +157,7 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 
 ### 2.15 Claude Code Session Recovery Hook
 
-On both full init and refresh, the script MUST ensure that `.claude/settings.json` at the project root contains the Purlin session-recovery hook. This hook enables automatic context restoration after `/clear` by injecting a system reminder that instructs the agent to run `/pl-resume`.
+On both full init and refresh, the script MUST ensure that `.claude/settings.json` at the project root contains the Purlin session-recovery hook. This hook enables automatic context restoration after `/clear` by injecting a system reminder that instructs the agent to run `purlin:resume`.
 
 **Hook definition (to be installed inside `hooks.SessionStart` array):**
 
@@ -167,7 +167,7 @@ On both full init and refresh, the script MUST ensure that `.claude/settings.jso
   "hooks": [
     {
       "type": "command",
-      "command": "echo 'IMPORTANT: Context was cleared. Run /pl-resume immediately to restore session context.'"
+      "command": "echo 'IMPORTANT: Context was cleared. Run purlin:resume immediately to restore session context.'"
     }
   ]
 }
@@ -247,7 +247,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 
 *   **Scenarios covered:** All `### QA Scenarios` in Section 3, including refresh mode behavior, idempotency verification, hook merge strategy, MCP installation, collaborator fresh-clone flow, and gitignore sync.
 *   **Harness type:** `custom_script` -- the sandbox-based test approach does not map to `agent_behavior` or `web_test` harness types. QA authors a custom regression script that reuses the sandbox architecture from Section 2.12.1.
-*   **Cross-feature integration:** `/pl-update-purlin` (Section 2.11 of that spec) calls `tools/init.sh --quiet` as part of every update. This integration path is tested by the update feature, not by this feature.
+*   **Cross-feature integration:** `purlin:update` (Section 2.11 of that spec) calls `tools/init.sh --quiet` as part of every update. This integration path is tested by the update feature, not by this feature.
 
 ---
 
@@ -261,7 +261,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     And no .purlin/ directory exists at the project root
     When the user runs "purlin/tools/init.sh"
     Then .purlin/ is created with config.json, all override templates, and .upstream_sha
-    And config.json contains the correct tools_root for the submodule path
+    And config.json is created from the plugin template
     And config.json is valid JSON (parseable by python3 json.load)
     And no launcher scripts (pl-run.sh, pl-run-*.sh) exist at the project root
     And .claude/commands/ contains pl-*.md files from the submodule (excluding pl-edit-base.md)
@@ -325,9 +325,9 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Ergonomic Symlink at Submodule Root
 
     Given Purlin is the submodule at "purlin/"
-    When the user inspects "purlin/pl-init.sh"
+    When the user inspects "purlin:init"
     Then it is a symlink pointing to "tools/init.sh"
-    And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
+    And running "purlin:init" behaves identically to running "purlin/tools/init.sh"
 
 ### QA Scenarios
 
@@ -336,7 +336,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Given a consumer project was cloned without --recurse-submodules
     And the submodule directory exists but is empty (not initialized)
     And pl-init.sh exists at the project root (previously committed)
-    When the user runs "./pl-init.sh"
+    When the user runs "purlin:init"
     Then git submodule update --init is run for the submodule
     And tools/init.sh is executed (delegated via exec)
 
@@ -352,7 +352,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Refresh Mode Preserves Locally Modified Commands @auto
 
     Given .purlin/ already exists at the project root
-    And .claude/commands/pl-status.md at the project root has a modification timestamp newer than the submodule version
+    And .claude/commandspurlin:status.md at the project root has a modification timestamp newer than the submodule version
     When the user runs "purlin/tools/init.sh"
     Then pl-status.md is NOT overwritten
     And the refresh summary reports the skip
@@ -360,7 +360,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Refresh Mode Excludes pl-edit-base.md @auto
 
     Given .purlin/ already exists at the project root
-    And the submodule has .claude/commands/pl-edit-base.md
+    And the submodule has .claude/commandspurlin:edit-base.md
     When the user runs "purlin/tools/init.sh"
     Then pl-edit-base.md is NOT copied to the project root
     And pl-edit-base.md does not appear in any counts or reports
@@ -443,10 +443,10 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
 #### Scenario: Refresh Mode Appends New Gitignore Patterns @auto
 
     Given .purlin/ already exists at the project root
-    And .gitignore exists but does not contain "/pl-status"
-    And purlin-config-sample/gitignore.purlin contains "/pl-status"
+    And .gitignore exists but does not contain "purlin:status"
+    And purlin-config-sample/gitignore.purlin contains "purlin:status"
     When the user runs "purlin/tools/init.sh"
-    Then .gitignore now contains "/pl-status"
+    Then .gitignore now contains "purlin:status"
     And all pre-existing .gitignore entries are preserved unchanged
 
 #### Scenario: Refresh Mode Does Not Duplicate Existing Patterns @auto
@@ -461,7 +461,7 @@ The init/refresh behavioral integration tests are QA-owned regression tests. The
     Given a sandbox consumer project has been initialized with Purlin (full init completed)
     And pl-init.sh has been committed to the repository
     And the sandbox is re-cloned without --recurse-submodules (simulating a collaborator fresh clone)
-    When the collaborator runs "./pl-init.sh" in the re-cloned sandbox
+    When the collaborator runs "purlin:init" in the re-cloned sandbox
     Then git submodule update --init is triggered for the submodule
     And .purlin/ exists with config.json and override templates
     And no launcher scripts exist at the project root

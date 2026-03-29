@@ -28,14 +28,14 @@ Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
       in an isolated worktree. Use when building independent features concurrently.
     tools: Read, Write, Edit, Bash, Glob, Grep
     isolation: worktree
-    skills: [pl-build]
+    skills: [purlin:build]
     permissionMode: bypassPermissions
     model: inherit
     maxTurns: 200
     ```
 *   **System prompt constraints:**
     - Single-feature focus: implements one feature only per invocation.
-    - Steps 0-2 only from `/pl-build`. No Step 3 (verification), no Step 4 (status tags).
+    - Steps 0-2 only from `purlin:build`. No Step 3 (verification), no Step 4 (status tags).
     - MUST NOT modify the delivery plan (`.purlin/delivery_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
     - Commit with `feat(scope): implement FEATURE_NAME`.
@@ -59,13 +59,13 @@ Runs automated tests in background during B2, keeping test output out of main En
     maxTurns: 50
     ```
 *   **System prompt constraints:**
-    - Run the `/pl-unit-test` protocol for specified features. The skill is preloaded with the complete testing protocol (quality rubric, anti-pattern scan, result reporting).
+    - Run the `purlin:unit-test` protocol for specified features. The skill is preloaded with the complete testing protocol (quality rubric, anti-pattern scan, result reporting).
     - Write `tests.json` results. `Write` is allowed only for `tests.json` output.
     - MUST NOT fix code or edit implementation files.
 
 ### 2.2 Parallel B1 Protocol
 
-When a delivery plan exists, Engineer mode MUST use `engineer-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
+When a delivery plan exists, Engineer mode MUST use `engineer-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `purlin:build` determines which features are independent:
 
 1.  Read `.purlin/cache/dependency_graph.json` and the delivery plan.
 2.  Compute execution groups: group PENDING phases with no cross-dependencies.
@@ -93,7 +93,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 1.  After all parallel workers complete, process branches in sequence.
 2.  For each branch: `git rebase HEAD <branch>`.
 3.  On rebase conflict: check if ALL conflicting files are in the safe list.
-    *   **Safe files:** `.purlin/delivery_plan.md`, `/pl-status`, `.purlin/cache/*`.
+    *   **Safe files:** `.purlin/delivery_plan.md`, `purlin:status`, `.purlin/cache/*`.
     *   Safe: auto-resolve by keeping main's version (`git checkout --ours`), then `git add` and `git rebase --continue`.
     *   Unsafe (any non-safe file in conflict): `git rebase --abort`, fall back to sequential for THIS feature only.
 4.  Loop up to 20 rebase iterations for multi-commit branches.
@@ -107,25 +107,25 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 
 **Goal:** Implementation knowledge lives in skills (preloadable by sub-agents). Base instructions contain only session orchestration.
 
-#### 2.5.1 Move Remaining Bright-Line Rules into `/pl-build`
+#### 2.5.1 Move Remaining Bright-Line Rules into `purlin:build`
 
-*   `PURLIN_BASE.md` Section 5 currently contains ~15 bright-line rules. Testing rules already reference `/pl-unit-test`.
-*   Move all remaining non-testing bright-line rules (web test verification, phase halt, cross-cutting triage, regression handoff) into `/pl-build`.
+*   `PURLIN_BASE.md` Section 5 currently contains ~15 bright-line rules. Testing rules already reference `purlin:unit-test`.
+*   Move all remaining non-testing bright-line rules (web test verification, phase halt, cross-cutting triage, regression handoff) into `purlin:build`.
 *   `PURLIN_BASE.md` Section 5 becomes:
     ```
     ## 5. Per-Feature Implementation Protocol
-    Invoke `/pl-build` for the complete per-feature protocol including all bright-line rules.
-    Testing protocol: `/pl-unit-test` (invoked by `/pl-build` Step 3).
+    Invoke `purlin:build` for the complete per-feature protocol including all bright-line rules.
+    Testing protocol: `purlin:unit-test` (invoked by `purlin:build` Step 3).
     ```
-*   This completes the extraction pattern that `/pl-unit-test` already started.
+*   This completes the extraction pattern that `purlin:unit-test` already started.
 
 #### 2.5.2 Delete Section 7 (Agentic Team Orchestration)
 
 *   Two vague lines with no actionable content. Sub-agent patterns are now defined by the sub-agent definitions themselves.
 
-#### 2.5.3 Extract Server Lifecycle into `/pl-server`
+#### 2.5.3 Extract Server Lifecycle into `purlin:server`
 
-*   `PURLIN_BASE.md` Section 8 server rules move to a new `/pl-server` skill (`.claude/commands/pl-server.md`).
+*   `PURLIN_BASE.md` Section 8 server rules move to a new `purlin:server` skill (`.claude/commandspurlin:server.md`).
 *   `PURLIN_BASE.md` Section 8 retains only non-server build/environment rules.
 
 #### 2.5.4 Resulting `PURLIN_BASE.md` Structure
@@ -135,7 +135,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 2. Startup Protocol (scan, work discovery, plan proposal)
 3. Feature Status Lifecycle
 4. Tombstone Processing
-5. Per-Feature Implementation Protocol (pointer to /pl-build)
+5. Per-Feature Implementation Protocol (pointer to purlin:build)
 6. Shutdown Protocol
 7. [deleted]
 8. Build & Environment Protocols (non-server rules only)
@@ -144,7 +144,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 
 ### 2.6 Server Lifecycle Skill
 
-A new skill at `.claude/commands/pl-server.md` with the following capabilities:
+A new skill at `.claude/commandspurlin:server.md` with the following capabilities:
 
 #### 2.6.1 Port Management
 
@@ -184,7 +184,7 @@ A new skill at `.claude/commands/pl-server.md` with the following capabilities:
 When `auto_start: true` in Engineer mode's config:
 
 *   After completing a delivery plan phase, Engineer mode auto-advances to the next PENDING phase instead of halting.
-*   The phase halt rule in `/pl-build` Step 4.E becomes conditional: halt only when `auto_start: false` (current default behavior).
+*   The phase halt rule in `purlin:build` Step 4.E becomes conditional: halt only when `auto_start: false` (current default behavior).
 *   When `auto_start: true`, Engineer mode marks the phase COMPLETE, then immediately begins the next phase within the same session.
 *   Engineer mode runs all phases end-to-end without bash orchestration.
 
@@ -199,7 +199,7 @@ When `auto_start: true` in Engineer mode's config:
 
 #### 2.9.1 Orphaned Sub-Agent Branches
 
-On `/pl-resume`, Engineer mode MUST check for orphaned worktree branches matching the pattern `worktree-*`:
+On `purlin:resume`, Engineer mode MUST check for orphaned worktree branches matching the pattern `worktree-*`:
 *   If found: attempt to merge them using the robust merge protocol (Section 2.4), then continue.
 *   If not found: the sub-agents either completed and merged, or never started. The delivery plan + scan state tells Engineer mode what remains.
 
@@ -232,7 +232,7 @@ On resume, Engineer mode:
 
 #### 2.10.2 Update Changes
 
-*   `/pl-update-purlin` extends conflict detection to also scan `.claude/agents/` for local modifications vs upstream changes.
+*   `purlin:update` extends conflict detection to also scan `.claude/agents/` for local modifications vs upstream changes.
 *   Same resolution options: "Accept upstream", "Keep current", "Smart merge".
 
 ### 2.11 Lifecycle Metadata Hash Exemption
@@ -241,13 +241,13 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
 
 ### 2.12 Sync Invariants
 
-*   `/pl-build` preloading by `engineer-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
-*   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
+*   `purlin:build` preloading by `engineer-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
+*   `purlin:unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
 ### 2.13 Execution Group Dispatch Bright-Line Rule
 
-The Execution Group Dispatch MUST appear as a named bright-line rule in `/pl-build`,
+The Execution Group Dispatch MUST appear as a named bright-line rule in `purlin:build`,
 not only as a standalone section. The rule text:
 
 > **Execution group dispatch is mandatory for multi-feature groups.** When an execution
@@ -303,7 +303,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Given Engineer mode has completed B1 for all features in a phase
     When Engineer mode enters B2
     Then it spawns verification-runner sub-agents in the background
-    And each verification-runner runs /pl-unit-test for its assigned feature
+    And each verification-runner runs purlin:unit-test for its assigned feature
     And the main session runs web tests concurrently with MCP access
 
 #### Scenario: verification-runner cannot edit files
@@ -322,9 +322,9 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 #### Scenario: Safe file conflicts auto-resolve during merge
 
-    Given two engineer-worker branches both modified /pl-status
+    Given two engineer-worker branches both modified purlin:status
     When the robust merge protocol runs rebase-before-merge
-    Then the conflict on /pl-status is auto-resolved by keeping main's version
+    Then the conflict on purlin:status is auto-resolved by keeping main's version
     And the merge completes successfully
 
 #### Scenario: Unsafe conflict falls back to sequential for that feature only
@@ -397,10 +397,10 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then purlin:start reads the auto_start setting from resolved config
     And Engineer mode auto-advances through phases without halting
 
-#### Scenario: Bright-line rules exist only in /pl-build skill
+#### Scenario: Bright-line rules exist only in purlin:build skill
 
     Given PURLIN_BASE.md Section 5 is read
-    Then it contains only a pointer to /pl-build
+    Then it contains only a pointer to purlin:build
     And it does not contain web test verification rules
     And it does not contain phase halt rules
     And it does not contain cross-cutting triage rules
@@ -409,28 +409,28 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given PURLIN_BASE.md is read
     When Section 5 is inspected
-    Then it contains "Invoke /pl-build" text
-    And it contains "Testing protocol: /pl-unit-test" text
+    Then it contains "Invoke purlin:build" text
+    And it contains "Testing protocol: purlin:unit-test" text
     And the section is fewer than 10 lines
 
-#### Scenario: Sub-agent preloading /pl-build gets all bright-line rules
+#### Scenario: Sub-agent preloading purlin:build gets all bright-line rules
 
-    Given a engineer-worker sub-agent has skills: [pl-build]
+    Given a engineer-worker sub-agent has skills: [purlin:build]
     When the sub-agent's preloaded context is inspected
-    Then the /pl-build skill content includes all bright-line rules
+    Then the purlin:build skill content includes all bright-line rules
     And the sub-agent has the complete per-feature protocol
 
 #### Scenario: Dev server starts on alternate port when default occupied
 
     Given port 3000 is already in use
-    When the /pl-server skill starts a dev server
+    When the purlin:server skill starts a dev server
     Then it detects port 3000 is occupied
     And starts the server on port 3100 instead
     And prints: "Dev server running: http://localhost:3100 (PID XXXXX)"
 
 #### Scenario: Server PID and port tracked in dev_server.json
 
-    Given a dev server is started via /pl-server
+    Given a dev server is started via purlin:server
     When the server starts successfully
     Then .purlin/runtime/dev_server.json is created
     And it contains pid, port, command, and started_at fields
@@ -471,14 +471,14 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given the submodule has updated .claude/agents/engineer-worker.md
     And the consumer's copy has not been locally modified
-    When /pl-update-purlin runs
+    When purlin:update runs
     Then engineer-worker.md is updated to the new version
 
 #### Scenario: Locally modified agent files preserved during update
 
     Given the consumer has locally modified .claude/agents/engineer-worker.md
     And the submodule has also updated engineer-worker.md
-    When /pl-update-purlin runs
+    When purlin:update runs
     Then init.sh preserves the local version (newer timestamp)
     And the conflict resolution step offers merge options
 
@@ -486,16 +486,16 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given Engineer mode was auto-progressing through Phase 4 of 6
     And context was cleared via /clear
-    When /pl-resume restores the session
+    When purlin:resume restores the session
     Then the delivery plan shows phases 1-3 COMPLETE, phase 4 IN_PROGRESS
-    And /pl-status identifies remaining TODO features in phase 4
+    And purlin:status identifies remaining TODO features in phase 4
     And Engineer mode continues from the current phase
 
 #### Scenario: Resume with orphaned sub-agent branches
 
     Given Engineer mode spawned 2 engineer-worker sub-agents
     And context was cleared while sub-agents were running
-    When /pl-resume restores the session
+    When purlin:resume restores the session
     Then Engineer mode detects orphaned worktree branches
     And merges them using the robust merge protocol
     And continues with remaining work
@@ -504,7 +504,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
     Given 2 engineer-worker sub-agents completed and merged
     And context was cleared after merge but before B2 verification
-    When /pl-resume restores the session
+    When purlin:resume restores the session
     Then the checkpoint shows parallel B1 completed
     And Engineer mode proceeds directly to B2 verification
 
@@ -516,9 +516,9 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then terminal_identity.md remains in COMPLETE state
     And no Engineer action item is generated for it
 
-#### Scenario: Execution group dispatch bright-line rule exists in /pl-build
+#### Scenario: Execution group dispatch bright-line rule exists in purlin:build
 
-    Given /pl-build is read
+    Given purlin:build is read
     When the Bright-Line Rules section is inspected
     Then it contains a rule about execution group dispatch being mandatory
     And the rule requires reading dependency_graph.json before Step 0

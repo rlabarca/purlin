@@ -8,15 +8,13 @@ import os
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root, load_config
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'mcp')))
+from bootstrap import detect_project_root, load_config
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 CONFIG = load_config(PROJECT_ROOT)
 
-TOOLS_ROOT = CONFIG.get("tools_root", "tools")
-
-PURLIN_TOOLS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "toolbox", "purlin_tools.json")
+PURLIN_TOOLS_PATH = os.path.join(SCRIPT_DIR, "purlin_tools.json")
 PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
 COMMUNITY_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community_tools.json")
 COMMUNITY_DIR = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community")

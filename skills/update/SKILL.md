@@ -48,7 +48,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - First, run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify which command and agent files changed upstream (single invocation). Also check launcher-relevant paths (e.g., `tools/init.sh`).
    - Also check if `tools/mcp/manifest.json` changed: `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- tools/mcp/manifest.json`. Record whether the MCP manifest changed (used in step 4b).
    - **If no command files, agent files, or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict. (The MCP manifest check above is independent and does not affect this early-exit.)
-   - For command files (`.claude/commands/pl-*.md`) that appear in BOTH the consumer project AND the diff-tree output (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
+   - For command files (`skills/*/SKILL.md`) that appear in BOTH the consumer project AND the diff-tree output (excluding N/A which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
    - For agent files (`.claude/agents/*.md`) that appear in BOTH the consumer project AND the diff-tree output:
@@ -96,7 +96,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
    - **Skip this step entirely if no conflicts were flagged** — do not scan or analyze files unnecessarily
 
 6. **Config Sync:**
-   - Run `sync_config()` from `tools/config/resolve_config.py`
+   - Run `sync_config()` via the MCP `purlin_config` tool
    - If `config.local.json` doesn't exist, creates it from `config.json`; otherwise adds missing keys with shared defaults
    - Reports new keys added or "Local config is up to date"
 
@@ -121,7 +121,7 @@ Set `<project_root>` to the resolved path. The submodule directory is `<project_
 8. **Stale Artifact Cleanup:**
    - **Known stale root scripts:** Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `pl-cdd-start.sh`, `pl-cdd-stop.sh`)
    - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
-   - **Orphaned command files:** After init refresh, compare `.claude/commands/pl-*.md` files against `<submodule>/.claude/commands/`. Any local `pl-*.md` file not present in the submodule is orphaned. Auto-delete unmodified orphans (report "Removed orphaned command: <file>"). Prompt before deleting modified orphans. Non-`pl-` prefixed command files are consumer-owned and not touched.
+   - **Orphaned command files:** After init refresh, compare `skills/*/SKILL.md` files against `<submodule>/.claude/commands/`. Any local skill not present in the submodule is orphaned. Auto-delete unmodified orphans (report "Removed orphaned command: <file>"). Prompt before deleting modified orphans. Non-purlin skill files are consumer-owned and not touched.
    - Check if `.purlin/release/` still exists AND `.purlin/toolbox/.migrated_from_release` exists (migration completed). If both true, prompt: `"Found legacy release config at .purlin/release/. This has been migrated to .purlin/toolbox/. Delete the old directory?"` Only delete on explicit user confirmation.
    - In `--dry-run` mode, list stale artifacts but do not delete
 
@@ -164,4 +164,4 @@ purlin:update --dry-run          # Preview what would change
 purlin:update v0.8.6 --dry-run   # Preview update to specific version
 ```
 
-**Implementation:** See `features/pl_update_purlin.md`
+**Implementation:** See `features/purlin_update_purlin.md`

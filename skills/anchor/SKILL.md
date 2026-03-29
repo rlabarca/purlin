@@ -88,4 +88,4 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 2. If **updating**: read the existing anchor node, identify the constraint to add or revise, apply the change, and identify all dependent features whose status will be reset to TODO.
 3. If **creating**: scaffold using the template above. Replace `Policy:` with `Architecture:`, `Design:`, `Operational:`, or `Product Brief:` as appropriate. For `prodbrief_*` anchors, use `## User Stories` and `## Success Criteria` instead of `## <Domain> Invariants`.
 4. **Cascade awareness:** Editing an anchor node resets ALL dependent features to TODO. This triggers re-validation across the entire domain. Verify this is intended.
-5. After editing, commit the change and run `${CLAUDE_PLUGIN_ROOT}/scripts/cdd/scan.sh`. The scan resets dependents and surfaces them as Engineer action items.
+5. After editing, commit the change and run the MCP `purlin_scan` tool. The scan resets dependents and surfaces them as Engineer action items.

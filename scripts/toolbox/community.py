@@ -14,18 +14,15 @@ import tempfile
 from datetime import date
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'mcp')))
+from bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
-_config = load_config(PROJECT_ROOT)
 
 COMMUNITY_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community_tools.json")
 COMMUNITY_DIR = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community")
 PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
-PURLIN_TOOLS_PATH = os.path.join(
-    PROJECT_ROOT, _config.get("tools_root", "tools"), "toolbox", "purlin_tools.json"
-)
+PURLIN_TOOLS_PATH = os.path.join(SCRIPT_DIR, "purlin_tools.json")
 
 COMMUNITY_PREFIX = "community."
 
@@ -411,7 +408,7 @@ def cmd_push(tool_id, git_url=None, version=None, dry_run=False):
     purlin_tools = _load_registry(PURLIN_TOOLS_PATH)
     if _find_entry(purlin_tools, tool_id) >= 0:
         return {"status": "error", "message": (
-            "Purlin tools cannot be pushed. Use '/pl-toolbox copy' first "
+            "Purlin tools cannot be pushed. Use 'purlin:toolbox copy' first "
             "to create a project tool, then push that."
         )}
 
@@ -514,7 +511,7 @@ def cmd_push(tool_id, git_url=None, version=None, dry_run=False):
         if not git_url:
             return {"status": "error", "message": (
                 f"This is a project tool with no source repo. "
-                f"Specify a git URL: '/pl-toolbox push {tool_id} <git-url>'"
+                f"Specify a git URL: 'purlin:toolbox push {tool_id} <git-url>'"
             )}
 
         tool_def = dict(project_tools[proj_idx])

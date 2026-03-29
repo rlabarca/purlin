@@ -29,14 +29,14 @@ Each tool (whether Purlin, Project, or Community) is a JSON object conforming to
 | `version` | string or null | No | Semver version string. Required for community tools. Purlin tools version with the framework. Project tools are unversioned (`null`). |
 | `metadata` | object or null | No | Extended metadata. Tooling MUST ignore unrecognized keys within metadata (forward-compatible). |
 | `metadata.author` | string or null | No | Email address of the tool author. Required for community tools, optional for project tools, null for purlin tools. |
-| `metadata.source_repo` | string or null | No | Git URL of the source repository. Required for community tools. Set during `/pl-toolbox add` or `/pl-toolbox push`. |
+| `metadata.source_repo` | string or null | No | Git URL of the source repository. Required for community tools. Set during `purlin:toolbox add` or `purlin:toolbox push`. |
 | `metadata.last_updated` | string or null | No | ISO 8601 date string. Auto-set on create, edit, or pull. |
 
 No additional top-level fields are required by the schema at this time. Tooling MUST ignore unrecognized fields with a warning, not an error (forward compatibility).
 
 ### 2.2 Purlin Tools Registry
 
-*   **Path:** `<tools_root>/toolbox/purlin_tools.json` (resolved via `tools_root` in `.purlin/config.json`; default `scripts/toolbox/purlin_tools.json`).
+*   **Path:** `${CLAUDE_PLUGIN_ROOT}/scripts/toolbox/purlin_tools.json`.
 *   **Format:**
     ```json
     {
@@ -92,7 +92,7 @@ The resolver merges three sources into a unified tool list.
 
 **Steps:**
 
-1. **Load purlin tools** from `<tools_root>/toolbox/purlin_tools.json`. Assign `category: "purlin"` to each.
+1. **Load purlin tools** from `${CLAUDE_PLUGIN_ROOT}/scripts/toolbox/purlin_tools.json`. Assign `category: "purlin"` to each.
 2. **Load project tools** from `.purlin/toolbox/project_tools.json`. Validate IDs do not use reserved prefixes (`purlin.`, `community.`). Assign `category: "project"`.
 3. **Load community tools** from `.purlin/toolbox/community_tools.json`. For each entry, read the full definition from `.purlin/toolbox/community/<tool_id>/tool.json`. Assign `category: "community"`.
 4. **Build merged registry** keyed by ID. All IDs must be unique across all three sources:
@@ -113,7 +113,7 @@ All subcommands that accept a tool name support fuzzy matching against both IDs 
 *   Exact ID match always wins.
 *   If no exact match: substring match against IDs and friendly names (case-insensitive).
 *   If multiple matches: show all candidates and ask the user to pick.
-*   If no matches: `"No tool matching '<query>'. Run /pl-toolbox list to see available tools."`
+*   If no matches: `"No tool matching '<query>'. Run purlin:toolbox list to see available tools."`
 
 ### 2.7 File Layout
 
@@ -207,19 +207,19 @@ The resolver detects old-format files by the absence of `schema_version` and the
 #### Scenario: Fuzzy match on partial ID
 
     Given a tool exists with id "purlin.verify_zero_queue"
-    When the user runs "/pl-toolbox run zero"
+    When the user runs "purlin:toolbox run zero"
     Then the tool "purlin.verify_zero_queue" is matched
 
 #### Scenario: Fuzzy match on friendly name
 
     Given a tool exists with friendly_name "Refresh Documentation"
-    When the user runs "/pl-toolbox run docs"
+    When the user runs "purlin:toolbox run docs"
     Then the tool is matched
 
 #### Scenario: Ambiguous fuzzy match shows candidates
 
     Given tools exist with ids "purlin.doc_consistency_check" and "doc_consistency_framework"
-    When the user runs "/pl-toolbox run doc"
+    When the user runs "purlin:toolbox run doc"
     Then both tools are shown as candidates
     And the user is asked to pick
 
@@ -227,9 +227,9 @@ The resolver detects old-format files by the absence of `schema_version` and the
 
     Given purlin_tools.json contains a tool with id "purlin.verify_zero_queue"
     And project_tools.json contains a tool with id "verify_zero_queue"
-    When the user runs "/pl-toolbox run verify_zero_queue"
+    When the user runs "purlin:toolbox run verify_zero_queue"
     Then the project tool executes (not the purlin tool)
-    And "/pl-toolbox list" shows both tools
+    And "purlin:toolbox list" shows both tools
 
 ### Manual Scenarios (Human Verification Required)
 

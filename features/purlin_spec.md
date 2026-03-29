@@ -1,0 +1,130 @@
+# Feature: Spec Authoring
+
+> Label: "Agent Skills: PM: purlin:spec Spec Authoring"
+> Category: "Agent Skills: PM"
+> Prerequisite: features/impl_notes_companion.md
+> Prerequisite: features/purlin_find.md
+
+[TODO]
+
+## 1. Overview
+
+The core spec authoring skill shared by PM and PM roles. Provides a guided workflow for creating new feature specs or refining existing ones, enforcing template compliance, category/label conventions, prerequisite checklist validation, and scan parser requirements. Integrates with `purlin:find` for topic discovery before authoring.
+
+---
+
+## 2. Requirements
+
+### 2.1 Role Gating
+
+- The command MUST only execute when invoked by the PM or PM role.
+- Non-PM agents MUST receive a redirect message.
+
+### 2.2 Required Reading
+
+- Before authoring or refining any spec, the agent MUST read `references/spec_authoring_guide.md` for shared authoring principles.
+
+### 2.3 Topic Discovery
+
+- The command MUST first run `purlin:find` logic to determine if a spec already exists or needs updating.
+- If updating: open the existing feature file, review, identify gaps, propose targeted additions or revisions. Apply after user confirmation.
+- If creating: follow the template and format rules.
+
+### 2.4 Template Compliance
+
+- New feature files MUST use the canonical template structure from `scripts/feature_templates/_feature.md`.
+- Required section headings (scan checks): a heading containing `overview`, `requirements`, and `scenarios`. Matching is case-insensitive substring (e.g., `## 2. Requirements` matches the `requirements` check).
+- Scenario headings MUST use four-hash `####` format.
+
+### 2.5 Category and Label Conventions
+
+- Before assigning a category, the agent MUST scan `.purlin/cache/dependency_graph.json` for existing categories.
+- Slash command features always go in "Agent Skills" category.
+- Label prefix patterns MUST match the chosen category.
+
+### 2.6 Prerequisite Checklist
+
+- Features rendering UI MUST declare relevant `design_*.md` anchor prerequisites.
+- Features accessing/transforming data MUST declare relevant `arch_*.md` anchor prerequisites.
+- Features in governed processes MUST declare relevant `policy_*.md` anchor prerequisites.
+- Features governed by operational mandates MUST declare relevant `ops_*.md` or `i_ops_*.md` anchor/invariant prerequisites.
+- Features with product brief requirements MUST declare relevant `prodbrief_*.md` or `i_prodbrief_*.md` anchor/invariant prerequisites.
+
+### 2.7 Invariant Advisory (Pre-Commit)
+
+Before committing a spec, the command MUST:
+
+1. Read `dependency_graph.json` → `global_invariants` and display any applicable global invariants.
+2. Check for scoped `i_*` files whose domain overlaps the feature's domain. Suggest them as prerequisites if not already declared.
+3. This advisory is **non-blocking** — it does not prevent the spec commit. It informs the PM of relevant invariant constraints during authoring.
+
+### 2.8 Post-Authoring
+
+- After editing, commit the change and run `scan.sh` to refresh scan results.
+
+---
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Role gate rejects non-PM invocation
+
+    Given an Engineer agent session
+    When the agent invokes purlin:spec
+    Then the command responds with a redirect message
+    And no spec file is created or modified
+
+#### Scenario: Topic discovery finds existing spec
+
+    Given a feature spec exists at features/my_feature.md
+    When purlin:spec is invoked with argument "my_feature"
+    Then the existing spec is opened for review
+    And gaps are identified and proposed to the user
+
+#### Scenario: New spec uses template structure
+
+    Given no feature spec exists for the topic
+    When purlin:spec creates a new feature file
+    Then the file contains overview, requirements, and scenarios sections
+    And scenario headings use four-hash format
+    And the file is ready for Engineer implementation
+
+#### Scenario: Category scan prevents duplicate categories
+
+    Given dependency_graph.json contains category "Agent Skills"
+    When purlin:spec creates a spec for a slash command feature
+    Then the spec uses category "Agent Skills"
+    And no new category is invented
+
+#### Scenario: Prerequisite checklist enforced for UI features
+
+    Given the new feature renders HTML/CSS output
+    When purlin:spec creates the spec
+    Then relevant design_*.md anchors are declared as prerequisites
+
+#### Scenario: Invariant advisory shows global invariants before commit
+
+    Given dependency_graph.json contains global_invariants ["i_arch_api_standards.md"]
+    When purlin:spec is about to commit a new feature spec
+    Then the command displays applicable global invariant constraints
+    And the advisory is non-blocking
+
+#### Scenario: Invariant advisory suggests scoped invariant as prerequisite
+
+    Given invariant i_policy_gdpr.md exists with Scope: scoped
+    And the new feature handles user data but does not declare i_policy_gdpr.md as a prerequisite
+    When purlin:spec runs the invariant advisory
+    Then the command suggests adding i_policy_gdpr.md as a prerequisite
+    And the suggestion is non-blocking
+
+#### Scenario: Prerequisite checklist includes ops_* and prodbrief_* anchors
+
+    Given the new feature is governed by an operational CI/CD mandate
+    And ops_ci_pipeline.md exists as an anchor
+    When purlin:spec creates the spec
+    Then relevant ops_*.md anchors are declared as prerequisites
+
+### QA Scenarios
+
+None.

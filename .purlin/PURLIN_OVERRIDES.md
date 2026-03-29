@@ -65,7 +65,7 @@ In this repository, test code is colocated with the tool it tests under `tools/`
 > Core-specific rules for the Purlin framework repository itself.
 
 ## Sample Sync Prompt
-When modifying ANY file inside `.purlin/` (instructions, configs, or other artifacts), you MUST ask the User whether the corresponding file in `purlin-config-sample/` should also be updated. Do NOT silently propagate changes to the sample folder. The sample folder is a distributable template and may intentionally diverge from the active working copy.
+When modifying ANY file inside `.purlin/` (instructions, configs, or other artifacts), you MUST ask the User whether the corresponding file in `templates/` should also be updated. Do NOT silently propagate changes to the templates folder. The templates folder is a distributable template and may intentionally diverge from the active working copy.
 
 ## Pre-Push Documentation Consistency Check
 Before any push to GitHub, you MUST run a cross-reference consistency check across all instruction and documentation files. Specifically:
@@ -81,7 +81,7 @@ When reviewing or modifying feature specs that touch tool behavior, verify the s
 *   Verify submodule safety per the checklist in the Submodule Compatibility Mandate above.
 
 ## Base File Soft Check
-Although PM/Engineer write access includes `instructions/*.md`, base files MUST NOT be modified without using `/pl-edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate -- they are never editable regardless of tool used.
+Although PM/Engineer write access includes `instructions/*.md`, base files MUST NOT be modified without using `purlin:edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate -- they are never editable regardless of tool used.
 
 ## Script Classification Mandate
 
@@ -120,7 +120,7 @@ The base instruction SKILL FILE LIFECYCLE (PURLIN_BASE Section 3.1) establishes 
 > Core-specific rules for the Purlin framework repository itself.
 
 ## Invariant Sync Verification in Submodule Mode
-When verifying invariant-related features (`pl_invariant`, invariant preflight in `pl_build`, invariant audit), test that `/pl-invariant sync` and `/pl-invariant add` resolve source paths and write `features/i_*.md` files correctly in BOTH standalone and submodule deployments. Specifically verify:
+When verifying invariant-related features (`pl_invariant`, invariant preflight in `pl_build`, invariant audit), test that `purlin:invariant sync` and `purlin:invariant add` resolve source paths and write `features/i_*.md` files correctly in BOTH standalone and submodule deployments. Specifically verify:
 *   `invariant.py` functions (`validate_invariant`, `compute_content_hash`, `extract_metadata`) operate on files at the consumer project's `features/` directory, not the submodule's.
 *   Hash comparisons in `scan_invariant_integrity()` use the constraint cache from `.purlin/cache/`, not a path inside the submodule.
 *   The invariant audit toolbox tool discovers invariants in the consumer project's `features/` directory.

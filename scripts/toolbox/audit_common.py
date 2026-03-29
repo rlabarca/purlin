@@ -8,8 +8,8 @@ import sys
 
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(_SCRIPT_DIR, '../../')))
-from tools.bootstrap import detect_project_root
+sys.path.insert(0, os.path.abspath(os.path.join(_SCRIPT_DIR, '..', 'mcp')))
+from bootstrap import detect_project_root
 
 
 def make_finding(severity, category, file_path, message, line=None):
