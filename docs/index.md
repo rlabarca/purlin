@@ -33,6 +33,10 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 * [What's New in v0.8.6](whats-new-0.8.6.md) — Plugin migration, mechanical mode guard, MCP server, hooks, new install model, skill renaming.
 * [What's New in v0.8.5](whats-new-0.8.5.md) — Unified agent, mode switching, Agentic Toolbox, dashboard removal, new launcher, and skill changes.
 
+## Project Structure
+
+* [The Features Folder](features-folder-guide.md) — How feature files are organized into category subfolders, system folders, and file types.
+
 ## Setup & Maintenance
 
 * [Installation Guide](installation-guide.md) — Registering the plugin, adding Purlin to a project, joining an existing team, upgrading from submodule, and configuration.
