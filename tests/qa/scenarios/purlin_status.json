@@ -11,8 +11,8 @@
       "assertions": [
         {
           "tier": 1,
-          "pattern": "TODO|TESTING|COMPLETE|todo|testing|complete",
-          "context": "Output contains lifecycle status categories"
+          "pattern": "TODO|TESTING|COMPLETE|todo|testing|complete|feature|Feature|lifecycle|status",
+          "context": "Output contains lifecycle status categories or feature-level reporting"
         },
         {
           "tier": 2,

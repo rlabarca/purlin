@@ -344,9 +344,9 @@ Regression suites:
     [NOT_RUN] skill_behavior_regression (agent_behavior, 9 scenarios)
 ```
 
-8. **`auto_start` gate (BEFORE prompting — do NOT print a prompt or wait for input when `auto_start: true`).**
-   - **When `auto_start: true`:** Print `"auto_start: running N per-feature suites (smoke first). Skipped M pre-release suites (run manually before release)."` Proceed directly to step 9 with all STALE and NOT_RUN per-feature suites selected. Do NOT print a prompt. Do NOT wait for user input.
-   - **When `auto_start: false`:** Print `"Run regression suites? [all / per-feature / skip]"` and wait for user selection. If the user says "skip": skip regression execution, proceed to Phase B, and record skipped suites in the QA report. Also prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
+8. **`--auto-verify` / `auto_start` gate (BEFORE prompting — do NOT print a prompt or wait for input when `--auto-verify` or `auto_start: true`).**
+   - **When `--auto-verify` or `auto_start: true`:** Run ALL regression suites — every STALE, FAIL, and NOT_RUN suite regardless of harness type (custom_script, agent_behavior, web_test). This is a HARD GATE: no suite may be skipped or deferred. Print `"auto-verify: running N suites (M custom_script, K agent_behavior). Skipped L pre-release suites (run manually before release)."` Proceed directly to step 9. Do NOT print a prompt. Do NOT wait for user input.
+   - **When `auto_start: false` (and no `--auto-verify`):** Print `"Run regression suites? [all / per-feature / skip]"` and wait for user selection. If the user says "skip": skip regression execution, proceed to Phase B, and record skipped suites in the QA report. Also prompt for pre-release suites: `"Run pre-release regression suites? [yes / skip]"`.
 
 9. **Execute selected suites in-session.** Skip suites already launched in Step 0b (background). All harness types — including `agent_behavior` — run directly. The `claude --print` invocations within `agent_behavior` suites are stateless, non-interactive subprocesses that do not conflict with the active session.
    - **Fast suites** (`web_test`, `custom_script`, single-scenario `agent_behavior`): run synchronously for immediate feedback.
