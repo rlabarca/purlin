@@ -1,0 +1,49 @@
+{
+  "feature": "purlin_agent_launcher",
+  "description": "Regression scenarios for Purlin unified agent session entry point: instruction stack assembly and help flag presence.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "instruction-stack-assembly",
+      "script_path": "tests/purlin_agent_launcher/test_instruction_stack.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "PURLIN_BASE\\.md found in instructions",
+          "context": "PURLIN_BASE.md exists in instructions directory"
+        },
+        {
+          "tier": 2,
+          "pattern": "PURLIN_OVERRIDES\\.md found in \\.purlin",
+          "context": "PURLIN_OVERRIDES.md exists in .purlin directory"
+        },
+        {
+          "tier": 2,
+          "pattern": "construct_system_prompt handles PURLIN role",
+          "context": "Harness runner constructs PURLIN system prompt from correct two-layer stack"
+        }
+      ]
+    },
+    {
+      "name": "help-output-flags",
+      "script_path": "tests/purlin_agent_launcher/test_help_flags.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "resume skill contains --yolo",
+          "context": "The resume skill references --yolo flag"
+        },
+        {
+          "tier": 2,
+          "pattern": "resume skill contains --no-yolo",
+          "context": "The resume skill references --no-yolo flag"
+        },
+        {
+          "tier": 2,
+          "pattern": "resume skill contains --no-save",
+          "context": "The resume skill references --no-save flag"
+        }
+      ]
+    }
+  ]
+}
