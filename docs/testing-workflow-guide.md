@@ -23,8 +23,8 @@ PM mode → Engineer mode → QA mode
 Switch to PM mode and create a spec:
 
 ```
-/pl-mode pm
-/pl-spec dashboard-overview
+purlin:mode pm
+purlin:spec dashboard-overview
 ```
 
 PM mode asks questions about scope, edge cases, behavior, and constraints, then produces a feature spec with:
@@ -36,11 +36,13 @@ PM mode asks questions about scope, edge cases, behavior, and constraints, then 
 
 ### With Figma Designs
 
+First, import the design as an invariant (one-time setup):
+
 ```
-/pl-design-ingest https://www.figma.com/design/ABC123/My-App
+purlin:invariant add-figma https://www.figma.com/design/ABC123/My-App
 ```
 
-PM mode extracts components, tokens, and annotations from Figma and writes them into the spec. It also generates `brief.json` — structured design data that Engineer mode reads instead of needing Figma access.
+Then reference it during spec authoring — `purlin:spec` reads the Figma design via MCP, extracts components and tokens, and generates `brief.json` (structured design data that Engineer mode reads instead of needing Figma access).
 
 ### Without Designs
 
@@ -53,8 +55,8 @@ Describe the feature in plain language. PM mode asks clarifying questions and bu
 Switch to Engineer mode and build:
 
 ```
-/pl-mode engineer
-/pl-build dashboard-overview
+purlin:mode engineer
+purlin:build dashboard-overview
 ```
 
 Engineer mode reads the spec and:
@@ -75,8 +77,10 @@ When Engineer mode discovers something the spec didn't anticipate, it records th
 Switch to QA mode and verify:
 
 ```
-/pl-mode qa
-/pl-verify
+purlin:mode qa
+purlin:verify                        # Verify all TESTING features
+purlin:verify dashboard-overview     # Verify a specific feature
+purlin:verify --auto-fix             # Enable auto-fix iteration loop
 ```
 
 QA mode finds all features marked `[Ready for Verification]` and runs through them.
@@ -115,9 +119,9 @@ Regression tests ensure that features keep working after future changes.
 
 ### The Regression Cycle
 
-1. **QA mode authors regression files** from the spec's QA scenarios (`/pl-regression author`).
+1. **QA mode authors regression files** from the spec's QA scenarios (`purlin:regression author`).
 2. **You run the suite** in a separate terminal (`./tests/qa/run_all.sh`).
-3. **QA mode evaluates results** (`/pl-regression evaluate`) — creates bug reports for failures, reports test quality.
+3. **QA mode evaluates results** (`purlin:regression evaluate`) — creates bug reports for failures, reports test quality.
 
 ### When Results Go Stale
 
@@ -134,7 +138,7 @@ Smoke tests are the critical-path checks that run before everything else.
 | Role | Responsibility |
 |------|----------------|
 | **PM mode** | Writes the scenarios that become smoke tests. |
-| **QA mode** | Decides which features are smoke-tier (`/pl-smoke`), authors simplified smoke regressions. |
+| **QA mode** | Decides which features are smoke-tier (`purlin:smoke`), authors simplified smoke regressions. |
 | **Engineer mode** | Fixes smoke test failures (they're blocking). |
 
 ### How It Fits In
@@ -144,7 +148,8 @@ During QA verification, smoke-tier features run first (Phase A, Step 2). If any 
 ### Setting It Up
 
 ```
-/pl-smoke config-layering
+purlin:smoke config-layering         # Promote a feature to smoke tier
+purlin:smoke suggest                 # Get suggestions for which features to promote
 ```
 
 QA mode adds the feature to the smoke tier and optionally creates a quick regression (1-3 scenarios, under 30 seconds).
@@ -177,17 +182,17 @@ Tags are immutable once created. The fixture repo is derived (not precious state
 | Build a feature without designs | PM mode → Engineer mode → QA mode |
 | Fix bugs found during QA | Engineer mode, then QA mode |
 | Resolve a spec dispute | PM mode, then Engineer mode, then QA mode |
-| Set up regression coverage | QA mode: `/pl-regression author` |
-| Add smoke tests | QA mode: `/pl-smoke feature-name` |
+| Set up regression coverage | QA mode: `purlin:regression author` |
+| Add smoke tests | QA mode: `purlin:smoke feature-name` |
 | Run the full regression suite | Terminal: `./tests/qa/run_all.sh` |
 
 ### Key Commands
 
 | Command | Mode | What It Does |
 |---------|------|--------------|
-| `/pl-spec <topic>` | PM | Create or update a feature spec. |
-| `/pl-build [name]` | Engineer | Implement a feature from its spec. |
-| `/pl-verify [name]` | QA | Run the verification workflow. |
-| `/pl-regression <cmd>` | QA | Author, run, or evaluate regressions. |
-| `/pl-smoke <feature>` | QA | Promote a feature to smoke tier. |
-| `/pl-status` | Any | See what needs doing. |
+| `purlin:spec <topic>` | PM | Create or update a feature spec. |
+| `purlin:build [name]` | Engineer | Implement a feature from its spec. |
+| `purlin:verify [name]` | QA | Run the verification workflow. |
+| `purlin:regression <cmd>` | QA | Author, run, or evaluate regressions. |
+| `purlin:smoke <feature>` | QA | Promote a feature to smoke tier. |
+| `purlin:status` | Any | See what needs doing. |

@@ -3,7 +3,7 @@
 
 Manages the Test Priority Tiers table in override files, suggests features
 for smoke promotion, creates simplified smoke regression files, and provides
-the smoke gate ordering logic used by /pl-verify.
+the smoke gate ordering logic used by purlin:verify.
 """
 
 import json

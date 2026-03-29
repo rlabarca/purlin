@@ -13,10 +13,10 @@ purlin:mode [pm|engineer|qa]
 
 When invoked with no arguments, display current mode status. No mode change, no terminal update.
 
-1. Print the current mode: `"Current mode: <Engineer|PM|QA>"` or `"No mode active"` if in open mode.
+1. Print the current mode: `"Current mode: <Engineer|PM|QA>"` or `"Default mode (read-only)"` if no mode is active.
 2. Print the available skills for the current mode from `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md`:
    - If a mode is active, print that mode's skill section.
-   - If no mode is active, print the Mode Quick Reference table below.
+   - If no mode is active, print the Mode Quick Reference table below and remind: "Activate a mode to make changes."
 3. Print: `"Switch with purlin:mode <pm|engineer|qa>"`
 
 ## With Argument: Mode Switch
@@ -43,6 +43,7 @@ When invoked with no arguments, display current mode status. No mode change, no 
 
 | Mode | Activates | Write Access |
 |---|---|---|
+| *(default)* | *Research, explore, read* | *None — read-only* |
 | engineer | Build, test, release, arch anchors | Code, tests, scripts, arch_*, companions, instructions |
 | pm | Spec authoring, design anchors | Feature specs, design_*, policy_* |
 | qa | Verification, discovery, regression | Discovery sidecars, QA tags, regression JSON |

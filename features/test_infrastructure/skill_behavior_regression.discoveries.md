@@ -5,7 +5,8 @@
 - **Observed Behavior:** All scenarios construct 4-layer system prompts for legacy roles (ARCHITECT, BUILDER, QA) using legacy `instructions/<ROLE>_BASE.md` (now `agents/purlin.md`). These role-specific agents have been replaced by the Purlin unified agent with modes (PM, Engineer, QA). Fixtures use the old instruction stack (`HOW_WE_WORK_BASE.md` + `<ROLE>_BASE.md` + overrides, now replaced by `agents/purlin.md`). 4 scenarios now fail because legacy instruction files no longer produce correct behavior; 5 pass by coincidence (QA role overlap, refusal patterns are similar, pre-loaded context compensates).
 - **Expected Behavior:** Suite should test the Purlin unified agent in PM mode (replaces PM), Engineer mode (replaces Engineer), and QA mode. Fixtures should use `agents/purlin.md` + `PURLIN_OVERRIDES.md` instruction stack. Prompts should be "Begin Purlin session" with mode activation, not "Begin PM session."
 - **Action Required:** PM (re-spec entire feature around Purlin unified agent modes) + Engineer (update fixtures, scenario JSON, and harness `construct_system_prompt()` for unified agent)
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
+- **Spec Resolution:** Feature spec already re-specced around Purlin unified agent modes (PURLIN role, pm/engineer/qa modes, purlin-unified fixture tag). Remaining work is Engineer-owned: update fixtures, scenario JSON, and harness for unified agent. Source: purlin:spec-code-audit 2026-03-29.
 
 ### [BUG] qa-startup-identifies-testing persistent failure (Discovered: 2026-03-25)
 - **Scenario:** features/skill_behavior_regression.md:qa-startup-identifies-testing

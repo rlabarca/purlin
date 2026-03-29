@@ -9,9 +9,9 @@ How to use, create, and share project tools.
 The Agentic Toolbox is a collection of independent, reusable tools that the agent can run on demand. Each tool is a JSON definition with shell commands, natural-language instructions for the agent, or both. Tools replace the old release checklist — instead of a fixed sequence of steps, you have a library of tools you can run in any order.
 
 ```
-/pl-toolbox                          # Interactive menu
-/pl-toolbox list                     # See all tools
-/pl-toolbox run <tool>               # Run a tool by name or ID
+purlin:toolbox                          # Interactive menu
+purlin:toolbox list                     # See all tools
+purlin:toolbox run <tool>               # Run a tool by name or ID
 ```
 
 ---
@@ -20,7 +20,7 @@ The Agentic Toolbox is a collection of independent, reusable tools that the agen
 
 | Category | Location | Who Manages |
 |----------|----------|-------------|
-| **Purlin** | Inside the Purlin submodule | Framework maintainers (read-only in consumer projects) |
+| **Purlin** | Inside the Purlin plugin | Framework maintainers (read-only in consumer projects) |
 | **Project** | `.purlin/toolbox/project_tools.json` | You and your team |
 | **Community** | `.purlin/toolbox/community/` | Downloaded from git repos, locally editable |
 
@@ -31,9 +31,9 @@ When you run a tool by name, the agent searches all three registries. Project to
 ## Running Tools
 
 ```
-/pl-toolbox run spec check           # Run by friendly name (fuzzy matched)
-/pl-toolbox run purlin.spec_check    # Run by exact ID
-/pl-toolbox run tool1 tool2          # Run multiple sequentially
+purlin:toolbox run spec check           # Run by friendly name (fuzzy matched)
+purlin:toolbox run purlin.spec_check    # Run by exact ID
+purlin:toolbox run tool1 tool2          # Run multiple sequentially
 ```
 
 The agent resolves the name against all registries. If multiple tools match, it shows candidates and asks you to pick. Exact ID match always wins over fuzzy name matching.
@@ -49,7 +49,7 @@ Each tool executes based on what it defines:
 ## Listing Tools
 
 ```
-/pl-toolbox list
+purlin:toolbox list
 ```
 
 Shows all tools grouped by category with their ID and friendly name. Community tools also show author and source repo. Categories with no tools are omitted.
@@ -59,7 +59,7 @@ Shows all tools grouped by category with their ID and friendly name. Community t
 ## Creating Project Tools
 
 ```
-/pl-toolbox create
+purlin:toolbox create
 ```
 
 Walks you through an interactive flow (requires Engineer mode):
@@ -82,16 +82,16 @@ At least one of code or instructions must be provided. The tool is written to `.
 
 ## Customizing Purlin Tools
 
-In consumer projects, Purlin tools are read-only (they live inside the submodule). To customize one:
+In consumer projects, Purlin tools are read-only (they're distributed with the plugin). To customize one:
 
 ```
-/pl-toolbox copy spec_check
+purlin:toolbox copy spec_check
 ```
 
 This copies the Purlin tool to your project registry with a new ID (stripping the `purlin.` prefix). You can then edit it:
 
 ```
-/pl-toolbox edit spec_check
+purlin:toolbox edit spec_check
 ```
 
 Your project copy shadows the original — when you run `spec_check`, your version executes.
@@ -107,7 +107,7 @@ Community tools are shared via git repos. Each repo contains a `tool.json` at it
 ### Installing
 
 ```
-/pl-toolbox add https://github.com/someone/my-cool-tool.git
+purlin:toolbox add https://github.com/someone/my-cool-tool.git
 ```
 
 The agent clones the repo, validates `tool.json`, assigns a `community.` prefixed ID, and registers it locally.
@@ -115,8 +115,8 @@ The agent clones the repo, validates `tool.json`, assigns a `community.` prefixe
 ### Updating
 
 ```
-/pl-toolbox pull                     # Update all community tools
-/pl-toolbox pull my-cool-tool        # Update one tool
+purlin:toolbox pull                     # Update all community tools
+purlin:toolbox pull my-cool-tool        # Update one tool
 ```
 
 If you haven't edited the tool locally, it auto-updates from upstream. If you have local edits, you're offered three options: accept upstream, keep yours, or view the diff.
@@ -124,7 +124,7 @@ If you haven't edited the tool locally, it auto-updates from upstream. If you ha
 ### Sharing
 
 ```
-/pl-toolbox push my-tool https://github.com/me/my-tool.git
+purlin:toolbox push my-tool https://github.com/me/my-tool.git
 ```
 
 Pushes a project tool to a git repo, converting it into a community tool others can `add`. If the tool already has a stored `source_repo`, the URL argument is optional.
@@ -134,7 +134,7 @@ Pushes a project tool to a git repo, converting it into a community tool others 
 ## Deleting Tools
 
 ```
-/pl-toolbox delete my-tool
+purlin:toolbox delete my-tool
 ```
 
 Shows a dry-run preview before deleting. Purlin tools can't be deleted in consumer projects. Project and community tools can be deleted after confirmation.
@@ -162,11 +162,11 @@ At least one of `code` or `agent_instructions` must be non-null.
 
 | You want to... | Command |
 |----------------|---------|
-| See all available tools | `/pl-toolbox list` |
-| Run a tool | `/pl-toolbox run <name>` |
-| Create a new tool | `/pl-toolbox create` |
-| Customize a Purlin tool | `/pl-toolbox copy <name>` then `/pl-toolbox edit <name>` |
-| Install a shared tool | `/pl-toolbox add <git-url>` |
-| Update shared tools | `/pl-toolbox pull` |
-| Share your tool | `/pl-toolbox push <name> <git-url>` |
-| Delete a tool | `/pl-toolbox delete <name>` |
+| See all available tools | `purlin:toolbox list` |
+| Run a tool | `purlin:toolbox run <name>` |
+| Create a new tool | `purlin:toolbox create` |
+| Customize a Purlin tool | `purlin:toolbox copy <name>` then `purlin:toolbox edit <name>` |
+| Install a shared tool | `purlin:toolbox add <git-url>` |
+| Update shared tools | `purlin:toolbox pull` |
+| Share your tool | `purlin:toolbox push <name> <git-url>` |
+| Delete a tool | `purlin:toolbox delete <name>` |

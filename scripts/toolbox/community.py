@@ -21,8 +21,14 @@ PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 COMMUNITY_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community_tools.json")
 COMMUNITY_DIR = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "community")
-PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
 PURLIN_TOOLS_PATH = os.path.join(SCRIPT_DIR, "purlin_tools.json")
+
+# Framework repo detection: project tools live in dev/ (tracked) not .purlin/toolbox/ (gitignored)
+_IS_FRAMEWORK_REPO = os.path.abspath(SCRIPT_DIR).startswith(os.path.abspath(PROJECT_ROOT))
+if _IS_FRAMEWORK_REPO:
+    PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, "dev", "project_tools.json")
+else:
+    PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
 
 COMMUNITY_PREFIX = "community."
 

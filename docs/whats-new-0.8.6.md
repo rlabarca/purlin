@@ -288,6 +288,45 @@ Configure credentials with `purlin:credentials` or when prompted at plugin enabl
 
 ---
 
+## New: `purlin:config` Skill
+
+Behavior settings that previously required CLI flags on `purlin:resume` or manual JSON editing now have a dedicated skill:
+
+```
+purlin:config                       # Show all settings
+purlin:config yolo on               # Auto-approve all permission prompts
+purlin:config find-work off         # Skip the startup scan
+purlin:config auto-start on         # Start working immediately
+```
+
+Three settings, each with on/off:
+
+| Setting | What It Controls |
+|---------|-----------------|
+| **yolo** | Auto-approve all permission prompts (no confirmation dialogs) |
+| **find-work** | Scan for work when entering a mode or recovering a session |
+| **auto-start** | Begin executing work immediately after scanning |
+
+All writes go to `.purlin/config.local.json` (gitignored), so your preferences stay local. The team's committed `.purlin/config.json` provides defaults for new contributors.
+
+### What Moved Out of Purlin Config
+
+**Model and effort** are no longer Purlin settings. They were removed from `.purlin/config.json` because they're native Claude Code settings:
+
+| Old (v0.8.5) | New |
+|---|---|
+| `purlin:resume --model claude-sonnet-4-6` | `/model` or `claude --model claude-sonnet-4-6` |
+| `purlin:resume --effort high` | `/effort` |
+| `agents.purlin.model` in config.json | Not needed — set at Claude Code level |
+| `agents.purlin.effort` in config.json | Not needed — set at Claude Code level |
+| `agents.purlin.default_mode` in config.json | Removed — use `purlin:mode` or `purlin:resume --mode` |
+
+The legacy agent entries (`pm`, `architect`, `builder`, `qa`) were also removed from the config template. Only `agents.purlin` exists now — the unified agent doesn't need per-role config.
+
+See the [Configuration Guide](config-guide.md) for the full reference.
+
+---
+
 ## Tips and Tricks
 
 **Just run `claude` and talk.** No launcher, no special startup command. The plugin handles everything. Use `--plugin-dir ../purlin` if loading from a local clone, or just `claude` if you registered the marketplace source. Tell the agent what you want in plain language — it switches modes automatically.
@@ -296,9 +335,9 @@ Configure credentials with `purlin:credentials` or when prompted at plugin enabl
 
 **Mode guard is mechanical now.** If you accidentally try to write a spec in Engineer mode, the hook blocks it with an error. No more relying on the agent to self-police. This is the single biggest reliability improvement.
 
-**YOLO mode persists.** Run `purlin:resume --yolo` once and all permission prompts are auto-approved for subsequent sessions. The `PermissionRequest` hook reads the flag from config. Run `purlin:resume --no-yolo` to turn it off.
+**YOLO mode persists.** Run `purlin:config yolo on` and all permission prompts are auto-approved for subsequent sessions. The `PermissionRequest` hook reads the flag from config. Run `purlin:config yolo off` to turn it off. The `--yolo`/`--no-yolo` flags on `purlin:resume` still work as shortcuts.
 
-**Model override is simpler.** The plugin sets a default model. Override per-session with `claude --model claude-sonnet-4-6`. No more `--model` flags on a launcher script.
+**Model and effort are native Claude settings.** Use `/model` and `/effort` inside a session, or `claude --model claude-sonnet-4-6` at launch. These are no longer part of Purlin's config — they're Claude Code built-ins that apply to all tool use.
 
 **Upgrading is one command.** `purlin:update` handles the submodule-to-plugin transition automatically. It removes the submodule, cleans artifacts, and declares the plugin.
 

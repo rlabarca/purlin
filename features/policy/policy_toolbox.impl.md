@@ -11,6 +11,6 @@
 
 **[IMPL]** Destructive operation safety: manage.py delete supports `--dry-run`. community.py add/pull/push all support `--dry-run`. The skill file (pl-toolbox.md) instructs the agent to show a preview and confirm before executing destructive operations.
 
-**[DEVIATION]** PM ownership (§2.6): file_classification.md lists `.purlin/toolbox/*.json` as CODE (Engineer-owned), but the policy spec says PM-owned. The pl-toolbox skill file says write subcommands activate Engineer mode. Current behavior follows file_classification (Engineer writes via purlin:toolbox). PM review needed to resolve the classification conflict.
+**[DEVIATION]** [ACKNOWLEDGED] PM ownership (§2.6): file_classification.md lists `.purlin/toolbox/*.json` as CODE (Engineer-owned), but the policy spec said PM-owned. The pl-toolbox skill file says write subcommands activate Engineer mode. Current behavior follows file_classification (Engineer writes via purlin:toolbox).
 - **Severity:** LOW
-- **Why:** The operational model works — Engineer writes tool registries via purlin:toolbox skill, which is the intended workflow. The policy text and file classification disagree on the formal owner label.
+- **Resolution:** Policy spec §2.6 updated to align with file_classification.md and operational reality. Section renamed from "PM Ownership" to "Toolbox Governance". Engineer writes registries via skill; PM governs schema and policy. Source: purlin:spec-code-audit 2026-03-29.

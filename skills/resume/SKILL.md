@@ -16,7 +16,6 @@ Session setup (cold start or post-clear recovery):
   --worktree                 Enter an isolated git worktree
   --yolo                     Enable auto-approve for all permission prompts (persists)
   --no-yolo                  Disable auto-approve (persists)
-  --effort <high|medium>     Set effort level for this session
   --find-work <true|false>   Enable/disable work discovery (persists)
   --no-save                  Don't persist sticky flags to config (this session only)
 
@@ -36,7 +35,9 @@ Subcommands (do NOT run the startup flow):
 - `save` -- go to **Save Mode** section below. Stop after save confirmation.
 - `merge-recovery` -- go to **Merge Recovery Mode** section below. Stop after summary.
 - Any `--flag` or no argument -- continue to **Execution Flow** below.
-- Unrecognized argument (not a `--flag`, not `save`, not `merge-recovery`) -- print error: `"Unknown argument '<arg>'. Valid subcommands: save, merge-recovery. Valid flags: --mode, --build, --verify, --pm, --worktree, --yolo, --no-yolo, --effort, --find-work, --no-save."` Stop.
+- Unrecognized argument (not a `--flag`, not `save`, not `merge-recovery`) -- print error: `"Unknown argument '<arg>'. Valid subcommands: save, merge-recovery. Valid flags: --mode, --build, --verify, --pm, --worktree, --yolo, --no-yolo, --find-work, --no-save."` Stop.
+
+> **Model & effort:** Use `/model` and `/effort` (native Claude Code settings). These are not managed by Purlin config.
 
 ---
 
@@ -88,7 +89,6 @@ This means `purlin:resume` already ran once this session (cold start). The agent
 - `--no-save`: When present, sticky flags (`--yolo`, `--no-yolo`, `--find-work`) apply to this session but are NOT written to config. Has no effect on first-run interactive selection (which always persists).
 - `--yolo`: Write `bypass_permissions: true` to `.purlin/config.json` (unless `--no-save`). The PermissionRequest hook reads this and auto-approves all permission dialogs.
 - `--no-yolo`: Write `bypass_permissions: false` (unless `--no-save`).
-- `--effort`: Execute `/effort <level>` (Claude Code built-in).
 - `--find-work`: Write `find_work` to config (unless `--no-save`).
 
 ### Step 2 -- Worktree Entry (cold start only, only if `--worktree`)
@@ -169,10 +169,10 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 ### Step 9 -- Read Startup Flags and Gather Project State
 
-**Reading startup flags:** Check `$PURLIN_SESSION_ID` env var (set by the launcher, inherited by the agent). If set, look for `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`. This file is PID-scoped so concurrent agents (10+ in the same project) don't clobber each other. If found, verify the PID is still alive (`kill -0 $PURLIN_SESSION_ID`). If alive, read `find_work` and `auto_start` from the file. If dead (stale from crash), delete the file and fall back to config. If `PURLIN_SESSION_ID` is not set (manual `purlin:resume`), fall back to the resolved config (`agents.purlin`). Read `default_mode` from the resolved config always (not in session overrides). Defaults: `find_work: true`, `auto_start: false`, `default_mode: null`.
+**Reading startup flags:** Check `$PURLIN_SESSION_ID` env var (set by the launcher, inherited by the agent). If set, look for `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`. This file is PID-scoped so concurrent agents (10+ in the same project) don't clobber each other. If found, verify the PID is still alive (`kill -0 $PURLIN_SESSION_ID`). If alive, read `find_work` and `auto_start` from the file. If dead (stale from crash), delete the file and fall back to config. If `PURLIN_SESSION_ID` is not set (manual `purlin:resume`), fall back to the resolved config (`agents.purlin`). Defaults: `find_work: true`, `auto_start: false`.
 
 **When a checkpoint exists (warm resume):**
-- Startup flags (`find_work`, `auto_start`, `default_mode`) are NOT consulted -- the checkpoint is the authority for both mode and work plan.
+- Startup flags (`find_work`, `auto_start`) are NOT consulted -- the checkpoint is the authority for both mode and work plan.
 - Run a **mode-scoped scan** based on the checkpoint's mode:
   - Engineer: `purlin_scan(only: "features,discoveries,plan,git", cached: true)`
   - PM: `purlin_scan(only: "features,discoveries,deviations,git", cached: true)`
@@ -202,9 +202,8 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
    - `auto_start: true` -- present the work plan and begin executing immediately. Requires a resolved mode (see below); without one, `auto_start` is a no-op.
 
 **Mode activation priority (cold start only):**
-- CLI `--mode` (inferred from session message directing mode entry, e.g., "Enter Engineer mode") > config `default_mode` > `.purlin_session.lock` mode > user input.
-- **Applying `default_mode`:** If the session message does not direct a specific mode, read `default_mode` from resolved config. If non-null, enter that mode. If null, suggest a mode based on scan results and wait for user input.
-- **`auto_start` without a resolved mode** (no CLI `--mode`, `default_mode: null`, no session lock): `auto_start` is a no-op -- the agent presents mode suggestions and waits.
+- CLI `--mode` (inferred from session message directing mode entry, e.g., "Enter Engineer mode") > `.purlin_session.lock` mode > user input.
+- **`auto_start` without a resolved mode** (no CLI `--mode`, no session lock): `auto_start` is a no-op -- the agent presents mode suggestions and waits.
 
 **Worktree context:** If `.purlin_worktree_label` exists, read the label and include it in the recovery summary badge. If `.purlin_session.lock` exists and no checkpoint is found, read the mode from the lock as a fallback for mode activation.
 
@@ -234,12 +233,12 @@ Uncommitted:    <none | summary>
 
 ### Step 11 -- Mode Activation, Cleanup, and Continue
 
-- **Mode activation priority:** CLI flag > checkpoint mode > config default_mode > user input.
+- **Mode activation priority:** CLI flag > checkpoint mode > user input.
   - If `--build`: activate Engineer + invoke `purlin:build`.
   - If `--verify`: activate QA + invoke `purlin:verify`.
   - If `--pm`: activate PM mode.
   - If `--mode <mode>`: activate the specified mode.
-- **Update terminal identity** to reflect the determined mode. If a mode was resolved (from checkpoint, `default_mode`, or session message), run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"`. The `<label>` is the project name by default, or a short task description from the checkpoint's current work. This detects branch/worktree context automatically and produces the unified format `<short_mode>(<context>) | <label>`. If no mode was resolved, leave the launcher's initial badge in place.
+- **Update terminal identity** to reflect the determined mode. If a mode was resolved (from checkpoint or session message), run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"`. The `<label>` is the project name by default, or a short task description from the checkpoint's current work. This detects branch/worktree context automatically and produces the unified format `<short_mode>(<context>) | <label>`. If no mode was resolved, leave the launcher's initial badge in place.
 - If a checkpoint file was read in Step 5, **delete whichever file was consumed** (PID-scoped, unscoped, or legacy). The checkpoint has been consumed and must not be restored again.
 - If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 10) gives the user visibility; they can interrupt if needed.

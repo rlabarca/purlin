@@ -8,17 +8,22 @@
 #   0 = always (informational hook, never blocks)
 
 PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
-MODE_FILE="$PROJECT_ROOT/.purlin/runtime/current_mode"
 
 # Only act if this is a Purlin project
 if [ ! -d "$PROJECT_ROOT/.purlin" ]; then
     exit 0
 fi
 
-# Clear the persisted mode state
+# Clear PID-scoped mode file if PURLIN_SESSION_ID is set, else unscoped
+if [ -n "$PURLIN_SESSION_ID" ]; then
+    MODE_FILE="$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}"
+else
+    MODE_FILE="$PROJECT_ROOT/.purlin/runtime/current_mode"
+fi
+
 if [ -f "$MODE_FILE" ]; then
     > "$MODE_FILE"
 fi
 
-echo "Plan mode exited. Mode cleared — activate a mode before writing files."
+echo "Plan mode exited. Now in default mode (read-only). Activate a mode (purlin:mode engineer|pm|qa) before making changes."
 exit 0

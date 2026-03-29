@@ -42,37 +42,6 @@
     ],
     "agents": {
         "purlin": {
-            "model": "claude-opus-4-6[1m]",
-            "effort": "high",
-            "bypass_permissions": true,
-            "find_work": true,
-            "auto_start": false,
-            "default_mode": null
-        },
-        "pm": {
-            "model": "claude-sonnet-4-6",
-            "effort": "medium",
-            "bypass_permissions": true,
-            "find_work": false,
-            "auto_start": false
-        },
-        "architect": {
-            "model": "claude-opus-4-6",
-            "effort": "high",
-            "bypass_permissions": true,
-            "find_work": false,
-            "auto_start": false
-        },
-        "builder": {
-            "model": "claude-opus-4-6",
-            "effort": "high",
-            "bypass_permissions": true,
-            "find_work": true,
-            "auto_start": false
-        },
-        "qa": {
-            "model": "claude-sonnet-4-6",
-            "effort": "medium",
             "bypass_permissions": true,
             "find_work": true,
             "auto_start": false

@@ -73,6 +73,41 @@ class MigrationStep(ABC):
             return False
 
 
+def _remove_stale_submodule(project_root):
+    """Remove a lingering purlin submodule if present. Returns True if cleaned."""
+    from version_detector import _gitmodules_has_purlin
+
+    submodule_path = _gitmodules_has_purlin(project_root)
+    if not submodule_path:
+        return False
+
+    try:
+        subprocess.run(
+            ['git', 'submodule', 'deinit', '-f', submodule_path],
+            cwd=project_root, capture_output=True, timeout=30
+        )
+        subprocess.run(
+            ['git', 'rm', '-f', submodule_path],
+            cwd=project_root, capture_output=True, timeout=30
+        )
+        git_modules = os.path.join(project_root, '.git', 'modules', submodule_path)
+        if os.path.isdir(git_modules):
+            shutil.rmtree(git_modules, ignore_errors=True)
+        # Remove .gitmodules if empty
+        gitmodules = os.path.join(project_root, '.gitmodules')
+        if os.path.isfile(gitmodules):
+            with open(gitmodules, encoding='utf-8') as f:
+                if not f.read().strip():
+                    subprocess.run(
+                        ['git', 'rm', '-f', '.gitmodules'],
+                        cwd=project_root, capture_output=True, timeout=10
+                    )
+    except subprocess.SubprocessError:
+        return False
+
+    return True
+
+
 class Step1UnifiedAgentModel(MigrationStep):
     """Step 1: Pre-unified submodule -> Unified submodule."""
 
@@ -215,29 +250,7 @@ class Step2SubmoduleToPlugin(MigrationStep):
             pass
 
         # Remove submodule
-        sub_full = os.path.join(project_root, submodule_path)
-        try:
-            subprocess.run(
-                ['git', 'submodule', 'deinit', '-f', submodule_path],
-                cwd=project_root, capture_output=True, timeout=30
-            )
-            subprocess.run(
-                ['git', 'rm', '-f', submodule_path],
-                cwd=project_root, capture_output=True, timeout=30
-            )
-            git_modules = os.path.join(project_root, '.git', 'modules', submodule_path)
-            if os.path.isdir(git_modules):
-                shutil.rmtree(git_modules, ignore_errors=True)
-            # Remove .gitmodules if empty
-            gitmodules = os.path.join(project_root, '.gitmodules')
-            if os.path.isfile(gitmodules):
-                with open(gitmodules, encoding='utf-8') as f:
-                    if not f.read().strip():
-                        subprocess.run(
-                            ['git', 'rm', '-f', '.gitmodules'],
-                            cwd=project_root, capture_output=True, timeout=10
-                        )
-        except subprocess.SubprocessError as e:
+        if not _remove_stale_submodule(project_root):
             return False
 
         # Clean stale artifacts
@@ -321,14 +334,22 @@ class Step3PluginRefresh(MigrationStep):
         return True, ''
 
     def plan(self, fingerprint, project_root):
-        actions = [
+        from version_detector import _gitmodules_has_purlin
+
+        actions = []
+        if _gitmodules_has_purlin(project_root):
+            actions.append('Remove stale purlin submodule.')
+        actions.extend([
             'Sync config: add missing keys from plugin template.',
             'Check for stale pre-plugin artifacts and clean up.',
             'Stamp _migration_version: 3.',
-        ]
+        ])
         return actions
 
     def execute(self, fingerprint, project_root, auto_approve=False):
+        # Remove stale submodule if plugin was installed while submodule still exists
+        _remove_stale_submodule(project_root)
+
         config_path = os.path.join(project_root, '.purlin', 'config.json')
         config = _read_json(config_path) or {}
 

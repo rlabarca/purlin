@@ -23,10 +23,10 @@ QA mode:
 From any session:
 
 ```
-/pl-mode qa
+purlin:mode qa
 ```
 
-Or run a QA skill directly — `/pl-verify`, `/pl-regression`, and `/pl-discovery` all activate QA mode automatically.
+Or run a QA skill directly — `purlin:verify`, `purlin:regression`, and `purlin:discovery` all activate QA mode automatically.
 
 At startup, QA mode finds features in TESTING state and presents a verification plan.
 
@@ -105,7 +105,7 @@ When verification finds a problem, QA mode records a structured discovery in the
 Record a discovery at any time:
 
 ```
-/pl-discovery feature-name
+purlin:discovery feature-name
 ```
 
 ---
@@ -140,9 +140,9 @@ Results land in `tests/<feature>/regression.json`.
 
 | Command | What It Does |
 |---------|--------------|
-| `/pl-regression author` | Write regression test files from specs. |
-| `/pl-regression run` | Generate the command to run the suite. |
-| `/pl-regression evaluate` | Process results and create discoveries for failures. |
+| `purlin:regression author` | Write regression test files from specs. |
+| `purlin:regression run` | Generate the command to run the suite. |
+| `purlin:regression evaluate` | Process results and create discoveries for failures. |
 
 ### Staleness
 
@@ -159,7 +159,7 @@ Smoke tests are your critical-path checks — the features that, if broken, mean
 Promote a feature to the smoke tier:
 
 ```
-/pl-smoke feature-name
+purlin:smoke feature-name
 ```
 
 This adds the feature to the test priority table and optionally creates a simplified smoke regression (1-3 scenarios, under 30 seconds).
@@ -184,7 +184,7 @@ This catches critical breakage early, before you spend time verifying less impor
 ## Completing Features
 
 ```
-/pl-complete feature-name
+purlin:complete feature-name
 ```
 
 QA mode marks a feature complete when all gates pass:
@@ -202,13 +202,16 @@ The completion commit includes a `[Verified]` tag.
 
 | Command | What It Does |
 |---------|--------------|
-| `/pl-verify [name]` | Run the verification workflow (scoped or batch). |
-| `/pl-complete <name>` | Mark a verified feature as complete. |
-| `/pl-discovery [name]` | Record a structured finding. |
-| `/pl-regression <cmd>` | Author, run, or evaluate regression suites. |
-| `/pl-smoke <feature>` | Promote a feature to the smoke tier. |
-| `/pl-qa-report` | Summary of discoveries and verification status. |
-| `/pl-web-test [name]` | Playwright visual verification. |
-| `/pl-status` | Check what needs verification. |
-| `/pl-find <topic>` | Search specs for a topic. |
-| `/pl-help` | Full command list for QA mode. |
+| `purlin:verify [name] [--auto-fix]` | Run the verification workflow. `--auto-fix` enables the auto-fix iteration loop. |
+| `purlin:complete <name>` | Mark a verified feature as complete. |
+| `purlin:discovery [name]` | Record a structured finding. |
+| `purlin:regression <cmd>` | Author, run, or evaluate regression suites. |
+| `purlin:smoke <feature>` | Promote a feature to the smoke tier. |
+| `purlin:qa-report` | Summary of discoveries and verification status. |
+| `purlin:fixture` | Manage test fixtures — create, list, verify, or push to remote. |
+| `purlin:web-test [name]` | Playwright visual verification (cross-mode from QA). |
+| `purlin:unit-test [name]` | Run unit tests (cross-mode from QA). |
+| `purlin:server` | Start/stop dev server for web testing (cross-mode from QA). |
+| `purlin:status` | Check what needs verification. |
+| `purlin:find <topic>` | Search specs for a topic. |
+| `purlin:help` | Full command list for QA mode. |

@@ -22,10 +22,10 @@ Engineer mode:
 From any session:
 
 ```
-/pl-mode engineer
+purlin:mode engineer
 ```
 
-Or run an Engineer skill directly — `/pl-build`, `/pl-unit-test`, and `/pl-delivery-plan` all activate Engineer mode automatically.
+Or run an Engineer skill directly — `purlin:build`, `purlin:unit-test`, and `purlin:delivery-plan` all activate Engineer mode automatically.
 
 At startup, Engineer mode checks for TODO features and proposes a work plan. You approve, and it begins.
 
@@ -41,7 +41,7 @@ Before writing code, the agent:
 
 - Reads the companion file (`features/<name>.impl.md`) for prior decisions.
 - Checks anchor node constraints (forbidden patterns, invariants).
-- Loads visual design sources if the feature has a Visual Specification.
+- Loads visual design sources if the feature has a Visual Specification — reads the Token Map and checks `brief.json` staleness. See the [Design Guide](design-guide.md) for details.
 - Detects whether this is new work or re-verification of existing code.
 
 ### Step 1 — Plan
@@ -60,11 +60,11 @@ Writes code and tests. When it makes a decision the spec doesn't cover, it recor
 | `[DISCOVERY]` | Found an unstated requirement. |
 | `[INFEASIBLE]` | Cannot implement as specified — halts work. |
 
-HIGH and CRITICAL tags show up as PM action items in `/pl-status`.
+HIGH and CRITICAL tags show up as PM action items in `purlin:status`.
 
 ### Step 3 — Verify
 
-Runs `/pl-unit-test` to check tests against the quality rubric. For features with visual specs, runs `/pl-web-test` via Playwright.
+Runs `purlin:unit-test` to check tests against the quality rubric. For features with visual specs, runs `purlin:web-test` via Playwright.
 
 ### Step 4 — Status Tag
 
@@ -77,7 +77,7 @@ A separate commit marks the feature's state:
 
 ## Unit Testing
 
-`/pl-unit-test` runs tests and checks them against a quality rubric. Every test must:
+`purlin:unit-test` runs tests and checks them against a quality rubric. Every test must:
 
 1. **Fail if the implementation is deleted** — tests that pass without their code are worthless.
 2. **Actually call the implementation** — no reading source files and checking strings.
@@ -94,30 +94,30 @@ Test results land in `tests/<feature>/tests.json`.
 For features with a Visual Specification section and `> Web Test:` metadata:
 
 ```
-/pl-web-test feature-name
+purlin:web-test feature-name
 ```
 
-This uses Playwright to navigate to the feature's URL and check each visual checklist item against the running app — CSS values, layout, content. The agent iterates until all items pass before committing the status tag.
+This uses Playwright to navigate to the feature's URL and check each visual checklist item against the running app — CSS values, layout, content. The agent iterates until all items pass before committing the status tag. Token Map entries are verified against computed styles: use `var(--purlin-accent)` not hardcoded hex values.
 
 ---
 
-## Delivery Plans
+## Work Plans and Pipeline Delivery
 
-When multiple features need implementation, the agent organizes work into phases.
+When multiple features need implementation, the agent creates a work plan and delivers features through a pipeline.
 
 ```
-/pl-delivery-plan
+purlin:delivery-plan
 ```
 
-Phasing kicks in when there are 2+ high-complexity features, 3+ features of any mix, or a single feature with 5+ scenarios.
+The work plan is a flat, priority-ordered list of features — no numbered phases or sizing caps. Each feature independently progresses through PM → Engineer → QA stages. Independent features at different stages run in parallel via cross-mode sub-agents in isolated worktrees.
 
-Each phase groups related features and follows three sub-phases:
+Features that share interaction surface (data models, APIs, UI components) are grouped into **verification groups**. When all features in a group finish building, cross-feature regression testing runs:
 
-- **Build** — Implement and test each feature.
-- **Test** — Re-run tests across all phase features to catch regressions.
-- **Fix** — Diagnose and fix any cross-feature failures.
+- **B1 (Build)** — Implement and test each feature (runs per-feature, potentially in parallel).
+- **B2 (Test)** — Re-run tests across all verification group features to catch regressions.
+- **B3 (Fix)** — Diagnose and fix any cross-feature failures.
 
-When a phase has independent features (no dependencies on each other), the agent can build them in parallel using isolated git worktrees. See the [Parallel Execution Guide](parallel-execution-guide.md) for details.
+See the [Parallel Execution Guide](parallel-execution-guide.md) for details on cross-mode parallelism.
 
 ---
 
@@ -137,9 +137,9 @@ Engineer mode has three ways to flag issues for PM:
 
 | Situation | What to Do |
 |-----------|------------|
-| Spec is impossible to implement | `/pl-infeasible feature-name` — halts work, creates a critical escalation. |
+| Spec is impossible to implement | `purlin:infeasible feature-name` — halts work, creates a critical escalation. |
 | Implementation differs from spec | Record a `[DEVIATION]` in the companion file — PM reviews it. |
-| Spec should change | `/pl-propose topic` — suggests a spec change for PM to evaluate. |
+| Spec should change | `purlin:propose topic` — suggests a spec change for PM to evaluate. |
 
 ---
 
@@ -147,13 +147,16 @@ Engineer mode has three ways to flag issues for PM:
 
 | Command | What It Does |
 |---------|--------------|
-| `/pl-build [name]` | Implement features following the build protocol. |
-| `/pl-unit-test [name]` | Run unit tests with the quality rubric. |
-| `/pl-web-test [name]` | Visual verification via Playwright. |
-| `/pl-delivery-plan` | Create or review a phased delivery plan. |
-| `/pl-infeasible <name>` | Escalate a feature that can't be built as specified. |
-| `/pl-propose <topic>` | Suggest a spec change to PM. |
-| `/pl-spec-code-audit` | Audit alignment between specs and code. Detects circular dependencies. |
-| `/pl-status` | Check feature states and what needs building. |
-| `/pl-find <topic>` | Search specs for a topic. |
-| `/pl-help` | Full command list for Engineer mode. |
+| `purlin:build [name]` | Implement features following the build protocol. |
+| `purlin:unit-test [name]` | Run unit tests with the quality rubric. |
+| `purlin:web-test [name]` | Visual verification via Playwright. |
+| `purlin:delivery-plan` | Create or review a pipeline work plan. |
+| `purlin:infeasible <name>` | Escalate a feature that can't be built as specified. |
+| `purlin:propose <topic>` | Suggest a spec change to PM. |
+| `purlin:spec-code-audit [--deep]` | Audit alignment between specs and code. `--deep` runs parallel bidirectional analysis. |
+| `purlin:spec-from-code` | Reverse-engineer feature specs from existing code. |
+| `purlin:tombstone <feature>` | Retire a feature with a tombstone record. |
+| `purlin:server` | Start, stop, or restart the dev server for web testing. |
+| `purlin:status` | Check feature states and what needs building. |
+| `purlin:find <topic>` | Search specs for a topic. |
+| `purlin:help` | Full command list for Engineer mode. |

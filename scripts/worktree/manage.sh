@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# manage.sh -- Worktree management helper for /pl-worktree skill
+# manage.sh -- Worktree management helper for purlin:worktree skill
 # Usage: manage.sh list | cleanup-stale [--dry-run]
 #
 # Outputs JSON to stdout for agent consumption.
@@ -17,6 +17,8 @@ Usage: manage.sh <subcommand> [options]
 Subcommands:
   list              Show all worktrees with status (JSON to stdout)
   cleanup-stale     Remove stale/orphaned worktrees (JSON to stdout)
+  check-lock <path> Check if a worktree is safe to enter (JSON to stdout)
+  claim <path>      Update session lock to claim a stale worktree (JSON to stdout)
 
 Options:
   --dry-run         (cleanup-stale only) Report without removing
@@ -40,13 +42,13 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 
 if [[ -n "${PURLIN_PROJECT_ROOT:-}" ]] && [[ -d "$PURLIN_PROJECT_ROOT/.purlin" ]]; then
-    PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
+    PROJECT_ROOT="$(cd "$PURLIN_PROJECT_ROOT" && pwd -P)"
 else
-    # Climb from script dir: tools/worktree/ -> tools/ -> project root
-    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    # Climb from script dir: scripts/worktree/ -> scripts/ -> project root
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
     if [[ ! -d "$PROJECT_ROOT/.purlin" ]]; then
-        # Try submodule layout: tools/worktree/ -> tools/ -> purlin/ -> project root
-        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+        # Try submodule layout
+        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd -P)"
     fi
 fi
 
@@ -364,6 +366,103 @@ _cmd_cleanup_stale() {
 }
 
 ###############################################################################
+# Subcommand: check-lock
+# Check if a worktree is safe to enter (no live PID owns it).
+# Returns JSON: {"safe": true/false, "status": "...", "pid": N|null, ...}
+###############################################################################
+_cmd_check_lock() {
+    local wt_path="${1:-}"
+    if [[ -z "$wt_path" ]]; then
+        echo '{"error": "worktree path required"}' >&2
+        exit 1
+    fi
+
+    local lock_file="$wt_path/.purlin_session.lock"
+    local label_file="$wt_path/.purlin_worktree_label"
+
+    local label=""
+    if [[ -f "$label_file" ]]; then
+        label="$(cat "$label_file" 2>/dev/null | tr -d '[:space:]')"
+    fi
+
+    if [[ ! -f "$lock_file" ]]; then
+        echo "{\"safe\": true, \"status\": \"orphaned\", \"pid\": null, \"label\": \"$label\"}"
+        return 0
+    fi
+
+    local lock_json pid
+    lock_json="$(cat "$lock_file" 2>/dev/null || echo "")"
+    pid="$(_json_value "$lock_json" "pid")"
+    local mode
+    mode="$(_json_value "$lock_json" "mode")"
+
+    if _pid_alive "$pid"; then
+        echo "{\"safe\": false, \"status\": \"active\", \"pid\": $pid, \"label\": \"$label\", \"mode\": \"$mode\"}"
+        return 0
+    fi
+
+    echo "{\"safe\": true, \"status\": \"stale\", \"pid\": $pid, \"label\": \"$label\", \"mode\": \"$mode\"}"
+}
+
+###############################################################################
+# Subcommand: claim
+# Update the session lock to claim a stale/orphaned worktree for the current process.
+# Usage: claim <path> [--mode <mode>]
+###############################################################################
+_cmd_claim() {
+    local wt_path="${1:-}"
+    if [[ -z "$wt_path" ]]; then
+        echo '{"error": "worktree path required"}' >&2
+        exit 1
+    fi
+    shift
+
+    local mode="unknown"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --mode) mode="${2:-unknown}"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
+    local lock_file="$wt_path/.purlin_session.lock"
+    local label_file="$wt_path/.purlin_worktree_label"
+
+    # Safety: reject if PID is alive
+    if [[ -f "$lock_file" ]]; then
+        local lock_json pid
+        lock_json="$(cat "$lock_file" 2>/dev/null || echo "")"
+        pid="$(_json_value "$lock_json" "pid")"
+        if _pid_alive "$pid"; then
+            echo "{\"error\": \"worktree is owned by active session (PID $pid)\", \"claimed\": false}"
+            return 1
+        fi
+    fi
+
+    # Read existing label
+    local label=""
+    if [[ -f "$label_file" ]]; then
+        label="$(cat "$label_file" 2>/dev/null | tr -d '[:space:]')"
+    fi
+
+    # Write new session lock with current PID
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
+    local new_pid=$$
+
+    cat > "$lock_file" <<EOF
+{
+  "pid": $new_pid,
+  "started": "$timestamp",
+  "mode": "$mode",
+  "label": "$label"
+}
+EOF
+
+    echo "{\"claimed\": true, \"pid\": $new_pid, \"label\": \"$label\", \"mode\": \"$mode\"}"
+}
+
+###############################################################################
 # Main dispatch
 ###############################################################################
 SUBCOMMAND="${1:-}"
@@ -375,6 +474,14 @@ case "$SUBCOMMAND" in
     cleanup-stale)
         shift
         _cmd_cleanup_stale "$@"
+        ;;
+    check-lock)
+        shift
+        _cmd_check_lock "$@"
+        ;;
+    claim)
+        shift
+        _cmd_claim "$@"
         ;;
     "")
         echo "Error: no subcommand provided. Use --help for usage." >&2

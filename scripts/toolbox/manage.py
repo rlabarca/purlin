@@ -17,7 +17,13 @@ from bootstrap import detect_project_root, load_config, atomic_write as _bootstr
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 PURLIN_TOOLS_PATH = os.path.join(SCRIPT_DIR, "purlin_tools.json")
-PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
+
+# Framework repo detection: project tools live in dev/ (tracked) not .purlin/toolbox/ (gitignored)
+_IS_FRAMEWORK_REPO = os.path.abspath(SCRIPT_DIR).startswith(os.path.abspath(PROJECT_ROOT))
+if _IS_FRAMEWORK_REPO:
+    PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, "dev", "project_tools.json")
+else:
+    PROJECT_TOOLS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "toolbox", "project_tools.json")
 
 RESERVED_PREFIXES = ("purlin.", "community.")
 

@@ -39,9 +39,9 @@ This policy replaces `policy_release.md`. The "release checklist" concept is ret
 *   Old-format tool definitions (without `version` or `metadata` fields) are valid. Missing new fields default to `null`.
 *   The `schema_version` field in registry files enables format detection. Absence of `schema_version` indicates legacy format (pre-toolbox).
 
-### 2.6 PM Ownership
-*   The `.purlin/toolbox/` directory (`project_tools.json`, `community_tools.json`, and `community/` subdirectories) is PM-owned.
-*   Engineer mode executes tools via `purlin:toolbox run` but does not modify tool registries.
+### 2.6 Toolbox Governance
+*   The `.purlin/toolbox/` directory (`project_tools.json`, `community_tools.json`, and `community/` subdirectories) is classified as CODE per `file_classification.md`. Engineer mode writes tool registries via `purlin:toolbox` skill commands (create, edit, delete, copy, pull, push).
+*   PM governs the toolbox schema, policy invariants, and tool definitions in `scripts/toolbox/purlin_tools.json`. PM does not write to `.purlin/toolbox/` directly.
 *   QA mode can run tools for verification but does not modify tool registries.
 
 ### 2.7 Self-Contained Prerequisite Setup

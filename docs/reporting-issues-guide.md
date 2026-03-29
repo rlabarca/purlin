@@ -2,11 +2,11 @@
 
 ## When to Use This
 
-Use `/pl-purlin-issue` when you find a bug in the **Purlin framework itself** — not in your project's application code.
+Use `purlin:purlin-issue` when you find a bug in the **Purlin framework itself** — not in your project's application code.
 
-Examples: a slash command behaves incorrectly, the init script fails, agent startup crashes, or a documented workflow doesn't work as described.
+Examples: a skill behaves incorrectly, `purlin:init` fails, agent startup crashes, or a documented workflow doesn't work as described.
 
-For application-level bugs (features not working correctly), use `/pl-discovery` instead — that records findings in your project's discovery files and routes them to the right mode.
+For application-level bugs (features not working correctly), use `purlin:discovery` instead — that records findings in your project's discovery files and routes them to the right mode.
 
 ---
 
@@ -15,7 +15,7 @@ For application-level bugs (features not working correctly), use `/pl-discovery`
 From any session:
 
 ```
-/pl-purlin-issue Spec Gate reports FAIL for a feature with all required sections
+purlin:purlin-issue Spec Gate reports FAIL for a feature with all required sections
 ```
 
 Or run it without arguments and describe the issue when asked.
@@ -40,4 +40,4 @@ The report is self-contained — the recipient won't need to ask follow-up quest
 
 - Run it immediately when you hit the issue — your git state and conversation context are captured as-is.
 - Include reproduction steps in your description — the command collects environment data, but only you know the exact sequence of actions.
-- Check `/pl-status` first — the issue may already be flagged.
+- Check `purlin:status` first — the issue may already be flagged.

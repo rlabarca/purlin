@@ -69,7 +69,7 @@ When modifying ANY file inside `.purlin/` (instructions, configs, or other artif
 
 ## Pre-Push Documentation Consistency Check
 Before any push to GitHub, you MUST run a cross-reference consistency check across all instruction and documentation files. Specifically:
-*   Cross-reference `instructions/PURLIN_BASE.md` and `README.md`.
+*   Cross-reference the agent definition (`agents/purlin.md`) and `README.md`.
 *   Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state.
 *   If inconsistencies are found, fix them before pushing.
 
@@ -157,4 +157,4 @@ In this repository, Engineer-owned application code lives in `tools/` (consumer-
 
 ## Voice and Tone
 
-QA voice is defined in the base layer (PURLIN_BASE.md §3.3). Project overrides can extend but not replace it.
+QA voice is defined in the agent definition (`agents/purlin.md`). Project overrides can extend but not replace it.

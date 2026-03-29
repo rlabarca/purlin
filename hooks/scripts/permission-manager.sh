@@ -5,7 +5,44 @@
 
 INPUT=$(cat)
 
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
+# Resolve project root reliably:
+# 1. PURLIN_PROJECT_ROOT (set by MCP server / launcher)
+# 2. CLAUDE_PLUGIN_ROOT (always set by Claude Code for plugin hooks) -> parent is project root
+# 3. Climb from cwd looking for .purlin/ marker
+_find_project_root() {
+    # 1. Explicit env var
+    if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+        echo "$PURLIN_PROJECT_ROOT"
+        return
+    fi
+    # 2. CLAUDE_PLUGIN_ROOT — for inline plugins this IS the repo root;
+    #    for installed plugins it may be a subdirectory. Check both.
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+        if [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+            echo "$CLAUDE_PLUGIN_ROOT"
+            return
+        fi
+        if [ -d "$CLAUDE_PLUGIN_ROOT/../.purlin" ]; then
+            echo "$(cd "$CLAUDE_PLUGIN_ROOT/.." && pwd)"
+            return
+        fi
+    fi
+    # 3. Climb from the script's own location (most reliable fallback —
+    #    the script is always inside the repo at hooks/scripts/)
+    local dir
+    dir="$(cd "$(dirname "$0")" && pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/.purlin" ]; then
+            echo "$dir"
+            return
+        fi
+        dir="$(dirname "$dir")"
+    done
+    # 4. Last resort: cwd
+    echo "$(pwd)"
+}
+
+PROJECT_ROOT="$(_find_project_root)"
 
 # Check YOLO flag in config
 YOLO=$(python3 -c "

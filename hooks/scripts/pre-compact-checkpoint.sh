@@ -1,6 +1,6 @@
 #!/bin/bash
-# PreCompact hook — auto-save checkpoint before context compaction.
-# Writes a minimal checkpoint so the agent can recover after compaction.
+# PreCompact hook — auto-save enriched checkpoint before context compaction.
+# Reads disk state to capture pipeline context so purlin:resume can reconstruct.
 
 PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
 CACHE_DIR="$PROJECT_ROOT/.purlin/cache"
@@ -11,30 +11,49 @@ mkdir -p "$CACHE_DIR"
 BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+# Read mode from PID-scoped runtime file (or unscoped fallback)
+MODE="unknown"
+if [ -n "$PURLIN_SESSION_ID" ] && [ -f "$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}" ]; then
+    MODE=$(cat "$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}" 2>/dev/null || echo "unknown")
+elif [ -f "$PROJECT_ROOT/.purlin/runtime/current_mode" ]; then
+    MODE=$(cat "$PROJECT_ROOT/.purlin/runtime/current_mode" 2>/dev/null || echo "unknown")
+fi
+[ -z "$MODE" ] && MODE="unknown"
+
+# Read work plan summary (first 20 lines of pipeline status table)
+WORK_PLAN="No work plan"
+if [ -f "$PROJECT_ROOT/.purlin/work_plan.md" ]; then
+    WORK_PLAN=$(head -20 "$PROJECT_ROOT/.purlin/work_plan.md" 2>/dev/null || echo "Work plan exists but unreadable")
+fi
+
+# Recent commits for context
+RECENT_COMMITS=$(git -C "$PROJECT_ROOT" log --oneline -5 2>/dev/null || echo "Unknown")
+
+# Active worktrees count
+WORKTREE_COUNT=$(git -C "$PROJECT_ROOT" worktree list --porcelain 2>/dev/null | grep -c "^worktree" || echo "1")
+
 cat > "$CHECKPOINT" << EOF
 # Session Checkpoint (auto-saved before compaction)
 
-**Mode:** unknown
+**Mode:** $MODE
 **Timestamp:** $TIMESTAMP
 **Branch:** $BRANCH
+**Active Worktrees:** $WORKTREE_COUNT
 
-## Current Work
+## Work Plan Summary
 
-**Feature:** unknown
-**In Progress:** Session was compacted. Run purlin:start to restore context.
+$WORK_PLAN
 
-### Done
-- (auto-checkpoint — details lost to compaction)
+## Recent Commits
 
-### Next
-1. Run purlin:start to restore session context
+$RECENT_COMMITS
 
 ## Uncommitted Changes
 $(git -C "$PROJECT_ROOT" status --short 2>/dev/null || echo "Unknown")
 
 ## Notes
-This checkpoint was auto-saved by the PreCompact hook.
-The agent should run purlin:start to fully restore context.
+This checkpoint was auto-saved by the PreCompact hook with enriched pipeline state.
+The agent should run purlin:resume to fully restore context.
 EOF
 
 exit 0

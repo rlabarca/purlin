@@ -13,7 +13,7 @@ This project uses the Purlin plugin for spec-driven development. The **Purlin un
 
 ## Context Recovery
 
-If context is cleared or compacted, run `purlin:start` to restore session context.
+If context is cleared or compacted, run `purlin:resume` to restore session context.
 
 ## Project Overrides
 

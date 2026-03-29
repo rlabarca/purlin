@@ -104,7 +104,7 @@ No action is required — this is informational. QA sees it naturally and can pr
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Promote feature to smoke tier
 
@@ -186,7 +186,7 @@ No action is required — this is informational. QA sees it naturally and can pr
     And the user is prompted to stop or continue
     And standard-tier features are NOT verified until the user responds
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 #### Scenario: Smoke regression targets fast execution @manual
 

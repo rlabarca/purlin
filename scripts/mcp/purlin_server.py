@@ -42,6 +42,7 @@ from bootstrap import detect_project_root, load_config
 from config_engine import (
     resolve_config, classify_file, get_mode, set_mode,
 )
+from credentials import get_credential, require_credential, credential_status
 
 # Lazy imports for heavy modules (only loaded when their tools are called)
 _scan_engine = None
@@ -198,6 +199,25 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "purlin_credentials",
+        "description": "Check which credentials are configured for this Purlin project. Never returns credential values.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["status", "check"],
+                    "description": "status: all credentials; check: one specific key",
+                    "default": "status",
+                },
+                "key": {
+                    "type": "string",
+                    "description": "Credential key to check (for 'check' action)",
+                },
+            },
+        },
+    },
 ]
 
 
@@ -334,6 +354,33 @@ def handle_purlin_config(params):
     return {"action": "write", "key": key, "value": value}
 
 
+def handle_purlin_credentials(params):
+    """Handle purlin_credentials tool call."""
+    action = params.get("action", "status")
+
+    if action == "status":
+        return credential_status()
+
+    # check action
+    key = params.get("key")
+    if not key:
+        return {"error": "key is required for check action"}
+
+    status = credential_status()
+    entry = status.get(key)
+    if entry is None:
+        return {"error": f"Unknown credential key: {key}"}
+
+    result = {"key": key, **entry}
+    if not entry["configured"]:
+        result["hint"] = (
+            f"To configure, set it in your Claude Code plugin settings: "
+            f"Claude Code → Settings → Plugins → Purlin → {entry['title']}. "
+            f"Or: export CLAUDE_PLUGIN_OPTION_{key}=\"<value>\""
+        )
+    return result
+
+
 # Tool handler dispatch
 TOOL_HANDLERS = {
     "purlin_scan": handle_purlin_scan,
@@ -342,6 +389,7 @@ TOOL_HANDLERS = {
     "purlin_classify": handle_purlin_classify,
     "purlin_mode": handle_purlin_mode,
     "purlin_config": handle_purlin_config,
+    "purlin_credentials": handle_purlin_credentials,
 }
 
 

@@ -38,9 +38,13 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 # Make path relative to project root for classification
 REL_PATH="${FILE_PATH#$PROJECT_ROOT/}"
 
+# Export PURLIN_SESSION_ID so config_engine reads PID-scoped mode file
+export PURLIN_SESSION_ID="${PURLIN_SESSION_ID:-}"
+
 # Try MCP server classification first (via Python inline)
 CLASSIFICATION=$(python3 -c "
-import sys
+import sys, os
+os.environ.setdefault('PURLIN_PROJECT_ROOT', '$PROJECT_ROOT')
 sys.path.insert(0, '$PLUGIN_ROOT/scripts/mcp')
 from config_engine import classify_file, get_mode
 classification = classify_file('$REL_PATH')
@@ -76,7 +80,7 @@ CURRENT_MODE=$(echo "$CLASSIFICATION" | cut -d'|' -f2)
 
 # If no mode is active, block all writes
 if [ "$CURRENT_MODE" = "none" ] || [ "$CURRENT_MODE" = "None" ]; then
-    echo '{"error":"No mode active. Activate a mode before writing files."}'
+    echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before making changes."}'
     exit 2
 fi
 

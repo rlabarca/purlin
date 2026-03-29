@@ -25,6 +25,12 @@ tests/.purlin/
 # Plugin data (persists across updates)
 .claude-plugin-data/
 
+# MCP server config (machine-specific)
+.mcp.json
+
+# Dev scratch space
+dev/
+
 # Generated digests (per-machine, not committed)
 features/_digests/
 features/digests/

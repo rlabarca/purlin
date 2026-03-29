@@ -8,7 +8,34 @@
   "userConfig": {
     "figma_access_token": {
       "title": "Figma Access Token",
-      "description": "Figma personal access token for design system integration (optional)",
+      "description": "Figma personal access token for design system integration",
+      "type": "string",
+      "sensitive": true,
+      "required": false
+    },
+    "deploy_token": {
+      "title": "Deploy Token",
+      "description": "Deployment authentication token",
+      "type": "string",
+      "sensitive": true,
+      "required": false
+    },
+    "confluence_token": {
+      "title": "Confluence API Token",
+      "description": "Atlassian Confluence API token",
+      "type": "string",
+      "sensitive": true,
+      "required": false
+    },
+    "confluence_email": {
+      "title": "Confluence Email",
+      "description": "Atlassian account email for Confluence",
+      "type": "string",
+      "required": false
+    },
+    "confluence_base_url": {
+      "title": "Confluence Base URL",
+      "description": "Confluence instance URL (e.g., https://team.atlassian.net)",
       "type": "string",
       "required": false
     },

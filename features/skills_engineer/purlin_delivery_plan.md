@@ -3,11 +3,11 @@
 > Label: "Agent Skills: Engineer: purlin:delivery-plan Delivery Plan"
 > Category: "Agent Skills: Engineer"
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
-Engineer mode's phased delivery skill that assesses implementation scope and proposes splitting work into numbered phases for large or complex feature sets. Provides scope assessment heuristics, per-phase sizing caps, dependency-aware phase ordering with execution group detection, and a canonical delivery plan format. Supports both plan creation and cross-session plan review/adjustment.
+Engineer mode's pipeline delivery skill that assesses implementation scope and creates a work plan for coordinated multi-feature, multi-mode delivery. Replaces size-based phasing with a flat, priority-ordered feature list with per-feature pipeline status tracking, verification groups for cross-feature regression testing, and support for cross-mode sub-agent dispatch. The work plan is the coordination artifact that enables features to progress through PM → Engineer → QA stages independently, with parallel execution via worktrees.
 
 ---
 
@@ -20,60 +20,38 @@ Engineer mode's phased delivery skill that assesses implementation scope and pro
 
 ### 2.2 Existing Plan Review
 
-- If `.purlin/delivery_plan.md` exists: display current phase, completed phases, remaining phases, and per-feature status. Offer to adjust the plan.
+- If `.purlin/work_plan.md` exists: display the pipeline status table showing each feature's current stage and per-mode status. Offer to adjust the plan.
 
 ### 2.3 New Plan Creation
 
 - Run `scan.sh` to get current feature status.
 - Read `dependency_graph.json` and build a prerequisite map.
-- Resolve the context tier (see 2.4) and assess scope using tier-aware heuristics.
+- Assess scope: if 2+ features need work across any role (PM, Engineer, or QA), recommend creating a work plan. Single-feature work does not need a plan.
 
-### 2.4 Phase Sizing (Context-Tier-Aware)
+### 2.4 Feature Ordering
 
-Phase sizing caps are derived from Engineer mode's context tier:
+- Features ordered by dependency (foundations first), then by pipeline readiness (features closest to completion dispatched first).
+- Validation gate: verify no dependency cycles in the feature ordering before committing.
 
-**Tier Resolution Chain:**
-1. Read Engineer mode's configured model from the agent config (`agents.builder.model`).
-2. Look up that model ID in the `models` array to get `context_window_tokens`.
-3. If `context_window_tokens > 200000`, use **Extended** tier. Otherwise, use **Standard** tier.
-4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
+### 2.5 Verification Group Assignment
 
-**Tier Defaults:**
+- Analyze `dependency_graph.json` interaction density to assign features to verification groups.
+- Features sharing data models, APIs, or UI components → same verification group.
+- Features with no shared interaction surface → singleton verification group.
+- B2 cross-feature regression testing runs per-verification-group after all member features complete Engineer stage.
 
-| Parameter | Standard (<=200K) | Extended (>200K) |
-|---|---|---|
-| Max features per phase | 2 | 5 |
-| Max HIGH-complexity per phase (combined) | 1 | 2 |
-| HIGH solo-phase scenario threshold | 5 | 8 |
-| Phasing recommendation: any mix | 3+ features | 7+ features |
-| Phasing recommendation: HIGH | 2+ features | 4+ features |
-| Intra-feature phasing | 5+ scenarios | 8+ scenarios |
+### 2.6 Pipeline Status Initialization
 
-**Per-Project Override:** An optional `phase_sizing` block in the agent config overrides individual tier defaults:
-```json
-"builder": {
-    "model": "claude-opus-4-6[1m]",
-    "phase_sizing": {
-        "max_features_per_phase": 3,
-        "high_solo_threshold": 6
-    }
-}
-```
-Only keys present in `phase_sizing` override the tier default; absent keys fall through to the tier table.
-
-### 2.5 Phase Ordering
-
-- Phases ordered by: dependency order (foundations first), logical cohesion, testability gates, balanced effort, interaction density, and parallelization opportunity.
-- Validation gate: verify no dependency cycles between phases before committing.
-
-### 2.6 Execution Groups
-
-- Identify which phases can execute in parallel (no cross-phase dependencies).
-- Report parallel build opportunities within phases (independent features).
+- For each feature, determine the initial pipeline stage:
+  - Features with no spec (`pm: TODO` or spec missing) → stage `pm`, PM column PENDING.
+  - Features with complete spec and `engineer: TODO` → stage `engineer`, PM column COMPLETE, Engineer column PENDING.
+  - Features with `engineer: TESTING` → stage `qa`, Engineer column COMPLETE, QA column PENDING.
+  - Features already `[Complete]` → stage `complete`, all columns COMPLETE.
+  - PM column set to SKIPPED for features with existing, unchanged specs that don't need PM work.
 
 ### 2.7 Canonical Format
 
-- Plan file uses standardized Markdown format with Created date, Total Phases, Summary, and per-phase entries with Features, Completion Commit, Deferred, and QA Bugs Addressed fields.
+- Work plan file uses the format defined in `references/phased_delivery.md` Section 10.7.3: pipeline status table with Feature, Stage, PM, Engineer, QA, V-Group, and Notes columns, plus verification group definitions and amendments log.
 
 ---
 
@@ -87,49 +65,57 @@ Only keys present in `phase_sizing` override the tier default; absent keys fall 
     When the agent invokes purlin:delivery-plan
     Then the command responds with a redirect message
 
-#### Scenario: Existing plan displays current state
+#### Scenario: Existing work plan displays pipeline status
 
-    Given .purlin/delivery_plan.md exists with Phase 1 COMPLETE and Phase 2 IN_PROGRESS
+    Given .purlin/work_plan.md exists with 3 features at different stages
     When purlin:delivery-plan is invoked
-    Then Phase 1 status and completion commit are shown
-    And Phase 2 features with their implementation status are listed
+    Then the pipeline status table is displayed
+    And each feature's current stage and per-mode status are shown
 
-#### Scenario: Scope assessment recommends phasing for complex work (standard tier)
+#### Scenario: Scope assessment recommends work plan for multi-feature work
 
-    Given Engineer mode's model resolves to context_window_tokens 200000
-    And 3 features in TODO state
+    Given 3 features in TODO state across PM and Engineer roles
     When purlin:delivery-plan assesses scope
-    Then it recommends phased delivery
+    Then it recommends creating a work plan
+
+#### Scenario: Single feature does not trigger work plan
+
+    Given 1 feature in TODO state
+    When purlin:delivery-plan assesses scope
+    Then it does not recommend a work plan
 
 #### Scenario: Dependency validation catches cycle
 
-    Given a proposed plan where Phase 2 feature depends on Phase 3 feature
+    Given a proposed plan where feature B depends on feature A
+    And feature A is ordered after feature B
     When the validation gate runs
-    Then the cycle is detected
-    And the plan is corrected before committing
+    Then the ordering is corrected before committing
 
-#### Scenario: Phase sizing cap enforced
+#### Scenario: Verification groups assigned by interaction density
 
-    Given Engineer mode's model resolves to a context tier with max_features_per_phase of N
-    And N+1 features assigned to a single phase
-    When purlin:delivery-plan validates the plan
-    Then the phase is split to respect the tier-derived max features per phase
-
-#### Scenario: Extended context tier increases phase capacity
-
-    Given Engineer mode's model is "claude-opus-4-6[1m]" with context_window_tokens 1000000
-    And 5 features in TODO state with no HIGH-complexity features
+    Given features auth_flow and session_mgmt share the auth data model
+    And feature settings has no shared interaction surface
     When purlin:delivery-plan creates a plan
-    Then the plan uses the Extended tier defaults
-    And all 5 features fit in a single phase
+    Then auth_flow and session_mgmt are in the same verification group
+    And settings is in a singleton verification group
 
-#### Scenario: Phase sizing override takes precedence
+#### Scenario: Pipeline stage initialization from scan state
 
-    Given Engineer mode's model resolves to the Extended tier
-    And the agent config contains phase_sizing with max_features_per_phase of 3
-    When purlin:delivery-plan creates a plan with 4 features
-    Then the plan splits into phases of at most 3 features each
-    And the override value takes precedence over the Extended tier default of 5
+    Given feature_a has pm: COMPLETE and engineer: TODO
+    And feature_b has no spec (pm: TODO)
+    And feature_c has engineer: TESTING
+    When purlin:delivery-plan creates a plan
+    Then feature_a starts at stage "engineer" with PM COMPLETE
+    And feature_b starts at stage "pm" with PM PENDING
+    And feature_c starts at stage "qa" with Engineer COMPLETE
+
+#### Scenario: Existing specs marked SKIPPED in PM column
+
+    Given feature_x has an existing, unchanged spec
+    And feature_x has engineer: TODO
+    When purlin:delivery-plan creates a plan
+    Then feature_x PM column is SKIPPED
+    And feature_x starts at stage "engineer"
 
 ### QA Scenarios
 

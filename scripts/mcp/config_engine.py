@@ -234,34 +234,13 @@ def _cli_role(project_root, role):
     if role == 'purlin' and not agent:
         agent = agents.get('builder', {})
 
-    model = agent.get('model', '')
-    effort = agent.get('effort', '')
     bp = 'true' if agent.get('bypass_permissions', False) else 'false'
     fw = 'true' if agent.get('find_work', True) else 'false'
     as_ = 'true' if agent.get('auto_start', False) else 'false'
 
-    # Look up model warning from the models array
-    warning = ''
-    warning_dismissible = False
-    for m in config.get('models', []):
-        if m.get('id') == model:
-            warning = m.get('warning', '')
-            warning_dismissible = bool(m.get('warning_dismissible', False))
-            break
-
-    # Check if warning has been acknowledged
-    acknowledged = config.get('acknowledged_warnings', [])
-    dismissed = 'false'
-    if warning and warning_dismissible and model in acknowledged:
-        dismissed = 'true'
-
-    print(f'AGENT_MODEL="{model}"')
-    print(f'AGENT_EFFORT="{effort}"')
     print(f'AGENT_BYPASS="{bp}"')
     print(f'AGENT_FIND_WORK="{fw}"')
     print(f'AGENT_AUTO_START="{as_}"')
-    print(f'AGENT_MODEL_WARNING="{warning}"')
-    print(f'AGENT_MODEL_WARNING_DISMISSED="{dismissed}"')
 
     # Project name: config key with basename fallback
     project_name = config.get('project_name', '') or os.path.basename(project_root)
@@ -395,13 +374,25 @@ def main():
 # File classification for mode guard (plugin model)
 # ---------------------------------------------------------------------------
 
-# Mode state — persisted to .purlin/runtime/current_mode so hook scripts
+# Mode state — persisted to .purlin/runtime/ so hook scripts
 # (which run in separate processes) can read it.
+# PID-scoped when PURLIN_SESSION_ID is set to prevent concurrent
+# terminals from clobbering each other's mode.
 _current_mode = None
 
 
 def _mode_file_path():
-    """Return path to the mode state file."""
+    """Return path to the mode state file (PID-scoped when possible)."""
+    project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
+    session_id = os.environ.get('PURLIN_SESSION_ID')
+    if session_id:
+        return os.path.join(project_root, '.purlin', 'runtime',
+                            f'current_mode_{session_id}')
+    return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
+
+
+def _mode_file_path_unscoped():
+    """Return path to the unscoped mode state file (fallback)."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
     return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
 
@@ -411,9 +402,27 @@ def get_mode():
     global _current_mode
     if _current_mode is not None:
         return _current_mode
-    # Read from persisted state
+    # Read from persisted state — PID-scoped first, then unscoped fallback.
+    # If PID-scoped file EXISTS (even if empty), it is authoritative —
+    # do not fall back to unscoped. This ensures plan-exit-mode-clear
+    # (which empties the file) isn't bypassed by a stale unscoped file.
+    session_id = os.environ.get('PURLIN_SESSION_ID')
+    if session_id:
+        try:
+            path = _mode_file_path()
+            if os.path.isfile(path):
+                with open(path, 'r') as f:
+                    mode = f.read().strip()
+                if mode in ('engineer', 'pm', 'qa'):
+                    _current_mode = mode
+                    return mode
+                # File exists but is empty/invalid — mode was cleared
+                return None
+        except (IOError, OSError):
+            pass
+    # No session ID or no PID-scoped file — try unscoped
     try:
-        path = _mode_file_path()
+        path = _mode_file_path_unscoped()
         if os.path.isfile(path):
             with open(path, 'r') as f:
                 mode = f.read().strip()

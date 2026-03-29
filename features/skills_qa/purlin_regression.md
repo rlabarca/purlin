@@ -53,7 +53,7 @@ Subcommands override auto-detection. Power users who know the step they want can
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Bare invocation auto-detects author step
 
@@ -99,6 +99,6 @@ Subcommands override auto-detection. Power users who know the step they want can
     When purlin:regression evaluate is invoked
     Then the companion file entry is marked [RESOLVED]
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.

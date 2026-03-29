@@ -20,6 +20,13 @@
 
 **[CLARIFICATION]** A symlink `tests/agent_behavior_tests/test_behavior_harness.py -> ../../dev/test_behavior_harness.py` was added to make the test file discoverable by the traceability checker, which only scans `tests/<feature>/` and `tools/` directories. This resolved weak traceability warnings for two scenarios by making the full function bodies available for keyword matching. (Severity: INFO)
 
+### Audit Finding -- 2026-03-29
+[DISCOVERY] Companion debt (stale): code modified 2026-03-28T21:53:14Z, companion last updated 2026-03-26T12:34:03Z (~2 day gap).
+**Source:** purlin:spec-code-audit
+**Severity:** MEDIUM
+**Details:** policy_spec_code_sync Gate 4 detected stale companion. Recent code changes (post 2026-03-26) are not reflected in companion entries.
+**Suggested fix:** Engineer should add [IMPL] entries for all code changes since 2026-03-26.
+
 ## Architecture Decisions
 
 - **Three-file structure:** `test_agent_behavior.sh` (bash test runner for end-to-end claude --print tests), `setup_behavior_fixtures.sh` (fixture repo creation), `test_behavior_harness.py` (Python unit tests for the 7 automated scenarios that produce tests.json).

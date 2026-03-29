@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The `purlin:mode` skill explicitly switches the Purlin agent's operating mode (Engineer, PM, or QA). It enforces the pre-switch commit check and companion file gate, updates the iTerm terminal identity, and prints the mode's command subset.
+The `purlin:mode` skill explicitly switches the Purlin agent's operating mode (Engineer, PM, or QA). When no mode is active, the agent is in **default mode** — a read-only research state where no file writes or commits are permitted. The skill enforces the pre-switch commit check and companion file gate, updates the iTerm terminal identity, and prints the mode's command subset.
 
 ---
 
@@ -23,8 +23,9 @@ The `purlin:mode` skill explicitly switches the Purlin agent's operating mode (E
 
 When invoked with no arguments, `purlin:mode` displays the current mode status instead of switching:
 
-- Current mode name (or "No mode active" if in open mode)
+- Current mode name (or "Default mode (read-only)" if no mode is active)
 - Available skills for the current mode (read from `references/purlin_commands.md`)
+- If in default mode: remind that changes require activating a mode
 - Hint: "Switch with `purlin:mode <pm|engineer|qa>`"
 
 This is read-only — no mode change, no terminal identity update.
@@ -63,11 +64,12 @@ This is read-only — no mode change, no terminal identity update.
     And shows "Switch with purlin:mode <pm|engineer|qa>"
     And no mode change occurs
 
-#### Scenario: No-arg in open mode shows no mode active
+#### Scenario: No-arg in default mode shows read-only status
 
-    Given the agent is in open mode
+    Given the agent is in default mode (no mode active)
     When purlin:mode is invoked with no arguments
-    Then the output shows "No mode active"
+    Then the output shows "Default mode (read-only)"
+    And reminds that changes require activating a mode
     And lists all modes with their descriptions
     And shows "Switch with purlin:mode <pm|engineer|qa>"
 

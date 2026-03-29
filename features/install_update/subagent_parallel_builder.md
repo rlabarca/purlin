@@ -1,12 +1,12 @@
-# Feature: Sub-Agent Parallel Engineer
+# Feature: Sub-Agent Pipeline Delivery
 
-> Label: "Tool: Sub-Agent Parallel Engineer"
+> Label: "Tool: Sub-Agent Pipeline Delivery"
 > Category: "Install, Update & Scripts"
 > Prerequisite: purlin_agent_launcher.md
 
 ## 1. Overview
 
-Formalizes parallel feature building with dedicated sub-agent definitions, replaces ad-hoc Agent tool calls with structured `engineer-worker` and `verification-runner` sub-agents, and consolidates duplicated implementation knowledge from `PURLIN_BASE.md` into skills that sub-agents can preload. Adds a robust rebase-before-merge protocol for parallel branches, server lifecycle management with port tracking. Deprecates `--continuous` mode in favor of interactive multi-phase auto-progression.
+Formalizes cross-mode parallel delivery with dedicated sub-agent definitions for all three modes: `engineer-worker`, `pm-worker`, `qa-worker`, and `verification-runner`. Enables a pipeline execution model where features progress through PM → Engineer → QA stages independently, with features at different stages running in parallel via isolated worktrees. Includes a robust rebase-before-merge protocol, server lifecycle management, enriched PreCompact checkpointing for pipeline state recovery, and autonomous multi-feature delivery via the work plan coordination artifact.
 
 ---
 
@@ -14,17 +14,17 @@ Formalizes parallel feature building with dedicated sub-agent definitions, repla
 
 ### 2.1 Sub-Agent Definitions
 
-Two sub-agent definition files MUST be created in `.claude/agents/`:
+Four sub-agent definition files MUST exist in `.claude/agents/`:
 
 #### 2.1.1 `engineer-worker.md`
 
-Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
+Parallel feature builder for pipeline delivery. Implements a single feature in an isolated worktree.
 
 *   **Frontmatter:**
     ```yaml
     name: engineer-worker
     description: >
-      Parallel feature builder for intra-phase work. Implements a single feature
+      Parallel feature builder for pipeline delivery. Implements a single feature
       in an isolated worktree. Use when building independent features concurrently.
     tools: Read, Write, Edit, Bash, Glob, Grep
     isolation: worktree
@@ -36,14 +36,67 @@ Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
 *   **System prompt constraints:**
     - Single-feature focus: implements one feature only per invocation.
     - Steps 0-2 only from `purlin:build`. No Step 3 (verification), no Step 4 (status tags).
-    - MUST NOT modify the delivery plan (`.purlin/delivery_plan.md`).
+    - MUST NOT modify the work plan (`.purlin/work_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
     - Commit with `feat(scope): implement FEATURE_NAME`.
-    - Branch naming: `worktree-phase<N>-<feature_stem>` (encodes phase for orphan attribution).
+    - Activates Engineer mode in its worktree (PID-scoped mode file).
 
-#### 2.1.2 `verification-runner.md`
+#### 2.1.2 `pm-worker.md`
 
-Runs automated tests in background during B2, keeping test output out of main Engineer context.
+Spec authoring sub-agent for pipeline delivery. Writes or refines a single feature spec in an isolated worktree.
+
+*   **Frontmatter:**
+    ```yaml
+    name: pm-worker
+    description: >
+      Spec authoring sub-agent for pipeline delivery. Writes or refines a single
+      feature spec in an isolated worktree. Use for parallel spec work.
+    tools: Read, Write, Edit, Bash, Glob, Grep
+    isolation: worktree
+    skills: [purlin:spec]
+    permissionMode: bypassPermissions
+    model: inherit
+    maxTurns: 150
+    ```
+*   **System prompt constraints:**
+    - Single-feature focus: writes or refines one feature spec per invocation.
+    - Activates PM mode in its worktree (PID-scoped mode file).
+    - MUST NOT write code, tests, scripts, or instruction files.
+    - MUST NOT modify the work plan (`.purlin/work_plan.md`).
+    - MUST NOT spawn nested sub-agents (no Agent tool access).
+    - Commit with `spec(scope): define FEATURE_NAME` or `spec(scope): refine FEATURE_NAME`.
+    - Returns: spec file path, prerequisite graph updates if dependencies changed.
+
+#### 2.1.3 `qa-worker.md`
+
+Verification sub-agent for pipeline delivery. Verifies a single feature in an isolated worktree.
+
+*   **Frontmatter:**
+    ```yaml
+    name: qa-worker
+    description: >
+      Verification sub-agent for pipeline delivery. Verifies a single feature
+      in an isolated worktree. Use for parallel QA verification.
+    tools: Read, Write, Edit, Bash, Glob, Grep
+    isolation: worktree
+    skills: [purlin:verify]
+    permissionMode: bypassPermissions
+    model: inherit
+    maxTurns: 150
+    ```
+*   **System prompt constraints:**
+    - Single-feature focus: verifies one feature per invocation.
+    - Activates QA mode in its worktree (PID-scoped mode file).
+    - Runs Phase A (automated verification) of `purlin:verify`. Writes discoveries.
+    - MUST NOT write code or feature specs.
+    - MUST NOT mark `[Complete]` — the orchestrator handles final status after cross-feature checks.
+    - MUST NOT modify the work plan (`.purlin/work_plan.md`).
+    - MUST NOT spawn nested sub-agents (no Agent tool access).
+    - Returns: verification result (PASS/FAIL), discovery list.
+
+#### 2.1.4 `verification-runner.md`
+
+Runs automated tests in background during B2, keeping test output out of main session context.
 
 *   **Frontmatter:**
     ```yaml
@@ -63,20 +116,22 @@ Runs automated tests in background during B2, keeping test output out of main En
     - Write `tests.json` results. `Write` is allowed only for `tests.json` output.
     - MUST NOT fix code or edit implementation files.
 
-### 2.2 Parallel B1 Protocol
+### 2.2 Pipeline Dispatch Protocol
 
-When a delivery plan exists, Engineer mode MUST use `engineer-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `purlin:build` determines which features are independent:
+When a work plan exists, the orchestrator MUST use the pipeline dispatch loop to advance features through their stages using cross-mode sub-agents. The dispatch protocol in `purlin:build` determines which features are ready and dispatches them:
 
-1.  Read `.purlin/cache/dependency_graph.json` and the delivery plan.
-2.  Compute execution groups: group PENDING phases with no cross-dependencies.
-3.  For the current execution group, collect all features across member phases and check pairwise independence.
-4.  If independent features exist (2+):
-    - Announce: "Features X and Y are independent -- building in parallel."
-    - Spawn one `engineer-worker` sub-agent per feature.
-    - Each sub-agent runs Steps 0-2 only.
-    - Merge returned branches using the robust merge protocol (Section 2.4).
-    - After all groups complete, proceed to B2.
-5.  If no independent features exist, or only 1 feature: use the sequential per-feature loop.
+1.  Read `.purlin/work_plan.md`, `.purlin/cache/dependency_graph.json`, and scan state.
+2.  For each feature in priority order, determine the next action:
+    - PM PENDING → dispatch `pm-worker` sub-agent.
+    - Engineer PENDING (and dependencies met) → dispatch `engineer-worker` sub-agent.
+    - QA PENDING (and Engineer COMPLETE, and verification group B2 passed) → dispatch `qa-worker` sub-agent.
+3.  Dispatch to available worktree slots (max concurrent from config, default 3).
+4.  Cross-mode parallelism: a `pm-worker`, `engineer-worker`, and `qa-worker` MAY run simultaneously in separate worktrees on different features. This is safe because PM writes specs, Engineer writes code, and QA writes discoveries -- disjoint file sets.
+5.  Wait for any sub-agent to complete. Merge the returned branch using the robust merge protocol (Section 2.4).
+6.  Update the work plan: advance the feature's stage, update mode column status.
+7.  When all features in a verification group complete Engineer stage → run B2/B3 in main session.
+8.  Continue until all features reach `complete` or all remaining features are blocked.
+9.  If only 1-2 features or tight dependencies: fall back to sequential single-session work.
 
 ### 2.3 B2 Verification with verification-runner
 
@@ -93,7 +148,7 @@ Replace the current `git merge <branch> --no-edit` with abort-on-conflict with a
 1.  After all parallel workers complete, process branches in sequence.
 2.  For each branch: `git rebase HEAD <branch>`.
 3.  On rebase conflict: check if ALL conflicting files are in the safe list.
-    *   **Safe files:** `.purlin/delivery_plan.md`, `purlin:status`, `.purlin/cache/*`.
+    *   **Safe files:** `.purlin/work_plan.md`, `.purlin/cache/*`.
     *   Safe: auto-resolve by keeping main's version (`git checkout --ours`), then `git add` and `git rebase --continue`.
     *   Unsafe (any non-safe file in conflict): `git rebase --abort`, fall back to sequential for THIS feature only.
 4.  Loop up to 20 rebase iterations for multi-commit branches.
@@ -179,18 +234,18 @@ A new skill at `.claude/commandspurlin:server.md` with the following capabilitie
 *   NEVER use kill/pkill on processes not started in current session.
 *   Use `> Web Start:` command from feature spec when available.
 
-### 2.7 Multi-Phase Auto-Progression
+### 2.7 Pipeline Auto-Progression
 
-When `auto_start: true` in Engineer mode's config:
+When `auto_start: true` in Purlin agent config:
 
-*   After completing a delivery plan phase, Engineer mode auto-advances to the next PENDING phase instead of halting.
-*   The phase halt rule in `purlin:build` Step 4.E becomes conditional: halt only when `auto_start: false` (current default behavior).
-*   When `auto_start: true`, Engineer mode marks the phase COMPLETE, then immediately begins the next phase within the same session.
-*   Engineer mode runs all phases end-to-end without bash orchestration.
+*   The orchestrator works through the entire feature list across all modes without pausing at verification checkpoints.
+*   Only stops for major plan amendments (new features added, dependencies restructured) or unresolvable blockers.
+*   When `auto_start: false` (default), the orchestrator pauses at verification checkpoints (after B2 completes for each verification group) for user review before continuing.
+*   The orchestrator runs all features through the complete PM → Engineer → QA pipeline in a single session.
 
 ### 2.8 Continuous Mode Deprecation
 
-*   The `--continuous` flag and shell launcher `pl-run.sh` are retired. Sessions are started via `claude` with the Purlin plugin auto-activating. Multi-phase auto-progression is handled by the `auto_start: true` config setting within the interactive session (see Section 2.7).
+*   The `--continuous` flag and shell launcher `pl-run.sh` are retired. Sessions are started via `claude` with the Purlin plugin auto-activating. Pipeline auto-progression is handled by the `auto_start: true` config setting within the interactive session (see Section 2.7).
 *   `features/continuous_phase_builder.md` gets a tombstone for code removal (see `features/_tombstones/continuous_phase_builder.md`).
 *   Deprecated config keys: `continuous_evaluator_model`, `max_remediation_attempts`.
 *   Deprecated runtime artifacts: `.purlin/runtime/continuous_build_phase_*.log`, phase status JSON, evaluator state files.
@@ -199,26 +254,29 @@ When `auto_start: true` in Engineer mode's config:
 
 #### 2.9.1 Orphaned Sub-Agent Branches
 
-On `purlin:resume`, Engineer mode MUST check for orphaned worktree branches matching the pattern `worktree-*`:
+On `purlin:resume`, the orchestrator MUST check for orphaned worktree branches matching the pattern `purlin-*`:
 *   If found: attempt to merge them using the robust merge protocol (Section 2.4), then continue.
-*   If not found: the sub-agents either completed and merged, or never started. The delivery plan + scan state tells Engineer mode what remains.
+*   If not found: the sub-agents either completed and merged, or never started. The work plan + scan state tells the orchestrator what remains.
 
-#### 2.9.2 Checkpoint Format Extension
+#### 2.9.2 Enriched PreCompact Checkpoint
 
-Add to Engineer mode Context section of the checkpoint:
-```markdown
-**Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
-**Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
-```
+The PreCompact hook (`pre-compact-checkpoint.sh`) MUST save enriched pipeline state by reading disk artifacts:
+*   **Mode:** Read from `.purlin/runtime/current_mode_*` (PID-scoped mode file).
+*   **Work plan summary:** Read first 20 lines of `.purlin/work_plan.md` (pipeline status table).
+*   **Recent commits:** `git log --oneline -5` for context.
+*   **Active worktrees:** Count from `git worktree list`.
 
-#### 2.9.3 Auto-Progression Continuity
+This gives `purlin:resume` enough to reconstruct pipeline state without a full scan.
 
-On resume, Engineer mode:
-1.  Reads delivery plan -- identifies current phase (IN_PROGRESS) and remaining phases (PENDING).
-2.  Reads scan results -- identifies which features in the current phase are done vs TODO.
+#### 2.9.3 Pipeline Continuity
+
+On resume, the orchestrator:
+1.  Reads work plan -- identifies each feature's current stage and per-mode status.
+2.  Reads scan results -- identifies which features have progressed since the checkpoint.
 3.  Checks for orphaned worktree branches -- merges if found.
-4.  Continues with remaining features in the current phase.
-5.  Auto-progresses to next phases (if `auto_start: true`).
+4.  Updates work plan with any state changes discovered during recovery.
+5.  Re-enters the pipeline dispatch loop (Section 2.2) from the current state.
+6.  Continues dispatching features through their remaining stages (if `auto_start: true`).
 
 ### 2.10 Distribution to Consumer Projects
 
@@ -245,20 +303,17 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
 *   `purlin:unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
-### 2.13 Execution Group Dispatch Bright-Line Rule
+### 2.13 Pipeline Dispatch Bright-Line Rule
 
-The Execution Group Dispatch MUST appear as a named bright-line rule in `purlin:build`,
+Pipeline dispatch MUST appear as a named bright-line rule in `purlin:build`,
 not only as a standalone section. The rule text:
 
-> **Execution group dispatch is mandatory for multi-feature groups.** When an execution
-> group contains 2+ independent features (across all its member phases), MUST read
-> `dependency_graph.json`, check pairwise independence, and spawn `engineer-worker`
-> sub-agents for independent features BEFORE beginning Step 0 for any feature.
-> Sequential processing of independent features without checking the dependency graph
-> is a protocol violation.
-
-Additionally, Step 4.E auto-progression MUST explicitly reference the Execution
-Group Dispatch as mandatory when entering a new group with 2+ features.
+> **Pipeline dispatch is mandatory when a work plan exists.** When `.purlin/work_plan.md`
+> exists and contains 2+ features, the orchestrator MUST use the pipeline dispatch loop
+> (Section 2.5 of `purlin:build`). MUST read `dependency_graph.json`, determine feature
+> independence, and dispatch cross-mode sub-agents (`pm-worker`, `engineer-worker`,
+> `qa-worker`) for features ready at different pipeline stages. Sequential processing
+> of independent features without checking the work plan is a protocol violation.
 
 
 ---
@@ -267,41 +322,59 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 ### Unit Tests
 
-#### Scenario: Parallel features use engineer-worker sub-agent
+#### Scenario: Pipeline dispatches cross-mode sub-agents in parallel
 
-    Given a delivery plan phase has features A and B
-    And the dependency graph shows A and B have no cross-dependencies
-    When Engineer mode begins B1 for the phase
-    Then Engineer mode spawns one engineer-worker sub-agent per feature
-    And each sub-agent runs in an isolated worktree
-    And each sub-agent runs Steps 0-2 only
+    Given a work plan with feature A at stage "engineer" and feature B at stage "qa"
+    And features A and B have no cross-dependencies
+    When the pipeline dispatch loop runs
+    Then it spawns an engineer-worker for feature A in an isolated worktree
+    And a qa-worker for feature B in another isolated worktree
+    And both sub-agents run simultaneously
+
+#### Scenario: PM-worker writes spec in isolated worktree
+
+    Given a work plan with feature C at stage "pm" with PM PENDING
+    When the pipeline dispatch loop dispatches a pm-worker for feature C
+    Then the pm-worker activates PM mode in its worktree
+    And writes the feature spec
+    And commits with "spec(scope): define FEATURE_NAME"
+    And does NOT write code or tests
+
+#### Scenario: QA-worker verifies feature in isolated worktree
+
+    Given a work plan with feature D at stage "qa" with QA PENDING
+    When the pipeline dispatch loop dispatches a qa-worker for feature D
+    Then the qa-worker activates QA mode in its worktree
+    And runs Phase A automated verification
+    And writes discoveries
+    And does NOT mark [Complete] (orchestrator handles that)
 
 #### Scenario: Engineer-worker runs Steps 0-2 only
 
-    Given a engineer-worker sub-agent is spawned for feature A
+    Given an engineer-worker sub-agent is spawned for feature A
     When the sub-agent completes its work
     Then it has run Steps 0-2 (pre-flight, plan, implement)
     And it has NOT run Step 3 (verification) or Step 4 (status tags)
-    And it has NOT modified the delivery plan
+    And it has NOT modified the work plan
 
-#### Scenario: Engineer-worker cannot spawn nested sub-agents
+#### Scenario: Sub-agents cannot spawn nested sub-agents
 
-    Given a engineer-worker sub-agent is running
+    Given any sub-agent (engineer-worker, pm-worker, or qa-worker) is running
     When the sub-agent's tool list is inspected
     Then the Agent tool is not available
     And the sub-agent cannot launch nested sub-agents
 
-#### Scenario: Engineer-worker hits maxTurns safety limit
+#### Scenario: Sub-agent hits maxTurns safety limit
 
-    Given a engineer-worker sub-agent is running
-    When the sub-agent reaches 200 turns
+    Given a sub-agent is running
+    When it reaches its maxTurns limit
     Then the sub-agent stops execution
     And the main session handles the incomplete feature sequentially
 
 #### Scenario: verification-runner runs tests in background during B2
 
-    Given Engineer mode has completed B1 for all features in a phase
-    When Engineer mode enters B2
+    Given the orchestrator has completed B1 for all features in a verification group
+    When the orchestrator enters B2
     Then it spawns verification-runner sub-agents in the background
     And each verification-runner runs purlin:unit-test for its assigned feature
     And the main session runs web tests concurrently with MCP access
@@ -313,18 +386,20 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then Edit and Agent are disallowed
     And Write is allowed only for tests.json output
 
-#### Scenario: Main session runs web tests concurrently
+#### Scenario: Three modes run simultaneously in separate worktrees
 
-    Given verification-runner sub-agents are running in background
-    When the main Engineer session begins web test verification
-    Then MCP tools (browser_navigate, browser_snapshot) are available in the main session
-    And web tests run concurrently with the background test runners
+    Given a work plan with 5 features at different stages
+    And max_concurrent_worktrees is 3
+    When the pipeline dispatch loop runs
+    Then up to 3 worktrees run simultaneously
+    And each worktree has a different mode (PM, Engineer, or QA)
+    And mode-guard enforces write boundaries per-worktree via PID-scoped mode files
 
 #### Scenario: Safe file conflicts auto-resolve during merge
 
-    Given two engineer-worker branches both modified purlin:status
+    Given two sub-agent branches both modified .purlin/work_plan.md
     When the robust merge protocol runs rebase-before-merge
-    Then the conflict on purlin:status is auto-resolved by keeping main's version
+    Then the conflict on .purlin/work_plan.md is auto-resolved by keeping main's version
     And the merge completes successfully
 
 #### Scenario: Unsafe conflict falls back to sequential for that feature only
@@ -348,54 +423,53 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 #### Scenario: Multi-commit rebase with iterative safe-file resolution
 
     Given a engineer-worker branch has 5 commits
-    And 2 of those commits touch .purlin/delivery_plan.md
+    And 2 of those commits touch .purlin/work_plan.md
     When the robust merge protocol runs rebase
     Then it iterates through each commit's conflicts
     And auto-resolves safe file conflicts at each step
     And the rebase completes within 20 iterations
 
-#### Scenario: Engineer auto-advances to next phase when auto_start is true
+#### Scenario: Orchestrator continues through pipeline when auto_start is true
 
-    Given auto_start is true in Engineer mode's config
-    And a delivery plan has Phase 1 IN_PROGRESS and Phase 2 PENDING
-    When Engineer mode completes Phase 1
-    Then Phase 1 is marked COMPLETE in the delivery plan
-    And Engineer mode immediately begins Phase 2 without halting
+    Given auto_start is true in Purlin agent config
+    And a work plan has features at different pipeline stages
+    When the orchestrator completes a verification group's B2
+    Then it immediately continues dispatching remaining features
+    And does not pause for user review
 
-#### Scenario: Engineer halts after phase when auto_start is false
+#### Scenario: Orchestrator pauses at verification checkpoint when auto_start is false
 
-    Given auto_start is false in Engineer mode's config
-    And a delivery plan has Phase 1 IN_PROGRESS and Phase 2 PENDING
-    When Engineer mode completes Phase 1
-    Then Phase 1 is marked COMPLETE in the delivery plan
-    And Engineer mode halts with a phase completion message
-    And Engineer mode does NOT begin Phase 2
+    Given auto_start is false in Purlin agent config
+    And a verification group's B2 completes
+    When the orchestrator reaches the verification checkpoint
+    Then it pauses for user review
+    And resumes dispatching when the user continues
 
-#### Scenario: Engineer spawns parallel sub-agents for multi-feature phases
+#### Scenario: Pipeline dispatches cross-mode agents for multi-feature work
 
     Given auto_start is true
-    And Phase 2 has 3 independent features
-    When Engineer mode auto-advances to Phase 2
-    Then it spawns engineer-worker sub-agents for the independent features
+    And a work plan has 5 features at different stages
+    When the pipeline dispatch loop runs
+    Then it dispatches up to 3 concurrent sub-agents across PM, Engineer, and QA modes
     And merges results using the robust merge protocol
-    And proceeds to B2 verification
+    And advances features through their stages
 
-#### Scenario: Engineer runs all phases in a single session without bash orchestration
+#### Scenario: Pipeline completes all features in a single session
 
     Given auto_start is true
-    And a delivery plan has 4 phases
-    When Engineer mode completes all 4 phases
-    Then all phases are marked COMPLETE
-    And the delivery plan is deleted
-    And no external orchestrator was involved
+    And a work plan has 4 features
+    When the orchestrator completes all features through the full pipeline
+    Then all features reach stage "complete"
+    And the work plan is deleted
+    And no external orchestration was involved
 
-#### Scenario: Continuous mode replaced by auto_start config
+#### Scenario: Pipeline auto-start replaces continuous mode
 
-    Given the user wants continuous multi-phase building
+    Given the user wants autonomous multi-feature delivery
     When the user sets auto_start: true in agent config
     And starts a session via claude (plugin auto-activates)
     Then purlin:resume reads the auto_start setting from resolved config
-    And Engineer mode auto-advances through phases without halting
+    And the orchestrator runs the pipeline dispatch loop without halting
 
 #### Scenario: Bright-line rules exist only in purlin:build skill
 
@@ -462,10 +536,10 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 #### Scenario: init.sh copies .claude/agents/ to consumer project
 
     Given Purlin is a submodule with .claude/agents/engineer-worker.md
+    And .claude/agents/pm-worker.md and .claude/agents/qa-worker.md
     And .claude/agents/verification-runner.md
     When the user runs tools/init.sh (full init)
-    Then .claude/agents/engineer-worker.md is copied to the project root
-    And .claude/agents/verification-runner.md is copied to the project root
+    Then all four agent files are copied to the project root
 
 #### Scenario: pl-update-purlin refreshes agent files with conflict detection
 
@@ -482,31 +556,41 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then init.sh preserves the local version (newer timestamp)
     And the conflict resolution step offers merge options
 
-#### Scenario: Resume after clear during multi-phase auto-progression
+#### Scenario: Resume after clear during pipeline delivery
 
-    Given Engineer mode was auto-progressing through Phase 4 of 6
+    Given the orchestrator was dispatching features through the pipeline
     And context was cleared via /clear
     When purlin:resume restores the session
-    Then the delivery plan shows phases 1-3 COMPLETE, phase 4 IN_PROGRESS
-    And purlin:status identifies remaining TODO features in phase 4
-    And Engineer mode continues from the current phase
+    Then the work plan shows each feature's current stage and per-mode status
+    And the enriched checkpoint provides mode, recent commits, and active worktrees
+    And the orchestrator re-enters the pipeline dispatch loop
 
 #### Scenario: Resume with orphaned sub-agent branches
 
-    Given Engineer mode spawned 2 engineer-worker sub-agents
+    Given the orchestrator spawned cross-mode sub-agents
     And context was cleared while sub-agents were running
     When purlin:resume restores the session
-    Then Engineer mode detects orphaned worktree branches
+    Then the orchestrator detects orphaned worktree branches
     And merges them using the robust merge protocol
-    And continues with remaining work
+    And updates the work plan with merged results
+    And continues dispatching remaining work
 
-#### Scenario: Resume after all sub-agents completed before clear
+#### Scenario: Resume after sub-agents completed before clear
 
-    Given 2 engineer-worker sub-agents completed and merged
-    And context was cleared after merge but before B2 verification
+    Given sub-agents completed and merged for features in a verification group
+    And context was cleared after merge but before B2
     When purlin:resume restores the session
-    Then the checkpoint shows parallel B1 completed
-    And Engineer mode proceeds directly to B2 verification
+    Then the work plan shows all group features at Engineer COMPLETE
+    And the orchestrator proceeds directly to B2 verification
+
+#### Scenario: Enriched PreCompact checkpoint captures pipeline state
+
+    Given the orchestrator is mid-pipeline with 3 active worktrees
+    When PreCompact fires before context compaction
+    Then the checkpoint includes current mode from runtime file
+    And the first 20 lines of the work plan (pipeline status table)
+    And the last 5 git commits
+    And the count of active worktrees
 
 #### Scenario: Metadata-only spec edit does not reset lifecycle
 
@@ -516,23 +600,23 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     Then terminal_identity.md remains in COMPLETE state
     And no Engineer action item is generated for it
 
-#### Scenario: Execution group dispatch bright-line rule exists in purlin:build
+#### Scenario: Pipeline dispatch bright-line rule exists in purlin:build
 
     Given purlin:build is read
     When the Bright-Line Rules section is inspected
-    Then it contains a rule about execution group dispatch being mandatory
-    And the rule requires reading dependency_graph.json before Step 0
+    Then it contains a rule about pipeline dispatch being mandatory when a work plan exists
+    And the rule requires reading dependency_graph.json and dispatching cross-mode sub-agents
     And the rule labels sequential processing of independent features as a protocol violation
 
 ### QA Scenarios
 
-#### @manual Scenario: Sub-agent parallel build end-to-end
+#### @manual Scenario: Cross-mode pipeline delivery end-to-end
 
-    Given a delivery plan phase has 3 independent features
-    When Engineer mode executes the phase with parallel sub-agents
-    Then a human verifies all 3 features are correctly implemented
-    And the merge produced no regressions
-    And the scan status shows expected states
+    Given a work plan with 4 features at different pipeline stages
+    When the orchestrator runs the pipeline with cross-mode sub-agents
+    Then a human verifies all features are correctly implemented and verified
+    And cross-mode merges produced no regressions
+    And the work plan accurately reflects final state
 
 #### @manual Scenario: Robust merge handles real-world conflicts
 

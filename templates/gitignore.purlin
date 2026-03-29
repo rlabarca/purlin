@@ -14,5 +14,10 @@ features/digests/
 # Claude Code worktrees (agent isolation)
 .claude/worktrees/
 
+# Credential files (must never be committed)
+credentials.json
+*.credentials
+*.secret
+
 # Web verification artifacts
 .playwright-mcp/

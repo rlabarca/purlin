@@ -56,7 +56,7 @@ When documenting work in the companion file, use the tag that matches the situat
 
 **Format:** `**[TAG]** <description> (Severity: <level>)` — omit the severity line for `[IMPL]`.
 
-`[IMPL]` is the everyday tag. It's lightweight, doesn't require PM review, and doesn't appear in the Active Deviations table. The higher-severity tags surface as PM action items in `/pl-status`.
+`[IMPL]` is the everyday tag. It's lightweight, doesn't require PM review, and doesn't appear in the Active Deviations table. The higher-severity tags surface as PM action items in `purlin:status`.
 
 ---
 
@@ -75,7 +75,7 @@ Companion files have a structured table at the top for deviations that PM needs 
 | (silent on priority) | Defaults to NORMAL | DISCOVERY | PENDING |
 ```
 
-PM reviews these via `/pl-status` and marks each as:
+PM reviews these via `purlin:status` and marks each as:
 
 - **ACCEPTED** — PM agrees with the deviation.
 - **REJECTED** — PM overrules; Engineer follows the spec.
@@ -89,7 +89,7 @@ PM reviews these via `/pl-status` and marks each as:
 
 Four gates ensure companion files stay current. All are **mechanical** — they check whether the file changed, not whether the engineer's judgment was correct.
 
-### Gate 1: Build Completion (`/pl-build` Step 4)
+### Gate 1: Build Completion (`purlin:build` Step 4)
 
 Before committing a status tag (`[Complete]` or `[Ready for Verification]`):
 
@@ -104,7 +104,7 @@ Before switching out of Engineer mode:
 - Were code commits made for any feature without companion updates?
 - If companion debt exists: **blocked.** No skip option. Write the entries.
 
-### Gate 3: Session Save (`/pl-resume save`)
+### Gate 3: Session Save (`purlin:resume save`)
 
 Before writing a checkpoint:
 
@@ -116,7 +116,7 @@ Before writing a checkpoint:
 The scan compares code commit timestamps against companion file timestamps:
 
 - If code is newer than the companion: flagged as `companion_debt`.
-- `/pl-status` routes it to Engineer action items.
+- `purlin:status` routes it to Engineer action items.
 - Catches debt from manual git commits, session crashes, or anything Gates 1-3 missed.
 
 ---
@@ -125,15 +125,15 @@ The scan compares code commit timestamps against companion file timestamps:
 
 | Situation | What to Do | Blocking? |
 |-----------|------------|-----------|
-| Spec is impossible to implement | `/pl-infeasible feature-name` | Yes — work halts |
+| Spec is impossible to implement | `purlin:infeasible feature-name` | Yes — work halts |
 | Implementation differs from spec | Add a `[DEVIATION]` row to the companion table | No — build continues |
-| Spec should be changed proactively | `/pl-propose topic` | No — suggestion only |
+| Spec should be changed proactively | `purlin:propose topic` | No — suggestion only |
 
 ---
 
 ## How PM Reviews Deviations
 
-1. PM runs `/pl-status` and sees unacknowledged deviations listed as action items.
+1. PM runs `purlin:status` and sees unacknowledged deviations listed as action items.
 2. PM reads the companion file's Active Deviations table.
 3. For each entry, PM either:
    - Accepts (marks `[ACKNOWLEDGED]`, deviation stands).
@@ -145,7 +145,7 @@ The scan compares code commit timestamps against companion file timestamps:
 
 ## The Spec-Code Audit
 
-`/pl-spec-code-audit` uses companion entries as a structured index:
+`purlin:spec-code-audit` uses companion entries as a structured index:
 
 - **Companion debt** — code without entries is flagged HIGH severity.
 - **Impl-to-spec tracing** — `[IMPL]` references map code back to spec requirements.
@@ -168,7 +168,7 @@ The scan compares code commit timestamps against companion file timestamps:
 
 **As a PM:**
 
-1. Check `/pl-status` for unacknowledged deviations.
+1. Check `purlin:status` for unacknowledged deviations.
 2. Read the companion file's Active Deviations table.
 3. Accept, reject, or request clarification for each entry.
 4. Update the spec to absorb accepted deviations when ready.
@@ -181,7 +181,7 @@ The scan compares code commit timestamps against companion file timestamps:
 |----------------|------------|
 | Document spec-aligned work | `**[IMPL]** <what you built>` in the companion file |
 | Record a deviation | Add a row to the Active Deviations table with the appropriate tag |
-| Escalate something impossible | `/pl-infeasible feature-name` |
-| Suggest a spec change | `/pl-propose topic` |
-| Check for companion debt | `/pl-status` (scan detects it automatically) |
-| Review deviations (PM) | `/pl-status` then read the companion file |
+| Escalate something impossible | `purlin:infeasible feature-name` |
+| Suggest a spec change | `purlin:propose topic` |
+| Check for companion debt | `purlin:status` (scan detects it automatically) |
+| Review deviations (PM) | `purlin:status` then read the companion file |

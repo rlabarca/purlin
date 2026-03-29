@@ -10,6 +10,7 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 
 ## Using the Agent
 
+* [Configuration Guide](config-guide.md) — YOLO mode, find-work, auto-start, and config file layering.
 * [Common Commands Guide](common-commands-guide.md) — Status, mode switching, collaboration, session management, and other commands available in any mode.
 * [PM Mode Guide](pm-agent-guide.md) — Write feature specs from ideas, Figma designs, or live web pages.
 * [Engineer Mode Guide](engineer-agent-guide.md) — Implement features from specs, write tests, and manage delivery plans.
@@ -56,6 +57,7 @@ Skills are slash commands that trigger specific workflows. Run `purlin:help` ins
 | `purlin:mode <pm\|engineer\|qa>` | Switch to a different mode. |
 | `purlin:help` | Prints the command table for your current mode. |
 | `purlin:find <topic>` | Searches all specs for coverage of a topic. |
+| `purlin:config [setting] [on\|off]` | View or change behavior settings (yolo, find-work, auto-start). |
 | `purlin:resume [save\|merge-recovery]` | Session recovery after `/clear` or context compaction. Not required to start working — invoke any skill directly instead. |
 | `purlin:update [version] [--dry-run] [--auto-approve]` | Updates the Purlin plugin to the latest release tag (or a specified version). |
 | `purlin:remote <cmd>` | Branch collaboration — push, pull, add, or manage remotes. |

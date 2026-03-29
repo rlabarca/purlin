@@ -22,7 +22,11 @@
 
 # --- TTY resolution ---
 # Resolve once at source time. Prefer /dev/tty, fall back to parent's TTY device.
+# During session teardown (SessionEnd hooks), /dev/tty and PPID may be
+# inaccessible. Check for a cached TTY path written by session-init-identity.sh
+# as a first-resort fallback.
 _PURLIN_TTY=""
+_PURLIN_TTY_CACHE="${PURLIN_PROJECT_ROOT:-.}/.purlin/cache/session_tty"
 if [ -e /dev/tty ] && (echo -n > /dev/tty) 2>/dev/null; then
     _PURLIN_TTY="/dev/tty"
 elif [ -n "${PPID:-}" ]; then
@@ -31,6 +35,14 @@ elif [ -n "${PPID:-}" ]; then
         _PURLIN_TTY="/dev/$_parent_tty"
     fi
     unset _parent_tty
+fi
+# Fallback: read cached TTY from session init (survives teardown)
+if [ -z "$_PURLIN_TTY" ] && [ -f "$_PURLIN_TTY_CACHE" ]; then
+    _cached_tty=$(cat "$_PURLIN_TTY_CACHE" 2>/dev/null)
+    if [ -n "$_cached_tty" ] && [ -e "$_cached_tty" ]; then
+        _PURLIN_TTY="$_cached_tty"
+    fi
+    unset _cached_tty
 fi
 
 # --- Environment Detection ---
@@ -46,6 +58,20 @@ esac
 
 purlin_detect_env() {
     echo "title:$_PURLIN_ENV_TITLE iterm:$_PURLIN_ENV_ITERM warp:$_PURLIN_ENV_WARP"
+}
+
+# Persist resolved TTY so SessionEnd hooks can find it during teardown
+purlin_save_tty() {
+    if [ -n "$_PURLIN_TTY" ]; then
+        local cache_dir="${PURLIN_PROJECT_ROOT:-.}/.purlin/cache"
+        mkdir -p "$cache_dir" 2>/dev/null
+        echo "$_PURLIN_TTY" > "$cache_dir/session_tty"
+    fi
+}
+
+# Remove cached TTY (call during SessionEnd after clearing identity)
+purlin_cleanup_tty() {
+    rm -f "${PURLIN_PROJECT_ROOT:-.}/.purlin/cache/session_tty"
 }
 
 # Write escape sequence to the resolved TTY (or stdout as last resort)
@@ -122,14 +148,18 @@ clear_agent_identity() {
 
 # --- Centralized Session Identity ---
 # Single function to update all naming environments.
-# Computes badge from mode + branch/worktree context.
+# Computes a unified label from mode + branch/worktree context + task/project.
 #
-# Usage: update_session_identity <mode_display> [project]
+# Usage: update_session_identity <mode_display> [label]
 #   mode_display: "Engineer", "PM", "QA", "Purlin", or custom label
-#   project: project name (optional, used for title prefix)
+#   label: project name or short task description (optional)
+#
+# Format: <short_mode>(<context>) | <label>
+#   Engineer -> Eng, PM -> PM, QA -> QA, Purlin -> Purlin
+#   Examples: Eng(main) | purlin, QA(dev/0.8.6) | fix auth flow
 #
 # Side effects:
-#   Sets $_PURLIN_LAST_BADGE and $_PURLIN_LAST_TITLE
+#   Sets $_PURLIN_LAST_BADGE and $_PURLIN_LAST_TITLE (both identical)
 #   Writes to all detected terminal environments
 
 _PURLIN_LAST_BADGE=""
@@ -143,23 +173,35 @@ _purlin_detect_context() {
     fi
 }
 
+_purlin_short_mode() {
+    case "$1" in
+        [Ee]ngineer) echo "Eng" ;;
+        [Pp][Mm])    echo "PM" ;;
+        [Qq][Aa])    echo "QA" ;;
+        none|"")     echo "Purlin" ;;
+        *)           echo "$1" ;;
+    esac
+}
+
 update_session_identity() {
     local mode_display="$1"
-    local project="${2:-}"
-    local context
+    local label="${2:-}"
+    local context short_mode unified
     context="$(_purlin_detect_context)"
+    short_mode="$(_purlin_short_mode "$mode_display")"
 
     if [ -n "$context" ]; then
-        _PURLIN_LAST_BADGE="$mode_display ($context)"
+        unified="${short_mode}(${context})"
     else
-        _PURLIN_LAST_BADGE="$mode_display"
+        unified="$short_mode"
     fi
 
-    if [ -n "$project" ]; then
-        _PURLIN_LAST_TITLE="$project - $_PURLIN_LAST_BADGE"
-    else
-        _PURLIN_LAST_TITLE="$_PURLIN_LAST_BADGE"
+    if [ -n "$label" ]; then
+        unified="${unified} | ${label}"
     fi
+
+    _PURLIN_LAST_BADGE="$unified"
+    _PURLIN_LAST_TITLE="$unified"
 
     set_term_title "$_PURLIN_LAST_TITLE"
     set_iterm_badge "$_PURLIN_LAST_BADGE"

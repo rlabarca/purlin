@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-The primary Engineer skill that orchestrates the entire implementation workflow. Uses `purlin:status` to identify the highest-priority Engineer work item (or accepts a named feature as argument), then executes a multi-step implementation protocol: tombstone processing, pre-flight checks, planning, implementation with knowledge colocation, local verification via `purlin:unit-test`, and status tag commits. Supports delivery plan integration with execution group dispatch for parallel multi-feature builds.
+The primary Engineer skill that orchestrates the entire implementation workflow. Uses `purlin:status` to identify the highest-priority Engineer work item (or accepts a named feature as argument), then executes a multi-step implementation protocol: tombstone processing, pre-flight checks, planning, implementation with knowledge colocation, local verification via `purlin:unit-test`, and status tag commits. Supports work plan integration with pipeline dispatch for cross-mode parallel delivery via `engineer-worker`, `pm-worker`, and `qa-worker` sub-agents in isolated worktrees.
 
 ---
 
@@ -27,7 +27,7 @@ The primary Engineer skill that orchestrates the entire implementation workflow.
 - If an argument is provided, implement the named feature from `features/<arg>.md`.
 - If no argument is provided, run `purlin:status` to identify the highest-priority Engineer work item.
 - Tombstones in `features/_tombstones/` MUST be processed before regular feature work (see Section 2.4).
-- If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only.
+- If a work plan exists at `.purlin/work_plan.md`, use pipeline dispatch (see Section 2.5) instead of single-feature sequential execution.
 
 ### 2.3.1 Missing Spec Redirect
 
@@ -60,11 +60,25 @@ When `features/_tombstones/` contains tombstone files, process ALL of them befor
 6. **Commit:** `git commit -m "chore: process tombstone <name> — delete retired code and tests"`
 7. **Repeat** for each remaining tombstone.
 
-### 2.5 Execution Group Dispatch
+### 2.5 Pipeline Dispatch
 
-- When a delivery plan has PENDING phases with 2+ independent features (no mutual dependencies in `dependency_graph.json`), Engineer mode MUST spawn `engineer-worker` sub-agents for parallel execution in isolated worktrees.
-- Independent features build in parallel; dependent features use the sequential per-feature loop.
-- Merge uses the Robust Merge Protocol: rebase sequentially, auto-resolve conflicts in safe files (delivery plan, cache), abort and fall back to sequential for unsafe conflicts.
+When a work plan exists, the orchestrator runs a dispatch loop instead of single-feature sequential execution. The dispatch loop advances features through their pipeline stages using cross-mode sub-agents in isolated worktrees.
+
+**Orchestrator loop:**
+1. Read work plan + scan state.
+2. For each feature in priority order, determine next action based on current stage and dependencies:
+   - Stage `pm` + PM PENDING → dispatch `pm-worker` sub-agent.
+   - Stage `engineer` + Engineer PENDING → dispatch `engineer-worker` sub-agent.
+   - Stage `qa` + QA PENDING → dispatch `qa-worker` sub-agent.
+   - All features in a verification group at Engineer COMPLETE → run B2/B3 in main session.
+3. Dispatch to available worktree slots (max concurrent from `max_concurrent_worktrees` config, default 3).
+4. Wait for any sub-agent to complete. Merge the completed worktree branch using the Robust Merge Protocol.
+5. Update work plan: advance feature to next stage, update mode column.
+6. Continue until all features reach `complete` or all remaining features are blocked.
+
+**Dependency enforcement:** Feature B cannot enter `engineer` stage until feature A's `engineer` stage completes (if B depends on A). PM stages can proceed in parallel since specs define interfaces, not implementations.
+
+**Fallback:** For 1-2 features or tightly dependent work, skip the dispatch loop and work directly in the main session using the sequential per-feature protocol (Section 2.6), switching modes via `purlin:mode` as needed.
 
 ### 2.6 Per-Feature Implementation Protocol
 
@@ -92,6 +106,7 @@ During pre-flight, the build collects and enforces invariant constraints:
 - Chat is not a communication channel; use `purlin:propose` for findings.
 - Re-verification, not re-implementation, when scan shows `spec_modified_after_completion` with passing tests and no scenario diff.
 - Design alignment verification MUST pass (zero BUG/DRIFT) before status tag for features with `> Web Test:` metadata.
+- **Pipeline dispatch is mandatory when a work plan exists.** When `.purlin/work_plan.md` exists and contains 2+ features, the orchestrator MUST use the pipeline dispatch loop (Section 2.5). Sequential processing of independent features without checking the work plan is a protocol violation.
 
 ---
 
@@ -147,13 +162,37 @@ During pre-flight, the build collects and enforces invariant constraints:
     And features/_tombstones/old_feature.impl.md is deleted
     And the dependency graph is regenerated
 
-#### Scenario: Delivery plan scopes to current phase
+#### Scenario: Work plan triggers pipeline dispatch
 
-    Given .purlin/delivery_plan.md exists with Phase 1 IN_PROGRESS containing feature_a
-    And Phase 2 PENDING contains feature_b
+    Given .purlin/work_plan.md exists with feature_a at stage "engineer" and feature_b at stage "pm"
     When purlin:build is invoked
-    Then only feature_a is implemented
-    And feature_b is not started
+    Then the pipeline dispatch loop is entered
+    And feature_a is dispatched to an engineer-worker sub-agent
+    And feature_b is dispatched to a pm-worker sub-agent (if worktree slots available)
+
+#### Scenario: Cross-mode sub-agents run in parallel
+
+    Given a work plan with feature_a at stage "engineer" and feature_b at stage "qa"
+    And both features are independent (no mutual dependencies)
+    When the pipeline dispatch loop runs
+    Then an engineer-worker builds feature_a in one worktree
+    And a qa-worker verifies feature_b in another worktree simultaneously
+
+#### Scenario: Pipeline respects dependency order
+
+    Given feature_b depends on feature_a in dependency_graph.json
+    And feature_a is at stage "engineer" IN_PROGRESS
+    When the pipeline dispatch loop evaluates feature_b
+    Then feature_b is not dispatched to engineer stage
+    And feature_b waits until feature_a's engineer stage completes
+
+#### Scenario: Verification group triggers B2 after all members complete
+
+    Given features auth_flow and session_mgmt are in verification group "auth"
+    And both features complete their engineer stage
+    When the pipeline dispatch loop detects the group completion
+    Then B2 cross-feature regression testing runs in the main session
+    And both features are tested together
 
 #### Scenario: Status tag is a separate commit
 
