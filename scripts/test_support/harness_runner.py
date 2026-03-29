@@ -680,12 +680,26 @@ def evaluate_assertions(output, assertions):
     return results
 
 
+def _resolve_feature_path(feature_name, project_root):
+    """Resolve feature stem to its relative path in category subfolders."""
+    features_dir = os.path.join(project_root, 'features')
+    target = f"{feature_name}.md"
+    for dirpath, dirnames, filenames in os.walk(features_dir):
+        dirnames[:] = [d for d in dirnames if not d.startswith('_')]
+        if target in filenames:
+            return os.path.relpath(
+                os.path.join(dirpath, target), project_root)
+    # Fallback to flat path for backward compatibility.
+    return f"features/{feature_name}.md"
+
+
 def process_scenario_file(scenario_path, project_root, progress=None):
     """Process a single scenario JSON file. Returns (feature_name, details, passed, failed)."""
     with open(scenario_path) as f:
         data = json.load(f)
 
     feature_name = data.get('feature', '')
+    feature_path = _resolve_feature_path(feature_name, project_root)
     harness_type = data.get('harness_type', '')
     scenarios = data.get('scenarios', [])
     details = []
@@ -837,7 +851,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                                      if context else name),
                             'status': 'PASS' if passed else 'FAIL',
                             'scenario_ref':
-                                f"features/{feature_name}.md:{name}",
+                                f"{feature_path}:{name}",
                             'expected': context,
                         }
                         if tier in (1, 2, 3):
@@ -854,7 +868,7 @@ def process_scenario_file(scenario_path, project_root, progress=None):
                         'name': name,
                         'status': 'PASS' if exec_success else 'FAIL',
                         'scenario_ref':
-                            f"features/{feature_name}.md:{name}",
+                            f"{feature_path}:{name}",
                         'expected': 'Scenario executes successfully',
                     }
                     if not exec_success:

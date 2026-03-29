@@ -58,20 +58,20 @@ class TestClassifyFile(unittest.TestCase):
     # ----- INVARIANT files -----
 
     def test_invariant_i_security(self):
-        """features/i_*.md files are INVARIANT."""
-        result = classify_file('features/i_arch_security.md')
+        """features/_invariants/i_*.md files are INVARIANT."""
+        result = classify_file('features/_invariants/i_arch_security.md')
         self.assertEqual(result, 'INVARIANT')
 
     def test_invariant_i_data_retention(self):
         """Another invariant pattern with underscore-prefixed name."""
-        result = classify_file('features/i_policy_data_retention.md')
+        result = classify_file('features/_invariants/i_policy_data_retention.md')
         self.assertEqual(result, 'INVARIANT')
 
     # ----- QA files -----
 
     def test_qa_discoveries(self):
         """*.discoveries.md files are QA-owned."""
-        result = classify_file('features/foo.discoveries.md')
+        result = classify_file('features/core/foo.discoveries.md')
         self.assertEqual(result, 'QA')
 
     def test_qa_regression_json(self):
@@ -90,19 +90,19 @@ class TestClassifyFile(unittest.TestCase):
 
     def test_code_impl_companion(self):
         """*.impl.md files inside features/ are CODE (Engineer-owned companions)."""
-        result = classify_file('features/foo.impl.md')
+        result = classify_file('features/core/foo.impl.md')
         self.assertEqual(result, 'CODE')
 
     # ----- SPEC files (PM-owned) -----
 
     def test_spec_feature_file(self):
         """Regular feature specs are SPEC."""
-        result = classify_file('features/user_auth.md')
+        result = classify_file('features/core/user_auth.md')
         self.assertEqual(result, 'SPEC')
 
     def test_spec_arch_anchor(self):
-        """Arch anchors in features/ are SPEC (they live in features/)."""
-        result = classify_file('features/arch_testing.md')
+        """Arch anchors in features/ are SPEC (they live in category subfolders)."""
+        result = classify_file('features/architecture/arch_testing.md')
         self.assertEqual(result, 'SPEC')
 
     def test_spec_tombstoned_feature(self):

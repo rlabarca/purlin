@@ -335,7 +335,7 @@ Scenario: Prodbrief section detection
 Scenario: Add invariant from git repo @auto
   Given an external git repo with `features/policy_security.md`
   When PM runs `purlin:invariant add <repo-url> policy_security.md`
-  Then `features/i_policy_security.md` is created with injected metadata
+  Then `features/_invariants/i_policy_security.md` is created with injected metadata
   And the dependency graph includes the new invariant
   And the scan shows the invariant in its output
 
@@ -357,7 +357,7 @@ Scenario: Sync detects Figma update @auto
 
 Scenario: Mode guard blocks invariant write @manual
   Given the agent is in Engineer mode
-  When the agent attempts to write to `features/i_policy_security.md`
+  When the agent attempts to write to `features/_invariants/i_policy_security.md`
   Then the write is blocked
   And the agent displays a redirect message mentioning `purlin:invariant sync`
 

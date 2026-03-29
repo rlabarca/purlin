@@ -162,7 +162,7 @@ else
 fi
 
 # 2. engineer + SPEC -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/user_auth.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/user_auth.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "engineer + SPEC (features/user_auth.md) -> exit 2"
@@ -171,7 +171,7 @@ else
 fi
 
 # 3. engineer + QA -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/api_endpoints.discoveries.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/api_endpoints.discoveries.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "engineer + QA (api_endpoints.discoveries.md) -> exit 2"
@@ -180,7 +180,7 @@ else
 fi
 
 # 4. engineer + INVARIANT -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/i_arch_security.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_arch_security.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "engineer + INVARIANT (i_arch_security.md) -> exit 2"
@@ -189,7 +189,7 @@ else
 fi
 
 # 5. engineer + companion (CODE) -> allow (exit 0)
-INPUT="$(make_input "$FIXTURE_DIR/features/api_endpoints.impl.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/api_endpoints.impl.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 0 ]]; then
     pass "engineer + CODE companion (api_endpoints.impl.md) -> exit 0"
@@ -204,7 +204,7 @@ echo "-- PM mode --"
 set_mode "pm"
 
 # 6. pm + SPEC -> allow (exit 0)
-INPUT="$(make_input "$FIXTURE_DIR/features/user_auth.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/user_auth.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 0 ]]; then
     pass "pm + SPEC (features/user_auth.md) -> exit 0"
@@ -222,7 +222,7 @@ else
 fi
 
 # 8. pm + QA -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/api_endpoints.discoveries.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/api_endpoints.discoveries.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "pm + QA (api_endpoints.discoveries.md) -> exit 2"
@@ -231,7 +231,7 @@ else
 fi
 
 # 9. pm + INVARIANT -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/i_arch_security.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_arch_security.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "pm + INVARIANT (i_arch_security.md) -> exit 2"
@@ -246,7 +246,7 @@ echo "-- QA mode --"
 set_mode "qa"
 
 # 10. qa + QA -> allow (exit 0)
-INPUT="$(make_input "$FIXTURE_DIR/features/api_endpoints.discoveries.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/api_endpoints.discoveries.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 0 ]]; then
     pass "qa + QA (api_endpoints.discoveries.md) -> exit 0"
@@ -264,7 +264,7 @@ else
 fi
 
 # 12. qa + SPEC -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/user_auth.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/user_auth.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "qa + SPEC (features/user_auth.md) -> exit 2"
@@ -273,7 +273,7 @@ else
 fi
 
 # 13. qa + INVARIANT -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/i_arch_security.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_arch_security.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "qa + INVARIANT (i_arch_security.md) -> exit 2"
@@ -297,7 +297,7 @@ else
 fi
 
 # 15. no mode + SPEC -> block (exit 2)
-INPUT="$(make_input "$FIXTURE_DIR/features/user_auth.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/core/user_auth.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "no mode + SPEC (features/user_auth.md) -> exit 2"
@@ -311,7 +311,7 @@ echo "-- Invariant blocked in all modes --"
 
 # 16. engineer + second invariant -> block
 set_mode "engineer"
-INPUT="$(make_input "$FIXTURE_DIR/features/i_policy_data_retention.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_policy_data_retention.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "engineer + INVARIANT (i_policy_data_retention.md) -> exit 2"
@@ -321,7 +321,7 @@ fi
 
 # 17. pm + second invariant -> block
 set_mode "pm"
-INPUT="$(make_input "$FIXTURE_DIR/features/i_policy_data_retention.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_policy_data_retention.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "pm + INVARIANT (i_policy_data_retention.md) -> exit 2"
@@ -331,7 +331,7 @@ fi
 
 # 18. qa + second invariant -> block
 set_mode "qa"
-INPUT="$(make_input "$FIXTURE_DIR/features/i_policy_data_retention.md")"
+INPUT="$(make_input "$FIXTURE_DIR/features/_invariants/i_policy_data_retention.md")"
 EC="$(run_hook_exit_code mode-guard.sh "$INPUT")"
 if [[ "$EC" -eq 2 ]]; then
     pass "qa + INVARIANT (i_policy_data_retention.md) -> exit 2"
@@ -473,7 +473,7 @@ else
 fi
 
 # 30. companion-debt-tracker.sh exits 0 for feature file (skipped)
-INPUT='{"file_path":"features/user_auth.md"}'
+INPUT='{"file_path":"features/core/user_auth.md"}'
 EC="$(run_hook_exit_code companion-debt-tracker.sh "$INPUT")"
 if [[ "$EC" -eq 0 ]]; then
     pass "companion-debt-tracker.sh exits 0 for feature file (skipped)"

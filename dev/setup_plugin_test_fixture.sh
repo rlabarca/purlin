@@ -67,7 +67,9 @@ git config user.name "Purlin Fixture Engineer"
 
 # Create directory structure
 mkdir -p .purlin/runtime .purlin/cache
-mkdir -p features/_tombstones
+mkdir -p features/_tombstones features/_invariants
+mkdir -p features/core features/ui features/foundation features/analytics
+mkdir -p features/architecture features/design features/policy
 mkdir -p tests/api_endpoints tests/search tests/data_model tests/billing tests/reporting
 mkdir -p src/utils
 
@@ -111,20 +113,20 @@ cat > .purlin/delivery_plan.md <<'PLAN'
 
 ## Phase 1 — Foundation (COMPLETE)
 
-- `features/data_model.md`
+- `features/foundation/data_model.md`
 
 ## Phase 2 — Core Features (IN_PROGRESS)
 
-- `features/user_auth.md`
-- `features/api_endpoints.md`
-- `features/billing.md`
+- `features/core/user_auth.md`
+- `features/core/api_endpoints.md`
+- `features/core/billing.md`
 
 ## Phase 3 — UI Layer (PENDING)
 
-- `features/dashboard.md`
-- `features/search.md`
-- `features/reporting.md`
-- `features/notifications.md`
+- `features/ui/dashboard.md`
+- `features/core/search.md`
+- `features/analytics/reporting.md`
+- `features/core/notifications.md`
 PLAN
 
 # --- .purlin/PURLIN_OVERRIDES.md ---
@@ -252,7 +254,7 @@ git commit -m "feat: initial project structure" >/dev/null 2>&1
 echo "[2/5] Creating feature specifications..."
 
 # --- features/user_auth.md --- [TODO]
-cat > features/user_auth.md <<'SPEC'
+cat > features/core/user_auth.md <<'SPEC'
 # Feature: User Authentication
 
 > Label: "User Authentication"
@@ -309,12 +311,12 @@ Handles user login, logout, and session management.
 SPEC
 
 # --- features/dashboard.md --- [TODO], Prereq: features/user_auth.md
-cat > features/dashboard.md <<'SPEC'
+cat > features/ui/dashboard.md <<'SPEC'
 # Feature: Dashboard
 
 > Label: "Dashboard"
 > Category: "UI"
-> Prerequisite: features/user_auth.md
+> Prerequisite: user_auth.md
 
 ## Status
 
@@ -357,7 +359,7 @@ Main dashboard view showing user metrics and recent activity.
 SPEC
 
 # --- features/notifications.md --- [TODO]
-cat > features/notifications.md <<'SPEC'
+cat > features/core/notifications.md <<'SPEC'
 # Feature: Notifications
 
 > Label: "Notifications"
@@ -404,7 +406,7 @@ Real-time notification system for user events.
 SPEC
 
 # --- features/api_endpoints.md --- [TESTING]
-cat > features/api_endpoints.md <<'SPEC'
+cat > features/core/api_endpoints.md <<'SPEC'
 # Feature: API Endpoints
 
 > Label: "REST API"
@@ -464,7 +466,7 @@ RESTful API for CRUD operations on user data and resources.
 SPEC
 
 # --- features/search.md --- [TESTING]
-cat > features/search.md <<'SPEC'
+cat > features/core/search.md <<'SPEC'
 # Feature: Search
 
 > Label: "Search"
@@ -515,7 +517,7 @@ Full-text search across application entities.
 SPEC
 
 # --- features/data_model.md --- [COMPLETE]
-cat > features/data_model.md <<'SPEC'
+cat > features/foundation/data_model.md <<'SPEC'
 # Feature: Data Model
 
 > Label: "Data Model"
@@ -567,12 +569,12 @@ Core database schema and data access layer.
 SPEC
 
 # --- features/billing.md --- [COMPLETE], Prereq: features/data_model.md
-cat > features/billing.md <<'SPEC'
+cat > features/core/billing.md <<'SPEC'
 # Feature: Billing
 
 > Label: "Billing"
 > Category: "Core"
-> Prerequisite: features/data_model.md
+> Prerequisite: data_model.md
 
 ## Status
 
@@ -620,12 +622,12 @@ Subscription billing and payment processing.
 SPEC
 
 # --- features/reporting.md --- [COMPLETE], Prereq: features/billing.md
-cat > features/reporting.md <<'SPEC'
+cat > features/analytics/reporting.md <<'SPEC'
 # Feature: Reporting
 
 > Label: "Reporting"
 > Category: "Analytics"
-> Prerequisite: features/billing.md
+> Prerequisite: billing.md
 
 ## Status
 
@@ -677,7 +679,7 @@ git commit -m "feat: add feature specifications" >/dev/null 2>&1
 echo "[3/5] Creating companion files and discovery sidecars..."
 
 # --- features/api_endpoints.impl.md --- (unacknowledged deviation)
-cat > features/api_endpoints.impl.md <<'IMPL'
+cat > features/core/api_endpoints.impl.md <<'IMPL'
 # Companion: API Endpoints
 
 ## Active Deviations
@@ -696,7 +698,7 @@ cat > features/api_endpoints.impl.md <<'IMPL'
 IMPL
 
 # --- features/search.impl.md --- (acknowledged deviation)
-cat > features/search.impl.md <<'IMPL'
+cat > features/core/search.impl.md <<'IMPL'
 # Companion: Search
 
 ## Active Deviations
@@ -714,7 +716,7 @@ cat > features/search.impl.md <<'IMPL'
 IMPL
 
 # --- features/api_endpoints.discoveries.md --- (OPEN BUG + OPEN DISCOVERY)
-cat > features/api_endpoints.discoveries.md <<'DISC'
+cat > features/core/api_endpoints.discoveries.md <<'DISC'
 # Discoveries: API Endpoints
 
 ### [BUG] Pagination cursor breaks on special characters
@@ -733,7 +735,7 @@ cat > features/api_endpoints.discoveries.md <<'DISC'
 DISC
 
 # --- features/data_model.discoveries.md --- (RESOLVED BUG)
-cat > features/data_model.discoveries.md <<'DISC'
+cat > features/foundation/data_model.discoveries.md <<'DISC'
 # Discoveries: Data Model
 
 ### [BUG] Migration rollback fails on foreign key constraints
@@ -908,7 +910,7 @@ git commit -m "test: add test results" >/dev/null 2>&1
 echo "[5/5] Creating anchors, invariants, and tombstone..."
 
 # --- features/i_arch_security.md --- (invariant, global scope)
-cat > features/i_arch_security.md <<'INVARIANT'
+cat > features/_invariants/i_arch_security.md <<'INVARIANT'
 > Format-Version: 1.0
 > Invariant: true
 > Version: 1.0.0
@@ -934,12 +936,12 @@ individual feature specs or delivery plan decisions.
 INVARIANT
 
 # --- features/i_policy_data_retention.md --- (invariant, scoped)
-cat > features/i_policy_data_retention.md <<'INVARIANT'
+cat > features/_invariants/i_policy_data_retention.md <<'INVARIANT'
 > Format-Version: 1.0
 > Invariant: true
 > Version: 1.0.0
 > Source: manual
-> Scope: features/data_model.md, features/billing.md
+> Scope: data_model.md, billing.md
 
 # Invariant: Data Retention Policy
 
@@ -957,7 +959,7 @@ Scoped to specific features rather than global.
 INVARIANT
 
 # --- features/arch_testing.md --- (technical anchor)
-cat > features/arch_testing.md <<'ANCHOR'
+cat > features/architecture/arch_testing.md <<'ANCHOR'
 # Anchor: Testing Architecture
 
 > Label: "Testing Architecture"
@@ -978,7 +980,7 @@ All features must conform to these testing patterns.
 ANCHOR
 
 # --- features/design_visual_system.md --- (design anchor)
-cat > features/design_visual_system.md <<'ANCHOR'
+cat > features/design/design_visual_system.md <<'ANCHOR'
 # Anchor: Visual System
 
 > Label: "Visual System"
@@ -999,7 +1001,7 @@ for all user-facing features.
 ANCHOR
 
 # --- features/policy_code_review.md --- (policy anchor)
-cat > features/policy_code_review.md <<'ANCHOR'
+cat > features/policy/policy_code_review.md <<'ANCHOR'
 # Anchor: Code Review Policy
 
 > Label: "Code Review Policy"

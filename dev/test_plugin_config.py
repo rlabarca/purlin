@@ -205,9 +205,9 @@ class TestPluginConfig(unittest.TestCase):
 
     def test_classify_from_config_engine(self):
         """Basic classification test via the imported config_engine module."""
-        self.assertEqual(config_engine.classify_file('features/login.md'), 'SPEC')
+        self.assertEqual(config_engine.classify_file('features/core/login.md'), 'SPEC')
         self.assertEqual(config_engine.classify_file('src/main.py'), 'CODE')
-        self.assertEqual(config_engine.classify_file('features/i_audit.md'), 'INVARIANT')
+        self.assertEqual(config_engine.classify_file('features/_invariants/i_audit.md'), 'INVARIANT')
         self.assertEqual(config_engine.classify_file('app.discoveries.md'), 'QA')
 
     # ----- Edge cases -----

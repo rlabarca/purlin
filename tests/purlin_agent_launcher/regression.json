@@ -8,42 +8,42 @@
     {
       "name": "instruction-stack-assembly:PURLIN_BASE.md exists in instructions directory",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:instruction-stack-assembly",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:instruction-stack-assembly",
       "expected": "PURLIN_BASE.md exists in instructions directory",
       "assertion_tier": 2
     },
     {
       "name": "instruction-stack-assembly:PURLIN_OVERRIDES.md exists in .purlin directory",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:instruction-stack-assembly",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:instruction-stack-assembly",
       "expected": "PURLIN_OVERRIDES.md exists in .purlin directory",
       "assertion_tier": 2
     },
     {
       "name": "instruction-stack-assembly:Harness runner constructs PURLIN system prompt from correct two-layer stack",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:instruction-stack-assembly",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:instruction-stack-assembly",
       "expected": "Harness runner constructs PURLIN system prompt from correct two-layer stack",
       "assertion_tier": 2
     },
     {
       "name": "help-output-flags:The resume skill references --yolo flag",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:help-output-flags",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:help-output-flags",
       "expected": "The resume skill references --yolo flag",
       "assertion_tier": 2
     },
     {
       "name": "help-output-flags:The resume skill references --no-yolo flag",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:help-output-flags",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:help-output-flags",
       "expected": "The resume skill references --no-yolo flag",
       "assertion_tier": 2
     },
     {
       "name": "help-output-flags:The resume skill references --no-save flag",
       "status": "PASS",
-      "scenario_ref": "features/purlin_agent_launcher.md:help-output-flags",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:help-output-flags",
       "expected": "The resume skill references --no-save flag",
       "assertion_tier": 2
     }

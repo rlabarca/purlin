@@ -335,16 +335,16 @@ test_classify() {
 test_classify "src/app.py" "CODE" "src/app.py" 8
 
 # 9. features/user_auth.md -> SPEC
-test_classify "features/user_auth.md" "SPEC" "features/user_auth.md" 9
+test_classify "features/core/user_auth.md" "SPEC" "features/core/user_auth.md" 9
 
 # 10. features/i_arch_security.md -> INVARIANT
-test_classify "features/i_arch_security.md" "INVARIANT" "features/i_arch_security.md" 10
+test_classify "features/_invariants/i_arch_security.md" "INVARIANT" "features/_invariants/i_arch_security.md" 10
 
 # 11. features/api_endpoints.discoveries.md -> QA
-test_classify "features/api_endpoints.discoveries.md" "QA" "features/api_endpoints.discoveries.md" 11
+test_classify "features/core/api_endpoints.discoveries.md" "QA" "features/core/api_endpoints.discoveries.md" 11
 
 # 12. features/api_endpoints.impl.md -> CODE (companion)
-test_classify "features/api_endpoints.impl.md" "CODE" "features/api_endpoints.impl.md" 12
+test_classify "features/core/api_endpoints.impl.md" "CODE" "features/core/api_endpoints.impl.md" 12
 
 # 13. README.md -> CODE (default)
 test_classify "README.md" "CODE" "README.md" 13
