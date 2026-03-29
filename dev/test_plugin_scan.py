@@ -447,13 +447,17 @@ class TestPluginScan(unittest.TestCase):
                 self.assertEqual(f.get("lifecycle"), "TOMBSTONE")
 
     def test_tombstone_present(self):
-        """Verify tombstones/ directory handling.
+        """Verify _tombstones/ directory handling.
 
-        If features/tombstones/ exists in the fixture, the scan engine
-        should have appended entries with tombstone=True. If it does not
-        exist, no tombstone entries should appear.
+        If features/_tombstones/ (or legacy tombstones/) exists in the
+        fixture, the scan engine should have appended entries with
+        tombstone=True. If neither exists, no tombstone entries should
+        appear.
         """
-        tombstones_dir = os.path.join(FIXTURE_ROOT, "features", "tombstones")
+        tombstones_dir = os.path.join(FIXTURE_ROOT, "features", "_tombstones")
+        if not os.path.isdir(tombstones_dir):
+            tombstones_dir = os.path.join(
+                FIXTURE_ROOT, "features", "tombstones")
         result = scan_engine.run_scan(only={"features"})
         tombstone_entries = [
             f for f in result["features"] if f.get("tombstone")

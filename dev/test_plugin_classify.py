@@ -106,8 +106,13 @@ class TestClassifyFile(unittest.TestCase):
         self.assertEqual(result, 'SPEC')
 
     def test_spec_tombstoned_feature(self):
-        """Tombstoned features under features/tombstones/ are still SPEC."""
-        result = classify_file('features/tombstones/legacy_auth.md')
+        """Tombstoned features under features/_tombstones/ are still SPEC."""
+        result = classify_file('features/_tombstones/legacy_auth.md')
+        self.assertEqual(result, 'SPEC')
+
+    def test_spec_feature_in_category_subfolder(self):
+        """Features in category subfolders are still SPEC."""
+        result = classify_file('features/skills_common/purlin_mode.md')
         self.assertEqual(result, 'SPEC')
 
     # ----- CODE files (default bucket) -----
