@@ -3,24 +3,14 @@ name: override-edit
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles, all sections)**
-**Purlin mode: shared**
-
-Available to all agents and modes.
-
 Any active mode (Engineer, PM, QA) may edit any section of `.purlin/PURLIN_OVERRIDES.md`. There is no per-section role restriction.
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 
 ---
 
 **Base/override file pair:**
-- `PURLIN_OVERRIDES.md` ↔ `instructions/PURLIN_BASE.md`
+- `PURLIN_OVERRIDES.md` ↔ `${CLAUDE_PLUGIN_ROOT}/agents/purlin.md`
 
 ---
 
@@ -47,7 +37,7 @@ Any active mode (Engineer, PM, QA) may edit any section of `.purlin/PURLIN_OVERR
    *   **Project-specific bright-line rules** -- tech stack constraints, deployment restrictions, submodule prohibitions, domain-specific mandates.
    *   **Domain context** -- project architecture, environment details, team conventions the agent needs always-on.
 
-   Override files do NOT carry: workflow procedures, multi-step protocols, format templates, or response processing patterns. Those belong in skill files (`.claude/commands/pl-*.md`). If the proposed content is a step-by-step procedure, advise putting it in a skill instead.
+   Override files do NOT carry: workflow procedures, multi-step protocols, format templates, or response processing patterns. Those belong in skill files (`skills/*/SKILL.md`). If the proposed content is a step-by-step procedure, advise putting it in a skill instead.
 
 5. Apply the proposed change with these constraints:
    - Additive only -- append, do not delete or restructure existing content.

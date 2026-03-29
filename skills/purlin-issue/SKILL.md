@@ -3,11 +3,6 @@ name: purlin-issue
 description: Available to all agents and modes
 ---
 
-**Purlin command: shared (all roles)**
-**Purlin mode: shared**
-
-Available to all agents and modes.
-
 Generate a structured, copy-paste-ready bug report for the Purlin framework. The output is designed to be pasted directly into a Purlin Engineer session as a debugging task prompt.
 
 This command is for reporting issues with the Purlin framework tooling, not for logging project-level bugs (use `purlin:discovery` for that).
@@ -20,7 +15,7 @@ If `$ARGUMENTS` is non-empty, use it as the issue description. Otherwise, ask: *
 
 Then gather the debugging essentials. If any of these are visible in the current conversation, extract them directly and confirm with the user. Otherwise, ask:
 
-1. **Command/skill**: "What command or skill were you running?" (e.g., `purlin:build notifications`, `purlin:start --build`)
+1. **Command/skill**: "What command or skill were you running?" (e.g., `purlin:build notifications`, `purlin:resume --build`)
 2. **Error output**: "Paste or describe the error output (traceback, unexpected result, or wrong behavior)." If the error is visible in conversation context, extract it and ask: "Is this the error? [show extracted text]"
 3. **Expected behavior**: "What should have happened instead?"
 

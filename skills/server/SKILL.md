@@ -5,8 +5,6 @@ description: "This skill activates Engineer mode. Exception: when invoked from Q
 
 **Purlin mode: Engineer (QA cross-mode: run-only)**
 
-Purlin agent: This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop servers but cannot modify app code).
-
 ---
 
 ## Server Lifecycle Management

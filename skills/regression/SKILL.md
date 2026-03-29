@@ -3,10 +3,7 @@ name: regression
 description: This skill activates QA mode. If another mode is active, confirm switch first
 ---
 
-**Purlin command: Purlin agent only (replaces purlin:regression-run, purlin:regression-author, purlin:regression-evaluate)**
 **Purlin mode: QA**
-
-Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
 
 ---
 
@@ -41,13 +38,6 @@ After completing the detected step, print:
 ```
 Next: purlin:regression    (auto-detects next step)
 ```
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## Subcommands
 
@@ -125,3 +115,8 @@ Evaluate regression results — read the result files, report status, and docume
 5. **Re-evaluation after fix.** When evaluating a suite that previously failed:
    - If now PASS: update the companion file entry to `[RESOLVED]` with the date.
    - If still FAIL: update the companion file entry with incremented attempt count and the new actual output (it may have changed).
+
+6. **Commit** regression results and any companion file updates: `git commit -m "qa(regression): evaluate <feature|batch>"`.
+   For the `author` subcommand, commit new baselines: `git commit -m "qa(regression): author baselines for <feature>"`.
+   For the `run` subcommand, commit updated `regression.json` results: `git commit -m "qa(regression): run <feature|all>"`.
+   Run `purlin_scan` after commit.

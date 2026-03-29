@@ -5,8 +5,6 @@ description: This skill activates Engineer mode. If another mode is active, conf
 
 **Purlin mode: Engineer**
 
-Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
-
 ---
 
 Given the topic provided as an argument, surface a structured spec change suggestion to PM mode:

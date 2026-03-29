@@ -3,10 +3,7 @@ name: remote
 description: Branch collaboration — remote config, branch lifecycle, push/pull sync
 ---
 
-**Purlin command: Purlin agent only (replaces purlin:remote-push, purlin:remote-pull, purlin:remote-add)**
 **Purlin mode: shared**
-
-Purlin agent: Branch collaboration — remote config, branch lifecycle, push/pull sync.
 
 ---
 

@@ -3,18 +3,6 @@ name: resume
 description: Session recovery. Saves/restores checkpoints, recovers merge failures, discovers work. Not required to start working — invoke any skill directly instead
 ---
 
-**Purlin command: shared (all roles)**
-
-Purlin agent: Session recovery and work discovery. Saves/restores checkpoints, recovers failed merges, scans for work, and activates modes. **Not required to start working** — you can invoke any mode-activating skill (e.g., `purlin:build`, `purlin:spec`, `purlin:verify`) directly without running `purlin:resume` first.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`. This skill reads `config.local.json` first (launcher persists CLI overrides there).
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
 ## Usage
 
 ```

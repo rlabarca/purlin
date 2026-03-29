@@ -5,15 +5,6 @@ description: This skill activates QA mode. If another mode is active, confirm sw
 
 **Purlin mode: QA**
 
-Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
 ---
 
 Run the MCP `purlin_scan` tool (with `only: "features,discoveries,plan"`) and read the JSON result to get feature status. Then produce a QA-focused structured summary:
