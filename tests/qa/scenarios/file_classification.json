@@ -1,0 +1,60 @@
+{
+  "feature": "file_classification",
+  "description": "Regression scenarios for file classification reference: ownership categories, agent definition references, and CODE type coverage.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "all-types-classified",
+      "script_path": "tests/file_classification/test_coverage.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "CODE section covers source and scripts",
+          "context": "CODE category includes source code, scripts, tests, and hooks"
+        },
+        {
+          "tier": 2,
+          "pattern": "SPEC section covers features and anchors",
+          "context": "SPEC category includes feature specs, design anchors, policy anchors"
+        },
+        {
+          "tier": 2,
+          "pattern": "QA-OWNED section covers discoveries and regression",
+          "context": "QA-OWNED category includes discovery sidecars and regression JSON"
+        }
+      ]
+    },
+    {
+      "name": "purlin-base-references-classification",
+      "script_path": "tests/file_classification/test_base_reference.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "all modes reference file_classification.md",
+          "context": "Agent definition delegates file ownership to file_classification.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "no inline file pattern lists in mode definitions",
+          "context": "No *.py, *.sh etc. in agent definition write-access lines"
+        }
+      ]
+    },
+    {
+      "name": "devops-and-skills-are-code",
+      "script_path": "tests/file_classification/test_code_types.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "devops files classified as CODE",
+          "context": "Dockerfile, Makefile, .github are under CODE section"
+        },
+        {
+          "tier": 2,
+          "pattern": "skill files classified as CODE",
+          "context": "Skill files are under CODE section"
+        }
+      ]
+    }
+  ]
+}
