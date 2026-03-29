@@ -26,46 +26,52 @@ You switch between modes as the work demands. Each mode can read everything but 
 
 ## Quick Start
 
-You need **git** and **[Claude Code](https://docs.anthropic.com/en/docs/claude-code) 2.1.81+** installed. On macOS:
+**Prerequisites:** git, Python 3.8+, and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 2.1.81+.
+
+### New User
+
+Clone Purlin and load it with `--plugin-dir`:
 
 ```bash
-brew install git node           # node is optional, needed for web testing
-npm install -g @anthropic-ai/claude-code
-```
-
-Already have Claude Code? Run `claude update` to make sure you're on the latest version.
-
-### Option A: Load from a Local Clone (Simplest)
-
-Clone the Purlin repo and point Claude Code at it with `--plugin-dir`. No marketplace registration needed.
-
-```bash
-git clone https://github.com/rlabarca/purlin.git
-
-mkdir my-app && cd my-app
-git init
+git clone git@bitbucket.org:boomerangdev/purlin.git
+mkdir my-app && cd my-app && git init
 claude --plugin-dir ../purlin
 ```
 
-Inside the Claude Code session, initialize your project:
+Inside the session: `purlin:init`. Then start working — invoke any skill directly:
 
 ```
-purlin:init
+purlin:spec login             # PM mode — create a spec
+purlin:build login            # Engineer mode — implement it
+purlin:verify login           # QA mode — verify it
 ```
 
-This creates `features/`, `.purlin/` (config and overrides), and enables the plugin for this project via `.claude/settings.json`.
+Every session, pass `--plugin-dir` to load the plugin. Or register it once for automatic loading — see [Persistent Setup](#persistent-setup-optional) below.
 
-Every time you start a session in this project, use `--plugin-dir` to load the plugin:
+### Joining a Team Project
+
+If someone already set up Purlin in a repo you're cloning:
 
 ```bash
-claude --plugin-dir ../purlin
+git clone <repo-url> && cd <project-name>
+claude --plugin-dir /path/to/purlin
 ```
 
-### Option B: Register via Marketplace (Persistent)
+The project's `.claude/settings.json` already has `enabledPlugins` configured. You just need Purlin available to Claude Code (via `--plugin-dir` or the persistent setup).
 
-Register the plugin source once in your user-level settings. After that, `claude` loads Purlin automatically in any project that has it enabled — no `--plugin-dir` flag needed.
+### Upgrading from v0.8.5
 
-Add to `~/.claude/settings.json`:
+Inside any agent session:
+
+```
+purlin:update
+```
+
+This detects the submodule, removes it, cleans stale artifacts (`pl-run.sh`, `.claude/commands/pl-*.md`), and declares the plugin. Exit and restart `claude` to complete the transition. See [What's New in v0.8.6](docs/whats-new-0.8.6.md).
+
+### Persistent Setup (Optional)
+
+To avoid passing `--plugin-dir` every session, register the plugin source in `~/.claude/settings.json`:
 
 ```json
 {
@@ -75,105 +81,22 @@ Add to `~/.claude/settings.json`:
       "source": "settings",
       "plugins": [{
         "name": "purlin",
-        "source": { "source": "github", "repo": "rlabarca/purlin" }
+        "source": { "source": "url", "url": "https://bitbucket.org/boomerangdev/purlin.git" }
       }]
     }
   }
 }
 ```
 
-Then create your project and initialize:
+After this, just run `claude` in any project with `enabledPlugins` configured — no flags needed.
 
-```bash
-mkdir my-app && cd my-app
-git init
-claude
-```
+### Session Recovery
 
-Inside the Claude Code session:
-
-```
-purlin:init
-```
-
-Exit and re-enter Claude Code so the plugin loads fully:
-
-```bash
-claude
-```
-
-### Start Working
-
-Once the plugin is loaded (via either option), the agent enters PM mode on first launch in a new project and asks what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
-
-Switch modes inside the session:
-
-```
-purlin:mode pm        # write specs, design features
-purlin:mode engineer  # implement code, run tests
-purlin:mode qa        # verify features, record discoveries
-```
-
-Or invoke any mode-specific skill directly — it activates the mode automatically:
-
-```
-purlin:spec login     # activates PM mode, starts a spec
-purlin:build login    # activates Engineer mode, starts building
-purlin:verify login   # activates QA mode, starts verification
-```
-
-### Collaborator Setup
-
-When a team member clones your repository, the plugin activates automatically (if they've registered the marketplace source):
-
-```bash
-git clone <repo-url>
-cd <project-name>
-claude
-```
-
-The committed `.claude/settings.json` enables the plugin. The team member needs to have either registered the marketplace source (Option B) or use `--plugin-dir` to point at a local clone of Purlin. If `.purlin/` doesn't exist yet, run `purlin:init` inside the session.
-
-### Updating Purlin
-
-From inside an agent session:
-
-```
-purlin:update
-```
-
-This fetches the latest release tag, refreshes skills, hooks, and the MCP server, and resolves any conflicts with your customizations. Use `--dry-run` to preview changes first, or pass a specific version like `purlin:update v0.8.7`. See the [Installation Guide](docs/installation-guide.md) for details.
-
-#### Upgrading from v0.8.5 (Submodule to Plugin)
-
-v0.8.5 distributed Purlin as a git submodule with a launcher script (`pl-run.sh`). v0.8.6 replaces this with the Claude Code plugin system.
-
-Run `purlin:update` inside any agent session. The update skill detects the submodule, removes it, cleans stale artifacts, and declares the plugin. Exit and restart `claude` to complete the transition. See [What's New in v0.8.6](docs/whats-new-0.8.6.md) for the full changelog.
-
-### How the Plugin Layers Work
-
-Purlin uses two configuration layers that combine when you run `claude`:
-
-| Layer | File | What It Does |
-|---|---|---|
-| **Global** (user) | `~/.claude/settings.json` | Registers the plugin source. Makes Purlin *available*. |
-| **Project** | `.claude/settings.json` | Enables the plugin. Activates Purlin in *this project*. |
-
-When you run `claude` in a project with the plugin enabled, the Purlin agent activates, hooks register (mode guard, session recovery, auto-checkpoint), and the MCP server starts. In any other directory, you get standard Claude Code.
-
-### Configuration
-
-**Startup controls:** Set `find_work: false` in `.purlin/config.local.json` to skip work discovery on launch. Set `auto_start: true` (with `find_work: true`) to begin executing immediately without waiting for approval. See the [Installation Guide](docs/installation-guide.md) for details.
-
-**Model override:** The plugin sets a default model. Override per-session with `claude --model claude-sonnet-4-6`.
-
-**Python environment:** The MCP server and core tools use only the Python standard library. No venv or pip install needed.
+You do **not** need to run any startup command. The `SessionStart` hook recovers context automatically. Use `purlin:resume` only when recovering after `/clear` or context compaction, or to resolve a failed worktree merge with `purlin:resume merge-recovery`.
 
 ---
 
 ## Core Concepts
-
-Purlin is built on a few ideas that show up everywhere in the framework. The [full documentation](docs/index.md) covers each in depth.
 
 *   **Specs drive everything.** The project's state lives in specification files in `features/`. Anchor nodes set project-wide rules; feature specs describe requirements as plain-language scenarios. If all source code were deleted, the specs must be enough to rebuild.
 *   **Three modes, strict boundaries.** PM mode translates intent into specs, Engineer mode writes code and tests, and QA mode verifies behavior. Each mode can read everything but only writes to its own domain.
@@ -194,13 +117,12 @@ One agent, three modes. Each mode can read everything but only writes to its own
 | Project code and config | Read | **Owner** | Read |
 | Tests and traceability | Read | **Owner** | Read |
 | QA scripts and discoveries | Read | Read | **Owner** |
-| Purlin submodule (`purlin/`) | — | — | — |
 
 *   **PM mode** — Translates ideas and Figma designs into feature specs with requirements and scenarios. [PM Mode Guide](docs/pm-agent-guide.md)
 *   **Engineer mode** — Reads specs, writes code and tests, records implementation decisions. [Engineer Mode Guide](docs/engineer-agent-guide.md)
 *   **QA mode** — Verifies features against specs, records findings, builds regression suites. [QA Mode Guide](docs/qa-agent-guide.md)
 
-For the full command reference, run `purlin:help` inside a session.
+For the full command reference, run `purlin:help` inside a session. See the [Installation Guide](docs/installation-guide.md) for configuration, updating, and troubleshooting.
 
 ---
 

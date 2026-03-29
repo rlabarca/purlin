@@ -20,7 +20,7 @@ Purlin is a Claude Code plugin. There are two ways to load it: point Claude Code
 Clone the Purlin repo and use `--plugin-dir` to load it. No marketplace registration or settings changes needed.
 
 ```bash
-git clone https://github.com/rlabarca/purlin.git
+git clone git@bitbucket.org:boomerangdev/purlin.git
 ```
 
 Then create your project and initialize:
@@ -70,7 +70,7 @@ Edit `~/.claude/settings.json`:
       "source": "settings",
       "plugins": [{
         "name": "purlin",
-        "source": { "source": "github", "repo": "rlabarca/purlin" }
+        "source": { "source": "url", "url": "https://bitbucket.org/boomerangdev/purlin.git" }
       }]
     }
   }
@@ -284,7 +284,7 @@ Sensitive values (Figma access token, deploy token, Confluence credentials) are 
 
 ## Troubleshooting
 
-**Plugin not loading?** Verify both layers:
+**Plugin not loading?** If using `--plugin-dir`, verify the path points to the Purlin repo root (containing `.claude-plugin/plugin.json`). If using marketplace registration, verify both layers:
 1. `~/.claude/settings.json` has the `extraKnownMarketplaces` entry for Purlin.
 2. `.claude/settings.json` in your project has `enabledPlugins: { "purlin@purlin": true }`.
 

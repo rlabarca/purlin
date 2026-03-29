@@ -31,7 +31,7 @@ Purlin is no longer distributed as a git submodule. It's now a **Claude Code plu
 **Quickest path** — clone the repo and use `--plugin-dir`:
 
 ```bash
-git clone https://github.com/rlabarca/purlin.git
+git clone git@bitbucket.org:boomerangdev/purlin.git
 mkdir my-app && cd my-app
 git init
 claude --plugin-dir ../purlin
