@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "passed": 5,
+  "failed": 0,
+  "total": 5,
+  "test_file": "tests/qa/scenarios/purlin_worktree_identity.json",
+  "details": [
+    {
+      "name": "badge-no-purlin-prefix:Identity script never produces 'Purlin:' prefixed output",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_identity.md:badge-no-purlin-prefix",
+      "expected": "Identity script never produces 'Purlin:' prefixed output",
+      "assertion_tier": 2
+    },
+    {
+      "name": "badge-no-purlin-prefix:Identity functions produce <short_mode>(<context>) | <label> format",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_identity.md:badge-no-purlin-prefix",
+      "expected": "Identity functions produce <short_mode>(<context>) | <label> format",
+      "assertion_tier": 2
+    },
+    {
+      "name": "worktree-label-file-handling:.purlin_worktree_label is listed in .gitignore",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_identity.md:worktree-label-file-handling",
+      "expected": ".purlin_worktree_label is listed in .gitignore",
+      "assertion_tier": 2
+    },
+    {
+      "name": "worktree-label-file-handling:identity.sh _purlin_detect_context reads .purlin_worktree_label",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_identity.md:worktree-label-file-handling",
+      "expected": "identity.sh _purlin_detect_context reads .purlin_worktree_label",
+      "assertion_tier": 2
+    },
+    {
+      "name": "no-label-in-non-worktree:.purlin_worktree_label does not exist in non-worktree project root",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_worktree_identity.md:no-label-in-non-worktree",
+      "expected": ".purlin_worktree_label does not exist in non-worktree project root",
+      "assertion_tier": 2
+    }
+  ]
+}

@@ -32,3 +32,10 @@
 - **Expected Behavior:** `pl-run-builder.sh` exists, prints deprecation warning mentioning `pl-run.sh`, and starts the agent session.
 - **Action Required:** None — legacy launchers intentionally removed.
 - **Status:** RESOLVED — not a bug; legacy launchers are retired. Spec section 2.6 needs PM update to match.
+
+### [BUG] --no-save flag missing from purlin:resume skill (Discovered: 2026-03-28)
+- **Scenario:** Help output includes yolo and no-save flags @auto
+- **Observed Behavior:** The `skills/resume/SKILL.md` file contains `--yolo` and `--no-yolo` flags but does not contain `--no-save`. Regression assertion for `--no-save` presence fails.
+- **Expected Behavior:** Per `features/purlin_agent_launcher.md` section 2.2.3, `--no-save` is a meta flag that suppresses persistence for all sticky flags. The skill file should document this flag in its usage section.
+- **Action Required:** Engineer (add `--no-save` flag to `skills/resume/SKILL.md` usage section and implementation)
+- **Status:** OPEN
