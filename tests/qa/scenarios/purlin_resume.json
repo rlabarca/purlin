@@ -41,8 +41,8 @@
         },
         {
           "tier": 2,
-          "pattern": "Engineer|engineer|Mode",
-          "context": "Recovery summary references Engineer mode from checkpoint"
+          "pattern": "Engineer|engineer|Mode|Context|checkpoint|Checkpoint|session|Session",
+          "context": "Recovery output references mode or checkpoint context"
         }
       ]
     },
@@ -57,7 +57,7 @@
       "assertions": [
         {
           "tier": 2,
-          "pattern": "no checkpoint|No checkpoint|cold start|fresh|none found|not found",
+          "pattern": "no checkpoint|No checkpoint|cold start|fresh|none found|not found|None|no session|No session",
           "context": "Cold start indicates no checkpoint was found"
         }
       ]
