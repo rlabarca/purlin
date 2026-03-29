@@ -14,6 +14,7 @@ Purlin agent: This skill activates PM mode for write operations (add, add-figma,
 > Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
 > **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` for the canonical format.
 > **Invariant model:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md` for identification, scope, and cascade rules.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

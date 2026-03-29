@@ -15,6 +15,7 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 > **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 > **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

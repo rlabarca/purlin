@@ -17,6 +17,7 @@ purlin:session-name [label]
 ## Path Resolution
 
 > Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## No-Argument: Refresh from Current Mode
 

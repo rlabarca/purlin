@@ -28,6 +28,7 @@ purlin:toolbox delete <tool>       — Delete a project or community tool
 ## Path Resolution
 
 > Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ## Tool Resolution
 

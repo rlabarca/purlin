@@ -24,6 +24,7 @@ Purlin agent: This skill activates Engineer mode. Exception: when invoked from Q
 > Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
 > **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
 > **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

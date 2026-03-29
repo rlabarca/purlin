@@ -10,6 +10,11 @@ Available to all agents and modes.
 
 Any active mode (Engineer, PM, QA) may edit any section of `.purlin/PURLIN_OVERRIDES.md`. There is no per-section role restriction.
 
+## Path Resolution
+
+> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
+
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 
 ---

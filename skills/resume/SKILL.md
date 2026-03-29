@@ -136,6 +136,7 @@ You can now /clear or close the terminal. Run purlin:resume to recover.
 
 > Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`. This skill reads `config.local.json` first (launcher persists CLI overrides there).
 > **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 

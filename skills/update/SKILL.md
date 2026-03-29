@@ -20,6 +20,8 @@ Resolve the project root:
 
 Set `<project_root>` to the resolved path. The submodule directory is `<project_root>/purlin` (or the configured submodule path). All paths below (`.purlin/`, `purlin-config-sample/`, launcher scripts, etc.) are relative to `<project_root>`.
 
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
+
 **Behavior:**
 
 0. **Standalone Mode Guard:**

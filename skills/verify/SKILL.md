@@ -17,6 +17,7 @@ Purlin agent: This skill activates QA mode. If another mode is active, confirm s
 > **Phased delivery:** See `${CLAUDE_PLUGIN_ROOT}/references/phased_delivery.md`.
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 > **Testing lifecycle:** See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` for the complete lifecycle across all modes (define, implement, verify, complete).
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
 
 ---
 
