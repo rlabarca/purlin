@@ -1,7 +1,7 @@
 {
-  "status": "FAIL",
-  "passed": 5,
-  "failed": 1,
+  "status": "PASS",
+  "passed": 6,
+  "failed": 0,
   "total": 6,
   "test_file": "tests/qa/scenarios/purlin_agent_launcher.json",
   "details": [
@@ -42,11 +42,10 @@
     },
     {
       "name": "help-output-flags:The resume skill references --no-save flag",
-      "status": "FAIL",
+      "status": "PASS",
       "scenario_ref": "features/purlin_agent_launcher.md:help-output-flags",
       "expected": "The resume skill references --no-save flag",
-      "assertion_tier": 2,
-      "actual_excerpt": "resume skill contains --yolo\nresume skill contains --no-yolo\nFAIL: resume skill missing --no-save flag\n"
+      "assertion_tier": 2
     }
   ]
 }

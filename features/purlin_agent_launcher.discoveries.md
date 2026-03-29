@@ -38,4 +38,4 @@
 - **Observed Behavior:** The `skills/resume/SKILL.md` file contains `--yolo` and `--no-yolo` flags but does not contain `--no-save`. Regression assertion for `--no-save` presence fails.
 - **Expected Behavior:** Per `features/purlin_agent_launcher.md` section 2.2.3, `--no-save` is a meta flag that suppresses persistence for all sticky flags. The skill file should document this flag in its usage section.
 - **Action Required:** Engineer (add `--no-save` flag to `skills/resume/SKILL.md` usage section and implementation)
-- **Status:** OPEN
+- **Status:** RESOLVED — fixed in auto-fix iteration 2 (2026-03-28)
