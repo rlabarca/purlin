@@ -3,31 +3,31 @@
 ### v0.8.5 — 2026-03-26
 
 **Unified Agent**
-- One agent, three modes. The `purlin:start` skill replaces the four separate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). Switch modes mid-session with `purlin:mode pm|engineer|qa`
-- Automated migration from v0.8.4: run `/pl-update-purlin` and the migration module handles config consolidation, file renames, and artifact cleanup
+- One agent, three modes. `purlin:mode pm|engineer|qa` replaces the four separate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`). `purlin:resume` handles session recovery after context clears
+- Automated migration from v0.8.4: run `purlin:update` and the migration module handles config consolidation, file renames, and artifact cleanup
 - Strict write boundaries enforced per mode -- open mode (no mode active) blocks all file writes until a mode is activated
 
 **CDD Dashboard & Critic Retired**
-- The CDD Dashboard server and Critic coordination engine have been fully removed. The scan engine and `/pl-status` now handle all project state assessment directly
+- The CDD Dashboard server and Critic coordination engine have been fully removed. The scan engine and `purlin:status` now handle all project state assessment directly
 - Simpler, faster feedback loop -- no background server to manage
 
 **Agentic Toolbox**
 - The old release checklist is replaced by independent, reusable tools that run in any order at any time
 - Ships with two built-in Purlin tools (Spec Check, Spec Map) and four project tools (Record Version Notes, Docs Update, Push to Bitbucket, Push to GitHub)
 - Create your own tools, share them via git repos, or copy and customize Purlin's built-ins
-- `/pl-toolbox list|run|create|edit|copy|delete|add|pull|push`
+- `purlin:toolbox list|run|create|edit|copy|delete|add|pull|push`
 
 **Spec-Code Audit**
-- `/pl-spec-code-audit` now detects circular dependencies in the prerequisite graph and recommends which link to break
+- `purlin:spec-code-audit` now detects circular dependencies in the prerequisite graph and recommends which link to break
 - Spec Check tool provides a comprehensive integrity scan: stale references, naming consistency, category grouping
 
 **QA Improvements**
-- `/pl-verify` adds an auto-fix iteration loop -- QA finds a bug, internal mode switch lets Engineer fix it, QA re-verifies, repeat until clean
+- `purlin:verify` adds an auto-fix iteration loop -- QA finds a bug, internal mode switch lets Engineer fix it, QA re-verifies, repeat until clean
 - Strategy menu for verification: choose targeted, full, or regression-only verification runs
 - QA mode now speaks like Michelangelo from Teenage Mutant Ninja Turtles -- same technical accuracy, surfer-dude delivery
 
 **Worktree Management**
-- `/pl-worktree` for listing, creating, and cleaning up isolated git worktrees
+- `purlin:worktree` for listing, creating, and cleaning up isolated git worktrees
 - Session locks prevent concurrent agents from colliding in the same worktree
 - Merge serialization via lock file prevents race conditions between parallel merges
 - Automatic merge-back on session exit (SessionEnd hook)
@@ -35,20 +35,20 @@
 **Session & Terminal**
 - Terminal badge always includes branch context: `Engineer (main)`, `QA (feature-xyz)`, `PM (W1)` for worktrees
 - PID-scoped checkpoint files so concurrent terminals never collide
-- Startup and resume unified into a single `/pl-resume` flow -- no separate startup protocol
+- Session recovery unified into `purlin:resume` -- checkpoint save, merge recovery, and restore all in one skill. Not required to start working; invoke any skill directly
 - Warp terminal support for tab naming alongside iTerm2 badges
 
 **New & Consolidated Skills**
-- `/pl-mode` -- switch modes or check current mode status without arguments
-- `/pl-remote` -- consolidates `/pl-remote-push`, `/pl-remote-pull`, and `/pl-remote-add` into one skill
-- `/pl-regression` -- consolidates `/pl-regression-author`, `/pl-regression-run`, and `/pl-regression-evaluate`
-- `/pl-smoke` -- smoke-first verification gate for QA
-- `/pl-whats-different` -- now includes companion staleness detection and mode-aware impact briefing
+- `purlin:mode` -- switch modes or check current mode status without arguments
+- `purlin:remote` -- consolidates `purlin:remote-push`, `purlin:remote-pull`, and `purlin:remote-add` into one skill
+- `purlin:regression` -- consolidates `purlin:regression-author`, `purlin:regression-run`, and `purlin:regression-evaluate`
+- `purlin:smoke` -- smoke-first verification gate for QA
+- `purlin:whats-different` -- now includes companion staleness detection and mode-aware impact briefing
 
 **Scan Engine**
-- Tombstone scanning surfaces retired features in `/pl-status`
+- Tombstone scanning surfaces retired features in `purlin:status`
 - Spec modification detection flags features whose spec changed after completion
-- `--only` flag for focused output (e.g., `/pl-status --only engineer`)
+- `--only` flag for focused output (e.g., `purlin:status --only engineer`)
 - Exemption tags (`[Migration]`) suppress false positives during bulk operations
 
 **Documentation**
@@ -58,7 +58,7 @@
 **Removed**
 - CDD Dashboard (server, tests, all related specs and code)
 - Critic coordination engine (replaced by scan engine)
-- Four legacy agent launchers (replaced by `purlin:start`)
+- Four legacy agent launchers (replaced by `purlin:resume`)
 - Release checklist system (replaced by Agentic Toolbox)
 - 17 legacy feature specs tombstoned
 
@@ -76,15 +76,15 @@
 - Smoke testing gate -- classify features by priority tier (smoke, standard, full-only) and QA verifies the most critical ones first
 - "Just smoke" mode lets you run only the critical checks when you need a fast confidence pass
 - Agent behaviors can now be regression-tested so you know when a change breaks something that used to work
-- Three new commands (`/pl-regression-author`, `/pl-regression-run`, `/pl-regression-evaluate`) cover the full regression author-run-review cycle
+- Three new commands (`purlin:regression-author`, `purlin:regression-run`, `purlin:regression-evaluate`) cover the full regression author-run-review cycle
 - QA cannot mark a feature complete while regressions are failing -- broken behavior blocks the release
 
 **Engineer Escalation Path**
-- Builders can propose spec or anchor node changes directly with `/pl-propose` instead of waiting for the PM
+- Builders can propose spec or anchor node changes directly with `purlin:propose` instead of waiting for the PM
 - The Critic automatically surfaces unacknowledged proposals as high-priority PM action items
 
 **Spec-Code Audit**
-- `/pl-spec-code-audit` now finds code that has no matching spec, not just specs missing code
+- `purlin:spec-code-audit` now finds code that has no matching spec, not just specs missing code
 - A scope confirmation step lets you choose which features to audit before it starts
 
 **CDD Dashboard**
@@ -99,8 +99,8 @@
 - Docs are auto-refreshed and cross-linked during every release -- no more stale references
 
 **New Commands**
-- `/pl-purlin-issue` -- Report a framework bug or feature request directly from any agent session
-- `/pl-add-remote` -- Set up a git remote for collaboration directly from any agent session
+- `purlin:purlin-issue` -- Report a framework bug or feature request directly from any agent session
+- `purlin:remote` -- Set up a git remote for collaboration directly from any agent session
 
 **Test Fixtures**
 - Fixture repos can be pushed to a remote so every team member starts from the same test state
@@ -121,9 +121,9 @@
 ### v0.8.3 — 2026-03-19
 
 **New Commands**
-- `/pl-web-test` -- Playwright-based web verification, replaces `/pl-aft-web`
-- `/pl-whats-different` -- Compare your current branch against main to see what changed
-- `/pl-regression` -- Structured regression test pipeline with declarative scenario harness [ALPHA - basic plumbing only]
+- `purlin:web-test` -- Playwright-based web verification, replaces `purlin:aft-web`
+- `purlin:whats-different` -- Compare your current branch against main to see what changed
+- `purlin:regression` -- Structured regression test pipeline with declarative scenario harness [ALPHA - basic plumbing only]
 
 **New Features**
 - Terminal Identity -- Terminal title shows which agent role is running
@@ -138,9 +138,9 @@
 
 **Improvements**
 - Simpler startup config -- `find_work`/`auto_start` replaces the old `startup_sequence`/`recommend_next_actions` naming
-- `/pl-update-purlin` -- Now shows MCP manifest diffs when updating the submodule
-- `/pl-remote-push` / `/pl-remote-pull` -- Work gracefully without a remote configured
-- `/pl-help` -- Now discovers CLI scripts alongside slash commands
+- `purlin:update` -- Now shows MCP manifest diffs when updating the submodule
+- `purlin:remote-push` / `purlin:remote-pull` -- Work gracefully without a remote configured
+- `purlin:help` -- Now discovers CLI scripts alongside slash commands
 - Continuous Phase Engineer -- Parallel worktree execution with inter-phase Critic integration [ALPHA - UNSTABLE]
 
 ### v0.8.2 — 2026-03-17
@@ -171,7 +171,7 @@
 - `pl-update-purlin` diff-tree speed optimization
 - `pl-session-resume` PM support and startup flag awareness
 - Per-role launcher specs split with shared common spec
-- Claude Code hook on `/clear` event reminds the agent to run `/pl-resume` on next prompt
+- Claude Code hook on `/clear` event reminds the agent to run `purlin:resume` on next prompt
 
 **Fixes**
 - Critic: NameError fix, circular prerequisite fix, requirements-section change detection
@@ -205,27 +205,27 @@
 - Collaboration now uses plain git branches on your existing remote -- no special `collab/` prefix or session abstraction. Create a branch, push it, and another machine joins by checking it out.
 - The CDD Dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED, EMPTY), a contributors table, and last-sync timestamps -- all from locally cached git refs.
 - Two-phase join flow with pre-join sync assessment: the dashboard tells you what will happen before you commit to a checkout.
-- `/pl-remote-push` and `/pl-remote-pull` work with any branch. Pushes fetch first and block if behind. Pulls merge to preserve shared history.
+- `purlin:remote-push` and `purlin:remote-pull` work with any branch. Pushes fetch first and block if behind. Pulls merge to preserve shared history.
 
 **Removed: Isolated Teams**
-- The worktree-based isolated teams system (`/pl-isolated-push`, `/pl-isolated-pull`, CDD Isolated Teams panel, Handoff Checklist, and the Isolated Agent Collaboration policy) has been fully retired. Branch collaboration covers the same use cases with less complexity.
+- The worktree-based isolated teams system (`purlin:push`, `purlin:pull`, CDD Isolated Teams panel, Handoff Checklist, and the Isolated Agent Collaboration policy) has been fully retired. Branch collaboration covers the same use cases with less complexity.
 
-**Web Verify (`/pl-web-verify`)** *(renamed to `/pl-aft-web` -- see AFT below)*
+**Web Verify (`purlin:web-verify`)** *(renamed to `purlin:aft-web` -- see AFT below)*
 - New Playwright-based automated verification for features with web UIs. Any feature with a `> Web Testable: <url>` metadata tag can have its manual scenarios and visual specification checklist items verified automatically in a real browser.
 - Supports `> Web Port File:` for dynamic ports and `> Web Start:` for auto-starting servers.
 - Screenshots saved to `.purlin/runtime/web-verify/` for post-run review.
 
 **Automated Feedback Tests (AFT)**
 - Introduced the AFT pattern as an architectural anchor node (`arch_automated_feedback_tests.md`). AFTs are tools that script interactions with a target system, observe results, and report structured pass/fail with evidence.
-- `/pl-web-verify` renamed to `/pl-aft-web` as the first AFT implementation. Metadata tags renamed: `> Web Testable:` -> `> AFT Web:`, `> Web Start:` -> `> AFT Start:`, `> Web Port File:` removed (port resolution is now internal to the tool).
+- `purlin:web-verify` renamed to `purlin:aft-web` as the first AFT implementation. Metadata tags renamed: `> Web Testable:` -> `> AFT Web:`, `> Web Start:` -> `> AFT Start:`, `> Web Port File:` removed (port resolution is now internal to the tool).
 - Engineer now owns all automated verification (AFT:Web, AFT:TestOnly, AFT:Skip). QA only sees manual items.
 - New B1/B2/B3 sub-phase protocol for phased delivery: Build, Test (cross-feature regression), Fix (analyze-first).
 
-**Test Fixtures (`/pl-fixture`)**
+**Test Fixtures (`purlin:fixture`)**
 - New test fixture system for scenarios that need controlled project state (specific git history, config values, branch topologies). Each fixture is an immutable git tag in a dedicated fixture repo -- no complex setup code needed.
 - `tools/fixtures/setup_fixture_repo.sh` ships with 74 pre-built fixture tags covering CDD lifecycle, branch collaboration, agent configuration, and more.
 - Convention-over-configuration: the fixture repo lives at `tests/fixtures/fixture-repo/` and is auto-created on first test run.
-- `/pl-fixture` skill available to all roles for managing fixtures.
+- `purlin:fixture` skill available to all roles for managing fixtures.
 
 **Automated Test Expansion**
 - Fixtures and Web Verify work together to simulate real interface testing across different configuration states. A fixture tag sets up the project state (branch topology, config values, feature lifecycle), then Web Verify launches the dashboard against that state and validates the UI in a real browser. This combination makes it possible to automatically test scenarios that previously required a human to manually set up a project, open a browser, and click through the dashboard.
@@ -240,7 +240,7 @@
 **New Install and Update Process**
 - `pl-init.sh` replaces the old `init.sh` as the single entry point for both first-time setup and collaborator onboarding. It creates launchers, commands, symlinks, and the `.purlin/` directory.
 - Running `pl-init.sh` on an existing project refreshes commands without overwriting config.
-- `/pl-update-purlin` provides intelligent submodule updates with semantic change analysis and conflict resolution for `.purlin/` customizations.
+- `purlin:update` provides intelligent submodule updates with semantic change analysis and conflict resolution for `.purlin/` customizations.
 
 ### v0.7.5 — 2026-02-26
 
@@ -248,25 +248,25 @@
 - `-p <port>` flag lets you override the CDD Dashboard port at runtime -- useful for running multiple projects on the same machine
 
 **Upstream Sync Modernization**
-- `/pl-update-purlin` replaces the old `sync_upstream.sh` script with semantic analysis and conflict resolution
+- `purlin:update` replaces the old `sync_upstream.sh` script with semantic analysis and conflict resolution
 
 ### v0.7.0 — 2026-02-26
 
 **Remote Collaboration**
 - Multi-machine collaboration via collab sessions (`collab/<name>` branches on a hosted remote)
 - Dashboard section with session management and sync badges
-- `/pl-remote-push` and `/pl-remote-pull` for collab branch sync
+- `purlin:remote-push` and `purlin:remote-pull` for collab branch sync
 
 **Other Highlights**
 - Spec Map: inter-category topological ordering with edge arrows and dynamic label sizing
 - Critic: targeted scope completeness audit and delivery plan scope reset
-- `/pl-spec-from-code` for reverse-engineering specs from existing codebases (experimental)
+- `purlin:spec-from-code` for reverse-engineering specs from existing codebases (experimental)
 
 ### v0.6.0 — 2026-02-24
 
 **Isolated Teams**
 - Named git worktrees for concurrent agent sessions with dashboard state tracking
-- `/pl-isolated-push` and `/pl-isolated-pull` for merge-before-proceed workflow
+- `purlin:push` and `purlin:pull` for merge-before-proceed workflow
 
 **Agent Configuration**
 - Dashboard panel for per-agent model, effort, permissions, and startup settings
@@ -275,7 +275,7 @@
 - Spec Map (renamed from Software Map): interactive dependency graph with position persistence
 - Implementation notes migrated to standalone `*.impl.md` companion files
 - File access permissions formalized across all roles
-- Bidirectional spec-code audit (`/pl-spec-code-audit`) shared between PM and Engineer
+- Bidirectional spec-code audit (`purlin:spec-code-audit`) shared between PM and Engineer
 - Complete QA verification pass across all 31 features
 
 ### v0.5.0 — 2026-02-22
@@ -288,4 +288,4 @@
 
 **Known limitations:**
 - Built exclusively for Claude Code. Supporting additional models is a goal but model feature disparity makes that non-trivial.
-- The release checklist can stress context windows. Interrupt and resume with: `/pl-release-run start with step X, steps 1 through X-1 have passed`.
+- The release checklist can stress context windows. Interrupt and resume with: `purlin:release-run start with step X, steps 1 through X-1 have passed`.

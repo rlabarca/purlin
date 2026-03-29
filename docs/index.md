@@ -20,80 +20,83 @@ Purlin is a spec-first framework where one AI agent operates in three modes — 
 * [Testing Workflow Guide](testing-workflow-guide.md) — The complete journey from idea through spec, implementation, verification, and regression coverage.
 * [Testing Lifecycle Reference](../references/testing_lifecycle.md) — Who defines, implements, runs, and verifies each test type across PM, Engineer, and QA modes. Includes the auto-fix iteration loop and failure routing.
 * [Spec-Code Sync Guide](spec-code-sync-guide.md) — How specs and code stay in sync through companion files, decision tags, and enforcement gates.
+* [Design Guide](design-guide.md) — Working with designs and design anchors: local anchors, Figma invariants, Token Maps, visual specifications, and design audit.
+* [Figma Integration Guide](figma-guide.md) — Figma MCP setup, Token Map workflow, design briefs, and three-source verification.
 * [Invariants Guide](invariants-guide.md) — Import external rules (architecture standards, security policies, design systems) and enforce them automatically across all features.
-* [Figma Integration Guide](figma-guide.md) — Turn Figma designs into verified implementations with Token Maps, design briefs, and three-source verification.
 * [Worktree Guide](worktree-guide.md) — Running multiple agents in parallel with isolated worktrees, merging work back, and recovering from crashes.
 * [Parallel Execution Guide](parallel-execution-guide.md) — How the agent builds independent features in parallel using git worktrees.
 * [Agentic Toolbox Guide](toolbox-guide.md) — How to use, create, and share project tools.
+* [Credential Storage Guide](credential-storage-guide.md) — How Purlin stores and accesses API tokens and deploy keys securely via Claude Code's plugin system.
 
 ## What's New
 
+* [What's New in v0.8.6](whats-new-0.8.6.md) — Plugin migration, mechanical mode guard, MCP server, hooks, new install model, skill renaming.
 * [What's New in v0.8.5](whats-new-0.8.5.md) — Unified agent, mode switching, Agentic Toolbox, dashboard removal, new launcher, and skill changes.
 
 ## Setup & Maintenance
 
-* [Installation Guide](installation-guide.md) — Adding Purlin to a new project, joining an existing team, updating to a newer version, and configuration.
+* [Installation Guide](installation-guide.md) — Registering the plugin, adding Purlin to a project, joining an existing team, upgrading from submodule, and configuration.
 * [Reporting Issues](reporting-issues-guide.md) — How to report bugs in the Purlin framework itself.
 
 ---
 
 ## Skill Reference
 
-Skills are slash commands that trigger specific workflows. Run `/pl-help` inside any session for the full list.
+Skills are slash commands that trigger specific workflows. Run `purlin:help` inside any session for the full list.
 
 ### All Modes
 
 | Skill | What It Does |
 |-------|--------------|
-| `/pl-status` | Shows feature states and action items for the current mode. |
-| `/pl-mode <pm\|engineer\|qa>` | Switch to a different mode. |
-| `/pl-help` | Prints the command table for your current mode. |
-| `/pl-find <topic>` | Searches all specs for coverage of a topic. |
-| `/pl-resume [save]` | Saves or restores session state across context clears. |
-| `/pl-update-purlin [version]` | Updates the Purlin submodule to the latest release tag (or a specified version) and refreshes artifacts. |
-| `/pl-remote <cmd>` | Branch collaboration — push, pull, add, or manage remotes. |
-| `/pl-override-edit` | Edit PURLIN_OVERRIDES.md sections. |
-| `/pl-whats-different` | Compare current branch against main with mode-aware impact briefing. |
-| `/pl-session-name [label]` | Update the terminal session display name. |
-| `/pl-worktree <cmd>` | Worktree management — list active worktrees or clean up stale ones. |
-| `/pl-merge` | Merge a worktree branch back to the source branch. |
-| `/pl-purlin-issue` | Report a bug or feature request in the Purlin framework. |
+| `purlin:status` | Shows feature states and action items for the current mode. |
+| `purlin:mode <pm\|engineer\|qa>` | Switch to a different mode. |
+| `purlin:help` | Prints the command table for your current mode. |
+| `purlin:find <topic>` | Searches all specs for coverage of a topic. |
+| `purlin:resume [save\|merge-recovery]` | Session recovery after `/clear` or context compaction. Not required to start working — invoke any skill directly instead. |
+| `purlin:update [version] [--dry-run] [--auto-approve]` | Updates the Purlin plugin to the latest release tag (or a specified version). |
+| `purlin:remote <cmd>` | Branch collaboration — push, pull, add, or manage remotes. |
+| `purlin:override-edit [--scan-only]` | Edit PURLIN_OVERRIDES.md sections. `--scan-only` checks conflicts without writing. |
+| `purlin:whats-different` | Compare current branch against main with mode-aware impact briefing. |
+| `purlin:session-name [label]` | Update the terminal session display name. |
+| `purlin:worktree <cmd>` | Worktree management — list active worktrees or clean up stale ones. |
+| `purlin:merge` | Merge a worktree branch back to the source branch. |
+| `purlin:purlin-issue` | Report a bug or feature request in the Purlin framework. |
+| `purlin:init [--force]` | Initialize a project for Purlin. `--force` re-initializes. |
+| `purlin:toolbox <cmd>` | Agentic Toolbox — list, run, create, edit, and share project tools. |
 
 ### PM Mode
 
 | Skill | What It Does |
 |-------|--------------|
-| `/pl-spec <topic>` | Creates or refines a feature spec with guided questions. |
-| `/pl-anchor <name>` | Creates or updates a design or policy anchor node. |
-| `/pl-design-ingest <source>` | Ingests a Figma URL or live web page into a visual specification. |
-| `/pl-design-audit` | Audits design artifacts for consistency with specs and anchors. |
-| `/pl-invariant <cmd>` | Imports, syncs, and manages externally-sourced invariant constraints. |
+| `purlin:spec <topic>` | Creates or refines a feature spec with guided questions. |
+| `purlin:anchor <name>` | Creates or updates a design or policy anchor node. |
+| `purlin:design-audit` | Audits design artifacts for consistency with specs and anchors. |
+| `purlin:invariant <cmd>` | Imports, syncs, and manages externally-sourced invariant constraints. |
 
 ### Engineer Mode
 
 | Skill | What It Does |
 |-------|--------------|
-| `/pl-build [name]` | Implements features following the build protocol. |
-| `/pl-unit-test [name]` | Runs unit tests with the quality rubric. |
-| `/pl-web-test [name]` | Runs Playwright visual verification for web features. |
-| `/pl-delivery-plan` | Creates a phased delivery plan for multiple features. |
-| `/pl-toolbox <cmd>` | Agentic Toolbox — list, run, create, edit, and share project tools. |
-| `/pl-server` | Start, stop, or restart the dev server. |
-| `/pl-infeasible <name>` | Escalates a feature that cannot be implemented as specified. |
-| `/pl-propose <topic>` | Suggests a spec change to PM mode. |
-| `/pl-spec-code-audit` | Audits alignment between feature specs and implementation. |
-| `/pl-spec-from-code` | Reverse-engineers feature specs from existing code. |
-| `/pl-anchor arch_*` | Creates or updates technical architecture anchors. |
-| `/pl-tombstone` | Retires a feature with a tombstone record. |
+| `purlin:build [name]` | Implements features following the build protocol. |
+| `purlin:unit-test [name]` | Runs unit tests with the quality rubric. |
+| `purlin:web-test [name]` | Runs Playwright visual verification for web features. |
+| `purlin:delivery-plan` | Creates a phased delivery plan for multiple features. |
+| `purlin:server` | Start, stop, or restart the dev server. |
+| `purlin:infeasible <name>` | Escalates a feature that cannot be implemented as specified. |
+| `purlin:propose <topic>` | Suggests a spec change to PM mode. |
+| `purlin:spec-code-audit [--deep]` | Audits alignment between feature specs and implementation. |
+| `purlin:spec-from-code` | Reverse-engineers feature specs from existing code. |
+| `purlin:anchor arch_*` | Creates or updates technical architecture anchors. |
+| `purlin:tombstone` | Retires a feature with a tombstone record. |
 
 ### QA Mode
 
 | Skill | What It Does |
 |-------|--------------|
-| `/pl-verify [name]` | Runs the verification workflow (automated first, then manual). |
-| `/pl-complete <name>` | Marks a verified feature as complete. |
-| `/pl-discovery [name]` | Records a structured finding (bug, spec dispute, etc.). |
-| `/pl-regression` | Manages regression suites — author, run, or evaluate. |
-| `/pl-smoke <feature>` | Promotes a feature to the smoke testing tier. |
-| `/pl-qa-report` | Summarizes open discoveries and verification status. |
-| `/pl-fixture` | Manages test fixtures — create, list, verify, or push to remote. |
+| `purlin:verify [name] [--auto-fix]` | Runs the verification workflow (automated first, then manual). |
+| `purlin:complete <name>` | Marks a verified feature as complete. |
+| `purlin:discovery [name]` | Records a structured finding (bug, spec dispute, etc.). |
+| `purlin:regression` | Manages regression suites — author, run, or evaluate. |
+| `purlin:smoke <feature\|suggest>` | Promotes a feature to smoke tier, or suggests candidates. |
+| `purlin:qa-report` | Summarizes open discoveries and verification status. |
+| `purlin:fixture` | Manages test fixtures — create, list, verify, or push to remote. |

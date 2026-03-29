@@ -7,7 +7,7 @@ Commands you can run in any mode — project status, mode switching, collaborati
 ## Checking Project Status
 
 ```
-/pl-status
+purlin:status
 ```
 
 Scans the project and shows what needs doing, organized by mode. Each item includes a reason annotation so you know why it's listed.
@@ -27,17 +27,17 @@ Run this whenever you want to know what's next. It's the starting point after ev
 ## Switching Modes
 
 ```
-/pl-mode              # Show current mode and available commands
-/pl-mode pm           # Switch to PM mode
-/pl-mode engineer     # Switch to Engineer mode
-/pl-mode qa           # Switch to QA mode
+purlin:mode              # Show current mode and available commands
+purlin:mode pm           # Switch to PM mode
+purlin:mode engineer     # Switch to Engineer mode
+purlin:mode qa           # Switch to QA mode
 ```
 
 With no argument, shows your current mode and its commands. With an argument, switches to that mode.
 
 If you have uncommitted changes when switching, the agent asks whether to commit first. Uncommitted work isn't lost — it carries into the new mode if you choose not to commit.
 
-You can also activate a mode by running any mode-specific skill directly. For example, `/pl-spec` activates PM mode, `/pl-build` activates Engineer, and `/pl-verify` activates QA.
+You can also activate a mode by running any mode-specific skill directly. For example, `purlin:spec` activates PM mode, `purlin:build` activates Engineer, and `purlin:verify` activates QA.
 
 | Mode | What It Does | Write Access |
 |------|-------------|--------------|
@@ -50,7 +50,7 @@ You can also activate a mode by running any mode-specific skill directly. For ex
 ## Searching Specs
 
 ```
-/pl-find <topic>
+purlin:find <topic>
 ```
 
 Searches all feature specs, anchor nodes, and instruction files for coverage of a topic. Reports:
@@ -63,27 +63,43 @@ Searches all feature specs, anchor nodes, and instruction files for coverage of 
 **Examples:**
 
 ```
-/pl-find authentication       # Where is auth covered?
-/pl-find error handling       # Any specs for error states?
-/pl-find dark mode            # Is there a design anchor for theming?
+purlin:find authentication       # Where is auth covered?
+purlin:find error handling       # Any specs for error states?
+purlin:find dark mode            # Is there a design anchor for theming?
 ```
 
 ---
 
 ## Session Recovery
 
+**You do not need to run `purlin:resume` to start working.** The `SessionStart` hook handles context recovery automatically on every launch. Just invoke any skill directly (e.g., `purlin:build`, `purlin:spec`, `purlin:mode engineer`).
+
+Use `purlin:resume` manually in two situations:
+
 ```
-/pl-resume                    # Restore after context clear or restart
-/pl-resume save               # Save checkpoint before clearing context
-/pl-resume merge-recovery     # Resolve pending worktree merge failures
+purlin:resume                           # Restore after /clear or context compaction
+purlin:resume save                      # Save checkpoint before clearing context
+purlin:resume merge-recovery            # Resolve pending worktree merge failures
 ```
 
-The agent runs `/pl-resume` automatically at the start of every session. You'll use it manually in two situations:
+Recovery flags (used when restoring a session):
+
+```
+purlin:resume --mode engineer           # Restore and activate a mode
+purlin:resume --build                   # Shortcut: Engineer mode + auto-start
+purlin:resume --verify [feature]        # Shortcut: QA mode + auto-start
+purlin:resume --worktree --build        # Isolated worktree + Engineer auto-start
+purlin:resume --yolo                    # Enable auto-approve for permissions (persists)
+purlin:resume --no-yolo                 # Disable auto-approve (persists)
+purlin:resume --effort <high|medium>    # Set effort level for this session
+```
+
+The two situations where you use it manually:
 
 **Saving before a context clear:** When you're about to run `/clear` or close the terminal and want to pick up where you left off:
 
 ```
-/pl-resume save
+purlin:resume save
 /clear
 ```
 
@@ -92,7 +108,7 @@ The checkpoint captures your current mode, in-progress work, completed items, an
 **Resolving failed merges:** If a worktree merge failed (e.g., due to conflicts), the agent detects it at startup. You can also trigger resolution manually:
 
 ```
-/pl-resume merge-recovery
+purlin:resume merge-recovery
 ```
 
 ---
@@ -100,15 +116,15 @@ The checkpoint captures your current mode, in-progress work, completed items, an
 ## Branch Collaboration
 
 ```
-/pl-remote push                          # Push current branch to remote
-/pl-remote pull                          # Pull remote changes into local
-/pl-remote pull feature-xyz              # Pull a specific branch
-/pl-remote add                           # Configure a git remote (interactive)
-/pl-remote add git@github.com:org/repo   # Configure with URL
-/pl-remote branch create feature-xyz     # Create and switch to a new branch
-/pl-remote branch join feature-xyz       # Switch to an existing branch
-/pl-remote branch leave                  # Return to main
-/pl-remote branch list                   # List collaboration branches
+purlin:remote push                          # Push current branch to remote
+purlin:remote pull                          # Pull remote changes into local
+purlin:remote pull feature-xyz              # Pull a specific branch
+purlin:remote add                           # Configure a git remote (interactive)
+purlin:remote add git@github.com:org/repo   # Configure with URL
+purlin:remote branch create feature-xyz     # Create and switch to a new branch
+purlin:remote branch join feature-xyz       # Switch to an existing branch
+purlin:remote branch leave                  # Return to main
+purlin:remote branch list                   # List collaboration branches
 ```
 
 Manages branch-based collaboration with safety checks: push/pull verify sync state before acting, and force-push is never allowed.
@@ -116,12 +132,12 @@ Manages branch-based collaboration with safety checks: push/pull verify sync sta
 **Typical workflow:**
 
 ```
-/pl-remote branch create my-feature      # Start a branch
+purlin:remote branch create my-feature      # Start a branch
 # ... do work, commit ...
-/pl-remote push                          # Share your work
+purlin:remote push                          # Share your work
 # ... teammate pushes changes ...
-/pl-remote pull                          # Get their changes
-/pl-remote branch leave                  # Done, back to main
+purlin:remote pull                          # Get their changes
+purlin:remote branch leave                  # Done, back to main
 ```
 
 The remote name defaults to `origin`. Override it in `.purlin/config.json` under `branch_collab.remote`.
@@ -131,21 +147,21 @@ The remote name defaults to `origin`. Override it in `.purlin/config.json` under
 ## Comparing Branches
 
 ```
-/pl-whats-different
+purlin:whats-different
 ```
 
 Shows a plain-English summary of what changed on the remote collaboration branch compared to your local `main`. Must be run from the `main` branch.
 
 When a mode is active, produces a role-specific briefing: PM sees spec changes, Engineer sees code changes, QA sees verification state changes.
 
-**Setup:** Requires an active collaboration branch (set up via `/pl-remote branch create` or `/pl-remote branch join`).
+**Setup:** Requires an active collaboration branch (set up via `purlin:remote branch create` or `purlin:remote branch join`).
 
 ---
 
 ## Editing Project Overrides
 
 ```
-/pl-override-edit
+purlin:override-edit
 ```
 
 Opens your project's `PURLIN_OVERRIDES.md` for guided editing. The agent:
@@ -158,7 +174,7 @@ Opens your project's `PURLIN_OVERRIDES.md` for guided editing. The agent:
 Each mode can only edit its own section of the overrides file. Use `--scan-only` to check for conflicts without making changes:
 
 ```
-/pl-override-edit --scan-only
+purlin:override-edit --scan-only
 ```
 
 ---
@@ -166,11 +182,12 @@ Each mode can only edit its own section of the overrides file. Use `--scan-only`
 ## Managing Worktrees
 
 ```
-/pl-worktree list              # Show all worktrees and their status
-/pl-worktree cleanup-stale     # Remove stale/orphaned worktrees
+purlin:worktree list              # Show all worktrees and their status
+purlin:worktree cleanup-stale     # Remove stale/orphaned worktrees
+purlin:worktree cleanup-stale --dry-run   # Preview what would be cleaned
 ```
 
-Worktrees are isolated copies of the repository used for parallel feature builds. You typically don't create them manually — the agent spawns them during `/pl-build` when a delivery plan has independent features.
+Worktrees are isolated copies of the repository used for parallel feature builds. You typically don't create them manually — the agent spawns them during `purlin:build` when a delivery plan has independent features.
 
 `list` shows each worktree's label, mode, PID, status (active/stale/orphaned), and age. `cleanup-stale` removes dead worktrees, prompting before discarding any with uncommitted changes.
 
@@ -179,12 +196,12 @@ Worktrees are isolated copies of the repository used for parallel feature builds
 ## Agentic Toolbox
 
 ```
-/pl-toolbox                          # Interactive menu
-/pl-toolbox list                     # Show all tools
-/pl-toolbox run <tool>               # Execute a tool
-/pl-toolbox run tool1 tool2          # Run multiple tools sequentially
-/pl-toolbox create                   # Create a new project tool
-/pl-toolbox add <git-url>            # Download a community tool
+purlin:toolbox                          # Interactive menu
+purlin:toolbox list                     # Show all tools
+purlin:toolbox run <tool>               # Execute a tool
+purlin:toolbox run tool1 tool2          # Run multiple tools sequentially
+purlin:toolbox create                   # Create a new project tool
+purlin:toolbox add <git-url>            # Download a community tool
 ```
 
 Tools are independent, agent-executable units — scripts, checklists, or instructions that the agent can run on demand. Three categories:
@@ -207,34 +224,34 @@ Tools are independent, agent-executable units — scripts, checklists, or instru
 ## Updating Purlin
 
 ```
-/pl-update-purlin                    # Update to latest release tag
-/pl-update-purlin v0.8.6             # Update to a specific version
-/pl-update-purlin --dry-run          # Preview changes without modifying anything
+purlin:update                    # Update to latest release tag
+purlin:update v0.8.7             # Update to a specific version
+purlin:update --dry-run          # Preview changes without modifying anything
+purlin:update --auto-approve     # Apply without confirmation prompts
 ```
 
-Updates the Purlin submodule to the latest release tag on `origin/main` — not the latest commit. This ensures you only pull tagged releases, never unreleased work-in-progress. To target a specific tag or branch, pass it as the first argument.
+Updates the Purlin plugin to the latest release tag. This ensures you only pull tagged releases, never unreleased work-in-progress. Pass a specific version to target a particular release.
 
 The agent:
 
 1. Fetches the latest version and resolves the target release tag.
 2. Scans for conflicts with your local customizations.
-3. Advances the submodule to the resolved tag.
-4. Refreshes commands and config.
-5. Resolves conflicts with three-way diffs.
-6. Cleans up stale artifacts from previous versions.
+3. Refreshes skills, hooks, and the MCP server.
+4. Resolves conflicts with three-way diffs.
+5. Cleans up stale artifacts from previous versions.
 
-See the [Installation Guide](installation-guide.md) for manual update steps.
+See the [Installation Guide](installation-guide.md) for details.
 
 ---
 
 ## Reporting Framework Bugs
 
 ```
-/pl-purlin-issue
-/pl-purlin-issue "scan crashes when config.json is empty"
+purlin:purlin-issue
+purlin:purlin-issue "scan crashes when config.json is empty"
 ```
 
-Generates a structured bug report for the Purlin framework itself (not project-level bugs — use `/pl-discovery` for those). The agent collects:
+Generates a structured bug report for the Purlin framework itself (not project-level bugs — use `purlin:discovery` for those). The agent collects:
 
 - Your description and expected behavior
 - Purlin version, deployment mode, and git state
@@ -247,7 +264,7 @@ The output is a copy-paste-ready report formatted for a Purlin Engineer debuggin
 ## Getting Help
 
 ```
-/pl-help
+purlin:help
 ```
 
 Prints the full command table for your current mode. If no mode is active, shows all commands across all modes.
@@ -258,6 +275,6 @@ Prints the full command table for your current mode. If no mode is active, shows
 
 These commands activate and are documented in their respective mode guides:
 
-- **PM mode:** `/pl-spec`, `/pl-anchor`, `/pl-design-ingest`, `/pl-design-audit` — see [PM Mode Guide](pm-agent-guide.md)
-- **Engineer mode:** `/pl-build`, `/pl-unit-test`, `/pl-web-test`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-spec-code-audit` — see [Engineer Mode Guide](engineer-agent-guide.md)
-- **QA mode:** `/pl-verify`, `/pl-complete`, `/pl-discovery`, `/pl-regression`, `/pl-smoke`, `/pl-qa-report` — see [QA Mode Guide](qa-agent-guide.md)
+- **PM mode:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit`, `purlin:design-ingest` — see [PM Mode Guide](pm-agent-guide.md)
+- **Engineer mode:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Mode Guide](engineer-agent-guide.md)
+- **QA mode:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report`, `purlin:fixture` — see [QA Mode Guide](qa-agent-guide.md)

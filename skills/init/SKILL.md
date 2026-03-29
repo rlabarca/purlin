@@ -9,6 +9,10 @@ Purlin agent: Initialize a new project for use with Purlin. Creates the required
 
 ---
 
+## Path Resolution
+
+> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
+
 ## Usage
 
 ```
@@ -80,5 +84,8 @@ Created:
   .gitignore (updated)
   features/ (created)
 
-Next: Run purlin:start to begin a session.
+Next: Start working by invoking any skill directly:
+  purlin:mode pm         — switch to PM mode
+  purlin:spec <topic>    — create your first feature spec
+  purlin:status          — see what needs doing
 ```
