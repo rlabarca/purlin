@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "passed": 4,
+  "failed": 0,
+  "total": 4,
+  "test_file": "tests/qa/scenarios/purlin_help.json",
+  "details": [
+    {
+      "name": "command-table-structure:purlin_commands.md has Common, Engineer, PM, and QA sections",
+      "status": "PASS",
+      "scenario_ref": "features/skills_common/purlin_help.md:command-table-structure",
+      "expected": "purlin_commands.md has Common, Engineer, PM, and QA sections",
+      "assertion_tier": 2
+    },
+    {
+      "name": "command-table-structure:purlin_commands.md lists purlin:status, purlin:mode, purlin:help",
+      "status": "PASS",
+      "scenario_ref": "features/skills_common/purlin_help.md:command-table-structure",
+      "expected": "purlin_commands.md lists purlin:status, purlin:mode, purlin:help",
+      "assertion_tier": 2
+    },
+    {
+      "name": "help-skill-exists:skills/help/SKILL.md is present",
+      "status": "PASS",
+      "scenario_ref": "features/skills_common/purlin_help.md:help-skill-exists",
+      "expected": "skills/help/SKILL.md is present",
+      "assertion_tier": 2
+    },
+    {
+      "name": "help-skill-exists:Help skill reads command table from purlin_commands.md",
+      "status": "PASS",
+      "scenario_ref": "features/skills_common/purlin_help.md:help-skill-exists",
+      "expected": "Help skill reads command table from purlin_commands.md",
+      "assertion_tier": 2
+    }
+  ]
+}

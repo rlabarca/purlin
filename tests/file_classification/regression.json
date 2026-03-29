@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "passed": 7,
+  "failed": 0,
+  "total": 7,
+  "test_file": "tests/qa/scenarios/file_classification.json",
+  "details": [
+    {
+      "name": "all-types-classified:CODE category includes source code, scripts, tests, and hooks",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:all-types-classified",
+      "expected": "CODE category includes source code, scripts, tests, and hooks",
+      "assertion_tier": 2
+    },
+    {
+      "name": "all-types-classified:SPEC category includes feature specs, design anchors, policy anchors",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:all-types-classified",
+      "expected": "SPEC category includes feature specs, design anchors, policy anchors",
+      "assertion_tier": 2
+    },
+    {
+      "name": "all-types-classified:QA-OWNED category includes discovery sidecars and regression JSON",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:all-types-classified",
+      "expected": "QA-OWNED category includes discovery sidecars and regression JSON",
+      "assertion_tier": 2
+    },
+    {
+      "name": "purlin-base-references-classification:Agent definition delegates file ownership to file_classification.md",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:purlin-base-references-classification",
+      "expected": "Agent definition delegates file ownership to file_classification.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "purlin-base-references-classification:No *.py, *.sh etc. in agent definition write-access lines",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:purlin-base-references-classification",
+      "expected": "No *.py, *.sh etc. in agent definition write-access lines",
+      "assertion_tier": 2
+    },
+    {
+      "name": "devops-and-skills-are-code:Dockerfile, Makefile, .github are under CODE section",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:devops-and-skills-are-code",
+      "expected": "Dockerfile, Makefile, .github are under CODE section",
+      "assertion_tier": 2
+    },
+    {
+      "name": "devops-and-skills-are-code:Skill files are under CODE section",
+      "status": "PASS",
+      "scenario_ref": "features/shared_definitions/file_classification.md:devops-and-skills-are-code",
+      "expected": "Skill files are under CODE section",
+      "assertion_tier": 2
+    }
+  ]
+}

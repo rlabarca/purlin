@@ -14,7 +14,7 @@ if [[ ! -f "$FC" ]]; then
 fi
 
 # Extract the CODE section (from "## CODE" to next "##")
-code_section=$(sed -n '/^## CODE/,/^## [A-Z]/p' "$FC" | head -n -1)
+code_section=$(sed -n '/^## CODE/,/^## SPEC/p' "$FC")
 
 # Check DevOps files in CODE section
 devops_ok=true

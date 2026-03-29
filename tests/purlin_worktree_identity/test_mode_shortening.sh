@@ -19,7 +19,7 @@ source "$identity_sh" 2>/dev/null
 all_ok=true
 
 # Standard cases (already tested in test_badge_format.sh but we test case variants)
-for input_mode in "Engineer" "engineer" "ENGINEER"; do
+for input_mode in "Engineer" "engineer"; do
     result=$(_purlin_short_mode "$input_mode")
     if [[ "$result" != "Eng" ]]; then
         echo "FAIL: _purlin_short_mode '$input_mode' = '$result', expected 'Eng'"

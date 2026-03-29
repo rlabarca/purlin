@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 6,
+  "passed": 9,
   "failed": 0,
-  "total": 6,
+  "total": 9,
   "test_file": "tests/qa/scenarios/purlin_agent_launcher.json",
   "details": [
     {
@@ -45,6 +45,27 @@
       "status": "PASS",
       "scenario_ref": "features/framework_core/purlin_agent_launcher.md:help-output-flags",
       "expected": "The resume skill references --no-save flag",
+      "assertion_tier": 2
+    },
+    {
+      "name": "config-persistence-types:Config engine coerces string 'true'/'false' to JSON booleans for boolean fields",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:config-persistence-types",
+      "expected": "Config engine coerces string 'true'/'false' to JSON booleans for boolean fields",
+      "assertion_tier": 2
+    },
+    {
+      "name": "config-persistence-types:Role resolution falls back to builder config when agents.purlin is absent",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:config-persistence-types",
+      "expected": "Role resolution falls back to builder config when agents.purlin is absent",
+      "assertion_tier": 2
+    },
+    {
+      "name": "config-persistence-types:find_work and auto_start config values appear in role resolution output",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_agent_launcher.md:config-persistence-types",
+      "expected": "find_work and auto_start config values appear in role resolution output",
       "assertion_tier": 2
     }
   ]

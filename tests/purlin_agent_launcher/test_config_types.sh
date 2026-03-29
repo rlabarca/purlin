@@ -44,22 +44,24 @@ TMPDIR2=$(mktemp -d -t config-test-XXXXXX)
 mkdir -p "$TMPDIR2/.purlin"
 echo '{"agents": {"builder": {"model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": false}}}' > "$TMPDIR2/.purlin/config.local.json"
 
-role_output=$(PURLIN_PROJECT_ROOT="$TMPDIR2" python3 "$CONFIG_ENGINE" role purlin 2>/dev/null || true)
+role_output=$(PURLIN_PROJECT_ROOT="$TMPDIR2" python3 "$CONFIG_ENGINE" purlin 2>/dev/null || true)
 
-if echo "$role_output" | grep -q 'AGENT_MODEL='; then
+if echo "$role_output" | grep -q 'AGENT_BYPASS='; then
     echo "missing agents.purlin returns safe defaults"
     ((passed++))
 else
     echo "FAIL: role resolution with missing agents.purlin produced no output"
     ((failed++))
 fi
+rm -rf "$TMPDIR2"
 
 # Test 3: Startup control values resolve correctly
 TMPDIR3=$(mktemp -d -t config-test-XXXXXX)
 mkdir -p "$TMPDIR3/.purlin"
 echo '{"agents": {"purlin": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": false, "find_work": false, "auto_start": false}}}' > "$TMPDIR3/.purlin/config.local.json"
 
-role_output=$(PURLIN_PROJECT_ROOT="$TMPDIR3" python3 "$CONFIG_ENGINE" role purlin 2>/dev/null || true)
+role_output=$(PURLIN_PROJECT_ROOT="$TMPDIR3" python3 "$CONFIG_ENGINE" purlin 2>/dev/null || true)
+rm -rf "$TMPDIR3"
 
 if echo "$role_output" | grep -q 'AGENT_FIND_WORK="false"' && echo "$role_output" | grep -q 'AGENT_AUTO_START="false"'; then
     echo "startup control values resolve correctly"

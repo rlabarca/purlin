@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "passed": 5,
+  "failed": 0,
+  "total": 5,
+  "test_file": "tests/qa/scenarios/plan_mode_guard.json",
+  "details": [
+    {
+      "name": "hook-clears-mode-state:Hook guards on .purlin existence for non-Purlin project safety",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/plan_mode_guard.md:hook-clears-mode-state",
+      "expected": "Hook guards on .purlin existence for non-Purlin project safety",
+      "assertion_tier": 2
+    },
+    {
+      "name": "hook-clears-mode-state:Hook checks PURLIN_SESSION_ID for PID-scoped mode files",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/plan_mode_guard.md:hook-clears-mode-state",
+      "expected": "Hook checks PURLIN_SESSION_ID for PID-scoped mode files",
+      "assertion_tier": 2
+    },
+    {
+      "name": "hook-clears-mode-state:Running the hook empties the current_mode file",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/plan_mode_guard.md:hook-clears-mode-state",
+      "expected": "Running the hook empties the current_mode file",
+      "assertion_tier": 2
+    },
+    {
+      "name": "hook-idempotent-safe:Hook exits 0 when mode file is already empty",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/plan_mode_guard.md:hook-idempotent-safe",
+      "expected": "Hook exits 0 when mode file is already empty",
+      "assertion_tier": 2
+    },
+    {
+      "name": "hook-idempotent-safe:Hook exits 0 when mode file does not exist",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/plan_mode_guard.md:hook-idempotent-safe",
+      "expected": "Hook exits 0 when mode file does not exist",
+      "assertion_tier": 2
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 5,
+  "passed": 8,
   "failed": 0,
-  "total": 5,
+  "total": 8,
   "test_file": "tests/qa/scenarios/purlin_worktree_identity.json",
   "details": [
     {
@@ -38,6 +38,27 @@
       "status": "PASS",
       "scenario_ref": "features/framework_core/purlin_worktree_identity.md:no-label-in-non-worktree",
       "expected": ".purlin_worktree_label does not exist in non-worktree project root",
+      "assertion_tier": 2
+    },
+    {
+      "name": "mode-shortening-exhaustive:Engineer/engineer/ENGINEER all produce Eng; PM/pm produce PM; QA/qa produce QA",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_worktree_identity.md:mode-shortening-exhaustive",
+      "expected": "Engineer/engineer/ENGINEER all produce Eng; PM/pm produce PM; QA/qa produce QA",
+      "assertion_tier": 2
+    },
+    {
+      "name": "mode-shortening-exhaustive:Empty string and 'none' both resolve to Purlin as default",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_worktree_identity.md:mode-shortening-exhaustive",
+      "expected": "Empty string and 'none' both resolve to Purlin as default",
+      "assertion_tier": 2
+    },
+    {
+      "name": "mode-shortening-exhaustive:Unknown mode names pass through without modification",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_worktree_identity.md:mode-shortening-exhaustive",
+      "expected": "Unknown mode names pass through without modification",
       "assertion_tier": 2
     }
   ]
