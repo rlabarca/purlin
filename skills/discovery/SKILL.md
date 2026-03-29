@@ -3,12 +3,6 @@ name: discovery
 description: This skill activates QA mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: QA**
-
-Purlin agent: This skill activates QA mode. If another mode is active, confirm switch first.
-
----
-
 ## Scope
 
 If an argument was provided, record a discovery for `features/<arg>.md`.

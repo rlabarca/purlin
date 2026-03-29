@@ -3,16 +3,6 @@ name: design-ingest
 description: This skill activates PM mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: PM**
-
-Purlin agent: This skill activates PM mode. If another mode is active, confirm switch first.
-
----
-
-## Path Resolution
-
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
 ## Retirement Notice
 
 `purlin:design-ingest` is retired. Its responsibilities have been split across other commands:

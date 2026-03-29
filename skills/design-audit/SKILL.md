@@ -3,16 +3,6 @@ name: design-audit
 description: This skill activates PM mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: PM**
-
-Purlin agent: This skill activates PM mode. If another mode is active, confirm switch first.
-
----
-
-## Path Resolution
-
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
 Read `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md` before auditing.
 
 ## Session Identity

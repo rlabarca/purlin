@@ -3,22 +3,21 @@ name: anchor
 description: This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead
 ---
 
-**Purlin mode: PM (arch_* targets activate Engineer mode)**
-
-Purlin agent: This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead.
-
----
-
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
-
----
-
 ## Required Reading
 
 Before creating or updating any anchor node, read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_guide.md` — specifically Section 3 (Anchor Node Classification Guide) — for detailed domain classification, boundary-case heuristics, and sizing guidance.
+
+---
+
+## Session Identity
+
+You MUST update the terminal identity before starting anchor work. Derive a short task label (3-4 words max) from the anchor topic. Do NOT leave the label as the project name.
+
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<task label>"
+```
+
+Use the mode that matches the anchor type: `"PM"` for design_*/policy_*/ops_*/prodbrief_*, `"Engineer"` for arch_*. Examples: `PM(main) | anchor visual std`, `Eng(dev/0.8.6) | anchor api contracts`.
 
 ---
 
@@ -38,7 +37,7 @@ Given the topic provided as an argument, create or update an anchor node file in
 
 Any anchor type can exist as an **invariant** by prepending `i_` to the filename: `i_arch_*`, `i_design_*`, `i_policy_*`, `i_ops_*`, `i_prodbrief_*`.
 
-**Invariants are externally-sourced and locally immutable.** No mode (Engineer, PM, QA) can write to `features/i_*.md` files. Changes come ONLY via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
+**Invariants are externally-sourced and locally immutable.** No mode (Engineer, PM, QA) can write to `features/_invariants/i_*.md` files. Changes come ONLY via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
 
 If the user requests creating an anchor with the `i_` prefix, redirect:
 ```

@@ -3,18 +3,15 @@ name: delivery-plan
 description: This skill activates Engineer mode. If another mode is active, confirm switch first
 ---
 
-**Purlin mode: Engineer**
+## Session Identity
 
-Purlin agent: This skill activates Engineer mode. If another mode is active, confirm switch first.
+You MUST update the terminal identity before starting delivery plan work. Derive a short task label (3-4 words max) from the plan scope. Do NOT leave the label as the project name.
 
----
+```bash
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
+```
 
-## Path Resolution
-
-> Scripts at `${CLAUDE_PLUGIN_ROOT}/scripts/`. References at `${CLAUDE_PLUGIN_ROOT}/references/`.
-> **Commit format:** See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md`.
-> **Companion files:** See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation format and PM review protocol.
-> **Output standards:** See `${CLAUDE_PLUGIN_ROOT}/references/output_standards.md`.
+Examples: `Eng(main) | delivery plan`, `Eng(dev/0.8.6) | plan auth phase`.
 
 ---
 
