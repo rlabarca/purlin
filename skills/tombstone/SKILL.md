@@ -1,6 +1,6 @@
 ---
 name: tombstone
-description: This skill activates Engineer mode. If another mode is active, confirm switch first
+description: Create tombstone files for feature retirement
 ---
 
 Given the feature name provided as an argument:

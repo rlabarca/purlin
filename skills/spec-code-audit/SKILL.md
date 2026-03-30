@@ -1,6 +1,6 @@
 ---
 name: spec-code-audit
-description: This skill activates Engineer mode. If another mode is active, confirm switch first
+description: Bidirectional spec-code audit with role-aware remediation
 ---
 
 Call the `EnterPlanMode` tool immediately before doing anything else. Do not read any files or run any commands until plan mode is active.
@@ -12,8 +12,8 @@ Call the `EnterPlanMode` tool immediately before doing anything else. Do not rea
 Bidirectional spec-code audit with role-aware remediation. Two modes: **triage** (default, fast, in-agent) and **deep** (parallel subagent waves with scenario-by-scenario comparison and transitive anchor constraint validation). Both modes produce a prioritized gap table, then remediate gaps within your role's authority and escalate cross-role gaps through established mechanisms.
 
 **Role behavior:**
-- **PM mode:** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to Engineer mode by adding actionable notes in companion files (`features/<name>.impl.md`).
-- **Engineer mode:** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to PM mode by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
+- **PM (spec role):** Fixes spec-side gaps directly (edit feature files). Escalates code-side gaps to Engineer by adding actionable notes in companion files (`features/<name>.impl.md`).
+- **Engineer (code role):** Fixes code-side gaps directly (edit code/tests). Escalates spec-side gaps to PM by recording `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries in companion files.
 
 ---
 
@@ -401,7 +401,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 2. For acknowledged builder decisions (`[DEVIATION]`, `[DISCOVERY]`): update the spec to reflect the decision, then mark the tag as acknowledged in the companion file.
 3. Commit each logical group of spec fixes.
 
-**ESCALATE (code-side gaps for Engineer mode):**
+**ESCALATE (code-side gaps for Engineer):**
 1. Open (or create) the companion file `<feature_name>.impl.md (in the same folder as the feature spec)`.
 2. Add a clearly tagged entry under the implementation notes:
 
@@ -411,7 +411,7 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 **Source:** purlin:spec-code-audit
 **Severity:** <severity>
 **Details:** <what the code does vs what the spec expects, or what code path lacks scenario coverage>
-**Suggested fix:** <concrete suggestion for Engineer mode>
+**Suggested fix:** <concrete suggestion for Engineer>
 ```
 
 3. Commit all escalation entries together.
@@ -428,7 +428,7 @@ For features flagged with companion debt (missing or stale companion files): rec
 3. Update the companion file's implementation notes to document what changed and why.
 4. Commit each logical group of code fixes.
 
-**ESCALATE (spec-side gaps for PM mode):**
+**ESCALATE (spec-side gaps for PM):**
 1. Open (or create) the companion file `<feature_name>.impl.md (in the same folder as the feature spec)`.
 2. Add a `[DISCOVERY]` or `[SPEC_PROPOSAL]` entry:
 
@@ -438,7 +438,7 @@ For features flagged with companion debt (missing or stale companion files): rec
 **Source:** purlin:spec-code-audit
 **Severity:** <severity>
 **Details:** <what is missing or inconsistent in the spec>
-**Suggested spec change:** <concrete proposal for PM mode>
+**Suggested spec change:** <concrete proposal for PM>
 ```
 
 3. Commit all escalation entries together.
@@ -469,7 +469,7 @@ Bulk catch-up for accumulated companion debt. This is the primary reconciliation
 
 - **PM FIX:** Create a new feature spec (via `purlin:spec`) for orphaned code that represents significant unspecified behavior, or add the file to an existing feature's companion Source Mapping section if it belongs to an existing feature.
 - **PM ESCALATE to Engineer:** If code appears dead (zero imports, zero owners, no entry points), record `[DISCOVERY]` in the nearest feature's companion file suggesting removal.
-- **Engineer ESCALATE to PM:** If Engineer mode discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
+- **Engineer ESCALATE to PM:** If Engineer discovers code that has no spec, record `[SPEC_PROPOSAL]` in the companion file requesting spec creation for the orphaned code.
 
 ### Post-Remediation
 

@@ -1,6 +1,6 @@
 ---
 name: invariant
-description: This skill activates PM mode for write operations (add, add-figma, sync, remove). Read-only subcommands (check-update...
+description: Manage externally-sourced invariant constraint files. Write ops use bypass lock protocol
 ---
 
 > **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` for the canonical format.
@@ -12,27 +12,34 @@ description: This skill activates PM mode for write operations (add, add-figma, 
 purlin:invariant <subcommand> [args]
 ```
 
-| Subcommand | Mode | Description |
-|------------|------|-------------|
-| `add <repo-url> [file-path]` | PM | Import an invariant from an external git repo |
-| `add-figma <figma-url> [existing-anchor]` | PM | Create a Figma-sourced design invariant |
-| `sync [file-name \| --all]` | PM | Pull latest version from source (git or Figma) |
-| `check-updates` | Any | Check all invariants for new versions (fast, no clone) |
-| `check-conflicts` | Any | Detect invariant-to-invariant and invariant-to-anchor conflicts |
-| `check-feature <feature> [--all]` | Any | Check feature adherence to applicable invariants |
-| `validate` | Any | Validate all invariant files for correct format and metadata |
-| `audit` | Any | Comprehensive audit: format, sync, compliance, conflicts |
-| `list` | Any | List all active invariants with version, scope, sync status |
-| `remove <file-name>` | PM | Remove an invariant from the project |
+| Subcommand | Writes | Description |
+|------------|--------|-------------|
+| `add <repo-url> [file-path]` | INVARIANT | Import an invariant from an external git repo |
+| `add-figma <figma-url> [existing-anchor]` | INVARIANT | Create a Figma-sourced design invariant |
+| `sync [file-name \| --all]` | INVARIANT | Pull latest version from source (git or Figma) |
+| `check-updates` | none | Check all invariants for new versions (fast, no clone) |
+| `check-conflicts` | none | Detect invariant-to-invariant and invariant-to-anchor conflicts |
+| `check-feature <feature> [--all]` | none | Check feature adherence to applicable invariants |
+| `validate` | none | Validate all invariant files for correct format and metadata |
+| `audit` | none | Comprehensive audit: format, sync, compliance, conflicts |
+| `list` | none | List all active invariants with version, scope, sync status |
+| `remove <file-name>` | INVARIANT | Remove an invariant from the project |
 
 If no subcommand is provided, print the usage table above and stop.
 
 ---
 
-## Mode Enforcement
+## Write Protection (Bypass Lock Protocol)
 
-- **Write subcommands** (`add`, `add-figma`, `sync`, `remove`): Require PM mode. If the current mode is not PM, prompt: `"This subcommand modifies invariant files. Switch to PM mode?"` Do not proceed without PM mode active.
-- **Read-only subcommands** (`audit`, `check-updates`, `check-conflicts`, `check-feature`, `validate`, `list`): Run in any active mode. No mode switch required.
+Invariant files (`features/_invariants/i_*.md`) are protected by the write guard — direct edits are blocked. Write subcommands (`add`, `add-figma`, `sync`, `remove`) use the **bypass lock protocol** to temporarily unlock invariant writes:
+
+1. Before writing: set the bypass lock at `.purlin/runtime/invariant_bypass_lock` with the target filename and operation.
+2. Perform the write (the write guard checks for the lock and allows the specific file).
+3. After writing: remove the bypass lock.
+
+This ensures invariant files can only be modified through this skill's controlled subcommands — never by ad-hoc edits. Read-only subcommands (`audit`, `check-updates`, `check-conflicts`, `check-feature`, `validate`, `list`) require no lock.
+
+**All write subcommands** must wrap their invariant file operations with this protocol: acquire the lock before the first invariant file write, and release it after the last invariant file write (before commit).
 
 ---
 
@@ -404,7 +411,7 @@ i_prodbrief_q2_goals.md            prodbrief  v1.0.0   scoped  git
 
 ## Subcommand: `remove <file-name>`
 
-Remove an invariant from the project. Requires PM mode.
+Remove an invariant from the project. Uses bypass lock protocol.
 
 1. **Verify** `features/_invariants/<file-name>` exists and starts with `i_`.
 2. **Find dependents:** Grep all feature files for `> Prerequisite: features/_invariants/<file-name>`.

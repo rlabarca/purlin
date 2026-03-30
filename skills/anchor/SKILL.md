@@ -1,6 +1,6 @@
 ---
 name: anchor
-description: This skill activates PM mode for design_*/policy_* anchors. For arch_* anchors, it activates Engineer mode instead
+description: Create or update anchor node constraint files in features/
 ---
 
 ## Required Reading
@@ -13,8 +13,8 @@ Given the topic provided as an argument, create or update an anchor node file in
 
 ## Anchor Node Types
 
-| Prefix | Domain | When to Use | Mode |
-|--------|--------|-------------|------|
+| Prefix | Domain | When to Use | Owner |
+|--------|--------|-------------|-------|
 | `arch_*.md` | Technical | System architecture, API contracts, data access patterns, module boundaries, dependency rules, coding conventions | Engineer |
 | `design_*.md` | Design | Visual language, color systems, typography, spacing, interaction patterns, accessibility | PM |
 | `policy_*.md` | Governance | Security baselines, compliance, process protocols, coordination rules, quality gates, release criteria | PM |
@@ -25,7 +25,7 @@ Given the topic provided as an argument, create or update an anchor node file in
 
 Any anchor type can exist as an **invariant** by prepending `i_` to the filename: `i_arch_*`, `i_design_*`, `i_policy_*`, `i_ops_*`, `i_prodbrief_*`.
 
-**Invariants are externally-sourced and locally immutable.** No mode (Engineer, PM, QA) can write to `features/_invariants/i_*.md` files. Changes come ONLY via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
+**Invariants are externally-sourced and locally immutable.** Nobody can write directly to `features/_invariants/i_*.md` files — the write guard blocks all direct edits. Changes come ONLY via `purlin:invariant add`, `purlin:invariant add-figma`, or `purlin:invariant sync`.
 
 If the user requests creating an anchor with the `i_` prefix, redirect:
 ```

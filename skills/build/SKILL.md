@@ -1,6 +1,6 @@
 ---
 name: build
-description: This skill activates Engineer mode. If another mode is active, confirm switch first
+description: Implement features from specs with full CDD lifecycle. Writes CODE and TEST files
 ---
 
 ## Session Identity
@@ -8,10 +8,10 @@ description: This skill activates Engineer mode. If another mode is active, conf
 When starting work on a feature, you MUST update the terminal identity with a short task label (3-4 words max) derived from the feature name or plan. Do NOT leave the label as the project name — always derive a work-specific label.
 
 ```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "Engineer" "<task label>"
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
 ```
 
-Examples: `Eng(main) | add auth flow`, `Eng(dev/0.8.6) | fix scan engine`.
+Examples: `(main) add auth flow`, `(dev/0.8.6) fix scan engine`.
 
 ---
 
@@ -70,9 +70,14 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 *   **Spec Existence Check:** If a feature name was provided as an argument, verify the spec exists (glob `features/**/<name>.md`). If it does NOT exist:
     1. Inform the user: `"No spec exists for '<name>'. In Purlin, specs come before code."`
-    2. Offer: `"Switch to PM mode to create the spec? (purlin:spec <name>)"`
-    3. If confirmed: switch to PM mode and invoke `purlin:spec <name>`. STOP — do not continue with purlin:build.
+    2. Offer: `"No spec exists — create one? (purlin:spec <name>)"`
+    3. If confirmed: invoke `purlin:spec <name>`. STOP — do not continue with purlin:build.
     4. If declined: STOP — do not implement without a spec.
+*   **Sync Ledger Check:** Read `.purlin/sync_ledger.json` for the target feature's entry (if the file exists). Surface relevant drift:
+    *   If `sync_status` is `spec_ahead` (spec updated since last code change): warn `"Spec updated since last implementation — review spec changes before building."` This is advisory, not blocking.
+    *   If `open_discoveries > 0`: warn `"Feature has N open discovery/ies — review before implementing."`
+    *   If `sync_status` is `code_ahead` or `code_ahead_no_impl`: note that prior code changes exist without spec/impl updates — this is expected when resuming work.
+    *   If the feature has no ledger entry or the ledger doesn't exist yet, skip silently (new features and projects without the ledger are normal).
 *   **Re-Verification Detection:** Check scan results for this feature's `reset_context`. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
 *   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
 *   **Invariant Preflight:** Collect all invariants applicable to this feature:
@@ -104,7 +109,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 ### Step 1 -- Acknowledge and Plan
 
-*   **Update terminal identity:** Derive a short task label (3-4 words max) from the feature name or delivery plan context. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "engineer" "<task label>"`. Examples: `Eng(main) | add auth flow`, `Eng(dev/0.8.6) | fix scan engine`.
+*   **Update terminal identity:** Derive a short task label (3-4 words max) from the feature name or delivery plan context. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"`. Examples: `(main) add auth flow`, `(dev/0.8.6) fix scan engine`.
 *   State which feature you are implementing.
 *   Briefly outline your plan, referencing any companion file notes that influenced your strategy.
 
@@ -147,7 +152,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     *   Check: were code commits made for this feature during this session?
     *   If yes: does the companion file (`<name>.impl.md (in the same folder as the spec)`) have new entries from this session? (Check file modification time or diff against the pre-build state.)
     *   If the companion file has NO new entries: **WARN** that companion debt exists. Recommend writing `[IMPL]` entries describing what was implemented. For deviations from spec, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, etc.) instead of or in addition to `[IMPL]`.
-    *   Allow the status tag commit to proceed. Companion debt is tracked in `purlin:status` and the mode switch gate will enforce before leaving Engineer mode. Debt can also be reconciled in bulk via `purlin:spec-code-audit`.
+    *   Allow the status tag commit to proceed. Companion debt is tracked in `purlin:status` and surfaced via the sync ledger. Debt can be reconciled in bulk via `purlin:spec-code-audit`.
 *   **Pre-check -- Web Test Gate:**
     *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `purlin:web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `purlin:web-test` first.
     *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.

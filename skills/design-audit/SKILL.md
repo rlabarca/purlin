@@ -1,6 +1,6 @@
 ---
 name: design-audit
-description: This skill activates PM mode. If another mode is active, confirm switch first
+description: Audit design artifacts and visual specifications for integrity and staleness
 ---
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md` before auditing.
@@ -16,7 +16,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - Whether a Token Map exists (from `- **Token Map:**`)
    - Checklist item count
    Also check for `brief.json` at `features/_design/<feature_stem>/brief.json` for each feature with a Figma reference.
-   If Figma MCP tools are available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
+   If Figma MCP tools are available, also extract annotation count per screen via `get_design_context` (fileKey + nodeId from reference URL). Report as informational metadata (not a pass/fail check).
    **Invariant inventory:** Also glob `features/_invariants/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata. These are checked in steps 3.2 and 4.1.
 
 2. **Reference integrity:** For each screen:
@@ -36,7 +36,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - If `brief.json` is missing and screen has Figma reference: WARNING ("No brief.json found").
 
 3.2. **Invariant pointer sync status:** For each `i_design_*.md` invariant pointer found in step 1:
-   - **Figma-sourced** (`> Source: figma`): If Figma MCP is available, fetch the current Figma file version ID and compare against the pointer's `> Version:`. If different: STALE_INVARIANT. If MCP unavailable: report as UNKNOWN.
+   - **Figma-sourced** (`> Source: figma`): If Figma MCP is available, fetch the current Figma file version ID via `get_metadata` (fileKey from `> Figma-URL:`) and compare against the pointer's `> Version:`. If different: STALE_INVARIANT. If MCP unavailable: report as UNKNOWN.
    - **Git-sourced** (`> Source:` is a URL): Run `git ls-remote <source-url> HEAD` and compare SHA against `> Source-SHA:`. If different: STALE_INVARIANT.
    - For each stale invariant, check how many features depend on it (via `> Prerequisite:` or global scope). Report cascade impact.
    - **Brief vs pointer version:** For features with a `brief.json` referencing a Figma invariant, compare `brief.json`'s `figma_version_id` against the pointer's `> Version:`. If pointer is newer than brief: STALE_BRIEF (brief needs regeneration via `purlin:spec`).
@@ -56,27 +56,36 @@ Audit all design artifacts and visual specifications across the project for inte
    - Surface the invariant's `## Design Invariants` statements as compliance context.
 
 5. **Figma staleness (MCP):** For screens referencing Figma URLs:
-   - If Figma MCP tools are available: read the design's `lastModified` timestamp via MCP.
+   - If Figma MCP tools are available: read the design's `lastModified` timestamp via `get_metadata` (fileKey from reference URL).
    - Compare against the Processed date. If Figma was modified after Processed, flag as STALE.
    - If Figma MCP is not available: report staleness as N/A for Figma screens (no connectivity check).
 
 6. **Design-spec conflict detection (MCP):** For screens referencing Figma URLs when MCP is available:
-   - Extract design variable names and values from the Figma design via MCP.
-   - Compare against the Token Map entries in the Visual Specification.
-   - Flag discrepancies as DESIGN_CONFLICT warnings (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
-   - Also compare Figma design variable resolved values against `brief.json` token values if present.
+   - Extract design variable names, types, and resolved values via `get_variable_defs` (fileKey from reference URL).
+   - Compare variable names against the Token Map entries in the Visual Specification:
+     - Variable renamed in Figma but not in Token Map: DESIGN_CONFLICT (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma variable `primary` has been renamed to `brand-primary`").
+     - Variable added in Figma but missing from Token Map: DESIGN_GAP (new token not yet mapped).
+     - Variable removed from Figma but still in Token Map: DESIGN_CONFLICT (stale mapping).
+   - Also compare resolved variable values against `brief.json` token values if present. Value drift (same name, different resolved value) is flagged as DESIGN_DRIFT.
 
 6.1. **Figma dev status consistency (MCP):** For features with `> Figma Status:` metadata and a Figma reference when MCP is available:
-   - Read the current dev status via MCP.
+   - Read the current dev status via `get_metadata` (fileKey from reference URL).
    - Compare against the spec's `> Figma Status:` value.
    - Discrepancies flagged as INFO with suggestion to update the spec.
    - Report in the "Dev Status" column: CURRENT (matches), DRIFT (mismatch), N/A (no metadata/MCP/reference).
 
 6.2. **Version ID drift (MCP):** For screens where `brief.json` contains `figma_version_id`:
-   - Read the current Figma file version via MCP.
+   - Read the current Figma file version via `get_metadata` (fileKey from reference URL).
    - Compare against `figma_version_id` in `brief.json`.
    - Different versions flag the screen as STALE (more precise than timestamp).
    - This supplements timestamp-based detection and takes precedence when both are available.
+
+6.3. **Visual drift detection (MCP, optional):** For screens referencing Figma URLs when MCP is available AND the feature has `> Web Test:` metadata:
+   - Fetch the Figma frame screenshot via `get_screenshot` (fileKey + nodeId from reference URL).
+   - If Playwright MCP is also available, navigate to the web test URL and take a browser screenshot via `browser_take_screenshot`.
+   - Compare the two screenshots using vision analysis. Flag significant visual discrepancies as VISUAL_DRIFT with a brief description of what differs (layout shift, color mismatch, missing element, etc.).
+   - This step is **informational** — VISUAL_DRIFT is reported as a WARNING, not a blocking issue. It supplements metadata-based staleness detection with actual visual comparison.
+   - Skip this step if either Figma MCP or Playwright MCP is unavailable, or if the feature lacks a web test URL.
 
 7. **Report:** Print a summary table. The Annotations column is optional — show it when Figma MCP is available, omit otherwise. Annotation count is informational metadata only (not a pass/fail check).
    ```

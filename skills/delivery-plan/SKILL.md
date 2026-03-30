@@ -1,6 +1,6 @@
 ---
 name: delivery-plan
-description: This skill activates Engineer mode. If another mode is active, confirm switch first
+description: Create or manage phased delivery plans for multi-feature work
 ---
 
 If a delivery plan already exists at `.purlin/delivery_plan.md`:
@@ -21,7 +21,7 @@ If no delivery plan exists:
 
 **Context Tier Resolution:**
 
-Before assessing scope, resolve Engineer mode's context tier:
+Before assessing scope, resolve the context tier:
 1. Determine the current model from the active Claude Code session (the model in use, not a config value).
 2. If the model has a context window > 200,000 tokens (e.g., Opus 4.6 with 1M context), use **Extended** tier. Otherwise, use **Standard** tier.
 4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
@@ -61,7 +61,7 @@ If the user approves phasing, create the delivery plan using the canonical forma
 *   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction?), then: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]`.
 *   Status tags only after B2 passes or B3 escalations are recorded.
 
-**Cross-Session Rule:** Each phase is a separate Engineer session. STOP after completing a phase. Do not auto-advance.
+**Cross-Session Rule:** Each phase is a separate build session. STOP after completing a phase. Do not auto-advance.
 
 **Canonical `delivery_plan.md` format:**
 

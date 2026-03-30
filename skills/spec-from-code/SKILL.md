@@ -1,6 +1,6 @@
 ---
 name: spec-from-code
-description: This skill activates Engineer mode. If another mode is active, confirm switch first
+description: Reverse-engineer feature specs from an existing codebase
 ---
 
 ## Purpose
@@ -134,4 +134,4 @@ For each category:
 5. Print recommended next steps:
    - "Run `purlin:spec-code-audit` to validate the generated specs against the actual code and identify any gaps the import missed."
    - "Review generated features in dependency order (anchor nodes first) and refine the draft scenarios."
-   - "Once specs are refined, have Engineer mode run `purlin:build` to begin implementation verification."
+   - "Once specs are refined, run `purlin:build` to begin implementation verification."
