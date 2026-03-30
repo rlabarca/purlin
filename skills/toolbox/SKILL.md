@@ -58,13 +58,16 @@ Wait for user input, then execute the corresponding subcommand.
 
 ### list
 
-Show all tools grouped by category (Purlin, Project, Community). Each tool shows id, friendly_name, and a short description (truncated to ~60 chars if needed). Community tools show author and repo on indented lines. Omit categories with zero tools.
+Show all tools grouped by category (Purlin, Project, Community) as markdown tables. Each tool shows id, friendly name, and full description (no truncation — let it wrap). Community tools include author and repo in the description. Omit categories with zero tools.
 
-Format:
+Format per category:
 
-```
-<Category> (<N>)
-  <id>                  <friendly_name> — <description>
+```markdown
+### Purlin (N)
+
+| Tool | Name | Description |
+|------|------|-------------|
+| `purlin.spec_check` | Purlin Spec Check | Scans the spec map for integrity issues... |
 ```
 
 ### run
