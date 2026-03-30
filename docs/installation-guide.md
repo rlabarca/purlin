@@ -86,18 +86,15 @@ This file is committed to git so that everyone who clones the repo gets the plug
 
 ### Start working
 
-On first launch in a new project, the agent enters PM mode and asks what you're building. Just tell the agent what you want in plain language:
-
-> "spec a login feature, then build and verify it"
-
-The agent switches modes automatically. You can also use explicit commands:
-
 ```
 purlin:spec login             # PM mode — create a spec
 purlin:build login            # Engineer mode — implement it
 purlin:verify login           # QA mode — verify it
-purlin:mode engineer          # switch modes without starting a workflow
+purlin:mode engineer          # switch modes explicitly
+purlin:status                 # see what needs doing
 ```
+
+Each skill activates the appropriate mode when invoked.
 
 ---
 
@@ -112,7 +109,7 @@ claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 claude
 ```
 
-The plugin loads automatically. The `SessionStart` hook handles context recovery.
+The plugin loads automatically. Run `purlin:resume` if you need to recover a previous session's state.
 
 If `.purlin/` doesn't exist yet (first team member to use Purlin on this project), run `purlin:init` inside the session.
 
@@ -143,7 +140,7 @@ When you run `claude` in a directory without Purlin enabled, you get standard Cl
 |---|---|---|
 | Marketplace registration | `~/.claude/settings.json` | All projects (makes plugin available) |
 | Plugin enablement | `.claude/settings.json` (project) | This project only |
-| Agent settings (model, auto-start) | `.purlin/config.json` | This project |
+| Agent settings (auto-start, YOLO) | `.purlin/config.json` | This project |
 | Local overrides (not committed) | `.purlin/config.local.json` | Your machine only |
 | Project-specific rules | `CLAUDE.md` | This project |
 | Credentials (Figma, deploy tokens) | macOS keychain (via plugin userConfig) | Your machine only |
@@ -201,16 +198,16 @@ claude plugin marketplace remove purlin
 
 ### Agent Settings
 
-Edit `.purlin/config.json` to change:
+Use `purlin:config` to manage settings:
 
-- Which Claude model to use.
-- Reasoning effort level (low, medium, high).
-- Whether the agent discovers work at startup (`find_work`).
-- Whether the agent starts executing immediately (`auto_start`).
+```
+purlin:config                       # Show all settings
+purlin:config yolo on               # Auto-approve permission prompts
+purlin:config find-work off         # Skip startup scan
+purlin:config auto-start on         # Start working immediately
+```
 
-### Local Overrides
-
-Create `.purlin/config.local.json` to override settings without modifying the shared config. This file is gitignored and takes precedence over `config.json`.
+Settings are stored in `.purlin/config.local.json` (gitignored). Model and effort are native Claude Code settings — use `/model` and `/effort`.
 
 ### Project-Specific Rules
 
@@ -230,7 +227,7 @@ Sensitive values (Figma access token, deploy token, Confluence credentials) are 
 
 **Skills not found?** Make sure you're running `claude` from the project root where `.claude/settings.json` exists. The plugin only loads when the project has it enabled.
 
-**MCP tools not available?** The YOLO mode (`bypass_permissions: true` in `.purlin/config.json`) auto-approves MCP tool access. If you've disabled YOLO, you'll be prompted for each MCP tool on first use.
+**MCP tools not available?** Run `purlin:config yolo on` to auto-approve MCP tool access. If YOLO is off, you'll be prompted for each MCP tool on first use.
 
 **Stale submodule artifacts?** If you upgraded from v0.8.5 and still see `purlin/`, `pl-run.sh`, or `.claude/commands/pl-*.md`, run `purlin:update` again inside a session to clean them up.
 
