@@ -21,6 +21,7 @@ purlin:invariant <subcommand> [args]
 | `check-conflicts` | Any | Detect invariant-to-invariant and invariant-to-anchor conflicts |
 | `check-feature <feature> [--all]` | Any | Check feature adherence to applicable invariants |
 | `validate` | Any | Validate all invariant files for correct format and metadata |
+| `audit` | Any | Comprehensive audit: format, sync, compliance, conflicts |
 | `list` | Any | List all active invariants with version, scope, sync status |
 | `remove <file-name>` | PM | Remove an invariant from the project |
 
@@ -31,7 +32,7 @@ If no subcommand is provided, print the usage table above and stop.
 ## Mode Enforcement
 
 - **Write subcommands** (`add`, `add-figma`, `sync`, `remove`): Require PM mode. If the current mode is not PM, prompt: `"This subcommand modifies invariant files. Switch to PM mode?"` Do not proceed without PM mode active.
-- **Read-only subcommands** (`check-updates`, `check-conflicts`, `check-feature`, `validate`, `list`): Run in any active mode. No mode switch required.
+- **Read-only subcommands** (`audit`, `check-updates`, `check-conflicts`, `check-feature`, `validate`, `list`): Run in any active mode. No mode switch required.
 
 ---
 
@@ -56,7 +57,7 @@ Import an invariant from an external git repo.
    - `> Source-Path: <path-within-repo>`
    - `> Source-SHA: <git-commit-sha>`
    - `> Synced-At: <ISO-8601-timestamp>`
-   - `> Format-Version: 1.0` (if not already present)
+   - `> Format-Version: 1.1` (if not already present)
 6. **Copy to `features/_invariants/`** with `i_` prefix prepended to the filename. If the source file is `policy_security.md`, the local file becomes `features/_invariants/i_policy_security.md`. Create the `_invariants/` folder if it doesn't exist. If `features/_invariants/i_<name>.md` already exists, stop with: "Invariant file already exists at `features/_invariants/i_<name>.md`. Use `purlin:invariant sync` to update an existing invariant."
 7. **Commit** with tag: `invariant-add(features/_invariants/i_<type>_<name>.md): v<version> from <repo>`.
 8. **Run scan:** Run `purlin_scan` to integrate into dependency graph and trigger cascade if global.
@@ -71,20 +72,22 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
 1. **Verify Figma MCP** is available (check for `get_design_context` or Figma-related tools in available tool list). If not available:
    ```
    Figma MCP is not available. To set up:
-   1. Run: claude mcp add figma -- npx figma-developer-mcp --stdio
-   2. Restart the session
+   1. Run: claude mcp add --transport http figma https://mcp.figma.com/mcp
+   2. Restart the session and complete OAuth via /mcp
    ```
    Stop -- do not proceed without MCP.
-2. **Fetch Figma metadata** via MCP: version ID, last modified, design variables.
-3. **Extract annotations** via `get_design_context`: behavioral notes, interaction descriptions, edge cases.
-4. **Prompt PM** for the invariant name and Purpose section content.
-5. **Create pointer file** `features/_invariants/i_design_<name>.md` with:
+2. **Fetch Figma metadata** via `get_metadata` (fileKey from URL): extract version ID, last modified timestamp, and file name.
+3. **Extract design context** via `get_design_context` (fileKey + nodeId from URL): extract annotations (behavioral notes, interaction descriptions, edge cases), design token CSS variables, and Code Connect snippets (if configured).
+4. **Extract variable definitions** via `get_variable_defs` (fileKey): capture the design variable vocabulary (names, types, collection groupings). Store variable names in the pointer's `## Design Variables` section as a lightweight reference (names and types only, not resolved values -- those belong in `brief.json`).
+5. **Check Code Connect** (progressive): If `get_design_context` returned Code Connect snippets, note their presence in the pointer's `## Code Connect` section. This is informational -- it tells engineers that component-to-code mappings are available via Figma MCP for this design.
+6. **Prompt PM** for the invariant name and Purpose section content.
+7. **Create pointer file** `features/_invariants/i_design_<name>.md` with:
    ```markdown
    # Design: <Name>
 
    > Label: "Design: <Name>"
    > Category: "<Category>"
-   > Format-Version: 1.0
+   > Format-Version: 1.1
    > Invariant: true
    > Version: <figma-version-id>
    > Source: figma
@@ -102,17 +105,32 @@ Create a Figma-sourced design invariant. **Requires Figma MCP** -- no fallback.
    Design tokens, constraints, and visual standards are defined in Figma
    and cached locally in per-feature `brief.json` files during spec authoring.
 
+   ## Design Variables
+
+   <Variable names and types from get_variable_defs, grouped by collection. Example:>
+   - **Colors:** `primary`, `secondary`, `surface`, `on-surface` (COLOR)
+   - **Spacing:** `spacing-sm`, `spacing-md`, `spacing-lg` (FLOAT)
+   <Omit this section if get_variable_defs returns no variables.>
+
+   ## Code Connect
+
+   <If get_design_context returned Code Connect snippets:>
+   Code Connect mappings are available for this design. During `purlin:spec`,
+   `brief.json` generation will auto-populate the `code_connect` key from
+   `get_code_connect_map` and `get_code_connect_suggestions`.
+   <If no Code Connect data: omit this section entirely.>
+
    ## Annotations
 
-   <Extracted behavioral notes, marked as advisory>
+   <Extracted behavioral notes from get_design_context, marked as advisory>
    ```
-6. **Anchor upgrade** (if `existing-anchor` provided):
+8. **Anchor upgrade** (if `existing-anchor` provided):
    - Resolve the existing anchor via `features/**/<existing-anchor>` and verify it is a `design_*.md` file.
    - Find all feature files with `> Prerequisite: <existing-anchor>` or `> **Design Anchor:** <existing-anchor>`.
    - Update those references to point to `i_design_<name>.md`.
    - Delete the old anchor file.
-7. **Commit** with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
-8. **Run scan:** Run `purlin_scan` to cascade-reset dependent features.
+9. **Commit** with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
+10. **Run scan:** Run `purlin_scan` to cascade-reset dependent features.
 
 ---
 
@@ -144,12 +162,14 @@ Pull latest version from source.
 ### Figma-sourced invariants
 
 1. **Verify Figma MCP** is available. If not, report and stop.
-2. **Fetch current** Figma file metadata via MCP.
+2. **Fetch current metadata** via `get_metadata` (fileKey): extract current version ID.
 3. **Compare** `figma_version_id` against stored `> Version:`.
 4. **If unchanged:** Report already current and stop.
 5. **If changed:**
    - Update `> Version:` and `> Synced-At:` in the pointer file.
-   - Re-extract annotations, update the `## Annotations` section.
+   - Re-extract annotations via `get_design_context` (fileKey + nodeId), update the `## Annotations` section.
+   - Re-extract variable definitions via `get_variable_defs` (fileKey), update the `## Design Variables` section.
+   - If Code Connect data is now present (or was removed), update the `## Code Connect` section accordingly.
    - Flag affected features' `brief.json` as potentially stale.
 6. **Commit and cascade** same as git-sourced.
 
@@ -161,7 +181,7 @@ Check all invariants for new versions. Fast -- no clone.
 
 For each `i_*` file in `features/_invariants/`:
 - **Git-sourced:** Run `git ls-remote <source-url> HEAD` to get remote HEAD SHA. Compare against local `> Source-SHA:`. If different: `"Update may be available: <file> (local: <sha-short>, remote: <sha-short>)"`.
-- **Figma-sourced:** If Figma MCP available, fetch file version ID. Compare against stored `> Version:`. If different: `"Figma updated: <file>"`. If MCP not available: `"Skipped (no Figma MCP): <file>"`.
+- **Figma-sourced:** If Figma MCP available, fetch file version ID via `get_metadata` (fileKey). Compare against stored `> Version:`. If different: `"Figma updated: <file>"`. If MCP not available: `"Skipped (no Figma MCP): <file>"`.
 - **Report summary:** `N invariants checked, M have updates available.`
 
 ---
@@ -226,12 +246,16 @@ Validate all `i_*` files in `features/_invariants/` for format compliance.
 
 For each `i_*` file in `features/_invariants/`:
 1. **Required metadata:** Check for `> Format-Version:`, `> Invariant: true`, `> Version:`, `> Source:`, `> Scope:`.
-2. **Format version compatibility:** Warn if file's format version exceeds Purlin's supported version (currently `1.0`).
+2. **Format version compatibility:** Warn if file's format version exceeds Purlin's supported version (currently `1.1`).
 3. **Required sections per type:**
    - arch/policy/ops/design: `## Purpose` + `## * Invariants`
    - prodbrief: `## Purpose` + `## User Stories` + `## Success Criteria`
 4. **Type prefix:** After stripping `i_`, verify the remaining prefix is one of: `arch_`, `design_`, `policy_`, `ops_`, `prodbrief_`.
-5. **Report** issues per file:
+5. **Figma-specific checks** (for `> Source: figma` invariants):
+   - If `> Version: pending-sync`: WARN — "Figma invariant not yet synced. Run `purlin:invariant sync <file>` to fetch metadata, design variables, and annotations."
+   - If `> Format-Version: 1.1` (or later) and `## Design Variables` section is missing: WARN — "Format 1.1 Figma invariant missing Design Variables section. Run `purlin:invariant sync <file>` to populate."
+   - If `> Format-Version: 1.0` and `## Design Variables` section is missing: INFO — "Format 1.0 Figma invariant. Consider upgrading to 1.1 by running `purlin:invariant sync <file>`." (Not a warning — 1.0 invariants are valid without this section.)
+6. **Report** issues per file:
    ```
    Validating 5 invariant files...
 
@@ -240,10 +264,121 @@ For each `i_*` file in `features/_invariants/`:
      - Missing required metadata: > Scope:
    i_prodbrief_q2.md: PASS
    i_design_visual.md: WARN
-     - Format-Version 2.0 exceeds supported version 1.0
+     - Figma invariant not yet synced (Version: pending-sync)
+   i_design_tokens.md: WARN
+     - Format-Version 2.0 exceeds supported version 1.1
 
-   Result: 3 passed, 1 failed, 1 warning
+   Result: 2 passed, 1 failed, 2 warnings
    ```
+
+---
+
+## Subcommand: `audit`
+
+Comprehensive invariant audit — combines format validation, sync status, feature compliance, and cross-invariant conflict detection into a single structured report.
+
+Canonical type specs: `${CLAUDE_PLUGIN_ROOT}/references/invariant_type_{arch,design,policy,ops,prodbrief}.md`.
+
+### Step 1: Gather Data
+
+1. Run `purlin_scan` (with `only: "features,deps,invariants"`) to ensure state is fresh.
+2. Read `.purlin/cache/dependency_graph.json` — extract `global_invariants` and all feature prerequisite relationships.
+3. Glob `features/_invariants/i_*.md` and `features/**/i_*.md` to find all invariant files. Read each one and extract metadata, FORBIDDEN patterns, numbered invariant statements (INV-N), and anchor type.
+4. Build the transitive constraint map: **global invariants** (Scope: global) apply to EVERY non-anchor feature automatically. **Scoped invariants** (Scope: scoped) apply only via explicit `> Prerequisite:` chains.
+
+**If no invariant files exist:** Print `No invariant files found. Nothing to audit.` and stop.
+
+### Step 2: Format Validation
+
+For each invariant file, validate per `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` and the canonical type spec:
+
+1. **Required metadata:** `Format-Version`, `Invariant: true`, `Version`, `Source`, `Scope` (global or scoped). Git-sourced also need `Source-Path`, `Source-SHA`, `Synced-At`. Figma-sourced need `Figma-URL`, `Synced-At`.
+2. **Required sections by type:**
+   - `i_arch_*`, `i_policy_*`, `i_ops_*`: `## Purpose` + `## <Domain> Invariants` (with INV-N statements)
+   - `i_design_*` (git): `## Purpose` + `## <Domain> Invariants`
+   - `i_design_*` (figma): `## Purpose` + `## Figma Source` + `## Annotations`
+   - `i_prodbrief_*`: `## Purpose` + `## User Stories` + `## Success Criteria`
+3. **Scope validation:** Must be `global` or `scoped`. Flag missing or invalid values.
+
+Report format issues as CRITICAL — a malformed invariant cannot be reliably enforced.
+
+### Step 3: Check Sync Status
+
+For each invariant:
+- **Git-sourced:** Run `git ls-remote <source-url> HEAD` and compare against `Source-SHA`. CURRENT / STALE / UNKNOWN.
+- **Figma-sourced:** Check if `Synced-At` is older than 90 days → STALE. Check if `Version` is `pending-sync` → UNSYNCED. Otherwise CURRENT.
+
+### Step 4: Feature Compliance
+
+For each non-anchor feature with applicable invariants (including global invariants auto-applied to ALL features):
+
+1. **FORBIDDEN pattern scan:** Grep feature code files for violations. Compile patterns per scope glob for efficiency. Record file:line evidence.
+2. **Behavioral invariant coverage:** Check if each INV-N statement has scenario or code coverage. Flag zero-coverage.
+3. **Design Token Map compliance** (i_design_* only): Verify Token Map values match the invariant's Design Variables.
+4. **Brief staleness** (i_design_* Figma only): Compare feature's `brief.json` version against invariant pointer version.
+5. **Prodbrief coverage** (i_prodbrief_* only): Check if user stories have corresponding features/scenarios. Flag uncovered stories.
+6. **Global invariant completeness:** Verify that EVERY non-anchor feature is checked against ALL global invariants — not just features that explicitly link to them.
+7. **Scoped invariant orphan check:** Flag scoped invariants with zero features linking to them (unused).
+
+### Step 5: Cross-Invariant Conflict Detection
+
+For each feature governed by 2+ invariants, check for contradictions:
+- Conflicting FORBIDDEN patterns (one forbids what another requires)
+- Contradictory behavioral invariants (different required values for the same property)
+- Design token conflicts across multiple design invariants
+
+### Step 6: Report
+
+```
+INVARIANT AUDIT REPORT
+======================================================================
+Project: <project>   Scanned: <ISO 8601>
+Invariants: <N> (global: <M>, scoped: <K>)
+Features governed: <F>
+
+FORMAT VALIDATION
+----------------------------------------------------------------------
+
+ Invariant                  Type       Format  Issues
+ -------------------------  ---------  ------  --------------------------
+ <filename>                 <type>     <OK|ERR> <issue or '--'>
+
+SYNC STATUS
+----------------------------------------------------------------------
+
+ Invariant                          Source  Version  Scope   Sync
+ ---------------------------------  ------  -------  ------  --------
+ <filename>                         <src>   <ver>    <scope> <status>
+
+FEATURE COMPLIANCE
+----------------------------------------------------------------------
+
+ Feature              Invariant                     Status     Issue
+ ------------------   ----------------------------  ---------  ------
+ <feature>            <invariant> (<INV-N>)         <status>   <issue>
+
+CROSS-INVARIANT CONFLICTS
+----------------------------------------------------------------------
+
+ <conflict description, or 'No conflicts detected.'>
+
+VIOLATIONS (<N> total)
+----------------------------------------------------------------------
+
+V1. [<SEVERITY>] <feature> -- <violation type>
+    Invariant: <filename>, <INV-N>
+    Constraint: <text>
+    Evidence: <file:line>
+    Fix: <remediation>
+    Owner: <Engineer | PM>
+    Type spec: references/invariant_type_<type>.md
+```
+
+**Severity:** CRITICAL (format failure), HIGH (FORBIDDEN violation, cross-invariant conflict), MEDIUM (zero coverage, Token Map mismatch, brief staleness, uncovered user story), LOW (sync stale, unused scoped invariant).
+
+**Owner:** Engineer (code violations, missing test coverage). PM (spec gaps, stale invariants, format issues, unused scoped invariants).
+
+**If no violations:** Print all sections with clean status, then: `No violations found. All features compliant.`
 
 ---
 

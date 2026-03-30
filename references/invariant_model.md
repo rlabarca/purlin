@@ -53,7 +53,7 @@ For global invariants, "all dependents" means every non-anchor feature in the pr
 | `purlin:build` Step 3 | Design token/style comparison (colors strict, spacing warned) | Colors block, spacing warn |
 | `purlin:spec` commit | Global invariant reminder, scoped prerequisite suggestions | No — advisory |
 | `purlin:spec-code-audit` | Dimension 14: full invariant compliance check | No — audit finding |
-| `purlin.invariant_audit` | Project-wide invariant adherence report | No — report |
+| `purlin:invariant audit` | Project-wide invariant adherence report | No — report |
 
 ## Design Invariant Tiers
 

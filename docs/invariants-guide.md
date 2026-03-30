@@ -120,7 +120,7 @@ Invariants are checked at multiple points:
 | `purlin:build` (Step 0) | FORBIDDEN patterns block the build. Behavioral invariants show as reminders. |
 | `purlin:spec` | PM sees applicable invariants as advisory context while writing specs. |
 | `purlin:spec-code-audit` | Dimension 14 checks invariant compliance — violations, coverage gaps, staleness. |
-| `purlin:toolbox run invariant audit` | Full audit report: status, compliance, violations with severity and fix guidance. |
+| `purlin:invariant audit` | Full audit report: format, sync, compliance, conflicts, and violations with fix guidance. |
 
 ---
 
@@ -199,7 +199,7 @@ Every invariant includes metadata at the top:
 For a comprehensive compliance report across the entire project:
 
 ```
-purlin:toolbox run invariant audit
+purlin:invariant audit
 ```
 
 This produces a structured report with:

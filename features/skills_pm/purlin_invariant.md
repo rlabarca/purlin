@@ -98,7 +98,7 @@ Import an invariant from an external git repo.
 2. Locate the target file in the repo's `features/` directory (or specified path).
 3. Validate format: required sections and `> Version:` metadata present.
 4. If `> Scope:` is missing, prompt PM to choose global or scoped.
-5. Inject/verify invariant metadata (`> Format-Version: 1.0` if not present, `> Invariant: true`, `> Source:`, `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`).
+5. Inject/verify invariant metadata (`> Format-Version: 1.1` if not present, `> Invariant: true`, `> Source:`, `> Source-Path:`, `> Source-SHA:`, `> Synced-At:`).
 6. Copy to `features/` with `i_` prefix prepended to the filename.
 7. Commit with tag: `invariant-add(features/i_<type>_<name>.md): v<version> from <repo>`.
 8. Run `scan.sh` to integrate into dependency graph and trigger cascade if global.
@@ -110,15 +110,17 @@ Import an invariant from an external git repo.
 
 Create a Figma-sourced design invariant.
 
-1. Verify Figma MCP is available. If not, provide setup instructions and stop.
-2. Fetch Figma file metadata via MCP (version ID, last modified, design variables).
-3. Extract annotations via `get_design_context` — behavioral notes, interaction descriptions, edge cases.
-4. Create a thin pointer file `features/i_design_<name>.md` with invariant metadata, Purpose (PM provides), Figma Source boilerplate, and Annotations section (advisory).
-5. If upgrading an existing `design_*.md` anchor:
+1. Verify Figma MCP is available (check for `get_design_context` in tool list). If not, provide setup instructions and stop.
+2. Fetch Figma file metadata via `get_metadata` (fileKey from URL): version ID, last modified, file name.
+3. Extract design context via `get_design_context` (fileKey + nodeId): annotations (behavioral notes, interaction descriptions, edge cases), design token CSS variables, and Code Connect snippets (if configured).
+4. Extract variable definitions via `get_variable_defs` (fileKey): variable names, types, and collection groupings. Stored in `## Design Variables` section (names and types only, not resolved values).
+5. Check Code Connect: if `get_design_context` returned Code Connect snippets, note their presence in `## Code Connect` section (informational).
+6. Create a thin pointer file `features/_invariants/i_design_<name>.md` with invariant metadata, Purpose (PM provides), Figma Source boilerplate, Design Variables, Code Connect (if present), and Annotations section (advisory).
+7. If upgrading an existing `design_*.md` anchor:
    - Update all `> Prerequisite:` and `> **Design Anchor:**` references in feature files.
    - Delete the old `design_*.md` file.
-6. Commit with tag: `invariant-add(features/i_design_<name>.md): Figma-sourced`.
-7. Run `scan.sh` to cascade-reset dependent features.
+8. Commit with tag: `invariant-add(features/_invariants/i_design_<name>.md): Figma-sourced`.
+9. Run `purlin_scan` to cascade-reset dependent features.
 
 ### 3.3 `sync [file-name | --all]`
 
@@ -137,9 +139,9 @@ Pull latest version from source.
 8. Run `scan.sh` to trigger cascade (semver-gated).
 
 **Figma-sourced:**
-1. Fetch current Figma file metadata via MCP.
+1. Fetch current Figma file metadata via `get_metadata` (fileKey).
 2. Compare `figma_version_id` against stored `> Version:`.
-3. If changed: update pointer metadata, re-extract annotations, flag briefs as stale.
+3. If changed: update pointer metadata (`> Version:`, `> Synced-At:`), re-extract annotations via `get_design_context`, re-extract variable definitions via `get_variable_defs`, update Code Connect presence, flag briefs as stale.
 4. Commit and cascade same as git-sourced.
 
 ### 3.4 `check-updates`
@@ -149,7 +151,7 @@ Pull latest version from source.
 Check all invariants for new versions. Fast — no clone.
 
 - Git-sourced: `git ls-remote <source-url> HEAD` to compare SHA.
-- Figma-sourced: fetch file version ID via MCP if available.
+- Figma-sourced: fetch file version ID via `get_metadata` (fileKey) if available.
 - Report summary: N checked, M have updates available.
 
 ### 3.5 `check-conflicts`
@@ -214,7 +216,13 @@ Local assets (images, PDFs, web URLs) are regular `design_*.md` anchors, not inv
 
 ### 4.2 Figma Pointer Model
 
-Figma invariants are thin pointer files. The Figma document is the authority. Per-feature `brief.json` files cache Figma data for Engineers. Briefs are created during `purlin:spec` when PM specifies Figma frames for a feature.
+Figma invariants are thin pointer files. The Figma document is the authority. The pointer captures three categories of Figma data:
+
+- **Design Variables** (from `get_variable_defs`) — variable names and types grouped by collection. Used by `purlin:spec` for Token Map auto-seeding and by `purlin:design-audit` for drift detection.
+- **Code Connect** (from `get_design_context`, optional) — presence indicator for component-to-code mappings. Used by `purlin:spec` to auto-populate `brief.json`.
+- **Annotations** (from `get_design_context`) — advisory behavioral notes for PM spec authoring.
+
+Per-feature `brief.json` files cache resolved Figma data (dimensions, token values, Code Connect mappings) for Engineers. Briefs are created during `purlin:spec` when PM specifies Figma frames for a feature.
 
 ### 4.3 Annotation Model
 
@@ -248,7 +256,7 @@ Figma annotations extracted via `get_design_context` are stored in the pointer's
 
 - Advisory: show applicable global invariants before commit.
 - Suggest scoped invariant prerequisites based on domain overlap.
-- When feature references a Figma invariant: generate brief.json, author Token Map and checklists.
+- When feature references a Figma invariant: auto-seed Token Map from `get_design_context` and `get_variable_defs` output, generate brief.json (with Code Connect data if available), author checklists.
 
 ### 5.3 `purlin:spec-code-audit` (Audit)
 
@@ -265,9 +273,9 @@ Figma annotations extracted via `get_design_context` are stored in the pointer's
 
 ## 6. Reporting
 
-### 6.1 Invariant Audit Toolbox Tool
+### 6.1 Invariant Audit Subcommand
 
-New `purlin.invariant_audit` tool in `tools/toolbox/purlin_tools.json`. Reports invariant status, feature compliance, and actionable violations with owner and remediation.
+`purlin:invariant audit` — comprehensive audit combining format validation, sync status, feature compliance, cross-invariant conflict detection, and a structured violation report. Runs in any mode (read-only). See `skills/invariant/SKILL.md` for the full protocol.
 
 ### 6.2 `purlin:spec-code-audit` Dimension 14
 
@@ -343,16 +351,25 @@ Scenario: Add Figma design invariant @auto
   Given Figma MCP is available
   And a Figma file URL for the project design system
   When PM runs `purlin:invariant add-figma <figma-url>`
-  Then `features/i_design_<name>.md` is created as a thin pointer
-  And the Annotations section contains extracted behavioral notes
+  Then `features/_invariants/i_design_<name>.md` is created as a thin pointer
+  And the Annotations section contains behavioral notes extracted via `get_design_context`
+  And the Design Variables section contains variable names and types from `get_variable_defs`
   And dependent features are cascade-reset
+
+Scenario: Add Figma design invariant with Code Connect @auto
+  Given Figma MCP is available
+  And a Figma file URL with Code Connect mappings configured
+  When PM runs `purlin:invariant add-figma <figma-url>`
+  Then the pointer includes a Code Connect section noting mappings are available
+  And the Annotations section contains behavioral notes
 
 Scenario: Sync detects Figma update @auto
   Given a Figma invariant at version v100
   And the Figma file has been updated to version v200
   When PM runs `purlin:invariant sync i_design_<name>.md`
   Then the pointer's `> Version:` is updated to v200
-  And annotations are re-extracted
+  And annotations are re-extracted via `get_design_context`
+  And variable definitions are re-extracted via `get_variable_defs`
   And dependent features' briefs are flagged as stale
 
 Scenario: Mode guard blocks invariant write @manual
@@ -369,7 +386,7 @@ Scenario: Upgrade existing design anchor to Figma invariant @auto
   And all 5 features' prerequisite links are updated to the new filename
   And all 5 features are cascade-reset to `[TODO]`
 
-Scenario: Invariant audit toolbox tool @manual
+Scenario: Invariant audit subcommand @manual
   Given 3 invariants exist (1 global, 2 scoped) and 1 has a FORBIDDEN pattern violation
-  When the user runs `purlin:toolbox run invariant_audit`
-  Then the report shows invariant status, feature compliance, and actionable violations with owners
+  When the user runs `purlin:invariant audit`
+  Then the report shows format validation, sync status, feature compliance, cross-invariant conflicts, and actionable violations with owners
