@@ -52,7 +52,7 @@ The agent switches modes automatically. You can also use `purlin:spec`, `purlin:
 
 ## Update Purlin
 
-There are two layers to update:
+> **Do NOT run `purlin:init` on existing projects.** Init is only for brand new projects. For upgrades (including from v0.8.5 submodule), use `purlin:update` — it handles submodule removal, config migration, file format transitions, and stale artifact cleanup automatically.
 
 **1. Update the plugin code** (pulls latest skills, hooks, scripts from the repo):
 
@@ -60,13 +60,7 @@ There are two layers to update:
 claude plugin update purlin@purlin
 ```
 
-**2. Run project migration** (handles config changes, file format transitions, stale artifact cleanup):
-
-```bash
-claude
-```
-
-Inside the session:
+**2. Run project migration** inside a session:
 
 ```
 purlin:update                    # Migrate project to current version

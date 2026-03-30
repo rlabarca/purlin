@@ -152,7 +152,7 @@ When you run `claude` in a directory without Purlin enabled, you get standard Cl
 
 ## Updating Purlin
 
-There are two layers to update:
+> **Do NOT run `purlin:init` on existing projects.** Init is only for brand new projects. For upgrades (including from v0.8.5 submodule), use `purlin:update`.
 
 ### 1. Update the plugin code
 
@@ -164,20 +164,14 @@ claude plugin update purlin@purlin
 
 ### 2. Run project migration
 
-This handles config changes, file format transitions, and stale artifact cleanup for your project:
-
-```bash
-claude
-```
-
-Inside the session:
+Inside a session:
 
 ```
 purlin:update                    # Migrate project to current version
 purlin:update --dry-run          # Preview the migration plan
 ```
 
-Your specs, features, and toolbox are never touched — only plugin internals and project config are updated.
+This handles submodule removal, config migration, Figma-to-invariant conversion, file format transitions, and stale artifact cleanup. Your specs, features, and toolbox are never touched.
 
 ---
 
