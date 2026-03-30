@@ -107,6 +107,8 @@ Step <id>: <name> (<from_era> → <to_era>)
 
 ### Step 5 -- Execute Migration Steps
 
+**Before executing:** Activate Engineer mode by calling `purlin_mode(mode: "engineer")`. The migration scripts handle their own file writes via Python, but the mode guard must be active for any Bash or Write tool calls the agent makes during orchestration.
+
 Execute each step sequentially:
 
 ```
@@ -202,6 +204,8 @@ When the skill orchestrates step 3:
 ## Post-Migration: Organize Features
 
 After all migration steps complete (or if already up to date), run feature file organization as permanent housekeeping. This step runs on every `purlin:update` invocation and is idempotent.
+
+**Mode activation:** Before any file operations in this step, activate Engineer mode by calling `purlin_mode(mode: "engineer")`. The mode guard blocks file writes and Bash commands when no mode is active.
 
 ### Organize Step -- Feature File Placement
 
