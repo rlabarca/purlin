@@ -370,14 +370,18 @@ class Step3PluginRefresh(MigrationStep):
         return True
 
 
-def _find_design_anchors_with_figma(project_root):
-    """Find design_*.md anchors that declare a Figma source in metadata.
+def _find_features_with_figma(project_root):
+    """Find ANY feature files that reference Figma (design_*.md OR regular specs).
 
-    Matches multiple Figma reference formats:
-    - Full URL: > Figma-URL: https://figma.com/...
-    - Markdown link: [text](https://figma.com/...)
-    - File key metadata: > **Figma File:** <key> or > Figma File: <key>
-    - Also checks for companion brief.json with figma_file_key
+    Old Purlin versions (<=0.8.5) put Figma references directly in feature
+    specs instead of design anchors. This function scans ALL .md files in
+    features/ so the migration can extract Figma references into i_design_*
+    invariants regardless of where they were placed.
+
+    Returns list of (filepath, figma_ref, invariant_stem) tuples.
+    The invariant_stem is used for the output filename: i_design_{stem}.md.
+    For design_*.md files, stem is the part after 'design_'.
+    For regular feature files, stem is the feature name.
     """
     features_dir = os.path.join(project_root, 'features')
     if not os.path.isdir(features_dir):
@@ -392,44 +396,54 @@ def _find_design_anchors_with_figma(project_root):
     )
     # Figma file key patterns (no full URL, just the key)
     figma_key_re = re.compile(
-        r'>\s*\*{0,2}Figma[- ]File:?\*{0,2}\s*([A-Za-z0-9_-]{20,})'
+        r'>\s*\*{0,2}Figma[- ](?:File|Node):?\*{0,2}\s*([A-Za-z0-9_:-]{5,})'
     )
     results = []
 
     for dirpath, _dirnames, filenames in os.walk(features_dir):
+        # Skip _invariants (already converted), _tombstones, system folders
+        rel_dir = os.path.relpath(dirpath, features_dir)
+        if rel_dir.startswith('_'):
+            continue
+
         for fname in filenames:
-            if fname.startswith('design_') and fname.endswith('.md'):
-                if fname.endswith('.impl.md') or fname.endswith('.discoveries.md'):
-                    continue
-                fpath = os.path.join(dirpath, fname)
-                try:
-                    with open(fpath, encoding='utf-8') as f:
-                        content = f.read()
-                except OSError:
-                    continue
+            if not fname.endswith('.md'):
+                continue
+            if fname.endswith('.impl.md') or fname.endswith('.discoveries.md'):
+                continue
+            # Skip existing invariants
+            if fname.startswith('i_'):
+                continue
 
-                # Try full URL first
-                match = metadata_url_re.search(content)
-                if not match:
-                    match = link_re.search(content)
-                if match:
-                    figma_ref = match.group(1).rstrip('.,;:"\'>)')
-                    stem = fname[len('design_'):-len('.md')]
-                    results.append((fpath, figma_ref, stem))
-                    continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath, encoding='utf-8') as f:
+                    content = f.read()
+            except OSError:
+                continue
 
-                # Try file key in metadata
+            figma_ref = None
+
+            # Try full URL first
+            match = metadata_url_re.search(content)
+            if not match:
+                match = link_re.search(content)
+            if match:
+                figma_ref = match.group(1).rstrip('.,;:"\'>)')
+
+            # Try file key in metadata
+            if not figma_ref:
                 match = figma_key_re.search(content)
                 if match:
                     figma_ref = f'figma:file:{match.group(1)}'
-                    stem = fname[len('design_'):-len('.md')]
-                    results.append((fpath, figma_ref, stem))
-                    continue
 
-                # Check for companion brief.json with figma_file_key
+            # Check for companion brief.json with figma_file_key
+            if not figma_ref:
+                stem_for_brief = fname[:-len('.md')]
+                if stem_for_brief.startswith('design_'):
+                    stem_for_brief = stem_for_brief[len('design_'):]
                 brief_path = os.path.join(
-                    dirpath, 'design',
-                    fname[len('design_'):-len('.md')], 'brief.json'
+                    features_dir, 'design', stem_for_brief, 'brief.json'
                 )
                 if os.path.isfile(brief_path):
                     try:
@@ -438,10 +452,16 @@ def _find_design_anchors_with_figma(project_root):
                         fkey = brief.get('figma_file_key')
                         if fkey:
                             figma_ref = f'figma:file:{fkey}'
-                            stem = fname[len('design_'):-len('.md')]
-                            results.append((fpath, figma_ref, stem))
                     except (OSError, json.JSONDecodeError):
                         pass
+
+            if figma_ref:
+                # Derive invariant stem
+                if fname.startswith('design_'):
+                    stem = fname[len('design_'):-len('.md')]
+                else:
+                    stem = fname[:-len('.md')]
+                results.append((fpath, figma_ref, stem))
 
     return results
 
@@ -473,10 +493,18 @@ def _count_prerequisite_refs(project_root, anchor_filepath):
 
 
 class Step4DesignToInvariant(MigrationStep):
-    """Step 4: Convert Figma-sourced design_*.md anchors to i_design_*.md invariants."""
+    """Step 4: Extract Figma references from any feature file into i_design_* invariants.
+
+    Old Purlin versions (<=0.8.5) put Figma references directly in feature
+    specs. This step scans ALL feature .md files, creates i_design_* invariants
+    for each Figma reference found, and updates the source file:
+    - design_*.md files: converted to invariant, original deleted.
+    - Regular feature files: Figma metadata removed, prerequisite reference
+      to the new invariant added. The feature file is preserved.
+    """
 
     step_id = 4
-    name = 'Design Anchor to Invariant'
+    name = 'Figma to Design Invariant'
     from_era = 'current'
     to_era = 'current'
 
@@ -489,27 +517,34 @@ class Step4DesignToInvariant(MigrationStep):
         return True, ''
 
     def plan(self, fingerprint, project_root):
-        anchors = _find_design_anchors_with_figma(project_root)
+        anchors = _find_features_with_figma(project_root)
         if not anchors:
             return [
-                'No design_*.md anchors with Figma URLs found.',
+                'No feature files with Figma references found.',
                 'Stamp _migration_version: 4.',
             ]
 
         actions = []
-        for fpath, figma_url, stem in anchors:
+        for fpath, figma_ref, stem in anchors:
             rel = os.path.relpath(fpath, project_root)
-            actions.append(
-                f'Convert {rel} → features/_invariants/i_design_{stem}.md '
-                f'(Figma: {figma_url[:60]}...)'
-            )
+            fname = os.path.basename(fpath)
+            is_design = fname.startswith('design_')
+            if is_design:
+                actions.append(
+                    f'Convert {rel} → features/_invariants/i_design_{stem}.md '
+                    f'(delete original)'
+                )
+            else:
+                actions.append(
+                    f'Extract Figma from {rel} → features/_invariants/i_design_{stem}.md '
+                    f'(add prerequisite to feature, keep feature file)'
+                )
         actions.append('Update prerequisite references in dependent features.')
-        actions.append('Delete converted design_*.md anchor files.')
         actions.append('Stamp _migration_version: 4.')
         return actions
 
     def execute(self, fingerprint, project_root, auto_approve=False):
-        anchors = _find_design_anchors_with_figma(project_root)
+        anchors = _find_features_with_figma(project_root)
 
         if not anchors:
             self._stamp_version(project_root)
@@ -522,8 +557,17 @@ class Step4DesignToInvariant(MigrationStep):
         now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         converted = []
 
-        for fpath, figma_url, stem in anchors:
+        # Regex to strip Figma metadata lines from feature files
+        figma_line_re = re.compile(
+            r'^\s*>\s*\*{0,2}(?:Figma[- ](?:File|Node|URL)|Figma-URL):?\*{0,2}\s*.*$'
+        )
+        ref_line_re = re.compile(
+            r'^(>\s*(?:Prerequisite|[*]*Design Anchor[*]*):\s*)'
+        )
+
+        for fpath, figma_ref, stem in anchors:
             old_filename = os.path.basename(fpath)
+            is_design = old_filename.startswith('design_')
 
             ref_count = _count_prerequisite_refs(project_root, fpath)
             scope = 'global' if ref_count >= 3 else 'scoped'
@@ -550,7 +594,7 @@ class Step4DesignToInvariant(MigrationStep):
                 f'> Invariant: true\n'
                 f'> Version: pending-sync\n'
                 f'> Source: figma\n'
-                f'> Figma-URL: {figma_url}\n'
+                f'> Figma-URL: {figma_ref}\n'
                 f'> Synced-At: {now_iso}\n'
                 f'> Scope: {scope}\n'
                 f'\n'
@@ -575,60 +619,74 @@ class Step4DesignToInvariant(MigrationStep):
                 f.write(invariant_content)
 
             new_filename = f'i_design_{stem}.md'
-            old_rel_from_features = os.path.relpath(fpath, features_dir)
-            new_rel_from_features = os.path.relpath(invariant_path, features_dir)
 
-            old_forms = [
-                old_filename,
-                old_rel_from_features,
-                f'features/{old_rel_from_features}',
-            ]
-            new_forms = [
-                new_filename,
-                new_rel_from_features,
-                f'features/{new_rel_from_features}',
-            ]
+            if is_design:
+                # design_*.md: update references in other files, then delete
+                old_rel = os.path.relpath(fpath, features_dir)
+                new_rel = os.path.relpath(invariant_path, features_dir)
+                old_forms = [old_filename, old_rel, f'features/{old_rel}']
+                new_forms = [new_filename, new_rel, f'features/{new_rel}']
 
-            ref_line_re = re.compile(
-                r'^(>\s*(?:Prerequisite|[*]*Design Anchor[*]*):\s*)'
-            )
-
-            for dirpath, _dirnames, filenames in os.walk(features_dir):
-                for fname in filenames:
-                    if not fname.endswith('.md'):
-                        continue
-                    ref_path = os.path.join(dirpath, fname)
-                    if os.path.abspath(ref_path) in (
-                        os.path.abspath(fpath),
-                        os.path.abspath(invariant_path),
-                    ):
-                        continue
-                    try:
-                        with open(ref_path, encoding='utf-8') as f:
-                            content = f.read()
-                    except OSError:
-                        continue
-                    if old_filename not in content:
-                        continue
-
-                    lines = content.split('\n')
-                    changed = False
-                    for i, line in enumerate(lines):
-                        if not ref_line_re.match(line):
+                for dp, _dn, fns in os.walk(features_dir):
+                    for fn in fns:
+                        if not fn.endswith('.md'):
                             continue
-                        new_line = line
-                        for old_form, new_form in zip(old_forms, new_forms):
-                            if old_form in new_line:
-                                new_line = new_line.replace(old_form, new_form)
-                        if new_line != line:
-                            lines[i] = new_line
-                            changed = True
+                        rp = os.path.join(dp, fn)
+                        if os.path.abspath(rp) in (
+                            os.path.abspath(fpath),
+                            os.path.abspath(invariant_path),
+                        ):
+                            continue
+                        try:
+                            with open(rp, encoding='utf-8') as f:
+                                content = f.read()
+                        except OSError:
+                            continue
+                        if old_filename not in content:
+                            continue
+                        lines = content.split('\n')
+                        changed = False
+                        for i, line in enumerate(lines):
+                            if not ref_line_re.match(line):
+                                continue
+                            new_line = line
+                            for of, nf in zip(old_forms, new_forms):
+                                if of in new_line:
+                                    new_line = new_line.replace(of, nf)
+                            if new_line != line:
+                                lines[i] = new_line
+                                changed = True
+                        if changed:
+                            with open(rp, 'w', encoding='utf-8') as f:
+                                f.write('\n'.join(lines))
 
-                    if changed:
-                        with open(ref_path, 'w', encoding='utf-8') as f:
-                            f.write('\n'.join(lines))
+                os.remove(fpath)
+            else:
+                # Regular feature file: strip Figma metadata lines, add
+                # prerequisite reference to the new invariant. Keep the file.
+                try:
+                    with open(fpath, encoding='utf-8') as f:
+                        lines = f.read().split('\n')
+                except OSError:
+                    continue
 
-            os.remove(fpath)
+                # Remove Figma metadata lines
+                cleaned = [l for l in lines if not figma_line_re.match(l)]
+
+                # Add prerequisite to invariant if not already present
+                invariant_ref = f'_invariants/{new_filename}'
+                if invariant_ref not in '\n'.join(cleaned):
+                    # Insert after existing metadata block (lines starting with >)
+                    insert_idx = 0
+                    for i, line in enumerate(cleaned):
+                        if line.startswith('>'):
+                            insert_idx = i + 1
+                    cleaned.insert(insert_idx,
+                                   f'> Prerequisite: {invariant_ref}')
+
+                with open(fpath, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(cleaned))
+
             converted.append(f'i_design_{stem}.md')
 
         try:
@@ -639,7 +697,7 @@ class Step4DesignToInvariant(MigrationStep):
             names = ', '.join(converted)
             subprocess.run(
                 ['git', 'commit', '-m',
-                 f'chore(purlin): convert design anchors to invariants ({names})'],
+                 f'chore(purlin): extract Figma references to design invariants ({names})'],
                 cwd=project_root, capture_output=True, timeout=10
             )
         except subprocess.SubprocessError:
