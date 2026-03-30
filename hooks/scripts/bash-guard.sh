@@ -86,9 +86,17 @@ if [ -n "$CURRENT_MODE" ] && [ "$CURRENT_MODE" != "none" ] && [ "$CURRENT_MODE" 
     _allow "$CURRENT_MODE mode active: Bash authorized"
 fi
 
-# Default mode (no mode active) — check for write/destructive patterns.
-# This is a best-effort safety net, not an exhaustive parser.
-WRITE_PATTERNS='(^|[;&|]\s*)(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|rm\s|rm\s+-|rmdir\s|mv\s|cp\s|git\s+add|git\s+commit|git\s+push|git\s+reset|git\s+checkout\s|git\s+stash|mkdir\s|touch\s|chmod\s|chown\s|ln\s|install\s|>\s*[/a-zA-Z]|>>\s*[/a-zA-Z])'
+# Default mode (no mode active) — allow safe git operations, block destructive ones.
+# These git commands are read-only or restore operations, safe without a mode:
+#   git status, git log, git diff, git show, git branch (list), git remote -v,
+#   git checkout -- <file> (restore), git restore, git stash (save work)
+SAFE_GIT='git\s+(status|log|diff|show|branch|remote|fetch|pull|checkout\s+--|restore|stash)'
+if echo "$COMMAND" | grep -qE "$SAFE_GIT"; then
+    _allow "Safe git operation in default mode"
+fi
+
+# Block destructive/write patterns. Best-effort safety net, not an exhaustive parser.
+WRITE_PATTERNS='(^|[;&|]\s*)(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|rm\s|rm\s+-|rmdir\s|mv\s|cp\s|git\s+add|git\s+commit|git\s+push|git\s+reset|git\s+checkout\s|mkdir\s|touch\s|chmod\s|chown\s|ln\s|install\s|>\s*[/a-zA-Z]|>>\s*[/a-zA-Z])'
 
 if echo "$COMMAND" | grep -qE "$WRITE_PATTERNS"; then
     echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before running write/destructive commands."}' >&2
