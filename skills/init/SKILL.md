@@ -35,6 +35,7 @@ Create the following directories:
 ### Step 3 -- Create Configuration Files
 
 1. **`.purlin/config.json`** -- Copy from `${CLAUDE_PLUGIN_ROOT}/templates/config.json`. Skip if exists (preserves user config).
+2. **`.purlin/sync_ledger.json`** -- Create empty `{}`. This is the persistent sync tracking ledger (committed to git). Skip if exists.
 
 ### Step 4 -- Update .gitignore
 
@@ -44,6 +45,7 @@ Ensure `.gitignore` contains Purlin-specific entries:
 # Purlin
 .purlin/cache/
 .purlin/runtime/
+.purlin/runtime/sync_state.json
 .purlin_session.lock
 .purlin_worktree_label
 ```
@@ -65,11 +67,11 @@ Project initialized for Purlin.
 
 Created:
   .purlin/config.json
+  .purlin/sync_ledger.json
   .gitignore (updated)
   features/
 
 Next: Start working by invoking any skill directly:
-  purlin:mode pm         — switch to PM mode
   purlin:spec <topic>    — create your first feature spec
   purlin:status          — see what needs doing
 ```

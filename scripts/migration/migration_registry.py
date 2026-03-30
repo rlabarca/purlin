@@ -23,7 +23,7 @@ from version_detector import detect_version, _read_json
 
 
 # Current migration version — the target for all migrations.
-CURRENT_MIGRATION_VERSION = 5
+CURRENT_MIGRATION_VERSION = 6
 
 
 class MigrationStep(ABC):
@@ -728,7 +728,7 @@ class Step4DesignToInvariant(MigrationStep):
                 f'\n'
                 f'> Label: "Design: {display_name}"\n'
                 f'> Category: "{category}"\n'
-                f'> Format-Version: 1.0\n'
+                f'> Format-Version: 1.1\n'
                 f'> Invariant: true\n'
                 f'> Version: pending-sync\n'
                 f'> Source: figma\n'
@@ -747,9 +747,15 @@ class Step4DesignToInvariant(MigrationStep):
                 f'Design tokens, constraints, and visual standards are defined in Figma\n'
                 f'and cached locally in per-feature `brief.json` files during spec authoring.\n'
                 f'\n'
+                f'## Design Variables\n'
+                f'\n'
+                f'*(Run `purlin:invariant sync` to extract design variables '
+                f'via `get_variable_defs`)*\n'
+                f'\n'
                 f'## Annotations\n'
                 f'\n'
-                f'- *(Run `purlin:invariant sync` to extract annotations from Figma)*\n'
+                f'- *(Run `purlin:invariant sync` to extract annotations '
+                f'from `get_design_context`)*\n'
             )
 
             invariant_path = os.path.join(invariants_dir, f'i_design_{stem}.md')
@@ -1073,6 +1079,164 @@ class Step5RemoveOverrides(MigrationStep):
         return True
 
 
+class Step6ModeToSync(MigrationStep):
+    """Step 6: Remove mode system, create sync tracking artifacts.
+
+    The mode system (role-based write guards) is replaced by lightweight
+    sync observation. This step cleans up consumer-side mode artifacts
+    and creates the sync ledger. Hook files ship with the plugin update
+    itself — consumer projects don't manage hook scripts directly.
+    """
+
+    step_id = 6
+    name = 'Mode to Sync'
+    from_era = 'current'
+    to_era = 'current'
+
+    def _has_mode_artifacts(self, project_root):
+        """Check if any mode system artifacts exist."""
+        runtime_dir = os.path.join(project_root, '.purlin', 'runtime')
+        # Mode state files
+        mode_files = glob_mod.glob(os.path.join(runtime_dir, 'current_mode*'))
+        # Session tracking files from companion debt system
+        session_files = [
+            os.path.join(runtime_dir, 'session_writes.json'),
+            os.path.join(runtime_dir, 'companion_debt.json'),
+        ]
+        has_session = any(os.path.exists(f) for f in session_files)
+        return bool(mode_files) or has_session
+
+    def preconditions(self, fingerprint, project_root):
+        mv = fingerprint.get('migration_version')
+        if mv is not None and mv >= self.step_id:
+            return False, f'Already at migration_version {mv}.'
+        if mv is None or mv < 5:
+            return False, 'Step 5 (Remove Override System) must complete first.'
+        return True, ''
+
+    def plan(self, fingerprint, project_root):
+        actions = []
+        runtime_dir = os.path.join(project_root, '.purlin', 'runtime')
+
+        # Check for mode state files
+        mode_files = glob_mod.glob(os.path.join(runtime_dir, 'current_mode*'))
+        if mode_files:
+            names = ', '.join(os.path.basename(f) for f in mode_files)
+            actions.append(f'Delete mode state files: {names}.')
+
+        # Check for session tracking files
+        for fname in ('session_writes.json', 'companion_debt.json'):
+            if os.path.exists(os.path.join(runtime_dir, fname)):
+                actions.append(f'Delete {fname}.')
+
+        # Sync ledger creation
+        ledger_path = os.path.join(project_root, '.purlin', 'sync_ledger.json')
+        if not os.path.exists(ledger_path):
+            actions.append('Create .purlin/sync_ledger.json (empty).')
+
+        # Config cleanup
+        config_path = os.path.join(project_root, '.purlin', 'config.json')
+        config = _read_json(config_path) or {}
+        mode_keys = [k for k in ('default_mode', 'mode_on_start') if k in config]
+        # Also check nested in agents.purlin
+        agents_purlin = config.get('agents', {}).get('purlin', {})
+        nested_mode_keys = [k for k in ('default_mode', 'mode_on_start')
+                            if k in agents_purlin]
+        if mode_keys:
+            actions.append(
+                f'Remove mode config keys from config.json: {", ".join(mode_keys)}.')
+        if nested_mode_keys:
+            actions.append(
+                f'Remove mode config keys from agents.purlin: '
+                f'{", ".join(nested_mode_keys)}.')
+
+        # Gitignore update
+        actions.append('Update .gitignore: add sync_state.json entry.')
+
+        if not actions:
+            actions.append('No mode artifacts found (clean project).')
+
+        actions.append('Stamp _migration_version: 6.')
+        return actions
+
+    def execute(self, fingerprint, project_root, auto_approve=False):
+        runtime_dir = os.path.join(project_root, '.purlin', 'runtime')
+
+        # 1. Delete mode state files
+        for f in glob_mod.glob(os.path.join(runtime_dir, 'current_mode*')):
+            os.remove(f)
+
+        # 2. Delete session tracking files
+        for fname in ('session_writes.json', 'companion_debt.json'):
+            path = os.path.join(runtime_dir, fname)
+            if os.path.exists(path):
+                os.remove(path)
+
+        # 3. Create empty sync ledger
+        ledger_path = os.path.join(project_root, '.purlin', 'sync_ledger.json')
+        if not os.path.exists(ledger_path):
+            os.makedirs(os.path.dirname(ledger_path), exist_ok=True)
+            with open(ledger_path, 'w', encoding='utf-8') as f:
+                json.dump({}, f)
+                f.write('\n')
+
+        # 4. Clean mode config keys
+        config_path = os.path.join(project_root, '.purlin', 'config.json')
+        config = _read_json(config_path) or {}
+        for key in ('default_mode', 'mode_on_start'):
+            config.pop(key, None)
+        # Also clean nested mode keys in agents.purlin
+        agents_purlin = config.get('agents', {}).get('purlin', {})
+        for key in ('default_mode', 'mode_on_start'):
+            agents_purlin.pop(key, None)
+
+        # 5. Update .gitignore
+        gitignore_path = os.path.join(project_root, '.gitignore')
+        gitignore_entries = {
+            '.purlin/runtime/sync_state.json',
+        }
+        remove_entries = {
+            '.purlin/runtime/session_writes.json',
+        }
+        if os.path.isfile(gitignore_path):
+            with open(gitignore_path, 'r', encoding='utf-8') as f:
+                lines = f.read().splitlines()
+            # Remove stale entries
+            lines = [l for l in lines
+                     if l.strip() not in remove_entries]
+            # Add new entries if missing
+            existing = set(l.strip() for l in lines)
+            for entry in gitignore_entries:
+                if entry not in existing:
+                    # Find the Purlin section or append at end
+                    purlin_idx = None
+                    for i, line in enumerate(lines):
+                        if '# Purlin' in line or '# purlin' in line:
+                            purlin_idx = i
+                    if purlin_idx is not None:
+                        # Insert after the last .purlin entry in this block
+                        insert_at = purlin_idx + 1
+                        while (insert_at < len(lines)
+                               and lines[insert_at].strip().startswith('.purlin')):
+                            insert_at += 1
+                        lines.insert(insert_at, entry)
+                    else:
+                        lines.append(entry)
+            with open(gitignore_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+                if lines and lines[-1]:
+                    f.write('\n')
+        else:
+            with open(gitignore_path, 'w', encoding='utf-8') as f:
+                f.write('# Purlin\n')
+                for entry in sorted(gitignore_entries):
+                    f.write(entry + '\n')
+
+        # 6. Stamp version
+        self._stamp_version(project_root)
+        return True
+
+
 # Registry: ordered list of all migration steps.
 STEPS = [
     Step1UnifiedAgentModel(),
@@ -1080,6 +1244,7 @@ STEPS = [
     Step3PluginRefresh(),
     Step4DesignToInvariant(),
     Step5RemoveOverrides(),
+    Step6ModeToSync(),
 ]
 
 

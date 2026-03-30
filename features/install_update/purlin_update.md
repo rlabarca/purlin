@@ -81,6 +81,7 @@ Each migration step is a Python class with:
 | 3 | 3 | Plugin Refresh | Force-remove purlin/ dir, .gitmodules, symlinks. Delete ALL stale artifacts (pl-* glob, CRITIC_REPORT.md, old override files, .purlin/release/). Rewrite CLAUDE.md (strip old boilerplate). |
 | 4 | 4 | Figma to Design Invariant | Scan ALL feature .md files for Figma references. Create `i_design_*` invariants in `_invariants/`. Move companion design data (brief.json) to `_invariants/`. Strip Figma metadata from feature files. Add prerequisite references. |
 | 5 | 5 | Remove Override System | Parse test priority tiers from PURLIN_OVERRIDES.md / QA_OVERRIDES.md into config.json. Strip submodule-era boilerplate. Delete override files. |
+| 6 | 6 | Mode to Sync | Remove mode system artifacts (state files, session tracking, config keys). Create `.purlin/sync_ledger.json`. Update `.gitignore` for sync tracking. |
 
 #### 2.4.3 Path Computation
 
@@ -151,11 +152,30 @@ Removes PURLIN_OVERRIDES.md and QA_OVERRIDES.md. Extracts test priority tiers to
 
 Only genuinely project-specific content survives the filter and is appended to CLAUDE.md.
 
-### 2.8 Post-Migration: Feature File Organization
+### 2.8 Step 6: Mode to Sync (Detail)
+
+Removes the mode system (role-based write guards) and creates sync tracking artifacts. The mode system is replaced by lightweight sync observation — drift detection instead of write prevention.
+
+**Mode artifact cleanup:**
+- `.purlin/runtime/current_mode*` — mode state files (including per-agent variants like `current_mode_<agent_id>`)
+- `.purlin/runtime/session_writes.json` — old companion debt tracker input
+- `.purlin/runtime/companion_debt.json` — old companion debt state
+
+**Sync ledger creation:**
+- `.purlin/sync_ledger.json` — empty `{}`, committed to git. Tracks per-feature sync state across commits.
+
+**Config cleanup:**
+- Remove `default_mode` and `mode_on_start` from top-level config and from `agents.purlin` (if present).
+
+**Gitignore update:**
+- Add `.purlin/runtime/sync_state.json` (session-scoped, not committed)
+- Remove `.purlin/runtime/session_writes.json` (if present)
+
+**Note:** Hook file updates (mode-guard.sh → write-guard.sh, companion-debt-tracker.sh → sync-tracker.sh) ship with the plugin update itself. Consumer projects don't manage hook scripts — those come from the plugin directory. This step only handles consumer-side artifacts.
+
+### 2.9 Post-Migration: Feature File Organization
 
 Runs on EVERY `purlin:update` invocation (not just migration). Idempotent.
-
-**The skill activates Engineer mode** (Step 0) before any file operations.
 
 1. Rename legacy special folders: `features/tombstones/` → `features/_tombstones/`, `features/digests/` → `features/_digests/`, `features/design/` → `features/_design/`.
 2. Scan `features/` root for `.md` files not in a category subfolder.
@@ -164,14 +184,14 @@ Runs on EVERY `purlin:update` invocation (not just migration). Idempotent.
 5. Files with no `> Category:` metadata are skipped with a warning.
 6. Drift detection: scan subfolders, compare slugified category to folder name, warn on mismatches (no auto-move).
 
-### 2.9 Idempotency
+### 2.10 Idempotency
 
 - Each step checks `_migration_version` before running. Steps with `step_id <= migration_version` are skipped.
 - Interrupted runs resume from the last completed step (the interrupted step's version was not stamped).
 - Steps whose preconditions fail are skipped (not halted), allowing later steps to run.
 - Running `purlin:update` on an already-current project runs only the post-migration organize step.
 
-### 2.10 Error Handling
+### 2.11 Error Handling
 
 | Condition | Message | Action |
 |-----------|---------|--------|
