@@ -62,13 +62,18 @@ except Exception:
 " 2>/dev/null)
 
 if [ "$YOLO" = "true" ]; then
-    # Auto-approve tool execution permissions, but NOT user-facing prompts.
-    # AskUserQuestion is how the agent asks the user to make choices —
-    # auto-approving it silently answers "yes" to things like migration
-    # confirmations, which removes user agency.
-    if [ "$TOOL_NAME" != "AskUserQuestion" ]; then
-        echo '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
-    fi
+    # Auto-approve tool execution permissions, but NOT user-facing decisions.
+    # These tools require the user to review and approve:
+    # - AskUserQuestion: agent asking user to make choices (migration confirms, etc.)
+    # - ExitPlanMode: agent proposing a plan — user must review before execution
+    case "$TOOL_NAME" in
+        AskUserQuestion|ExitPlanMode)
+            # Do NOT auto-approve — let the user decide
+            ;;
+        *)
+            echo '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
+            ;;
+    esac
 fi
 
 exit 0
