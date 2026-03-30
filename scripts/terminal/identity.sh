@@ -10,21 +10,19 @@
 #   set_warp_tab_name <text>  Set Warp tab name (no-op if not Warp)
 #   clear_warp_tab_name       Clear Warp tab name (no-op if not Warp)
 #   set_agent_identity <text> [project]  Set title + badge + Warp tab
-#                                       If project given, title = "project - text"
 #   clear_agent_identity      Clear title + badge + Warp tab
-#   update_session_identity <mode> [project]  Detect context, format badge,
-#                                             dispatch to all environments
+#   update_session_identity [label]  Detect context, format badge,
+#                                    dispatch to all environments
 #   purlin_detect_env         Print detected environments
+#
+# Identity format: (<branch_or_worktree>) <label>
+#   Examples: (main) purlin, (dev/0.8.6) purlin, (W1) building webhook_delivery
 #
 # TTY resolution: /dev/tty may not be accessible in sandboxed environments
 # (e.g. Claude Code). We resolve the real TTY device from the parent process
 # as a fallback, ensuring escape sequences reach the correct terminal session.
 
 # --- TTY resolution ---
-# Resolve once at source time. Prefer /dev/tty, fall back to parent's TTY device.
-# During session teardown (SessionEnd hooks), /dev/tty and PPID may be
-# inaccessible. Check for a cached TTY path written by session-init-identity.sh
-# as a first-resort fallback.
 _PURLIN_TTY=""
 _PURLIN_TTY_CACHE="${PURLIN_PROJECT_ROOT:-.}/.purlin/cache/session_tty"
 if [ -e /dev/tty ] && (echo -n > /dev/tty) 2>/dev/null; then
@@ -46,7 +44,6 @@ if [ -z "$_PURLIN_TTY" ] && [ -f "$_PURLIN_TTY_CACHE" ]; then
 fi
 
 # --- Environment Detection ---
-# Detect once at source time. Terminal type cannot change mid-session.
 _PURLIN_ENV_ITERM=false
 _PURLIN_ENV_WARP=false
 _PURLIN_ENV_TITLE=true
@@ -110,9 +107,6 @@ clear_iterm_badge() {
 }
 
 # --- Warp Terminal Tab Name (best-effort) ---
-# Warp's OSC 0 support for tab naming is unreliable in some versions
-# (ref: warp-dev/Warp#8330). Separate from set_term_title so a proprietary
-# Warp sequence can replace OSC 0 without touching the universal title function.
 
 set_warp_tab_name() {
     [ "$_PURLIN_ENV_WARP" = true ] || return 0
@@ -148,18 +142,16 @@ clear_agent_identity() {
 
 # --- Centralized Session Identity ---
 # Single function to update all naming environments.
-# Computes a unified label from mode + branch/worktree context + task/project.
+# Computes a unified label from branch/worktree context + task/project.
 #
-# Usage: update_session_identity <mode_display> [label]
-#   mode_display: "Engineer", "PM", "QA", "Purlin", or custom label
+# Usage: update_session_identity [label]
 #   label: project name or short task description (optional)
 #
-# Format: <short_mode>(<context>) | <label>
-#   Engineer -> Eng, PM -> PM, QA -> QA, Purlin -> Purlin
-#   Examples: Eng(main) | purlin, QA(dev/0.8.6) | fix auth flow
+# Format: (<context>) <label>
+#   Examples: (main) purlin, (dev/0.8.6) building webhook_delivery
 #
 # Side effects:
-#   Sets $_PURLIN_LAST_BADGE and $_PURLIN_LAST_TITLE (both identical)
+#   Sets $_PURLIN_LAST_BADGE and $_PURLIN_LAST_TITLE
 #   Writes to all detected terminal environments
 
 _PURLIN_LAST_BADGE=""
@@ -173,32 +165,23 @@ _purlin_detect_context() {
     fi
 }
 
-_purlin_short_mode() {
-    case "$1" in
-        [Ee]ngineer) echo "Eng" ;;
-        [Pp][Mm])    echo "PM" ;;
-        [Qq][Aa])    echo "QA" ;;
-        none|"")     echo "Purlin" ;;
-        *)           echo "$1" ;;
-    esac
-}
-
 update_session_identity() {
-    local mode_display="$1"
-    local label="${2:-}"
-    local context short_mode unified
+    local label="${1:-}"
+    local context unified
     context="$(_purlin_detect_context)"
-    short_mode="$(_purlin_short_mode "$mode_display")"
 
     if [ -n "$context" ]; then
-        unified="${short_mode}(${context})"
+        unified="(${context})"
     else
-        unified="$short_mode"
+        unified=""
     fi
 
     if [ -n "$label" ]; then
-        unified="${unified} | ${label}"
+        unified="${unified} ${label}"
     fi
+
+    # Trim leading space if no context
+    unified="${unified# }"
 
     _PURLIN_LAST_BADGE="$unified"
     _PURLIN_LAST_TITLE="$unified"

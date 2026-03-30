@@ -330,7 +330,7 @@ def main():
     project_root = _find_project_root()
 
     if len(sys.argv) < 2:
-        print("Usage: resolve_config.py [--dump | --key <name> | <role> | has_agent_config <role> | set_agent_config <role> <key> <value> | acknowledge_warning <model_id>]",
+        print("Usage: config_engine.py [--dump | --key <name> | classify <path> | <role> | ...]",
               file=sys.stderr)
         sys.exit(1)
 
@@ -340,24 +340,29 @@ def main():
         _cli_dump(project_root)
     elif arg == '--key':
         if len(sys.argv) < 3:
-            print("Usage: resolve_config.py --key <name>", file=sys.stderr)
+            print("Usage: config_engine.py --key <name>", file=sys.stderr)
             sys.exit(1)
         _cli_key(project_root, sys.argv[2])
+    elif arg == 'classify':
+        if len(sys.argv) < 3:
+            print("Usage: config_engine.py classify <filepath>", file=sys.stderr)
+            sys.exit(1)
+        print(classify_file(sys.argv[2]))
     elif arg == 'acknowledge_warning':
         if len(sys.argv) < 3:
-            print("Usage: resolve_config.py acknowledge_warning <model_id>",
+            print("Usage: config_engine.py acknowledge_warning <model_id>",
                   file=sys.stderr)
             sys.exit(1)
         _cli_acknowledge_warning(project_root, sys.argv[2])
     elif arg == 'has_agent_config':
         if len(sys.argv) < 3:
-            print("Usage: resolve_config.py has_agent_config <role>",
+            print("Usage: config_engine.py has_agent_config <role>",
                   file=sys.stderr)
             sys.exit(1)
         _cli_has_agent_config(project_root, sys.argv[2])
     elif arg == 'set_agent_config':
         if len(sys.argv) < 5:
-            print("Usage: resolve_config.py set_agent_config <role> <key> <value>",
+            print("Usage: config_engine.py set_agent_config <role> <key> <value>",
                   file=sys.stderr)
             sys.exit(1)
         _cli_set_agent_config(project_root, sys.argv[2], sys.argv[3], sys.argv[4])
@@ -365,121 +370,83 @@ def main():
         _cli_role(project_root, arg)
     else:
         print(f"Unknown argument: {arg}", file=sys.stderr)
-        print("Usage: resolve_config.py [--dump | --key <name> | <role> | has_agent_config <role> | set_agent_config <role> <key> <value> | acknowledge_warning <model_id>]",
-              file=sys.stderr)
         sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
-# File classification for mode guard (plugin model)
+# File classification for write guard
 # ---------------------------------------------------------------------------
 
-# Mode state — persisted to .purlin/runtime/ so hook scripts
-# (which run in separate processes) can read it.
-# Scoped by agent_id (for parallel subagents) or PURLIN_SESSION_ID
-# (for concurrent terminals) to prevent mode file collisions.
-# The cache is keyed by scope identifier because the MCP server is a
-# single process shared across all agents — a global would be corrupted
-# by concurrent subagents overwriting each other's state.
-_mode_cache = {}  # {scope_key: mode_string_or_None}
+def _read_claude_md_classifications():
+    """Read custom file classifications from the project's CLAUDE.md.
 
+    Looks for a '## Purlin File Classifications' section with lines like:
+        - `docs/` → SPEC
+        - `config/` → CODE
 
-def _mode_scope_key(agent_id=None):
-    """Return the scope key for mode file and cache lookups."""
-    if agent_id:
-        return agent_id
-    return os.environ.get('PURLIN_SESSION_ID', '')
-
-
-def _mode_file_path(agent_id=None):
-    """Return path to the mode state file (scoped when possible)."""
-    project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
-    scope = _mode_scope_key(agent_id)
-    if scope:
-        return os.path.join(project_root, '.purlin', 'runtime',
-                            f'current_mode_{scope}')
-    return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
-
-
-def _mode_file_path_unscoped():
-    """Return path to the unscoped mode state file (fallback)."""
-    project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
-    return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
-
-
-def get_mode(agent_id=None):
-    """Return current operating mode or None.
-
-    Args:
-        agent_id: Optional agent identifier for subagent-scoped mode lookup.
+    Returns a list of (pattern, classification) tuples. INVARIANT assignments
+    are ignored (invariants are managed exclusively by purlin:invariant).
+    Results are cached for the lifetime of the process.
     """
-    scope = _mode_scope_key(agent_id)
-    if scope in _mode_cache and _mode_cache[scope] is not None:
-        return _mode_cache[scope]
-    # Read from persisted state — scoped first, then unscoped fallback.
-    # If scoped file EXISTS (even if empty), it is authoritative —
-    # do not fall back to unscoped. This ensures plan-exit-mode-clear
-    # (which empties the file) isn't bypassed by a stale unscoped file.
-    if scope:
-        try:
-            path = _mode_file_path(agent_id)
-            if os.path.isfile(path):
-                with open(path, 'r') as f:
-                    mode = f.read().strip()
-                if mode in ('engineer', 'pm', 'qa'):
-                    _mode_cache[scope] = mode
-                    return mode
-                # File exists but is empty/invalid — mode was cleared
-                return None
-        except (IOError, OSError):
-            pass
-    # No scope or no scoped file — try unscoped
+    if hasattr(_read_claude_md_classifications, '_cache'):
+        return _read_claude_md_classifications._cache
+
+    rules = []
+    project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
+    if not project_root:
+        _read_claude_md_classifications._cache = rules
+        return rules
+
+    claude_md = os.path.join(project_root, 'CLAUDE.md')
+    if not os.path.isfile(claude_md):
+        _read_claude_md_classifications._cache = rules
+        return rules
+
     try:
-        path = _mode_file_path_unscoped()
-        if os.path.isfile(path):
-            with open(path, 'r') as f:
-                mode = f.read().strip()
-            if mode in ('engineer', 'pm', 'qa'):
-                _mode_cache[scope] = mode
-                return mode
+        with open(claude_md, 'r') as f:
+            content = f.read()
     except (IOError, OSError):
-        pass
-    return None
+        _read_claude_md_classifications._cache = rules
+        return rules
 
+    import re
+    # Find the section
+    in_section = False
+    valid = {'CODE', 'SPEC', 'QA'}
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped == '## Purlin File Classifications':
+            in_section = True
+            continue
+        if in_section:
+            # Stop at next heading
+            if stripped.startswith('## ') or stripped.startswith('# '):
+                break
+            # Parse: - `pattern` → CLASSIFICATION
+            m = re.match(r'^-\s+`([^`]+)`\s*→\s*(\w+)', stripped)
+            if m:
+                pattern, classification = m.group(1), m.group(2).upper()
+                if classification in valid:
+                    rules.append((pattern, classification))
 
-def set_mode(mode, agent_id=None):
-    """Set current operating mode (engineer, pm, qa, or None).
-
-    Args:
-        mode: Mode string or None to clear.
-        agent_id: Optional agent identifier for subagent-scoped mode.
-    """
-    scope = _mode_scope_key(agent_id)
-    _mode_cache[scope] = mode
-    # Persist to file for cross-process access (hooks)
-    try:
-        path = _mode_file_path(agent_id)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w') as f:
-            f.write(mode or '')
-    except (IOError, OSError):
-        pass
+    _read_claude_md_classifications._cache = rules
+    return rules
 
 
 def classify_file(filepath):
-    """Classify a file as CODE, SPEC, QA, or INVARIANT for mode guard.
-
-    IMPORTANT: This function is the permission gate for marketplace plugins.
-    Every exit-0 path in mode-guard.sh returns permissionDecision:"allow"
-    based on this classification. Be conservative — when in doubt, classify
-    as CODE (most restrictive for PM/QA modes).
+    """Classify a file as CODE, SPEC, QA, or INVARIANT for write guard.
 
     Rules are evaluated in order; first match wins.
+    Custom rules from CLAUDE.md are checked before built-in rules.
     """
     path = filepath.replace('\\', '/')
 
-    # --- INVARIANT — no mode can write ---
-    # Match i_ prefix files AND anything in _invariants/ folder
+    # --- Custom rules from CLAUDE.md (project-specific overrides) ---
+    for pattern, classification in _read_claude_md_classifications():
+        if path.startswith(pattern):
+            return classification
+
+    # --- INVARIANT — always blocked by write guard ---
     if '/features/i_' in path or path.startswith('features/i_'):
         return 'INVARIANT'
     if '/_invariants/' in path or path.startswith('_invariants/'):
@@ -488,31 +455,25 @@ def classify_file(filepath):
         return 'INVARIANT'
 
     # --- QA-owned ---
-    # Discovery sidecars
     if path.endswith('.discoveries.md'):
         return 'QA'
-    # Regression test results
     if '/tests/' in path and path.endswith('regression.json'):
         return 'QA'
-    # QA scenario files
     if '/tests/qa/scenarios/' in path or path.startswith('tests/qa/scenarios/'):
         return 'QA'
 
-    # --- SPEC (PM-owned) ---
-    # Feature specs in features/ (but NOT companion .impl.md files)
+    # --- SPEC ---
     if '/features/' in path or path.startswith('features/'):
         if path.endswith('.impl.md'):
-            return 'CODE'  # Companion files are Engineer-owned
+            return 'CODE'  # Companion files are code artifacts
         return 'SPEC'
-    # Design and policy anchors (can be at any path depth)
     basename = path.rsplit('/', 1)[-1] if '/' in path else path
     if basename.startswith('design_') and basename.endswith('.md'):
         return 'SPEC'
     if basename.startswith('policy_') and basename.endswith('.md'):
         return 'SPEC'
 
-    # --- CODE (Engineer-owned) — explicit patterns for clarity ---
-    # Skills, scripts, hooks, agents, references, templates, tests, .purlin config
+    # --- CODE — explicit patterns ---
     for prefix in ('skills/', 'scripts/', 'hooks/', 'agents/', 'references/',
                    'templates/', 'tests/', 'src/', 'lib/', 'app/', 'dev/',
                    '.claude/', '.purlin/', '.claude-plugin/'):
@@ -526,10 +487,103 @@ def classify_file(filepath):
                     'README.md', 'CHANGELOG.md', 'LICENSE'):
         return 'CODE'
 
-    # Default: UNKNOWN — file doesn't match any explicit rule.
-    # The mode guard will prompt the user (permissionDecision: "ask")
-    # instead of silently blocking or allowing.
     return 'UNKNOWN'
+
+
+# ---------------------------------------------------------------------------
+# Sync state management
+# ---------------------------------------------------------------------------
+
+def read_sync_state(project_root=None):
+    """Read the ephemeral session sync state (.purlin/runtime/sync_state.json).
+
+    Returns the sync state dict or an empty structure if not found.
+    """
+    if not project_root:
+        project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
+    state_file = os.path.join(project_root, '.purlin', 'runtime', 'sync_state.json')
+    try:
+        with open(state_file) as f:
+            return json.load(f)
+    except (IOError, json.JSONDecodeError, OSError):
+        return {'features': {}, 'unclassified_writes': []}
+
+
+def read_sync_ledger(project_root=None):
+    """Read the committed sync ledger (.purlin/sync_ledger.json).
+
+    Returns the ledger dict or empty dict if not found.
+    """
+    if not project_root:
+        project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
+    ledger_file = os.path.join(project_root, '.purlin', 'sync_ledger.json')
+    try:
+        with open(ledger_file) as f:
+            return json.load(f)
+    except (IOError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def get_sync_summary(project_root=None):
+    """Return per-feature sync status combining ledger + session state.
+
+    For each feature, returns:
+      - sync_status: synced, code_ahead, spec_ahead, new, unknown
+      - last_code_date, last_spec_date, last_impl_date (from ledger)
+      - session overlay: any in-session changes not yet committed
+
+    Returns a dict of {stem: {status info}}.
+    """
+    if not project_root:
+        project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
+
+    ledger = read_sync_ledger(project_root)
+    session = read_sync_state(project_root)
+
+    summary = {}
+
+    # Start with ledger entries
+    for stem, entry in ledger.items():
+        summary[stem] = {
+            'sync_status': entry.get('sync_status', 'unknown'),
+            'last_code_date': entry.get('last_code_date'),
+            'last_spec_date': entry.get('last_spec_date'),
+            'last_impl_date': entry.get('last_impl_date'),
+            'session_changes': False,
+        }
+
+    # Overlay session state (more recent, uncommitted changes)
+    for stem, feat in session.get('features', {}).items():
+        if stem not in summary:
+            summary[stem] = {
+                'sync_status': 'unknown',
+                'last_code_date': None,
+                'last_spec_date': None,
+                'last_impl_date': None,
+                'session_changes': True,
+            }
+        else:
+            summary[stem]['session_changes'] = True
+
+        has_code = bool(feat.get('code_files') or feat.get('test_files'))
+        has_spec = feat.get('spec_changed', False)
+        has_impl = feat.get('impl_changed', False)
+
+        # Session changes override ledger status
+        if has_code and has_spec:
+            summary[stem]['sync_status'] = 'synced'
+        elif has_code and has_impl:
+            summary[stem]['sync_status'] = 'synced'
+        elif has_code:
+            summary[stem]['sync_status'] = 'code_ahead'
+        elif has_spec and not has_code:
+            # Check if code exists in ledger
+            if summary[stem].get('last_code_date'):
+                summary[stem]['sync_status'] = 'spec_ahead'
+            else:
+                summary[stem]['sync_status'] = 'new'
+
+    return summary
 
 
 if __name__ == '__main__':

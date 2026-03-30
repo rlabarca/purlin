@@ -10,18 +10,14 @@ source "$PLUGIN_ROOT/scripts/terminal/identity.sh"
 # Persist the resolved TTY so SessionEnd can reach the terminal during teardown
 purlin_save_tty
 
-# Clear stale session writes from previous sessions so the companion debt
-# gate doesn't block based on a crashed session's state.
-rm -f ".purlin/runtime/session_writes.json" 2>/dev/null
+# Clear stale session sync state from previous sessions
+rm -f ".purlin/runtime/sync_state.json" 2>/dev/null
 
-# Check if a mode is already persisted (e.g. from a previous session)
-mode="none"
-if [ -n "$PURLIN_SESSION_ID" ] && [ -f ".purlin/runtime/current_mode_${PURLIN_SESSION_ID}" ]; then
-    mode=$(cat ".purlin/runtime/current_mode_${PURLIN_SESSION_ID}" 2>/dev/null)
-elif [ -f ".purlin/runtime/current_mode" ]; then
-    mode=$(cat .purlin/runtime/current_mode 2>/dev/null)
+# Detect project name from config or directory basename
+PROJECT_NAME=$(python3 "$PLUGIN_ROOT/scripts/mcp/config_engine.py" --key project_name 2>/dev/null)
+if [ -z "$PROJECT_NAME" ]; then
+    PROJECT_NAME=$(basename "$(pwd)")
 fi
-[ -z "$mode" ] && mode="none"
 
-update_session_identity "$mode"
+update_session_identity "$PROJECT_NAME"
 exit 0

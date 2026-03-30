@@ -40,7 +40,8 @@ if not os.environ.get('PURLIN_PROJECT_ROOT'):
 
 from bootstrap import detect_project_root, load_config
 from config_engine import (
-    resolve_config, classify_file, get_mode, set_mode,
+    resolve_config, classify_file,
+    read_sync_state, read_sync_ledger, get_sync_summary,
 )
 from credentials import get_credential, require_credential, credential_status
 
@@ -123,16 +124,10 @@ TOOLS = [
     },
     {
         "name": "purlin_status",
-        "description": "Get interpreted work items organized by mode. Runs a scan and formats results for the specified mode.",
+        "description": "Get project status including per-feature sync state. Runs a scan and overlays sync tracking data.",
         "inputSchema": {
             "type": "object",
-            "properties": {
-                "mode": {
-                    "type": "string",
-                    "enum": ["engineer", "pm", "qa"],
-                    "description": "Mode to organize work items for",
-                },
-            },
+            "properties": {},
         },
     },
     {
@@ -151,7 +146,7 @@ TOOLS = [
     },
     {
         "name": "purlin_classify",
-        "description": "Classify a file path as CODE, SPEC, QA, or INVARIANT for mode guard enforcement.",
+        "description": "Classify a file path as CODE, SPEC, QA, or INVARIANT for write guard enforcement.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -164,19 +159,14 @@ TOOLS = [
         },
     },
     {
-        "name": "purlin_mode",
-        "description": "Get or set the current operating mode.",
+        "name": "purlin_sync",
+        "description": "Get per-feature sync status. Shows which features have spec-code drift, which are synced, and which have uncommitted session changes.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "mode": {
+                "feature": {
                     "type": "string",
-                    "enum": ["engineer", "pm", "qa"],
-                    "description": "Mode to set. Omit to get current mode.",
-                },
-                "agent_id": {
-                    "type": "string",
-                    "description": "Subagent identifier for mode file scoping. Required for parallel workers to avoid mode collisions.",
+                    "description": "Optional feature stem to filter results to a single feature.",
                 },
             },
         },
@@ -266,11 +256,15 @@ def handle_purlin_scan(params):
 
 def handle_purlin_status(params):
     """Handle purlin_status tool call."""
-    mode = params.get("mode")
+    project_root = detect_project_root()
     engine = _get_scan_engine()
     result = engine.run_scan()
     _set_scan_cache(result)
-    return {"mode": mode, "scan": result}
+
+    # Overlay sync summary
+    sync_summary = get_sync_summary(project_root)
+
+    return {"scan": result, "sync": sync_summary}
 
 
 def handle_purlin_graph(params):
@@ -308,69 +302,21 @@ def handle_purlin_classify(params):
     return {"filepath": filepath, "classification": classification}
 
 
-def _read_session_writes():
-    """Read session-level write tracking for companion debt gate."""
+def handle_purlin_sync(params):
+    """Handle purlin_sync tool call — returns per-feature sync status."""
     project_root = detect_project_root()
-    sw_file = os.path.join(project_root, ".purlin", "runtime",
-                           "session_writes.json")
-    try:
-        with open(sw_file) as f:
-            return json.load(f)
-    except (IOError, json.JSONDecodeError):
-        return {"code_files": [], "companion_files_written": []}
+    feature = params.get("feature")
 
+    summary = get_sync_summary(project_root)
 
-def _clear_session_writes():
-    """Clear session writes after successful mode switch."""
-    project_root = detect_project_root()
-    sw_file = os.path.join(project_root, ".purlin", "runtime",
-                           "session_writes.json")
-    try:
-        with open(sw_file, "w") as f:
-            json.dump({"code_files": [], "companion_files_written": []}, f)
-    except IOError:
-        pass
+    if feature:
+        entry = summary.get(feature)
+        if entry:
+            return {"feature": feature, **entry}
+        return {"feature": feature, "sync_status": "not_found",
+                "message": f"No sync data for feature '{feature}'"}
 
-
-def handle_purlin_mode(params):
-    """Handle purlin_mode tool call."""
-    mode = params.get("mode")
-    agent_id = params.get("agent_id")
-    if mode:
-        current_mode = get_mode(agent_id=agent_id)
-        # Companion debt gate: block engineer exit when code was written
-        # but no companion files were updated.
-        # Allow engineer→pm switches (spec edits are a natural part of
-        # engineer work). Block switches to qa or default mode.
-        if (current_mode == "engineer" and mode != "engineer"
-                and mode != "pm"):
-            sw = _read_session_writes()
-            code_files = sw.get("code_files", [])
-            companion_written = sw.get("companion_files_written", [])
-            if code_files and not companion_written:
-                return {
-                    "mode": current_mode,
-                    "action": "blocked",
-                    "reason": "companion_debt",
-                    "code_files_count": len(code_files),
-                    "message": (
-                        f"Cannot exit Engineer mode: {len(code_files)} code "
-                        f"file(s) were modified but no companion files were "
-                        f"written. Write [IMPL] entries in the relevant "
-                        f"companion file(s), or run purlin:spec-code-audit "
-                        f"to reconcile."
-                    ),
-                }
-        set_mode(mode, agent_id=agent_id)
-        # Clear session writes when leaving engineer for a non-pm mode
-        # (the gate passed, so debt is satisfied). Don't clear on
-        # engineer→pm bounces — the debt persists until resolved.
-        if (current_mode == "engineer" and mode != "engineer"
-                and mode != "pm"):
-            _clear_session_writes()
-        return {"mode": mode, "action": "set",
-                **({"agent_id": agent_id} if agent_id else {})}
-    return {"mode": get_mode(agent_id=agent_id), "action": "get"}
+    return {"features": summary}
 
 
 def handle_purlin_config(params):
@@ -447,7 +393,7 @@ TOOL_HANDLERS = {
     "purlin_status": handle_purlin_status,
     "purlin_graph": handle_purlin_graph,
     "purlin_classify": handle_purlin_classify,
-    "purlin_mode": handle_purlin_mode,
+    "purlin_sync": handle_purlin_sync,
     "purlin_config": handle_purlin_config,
     "purlin_credentials": handle_purlin_credentials,
 }
