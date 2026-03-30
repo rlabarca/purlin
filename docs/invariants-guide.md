@@ -211,15 +211,25 @@ This produces a structured report with:
 
 ## Canonical Specifications
 
-The invariant system is defined by these files in the Purlin repo:
+### Per-Type Specs
+
+Each invariant type has a canonical spec defining its purpose, required sections, enforcement behavior, and examples:
+
+| Type | Spec |
+|------|------|
+| `i_arch_*` | [Architecture Invariant Spec](../references/invariant_type_arch.md) |
+| `i_design_*` | [Design Invariant Spec](../references/invariant_type_design.md) |
+| `i_policy_*` | [Policy Invariant Spec](../references/invariant_type_policy.md) |
+| `i_ops_*` | [Operational Invariant Spec](../references/invariant_type_ops.md) |
+| `i_prodbrief_*` | [Product Brief Invariant Spec](../references/invariant_type_prodbrief.md) |
+
+### System References
 
 | Document | What it defines |
 |----------|----------------|
 | [Invariant Model](../references/invariant_model.md) | Conceptual model — tiers, scope, cascade behavior, enforcement points |
-| [Invariant Format](../references/invariant_format.md) | File format spec — required metadata, sections by type, versioning rules |
+| [Invariant Format](../references/invariant_format.md) | Shared file format — metadata fields, templates, versioning rules |
 | [Invariant Template](../scripts/feature_templates/_invariant.md) | Starter template for new invariant files |
-| [purlin:invariant Spec](../features/skills_pm/purlin_invariant.md) | Feature spec for the invariant skill (add, sync, check, remove) |
-| [purlin:invariant Skill](../skills/invariant/SKILL.md) | Skill implementation (subcommands, Figma integration, conflict detection) |
 
 ---
 

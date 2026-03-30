@@ -65,9 +65,13 @@ For global invariants, "all dependents" means every non-anchor feature in the pr
 
 Only the first two tiers are invariants. Local design anchors with asset references are regular anchors.
 
-## Figma Annotations
+## Figma Design Data
 
-Annotations extracted from Figma are **advisory, not binding**. They are stored in the invariant pointer's `## Annotations` section and inform PM spec writing like user stories in a prodbrief. PM decides which to adopt, adapt, or skip.
+Figma invariant pointers capture three categories of data from Figma MCP during `add-figma` and `sync`:
+
+- **Design Variables** (from `get_variable_defs`) — variable names and types grouped by collection. Stored in `## Design Variables`. This is the token vocabulary the design system defines. Used by `purlin:spec` for Token Map auto-seeding and by `purlin:design-audit` for drift detection.
+- **Code Connect** (from `get_design_context`, optional) — presence indicator for component-to-code mappings. Stored in `## Code Connect` when Code Connect is configured in the Figma org. Used by `purlin:spec` to auto-populate the `code_connect` key in `brief.json`.
+- **Annotations** (from `get_design_context`) — behavioral notes, interaction descriptions, edge cases. Stored in `## Annotations`. **Advisory, not binding** — they inform PM spec writing like user stories in a prodbrief. PM decides which to adopt, adapt, or skip.
 
 ## Design Enforcement Weight
 
@@ -82,6 +86,18 @@ Annotations extracted from Figma are **advisory, not binding**. They are stored 
 
 Invariant tamper detection hashes and validation results are stored within `.purlin/cache/scan.json` alongside other scan data. Invalidated by SHA-256 comparison — since invariant files only change via explicit sync, cache hit rate approaches 100%.
 
+## Per-Type Specifications
+
+Each invariant type has a canonical spec defining its purpose, required sections, enforcement, and examples:
+
+| Type | Spec | Use case |
+|------|------|----------|
+| `i_arch_*` | [Architecture Invariant Spec](invariant_type_arch.md) | API standards, coding patterns, service boundaries |
+| `i_design_*` | [Design Invariant Spec](invariant_type_design.md) | Figma design systems, visual standards |
+| `i_policy_*` | [Policy Invariant Spec](invariant_type_policy.md) | Security, compliance, governance rules |
+| `i_ops_*` | [Operational Invariant Spec](invariant_type_ops.md) | Observability, deployment, infrastructure |
+| `i_prodbrief_*` | [Product Brief Invariant Spec](invariant_type_prodbrief.md) | Product goals, user stories, KPIs |
+
 ## Format Reference
 
-See `references/invariant_format.md` for the canonical file format, templates, and versioning rules.
+See [Invariant Format Reference](invariant_format.md) for the shared file format, metadata fields, templates, and versioning rules.
