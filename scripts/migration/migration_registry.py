@@ -349,16 +349,15 @@ class Step3PluginRefresh(MigrationStep):
         if os.path.exists(os.path.join(project_root, 'purlin')):
             actions.append('Delete purlin/ directory.')
 
-        # Check ALL stale artifacts
-        stale_root = [
-            'pl-run.sh', 'pl-init.sh', 'pl-run-architect.sh',
-            'pl-run-builder.sh', 'pl-run-pm.sh', 'pl-run-qa.sh',
-            'pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
-            'purlin-start.sh', 'purlin-stop.sh', 'CRITIC_REPORT.md',
-        ]
-        found_root = [n for n in stale_root
-                      if os.path.exists(os.path.join(project_root, n))
-                      or os.path.islink(os.path.join(project_root, n))]
+        # Check ALL stale artifacts — glob pl-* to catch any naming convention
+        found_pl = [os.path.basename(f) for f in
+                     glob_mod.glob(os.path.join(project_root, 'pl-*'))
+                     if os.path.isfile(f) or os.path.islink(f)]
+        other_stale = ['purlin-start.sh', 'purlin-stop.sh', 'CRITIC_REPORT.md']
+        found_other = [n for n in other_stale
+                       if os.path.exists(os.path.join(project_root, n))
+                       or os.path.islink(os.path.join(project_root, n))]
+        found_root = found_pl + found_other
         if found_root:
             actions.append(f'Delete stale scripts/files: {", ".join(found_root)}.')
 
@@ -434,16 +433,11 @@ class Step3PluginRefresh(MigrationStep):
 
         # Clean ALL stale pre-plugin artifacts comprehensively.
 
-        # 1. Root-level scripts and symlinks (all naming conventions)
-        stale_root_patterns = [
-            'pl-run.sh', 'pl-init.sh',
-            'pl-run-architect.sh', 'pl-run-builder.sh',
-            'pl-run-pm.sh', 'pl-run-qa.sh',
-            'pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
-            'purlin-start.sh', 'purlin-stop.sh',
-            'CRITIC_REPORT.md',
-        ]
-        for name in stale_root_patterns:
+        # 1. Root-level: ALL pl-* scripts/symlinks + other stale files
+        for f in glob_mod.glob(os.path.join(project_root, 'pl-*')):
+            if os.path.isfile(f) or os.path.islink(f):
+                os.remove(f)
+        for name in ('purlin-start.sh', 'purlin-stop.sh', 'CRITIC_REPORT.md'):
             f = os.path.join(project_root, name)
             if os.path.exists(f) or os.path.islink(f):
                 os.remove(f)
