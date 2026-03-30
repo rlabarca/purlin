@@ -1,5 +1,28 @@
 # Release Notes
 
+### v0.8.6 — 2026-03-29
+
+**Purlin Is Now a Claude Code Plugin**
+Install with one command, enable per-project. No more submodule management, launcher scripts, or path configuration. Just `claude` and go.
+
+- **Zero-friction install** — Add the plugin once and it works in every project you enable it for. No submodule cloning, no symlinks, no shell scripts to maintain
+- **Automatic session recovery** — Purlin restores your context on every launch. No need to manually run a resume command after context clears or terminal restarts
+- **Hard mode boundaries** — Write-access rules are now mechanically enforced. Engineer can't accidentally write specs, PM can't accidentally write code. Violations are blocked before they happen, not caught after
+- **Skills renamed** — All commands changed from `/pl-*` to `purlin:*` (e.g., `purlin:build`, `purlin:spec`, `purlin:verify`). Tab-completion works out of the box
+- **Instant status checks** — The MCP server keeps scan results warm in memory. `purlin:status`, `purlin:graph`, and `purlin:scan` respond immediately instead of re-scanning every time
+- **Invariant system** — Import externally-owned constraints (architecture standards, design systems, compliance policies, operational mandates) from git repos or Figma. Invariants are immutable locally — only the source owner can change them. `purlin:invariant add <repo>` to import, `purlin:invariant sync` to pull updates. Global invariants auto-apply to every feature; scoped invariants attach via prerequisite links. FORBIDDEN patterns block builds at preflight, and features automatically cascade-reset when an invariant updates
+- **YOLO mode** — `purlin:config yolo on` auto-approves permission prompts so you can stay in flow during trusted sessions
+- **New `purlin:update` skill** — Migrates existing v0.8.5 projects to the plugin format automatically. Handles config, file moves, and artifact cleanup
+- **Feature specs organized by category** — Specs now live in `features/<category>/` subfolders. Navigation and filtering are faster on large projects
+- **Credentials in keychain** — API tokens (Figma, Confluence, deploy) stored in macOS keychain instead of plain-text config files
+
+**Removed**
+- `pl-run.sh` launcher (504 lines) — replaced by plugin hooks
+- `pl-init.sh` setup script (808 lines) — replaced by `purlin:init`
+- `purlin/` submodule directory — plugin lives in Claude Code's cache
+- `.claude/commands/pl-*.md` (36 files) — replaced by `skills/*/SKILL.md`
+- `instructions/` and `tools/` directories — consolidated into `agents/`, `references/`, `scripts/`
+
 ### v0.8.5 — 2026-03-26
 
 **Unified Agent**
