@@ -18,7 +18,6 @@ Activate a mode with purlin:mode or invoke a mode-specific skill.
   purlin:help                   Full command reference
   purlin:find <topic>           Search feature specs
   purlin:init [--force]         Initialize project for Purlin
-  purlin:override-edit          Edit PURLIN_OVERRIDES.md
   purlin:update                 Update Purlin plugin
   purlin:config [setting] [on|off]
                                 View or change Purlin behavior settings

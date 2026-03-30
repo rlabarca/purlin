@@ -1,6 +1,6 @@
 ---
 name: init
-description: Initialize a project for Purlin — creates .purlin/ directory structure, config, and override template
+description: Initialize a project for Purlin — creates .purlin/ directory structure and config
 ---
 
 ## Usage
@@ -35,13 +35,8 @@ Create the following directories:
 ### Step 3 -- Create Configuration Files
 
 1. **`.purlin/config.json`** -- Copy from `${CLAUDE_PLUGIN_ROOT}/templates/config.json`. Skip if exists (preserves user config).
-2. **`.purlin/PURLIN_OVERRIDES.md`** -- Copy from `${CLAUDE_PLUGIN_ROOT}/templates/PURLIN_OVERRIDES.md`. Skip if exists.
 
-### Step 4 -- Create Project CLAUDE.md
-
-If `CLAUDE.md` does not exist at the project root, create it from `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md`. If `CLAUDE.md` exists, check if it already references Purlin. If not, append the Purlin reference block.
-
-### Step 5 -- Update .gitignore
+### Step 4 -- Update .gitignore
 
 Ensure `.gitignore` contains Purlin-specific entries:
 
@@ -53,7 +48,7 @@ Ensure `.gitignore` contains Purlin-specific entries:
 .purlin_worktree_label
 ```
 
-### Step 6 -- Create features/ Directory
+### Step 5 -- Create features/ Directory
 
 If `features/` does not exist, create it with a placeholder README:
 
@@ -62,7 +57,7 @@ features/
 └── README.md    # "Feature specifications live here. See purlin:spec to create one."
 ```
 
-### Step 7 -- Confirmation
+### Step 6 -- Confirmation
 
 Print:
 ```
@@ -70,9 +65,8 @@ Project initialized for Purlin.
 
 Created:
   .purlin/config.json
-  .purlin/PURLIN_OVERRIDES.md
   .gitignore (updated)
-  features/ (created)
+  features/
 
 Next: Start working by invoking any skill directly:
   purlin:mode pm         — switch to PM mode
@@ -80,6 +74,6 @@ Next: Start working by invoking any skill directly:
   purlin:status          — see what needs doing
 ```
 
-### Step 8 -- Commit
+### Step 7 -- Commit
 
 Commit the initialized project structure: `git commit -m "chore: initialize purlin project"`.

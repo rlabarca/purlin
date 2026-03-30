@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test: Instruction stack assembly for Purlin unified agent.
-# Verifies base instruction file exists, PURLIN_OVERRIDES.md exists,
-# and the harness runner's construct_system_prompt handles the PURLIN role.
+# Verifies base instruction file exists and the harness runner's
+# construct_system_prompt handles the PURLIN role.
 #
 # NOTE: In the Purlin framework repo, the base instruction is agents/purlin.md.
 # In consumer projects it would be instructions/PURLIN_BASE.md. This test
@@ -20,22 +20,11 @@ else
     echo "FAIL: no base instruction file found (agents/purlin.md or instructions/PURLIN_BASE.md)"
 fi
 
-# Check 2: PURLIN_OVERRIDES.md exists in .purlin/
-if [[ -f "$PROJECT_ROOT/.purlin/PURLIN_OVERRIDES.md" ]]; then
-    echo "PURLIN_OVERRIDES.md found in .purlin"
-else
-    echo "FAIL: PURLIN_OVERRIDES.md not found in .purlin/"
-fi
-
-# Check 3: construct_system_prompt in harness_runner.py handles PURLIN role
+# Check 2: construct_system_prompt in harness_runner.py handles PURLIN role
 harness="$PROJECT_ROOT/scripts/test_support/harness_runner.py"
 if [[ -f "$harness" ]]; then
     if grep -q "if role == 'PURLIN'" "$harness"; then
-        if grep -q "PURLIN_BASE.md" "$harness" && grep -q "PURLIN_OVERRIDES.md" "$harness"; then
-            echo "construct_system_prompt handles PURLIN role"
-        else
-            echo "FAIL: construct_system_prompt missing PURLIN layer file references"
-        fi
+        echo "construct_system_prompt handles PURLIN role"
     else
         echo "FAIL: construct_system_prompt does not handle PURLIN role"
     fi

@@ -23,14 +23,14 @@ Promote a feature's test to smoke tier with an optional simplified fast-running 
    - QA scenarios (`### QA Scenarios` — `@auto` or `@manual`)
    - Regression JSON (`tests/<feature>/regression.json` or `tests/qa/scenarios/<feature>.json`)
 
-2. **Add to smoke tier table.** Read `PURLIN_OVERRIDES.md` (or `.purlin/QA_OVERRIDES.md` in legacy projects). Add the feature to the `## Test Priority Tiers` table with tier `smoke`. If the table doesn't exist, create it:
+2. **Add to smoke tier table.** Read `.purlin/config.json` and add the feature to the `test_priority_tiers` object with value `"smoke"`. If the key doesn't exist, create it:
 
-   ```markdown
-   ## Test Priority Tiers
-
-   | Feature | Tier |
-   |---------|------|
-   | <feature> | smoke |
+   ```json
+   {
+     "test_priority_tiers": {
+       "<feature>": "smoke"
+     }
+   }
    ```
 
 3. **Offer to simplify.** Ask the user:

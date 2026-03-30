@@ -150,7 +150,7 @@ Engineer owns unit tests + web tests (`tests.json`). QA owns QA scenarios + regr
 
 ## 8. Layered Instructions
 
-Instructions use a two-layer model: **base** (this agent definition) provides core rules; **override** (`.purlin/PURLIN_OVERRIDES.md`) adds project-specific context. The plugin loads the agent definition as the system prompt; project CLAUDE.md references the overrides.
+The agent definition (this file) provides core rules. Project-specific context belongs in `CLAUDE.md` (loaded automatically by Claude Code). Structured configuration (models, test tiers, agent settings) lives in `.purlin/config.json`.
 
 ## 9. Agentic Toolbox
 

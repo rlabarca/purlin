@@ -1,0 +1,324 @@
+{
+  "feature": "policy_spec_code_sync",
+  "description": "Regression tests for companion file enforcement gates, hard gates inline in agent definition, regression registration protocol, build skill companion gate, mode switch companion gate.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "companion-debt-tracker-hook",
+      "script_path": "tests/policy_spec_code_sync/test_companion_debt_tracker.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "code file change creates debt",
+          "context": "Changing a CODE file tracked under a feature creates companion debt"
+        },
+        {
+          "tier": 2,
+          "pattern": "debt records changed file path",
+          "context": "Debt entry records which file triggered it"
+        },
+        {
+          "tier": 2,
+          "pattern": "second code file adds to debt",
+          "context": "Multiple code file changes accumulate in the same feature's debt"
+        },
+        {
+          "tier": 2,
+          "pattern": "companion file change clears debt",
+          "context": "Writing to a .impl.md companion file clears debt for that feature"
+        },
+        {
+          "tier": 2,
+          "pattern": "multiple features: webhook has debt",
+          "context": "Debt is tracked per-feature independently"
+        },
+        {
+          "tier": 2,
+          "pattern": "clearing webhook doesn't affect rate_limiting",
+          "context": "Clearing one feature's debt does not affect other features"
+        },
+        {
+          "tier": 2,
+          "pattern": "rate_limiting still has debt after webhook cleared",
+          "context": "Other features retain their debt after a sibling is cleared"
+        },
+        {
+          "tier": 2,
+          "pattern": "feature spec change does not create debt",
+          "context": "Changes to feature spec .md files do NOT trigger companion debt"
+        },
+        {
+          "tier": 2,
+          "pattern": "discovery sidecar change does not create debt",
+          "context": "Changes to .discoveries.md files do NOT trigger companion debt"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin internal file does not create debt",
+          "context": ".purlin/ internal files are excluded from debt tracking"
+        },
+        {
+          "tier": 2,
+          "pattern": "claude internal file does not create debt",
+          "context": ".claude/ internal files are excluded from debt tracking"
+        },
+        {
+          "tier": 2,
+          "pattern": "debt entry has ISO 8601 first_seen timestamp",
+          "context": "Debt entries include a first_seen ISO timestamp for audit"
+        },
+        {
+          "tier": 2,
+          "pattern": "code file without matching feature spec creates no debt",
+          "context": "Code changes that can't be mapped to a feature spec are ignored"
+        },
+        {
+          "tier": 2,
+          "pattern": "regression JSON change does not create debt",
+          "context": "QA regression JSON files do not trigger companion debt"
+        }
+      ]
+    },
+    {
+      "name": "hard-gates-inline-in-agent-definition",
+      "script_path": "tests/policy_spec_code_sync/test_hard_gates_inline.sh",
+      "assertions": [
+        {
+          "tier": 1,
+          "pattern": "agent def has Hard Gates section header",
+          "context": "§14 Hard Gates section exists in agent definition"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def §14 is NOT just a reference pointer",
+          "context": "CRITICAL: §14 must have gate content inline, not a pointer to hard_gates.md. Extracting gates to a reference file caused Engineer to stop following build protocol (2026-03-28 regression)"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has companion file minimum gate",
+          "context": "CRITICAL: The companion file minimum gate must be in the agent system prompt so Engineer always writes impl files"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says no matches-spec exemption",
+          "context": "The 'matches spec = no entry needed' exemption must be explicitly removed"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has minimum one IMPL line",
+          "context": "Gate must specify minimum one [IMPL] line per code commit"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says status tag is separate commit",
+          "context": "Status tag commit must be separate from implementation commits"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has companion file pre-check",
+          "context": "Status tag pre-check: companion file has new entries this session"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has spec alignment pre-check",
+          "context": "Status tag pre-check: re-read spec and walk requirements"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has web test pre-check",
+          "context": "Status tag pre-check: web test passed with zero BUG/DRIFT"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has plan alignment pre-check",
+          "context": "Status tag pre-check: delivery plan alignment"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has FORBIDDEN pre-scan gate",
+          "context": "FORBIDDEN pattern pre-scan blocks builds with violations"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has spec existence gate",
+          "context": "Feature spec must exist before implementation starts"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has re-verification fast path",
+          "context": "Re-verification skips re-implementation when tests already pass"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has execution group dispatch rule",
+          "context": "Parallel dispatch is mandatory for 2+ independent features"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says Verified is QA-only",
+          "context": "Engineer must not use [Verified] tag — reserved for QA"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says tests.json must come from runner",
+          "context": "tests.json must come from test runner, never hand-written"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has PM scenario heading format gate",
+          "context": "PM gate: scenarios use #### (four hashes)"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has PM required sections gate",
+          "context": "PM gate: overview, requirements, scenarios sections required"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has PM no implementation notes gate",
+          "context": "PM gate: no Implementation Notes in feature files"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has PM scenarios untagged gate",
+          "context": "PM gate: scenarios written without @auto/@manual tags"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has QA verified mandatory gate",
+          "context": "QA gate: [Verified] tag is mandatory on QA status commits"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has QA delivery plan gating",
+          "context": "QA gate: don't mark Complete if feature in PENDING phase"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has QA companion edits no reset",
+          "context": "QA gate: companion edits don't reset feature lifecycle"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has QA regression readiness gate",
+          "context": "QA gate: all @auto scenarios need regression JSON before tests run"
+        },
+        {
+          "tier": 1,
+          "pattern": "mode guard uses CRITICAL prefix",
+          "context": "Mode guard must use CRITICAL language, not softened wording"
+        },
+        {
+          "tier": 1,
+          "pattern": "mode guard has response template for open mode",
+          "context": "Mode guard has explicit response template for open mode writes"
+        },
+        {
+          "tier": 1,
+          "pattern": "mode guard narration-is-not-activation warning",
+          "context": "Mode guard warns that narrating a mode doesn't activate it"
+        },
+        {
+          "tier": 1,
+          "pattern": "mode guard says MUST execute mode switch BEFORE writing",
+          "context": "Mode guard requires executing purlin:mode BEFORE writing files"
+        },
+        {
+          "tier": 1,
+          "pattern": "executive summary has open mode write block",
+          "context": "Executive summary must contain the open mode write block"
+        },
+        {
+          "tier": 1,
+          "pattern": "executive summary forbids Edit Write NotebookEdit",
+          "context": "Executive summary explicitly forbids Edit/Write/NotebookEdit without mode"
+        },
+        {
+          "tier": 1,
+          "pattern": "engineer mode has activated-by list",
+          "context": "Engineer mode definition includes Activated by: skill list"
+        },
+        {
+          "tier": 1,
+          "pattern": "PM mode has activated-by list",
+          "context": "PM mode definition includes Activated by: skill list"
+        },
+        {
+          "tier": 1,
+          "pattern": "QA mode has activated-by list",
+          "context": "QA mode definition includes Activated by: skill list"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def has regression registration gate",
+          "context": "Regression Registration Gate section exists in agent definition"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says all regression work through purlin:regression",
+          "context": "Agent definition mandates all regression work go through the skill"
+        },
+        {
+          "tier": 1,
+          "pattern": "agent def says unregistered tests invisible",
+          "context": "Agent definition warns unregistered tests are invisible to triage"
+        },
+        {
+          "tier": 1,
+          "pattern": "regression skill has spec registration protocol",
+          "context": "Regression skill has the mandatory Spec Registration Protocol section"
+        },
+        {
+          "tier": 1,
+          "pattern": "regression skill says switch to PM mode",
+          "context": "Regression skill requires cross-mode switch to PM for spec registration"
+        },
+        {
+          "tier": 1,
+          "pattern": "regression skill says Regression Guidance section",
+          "context": "Regression skill requires Regression Guidance section in feature spec"
+        },
+        {
+          "tier": 1,
+          "pattern": "regression skill author step has registration",
+          "context": "Regression skill author subcommand includes mandatory registration step"
+        },
+        {
+          "tier": 1,
+          "pattern": "regression skill says do not commit without registration",
+          "context": "Regression skill blocks committing regression JSON without spec registration"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 4 has companion file gate",
+          "context": "Build SKILL.md Step 4 has the Companion File Gate"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 4 blocks without new entries",
+          "context": "Build skill blocks status tag when companion has no new entries"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 4 says mechanical check",
+          "context": "Build skill companion gate is a mechanical check"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 4 says not a judgment call",
+          "context": "Build skill companion gate is not a judgment call"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 2 says record in impl.md",
+          "context": "Build skill Step 2 requires recording in companion impl.md"
+        },
+        {
+          "tier": 1,
+          "pattern": "build skill Step 2 has IMPL tag documentation",
+          "context": "Build skill Step 2 documents the [IMPL] tag"
+        }
+      ]
+    }
+  ]
+}

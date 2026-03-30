@@ -14,13 +14,8 @@
         },
         {
           "tier": 2,
-          "pattern": "PURLIN_OVERRIDES\\.md found in \\.purlin",
-          "context": "PURLIN_OVERRIDES.md exists in .purlin directory"
-        },
-        {
-          "tier": 2,
           "pattern": "construct_system_prompt handles PURLIN role",
-          "context": "Harness runner constructs PURLIN system prompt from correct two-layer stack"
+          "context": "Harness runner constructs PURLIN system prompt for the PURLIN role"
         }
       ]
     },

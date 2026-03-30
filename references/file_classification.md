@@ -19,7 +19,6 @@ Executable, interpreted, or controls agent behavior at runtime.
 - Technical anchors (`features/**/arch_*.md`)
 - Companion files (`features/**/*.impl.md`)
 - Process config (`.purlin/config.json`, `.purlin/toolbox/*.json`)
-- Override files (`.purlin/PURLIN_OVERRIDES.md`)
 
 ## SPEC (PM-owned)
 
@@ -49,7 +48,6 @@ Some files are OWNED by one mode but can be RECORDED TO by others:
 | `features/**/*.impl.md` | Engineer | Engineer writes; PM reads and acknowledges |
 | `features/**/*.discoveries.md` | QA (lifecycle) | Any mode can add new OPEN entries |
 | `features/**/*.md` QA Scenarios section | PM (initial) | QA adds `@auto`/`@manual` tags |
-| `.purlin/PURLIN_OVERRIDES.md` | Engineer | Any mode can edit any section via `purlin:override-edit` |
 
 ## INVARIANT (External, immutable)
 

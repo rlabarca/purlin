@@ -30,5 +30,6 @@
     ],
     "agents": {
         "purlin": { "bypass_permissions": true, "find_work": true, "auto_start": false }
-    }
+    },
+    "test_priority_tiers": {}
 }

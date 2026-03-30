@@ -14,7 +14,6 @@
     {"pattern": "^references/", "classification": "CODE", "description": "Reference docs (Engineer-owned for content)"},
     {"pattern": "^templates/", "classification": "CODE", "description": "Template files (Engineer-owned)"},
     {"pattern": "^tests/", "classification": "CODE", "description": "Test infrastructure (Engineer-owned)"},
-    {"pattern": "\\.purlin/PURLIN_OVERRIDES\\.md$", "classification": "SPEC", "description": "Project overrides (PM-owned)"},
     {"pattern": "", "classification": "CODE", "description": "Default: everything else is CODE"}
   ]
 }

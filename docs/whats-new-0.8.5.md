@@ -59,7 +59,7 @@ Switch mid-session with `purlin:mode engineer`, `purlin:mode pm`, or `purlin:mod
 | `purlin:mode` | Any | Switch between PM, Engineer, and QA mid-session. |
 | `purlin:regression` | QA | Unified regression management (author + run + evaluate). |
 | `purlin:remote` | Any | Unified branch collaboration (replaces push/pull/add). |
-| `purlin:override-edit` | Any | Edit PURLIN_OVERRIDES.md (absorbed instruction audit). |
+
 | `purlin:session-name` | Any | Set terminal identity (badge + title). |
 | `purlin:toolbox` | Any | Manage project tools — list, run, create, share. |
 | `purlin:tombstone` | Engineer | Retire a feature with a tombstone record. |
@@ -74,7 +74,7 @@ Switch mid-session with `purlin:mode engineer`, `purlin:mode pm`, or `purlin:mod
 | `purlin:remote-push` | `purlin:remote` |
 | `purlin:remote-pull` | `purlin:remote` |
 | `purlin:remote-add` | `purlin:remote` |
-| `purlin:override-edit` | `purlin:override-edit` |
+
 | `purlin:release-run` | Removed (toolbox tools replace release steps) |
 | `purlin:release-check` | Removed |
 | `purlin:release-step` | Removed |

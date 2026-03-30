@@ -61,7 +61,7 @@ Skills are slash commands that trigger specific workflows. Run `purlin:help` ins
 | `purlin:resume [save\|merge-recovery]` | Session recovery after `/clear` or context compaction. Not required to start working — invoke any skill directly instead. |
 | `purlin:update [version] [--dry-run] [--auto-approve]` | Updates the Purlin plugin to the latest release tag (or a specified version). |
 | `purlin:remote <cmd>` | Branch collaboration — push, pull, add, or manage remotes. |
-| `purlin:override-edit [--scan-only]` | Edit PURLIN_OVERRIDES.md sections. `--scan-only` checks conflicts without writing. |
+
 | `purlin:whats-different` | Compare current branch against main with mode-aware impact briefing. |
 | `purlin:session-name [label]` | Update the terminal session display name. |
 | `purlin:worktree <cmd>` | Worktree management — list active worktrees or clean up stale ones. |

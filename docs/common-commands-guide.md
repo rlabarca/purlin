@@ -158,25 +158,6 @@ When a mode is active, produces a role-specific briefing: PM sees spec changes, 
 
 ---
 
-## Editing Project Overrides
-
-```
-purlin:override-edit
-```
-
-Opens your project's `PURLIN_OVERRIDES.md` for guided editing. The agent:
-
-1. Reads the current override file and the corresponding base file.
-2. Scans for conflicts, warnings, and redundancies.
-3. Applies your proposed change (additive only — no deletions).
-4. Asks for confirmation before writing.
-
-Each mode can only edit its own section of the overrides file. Use `--scan-only` to check for conflicts without making changes:
-
-```
-purlin:override-edit --scan-only
-```
-
 ---
 
 ## Managing Worktrees

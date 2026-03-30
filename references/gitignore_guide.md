@@ -8,7 +8,6 @@
 | Path | Purpose |
 |------|---------|
 | `.purlin/config.json` | Shared project configuration |
-| `.purlin/PURLIN_OVERRIDES.md` | Project-specific instruction overrides (all modes) |
 | `.purlin/delivery_plan.md` | Phased delivery coordination (read by all agents across sessions) |
 | `features/*.md` | Feature specs, companion files, discovery sidecars |
 | `tests/*/tests.json` | AFT test definitions |

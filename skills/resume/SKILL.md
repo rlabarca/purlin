@@ -141,9 +141,7 @@ Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never co
 This step runs ONLY when the system prompt does NOT contain the Purlin agent instructions (i.e., the session was started with `claude` directly and the plugin has not yet injected context).
 
 When instruction reload is needed:
-1. Read the instruction layers in order:
-   - Base instructions from the plugin agent definition (`agents/purlin.md`)
-   - `.purlin/PURLIN_OVERRIDES.md` (if exists)
+1. Read the base instructions from the plugin agent definition (`agents/purlin.md`).
 2. Present a condensed "Mode Compact" -- key mandates, prohibitions, and protocol summaries. Not a full file dump; a focused digest of the most critical rules.
 
 When the system prompt already contains the Purlin instructions (plugin auto-activated), skip this step silently.

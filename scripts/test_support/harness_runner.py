@@ -264,8 +264,7 @@ def stop_dev_server(project_root, target_dir=None):
 def construct_system_prompt(fixture_dir, role):
     """Build the system prompt from fixture instruction files.
 
-    For the PURLIN role, loads PURLIN_BASE.md + PURLIN_OVERRIDES.md
-    (self-contained, no HOW_WE_WORK layer).
+    For the PURLIN role, loads the agent definition (agents/purlin.md).
     For legacy roles, loads the 4-layer stack:
       HOW_WE_WORK_BASE + {ROLE}_BASE + HOW_WE_WORK_OVERRIDES + {ROLE}_OVERRIDES.
 
@@ -280,7 +279,6 @@ def construct_system_prompt(fixture_dir, role):
         base_path = agent_def if os.path.exists(agent_def) else legacy_base
         layers = [
             base_path,
-            os.path.join(fixture_dir, '.purlin', 'PURLIN_OVERRIDES.md'),
         ]
     else:
         layers = [

@@ -47,5 +47,12 @@
             "auto_start": false
         }
     },
-    "fixture_repo_url": "git@github.com:rlabarca/purlin-fixtures.git"
+    "fixture_repo_url": "git@github.com:rlabarca/purlin-fixtures.git",
+    "test_priority_tiers": {
+        "config_layering": "smoke",
+        "project_init": "smoke",
+        "regression_testing": "smoke",
+        "test_fixture_repo": "smoke",
+        "agent_launchers_common": "smoke"
+    }
 }

@@ -137,11 +137,6 @@ class TestClassifyFile(unittest.TestCase):
         result = classify_file('README.md')
         self.assertEqual(result, 'CODE')
 
-    def test_code_purlin_overrides(self):
-        """.purlin/PURLIN_OVERRIDES.md is CODE (not in features/)."""
-        result = classify_file('.purlin/PURLIN_OVERRIDES.md')
-        self.assertEqual(result, 'CODE')
-
     def test_code_tests_non_regression_json(self):
         """Non-regression JSON in tests/ falls through to CODE."""
         result = classify_file('tests/foo/tests.json')

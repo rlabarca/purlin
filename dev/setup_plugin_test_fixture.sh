@@ -129,29 +129,6 @@ cat > .purlin/delivery_plan.md <<'PLAN'
 - `features/core/notifications.md`
 PLAN
 
-# --- .purlin/PURLIN_OVERRIDES.md ---
-cat > .purlin/PURLIN_OVERRIDES.md <<'OVERRIDES'
-# Project Overrides
-
-## General (all modes)
-
-This is a consumer project using Purlin for spec-driven development.
-
-## Engineer Mode
-
-### Test Framework
-Use pytest for unit tests.
-
-## PM Mode
-
-### Design System
-Use Material Design components.
-
-## QA Mode
-
-No project-specific QA overrides.
-OVERRIDES
-
 # --- CLAUDE.md ---
 cat > CLAUDE.md <<'CLAUDEMD'
 # Consumer App
@@ -168,13 +145,15 @@ This project uses the Purlin plugin for spec-driven development.
 
 If context is cleared, run `purlin:resume` to restore session context.
 
-## Project Overrides
-
-See `.purlin/PURLIN_OVERRIDES.md` for project-specific rules.
-
 ## Commands
 
 Run `purlin:help` for the full command reference.
+
+## Project Rules
+
+This is a consumer project using Purlin for spec-driven development.
+Use pytest for unit tests.
+Use Material Design components.
 CLAUDEMD
 
 # --- .gitignore ---
@@ -1061,7 +1040,7 @@ echo "Git history (5 commits):"
 git log --oneline --reverse
 echo ""
 echo "Contents:"
-echo "  .purlin/           — config.json, config.local.json, delivery_plan.md, PURLIN_OVERRIDES.md"
+echo "  .purlin/           — config.json, config.local.json, delivery_plan.md"
 echo "  features/          — 10 specs: 3 TODO, 2 TESTING, 3 COMPLETE, 2 invariants"
 echo "    companions       — 2 impl.md (1 unacknowledged deviation, 1 acknowledged)"
 echo "    discoveries      — 2 discoveries.md (2 OPEN + 1 RESOLVED)"

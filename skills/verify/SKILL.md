@@ -176,7 +176,7 @@ Credit features where Engineer status is DONE and zero QA scenarios exist. These
 
 ### Step 2 -- Smoke gate
 
-**Always runs.** Read the `## Test Priority Tiers` table from `PURLIN_OVERRIDES.md` or `QA_OVERRIDES.md` (check both; purlin agent uses the former, legacy agents the latter). Also detect smoke regression suites: any `tests/qa/scenarios/<feature>_smoke.json` file with `"tier": "smoke"`.
+**Always runs.** Read the `test_priority_tiers` object from `.purlin/config.json`. Also detect smoke regression suites: any `tests/qa/scenarios/<feature>_smoke.json` file with `"tier": "smoke"`.
 
 1.  Identify smoke-tier features. A feature is smoke-tier if:
     *   It appears in the tier table with `smoke`, OR

@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 9,
+  "passed": 8,
   "failed": 0,
-  "total": 9,
+  "total": 8,
   "test_file": "tests/qa/scenarios/purlin_resume.json",
   "details": [
     {
@@ -13,17 +13,10 @@
       "assertion_tier": 2
     },
     {
-      "name": "instruction-stack-assembly:PURLIN_OVERRIDES.md exists in .purlin directory",
+      "name": "instruction-stack-assembly:Harness runner constructs PURLIN system prompt for the PURLIN role",
       "status": "PASS",
       "scenario_ref": "features/framework_core/purlin_resume.md:instruction-stack-assembly",
-      "expected": "PURLIN_OVERRIDES.md exists in .purlin directory",
-      "assertion_tier": 2
-    },
-    {
-      "name": "instruction-stack-assembly:Harness runner constructs PURLIN system prompt from correct two-layer stack",
-      "status": "PASS",
-      "scenario_ref": "features/framework_core/purlin_resume.md:instruction-stack-assembly",
-      "expected": "Harness runner constructs PURLIN system prompt from correct two-layer stack",
+      "expected": "Harness runner constructs PURLIN system prompt for the PURLIN role",
       "assertion_tier": 2
     },
     {

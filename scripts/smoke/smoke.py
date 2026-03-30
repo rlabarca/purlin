@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Smoke tier management for Purlin QA verification.
 
-Manages the Test Priority Tiers table in override files, suggests features
+Manages the Test Priority Tiers in .purlin/config.json, suggests features
 for smoke promotion, creates simplified smoke regression files, and provides
 the smoke gate ordering logic used by purlin:verify.
 """
