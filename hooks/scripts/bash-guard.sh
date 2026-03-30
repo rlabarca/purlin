@@ -89,8 +89,10 @@ fi
 # Default mode (no mode active) — allow basic file operations and safe git.
 # Block dangerous operations and shell writes to files (bypasses mode guard).
 
-# Shell write patterns — these bypass the Write/Edit mode guard
-SHELL_WRITE='(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|>\s*[/a-zA-Z.]|>>\s*[/a-zA-Z.])'
+# Shell write patterns — these bypass the Write/Edit mode guard.
+# Redirect patterns use [^0-9] lookbehind to avoid matching stderr
+# redirects like 2>/dev/null which are harmless.
+SHELL_WRITE='(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|[^0-9]>\s*[/a-zA-Z.]|[^0-9]>>\s*[/a-zA-Z.]|^>\s*[/a-zA-Z.]|^>>\s*[/a-zA-Z.])'
 
 # Dangerous operations
 DANGEROUS='(git\s+push|git\s+reset\s+--hard|rm\s+-rf\s|rm\s+-r\s)'
