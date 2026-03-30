@@ -58,7 +58,14 @@ Wait for user input, then execute the corresponding subcommand.
 
 ### list
 
-Show all tools grouped by category (Purlin, Project, Community). Each tool shows id and friendly_name. Community tools show author and repo on indented lines. Omit categories with zero tools.
+Show all tools grouped by category (Purlin, Project, Community). Each tool shows id, friendly_name, and a short description (truncated to ~60 chars if needed). Community tools show author and repo on indented lines. Omit categories with zero tools.
+
+Format:
+
+```
+<Category> (<N>)
+  <id>                  <friendly_name> — <description>
+```
 
 ### run
 

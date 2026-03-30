@@ -168,7 +168,7 @@ All error messages are clear, actionable, and suggest a recovery path:
     And community_tools.json contains 1 tool
     When the user runs "purlin:toolbox list"
     Then output shows PURLIN (6), PROJECT (3), COMMUNITY (1) sections
-    And each tool shows id and friendly_name
+    And each tool shows id, friendly_name, and a short description
 
 #### Scenario: Run single tool
 
