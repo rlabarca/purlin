@@ -17,6 +17,43 @@ If you just need local project standards, use regular [anchor nodes](pm-agent-gu
 
 ---
 
+## Anchors vs Invariants
+
+Anchors and invariants serve the same role — they define constraints that features must follow. The difference is the source:
+
+| | Anchor | Invariant |
+|---|---|---|
+| Source | Locally authored by your team | Externally sourced (git repo, Figma) |
+| Editable | Yes (by mode owner) | No (sync only via `purlin:invariant sync`) |
+| Prefix | `design_*`, `arch_*`, `policy_*`, `ops_*`, `prodbrief_*` | `i_design_*`, `i_arch_*`, `i_policy_*`, etc. |
+| Storage | `features/<category>/` | `features/_invariants/` |
+
+**Never have both for the same concern.** If your design system comes from Figma, use `i_design_system.md` — don't also create a `design_system.md` anchor. If your API standards are locally authored, use `arch_api_standards.md` — don't import them as an invariant.
+
+**When you'd have both in the same domain:** Only when they cover *different* concerns. For example:
+- `design_visual_standards.md` — locally authored CSS tokens and typography (anchor)
+- `i_design_feedback_form.md` — Figma mockup for one feature (scoped invariant)
+
+These aren't duplicates. One is a project-wide standard authored by your team, the other is an imported design for a specific UI. A feature might prerequisite both:
+
+```markdown
+> Prerequisite: design_visual_standards.md
+> Prerequisite: features/_invariants/i_design_feedback_form.md
+```
+
+### Decision guide
+
+| Situation | Use |
+|---|---|
+| Your team writes the standard | Anchor (`design_*`, `arch_*`, `policy_*`) |
+| Standard comes from an external repo | Invariant (`i_arch_*`, `i_policy_*`) |
+| Design comes from Figma | Invariant (`i_design_*`) |
+| Product brief from leadership | Invariant (`i_prodbrief_*`) |
+| Local coding conventions | Anchor (`arch_*`) |
+| Compliance rules from legal/security | Invariant (`i_policy_*`) |
+
+---
+
 ## Quick Start
 
 ### Import from a Git Repo

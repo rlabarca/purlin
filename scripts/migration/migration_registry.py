@@ -759,14 +759,21 @@ class Step4DesignToInvariant(MigrationStep):
                 # Remove Figma metadata lines
                 cleaned = [l for l in lines if not figma_line_re.match(l)]
 
-                # Add prerequisite to invariant if not already present
-                invariant_ref = f'_invariants/{new_filename}'
+                # Add prerequisite to invariant if not already present.
+                # Use features/_invariants/ path to match existing prerequisite style.
+                invariant_ref = f'features/_invariants/{new_filename}'
                 if invariant_ref not in '\n'.join(cleaned):
-                    # Insert after existing metadata block (lines starting with >)
+                    # Insert after the last existing prerequisite line,
+                    # or after the last metadata line if no prerequisites exist
                     insert_idx = 0
+                    last_prereq_idx = -1
                     for i, line in enumerate(cleaned):
                         if line.startswith('>'):
                             insert_idx = i + 1
+                        if '> Prerequisite:' in line:
+                            last_prereq_idx = i
+                    if last_prereq_idx >= 0:
+                        insert_idx = last_prereq_idx + 1
                     cleaned.insert(insert_idx,
                                    f'> Prerequisite: {invariant_ref}')
 
