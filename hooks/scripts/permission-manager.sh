@@ -66,8 +66,9 @@ if [ "$YOLO" = "true" ]; then
     # These tools require the user to review and approve:
     # - AskUserQuestion: agent asking user to make choices (migration confirms, etc.)
     # - ExitPlanMode: agent proposing a plan — user must review before execution
+    # - RemoteTrigger: triggers external scheduled agents — external side effects
     case "$TOOL_NAME" in
-        AskUserQuestion|ExitPlanMode)
+        AskUserQuestion|ExitPlanMode|RemoteTrigger)
             # Do NOT auto-approve — let the user decide
             ;;
         *)
