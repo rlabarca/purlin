@@ -3,7 +3,7 @@
 # Verifies the resume skill file contains --yolo, --no-yolo, and --no-save.
 set -uo pipefail
 
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 
 skill_file="$PROJECT_ROOT/skills/resume/SKILL.md"
 

@@ -9,7 +9,7 @@
 # is validated by checking its PURLIN role handling in code.
 set -uo pipefail
 
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 
 # Check 1: Base instruction file exists (agents/purlin.md in framework repo)
 if [[ -f "$PROJECT_ROOT/agents/purlin.md" ]]; then

@@ -2,7 +2,7 @@
 # Test: Config engine persists boolean fields as JSON booleans, handles missing agent config
 set -euo pipefail
 
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 CONFIG_ENGINE="$PROJECT_ROOT/scripts/mcp/config_engine.py"
 
 passed=0
