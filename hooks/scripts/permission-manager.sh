@@ -10,35 +10,22 @@ INPUT=$(cat)
 # 2. CLAUDE_PLUGIN_ROOT (always set by Claude Code for plugin hooks) -> parent is project root
 # 3. Climb from cwd looking for .purlin/ marker
 _find_project_root() {
-    # 1. Explicit env var
+    # 1. Explicit env var (set by MCP server or parent process)
     if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
-        echo "$PURLIN_PROJECT_ROOT"
-        return
+        echo "$PURLIN_PROJECT_ROOT"; return
     fi
-    # 2. CLAUDE_PLUGIN_ROOT — for inline plugins this IS the repo root;
-    #    for installed plugins it may be a subdirectory. Check both.
-    if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
-        if [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
-            echo "$CLAUDE_PLUGIN_ROOT"
-            return
-        fi
-        if [ -d "$CLAUDE_PLUGIN_ROOT/../.purlin" ]; then
-            echo "$(cd "$CLAUDE_PLUGIN_ROOT/.." && pwd)"
-            return
-        fi
-    fi
-    # 3. Climb from the script's own location (most reliable fallback —
-    #    the script is always inside the repo at hooks/scripts/)
-    local dir
-    dir="$(cd "$(dirname "$0")" && pwd)"
+    # 2. Climb from CWD — most reliable for installed plugins (Claude Code
+    #    sets hook CWD to the user's working directory)
+    local dir; dir="$(pwd)"
     while [ "$dir" != "/" ]; do
-        if [ -d "$dir/.purlin" ]; then
-            echo "$dir"
-            return
-        fi
+        if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
         dir="$(dirname "$dir")"
     done
-    # 4. Last resort: cwd
+    # 3. CLAUDE_PLUGIN_ROOT — only works for --plugin-dir where plugin root IS the project
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
+    # 4. Last resort
     echo "$(pwd)"
 }
 

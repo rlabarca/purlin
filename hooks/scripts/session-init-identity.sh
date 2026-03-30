@@ -12,9 +12,12 @@ purlin_save_tty
 
 # Check if a mode is already persisted (e.g. from a previous session)
 mode="none"
-if [ -f ".purlin/state/mode" ]; then
-    mode=$(cat .purlin/state/mode 2>/dev/null)
+if [ -n "$PURLIN_SESSION_ID" ] && [ -f ".purlin/runtime/current_mode_${PURLIN_SESSION_ID}" ]; then
+    mode=$(cat ".purlin/runtime/current_mode_${PURLIN_SESSION_ID}" 2>/dev/null)
+elif [ -f ".purlin/runtime/current_mode" ]; then
+    mode=$(cat .purlin/runtime/current_mode 2>/dev/null)
 fi
+[ -z "$mode" ] && mode="none"
 
 update_session_identity "$mode"
 exit 0

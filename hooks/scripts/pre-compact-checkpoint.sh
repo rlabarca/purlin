@@ -2,7 +2,23 @@
 # PreCompact hook — auto-save enriched checkpoint before context compaction.
 # Reads disk state to capture pipeline context so purlin:resume can reconstruct.
 
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
+# Detect project root — works for both installed plugins and --plugin-dir.
+_find_project_root() {
+    if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+        echo "$PURLIN_PROJECT_ROOT"; return
+    fi
+    local dir; dir="$(pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
+        dir="$(dirname "$dir")"
+    done
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
+    echo "$(pwd)"
+}
+
+PROJECT_ROOT="$(_find_project_root)"
 CACHE_DIR="$PROJECT_ROOT/.purlin/cache"
 CHECKPOINT="$CACHE_DIR/session_checkpoint_purlin.md"
 

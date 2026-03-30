@@ -174,6 +174,10 @@ TOOLS = [
                     "enum": ["engineer", "pm", "qa"],
                     "description": "Mode to set. Omit to get current mode.",
                 },
+                "agent_id": {
+                    "type": "string",
+                    "description": "Subagent identifier for mode file scoping. Required for parallel workers to avoid mode collisions.",
+                },
             },
         },
     },
@@ -307,10 +311,12 @@ def handle_purlin_classify(params):
 def handle_purlin_mode(params):
     """Handle purlin_mode tool call."""
     mode = params.get("mode")
+    agent_id = params.get("agent_id")
     if mode:
-        set_mode(mode)
-        return {"mode": mode, "action": "set"}
-    return {"mode": get_mode(), "action": "get"}
+        set_mode(mode, agent_id=agent_id)
+        return {"mode": mode, "action": "set",
+                **({"agent_id": agent_id} if agent_id else {})}
+    return {"mode": get_mode(agent_id=agent_id), "action": "get"}
 
 
 def handle_purlin_config(params):

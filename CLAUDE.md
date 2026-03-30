@@ -1,24 +1,13 @@
-# Purlin
+# Developing Purlin
 
-This project uses the Purlin plugin for spec-driven development. The **Purlin unified agent** operates in three modes (Engineer, PM, QA) with strict write-access boundaries enforced by the mode guard hook.
+This repo IS the Purlin plugin framework. Rules here apply to developing Purlin itself — not to projects that install Purlin as a plugin. Anything we want Purlin to do for other projects using it should ONLY be in `agents/purlin.md`.
 
-## Purlin Agent (Unified)
+## Hook Authoring Rules
 
-- **Engineer mode**: Code, tests, scripts, arch anchors, companions.
-  NEVER write feature specs or design/policy anchors.
-- **PM mode**: Feature specs, design/policy anchors, design artifacts.
-  NEVER write code, tests, scripts, or instruction files.
-- **QA mode**: Discovery sidecars, QA tags, regression JSON.
-  NEVER write app code or feature specs.
+**Critical: PreToolUse hooks that block via exit code 2 MUST write error messages to stderr (`>&2`), not stdout.** Claude Code ignores stdout for exit-code-2 hooks — if stderr is empty, the tool call proceeds despite the non-zero exit code. Every `echo ... ; exit 2` pair in a guard script must use `echo "..." >&2`. Omitting this silently disables the guard.
 
-## Context Recovery
+## Tool Folder Separation
 
-If context is cleared or compacted, run `purlin:resume` to restore session context.
+*   **`scripts/`** — Consumer-facing framework tooling. Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
+*   **`dev/`** — Purlin-repository maintenance scripts. Scripts here are specific to developing, building, and releasing the Purlin framework itself. They are NOT designed for consumer use.
 
-## Project Overrides
-
-See `.purlin/PURLIN_OVERRIDES.md` for project-specific rules.
-
-## Commands
-
-Run `purlin:help` for the full command reference.

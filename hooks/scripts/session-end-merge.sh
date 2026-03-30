@@ -12,8 +12,22 @@ if [ -f "$PLUGIN_ROOT/scripts/terminal/identity.sh" ]; then
     purlin_cleanup_tty
 fi
 
-# Detect project root (resolve symlinks for consistent path comparison)
-PROJECT_ROOT="$(cd "${PURLIN_PROJECT_ROOT:-$(pwd)}" && pwd -P)"
+# Detect project root — works for both installed plugins and --plugin-dir.
+_find_project_root() {
+    if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+        echo "$PURLIN_PROJECT_ROOT"; return
+    fi
+    local dir; dir="$(pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
+        dir="$(dirname "$dir")"
+    done
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
+    echo "$(pwd)"
+}
+PROJECT_ROOT="$(cd "$(_find_project_root)" && pwd -P)"
 MERGE_LOCK="$PROJECT_ROOT/.purlin/cache/merge.lock"
 
 # --- Merge lock with stale PID detection (§2.6) ---

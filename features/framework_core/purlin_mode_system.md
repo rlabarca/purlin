@@ -44,6 +44,14 @@ A separate `PreToolUse` hook on `Bash` commands enforces default-mode read-only 
 - **When a mode IS active:** Allows all Bash commands through. Full per-mode classification of shell commands is inherently fragile, so mode-active sessions rely on the file-write guard for enforcement.
 - The blocked-command error directs the agent to activate a mode first.
 
+#### 2.3.3 Hook Blocking Invariant (stderr required for exit code 2)
+
+Claude Code `PreToolUse` hooks block tool calls via exit code 2. However, **exit code 2 alone is not sufficient** — the error message MUST be written to **stderr** (`>&2`), not stdout. Claude Code ignores stdout for exit-code-2 hooks and only feeds stderr to the agent. If stderr is empty, the tool call proceeds despite the non-zero exit code.
+
+**Invariant:** Every `echo ... ; exit 2` pair in a guard hook script MUST use `echo "..." >&2`. Omitting `>&2` silently disables the guard — the hook runs, returns exit 2, but the write goes through anyway because stderr is empty.
+
+This applies to all PreToolUse hook scripts: `mode-guard.sh`, `bash-guard.sh`, and any future guard hooks.
+
 ### 2.4 Pre-Switch Check
 
 - Before switching modes, if uncommitted work exists: prompt to commit first.
@@ -101,6 +109,70 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - The SessionEnd hook MUST clean up PID-scoped mode files (same as it cleans up PID-scoped checkpoints).
 - Hook scripts (mode guard, plan-exit-mode-clear) MUST read from the PID-scoped file when `PURLIN_SESSION_ID` is available.
 - **Migration:** The unscoped `current_mode` file continues to work for sessions without `PURLIN_SESSION_ID`. No migration step required.
+
+### 2.9.1 Subagent Mode Isolation
+
+When the main Purlin session spawns worker subagents (`pm-worker`, `engineer-worker`, `qa-worker`, `verification-runner`) via the Agent tool with `isolation: "worktree"`, each subagent runs in its own Claude Code worktree under `.claude/worktrees/`. These worktrees are separate from the main agent's `.purlin/worktrees/` and do not participate in the session lock protocol.
+
+#### Problem: MCP Server vs Hook Path Divergence
+
+The Purlin MCP server (`purlin_server.py`) is a single persistent process. It resolves `PURLIN_PROJECT_ROOT` at startup to the **main project root**. When a subagent in a worktree calls `purlin_mode(mode: "engineer")`, `set_mode()` writes to the main project's `.purlin/runtime/`. Meanwhile, the `mode-guard.sh` PreToolUse hook runs as a subprocess in the **subagent's CWD** (the worktree) and reads from `${PURLIN_PROJECT_ROOT:-$(pwd)}/.purlin/runtime/`. These are different filesystem paths — the MCP tool writes to one location and the hook reads from another.
+
+Without correction, the mode guard in a worktree subagent will never find the mode set by the MCP tool, and will block all writes with "Default mode is read-only."
+
+#### Solution: Agent-ID-Scoped Mode Files in the Main Project Root
+
+Both the MCP server and the mode guard MUST use the same base path (the main project root) with agent-ID-scoped mode filenames to isolate concurrent subagents. This avoids depending on CWD consistency across processes.
+
+**Mode isolation requirements:**
+
+- The `purlin_mode` MCP tool MUST accept an optional `agent_id` parameter. When provided, `set_mode()` MUST write to `.purlin/runtime/current_mode_${agent_id}` in the main project root. When omitted, existing behavior is preserved (uses `PURLIN_SESSION_ID` or unscoped fallback).
+- The `mode-guard.sh` hook MUST extract `agent_id` from the PreToolUse hook input JSON (field is present when running inside a subagent per Claude Code hook spec). When `agent_id` is present, the hook MUST read mode from `.purlin/runtime/current_mode_${agent_id}` **in the main project root** (not the worktree CWD). The main project root is derived from the hook input's `transcript_path` or by walking up from CWD to find `.purlin/`.
+- `bash-guard.sh` MUST apply the same agent_id extraction logic.
+- Concurrent subagents MUST NOT share a mode file. Each subagent's `agent_id` is unique (assigned by Claude Code), guaranteeing file isolation.
+- Each subagent MUST activate its own mode via `purlin_mode(mode: "<mode>", agent_id: "<id>")` before any writes. The agent definition instructions ("PM mode only", "Engineer mode only") are necessary but not sufficient — the mode guard enforces mechanically, not by instruction.
+
+**Subagent agent definition requirements:**
+
+- All worker agent definitions (`pm-worker.md`, `engineer-worker.md`, `qa-worker.md`) MUST include an explicit mode activation step as step 1 of their workflow: "Activate your mode by calling `purlin_mode(mode: \"<mode>\")` before writing any files."
+- Whether `agent_id` must be passed as a parameter depends on the open question below. If Claude Code does NOT expose `agent_id` as an environment variable to subagent MCP processes, the instruction MUST include the `agent_id` parameter. If it does, the MCP server can derive it automatically.
+- `engineer-worker.md` frontmatter `skills` field MUST reference `purlin:build` (not legacy `pl-build`).
+
+**Hook input fields used (per Claude Code hook spec):**
+
+- `session_id` — always present, used as fallback identifier.
+- `agent_id` — present when running inside a subagent. Used as the primary mode file key.
+- `agent_type` — present when running inside a subagent or `--agent` mode.
+- `cwd` — the working directory of the calling agent.
+
+**How subagents discover their agent_id:**
+
+Subagents do not inherently know their own `agent_id`. The resolution depends on Claude Code's environment propagation:
+1. **Best case — MCP server derives it automatically:** Claude Code exposes `agent_id` (or equivalent) as an environment variable to subagent processes. The MCP server reads it and uses it for mode file scoping. No parameter needed from the subagent.
+2. **Fallback — explicit parameter:** If no environment variable is available, the `purlin_mode` tool's `agent_id` parameter is required. The subagent agent definitions must instruct workers to pass a unique identifier (e.g., their session_id, which IS available to the agent in its own context).
+3. **Degraded mode (single-worker only):** If neither approach is feasible, the subagent writes to the unscoped file. This works for single-worker dispatch but creates race conditions in parallel. The mode guard still provides partial protection by reading the agent-scoped file first (if `agent_id` is in hook input) and falling back to unscoped.
+
+**Recommended implementation:**
+1. `purlin_mode` MCP tool writes to the agent-scoped file ONLY when `agent_id` is provided (not to the unscoped file — dual-write reintroduces the race condition). When `agent_id` is absent, writes to the unscoped file (existing behavior for main session).
+2. `mode-guard.sh` reads the agent-scoped file first (if `agent_id` present in hook input). If no agent-scoped file exists, falls back to unscoped. This ensures single-worker scenarios and main session work without changes, while parallel workers get correct isolation.
+3. The global `_current_mode` cache in `config_engine.py` MUST be removed or scoped by agent_id. As a single MCP server process handles calls from all agents, the in-memory cache will be corrupted by concurrent subagents overwriting each other's state. Either use a dict keyed by agent_id, or always read from disk (mode files are small, I/O cost is negligible).
+
+**Implementation prerequisites (not yet done):**
+- `purlin_mode` tool input schema must add optional `agent_id` parameter.
+- `config_engine.set_mode()` and `get_mode()` must accept an `agent_id` argument for scoped file access.
+- `config_engine._current_mode` global must become a dict or be removed.
+- `mode-guard.sh` and `bash-guard.sh` must parse `agent_id` from the PreToolUse hook input JSON.
+- `bash-guard.sh` must be registered in `hooks/hooks.json` under PreToolUse with matcher `Bash`.
+- `plan-exit-mode-clear.sh` must resolve project root independently of CWD (walk up to find `.purlin/` or use `CLAUDE_PLUGIN_ROOT` parent path).
+
+**Open question (requires Claude Code verification):**
+
+Does Claude Code provide `agent_id` or a unique session identifier as an environment variable to subagent processes (not just in hook input)? If yes, the MCP server can read it directly without requiring a parameter. If no, the `agent_id` parameter on `purlin_mode` is required, and subagent agent definitions must instruct workers to pass it. **This must be verified before implementation by testing with `claude --debug`.**
+
+**Cleanup:**
+
+- Agent-scoped mode files (`.purlin/runtime/current_mode_${agent_id}`) in the main project root MUST be cleaned up by the SessionEnd hook or SubagentStop hook.
+- The main session's SessionEnd hook SHOULD clean up stale `current_mode_*` files in `.purlin/runtime/` (any file matching the pattern that is older than the current session).
 
 ### 2.10 Commit Attribution
 
@@ -302,6 +374,39 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     When features/framework_core/auth_flow.impl.md is modified
     Then the "auth_flow" entry is removed from companion_debt.json
 
+#### Scenario: Concurrent subagents have isolated mode state
+
+    Given the main session spawns pm-worker (agent_id=abc) and engineer-worker (agent_id=def) in parallel
+    When pm-worker activates PM mode and engineer-worker activates Engineer mode
+    Then .purlin/runtime/current_mode_abc contains "pm" (in main project root)
+    And .purlin/runtime/current_mode_def contains "engineer" (in main project root)
+    And mode-guard.sh for pm-worker reads agent_id=abc from hook input and checks current_mode_abc
+    And mode-guard.sh for engineer-worker reads agent_id=def from hook input and checks current_mode_def
+
+#### Scenario: Subagent mode guard enforces correct boundaries
+
+    Given pm-worker (agent_id=abc) has activated PM mode
+    And .purlin/runtime/current_mode_abc contains "pm"
+    When pm-worker attempts to write to src/app.py (CODE-owned)
+    Then the mode guard extracts agent_id=abc from PreToolUse hook input
+    And reads mode "pm" from .purlin/runtime/current_mode_abc
+    And the write is blocked with "CODE-owned, not writable in PM mode"
+
+#### Scenario: MCP server and mode guard agree on mode file path
+
+    Given engineer-worker calls purlin_mode(mode: "engineer", agent_id: "def")
+    When mode-guard.sh fires for a Write call from the same subagent
+    Then the hook extracts agent_id=def from PreToolUse input
+    And reads .purlin/runtime/current_mode_def (same file the MCP tool wrote)
+    And the mode is "engineer" (not stale, not from another subagent)
+
+#### Scenario: Subagent without agent_id falls back to unscoped mode file
+
+    Given a single subagent is spawned without agent_id in hook input
+    When the subagent calls purlin_mode(mode: "engineer") and attempts a Write
+    Then mode-guard.sh falls back to reading .purlin/runtime/current_mode (unscoped)
+    And the write is allowed (single-worker, no race condition)
+
 ### QA Scenarios
 
 #### Scenario: Open mode prevents writes @auto
@@ -355,3 +460,8 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - Verify concurrent terminals with different PURLIN_SESSION_ID values have independent mode state
 - Verify SessionEnd cleans up PID-scoped mode files
 - Verify sessions without PURLIN_SESSION_ID fall back to unscoped current_mode file
+- Verify parallel subagents (pm-worker + engineer-worker) write to separate agent-ID-scoped mode files in the main project root
+- Verify mode-guard.sh extracts agent_id from PreToolUse hook input and reads the correct mode file
+- Verify MCP server and mode guard agree on mode file path (both use main project root + agent_id)
+- Verify single-worker fallback: subagent without agent_id in hook input uses unscoped mode file
+- Verify engineer-worker.md references `purlin:build` (not legacy `pl-build`) in skills frontmatter

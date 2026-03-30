@@ -39,7 +39,7 @@ Parallel feature builder for pipeline delivery. Implements a single feature in a
     - MUST NOT modify the work plan (`.purlin/work_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
     - Commit with `feat(scope): implement FEATURE_NAME`.
-    - Activates Engineer mode in its worktree (PID-scoped mode file).
+    - Activates Engineer mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
 
 #### 2.1.2 `pm-worker.md`
 
@@ -60,7 +60,7 @@ Spec authoring sub-agent for pipeline delivery. Writes or refines a single featu
     ```
 *   **System prompt constraints:**
     - Single-feature focus: writes or refines one feature spec per invocation.
-    - Activates PM mode in its worktree (PID-scoped mode file).
+    - Activates PM mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
     - MUST NOT write code, tests, scripts, or instruction files.
     - MUST NOT modify the work plan (`.purlin/work_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
@@ -86,7 +86,7 @@ Verification sub-agent for pipeline delivery. Verifies a single feature in an is
     ```
 *   **System prompt constraints:**
     - Single-feature focus: verifies one feature per invocation.
-    - Activates QA mode in its worktree (PID-scoped mode file).
+    - Activates QA mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
     - Runs Phase A (automated verification) of `purlin:verify`. Writes discoveries.
     - MUST NOT write code or feature specs.
     - MUST NOT mark `[Complete]` — the orchestrator handles final status after cross-feature checks.

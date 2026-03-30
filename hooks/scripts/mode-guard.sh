@@ -4,8 +4,19 @@
 # and blocks writes that violate mode boundaries.
 #
 # Exit codes:
-#   0 = allow the write
-#   2 = block the write (tool error shown to agent)
+#   0 = allow the write (with permissionDecision JSON for marketplace auto-approve)
+#   2 = block the write (error on stderr, required for Claude Code to enforce block)
+#
+# Permission model: Instead of relying on bypassPermissions (stripped for
+# marketplace plugins), this hook returns permissionDecision:"allow" for
+# authorized writes. This gives surgical per-call approval.
+
+# Output permissionDecision:allow JSON and exit 0
+_allow() {
+    local reason="${1:-Authorized by Purlin mode guard}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"$reason\"}}"
+    exit 0
+}
 
 set -e
 
@@ -28,18 +39,53 @@ except Exception:
 
 if [ -z "$FILE_PATH" ]; then
     # Cannot determine file — allow (fail open)
-    exit 0
+    _allow "File path not determined — fail open"
 fi
 
-# Detect project root
-PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
+# Extract agent_id from hook input (present when running inside a subagent)
+AGENT_ID=$(echo "$INPUT" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(data.get('agent_id', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+# Detect project root — works for both installed plugins (cache dir) and --plugin-dir.
+# Order: env var → climb from CWD → CWD fallback → CLAUDE_PLUGIN_ROOT (--plugin-dir only).
+_find_project_root() {
+    # 1. Explicit env var (set by MCP server or parent process)
+    if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+        echo "$PURLIN_PROJECT_ROOT"; return
+    fi
+    # 2. Climb from CWD — most reliable for installed plugins (Claude Code sets
+    #    hook CWD to the user's working directory)
+    local dir; dir="$(pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
+        dir="$(dirname "$dir")"
+    done
+    # 3. CLAUDE_PLUGIN_ROOT — only works for --plugin-dir where plugin root IS the project
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
+    # 4. Last resort
+    echo "$(pwd)"
+}
+
+PROJECT_ROOT="$(_find_project_root)"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
 # Make path relative to project root for classification
 REL_PATH="${FILE_PATH#$PROJECT_ROOT/}"
 
-# Export PURLIN_SESSION_ID so config_engine reads PID-scoped mode file
-export PURLIN_SESSION_ID="${PURLIN_SESSION_ID:-}"
+# Use agent_id for mode file scoping (subagents), fall back to PURLIN_SESSION_ID
+if [ -n "$AGENT_ID" ]; then
+    export PURLIN_SESSION_ID="$AGENT_ID"
+else
+    export PURLIN_SESSION_ID="${PURLIN_SESSION_ID:-}"
+fi
 
 # Try MCP server classification first (via Python inline)
 CLASSIFICATION=$(python3 -c "
@@ -72,7 +118,7 @@ fi
 
 if [ -z "$CLASSIFICATION" ]; then
     # Cannot classify — allow (fail open)
-    exit 0
+    _allow "File classification unavailable — fail open"
 fi
 
 FILE_CLASS=$(echo "$CLASSIFICATION" | cut -d'|' -f1)
@@ -80,7 +126,7 @@ CURRENT_MODE=$(echo "$CLASSIFICATION" | cut -d'|' -f2)
 
 # If no mode is active, block all writes
 if [ "$CURRENT_MODE" = "none" ] || [ "$CURRENT_MODE" = "None" ]; then
-    echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before making changes."}'
+    echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before making changes."}' >&2
     exit 2
 fi
 
@@ -88,19 +134,19 @@ fi
 case "$CURRENT_MODE" in
     engineer)
         if [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "QA" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in Engineer mode.\"}"
+            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in Engineer mode.\"}" >&2
             exit 2
         fi
         ;;
     pm)
         if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "QA" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in PM mode.\"}"
+            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in PM mode.\"}" >&2
             exit 2
         fi
         ;;
     qa)
         if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in QA mode.\"}"
+            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in QA mode.\"}" >&2
             exit 2
         fi
         ;;
@@ -108,8 +154,8 @@ esac
 
 # Invariant files blocked regardless of mode
 if [ "$FILE_CLASS" = "INVARIANT" ]; then
-    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. No mode can write to invariant files.\"}"
+    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. No mode can write to invariant files.\"}" >&2
     exit 2
 fi
 
-exit 0
+_allow "$CURRENT_MODE mode: $FILE_CLASS write authorized"

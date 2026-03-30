@@ -376,18 +376,28 @@ def main():
 
 # Mode state — persisted to .purlin/runtime/ so hook scripts
 # (which run in separate processes) can read it.
-# PID-scoped when PURLIN_SESSION_ID is set to prevent concurrent
-# terminals from clobbering each other's mode.
-_current_mode = None
+# Scoped by agent_id (for parallel subagents) or PURLIN_SESSION_ID
+# (for concurrent terminals) to prevent mode file collisions.
+# The cache is keyed by scope identifier because the MCP server is a
+# single process shared across all agents — a global would be corrupted
+# by concurrent subagents overwriting each other's state.
+_mode_cache = {}  # {scope_key: mode_string_or_None}
 
 
-def _mode_file_path():
-    """Return path to the mode state file (PID-scoped when possible)."""
+def _mode_scope_key(agent_id=None):
+    """Return the scope key for mode file and cache lookups."""
+    if agent_id:
+        return agent_id
+    return os.environ.get('PURLIN_SESSION_ID', '')
+
+
+def _mode_file_path(agent_id=None):
+    """Return path to the mode state file (scoped when possible)."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', os.getcwd())
-    session_id = os.environ.get('PURLIN_SESSION_ID')
-    if session_id:
+    scope = _mode_scope_key(agent_id)
+    if scope:
         return os.path.join(project_root, '.purlin', 'runtime',
-                            f'current_mode_{session_id}')
+                            f'current_mode_{scope}')
     return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
 
 
@@ -397,50 +407,58 @@ def _mode_file_path_unscoped():
     return os.path.join(project_root, '.purlin', 'runtime', 'current_mode')
 
 
-def get_mode():
-    """Return current operating mode or None."""
-    global _current_mode
-    if _current_mode is not None:
-        return _current_mode
-    # Read from persisted state — PID-scoped first, then unscoped fallback.
-    # If PID-scoped file EXISTS (even if empty), it is authoritative —
+def get_mode(agent_id=None):
+    """Return current operating mode or None.
+
+    Args:
+        agent_id: Optional agent identifier for subagent-scoped mode lookup.
+    """
+    scope = _mode_scope_key(agent_id)
+    if scope in _mode_cache and _mode_cache[scope] is not None:
+        return _mode_cache[scope]
+    # Read from persisted state — scoped first, then unscoped fallback.
+    # If scoped file EXISTS (even if empty), it is authoritative —
     # do not fall back to unscoped. This ensures plan-exit-mode-clear
     # (which empties the file) isn't bypassed by a stale unscoped file.
-    session_id = os.environ.get('PURLIN_SESSION_ID')
-    if session_id:
+    if scope:
         try:
-            path = _mode_file_path()
+            path = _mode_file_path(agent_id)
             if os.path.isfile(path):
                 with open(path, 'r') as f:
                     mode = f.read().strip()
                 if mode in ('engineer', 'pm', 'qa'):
-                    _current_mode = mode
+                    _mode_cache[scope] = mode
                     return mode
                 # File exists but is empty/invalid — mode was cleared
                 return None
         except (IOError, OSError):
             pass
-    # No session ID or no PID-scoped file — try unscoped
+    # No scope or no scoped file — try unscoped
     try:
         path = _mode_file_path_unscoped()
         if os.path.isfile(path):
             with open(path, 'r') as f:
                 mode = f.read().strip()
             if mode in ('engineer', 'pm', 'qa'):
-                _current_mode = mode
+                _mode_cache[scope] = mode
                 return mode
     except (IOError, OSError):
         pass
     return None
 
 
-def set_mode(mode):
-    """Set current operating mode (engineer, pm, qa, or None)."""
-    global _current_mode
-    _current_mode = mode
+def set_mode(mode, agent_id=None):
+    """Set current operating mode (engineer, pm, qa, or None).
+
+    Args:
+        mode: Mode string or None to clear.
+        agent_id: Optional agent identifier for subagent-scoped mode.
+    """
+    scope = _mode_scope_key(agent_id)
+    _mode_cache[scope] = mode
     # Persist to file for cross-process access (hooks)
     try:
-        path = _mode_file_path()
+        path = _mode_file_path(agent_id)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w') as f:
             f.write(mode or '')
@@ -451,29 +469,59 @@ def set_mode(mode):
 def classify_file(filepath):
     """Classify a file as CODE, SPEC, QA, or INVARIANT for mode guard.
 
-    This is a simplified version of the classification logic from
-    references/file_classification.md. Returns one of:
-    CODE, SPEC, QA, INVARIANT, or UNKNOWN.
+    IMPORTANT: This function is the permission gate for marketplace plugins.
+    Every exit-0 path in mode-guard.sh returns permissionDecision:"allow"
+    based on this classification. Be conservative — when in doubt, classify
+    as CODE (most restrictive for PM/QA modes).
+
+    Rules are evaluated in order; first match wins.
     """
     path = filepath.replace('\\', '/')
 
-    # Invariant files — no mode can write
+    # --- INVARIANT — no mode can write ---
     if '/features/i_' in path or path.startswith('features/i_'):
         return 'INVARIANT'
 
-    # QA-owned files
-    if '.discoveries.md' in path:
+    # --- QA-owned ---
+    # Discovery sidecars
+    if path.endswith('.discoveries.md'):
         return 'QA'
+    # Regression test results
     if '/tests/' in path and path.endswith('regression.json'):
         return 'QA'
+    # QA scenario files
+    if '/tests/qa/scenarios/' in path or path.startswith('tests/qa/scenarios/'):
+        return 'QA'
 
-    # Spec files (PM-owned)
+    # --- SPEC (PM-owned) ---
+    # Feature specs in features/ (but NOT companion .impl.md files)
     if '/features/' in path or path.startswith('features/'):
         if path.endswith('.impl.md'):
             return 'CODE'  # Companion files are Engineer-owned
         return 'SPEC'
+    # Design and policy anchors (can be at any path depth)
+    basename = path.rsplit('/', 1)[-1] if '/' in path else path
+    if basename.startswith('design_') and basename.endswith('.md'):
+        return 'SPEC'
+    if basename.startswith('policy_') and basename.endswith('.md'):
+        return 'SPEC'
 
-    # Everything else is CODE (Engineer-owned)
+    # --- CODE (Engineer-owned) — explicit patterns for clarity ---
+    # Skills, scripts, hooks, agents, references, templates, tests, .purlin config
+    for prefix in ('skills/', 'scripts/', 'hooks/', 'agents/', 'references/',
+                   'templates/', 'tests/', 'src/', 'lib/', 'app/', 'dev/',
+                   '.claude/', '.purlin/', '.claude-plugin/'):
+        if path.startswith(prefix) or f'/{prefix}' in path:
+            return 'CODE'
+
+    # Config and dotfiles at project root
+    if basename in ('package.json', 'tsconfig.json', 'pyproject.toml',
+                    'Cargo.toml', 'go.mod', 'Makefile', 'Dockerfile',
+                    '.gitignore', '.eslintrc', '.prettierrc', 'CLAUDE.md',
+                    'README.md', 'CHANGELOG.md', 'LICENSE'):
+        return 'CODE'
+
+    # Default: everything else is CODE (most restrictive for PM/QA)
     return 'CODE'
 
 

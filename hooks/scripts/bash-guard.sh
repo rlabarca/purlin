@@ -1,0 +1,99 @@
+#!/bin/bash
+# PreToolUse hook — default-mode Bash guard.
+# When no mode is active (default read-only), blocks Bash commands
+# that match known write/destructive patterns.
+# When a mode IS active, allows all Bash through with permissionDecision:allow.
+#
+# Exit codes:
+#   0 = allow (with permissionDecision JSON for marketplace auto-approve)
+#   2 = block (error on stderr)
+
+set -e
+
+# Output permissionDecision:allow JSON and exit 0
+_allow() {
+    local reason="${1:-Authorized by Purlin bash guard}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"$reason\"}}"
+    exit 0
+}
+
+INPUT=$(cat)
+
+# Extract the command string from the tool input
+COMMAND=$(echo "$INPUT" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    tool_input = data.get('tool_input', {})
+    print(tool_input.get('command', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+if [ -z "$COMMAND" ]; then
+    _allow "No command to evaluate"
+fi
+
+# Extract agent_id from hook input (present when running inside a subagent)
+AGENT_ID=$(echo "$INPUT" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(data.get('agent_id', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+# Detect project root — works for both installed plugins and --plugin-dir.
+_find_project_root() {
+    if [ -n "$PURLIN_PROJECT_ROOT" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+        echo "$PURLIN_PROJECT_ROOT"; return
+    fi
+    local dir; dir="$(pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
+        dir="$(dirname "$dir")"
+    done
+    if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
+    echo "$(pwd)"
+}
+
+PROJECT_ROOT="$(_find_project_root)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+
+# Use agent_id for mode file scoping (subagents), fall back to PURLIN_SESSION_ID
+if [ -n "$AGENT_ID" ]; then
+    export PURLIN_SESSION_ID="$AGENT_ID"
+else
+    export PURLIN_SESSION_ID="${PURLIN_SESSION_ID:-}"
+fi
+
+# Read current mode
+CURRENT_MODE=$(python3 -c "
+import sys, os
+os.environ.setdefault('PURLIN_PROJECT_ROOT', '$PROJECT_ROOT')
+sys.path.insert(0, '$PLUGIN_ROOT/scripts/mcp')
+from config_engine import get_mode
+mode = get_mode()
+print(mode or 'none')
+" 2>/dev/null)
+
+# If a mode is active, allow all Bash commands through.
+# Full per-mode classification of shell commands is too fragile.
+if [ -n "$CURRENT_MODE" ] && [ "$CURRENT_MODE" != "none" ] && [ "$CURRENT_MODE" != "None" ]; then
+    _allow "$CURRENT_MODE mode active: Bash authorized"
+fi
+
+# Default mode (no mode active) — check for write/destructive patterns.
+# This is a best-effort safety net, not an exhaustive parser.
+WRITE_PATTERNS='(^|[;&|]\s*)(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|rm\s|rm\s+-|rmdir\s|mv\s|cp\s|git\s+add|git\s+commit|git\s+push|git\s+reset|git\s+checkout\s|git\s+stash|mkdir\s|touch\s|chmod\s|chown\s|ln\s|install\s|>\s*[/a-zA-Z]|>>\s*[/a-zA-Z])'
+
+if echo "$COMMAND" | grep -qE "$WRITE_PATTERNS"; then
+    echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before running write/destructive commands."}' >&2
+    exit 2
+fi
+
+# Read-only command in default mode — allow
+_allow "Read-only command in default mode"
