@@ -21,13 +21,15 @@ purlin:update [<version>] [--dry-run] [--auto-approve]
 
 ## Execution Flow
 
-### Step 0 -- Banner
+### Step 0 -- Setup
 
-Print the skill banner per output standards:
+Print the skill banner and activate Engineer mode:
 
 ```
 ━━━ purlin:update ━━━━━━━━━━━━━━━━━━━━━
 ```
+
+Activate Engineer mode by calling `purlin_mode(mode: "engineer")`. This is required before any Bash or file operations — the mode guard blocks all writes in default mode.
 
 ### Step 1 -- Resolve Project Root
 
@@ -106,8 +108,6 @@ Step <id>: <name> (<from_era> → <to_era>)
 **If `--auto-approve`:** Proceed without prompting.
 
 ### Step 5 -- Execute Migration Steps
-
-**Before executing:** Activate Engineer mode by calling `purlin_mode(mode: "engineer")`. The migration scripts handle their own file writes via Python, but the mode guard must be active for any Bash or Write tool calls the agent makes during orchestration.
 
 Execute each step sequentially:
 
@@ -205,7 +205,7 @@ When the skill orchestrates step 3:
 
 After all migration steps complete (or if already up to date), run feature file organization as permanent housekeeping. This step runs on every `purlin:update` invocation and is idempotent.
 
-**Mode activation:** Before any file operations in this step, activate Engineer mode by calling `purlin_mode(mode: "engineer")`. The mode guard blocks file writes and Bash commands when no mode is active.
+Engineer mode was activated in Step 0.
 
 ### Organize Step -- Feature File Placement
 
