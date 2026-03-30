@@ -348,22 +348,50 @@ class Step3PluginRefresh(MigrationStep):
             actions.append('Remove purlin git submodule, .gitmodules, .git/modules/purlin.')
         if os.path.exists(os.path.join(project_root, 'purlin')):
             actions.append('Delete purlin/ directory.')
-        # Check for symlinks and stale scripts
-        stale_names = ['pl-run.sh', 'pl-init.sh', 'pl-cdd-start.sh',
-                       'pl-cdd-stop.sh', 'pl-cdd-status.sh']
-        found_stale = [n for n in stale_names
-                       if os.path.exists(os.path.join(project_root, n))
-                       or os.path.islink(os.path.join(project_root, n))]
-        if found_stale:
-            actions.append(f'Delete stale scripts/symlinks: {", ".join(found_stale)}.')
+
+        # Check ALL stale artifacts
+        stale_root = [
+            'pl-run.sh', 'pl-init.sh', 'pl-run-architect.sh',
+            'pl-run-builder.sh', 'pl-run-pm.sh', 'pl-run-qa.sh',
+            'pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
+            'purlin-start.sh', 'purlin-stop.sh', 'CRITIC_REPORT.md',
+        ]
+        found_root = [n for n in stale_root
+                      if os.path.exists(os.path.join(project_root, n))
+                      or os.path.islink(os.path.join(project_root, n))]
+        if found_root:
+            actions.append(f'Delete stale scripts/files: {", ".join(found_root)}.')
+
+        stale_purlin = [
+            '.purlin/ARCHITECT_OVERRIDES.md', '.purlin/BUILDER_OVERRIDES.md',
+            '.purlin/PM_OVERRIDES.md', '.purlin/HOW_WE_WORK_OVERRIDES.md',
+            '.purlin/gitignore.purlin', '.purlin/.upstream_sha',
+        ]
+        found_purlin = [n for n in stale_purlin
+                        if os.path.exists(os.path.join(project_root, n))]
+        if found_purlin:
+            actions.append(f'Delete old override/config files: {", ".join(found_purlin)}.')
+        if os.path.isdir(os.path.join(project_root, '.purlin', 'release')):
+            actions.append('Delete .purlin/release/ directory.')
+
         if glob_mod.glob(os.path.join(project_root, '.claude/commands/pl-*.md')):
             actions.append('Delete old .claude/commands/pl-*.md files.')
         if glob_mod.glob(os.path.join(project_root, '.claude/agents/*.md')):
             actions.append('Delete old .claude/agents/*.md files.')
-        actions.extend([
-            'Sync config: add missing keys from plugin template.',
-            'Stamp _migration_version: 3.',
-        ])
+
+        # CLAUDE.md cleanup
+        claude_md = os.path.join(project_root, 'CLAUDE.md')
+        if os.path.isfile(claude_md):
+            try:
+                with open(claude_md, encoding='utf-8') as f:
+                    content = f.read()
+                if 'purlin:start' in content or 'pl-resume' in content:
+                    actions.append('Rewrite CLAUDE.md: remove old 4-role boilerplate.')
+            except OSError:
+                pass
+
+        actions.append('Sync config: add missing keys from plugin template.')
+        actions.append('Stamp _migration_version: 3.')
         return actions
 
     def execute(self, fingerprint, project_root, auto_approve=False):
@@ -404,23 +432,74 @@ class Step3PluginRefresh(MigrationStep):
         config_path = os.path.join(project_root, '.purlin', 'config.json')
         config = _read_json(config_path) or {}
 
-        # Clean ALL stale pre-plugin artifacts: scripts, symlinks, old commands
-        stale_files = [
-            os.path.join(project_root, 'pl-run.sh'),
-            os.path.join(project_root, 'pl-init.sh'),
-            os.path.join(project_root, '.purlin', '.upstream_sha'),
+        # Clean ALL stale pre-plugin artifacts comprehensively.
+
+        # 1. Root-level scripts and symlinks (all naming conventions)
+        stale_root_patterns = [
+            'pl-run.sh', 'pl-init.sh',
+            'pl-run-architect.sh', 'pl-run-builder.sh',
+            'pl-run-pm.sh', 'pl-run-qa.sh',
+            'pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
+            'purlin-start.sh', 'purlin-stop.sh',
+            'CRITIC_REPORT.md',
         ]
-        # Symlinks from old purlin launcher system
-        for name in ('pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
-                     'purlin-start.sh', 'purlin-stop.sh'):
-            stale_files.append(os.path.join(project_root, name))
-        for f in stale_files:
+        for name in stale_root_patterns:
+            f = os.path.join(project_root, name)
             if os.path.exists(f) or os.path.islink(f):
                 os.remove(f)
-        # Old command files
+
+        # 2. Old command and agent files
         for pattern in ['.claude/commands/pl-*.md', '.claude/agents/*.md']:
             for f in glob_mod.glob(os.path.join(project_root, pattern)):
                 os.remove(f)
+
+        # 3. Old .purlin/ artifacts (override files, upstream sha, release config)
+        stale_purlin = [
+            '.purlin/.upstream_sha',
+            '.purlin/ARCHITECT_OVERRIDES.md',
+            '.purlin/BUILDER_OVERRIDES.md',
+            '.purlin/PM_OVERRIDES.md',
+            '.purlin/HOW_WE_WORK_OVERRIDES.md',
+            '.purlin/gitignore.purlin',
+        ]
+        for name in stale_purlin:
+            f = os.path.join(project_root, name)
+            if os.path.exists(f):
+                os.remove(f)
+        # Old release config directory
+        release_dir = os.path.join(project_root, '.purlin', 'release')
+        if os.path.isdir(release_dir):
+            shutil.rmtree(release_dir, ignore_errors=True)
+
+        # 4. Rewrite CLAUDE.md — replace old 4-role boilerplate with plugin reference
+        claude_md = os.path.join(project_root, 'CLAUDE.md')
+        if os.path.isfile(claude_md):
+            try:
+                with open(claude_md, encoding='utf-8') as f:
+                    content = f.read()
+                # Strip old purlin:start/end block
+                content = re.sub(
+                    r'<!-- purlin:start -->.*?<!-- purlin:end -->\s*',
+                    '', content, flags=re.DOTALL
+                )
+                # Strip migrated override boilerplate
+                content = re.sub(
+                    r'## Project Rules \(migrated from Purlin overrides\).*',
+                    '', content, flags=re.DOTALL
+                )
+                content = content.strip()
+                # Write clean CLAUDE.md if there's remaining project content,
+                # otherwise write a minimal plugin reference
+                if not content:
+                    content = (
+                        '# Project Instructions\n\n'
+                        'This project uses the Purlin plugin for spec-driven development.\n'
+                        'Run `purlin:help` for commands.\n'
+                    )
+                with open(claude_md, 'w', encoding='utf-8') as f:
+                    f.write(content + '\n')
+            except (IOError, OSError):
+                pass
 
         # Stamp version
         self._stamp_version(project_root)
