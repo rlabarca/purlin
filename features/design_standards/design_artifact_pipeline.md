@@ -45,22 +45,48 @@ Token mappings MUST validate against the declared design anchor's token definiti
 
 ### Annotation-Informed Ingestion
 
-Figma annotations are an optional behavioral input source that accelerates the design-to-spec pipeline. When Figma MCP is available, the PM reads annotations via `get_design_context` BEFORE the Probing Question Protocol. This is a progressive enhancement -- the pipeline works without annotations (the PM conducts a full probing interview) and gets faster when they are present (the PM only probes for gaps).
+Figma annotations are an optional behavioral input source that accelerates the design-to-spec pipeline. When Figma MCP is available, the PM calls `get_design_context` (fileKey + nodeId from the Figma URL) BEFORE the Probing Question Protocol. This returns annotations, design token CSS variables, Code Connect snippets (if configured), and contextual hints — all in one call. This is a progressive enhancement -- the pipeline works without annotations (the PM conducts a full probing interview) and gets faster when they are present (the PM only probes for gaps).
 
 *   Annotations that describe behavior (states, interactions, edge cases) are used to pre-populate Gherkin scenario drafts.
+*   Design token CSS variables from the response are used to auto-seed Token Map entries (see Token Map Auto-Seeding below).
+*   Code Connect snippets (when present) identify which code components map to Figma components — captured in `brief.json` under the `code_connect` key.
 *   Annotations do NOT replace the PM's spec authority -- they are input, not output. The PM validates, refines, and may discard annotation content.
 *   The PM presents extracted behavioral notes to the user before probing: "I found these behavioral notes in the Figma annotations: [list]. I'll use these to draft scenarios -- let me know if any are outdated."
 *   Probing questions skip topics already covered by annotations, reducing the interview from N questions to (N - annotations_covered) questions.
 *   Annotations are NOT required. Projects without annotations proceed through the full Probing Question Protocol as before.
 
+### Token Map Auto-Seeding
+
+When Figma MCP is available during `purlin:spec`, Token Maps are auto-seeded rather than manually authored:
+
+1.  **`get_design_context`** (fileKey + nodeId) returns design tokens as CSS variables for the specific node. These provide the initial Figma token names.
+2.  **`get_variable_defs`** (fileKey) returns the full variable vocabulary with names, types, and resolved values. This supplements the node-specific data with variables that may be inherited or referenced indirectly.
+3.  The PM reads the project's `design_*.md` anchors and `i_design_*.md` invariants to build the project token vocabulary.
+4.  For each Figma variable, automatic matching is attempted:
+    *   **Exact name match** (normalized) → identity mapping.
+    *   **Semantic match** (resolved value similarity or naming convention) → proposed mapping.
+    *   **No match** → flagged for PM review with the resolved value shown.
+5.  The auto-seeded Token Map is presented to the PM for review. The PM confirms, adjusts, or discards each mapping.
+
+**The PM's value-add** is reviewing and correcting auto-generated mappings, not manual token discovery. For mature design systems with code-matching token names, auto-seeding produces mostly identity mappings that the PM confirms in bulk.
+
+Without Figma MCP, the PM creates Token Maps manually (Tier 1 or Tier 2 processing). Auto-seeding is a progressive enhancement, not a requirement.
+
 ### Design Brief Cache
 
 During ingestion, the PM extracts a compact design brief from Figma and stores it locally at `features/_design/<feature_stem>/brief.json`. This provides Engineer mode with structured, machine-readable design data without requiring Figma MCP access during implementation.
+
+**MCP tools used for brief generation:**
+*   `get_design_context` (fileKey + nodeId) — primary source. Returns component hierarchy, layout hints, design token CSS variables, and Code Connect snippets (if configured). The brief captures the structured data portion.
+*   `get_variable_defs` (fileKey) — supplements with the full variable vocabulary and resolved values. Populates the `tokens` key.
+*   `get_metadata` (fileKey) — provides `figma_version_id` and `figma_last_modified` for staleness tracking.
+*   `get_code_connect_map` / `get_code_connect_suggestions` (fileKey, optional) — when Code Connect is configured, populates the `code_connect` key.
 
 **Schema:**
 ```json
 {
   "figma_url": "https://figma.com/design/...",
+  "figma_version_id": "<version-id>",
   "figma_last_modified": "2026-03-13T09:00:00Z",
   "screens": {
     "<Screen Name>": {
@@ -75,42 +101,47 @@ During ingestion, the PM extracts a compact design brief from Figma and stores i
   },
   "tokens": {
     "<figma-token-name>": "<resolved-value>"
-  }
-}
-```
-
-*   `brief.json` is generated once by the PM during ingestion (when the PM is already reading Figma via MCP).
-*   `figma_last_modified` is embedded for staleness detection.
-*   Engineer mode reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
-*   QA reads Figma MCP directly during verification for the freshest data. `brief.json` is a QA fallback if MCP is unavailable.
-
-### Code Connect Enhancement (Progressive)
-
-Code Connect is an optional enhancement available when Figma Org/Enterprise plans have published Code Connect mappings for their component libraries. When present, Figma MCP responses include component code references alongside existing design data. These references are captured in `brief.json` during ingestion under a `code_connect` key.
-
-*   Code Connect data does NOT replace the Token Map -- both coexist. Token Map bridges design-system tokens (colors, spacing, typography). Code Connect bridges components (which source component to use and how to configure its props).
-*   Code Connect mapping files (`.figma.tsx`, `.figma.swift`, etc.) are Engineer-owned implementation artifacts, not spec artifacts.
-*   Publishing Code Connect to Figma is a CI/CD concern outside Purlin's scope. We capture whatever data the MCP returns; we do not manage the publishing pipeline.
-*   The `code_connect` key in `brief.json` is OPTIONAL -- present only when Code Connect data exists in the MCP response.
-
-**Schema addition to `brief.json`:**
-```json
-{
+  },
   "code_connect": {
     "<ComponentName>": {
       "source_file": "src/components/Card.tsx",
-      "props": { "variant": "outlined", "size": "large" },
+      "props": {"variant": "outlined", "size": "large"},
       "figma_node_id": "<node-id>"
     }
   }
 }
 ```
 
+*   `brief.json` is generated once by the PM during ingestion (when the PM is already reading Figma via MCP).
+*   `figma_version_id` is the preferred staleness key; `figma_last_modified` is the fallback.
+*   The `code_connect` key is OPTIONAL — present only when Code Connect data exists in the MCP response.
+*   Engineer mode reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
+*   QA reads Figma MCP directly during verification for the freshest data. `brief.json` is a QA fallback if MCP is unavailable.
+
+### Code Connect Enhancement (Progressive)
+
+Code Connect is an optional enhancement available when Figma Org/Enterprise plans have published Code Connect mappings for their component libraries. When present, `get_design_context` responses include Code Connect snippets mapping Figma components to code implementations. These are supplemented by `get_code_connect_map` (returns all mappings for a file) and `get_code_connect_suggestions` (suggests unmapped components). References are captured in `brief.json` during ingestion under a `code_connect` key.
+
+**Detection flow during `purlin:spec`:**
+1.  Call `get_design_context` (fileKey + nodeId). If the response includes Code Connect snippets, Code Connect is active.
+2.  Call `get_code_connect_map` (fileKey) to get the full component-to-code mapping for the file.
+3.  Optionally call `get_code_connect_suggestions` (fileKey) to identify unmapped components that could benefit from Code Connect.
+4.  Populate `brief.json` `code_connect` key with the mapping data.
+
+**Detection during `purlin:invariant add-figma`:**
+1.  If `get_design_context` returns Code Connect snippets, note their presence in the pointer's `## Code Connect` section (informational only — the pointer does not store the mappings themselves).
+
+*   Code Connect data does NOT replace the Token Map -- both coexist. Token Map bridges design-system tokens (colors, spacing, typography). Code Connect bridges components (which source component to use and how to configure its props).
+*   Code Connect mapping files (`.figma.tsx`, `.figma.swift`, etc.) are Engineer-owned implementation artifacts, not spec artifacts.
+*   Publishing Code Connect to Figma is a CI/CD concern outside Purlin's scope. We capture whatever data the MCP returns; we do not manage the publishing pipeline.
+*   The `code_connect` key in `brief.json` is OPTIONAL -- present only when Code Connect data exists in the MCP response.
+
 ### Processing Mandate
 
 *   Every referenced artifact MUST have a corresponding `- **Token Map:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the Token Map and checklists are the working documents that agents use.
+*   When Figma MCP is available, Token Maps are auto-seeded from `get_design_context` and `get_variable_defs` output (see Token Map Auto-Seeding above). The PM reviews and confirms auto-generated mappings.
 *   Unprocessed artifacts (reference exists but no Token Map) are flagged as HIGH-priority PM action items by `purlin:status`.
-*   Engineer mode reads Figma MCP directly for layout and structure details. The Token Map provides the token bridge; visual acceptance checklists provide measurable criteria. Prose descriptions are NOT used.
+*   Engineer mode reads Figma MCP directly for layout and structure details (via `get_design_context`). The Token Map provides the token bridge; visual acceptance checklists provide measurable criteria. Prose descriptions are NOT used.
 
 ### Design Anchor Declaration
 
@@ -178,7 +209,7 @@ The PM may optionally attach feature spec URLs to Figma nodes via the Dev Resour
 
 *   **Tier 1 (Manual):** Public Figma URLs are recorded in `- **Reference:**` lines. The PM manually creates the Token Map by viewing the URL and mapping observed design tokens to the project's token system. No `brief.json` is generated.
 *   **Tier 2 (Export):** Designers export Figma frames as PNG/SVG/PDF. Exports are stored locally per the storage convention. If CSS or design tokens are exported from Figma dev mode, they are stored alongside as `<name>.tokens.css` or `<name>.tokens.json`. The PM creates the Token Map from these exports.
-*   **Tier 3 (MCP -- Live API):** When Figma MCP is available, the PM reads design data directly via MCP protocol. The `[Figma](<url>)` reference format is preserved for audit trail. MCP enables: extracting component metadata, layout properties, design variables/tokens, auto-layout constraints, and annotations. At Tier 3, the PM also generates `brief.json` from the MCP data. Tier 3 supplements Tiers 1/2 -- projects without Figma MCP fall back gracefully to Tier 1 or Tier 2 processing.
+*   **Tier 3 (MCP -- Live API):** When Figma MCP is available, the PM reads design data directly via MCP protocol. The `[Figma](<url>)` reference format is preserved for audit trail. Primary MCP tools: `get_design_context` (component metadata, layout, design tokens as CSS variables, Code Connect snippets, annotations), `get_variable_defs` (full variable vocabulary with resolved values), `get_metadata` (version tracking), `get_screenshot` (visual snapshots). At Tier 3, Token Maps are auto-seeded from MCP data, and the PM generates `brief.json` from the MCP responses. Tier 3 supplements Tiers 1/2 -- projects without Figma MCP fall back gracefully to Tier 1 or Tier 2 processing.
 
 ### Figma MCP Role Access
 
@@ -195,12 +226,14 @@ The PM may optionally attach feature spec URLs to Figma nodes via the Dev Resour
     2.  **Restart Claude** to pick up the new MCP server.
     3.  **Authenticate:** Run the `/mcp` command, select the Figma MCP, and complete OAuth in the browser.
     4.  Figma MCP tools are available after browser auth completes.
+    Key tools the agent checks for: `get_design_context`, `get_metadata`, `get_variable_defs`, `get_screenshot`.
 
 ### Figma Staleness Detection (MCP)
 
-*   When Figma MCP is available and a screen references a Figma URL, the agent reads the design's `lastModified` timestamp via MCP.
-*   The timestamp is compared against the `- **Processed:**` date in the Visual Specification.
-*   If the Figma design was modified after the processed date, the screen is flagged as STALE.
+*   When Figma MCP is available and a screen references a Figma URL, the agent reads the design's `lastModified` timestamp and version ID via `get_metadata` (fileKey from the reference URL).
+*   The version ID is the preferred comparison key (more precise than timestamps). The `lastModified` timestamp is a fallback when version IDs are unavailable.
+*   The version/timestamp is compared against the `- **Processed:**` date and `figma_version_id` in `brief.json`.
+*   If the Figma design was modified after the processed date (or version IDs differ), the screen is flagged as STALE.
 *   This enables automated staleness detection for Figma-sourced designs (not possible for URLs alone without MCP).
 
 ### Figma as Design Authority
@@ -218,7 +251,7 @@ QA verification uses three independent sources to detect discrepancies:
 
 | Source | What QA reads | How |
 |--------|--------------|-----|
-| **Figma** | Component tree, dimensions, colors, fonts, spacing, auto-layout | Figma MCP (`get_file`, `get_node`) using the Reference URL |
+| **Figma** | Component tree, dimensions, colors, fonts, spacing, auto-layout | Figma MCP: `get_design_context` (fileKey + nodeId) for structure/tokens, `get_variable_defs` (fileKey) for resolved values, `get_screenshot` (fileKey + nodeId) for visual comparison |
 | **Spec** | Token Map + checklist items | Read from `features/<name>.md` |
 | **App** | Computed styles, DOM structure, rendered pixels | Playwright MCP (`browser_evaluate`, `browser_screenshot`) or user-provided screenshot |
 

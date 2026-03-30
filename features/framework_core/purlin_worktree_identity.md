@@ -2,7 +2,7 @@
 
 > Label: "Tool: Purlin Worktree Identity"
 > Category: "Framework Core"
-> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_sync_system.md
 > Prerequisite: purlin_worktree_concurrency.md
 
 ## 1. Overview

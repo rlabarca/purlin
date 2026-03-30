@@ -148,27 +148,16 @@ After the loop exits (success, max iterations, or all escalated):
 - Execute Step 5a Checkpoint (C) to finalize any newly-passing features.
 - Proceed to Phase B for manual items, or skip Phase B if zero manual items remain.
 
-### 2.3.3 Internal Mode Switch Protocol (Auto-Fix Only)
+### 2.3.3 Auto-Fix Protocol
 
-Phase A.5 requires crossing the QA/Engineer write boundary within a single verification session. The agent MUST use the `purlin_mode` MCP tool (or `set_mode()` in config_engine) to toggle between QA and Engineer modes. These mode switches are mandatory — the agent cannot fix code without switching to Engineer, and cannot re-run tests without switching back to QA. This is a lightweight "internal mode switch" that preserves safety while avoiding the full ceremony of `purlin:mode`.
+Phase A.5 allows the agent to fix code and re-run tests within a single verification session. The write guard allows all classified file writes (CODE, SPEC, QA), so no mode switching is needed.
 
-**Invariants:**
-- Write-boundary enforcement (mode guard) remains active. Engineer cannot write QA files; QA cannot write code files.
-- Terminal identity stays in QA format (`QA(<branch>) | <label>`) throughout. The user is in a QA verification session; rapid mode flips should be invisible.
-- Pending work is committed before each switch.
-
-**QA → Engineer:**
+**Auto-Fix Loop:**
 1. Commit any pending QA artifacts (regression JSON, scenario tags).
-2. Activate Engineer write permissions.
-3. Log internally: "Auto-fix: Engineer mode (iteration N)."
-
-**Engineer → QA:**
-1. Run companion file gate: verify `[CLARIFICATION]` entries exist for all fixes made.
-2. Commit any pending Engineer changes with `fix(scope):` prefix.
-3. Activate QA write permissions.
-4. Log internally: "Auto-fix: QA mode (iteration N)."
-
-This protocol is defined within `purlin:verify` only. It does NOT modify `purlin:mode` behavior.
+2. Fix code to match spec assertions. Log internally: "Auto-fix: iteration N."
+3. Verify `[CLARIFICATION]` entries exist for all fixes made in companion file.
+4. Commit fixes with `fix(scope):` prefix.
+5. Re-run tests and update regression results.
 
 ### 2.4 Phase B -- Manual Verification Checklist
 

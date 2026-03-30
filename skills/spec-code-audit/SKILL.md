@@ -100,7 +100,7 @@ Process ALL features in-agent (no subagents). For each feature:
 3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map — including auto-injected global invariants — verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage. For `i_*` invariants, also flag staleness if `Synced-At` is older than 90 days.
 5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors and all global invariants (auto-included in Step 0.3). Flag violations with invariant provenance (`i_<name> INV-N`).
-6. **Companion coverage check (dimension 13)**: Compare companion file modification timestamp against code commit timestamps for the feature. Flag companion debt (no companion entries for recent code) as HIGH. Flag stale notes as MEDIUM.
+6. **Companion coverage check (dimension 13)**: Check the sync ledger for the feature's `sync_status`. Flag `code_ahead` (code changed without companion update) as HIGH. Flag stale companion notes (entries older than recent code changes) as MEDIUM.
 7. Skip scenario-by-scenario deep comparison.
 
 After processing all features individually, perform a **cross-feature requirement hygiene pass** (dimension 11):
@@ -219,7 +219,7 @@ For each assigned feature:
    - **Constraint compliance**: For each named constraint, check if the code's behavior aligns. Flag contradictions.
    - **Invariant staleness**: For `i_*` anchors, check `Synced-At` metadata. Flag as LOW if stale (> 90 days since last sync).
 8. **Undocumented behavior scan**: Error handlers, config branches, edge cases in code with no scenario coverage.
-9. **Companion coverage check (dimension 13)**: Compare companion file entries against git log of code changes. Flag companion debt (code commits with no companion entries) as HIGH. Flag stale notes (entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note as a positive signal of spec conformance.
+9. **Companion coverage check (dimension 13)**: Check sync ledger for the feature's `sync_status`. Flag `code_ahead` (code changed without companion update) as HIGH. Flag stale notes (entries older than recent code changes) as MEDIUM. If the feature has only `[IMPL]` entries and no deviation tags, note as a positive signal of spec conformance.
 10. **Spec completeness**: All 14 gap dimensions (see Gap Dimensions Table).
 
 ### Spec-Only Subagent Protocol
@@ -417,8 +417,8 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 3. Commit all escalation entries together.
 4. Run `purlin_scan` after committing to refresh project state (the scan will surface these as Engineer action items).
 
-**Companion Debt Escalation (PM ESCALATE — Dimension 13):**
-For features flagged with companion debt (missing or stale companion files): record `[DISCOVERY]` in the companion file noting that companion entries are missing or stale. The Engineer will see these as action items in `purlin:status`.
+**Companion Sync Escalation (PM ESCALATE — Dimension 13):**
+For features flagged as `code_ahead` in the sync ledger (code changed without companion update): record `[DISCOVERY]` in the companion file noting that companion entries are missing or stale. This will surface as an action item in `purlin:status`.
 
 ### If Running as Engineer
 
@@ -446,18 +446,18 @@ For features flagged with companion debt (missing or stale companion files): rec
 
 ### Dimension 13 (Companion Coverage) Reconciliation
 
-Bulk catch-up for accumulated companion debt. This is the primary reconciliation path when multiple features have stale or missing companion files.
+Bulk catch-up for features where code is ahead of companion documentation. This is the primary reconciliation path when multiple features have `code_ahead` sync status.
 
 **If Running as Engineer:**
-1. For each feature flagged with companion debt (missing or stale):
+1. For each feature flagged as `code_ahead` in the sync ledger:
    a. Read the feature spec and scan the implementation code.
    b. Create or update `<name>.impl.md` (in the same folder as the spec).
    c. Write `[IMPL]` entries summarizing what was implemented, referencing spec requirements where applicable.
    d. If code deviates from spec, use `[DEVIATION]` or `[DISCOVERY]` tags instead of or in addition to `[IMPL]`.
-2. Commit all companion file updates together: `docs(companions): reconcile companion debt for N features`
+2. Commit all companion file updates together: `docs(companions): reconcile companion files for N features`
 
 **If Running as PM:**
-- Companion debt is escalated to Engineer (see PM section above). PM does not write `[IMPL]` entries — only the Engineer who built the code can accurately document what was implemented.
+- Code-ahead features are escalated to Engineer (see PM section above). PM does not write `[IMPL]` entries — only the Engineer who built the code can accurately document what was implemented.
 
 ### Dimension 14 (Invariant Source Compliance) Remediation
 

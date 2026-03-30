@@ -79,7 +79,7 @@ In PM mode (requires [Figma MCP setup](figma-guide.md#setup)):
 purlin:invariant add-figma https://www.figma.com/design/ABC123/Design-System
 ```
 
-This creates `features/i_design_<name>.md` — a thin pointer file. The Figma document stays the authority. Purlin reads it via MCP when needed and extracts annotations as advisory context.
+This creates `features/_invariants/i_design_<name>.md` — a thin pointer file. The Figma document stays the authority. Purlin reads it via MCP when needed — extracting annotations and design variable definitions via `get_design_context` and `get_variable_defs`, and noting Code Connect availability when configured.
 
 **Upgrading a local anchor:** If you already have a `design_*.md` anchor and want to promote it to a Figma invariant:
 
@@ -129,9 +129,9 @@ purlin:spec dashboard-overview
 
 When PM encounters a feature with design requirements, it:
 
-1. **Reads the design source** — Figma via MCP (if a design invariant or URL is provided), or local anchor files.
-2. **Writes a Token Map** — Maps design token names to project CSS custom properties. This is the bridge between design and code.
-3. **Generates `brief.json`** (optional, Figma only) — A machine-readable cache at `features/_design/<feature>/brief.json` containing dimensions, components, and token values. Engineers read this instead of needing Figma access.
+1. **Reads the design source** — calls `get_design_context` (for structure, tokens, annotations) and `get_variable_defs` (for the full variable vocabulary) when Figma MCP is available, or reads local anchor files.
+2. **Auto-seeds a Token Map** — Matches Figma variable names against project design tokens automatically. PM reviews and confirms the mappings. Without MCP, PM creates Token Maps manually.
+3. **Generates `brief.json`** (optional, Figma only) — A machine-readable cache at `features/_design/<feature>/brief.json` containing dimensions, components, token values, and Code Connect mappings (when configured). Engineers read this instead of needing Figma access.
 4. **Writes a verification checklist** — Measurable items that QA and web tests can check.
 
 ```markdown
@@ -188,8 +188,9 @@ During `purlin:web-test`, QA performs **three-source triangulation**:
 | **Invariant sync status** | Figma or git source has a newer version |
 | **Anchor consistency** | Token Map values that don't match any anchor token, hardcoded hex values |
 | **Invariant compliance** | FORBIDDEN pattern violations, color/typography enforcement |
-| **Figma drift** (MCP) | Design variables renamed or values changed since the spec was written |
-| **Dev status** (MCP) | Figma frame status doesn't match spec metadata |
+| **Figma drift** (MCP) | Design variables renamed, added, or values changed since the spec was written (via `get_variable_defs`) |
+| **Visual drift** (MCP) | Figma screenshot vs browser screenshot comparison (via `get_screenshot` + Playwright) |
+| **Dev status** (MCP) | Figma frame status doesn't match spec metadata (via `get_metadata`) |
 
 ### Running It
 
@@ -219,7 +220,7 @@ The output is a per-feature table followed by an invariant summary. Remediation 
 | `purlin:invariant sync` | PM | Pull latest version from Figma or git source |
 | `purlin:invariant check-updates` | Any | Check if design invariants have newer versions |
 | `purlin:invariant check-feature` | Any | Check a feature's compliance with design constraints |
-| `purlin:spec` | PM | Write the Visual Specification — Token Map, brief, checklist |
+| `purlin:spec` | PM | Write the Visual Specification — auto-seed Token Map, generate brief, write checklist |
 | `purlin:design-audit` | PM | Audit design health across the project |
 | `purlin:build` | Engineer | Implement from Token Map; preflight checks invariant compliance |
 | `purlin:web-test` | Engineer/QA | Verify visual checklist items via Playwright |

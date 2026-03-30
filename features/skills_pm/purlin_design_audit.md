@@ -23,7 +23,7 @@ The `purlin:design-audit` command provides the PM and PM with a comprehensive au
 - For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Token Map:**` presence and entries, and checklist items (`- [ ]` / `- [x]`).
 - Also glob `features/i_design_*.md` to collect all design invariants. Read each pointer's `> Version:`, `> Source:`, `> Synced-At:`, and `> Scope:` metadata.
 - Also scan for `brief.json` at `features/_design/<feature_stem>/brief.json` for each feature with a Figma reference.
-- If Figma MCP is available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
+- If Figma MCP is available, also extract annotation count per screen via `get_design_context` (fileKey + nodeId from reference URL) and design variable inventory via `get_variable_defs` (fileKey). Report as informational metadata (not a pass/fail check).
 
 ### 2.3 Reference Integrity
 - **Local files:** Verify the referenced file exists on disk. Missing files are reported as CRITICAL.
@@ -37,8 +37,9 @@ The `purlin:design-audit` command provides the PM and PM with a comprehensive au
 - Screens with `- **Processed:** N/A` that have a local reference are flagged as UNPROCESSED (same as no Token Map).
 
 ### 2.5 Figma Staleness Detection (MCP)
-- When Figma MCP tools are available and a screen references a Figma URL, read the design's `lastModified` timestamp via MCP.
-- Compare against the `- **Processed:**` date. If the Figma design was modified after the Token Map was generated, flag as STALE.
+- When Figma MCP tools are available and a screen references a Figma URL, read the design's `lastModified` timestamp and version ID via `get_metadata` (fileKey from reference URL).
+- Compare against the `- **Processed:**` date and `figma_version_id` in `brief.json`. Version ID comparison takes precedence over timestamps.
+- If the Figma design was modified after the Token Map was generated (or version IDs differ), flag as STALE.
 - When Figma MCP is not available, Figma URL screens report staleness as N/A (no connectivity check).
 
 ### 2.5.1 Brief Staleness Detection
@@ -47,14 +48,16 @@ The `purlin:design-audit` command provides the PM and PM with a comprehensive au
 - If `brief.json` is missing and the screen has a Figma reference, report as WARNING: "No brief.json found -- Engineer has no local design data cache."
 
 ### 2.6 Design-Spec Conflict Detection (MCP)
-- When Figma MCP tools are available, extract design variable names and values from the Figma design.
-- Compare against the Token Map entries in the Visual Specification.
-- Flag discrepancies as `DESIGN_CONFLICT` warnings with specific differences listed (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
-- Also compare Figma design variable resolved values against `brief.json` token values (if present) to detect drift between the two caches.
+- When Figma MCP tools are available, extract design variable names, types, and resolved values via `get_variable_defs` (fileKey from reference URL).
+- Compare variable names against the Token Map entries in the Visual Specification:
+  - Variable renamed in Figma but not in Token Map: `DESIGN_CONFLICT` (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma variable `primary` has been renamed to `brand-primary`").
+  - Variable added in Figma but missing from Token Map: `DESIGN_GAP` (new token not yet mapped).
+  - Variable removed from Figma but still in Token Map: `DESIGN_CONFLICT` (stale mapping).
+- Also compare resolved variable values against `brief.json` token values (if present). Value drift (same name, different resolved value) is flagged as `DESIGN_DRIFT`.
 
 ### 2.6.1 Invariant Pointer Sync Status
-For each design invariant (`features/i_design_*.md`) collected in the inventory scan:
-- **Figma-sourced:** Fetch current version ID via MCP and compare against the pointer's `> Version:`. If different: `STALE_INVARIANT`.
+For each design invariant (`features/_invariants/i_design_*.md`) collected in the inventory scan:
+- **Figma-sourced:** Fetch current version ID via `get_metadata` (fileKey from `> Figma-URL:`) and compare against the pointer's `> Version:`. If different: `STALE_INVARIANT`.
 - **Git-sourced:** Run `git ls-remote` and compare SHA against `> Source-SHA:`. If different: `STALE_INVARIANT`.
 - For each stale invariant, check cascade impact: how many features depend on it (directly or transitively).
 - Compare `brief.json` version against pointer version: if the pointer is newer than the brief, flag as `STALE_BRIEF`.
@@ -92,14 +95,14 @@ Enforce a three-tier weight model for invariant design constraints:
 - For STALE items, offer to re-process via `purlin:spec <feature>` (update Visual Specification). For STALE_INVARIANT items, offer `purlin:invariant sync <invariant-file>`. For STALE_BRIEF items, offer `purlin:spec <feature>` (regenerate brief). For INVARIANT_VIOLATION items, report file:line evidence and suggest fix.
 
 ### 2.10 Figma Dev Status Consistency Check
-For features with `> Figma Status:` metadata and a Figma reference, check the current dev status via Figma MCP (when available).
+For features with `> Figma Status:` metadata and a Figma reference, check the current dev status via `get_metadata` (fileKey from reference URL, when Figma MCP is available).
 
 - Compare the current Figma dev status against the spec's `> Figma Status:` value.
 - Discrepancies are flagged as INFO (not errors) with a suggestion to update the spec.
 - Add a "Dev Status" column to the audit report table. Values: CURRENT (matches), DRIFT (mismatch), N/A (no Figma Status metadata, no MCP, or no Figma reference).
 
 ### 2.11 Version ID Drift Detection
-When `brief.json` contains a `figma_version_id` field, compare against the current Figma file version via MCP.
+When `brief.json` contains a `figma_version_id` field, compare against the current Figma file version via `get_metadata` (fileKey from reference URL).
 
 - Different version IDs flag the screen as STALE (more precise than timestamp comparison).
 - This supplements timestamp-based staleness detection and takes precedence when both are available.
@@ -227,6 +230,22 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
     When purlin:design-audit runs invariant-governed compliance checks
     Then the violation is flagged as INVARIANT_VIOLATION
     And the severity is HIGH (strict tier: colors)
+
+#### Scenario: Design variable gap detected via get_variable_defs
+
+    Given a screen's Token Map maps "primary" and "surface"
+    And Figma MCP get_variable_defs returns "primary", "surface", and "brand-accent"
+    When purlin:design-audit runs design-spec conflict detection
+    Then "brand-accent" is flagged as DESIGN_GAP (new token not yet mapped)
+
+#### Scenario: Visual drift detection with screenshots
+
+    Given a feature has a Figma reference and Web Test metadata
+    And Figma MCP and Playwright MCP are both available
+    When purlin:design-audit runs visual drift detection
+    Then a Figma screenshot is fetched via get_screenshot
+    And a browser screenshot is taken via Playwright
+    And significant visual discrepancies are reported as VISUAL_DRIFT warnings
 
 #### Scenario: Design invariants summary table shown after per-feature table
 

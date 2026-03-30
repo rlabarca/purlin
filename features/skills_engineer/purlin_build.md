@@ -96,7 +96,7 @@ During pre-flight, the build collects and enforces invariant constraints:
 2. **Collect scoped invariants:** Read scoped `i_*` files from the feature's transitive `> Prerequisite:` chain.
 3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each collected invariant. Grep feature code files for pattern violations. If any match: **block the build** with an actionable message (invariant ID, pattern, file:line location, fix suggestion). The agent MUST NOT proceed to Step 1 until all FORBIDDEN violations are resolved.
 4. **Behavioral awareness reminders:** Surface non-FORBIDDEN invariant statements as non-blocking awareness context for the engineer.
-5. **Figma brief staleness:** For design invariants, check the Figma invariant pointer's `> Version:` against brief.json version. Warn if stale.
+5. **Figma brief staleness:** For design invariants, compare the Figma invariant pointer's `> Version:` against `brief.json`'s `figma_version_id`. If the pointer version is newer (meaning the invariant was synced but the brief was not regenerated), warn: "brief.json is stale — regenerate via `purlin:spec <feature>`." If Figma MCP is available, optionally fetch current version via `get_metadata` to detect if even the pointer is outdated.
 
 ### 2.7 Bright-Line Rules
 

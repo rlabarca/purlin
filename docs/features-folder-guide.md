@@ -65,7 +65,7 @@ The scan engine, graph engine, and all skills use this resolution pattern. The a
 Prerequisites use bare filenames without paths:
 
 ```markdown
-> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_sync_system.md
 ```
 
 The scanner resolves the filename across all category subfolders automatically.

@@ -3,6 +3,10 @@
 # Intended to be called from skill commit steps or as a pre-commit hook.
 # Classifies staged files, maps to features, updates per-feature sync status.
 #
+# Usage:
+#   sync-ledger-update.sh              # Normal: reads staged files, uses 'pending' SHA
+#   sync-ledger-update.sh --sha <hash> # Backfill: updates 'pending' SHAs with real commit hash
+#
 # Exit codes:
 #   0 = always (informational, never blocks commits)
 
@@ -18,6 +22,9 @@ _find_project_root() {
         if [ -d "$dir/.purlin" ]; then echo "$dir"; return; fi
         dir=$(dirname "$dir")
     done
+    if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "$CLAUDE_PLUGIN_ROOT/.purlin" ]; then
+        echo "$CLAUDE_PLUGIN_ROOT"; return
+    fi
     echo "$(pwd)"
 }
 
@@ -25,15 +32,62 @@ PROJECT_ROOT="$(_find_project_root)"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 LEDGER_FILE="$PROJECT_ROOT/.purlin/sync_ledger.json"
 
+# --- SHA Backfill Mode ---
+if [ "${1:-}" = "--sha" ] && [ -n "${2:-}" ]; then
+    BACKFILL_SHA="$2"
+    if [ ! -f "$LEDGER_FILE" ]; then
+        exit 0
+    fi
+    # Replace all 'pending' SHAs with the real commit hash
+    export PURLIN_LEDGER_FILE="$LEDGER_FILE"
+    export PURLIN_BACKFILL_SHA="$BACKFILL_SHA"
+    python3 -c "
+import json, os, sys
+
+ledger_file = os.environ.get('PURLIN_LEDGER_FILE', '')
+if not ledger_file:
+    sys.exit(0)
+sha = os.environ.get('PURLIN_BACKFILL_SHA', '')
+if not sha:
+    sys.exit(0)
+
+try:
+    with open(ledger_file) as f:
+        ledger = json.load(f)
+except (IOError, json.JSONDecodeError):
+    sys.exit(0)
+
+changed = False
+for stem, entry in ledger.items():
+    for key in ('last_code_commit', 'last_spec_commit', 'last_impl_commit'):
+        if entry.get(key) == 'pending':
+            entry[key] = sha
+            changed = True
+
+if changed:
+    with open(ledger_file, 'w') as f:
+        json.dump(ledger, f, indent=2)
+        f.write('\n')
+    print(f'sync: backfilled pending SHAs with {sha[:8]}', file=sys.stderr)
+" 2>/dev/null
+    exit 0
+fi
+
+# --- Normal Mode: classify staged files and update ledger ---
+
 # Get staged files — pipe to Python via stdin for robustness
 # (avoids shell quoting issues with unusual filenames)
+export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
+export PURLIN_PLUGIN_ROOT="$PLUGIN_ROOT"
+export PURLIN_LEDGER_FILE="$LEDGER_FILE"
+
 git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null | python3 -c "
 import json, os, sys, re
 from datetime import datetime, timezone
 
-project_root = os.environ.get('PURLIN_PROJECT_ROOT', '$PROJECT_ROOT')
-plugin_root = '$PLUGIN_ROOT'
-ledger_file = '$LEDGER_FILE'
+project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
+plugin_root = os.environ.get('PURLIN_PLUGIN_ROOT', '')
+ledger_file = os.environ.get('PURLIN_LEDGER_FILE', '')
 
 sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
 os.environ.setdefault('PURLIN_PROJECT_ROOT', project_root)
@@ -97,7 +151,7 @@ if os.path.isfile(ledger_file):
         pass
 
 now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-# Use placeholder for commit SHA — backfilled by post-commit or caller
+# Use placeholder for commit SHA — backfilled by caller via --sha
 commit_sha = 'pending'
 
 # --- Update ledger per feature ---
@@ -130,7 +184,7 @@ for stem, changes in feature_changes.items():
         entry['sync_status'] = 'spec_ahead'
     elif changes['impl'] and not changes['code'] and not changes['spec']:
         # Impl-only update resolves existing debt
-        if entry.get('sync_status') in ('code_ahead', 'code_ahead_no_impl'):
+        if entry.get('sync_status') == 'code_ahead':
             entry['sync_status'] = 'synced'
     # else: keep existing status
 

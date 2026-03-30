@@ -1,9 +1,9 @@
 ---
 name: whats-different
-description: Available to all agents and modes
+description: Show what changed on the remote collaboration branch, grouped by file type
 ---
 
-Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`). When a Purlin mode is active, produces a role-specific briefing followed by the standard digest.
+Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`). Groups changes by file type (SPEC, CODE, IMPL, QA) for easy handoff between collaborators.
 
 ## Steps
 
@@ -53,32 +53,42 @@ Determine state: SAME, AHEAD, BEHIND, or DIVERGED.
 
 If SAME: print "HEAD is in sync with <session>. Nothing to summarize." Exit.
 
-### 4. Run Generation Script
+### 4. Generate File-Type Grouped Digest
 
-Execute the generation shell script:
+Run `git diff --name-status HEAD...origin/<session>` to get the list of changed files.
+
+Classify each changed file using the project's file classification (CODE, SPEC, QA, IMPL). Group and display as:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/collab/generate_whats_different.sh <session> [--role <mode>]
+SPEC changes:
+  webhook_delivery.md: §2.3 retry strategy, §2.5 batch endpoint (3h ago)
+  auth_middleware.md: new edge-case scenarios (1d ago)
+
+CODE changes:
+  scripts/webhook.py: 3 files changed (+142, -28) (3h ago)
+  auth_middleware: 3 files (1d ago)
+
+IMPL updates:
+  webhook_delivery.impl.md: [DEVIATION] exponential backoff, [AUTONOMOUS] batch limit
+
+QA changes:
+  webhook_delivery: 4 regression scenarios added, 1 DISCOVERY recorded
+  auth_middleware: regression results now STALE
 ```
 
-- If the agent has an active Purlin mode (PM, Engineer, or QA), pass `--role <mode>` to produce a role-specific briefing prepended to the standard digest.
-- If no mode is active (open mode), run without `--role` (standard digest only).
+For each group, read the actual diffs to provide meaningful summaries (not just file names). Show timestamps relative to now.
 
-This script runs the extraction tool and invokes the LLM to produce the digest. The output is written to `features/_digests/whats-different.md`.
+If a feature stem argument was provided, show detailed diff for just that feature across all file types.
 
 ### 5. Display Result
 
-Read and display the contents of `features/_digests/whats-different.md`.
-
-When a role briefing is present, the output has two sections separated by a horizontal rule:
-1. **Role briefing** — plain-language summary of what matters to this mode, with numbered IDs on each item.
-2. **Standard digest** — full file-level digest (Spec Changes / Code Changes / Purlin Changes).
+Output the grouped digest directly. If the diff is large, summarize each group with counts and highlight the most significant changes.
 
 ### 6. ID Drill-Down (Conversational)
 
-After displaying the briefing, be prepared for the user to reply with a numeric ID (e.g., "3", "#3", "tell me about 3"). When this happens:
+After displaying the digest, be prepared for the user to reply with a numeric ID (e.g., "3", "#3", "tell me about 3"). When this happens:
 
-1. Identify the corresponding item from the most recent briefing.
+1. Identify the corresponding item from the most recent digest.
 2. Read the relevant source files (feature spec, companion file, discovery sidecar, git diff).
 3. Provide a detailed explanation: what the original state was, what changed, the full context, and recommended next steps.
 

@@ -2,7 +2,7 @@
 
 > Label: "Policy: Spec-Code Synchronization"
 > Category: "Framework Core"
-> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_sync_system.md
 > Prerequisite: active_deviations.md
 > Prerequisite: impl_notes_companion.md
 
@@ -78,26 +78,22 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
     │  ┌──────────────────────────────────────────────────────────┐
     │  │              ENFORCEMENT & DETECTION                     │
     │  │                                                          │
-    │  │  Hard Gate: Mode Switch out of Engineer                  │
+    │  │  Sync Detection: sync_ledger + sync_state overlay        │
     │  │  ─── Session-level: code files written without ────     │
-    │  │  ─── companion files? BLOCK (except engineer→pm). ──   │
+    │  │  ─── companion files? Surface as code_ahead. ────────   │
     │  │  Write companion entries or run purlin:spec-code-audit.  │
     │  │                                                          │
     │  │  Advisory: purlin:build Step 4 (Status Tag Commit)       │
     │  │  ─── Did companion file get new entries? ───            │
-    │  │  WARN if not. Hard enforcement is at mode switch.        │
+    │  │  WARN if not. Advisory, not blocking.                    │
     │  │                                                          │
-    │  │  Advisory: purlin:resume save (Session End)               │
-    │  │  ─── Companion debt warning before checkpoint ───       │
-    │  │  Surfaces unwritten impl notes before session ends.      │
-    │  │                                                          │
-    │  │  Detection: scan_companion_debt()                        │
-    │  │  ─── Three signals: test dir git log, status tag ───    │
-    │  │  ─── timestamps, runtime session debt ───               │
-    │  │  Catches debt from any source. Surfaced in purlin:status.│
+    │  │  Detection: scan_sync_ledger()                           │
+    │  │  ─── Reads sync_ledger.json + sync_state.json ───      │
+    │  │  Per-feature sync status: synced, code_ahead,           │
+    │  │  spec_ahead. Surfaced in purlin:status.                 │
     │  │                                                          │
     │  │  Reconciliation: purlin:spec-code-audit                  │
-    │  │  ─── Bulk companion file writing for accumulated debt ──│
+    │  │  ─── Bulk companion writing for code_ahead features ── │
     │  └──────────────────────────────────────────────────────────┘
 
 
@@ -108,7 +104,7 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
               │  as a code map — traces what was built    │
               │  back to spec requirements. Detects:     │
               │                                          │
-              │  • Companion debt (code without notes)   │
+              │  • Code-ahead status (code without notes)│
               │  • Impl coverage (notes without spec)    │
               │  • Stale notes (code changed, note old)  │
               └──────────────────────────────────────────┘
@@ -149,33 +145,18 @@ The `[IMPL]` tag is a new Engineer Decision Tag with severity NONE. It records w
 
 All enforcement gates MUST be **mechanical** (did the file change?) not **judgmental** (did the engineer deviate?). This removes the failure mode where the engineer decides "this matches the spec" and skips documentation.
 
-#### Hard Gate: Mode Switch out of Engineer
-
-- The `purlin_mode` MCP tool checks session-level write tracking: were code files modified in this session without any companion file (`.impl.md`) being written?
-- If companion debt exists and the target mode is QA or default: **BLOCK** the mode switch.
-- Engineer→PM switches are **exempt** — updating specs is a natural part of engineer work. Companion debt persists and must be resolved before switching to QA or default.
-- The engineer MUST write at least one companion file with `[IMPL]` entries, or run `purlin:spec-code-audit` to reconcile.
-- This is a session-level check (were code files written without any companion files?), not a per-feature mapping.
-
 #### Advisory: `purlin:build` Step 4 — Companion File Warning
 
-- The build checks: were code commits made for this feature during this session?
-- If yes: does the companion file (`features/<name>.impl.md`) have new entries from this session?
-- If no new entries: **WARN** and recommend writing `[IMPL]` entries. Allow the status tag commit to proceed.
-- Hard enforcement is at mode switch, not at build time.
+- The build checks the sync ledger for the target feature's `sync_status`.
+- If `code_ahead`: **WARN** and recommend writing `[IMPL]` entries. Allow the status tag commit to proceed.
+- Advisory only — sync tracking surfaces drift, it does not block writes.
 
-#### Advisory: `purlin:resume save` — Session Checkpoint
+#### Detection: Sync Ledger — `scan_sync_ledger()`
 
-- Before writing a checkpoint, check for companion debt (same session-level logic as the mode switch gate).
-- If debt exists: warn and prompt to write entries before saving.
-- This is a soft gate (warning, not block) because session save may be invoked during crashes or context limits where blocking could lose work.
-
-#### Detection: Scan — `scan_companion_debt()`
-
-- Uses three signals to detect code activity per feature: (A) git log on `tests/<stem>/` directory, (B) status tag commit timestamps for COMPLETE/TESTING/VERIFIED features, (C) runtime session debt from the FileChanged hook.
-- If a feature has code activity more recent than its companion file: surface as `companion_debt` in scan results.
-- `purlin:status` routes companion debt to Engineer action items with a hint to run `purlin:spec-code-audit` for bulk reconciliation.
-- Catches debt from any source: manual git commits, session crashes, code outside test directories.
+- Reads `.purlin/sync_ledger.json` (persistent, committed) and `.purlin/runtime/sync_state.json` (session-scoped, gitignored).
+- Per-feature sync status: `synced`, `code_ahead`, `spec_ahead`, `unknown`.
+- `purlin:status` routes `code_ahead` features to Engineer advisory items with a hint to run `purlin:spec-code-audit` for bulk reconciliation.
+- Updated on every commit by `sync-ledger-update.sh`.
 
 ### 2.4 The Sync Guarantee
 
@@ -190,7 +171,7 @@ At any point in time, reading a feature's spec AND its companion file MUST provi
 
 `purlin:spec-code-audit` MUST leverage companion file `[IMPL]` entries as a structured index of implementation work:
 
-- **Companion debt detection**: Code commits without corresponding companion entries are a HIGH-severity gap (new dimension: "Companion coverage").
+- **Code-ahead detection**: Features with `code_ahead` sync status (code commits without corresponding companion entries) are a HIGH-severity gap (dimension: "Companion coverage").
 - **Impl-to-spec tracing**: `[IMPL]` entries that reference spec sections provide a mapping from code to requirements, making scenario-by-scenario comparison faster.
 - **Stale note detection**: If code has been modified since the last companion entry was written (git log comparison), flag as MEDIUM-severity "Stale companion notes."
 - **Coverage completeness**: A feature with code changes and only `[IMPL]` entries (no deviations) is a signal that implementation matched spec — the audit can deprioritize deep code comparison for these features (triage optimization).
@@ -212,7 +193,7 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 
 #### Scenario: Companion file commit covenant blocks status tag without impl entry
 
-    Given Engineer mode has committed code changes for feature "webhook_delivery"
+    Given Engineer has committed code changes for feature "webhook_delivery"
     And features/webhook_delivery.impl.md has no new entries from this session
     When purlin:build Step 4 runs the Companion File Gate
     Then the status tag commit is BLOCKED
@@ -220,34 +201,27 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
 
 #### Scenario: [IMPL] entry satisfies the companion file gate
 
-    Given Engineer mode has committed code changes for feature "webhook_delivery"
+    Given Engineer has committed code changes for feature "webhook_delivery"
     And features/webhook_delivery.impl.md contains a new [IMPL] entry from this session
     When purlin:build Step 4 runs the Companion File Gate
     Then the status tag commit proceeds
 
-#### Scenario: Mode switch blocked by companion debt
+#### Scenario: Sync ledger detects code-ahead from companion debt
 
-    Given Engineer mode has committed code for features "webhook_delivery" and "rate_limiting"
+    Given Engineer has committed code for features "webhook_delivery" and "rate_limiting"
     And features/webhook_delivery.impl.md has been updated
     And features/rate_limiting.impl.md has NOT been updated
-    When the agent attempts to switch to PM mode
-    Then the mode switch is BLOCKED
-    And the message lists "rate_limiting" as having companion debt
+    When scan_sync_ledger() runs
+    Then "rate_limiting" has sync_status "code_ahead"
+    And purlin:status surfaces it as an Engineer advisory item with companion debt
 
-#### Scenario: Mode switch skip escape is removed
-
-    Given Engineer mode has companion debt for feature "rate_limiting"
-    When the agent attempts to switch modes
-    Then no "skip" option is offered
-    And the only path forward is writing companion entries
-
-#### Scenario: Scan detects companion debt from code timestamps
+#### Scenario: Sync ledger detects code-ahead from commit timestamps
 
     Given feature "webhook_delivery" has code commits at 2026-03-26T10:00:00
-    And features/webhook_delivery.impl.md was last modified at 2026-03-25T15:00:00
-    When scan_companion_debt() runs
-    Then "webhook_delivery" is flagged with companion_debt
-    And purlin:status routes it to Engineer action items
+    And no spec or impl update since
+    When scan_sync_ledger() runs
+    Then "webhook_delivery" has sync_status "code_ahead"
+    And purlin:status routes it to Engineer advisory items
 
 #### Scenario: [IMPL] entries not surfaced to PM
 
@@ -263,12 +237,12 @@ The companion file commit covenant MUST NOT significantly impact engineer veloci
     When purlin:build Step 4 runs
     Then the gate passes (companion file was updated during the session)
 
-#### Scenario: Session save warns about companion debt
+#### Scenario: Status surfaces code-ahead features
 
-    Given Engineer mode has companion debt for feature "rate_limiting"
-    When purlin:resume save is invoked
-    Then a warning is displayed listing features with companion debt
-    And the checkpoint is still saved (soft gate)
+    Given feature "rate_limiting" has sync_status "code_ahead" in sync_ledger.json
+    When purlin:status is invoked
+    Then "rate_limiting" appears as an Engineer advisory item
+    And the hint says "Run purlin:spec-code-audit to reconcile"
 
 #### Scenario: Spec plus companion equals complete picture
 

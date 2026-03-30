@@ -63,12 +63,15 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 REL_PATH="${FILE_PATH#$PROJECT_ROOT/}"
 
 # Classify file
-CLASSIFICATION=$(python3 -c "
+CLASSIFICATION=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" PURLIN_PLUGIN_ROOT="$PLUGIN_ROOT" PURLIN_REL_PATH="$REL_PATH" python3 -c "
 import sys, os
-os.environ.setdefault('PURLIN_PROJECT_ROOT', '$PROJECT_ROOT')
-sys.path.insert(0, '$PLUGIN_ROOT/scripts/mcp')
+project_root = os.environ['PURLIN_PROJECT_ROOT']
+plugin_root = os.environ['PURLIN_PLUGIN_ROOT']
+rel_path = os.environ['PURLIN_REL_PATH']
+os.environ.setdefault('PURLIN_PROJECT_ROOT', project_root)
+sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
 from config_engine import classify_file
-print(classify_file('$REL_PATH'))
+print(classify_file(rel_path))
 " 2>/dev/null || echo "UNKNOWN")
 
 case "$CLASSIFICATION" in

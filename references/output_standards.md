@@ -135,7 +135,7 @@ Numbered findings let users reference specific items ("fix I1 and I3"):
 |----|----------|---------|-------|
 | I1 | ERROR | purlin_build | circular dep: A → B → A |
 | I2 | WARN | purlin_merge | companion references stale function |
-| I3 | INFO | purlin_mode | spec modified after completion |
+| I3 | INFO | purlin_sync_system | spec modified after completion |
 ```
 
 Severity levels:

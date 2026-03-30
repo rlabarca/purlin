@@ -28,10 +28,10 @@ Integration tests for the Purlin MCP server JSON-RPC protocol.
 Tests all 6 MCP tools:
   - purlin_scan: full scan, only filter, tombstones
   - purlin_classify: CODE, SPEC, QA, INVARIANT classifications
-  - purlin_mode: get/set mode persistence
+  - purlin_sync: per-feature sync status
   - purlin_config: read config values
   - purlin_graph: regenerate dependency graph
-  - purlin_status: mode-filtered scan
+  - purlin_status: scan-based status
 
 Also tests protocol-level behavior:
   - initialize handshake
@@ -205,9 +205,8 @@ sys.exit(0 if result else 1)
 }
 
 # ---------------------------------------------------------------------------
-# Clean mode state before tests
+# Clean state before tests
 # ---------------------------------------------------------------------------
-rm -f "$FIXTURE_DIR/.purlin/runtime/current_mode"
 
 # ---------------------------------------------------------------------------
 # Protocol Tests
@@ -350,52 +349,27 @@ test_classify "features/core/api_endpoints.impl.md" "CODE" "features/core/api_en
 test_classify "README.md" "CODE" "README.md" 13
 
 # ---------------------------------------------------------------------------
-# purlin_mode Tests
+# purlin_sync Tests
 # ---------------------------------------------------------------------------
 echo ""
-echo "=== purlin_mode Tests ==="
+echo "=== purlin_sync Tests ==="
 
-# Clean mode state
-rm -f "$FIXTURE_DIR/.purlin/runtime/current_mode"
-
-# 14. get mode returns null initially
-RESP="$(call_mcp_tool "purlin_mode" '{}' 14)"
+# 14. sync returns features dict
+RESP="$(call_mcp_tool "purlin_sync" '{}' 14)"
 TEXT="$(echo "$RESP" | extract_text)"
-MODE_VAL="$(echo "$TEXT" | json_field "d.get('mode')")"
-if [[ "$MODE_VAL" == "null" ]]; then
-    pass "purlin_mode: get returns null initially"
+if echo "$TEXT" | json_check "'features' in d"; then
+    pass "purlin_sync: returns features dict"
 else
-    fail "purlin_mode: get expected null, got $MODE_VAL"
+    fail "purlin_sync: missing features key"
 fi
 
-# 15. set engineer mode
-RESP="$(call_mcp_tool "purlin_mode" '{"mode":"engineer"}' 15)"
+# 15. sync with feature filter returns dict
+RESP="$(call_mcp_tool "purlin_sync" '{"feature":"nonexistent"}' 15)"
 TEXT="$(echo "$RESP" | extract_text)"
-if echo "$TEXT" | json_check "d.get('mode') == 'engineer' and d.get('action') == 'set'"; then
-    pass "purlin_mode: set engineer returns correct response"
+if echo "$TEXT" | json_check "isinstance(d, dict)"; then
+    pass "purlin_sync: feature filter returns dict"
 else
-    fail "purlin_mode: set engineer failed"
-fi
-
-# 16. get returns engineer (persistence via file)
-if [[ -f "$FIXTURE_DIR/.purlin/runtime/current_mode" ]]; then
-    FILE_MODE="$(tr -d '[:space:]' < "$FIXTURE_DIR/.purlin/runtime/current_mode")"
-    if [[ "$FILE_MODE" == "engineer" ]]; then
-        pass "purlin_mode: mode persisted to file as 'engineer'"
-    else
-        fail "purlin_mode: file contains '$FILE_MODE', expected 'engineer'"
-    fi
-else
-    fail "purlin_mode: current_mode file not created"
-fi
-
-# 17. set pm mode and verify
-RESP="$(call_mcp_tool "purlin_mode" '{"mode":"pm"}' 17)"
-TEXT="$(echo "$RESP" | extract_text)"
-if echo "$TEXT" | json_check "d.get('mode') == 'pm'"; then
-    pass "purlin_mode: set pm returns correct mode"
-else
-    fail "purlin_mode: set pm failed"
+    fail "purlin_sync: feature filter failed"
 fi
 
 # ---------------------------------------------------------------------------
@@ -475,9 +449,8 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Clean up mode state
+# Clean up
 # ---------------------------------------------------------------------------
-rm -f "$FIXTURE_DIR/.purlin/runtime/current_mode"
 
 # ---------------------------------------------------------------------------
 # Summary

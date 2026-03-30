@@ -42,7 +42,7 @@ Collect all of the following without user input:
 **Environment:**
 - Date: today's date
 - OS: `uname -s -r`
-- Mode: current Purlin mode from session state (Engineer, PM, QA, or "none")
+- Branch: current git branch
 - `tools_root`: from resolved config
 
 **Config state:**
@@ -59,7 +59,7 @@ Collect all of the following without user input:
 - `git status --short` (first 20 lines)
 
 **Conversation context:**
-- Compose a 2-3 sentence summary of what led to the issue: what was being attempted, what mode was active, what sequence of actions preceded the failure. Draw from conversation memory.
+- Compose a 2-3 sentence summary of what led to the issue: what was being attempted, what skill was invoked, what sequence of actions preceded the failure. Draw from conversation memory.
 
 ### 3. Compose and Present Bug Report
 
@@ -80,7 +80,7 @@ Assemble the report with the Reproduction Block first (what the receiving agent 
 **Expected:** <what should have happened>
 
 **Steps to Reproduce:**
-1. <step 1 — include mode, branch, and any setup>
+1. <step 1 — include branch, skill, and any setup>
 2. <step 2>
 3. <step 3>
 
@@ -97,7 +97,7 @@ Assemble the report with the Reproduction Block first (what the receiving agent 
 | Field | Value |
 |-------|-------|
 | Date | <date> |
-| Mode | <Engineer / PM / QA / none> |
+| Branch | <branch-name> |
 | Branch | <branch> |
 | Purlin SHA | <full-sha> |
 | Purlin Version | <version-tag> |

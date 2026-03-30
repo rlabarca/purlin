@@ -55,10 +55,10 @@ This command only works when the agent is running in a worktree (launched with `
    ```
    If any cleanup step fails, the remaining steps still execute (use `;` instead of `&&` for non-critical steps like lock removal). The `cd "$MAIN_ROOT"` MUST be first — it is what keeps the shell alive after the worktree directory is gone.
 
-7. **Update terminal identity.** The agent is no longer in a worktree. Update all terminal environments to reflect the current mode on the source branch:
+7. **Update terminal identity.** The agent is no longer in a worktree. Update all terminal environments to reflect the source branch:
    ```bash
-   source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<project>"
+   source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<project>"
    ```
-   Replace `<mode>` with the current active mode (Engineer, PM, QA) and `<project>` with the project name. Produces unified format: `<short_mode>(<branch>) | <project>`.
+   Replace `<project>` with the project name. Produces format: `(<branch>) <project>`.
 
 8. **Report:** "Merged [branch] into [source]. Worktree cleaned up. [N files changed]."

@@ -7,6 +7,19 @@ description: Show project status with sync state and actionable work items
 
 Run `purlin_scan` (with `tombstones: true`) to get full project state.
 
+## Sync State
+
+After scanning, read sync state to overlay per-feature sync tracking:
+
+1. Read `.purlin/sync_ledger.json` — persistent per-feature sync status (committed to git). Each entry has `sync_status` (one of: `synced`, `code_ahead`, `spec_ahead`, `unknown`), plus timestamps for last code/spec/impl commits.
+2. Read `.purlin/runtime/sync_state.json` — session-scoped write tracker (gitignored). Overlay on ledger: if the current session has new writes not yet committed, show those as pending sync changes.
+3. Merge: for each feature, combine ledger status with session overlay. Session writes upgrade `synced` → `code_ahead` or `spec_ahead` if only one side changed this session.
+
+Display sync summary after feature counts:
+```
+Sync: 3 synced, 1 code ahead, 1 spec ahead, 2 new (no code yet)
+```
+
 ## Work Interpretation Rules
 
 Analyze the scan JSON to classify features into role-based work items. Show all work grouped by role.
@@ -26,7 +39,7 @@ Analyze the scan JSON to classify features into role-based work items. Show all 
 4. Features in TODO lifecycle with no open INFEASIBLE — new work
 5. Open BUG discoveries with `action_required: Engineer`
 6. Delivery plan features in current phase
-7. Features with companion debt (`companion_debt` scan entries) — companion file missing or stale since last code activity. Show as advisory items with hint: `"Run purlin:spec-code-audit to reconcile companion files in bulk."`
+7. Features with `sync_status: code_ahead` in sync ledger — code changed without spec/impl update. Show as advisory items with hint: `"Run purlin:spec-code-audit to reconcile."`
 
 **QA work:**
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING
@@ -43,6 +56,7 @@ Analyze the scan JSON to classify features into role-based work items. Show all 
 **PM work:**
 - Features where `sections.requirements` is false (incomplete spec)
 - Unacknowledged deviations (PM needs to accept/reject)
+- Features with `sync_status: spec_ahead` in sync ledger — spec changed, code may need updating
 - SPEC_DISPUTE and INTENT_DRIFT discoveries
 
 ## Work Item Priority Ranking

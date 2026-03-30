@@ -27,14 +27,8 @@ mkdir -p "$CACHE_DIR"
 BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Read mode from PID-scoped runtime file (or unscoped fallback)
-MODE="unknown"
-if [ -n "$PURLIN_SESSION_ID" ] && [ -f "$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}" ]; then
-    MODE=$(cat "$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}" 2>/dev/null || echo "unknown")
-elif [ -f "$PROJECT_ROOT/.purlin/runtime/current_mode" ]; then
-    MODE=$(cat "$PROJECT_ROOT/.purlin/runtime/current_mode" 2>/dev/null || echo "unknown")
-fi
-[ -z "$MODE" ] && MODE="unknown"
+# No mode system — checkpoints track branch context only
+MODE="sync"
 
 # Read work plan summary (first 20 lines of pipeline status table)
 WORK_PLAN="No work plan"

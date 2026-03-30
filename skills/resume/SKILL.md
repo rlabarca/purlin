@@ -177,7 +177,7 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
    - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` Skip the scan. Skip work plan generation. Proceed directly to the recovery summary (Step 10) with no action items.
    - `find_work: true` -- continue to step 2.
 
-2. **Run a lightweight startup scan:** `purlin_scan(only: "features,discoveries,git,plan")`. This is enough for mode suggestion and work discovery. Skips `deps`, `smoke`, `deviations`, and `invariants` (~20-30% smaller than a full scan). Individual skills run their own focused scans when activated.
+2. **Run a lightweight startup scan:** `purlin_scan(only: "features,discoveries,git,plan")`. This is enough for work discovery. Skips `deps`, `smoke`, `deviations`, and `invariants` (~20-30% smaller than a full scan). Individual skills run their own focused scans when activated.
 
 3. **Run `purlin:status`** to interpret the scan results and present work organized by role.
 

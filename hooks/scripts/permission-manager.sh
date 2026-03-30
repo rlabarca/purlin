@@ -32,13 +32,14 @@ _find_project_root() {
 PROJECT_ROOT="$(_find_project_root)"
 
 # Check YOLO flag in config
-YOLO=$(python3 -c "
-import json, sys
+YOLO=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 -c "
+import json, os, sys
 try:
+    project_root = os.environ['PURLIN_PROJECT_ROOT']
     # Check config.local.json first, then config.json
-    for path in ['$PROJECT_ROOT/.purlin/config.local.json', '$PROJECT_ROOT/.purlin/config.json']:
+    for name in ['config.local.json', 'config.json']:
         try:
-            with open(path) as f:
+            with open(os.path.join(project_root, '.purlin', name)) as f:
                 c = json.load(f)
             val = c.get('agents', {}).get('purlin', {}).get('bypass_permissions', False)
             if val is True or val == 'true':

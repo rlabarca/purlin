@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Common: purlin:mode Mode Switch"
 > Category: "Agent Skills: Common"
-> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_sync_system.md
 
 ## 1. Overview
 

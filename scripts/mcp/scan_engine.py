@@ -11,7 +11,7 @@ Usage:
     python3 tools/cdd/scan.py --only features,git        # focused output (skip other sections)
     python3 tools/cdd/scan.py --cached --only features   # filter cached output
 
-Sections for --only: features, discoveries, deviations, companion_debt, plan, deps, git, smoke, invariants
+Sections for --only: features, discoveries, deviations, sync_ledger, plan, deps, git, smoke, invariants
 """
 
 import json
@@ -90,7 +90,7 @@ SECTION_MAP = {
     "features": "features",
     "discoveries": "open_discoveries",
     "deviations": "unacknowledged_deviations",
-    "companion_debt": "companion_debt",
+    "sync_ledger": "sync_ledger",
     "plan": "delivery_plan",
     "deps": "dependency_graph",
     "git": "git_state",
@@ -739,149 +739,68 @@ def scan_unacknowledged_deviations():
 # 4b. Companion debt (per policy_spec_code_sync.md)
 # ---------------------------------------------------------------------------
 
-def scan_companion_debt():
-    """Detect features with code commits more recent than companion file updates.
+def scan_sync_ledger():
+    """Read the sync ledger and overlay session sync state.
 
-    Uses three signals to detect code activity per feature:
-      A) git log on tests/<stem>/ directory (existing, catches test changes)
-      B) Status tag commit timestamps (new, catches features without test dirs)
-      C) Runtime debt from session FileChanged hook (new, catches uncommitted)
+    Returns a dict mapping feature stems to their sync status, merging
+    the persistent ledger (.purlin/sync_ledger.json) with the session-scoped
+    tracker (.purlin/runtime/sync_state.json).
 
-    Returns a list of dicts with feature, file, and debt_type
-    ('missing', 'stale', or 'session').
+    Each entry contains: sync_status, last_code_date, last_spec_date,
+    last_impl_date, and any session-level pending changes.
     """
-    global _status_commit_cache
-    if _status_commit_cache is None:
-        _status_commit_cache = _build_status_commit_index()
+    ledger = {}
+    ledger_file = os.path.join(PROJECT_ROOT, ".purlin", "sync_ledger.json")
+    if os.path.isfile(ledger_file):
+        ledger = _read_json_safe(ledger_file) or {}
 
-    debt = []
-    if not os.path.isdir(FEATURES_DIR):
-        return debt
+    # Overlay session sync state (uncommitted writes from current session).
+    session_file = os.path.join(
+        PROJECT_ROOT, ".purlin", "runtime", "sync_state.json")
+    session = _read_json_safe(session_file) or {}
+    session_features = session.get("features", {})
 
-    # Build set of feature stems that have companion files and their mtimes.
-    # Walk subfolders to find .impl.md files in category directories.
-    companion_mtimes = {}
-    companion_paths = {}
-    for filename, filepath in _iter_feature_files(
-            FEATURES_DIR, suffix=".impl.md"):
-        stem = filename.replace(".impl.md", "")
-        try:
-            companion_mtimes[stem] = os.path.getmtime(filepath)
-            companion_paths[stem] = filepath
-        except OSError:
-            continue
+    result = {}
 
-    for filename, filepath in _iter_feature_files(FEATURES_DIR):
-        if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
-            continue
-        stem = filename[:-3]
+    # Start with ledger entries.
+    for stem, entry in ledger.items():
+        result[stem] = {
+            "sync_status": entry.get("sync_status", "unknown"),
+            "last_code_date": entry.get("last_code_date"),
+            "last_spec_date": entry.get("last_spec_date"),
+            "last_impl_date": entry.get("last_impl_date"),
+            "last_code_commit": entry.get("last_code_commit"),
+            "last_spec_commit": entry.get("last_spec_commit"),
+        }
 
-        # Skip anchors and invariants — they don't have code.
-        if _is_anchor_node(filename):
-            continue
+    # Overlay session state: session writes may upgrade sync status.
+    for stem, sdata in session_features.items():
+        if stem not in result:
+            result[stem] = {"sync_status": "unknown"}
+        entry = result[stem]
+        has_code = bool(sdata.get("code_files") or sdata.get("test_files"))
+        has_spec = sdata.get("spec_changed", False)
+        has_impl = sdata.get("impl_changed", False)
 
-        # Signal A: test directory git log timestamp.
-        test_dir_ts = None
-        test_dir = os.path.join(TESTS_DIR, stem)
-        if os.path.isdir(test_dir):
-            try:
-                result = subprocess.run(
-                    ["git", "log", "-1", "--format=%ct", "--", test_dir],
-                    capture_output=True, text=True, timeout=5,
-                    cwd=PROJECT_ROOT,
-                )
-                if result.returncode == 0 and result.stdout.strip():
-                    test_dir_ts = float(result.stdout.strip())
-            except Exception:
-                pass
+        # Session-level sync: uncommitted changes may create pending drift.
+        if has_code and has_spec:
+            entry["session_pending"] = "synced"
+        elif has_code and has_impl:
+            entry["session_pending"] = "synced"
+        elif has_code and not has_spec and not has_impl:
+            entry["session_pending"] = "code_ahead"
+        elif has_spec and not has_code:
+            entry["session_pending"] = "spec_ahead"
 
-        # Signal B: status tag commit timestamp (from cached index).
-        # Only use tags that indicate code was written (not TODO, which means
-        # "reset to not-started").
-        status_tag_ts = None
-        status_entry = _status_commit_cache.get(filename)
-        if status_entry and status_entry["tag"] in (
-                "COMPLETE", "TESTING", "VERIFIED"):
-            status_tag_ts = float(status_entry["timestamp"])
+    # Include unclassified writes from session.
+    unclassified = session.get("unclassified_writes", [])
+    if unclassified:
+        result["_unclassified"] = {
+            "sync_status": "unclassified",
+            "files": unclassified[:20],
+        }
 
-        # Take the latest signal across all sources.
-        timestamps = [t for t in (test_dir_ts, status_tag_ts) if t]
-        if not timestamps:
-            continue
-        latest_code_ts = max(timestamps)
-
-        companion_mtime = companion_mtimes.get(stem)
-        spec_dir = os.path.dirname(filepath)
-
-        if companion_mtime is None:
-            # No companion file at all — companion debt (missing).
-            debt.append({
-                "feature": stem,
-                "file": _relpath(os.path.join(spec_dir, f"{stem}.impl.md")),
-                "debt_type": "missing",
-                "latest_code_commit": datetime.fromtimestamp(
-                    latest_code_ts, tz=timezone.utc
-                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            })
-        elif latest_code_ts > companion_mtime:
-            # Companion exists but is older than latest code commit — stale.
-            debt.append({
-                "feature": stem,
-                "file": _relpath(companion_paths[stem]),
-                "debt_type": "stale",
-                "latest_code_commit": datetime.fromtimestamp(
-                    latest_code_ts, tz=timezone.utc
-                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "companion_mtime": datetime.fromtimestamp(
-                    companion_mtime, tz=timezone.utc
-                ).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            })
-
-    # Signal C: merge real-time session debt from the FileChanged hook.
-    debt_stems = {d["feature"] for d in debt}
-    runtime_debt_file = os.path.join(
-        PROJECT_ROOT, ".purlin", "runtime", "companion_debt.json")
-    try:
-        with open(runtime_debt_file) as f:
-            runtime_debt = json.load(f)
-        for stem, entry in runtime_debt.items():
-            if stem not in debt_stems:
-                debt.append({
-                    "feature": stem,
-                    "file": f"features/*/{stem}.impl.md",
-                    "debt_type": "session",
-                    "files_changed": entry.get("files", []),
-                    "first_seen": entry.get("first_seen", ""),
-                })
-    except (IOError, json.JSONDecodeError):
-        pass
-
-    # Cap detailed output to prevent context bloat.  Return a summary
-    # with the full count and only the first 10 detailed entries.
-    MAX_DETAILED = 10
-    if len(debt) > MAX_DETAILED:
-        total = len(debt)
-        missing = sum(1 for d in debt if d["debt_type"] == "missing")
-        stale = sum(1 for d in debt if d["debt_type"] == "stale")
-        session = sum(1 for d in debt if d["debt_type"] == "session")
-        debt = debt[:MAX_DETAILED]
-        debt.append({
-            "summary": True,
-            "total": total,
-            "shown": MAX_DETAILED,
-            "omitted": total - MAX_DETAILED,
-            "missing": missing,
-            "stale": stale,
-            "session": session,
-            "message": (
-                f"{total} features with companion debt "
-                f"({missing} missing, {stale} stale, {session} session). "
-                f"Showing first {MAX_DETAILED}. "
-                f"Run purlin:spec-code-audit for full list."
-            ),
-        })
-
-    return debt
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -1208,8 +1127,8 @@ def run_scan(only=None):
         ]
     if only is None or "deviations" in only:
         result["unacknowledged_deviations"] = scan_unacknowledged_deviations()
-    if only is None or "companion_debt" in only:
-        result["companion_debt"] = scan_companion_debt()
+    if only is None or "sync_ledger" in only:
+        result["sync_ledger"] = scan_sync_ledger()
     if only is None or "plan" in only:
         result["delivery_plan"] = scan_delivery_plan()
     if only is None or "deps" in only:

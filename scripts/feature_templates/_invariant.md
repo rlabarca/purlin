@@ -2,7 +2,7 @@
 
 > Label: "<Category>: <Name>"
 > Category: "<Category>"
-> Format-Version: 1.0
+> Format-Version: 1.1
 > Invariant: true
 > Version: <semver>
 > Source: <git-repo-url>

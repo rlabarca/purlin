@@ -34,6 +34,22 @@
           "context": "No unit test failures"
         }
       ]
+    },
+    {
+      "name": "upgrade-chain-real-project",
+      "script_path": "tests/purlin_update/test_upgrade_chain.sh",
+      "assertions": [
+        {
+          "tier": 1,
+          "pattern": "0 failed",
+          "context": "All upgrade chain assertions pass"
+        },
+        {
+          "tier": 1,
+          "pattern": "passed",
+          "context": "Tests completed successfully"
+        }
+      ]
     }
   ]
 }

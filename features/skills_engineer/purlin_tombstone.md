@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Engineer: purlin:tombstone Feature Retirement"
 > Category: "Agent Skills: Engineer"
-> Prerequisite: purlin_mode_system.md
+> Prerequisite: purlin_sync_system.md
 
 [TODO]
 

@@ -124,7 +124,7 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
     *   **Scan scope:** `tools/**/*.{py,html,css,js}`
 
 ### 2.8 Design Artifact Inheritance
-When a design artifact is processed for a Purlin tool feature via `purlin:design-ingest`:
+When a design artifact is processed for a Purlin tool feature via `purlin:spec` (with Figma MCP tools `get_design_context` and `get_variable_defs` when available):
 
 *   All observed colors MUST be mapped to the nearest `--purlin-*` token from the color token system in Section 2.2. Literal hex values in descriptions are FORBIDDEN -- always reference the token name (e.g., "uses `var(--purlin-accent)`" not "uses #38BDF8").
 *   All observed fonts MUST be mapped to `--font-display` or `--font-body` from Section 2.3. If a design artifact shows a font not in the Purlin font stack, the description notes the discrepancy and maps to the closest Purlin font token.

@@ -13,7 +13,7 @@ No side effects. Output only.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md` and print the Default Variant verbatim.
 
-No role detection is needed — the Purlin agent uses one unified command table showing all modes (Engineer, PM, QA) and common commands.
+No role detection is needed — the Purlin agent uses one unified command table showing all skill categories (Engineer, PM, QA, Common).
 
 ### 2. Done
 

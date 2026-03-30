@@ -12,5 +12,5 @@ Independent features with all prerequisites COMPLETE.
 
 Depends on Phase 1 (`purlin_resume`).
 
-- `features/purlin_mode_system.md`
+- `features/purlin_sync_system.md`
 - `features/purlin_worktree_concurrency.md`

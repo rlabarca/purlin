@@ -1,0 +1,25 @@
+# Purlin Runtime & Cache (generated, per-machine)
+.purlin/cache/
+.purlin/runtime/
+.purlin/config.local.json
+
+# Generated reports (regenerated on every status run)
+CRITIC_REPORT.md
+tests/*/critic.json
+features/digests/
+
+# Node
+node_modules/
+
+# Logs & process files
+*.log
+*.pid
+
+# Web verification artifacts
+.playwright-mcp/
+
+# User-uploaded files (generated at runtime)
+uploads/
+
+# Added by Purlin refresh
+.claude/worktrees/

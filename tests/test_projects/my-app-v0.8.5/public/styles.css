@@ -1,0 +1,310 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --color-neutral-800: #1e1e1e;
+  --color-neutral-100: #eeeeee;
+  --color-neutral-300: #a3a3a3;
+  --color-white: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --border-primary: #dadada;
+  --text-primary: #121212;
+  --text-secondary: #3b3b3b;
+  --text-white: #f9f9f9;
+  --color-danger: #c0392b;
+  --color-supplementary-purple-500: #681f95;
+  --color-supplementary-amber: #F59E0B;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-neutral-100);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Modal Overlay ─────────────────────────────── */
+.modal-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 24px;
+}
+
+/* ── Modal Card ─────────────────────────────────── */
+.modal {
+  background: var(--color-bg-elevated);
+  border-radius: 16px;
+  width: 428px;
+  max-width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Header ─────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.btn-close:hover {
+  background: var(--color-neutral-100);
+}
+
+/* ── Body ───────────────────────────────────────── */
+.modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Fields ─────────────────────────────────────── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+/* Select */
+.select-wrapper {
+  position: relative;
+}
+
+.field-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 12px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field-select:focus {
+  border-color: var(--color-neutral-800);
+}
+
+.select-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-primary);
+}
+
+/* Textarea */
+.field-textarea {
+  width: 100%;
+  min-height: 65px;
+  padding: 10px 12px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-primary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field-textarea::placeholder {
+  color: var(--color-neutral-300);
+}
+
+.field-textarea:focus {
+  border-color: var(--color-neutral-800);
+}
+
+/* Attachment Zone */
+.attachment-zone {
+  background: var(--color-neutral-100);
+  border: 1.5px dashed var(--color-neutral-300);
+  border-radius: 12px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.attachment-caption {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--text-secondary);
+}
+
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--color-white);
+  border: 1px solid var(--color-neutral-800);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-upload:hover {
+  background: var(--color-neutral-100);
+}
+
+.attachment-filename {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Validation errors */
+.field-error {
+  font-size: 12px;
+  font-weight: 400;
+  color: #c0392b;
+  min-height: 16px;
+}
+
+/* ── Footer ─────────────────────────────────────── */
+.modal-footer {
+  background: var(--color-neutral-100);
+  padding: 16px 24px;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footer-info {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn-cancel {
+  background: var(--color-white);
+  border-color: var(--color-supplementary-purple-500);
+  color: var(--text-primary);
+}
+
+.btn-submit {
+  background: var(--color-supplementary-amber);
+  border-color: var(--color-supplementary-amber);
+  color: var(--text-white);
+}
+
+/* ── Status message ─────────────────────────────── */
+.modal-status {
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  min-height: 0;
+  transition: all 0.2s;
+}
+
+.modal-status:not(:empty) {
+  padding: 12px 24px;
+}
+
+.modal-status.success {
+  color: #2e7d32;
+}
+
+.modal-status.error {
+  color: #c0392b;
+}

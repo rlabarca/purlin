@@ -1,0 +1,202 @@
+{
+  "feature": "purlin_sync_system",
+  "description": "Regression tests for the sync tracking system: write guard (INVARIANT/UNKNOWN enforcement), file classification, custom classification rules, sync tracker state management, and sync ledger updates.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "write-guard-enforcement",
+      "script_path": "tests/purlin_sync_system/test_write_guard.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "INVARIANT file blocked",
+          "context": "Write guard blocks writes to INVARIANT files regardless of user"
+        },
+        {
+          "tier": 2,
+          "pattern": "UNKNOWN file blocked",
+          "context": "Write guard blocks writes to files with no classification rule"
+        },
+        {
+          "tier": 2,
+          "pattern": "CODE file allowed",
+          "context": "Write guard allows writes to CODE-classified files"
+        },
+        {
+          "tier": 2,
+          "pattern": "SPEC file allowed",
+          "context": "Write guard allows writes to SPEC-classified files"
+        },
+        {
+          "tier": 2,
+          "pattern": "QA file allowed",
+          "context": "Write guard allows writes to QA-classified files"
+        },
+        {
+          "tier": 2,
+          "pattern": "companion file allowed",
+          "context": "Write guard allows writes to .impl.md companion files"
+        },
+        {
+          "tier": 2,
+          "pattern": "invariant bypass lock works",
+          "context": "Write guard allows INVARIANT write when bypass lock matches"
+        }
+      ]
+    },
+    {
+      "name": "file-classification-rules",
+      "script_path": "tests/purlin_sync_system/test_file_classification.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "invariant file detected",
+          "context": "Files in features/_invariants/i_*.md classified as INVARIANT"
+        },
+        {
+          "tier": 2,
+          "pattern": "discovery sidecar is QA",
+          "context": "Files ending in .discoveries.md classified as QA"
+        },
+        {
+          "tier": 2,
+          "pattern": "feature spec is SPEC",
+          "context": "Feature spec .md files classified as SPEC"
+        },
+        {
+          "tier": 2,
+          "pattern": "companion \\(\\.impl\\.md\\) is CODE",
+          "context": "Companion .impl.md files classified as CODE"
+        },
+        {
+          "tier": 2,
+          "pattern": "python source is CODE",
+          "context": "Python source files classified as CODE"
+        },
+        {
+          "tier": 2,
+          "pattern": "agent definition is CODE",
+          "context": "Agent definition classified as CODE"
+        },
+        {
+          "tier": 2,
+          "pattern": "skill file is CODE",
+          "context": "Skill SKILL.md files classified as CODE"
+        }
+      ]
+    },
+    {
+      "name": "custom-classification-rules",
+      "script_path": "tests/purlin_sync_system/test_custom_classification.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "docs/ file is UNKNOWN without custom rules",
+          "context": "Unclassified files return UNKNOWN when no custom rules exist"
+        },
+        {
+          "tier": 2,
+          "pattern": "docs/ classified as SPEC via CLAUDE.md",
+          "context": "Custom CLAUDE.md classification overrides UNKNOWN"
+        },
+        {
+          "tier": 2,
+          "pattern": "config/ classified as CODE via CLAUDE.md",
+          "context": "Multiple custom classifications work in same file"
+        },
+        {
+          "tier": 2,
+          "pattern": "INVARIANT assignment ignored",
+          "context": "INVARIANT cannot be assigned via CLAUDE.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "skills/ still CODE with custom rules present",
+          "context": "Built-in rules still work alongside custom rules"
+        },
+        {
+          "tier": 2,
+          "pattern": "no CLAUDE.md: unclassified file is UNKNOWN",
+          "context": "No CLAUDE.md file: unclassified files are UNKNOWN"
+        },
+        {
+          "tier": 2,
+          "pattern": "invalid classification ignored",
+          "context": "Malformed classification lines are silently ignored"
+        },
+        {
+          "tier": 2,
+          "pattern": "consumer can reclassify their own scripts/ as SPEC",
+          "context": "Consumer projects can reclassify their own directories via CLAUDE.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "absolute path immune to custom rules",
+          "context": "Plugin files (absolute paths) are immune to project custom rules"
+        }
+      ]
+    },
+    {
+      "name": "sync-tracker-state",
+      "script_path": "tests/purlin_sync_system/test_sync_tracker.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "code file tracked in sync_state",
+          "context": "Writing a CODE file adds it to sync_state.json features"
+        },
+        {
+          "tier": 2,
+          "pattern": "spec change tracked in sync_state",
+          "context": "Writing a SPEC file sets spec_changed in sync_state.json"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl change tracked in sync_state",
+          "context": "Writing an .impl.md file sets impl_changed in sync_state.json"
+        },
+        {
+          "tier": 2,
+          "pattern": "unclassified file tracked",
+          "context": "Files that cannot map to a feature go to unclassified_writes"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin runtime files skipped",
+          "context": ".purlin/ directory files are not tracked"
+        }
+      ]
+    },
+    {
+      "name": "sync-ledger-update",
+      "script_path": "tests/purlin_sync_system/test_sync_ledger.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "code-only commit sets code_ahead",
+          "context": "Committing only code files sets sync_status to code_ahead"
+        },
+        {
+          "tier": 2,
+          "pattern": "spec-only commit sets spec_ahead",
+          "context": "Committing only spec files sets sync_status to spec_ahead"
+        },
+        {
+          "tier": 2,
+          "pattern": "code\\+spec commit sets synced",
+          "context": "Committing both code and spec sets sync_status to synced"
+        },
+        {
+          "tier": 2,
+          "pattern": "code\\+impl commit sets synced",
+          "context": "Committing code with impl sets sync_status to synced"
+        },
+        {
+          "tier": 2,
+          "pattern": "sha backfill replaces pending",
+          "context": "--sha argument replaces 'pending' commit SHAs with real hash"
+        }
+      ]
+    }
+  ]
+}

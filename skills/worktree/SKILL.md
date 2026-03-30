@@ -1,6 +1,6 @@
 ---
 name: worktree
-description: Worktree management. Available in any mode without switching
+description: Worktree management. Available in any context
 ---
 
 ## Usage

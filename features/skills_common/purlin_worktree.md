@@ -41,11 +41,34 @@ The `purlin:worktree` command provides visibility into active, stale, and orphan
 - Report summary: "Cleaned up N worktrees."
 - Skip active worktrees entirely.
 
-### 2.3 Mode and Access
+### 2.3 Subcommand: `check-lock` (internal)
+
+Internal helper used by `purlin:resume` to determine whether a worktree is safe to enter before creating or resuming a session. Not user-invocable via the skill.
+
+- Accept a worktree path as argument.
+- Read `.purlin_session.lock` and `.purlin_worktree_label` from the worktree.
+- Classify the worktree:
+  - **orphaned** (no lock file) → `safe: true`
+  - **stale** (lock exists, PID dead) → `safe: true`
+  - **active** (lock exists, PID alive) → `safe: false`
+- Return JSON: `{"safe": bool, "status": "...", "pid": N|null, "label": "...", "mode": "..."}`
+
+### 2.4 Subcommand: `claim` (internal)
+
+Internal helper used by `purlin:resume` to take ownership of a stale or orphaned worktree. Not user-invocable via the skill.
+
+- Accept a worktree path and optional `--mode <mode>` argument.
+- If the worktree has an active session lock (PID alive), reject with error and return `{"claimed": false, ...}`.
+- Otherwise, write a new `.purlin_session.lock` with the current PID, timestamp, and mode.
+- Preserve the existing worktree label from `.purlin_worktree_label`.
+- Return JSON: `{"claimed": true, "pid": N, "label": "...", "mode": "..."}`
+
+### 2.5 Mode and Access
 
 - Available in any mode (shared skill).
 - Does not activate or switch modes.
 - Read-only for `list`. `cleanup-stale` modifies worktree state.
+- `check-lock` and `claim` are internal to the framework (used by `purlin:resume`), not exposed as user-facing skill subcommands.
 
 ---
 
@@ -95,6 +118,51 @@ The `purlin:worktree` command provides visibility into active, stale, and orphan
     Given worktree W1 is active (PID alive)
     When purlin:worktree cleanup-stale is invoked
     Then W1 is not touched
+
+#### Scenario: Cleanup dry-run does not remove worktrees
+
+    Given worktree W4 is stale with no uncommitted changes
+    When purlin:worktree cleanup-stale --dry-run is invoked
+    Then W4 is reported but not removed
+
+#### Scenario: Check-lock reports orphaned worktree as safe
+
+    Given a worktree with no .purlin_session.lock
+    When manage.sh check-lock is called with the worktree path
+    Then the result has safe: true and status: "orphaned"
+
+#### Scenario: Check-lock reports stale worktree as safe
+
+    Given a worktree with .purlin_session.lock containing a dead PID
+    When manage.sh check-lock is called with the worktree path
+    Then the result has safe: true and status: "stale"
+
+#### Scenario: Check-lock reports active worktree as unsafe
+
+    Given a worktree with .purlin_session.lock containing a live PID
+    When manage.sh check-lock is called with the worktree path
+    Then the result has safe: false and status: "active"
+
+#### Scenario: Claim succeeds on stale worktree
+
+    Given a worktree with .purlin_session.lock containing a dead PID and label W1
+    When manage.sh claim is called with --mode qa
+    Then claimed: true is returned
+    And the label W1 is preserved
+    And the lock file is updated with mode "qa"
+
+#### Scenario: Claim succeeds on orphaned worktree
+
+    Given a worktree with no .purlin_session.lock
+    When manage.sh claim is called
+    Then claimed: true is returned
+    And a new lock file is created
+
+#### Scenario: Claim rejected on active worktree
+
+    Given a worktree with .purlin_session.lock containing a live PID
+    When manage.sh claim is called
+    Then the claim is rejected with an "active session" error
 
 ### QA Scenarios
 

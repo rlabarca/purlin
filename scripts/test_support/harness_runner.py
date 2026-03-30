@@ -480,27 +480,6 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
 
     # 4. Role enforcement reinforcement (compensates for missing
     #    tool-level guardrails in --print mode)
-    purlin_mode_mandates = {
-        'pm': (
-            'You are the Purlin Agent in PM mode. You MUST NEVER write, '
-            'edit, fix, debug, or modify code files, scripts, tests, or '
-            'instruction files. This includes fixing imports, changing '
-            'return values, updating variable names, or any other code '
-            'change no matter how small. If the user asks you to fix, edit, '
-            'or change ANY code file, you MUST REFUSE the request and '
-            'explain that code changes are Engineer-owned. Do NOT look for '
-            'the file, do NOT suggest you could fix it — simply refuse.'),
-        'engineer': (
-            'You are the Purlin Agent in Engineer mode. You MUST NEVER '
-            'write, edit, or create feature spec files (features/*.md) or '
-            'design/policy anchors. If asked to do so, REFUSE the request '
-            'and explain that spec files are PM-owned.'),
-        'qa': (
-            'You are the Purlin Agent in QA mode. You MUST NEVER write, '
-            'edit, or create application code or fix bugs in code. If asked '
-            'to do so, REFUSE the request and explain that code changes are '
-            'Engineer-owned and specs are PM-owned.'),
-    }
     role_mandates = {
         'ARCHITECT': (
             'You are the PM. You have a ZERO CODE MANDATE: you MUST '
@@ -522,18 +501,12 @@ def build_print_mode_context(fixture_dir, project_root, role, prompt, mode=None)
             'REFUSE the request and explain that code changes are '
             'Engineer-owned.'),
         'PURLIN': (
-            'You are the Purlin Agent in OPEN MODE. No mode is active. '
-            'You MUST NOT write, edit, or create ANY file. Do NOT call '
-            'Edit, Write, or NotebookEdit tools. If the user asks you to '
-            'edit or write any file, you MUST refuse and suggest activating '
-            'a mode first: "I need to activate a mode before writing files. '
-            'This looks like [Engineer/PM/QA] work. Activate [mode]?"'),
+            'You are the Purlin Agent. The write guard enforces file '
+            'classification — INVARIANT and UNKNOWN files are blocked, '
+            'all other classified files are allowed. Sync tracking records '
+            'changes per feature.'),
     }
-    # For PURLIN role with a mode, use mode-specific mandate
-    if role == 'PURLIN' and mode and mode.lower() in purlin_mode_mandates:
-        mandate = purlin_mode_mandates[mode.lower()]
-    else:
-        mandate = role_mandates.get(role, '')
+    mandate = role_mandates.get(role, '')
     if mandate:
         sections.append(f'# CRITICAL: Role Enforcement\n\n{mandate}')
 

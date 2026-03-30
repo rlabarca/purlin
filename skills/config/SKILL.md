@@ -30,8 +30,8 @@ Purlin Configuration
   Setting       Value   What it does
   ──────        ─────   ────────────
   yolo          ON      Auto-approve all permission prompts
-  find-work     ON      Scan for work when entering a mode
-  auto-start    OFF     Begin executing work immediately on mode entry
+  find-work     ON      Scan for work on session start
+  auto-start    OFF     Begin executing work immediately on session start
 
 Config file: .purlin/config.local.json
 Change a setting: purlin:config <setting> on|off
@@ -63,11 +63,11 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 ## Setting: `find-work` (maps to `find_work`)
 
-**What it controls:** When ON, entering a mode triggers a project scan that looks for unfinished features, open discoveries, pending verifications, and other work. Purlin presents what it found and suggests next steps. When OFF, Purlin enters the mode silently and waits for you to tell it what to do.
+**What it controls:** When ON, session startup triggers a project scan that looks for unfinished features, open discoveries, pending verifications, and other work. Purlin presents what it found and suggests next steps. When OFF, Purlin starts silently and waits for you to tell it what to do.
 
 **When to turn it ON:** You want Purlin to orient itself when starting a session. Useful when you're not sure what needs doing, or when resuming after a break. This is the default.
 
-**When to turn it OFF:** You already know exactly what you want to work on and don't want the scan overhead. Just enter a mode and give Purlin a direct instruction.
+**When to turn it OFF:** You already know exactly what you want to work on and don't want the scan overhead. Just give Purlin a direct instruction.
 
 **How it works:** `purlin:resume` Step 9 reads `agents.purlin.find_work` from the resolved config. If `true`, it runs `purlin_scan` and `purlin:status` to discover work. If `false`, it skips the scan entirely and prints `"find_work disabled -- awaiting instruction."`.
 
@@ -77,8 +77,8 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.find_work"`.
 2. **No argument** (just `purlin:config find-work`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.find_work"`, `value: true`). Print: `"Find-work is now ON. Mode entry will scan for work and suggest next steps."`
-4. **With `off`**: Write `false`. Print: `"Find-work is now OFF. Mode entry will skip scanning — tell Purlin what to do."`
+3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.find_work"`, `value: true`). Print: `"Find-work is now ON. Session startup will scan for work and suggest next steps."`
+4. **With `off`**: Write `false`. Print: `"Find-work is now OFF. Session startup will skip scanning — tell Purlin what to do."`
 
 ---
 
@@ -90,7 +90,7 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 **When to turn it OFF:** You want to review the work plan before Purlin starts. You can reorder priorities, skip items, or redirect Purlin to something else. This is the default and recommended for most workflows.
 
-**How it works:** `purlin:resume` Step 9.5 reads `agents.purlin.auto_start` from the resolved config. If `true` and a mode is resolved, Purlin begins executing immediately after presenting the work plan. If `false`, it waits for user approval.
+**How it works:** `purlin:resume` Step 9.5 reads `agents.purlin.auto_start` from the resolved config. If `true`, Purlin begins executing immediately after presenting the work plan. If `false`, it waits for user approval.
 
 **Interaction with other settings:**
 - **find-work OFF + auto-start ON**: Auto-start has no effect. Nothing was discovered, so there's nothing to start.

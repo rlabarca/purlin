@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for classify_file() in scripts/mcp/config_engine.py.
 
-Validates that the mode-guard file classification logic correctly maps
+Validates that the write-guard file classification logic correctly maps
 file paths to CODE, SPEC, QA, or INVARIANT categories.
 """
 
@@ -112,7 +112,7 @@ class TestClassifyFile(unittest.TestCase):
 
     def test_spec_feature_in_category_subfolder(self):
         """Features in category subfolders are still SPEC."""
-        result = classify_file('features/skills_common/purlin_mode.md')
+        result = classify_file('features/skills_common/purlin_worktree.md')
         self.assertEqual(result, 'SPEC')
 
     # ----- CODE files (default bucket) -----
@@ -129,7 +129,7 @@ class TestClassifyFile(unittest.TestCase):
 
     def test_code_hook_script(self):
         """Hook scripts are CODE."""
-        result = classify_file('hooks/mode-guard.sh')
+        result = classify_file('hooks/write-guard.sh')
         self.assertEqual(result, 'CODE')
 
     def test_code_readme(self):

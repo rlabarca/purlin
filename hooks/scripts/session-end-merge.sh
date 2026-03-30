@@ -196,10 +196,5 @@ merge_worktrees() {
     release_lock "$MERGE_LOCK"
 }
 
-# --- Clean up PID-scoped mode file ---
-if [ -n "$PURLIN_SESSION_ID" ]; then
-    rm -f "$PROJECT_ROOT/.purlin/runtime/current_mode_${PURLIN_SESSION_ID}"
-fi
-
 merge_worktrees
 exit 0

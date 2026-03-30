@@ -1,7 +1,7 @@
 {
   "name": "purlin",
   "version": "0.8.6",
-  "description": "Purlin — a unified workflow agent with three operating modes (Engineer, PM, QA) for spec-driven development. Enforces continuous design-driven development: specs before code, mode-gated writes, deviation tracking, structured QA, and phased delivery.",
+  "description": "Purlin — a unified workflow agent for spec-driven development with sync tracking. Enforces continuous design-driven development: specs before code, file classification guards, deviation tracking, structured QA, and phased delivery.",
   "author": {
     "name": "rlabarca"
   },

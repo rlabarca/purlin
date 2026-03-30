@@ -135,12 +135,12 @@ For deeper coverage, see the [Documentation](docs/index.md):
 
 Purlin uses **hook-based permission management** instead of `bypassPermissions`. This works with both `--plugin-dir` and marketplace installs.
 
-**How it works:** Two `PreToolUse` hooks intercept every Write/Edit and Bash call. The mode guard classifies the target file against the active mode's write-access list. Authorized writes return `permissionDecision: "allow"` (auto-approved, no prompt). Unauthorized writes are blocked with `exit 2` (tool call rejected).
+**How it works:** A `PreToolUse` hook intercepts every Write/Edit call. The write guard classifies the target file — INVARIANT and UNKNOWN files are blocked, all other classified files (CODE, SPEC, QA) are allowed with `permissionDecision: "allow"` (auto-approved, no prompt). A `FileChanged` hook tracks writes in `sync_state.json` for per-feature sync tracking.
 
 **YOLO mode is on by default.** The `PermissionRequest` hook auto-approves most permission dialogs (MCP tools, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`. User-facing decisions (plan approval, migration confirmations, remote triggers) always prompt regardless of YOLO. Disable with `purlin:config yolo off`.
 
 **Marketplace caveats:**
-- MCP tools (`purlin_mode`, `purlin_scan`, etc.) may prompt on first use per session — the PermissionRequest hook auto-approves these when YOLO is on.
+- MCP tools (`purlin_sync`, `purlin_scan`, etc.) may prompt on first use per session — the PermissionRequest hook auto-approves these when YOLO is on.
 - Enterprise environments with `allowManagedHooksOnly: true` or `allowManagedMcpServersOnly: true` can silently disable plugin hooks/MCP — Purlin must be whitelisted by the admin.
 
 See [Plugin Permissions](docs/plugin-permissions.md) for the full details.

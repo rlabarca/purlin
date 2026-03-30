@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "passed": 14,
+  "failed": 0,
+  "total": 14,
+  "scenarios": [
+    {
+      "scenario": "S1-status-200",
+      "passed": true
+    },
+    {
+      "scenario": "S1-feedback-json",
+      "passed": true
+    },
+    {
+      "scenario": "S1-timestamp",
+      "passed": true
+    },
+    {
+      "scenario": "S1-attachment-path",
+      "passed": true
+    },
+    {
+      "scenario": "S2-validate-empty",
+      "passed": true
+    },
+    {
+      "scenario": "S2-validate-null",
+      "passed": true
+    },
+    {
+      "scenario": "S2-validate-valid",
+      "passed": true
+    },
+    {
+      "scenario": "S2-server-rejects",
+      "passed": true
+    },
+    {
+      "scenario": "S3-client-oversize",
+      "passed": true
+    },
+    {
+      "scenario": "S3-client-at-limit",
+      "passed": true
+    },
+    {
+      "scenario": "S3-client-under-limit",
+      "passed": true
+    },
+    {
+      "scenario": "S3-server-rejects-oversize",
+      "passed": true
+    },
+    {
+      "scenario": "S4-default-state",
+      "passed": true
+    },
+    {
+      "scenario": "S4-no-data-saved",
+      "passed": true
+    }
+  ]
+}

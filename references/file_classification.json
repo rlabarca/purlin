@@ -14,6 +14,6 @@
     {"pattern": "^references/", "classification": "CODE", "description": "Reference docs (Engineer-owned for content)"},
     {"pattern": "^templates/", "classification": "CODE", "description": "Template files (Engineer-owned)"},
     {"pattern": "^tests/", "classification": "CODE", "description": "Test infrastructure (Engineer-owned)"},
-    {"pattern": "", "classification": "CODE", "description": "Default: everything else is CODE"}
+    {"pattern": "", "classification": "UNKNOWN", "description": "Default: unclassified files are UNKNOWN — project configures via CLAUDE.md"}
   ]
 }

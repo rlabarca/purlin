@@ -86,8 +86,8 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 ### 2.9 Figma MCP Pre-Check (Visual Spec Only)
 
 Before visual spec verification, check for Figma MCP tool availability:
-- Check for Figma MCP tools (e.g., `get_file`, `get_node`) in the available tool list.
-- If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the Figma node ID from the reference URL for use in triangulated verification (Section 2.9.1).
+- Check for Figma MCP tools (e.g., `get_design_context`, `get_metadata`, `get_variable_defs`, `get_screenshot`) in the available tool list.
+- If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the fileKey and nodeId from the reference URL (see URL parsing rules in the Figma MCP server instructions) for use in triangulated verification (Section 2.9.1).
 - If Figma MCP is NOT available, proceed with spec-only visual verification (no triangulation). Note in the output: "Figma MCP not available -- triangulated verification skipped. Install Figma MCP for three-source comparison."
 - Figma MCP access is read-only. QA MUST NOT write to Figma.
 
@@ -99,7 +99,7 @@ When Figma MCP is available and a visual spec screen has a Figma reference, perf
 
 | Source | What QA reads | How |
 |--------|--------------|-----|
-| **Figma** | Component tree, dimensions, colors, fonts, spacing | Figma MCP (`get_file`, `get_node`) using the node ID from the Reference URL |
+| **Figma** | Component tree, dimensions, colors, fonts, spacing, design tokens | Figma MCP: `get_design_context` (fileKey + nodeId) for structure/tokens, `get_variable_defs` (fileKey) for resolved values, `get_screenshot` (fileKey + nodeId) for visual comparison |
 | **Spec** | Token Map + checklist items | Read from `features/<name>.md` |
 | **App** | Computed styles, DOM structure, rendered pixels | Playwright MCP (`browser_evaluate`, `browser_screenshot`) |
 
@@ -108,7 +108,7 @@ Fetch ONLY the specific Figma node referenced in the Reference URL (using the `n
 **Step 2 -- Structured comparison (per checklist item):**
 
 For each measurable checklist item (e.g., `- [ ] Card width 120px`):
-1. Read the corresponding property from Figma via MCP.
+1. Read the corresponding property from the `get_design_context` response (design tokens, layout hints, component data) or `get_variable_defs` (resolved variable values).
 2. Read the expected value from the checklist.
 3. Read the actual value from the app via `browser_evaluate("getComputedStyle(el).property")`.
 4. Compare all three and assign a verdict:
@@ -124,7 +124,7 @@ For each measurable checklist item (e.g., `- [ ] Card width 120px`):
 **Step 3 -- Token verification:**
 
 For each Token Map entry (e.g., `surface -> var(--weather-bg)`):
-1. Read the Figma design variable value via MCP.
+1. Read the Figma design variable's resolved value from `get_variable_defs` response (or from `get_design_context` CSS variable output).
 2. Read the project token from the spec.
 3. Read the app's computed CSS property value via `browser_evaluate`.
 4. Compare all three. Token drift (Figma value != App value for the mapped token) is flagged.
@@ -132,9 +132,9 @@ For each Token Map entry (e.g., `surface -> var(--weather-bg)`):
 **Step 4 -- Visual judgment (non-measurable items):**
 
 For checklist items that cannot be measured via computed styles (e.g., `- [ ] Subtle left-edge shadow`):
-1. Take screenshot via Playwright.
-2. Read the Figma frame/node via MCP.
-3. Vision-compare the screenshot against the Figma render for the item.
+1. Take screenshot via Playwright `browser_take_screenshot`.
+2. Fetch the Figma frame screenshot via `get_screenshot` (fileKey + nodeId).
+3. Vision-compare the browser screenshot against the Figma screenshot for the item.
 
 ### 2.9.2 Spec-Only Visual Spec Verification (Fallback)
 

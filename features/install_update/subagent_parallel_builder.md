@@ -39,7 +39,7 @@ Parallel feature builder for pipeline delivery. Implements a single feature in a
     - MUST NOT modify the work plan (`.purlin/work_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
     - Commit with `feat(scope): implement FEATURE_NAME`.
-    - Activates Engineer mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
+    - Operates in its own worktree with independent sync tracking.
 
 #### 2.1.2 `pm-worker.md`
 
@@ -60,7 +60,7 @@ Spec authoring sub-agent for pipeline delivery. Writes or refines a single featu
     ```
 *   **System prompt constraints:**
     - Single-feature focus: writes or refines one feature spec per invocation.
-    - Activates PM mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
+    - Operates in its own worktree with independent sync tracking.
     - MUST NOT write code, tests, scripts, or instruction files.
     - MUST NOT modify the work plan (`.purlin/work_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
@@ -86,7 +86,7 @@ Verification sub-agent for pipeline delivery. Verifies a single feature in an is
     ```
 *   **System prompt constraints:**
     - Single-feature focus: verifies one feature per invocation.
-    - Activates QA mode in its worktree (PID-scoped mode file, see `purlin_mode_system.md` §2.9.1).
+    - Operates in its own worktree with independent sync tracking.
     - Runs Phase A (automated verification) of `purlin:verify`. Writes discoveries.
     - MUST NOT write code or feature specs.
     - MUST NOT mark `[Complete]` — the orchestrator handles final status after cross-feature checks.
@@ -261,7 +261,7 @@ On `purlin:resume`, the orchestrator MUST check for orphaned worktree branches m
 #### 2.9.2 Enriched PreCompact Checkpoint
 
 The PreCompact hook (`pre-compact-checkpoint.sh`) MUST save enriched pipeline state by reading disk artifacts:
-*   **Mode:** Read from `.purlin/runtime/current_mode_*` (PID-scoped mode file).
+*   **Branch:** Read from `git rev-parse --abbrev-ref HEAD`.
 *   **Work plan summary:** Read first 20 lines of `.purlin/work_plan.md` (pipeline status table).
 *   **Recent commits:** `git log --oneline -5` for context.
 *   **Active worktrees:** Count from `git worktree list`.
@@ -392,8 +392,8 @@ not only as a standalone section. The rule text:
     And max_concurrent_worktrees is 3
     When the pipeline dispatch loop runs
     Then up to 3 worktrees run simultaneously
-    And each worktree has a different mode (PM, Engineer, or QA)
-    And mode-guard enforces write boundaries per-worktree via PID-scoped mode files
+    And each worktree has independent sync tracking
+    And write-guard enforces INVARIANT/UNKNOWN protection per-worktree
 
 #### Scenario: Safe file conflicts auto-resolve during merge
 

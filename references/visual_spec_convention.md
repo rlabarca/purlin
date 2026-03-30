@@ -38,10 +38,30 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   **Design anchor declaration** -- the `> **Design Anchor:**` blockquote establishes which `design_*.md` anchor governs visual properties (colors, fonts, theme behavior) for this feature.
 *   **Design asset references** -- local artifact paths, Figma URLs, live web page URLs, or "N/A" when no reference exists.
 *   **Processed date** -- records when the artifact was last ingested and the Token Map was generated. Used for staleness detection.
-*   **Token Map** -- the explicit bridge between Figma's design token names and the project's token system. This is the PM's primary value-add. Each entry maps a Figma design variable name to the corresponding project token. Engineer mode uses the Token Map to know which project tokens to apply. The format is design-system agnostic -- CSS custom properties, SCSS variables, Tailwind classes, etc.
+*   **Token Map** -- the explicit bridge between Figma's design token names and the project's token system. Each entry maps a Figma design variable name to the corresponding project token. Engineer mode uses the Token Map to know which project tokens to apply. The format is design-system agnostic -- CSS custom properties, SCSS variables, Tailwind classes, etc. When Figma MCP is available, Token Maps are **auto-seeded** from `get_design_context` (which returns design tokens as CSS variables) and `get_variable_defs` (which returns the full variable vocabulary). The PM's value-add shifts from manual token discovery to **reviewing and correcting** the auto-generated mappings against the project's design anchor.
 *   **Checklist format** -- not Gherkin. Measurable visual acceptance criteria as checkboxes.
 *   **Separate from functional scenarios** -- QA can batch all visual checks across features instead of interleaving with functional verification.
 *   **No prose descriptions** -- the Token Map + checklists replace the previous `- **Description:**` prose paragraph. Engineer mode reads Figma MCP directly for layout and structure details. Prose descriptions are eliminated to avoid the lossy double-translation (Figma -> prose -> code).
+
+### Token Map Auto-Seeding (Figma MCP)
+
+When Figma MCP is available during `purlin:spec` and a screen references a Figma URL, the PM auto-seeds the Token Map using two MCP calls:
+
+1. **`get_design_context`** (fileKey + nodeId from the Figma URL) — returns design tokens as CSS variables alongside code hints, component data, and annotations. The CSS variable output provides the initial left-side (Figma token names) of the Token Map.
+2. **`get_variable_defs`** (fileKey) — returns the full variable vocabulary with names, types, collection groupings, and resolved values. This supplements `get_design_context` with variables that may not appear in the specific node's context.
+
+**Auto-seeding flow:**
+1. Call both MCP tools and collect all design variable names referenced by the target node.
+2. Read the project's `design_*.md` anchor(s) and `i_design_*.md` invariants to build the project token vocabulary.
+3. For each Figma variable, attempt automatic matching:
+   - **Exact name match** (after normalization: strip `--` prefix, lowercase) → identity mapping (e.g., `` `--weather-bg` -> `var(--weather-bg)` ``).
+   - **Semantic match** (e.g., Figma `surface` matches project `--bg` based on resolved value similarity or naming convention) → proposed mapping.
+   - **No match** → flagged for PM review with the resolved value shown.
+4. Present the auto-seeded Token Map to the PM for review. The PM confirms, adjusts, or discards each mapping.
+
+**The PM's value-add shifts** from manual token discovery to reviewing and correcting auto-generated mappings. For mature design systems with code-matching token names, auto-seeding produces mostly identity mappings that the PM confirms in bulk.
+
+Without Figma MCP, the PM creates Token Maps manually (Tier 1 or Tier 2 processing). Auto-seeding is a progressive enhancement, not a requirement.
 
 ## 9.3 Ownership and Traceability
 *   The `## Visual Specification` section is **PM-owned**. QA does NOT modify it.
@@ -51,7 +71,15 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   The scan detects visual spec sections and generates separate QA action items for visual verification.
 
 ## 9.3.1 Design Brief Cache
-When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/_design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
+When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/_design/<feature_stem>/brief.json`. This compact, machine-readable file provides Engineer mode with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation.
+
+**MCP tools used for brief generation:**
+- `get_design_context` (fileKey + nodeId) — primary source. Returns component hierarchy, layout hints, design token CSS variables, Code Connect snippets, and a screenshot. The brief captures the structured data portion (not the screenshot or raw code output).
+- `get_variable_defs` (fileKey) — supplements `get_design_context` with the full variable vocabulary and resolved values. Populates the `tokens` key in `brief.json`.
+- `get_metadata` (fileKey) — provides `figma_version_id` and `figma_last_modified` for staleness tracking.
+- `get_code_connect_map` / `get_code_connect_suggestions` (fileKey, optional) — when Code Connect is configured, populates the `code_connect` key mapping component names to source file paths and property configurations.
+
+See `design_artifact_pipeline.md` for the schema.
 
 ## 9.4 Design Asset Storage
 *   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).

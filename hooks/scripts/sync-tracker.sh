@@ -1,7 +1,7 @@
 #!/bin/bash
 # sync-tracker.sh — FileChanged hook.
 # Tracks all file writes in sync_state.json, grouped by feature.
-# Replaces companion-debt-tracker.sh.
+# Tracks all file writes grouped by feature for sync state.
 #
 # Exit codes:
 #   0 = always (informational hook, never blocks)
@@ -46,13 +46,13 @@ case "$REL_PATH" in
     .purlin/*|.claude/*|*/__pycache__/*) exit 0 ;;
 esac
 
-python3 -c "
+PURLIN_PROJECT_ROOT="$PROJECT_ROOT" PURLIN_PLUGIN_ROOT="$PLUGIN_ROOT" PURLIN_REL_PATH="$REL_PATH" python3 -c "
 import json, os, sys, re
 from datetime import datetime, timezone
 
-rel_path = '$REL_PATH'
-project_root = '$PROJECT_ROOT'
-plugin_root = '$PLUGIN_ROOT'
+rel_path = os.environ['PURLIN_REL_PATH']
+project_root = os.environ['PURLIN_PROJECT_ROOT']
+plugin_root = os.environ['PURLIN_PLUGIN_ROOT']
 
 # --- Classify file ---
 sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
@@ -82,12 +82,20 @@ if _SKIP.search(rel_path):
 # --- Map file to feature stem ---
 stem = None
 is_impl = False
+is_qa = False
 
 # features/<category>/<stem>.impl.md
 m = re.match(r'features/[^/]+/([^/]+)\.impl\.md$', rel_path)
 if m:
     stem = m.group(1)
     is_impl = True
+
+# features/<category>/<stem>.discoveries.md
+if not stem:
+    m = re.match(r'features/[^/]+/([^/]+)\.discoveries\.md$', rel_path)
+    if m:
+        stem = m.group(1)
+        is_qa = True
 
 # features/<category>/<stem>.md (not impl, not discoveries)
 if not stem:
@@ -115,8 +123,10 @@ def load_state():
 
 def save_state(state):
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
-    with open(state_file, 'w') as f:
+    tmp = state_file + '.tmp'
+    with open(tmp, 'w') as f:
         json.dump(state, f, indent=2)
+    os.replace(tmp, state_file)
 
 state = load_state()
 now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -131,6 +141,9 @@ if stem:
 
     if is_impl:
         feat['impl_changed'] = True
+    elif is_qa or classification == 'QA':
+        feat.setdefault('qa_changed', False)
+        feat['qa_changed'] = True
     elif classification == 'SPEC':
         feat['spec_changed'] = True
         if 'first_spec_change' not in feat:
@@ -145,7 +158,6 @@ if stem:
                 feat['code_files'].append(rel_path)
         if 'first_code_change' not in feat:
             feat['first_code_change'] = now
-    # QA files (discoveries, regression, scenarios) — tracked but don't affect code-spec sync
 elif classification in ('CODE', 'SPEC'):
     # Unclassified — can't map to a feature
     uw = state.setdefault('unclassified_writes', [])

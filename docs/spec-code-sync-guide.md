@@ -85,43 +85,33 @@ PM reviews these via `purlin:status` and marks each as:
 
 ---
 
-## Enforcement and Detection
+## Sync Tracking and Detection
 
-Companion file enforcement works at two levels: a **session-level gate** that blocks mode switches, and **scan-based detection** that surfaces feature-level debt in `purlin:status`.
+Companion file tracking works at two levels: **sync tracking** that observes writes per feature in real time, and **sync ledger** that persists per-feature sync status across commits.
 
-### Session-Level Gate: Mode Switch
+### Sync Tracker (Session-Level)
 
-The hard enforcement point. When switching out of Engineer mode, the `purlin_mode` tool checks whether code files were modified during the session without any companion files being written:
+The `sync-tracker.sh` FileChanged hook tracks all file writes in `.purlin/runtime/sync_state.json`:
 
-- Code files modified + zero companion files written → **blocked** (when switching to QA or default mode).
-- **Engineer→PM switches are exempt** — updating specs is a natural part of engineer work. Companion debt persists until resolved.
-- The engineer must write at least one companion file with `[IMPL]` entries, or run `purlin:spec-code-audit` to reconcile.
-- This is project-agnostic — it tracks file writes, not file-to-feature mappings. Works for any language or project structure.
-- The gate resets after a successful non-PM mode switch.
+- Every write is classified (CODE, SPEC, QA) and mapped to a feature stem.
+- Session state shows which features have code changes without spec/impl updates.
+- `purlin:status` reads this to surface in-session drift before commits happen.
+- Advisory only — does not block any writes.
 
 ### Build Advisory: Step 4 Pre-check
 
-Before committing a status tag, `purlin:build` checks whether the companion file was updated:
+Before committing a status tag, `purlin:build` checks the sync ledger for the target feature:
 
-- If no new entries: **warns** (not blocks). Recommends writing `[IMPL]` entries.
-- The mode switch gate provides the hard enforcement — the build check is an early reminder.
+- If `sync_status: code_ahead`: **warns** (not blocks). Recommends writing `[IMPL]` entries.
 
-### Scan Detection: Feature-Level Debt
+### Sync Ledger (Persistent)
 
-`purlin:status` includes companion debt as Engineer action items. The scan uses three signals to detect which features have stale or missing companions:
+`purlin:status` reads `.purlin/sync_ledger.json` to surface per-feature sync status:
 
-1. **Test directory commits:** `git log` on `tests/<stem>/` — catches code changes in test files.
-2. **Status tag timestamps:** If a feature was tagged (Complete, Testing, etc.), the tag timestamp represents "code work happened." Compares against companion file modification time.
-3. **Session debt:** The FileChanged hook tracks code changes in real-time. Uncommitted changes and in-progress work are captured here.
-
-This catches features that were implemented but never got companion entries, regardless of where the code lives.
-
-### Session Save (`purlin:resume save`)
-
-Before writing a checkpoint:
-
-- Same session-level companion debt check as the mode switch gate.
-- **Warning only** (not blocking) — session saves during crashes shouldn't lose work.
+- Updated on every commit by `sync-ledger-update.sh`.
+- Tracks `last_code_commit`, `last_spec_commit`, `last_impl_commit` with timestamps.
+- Computes `sync_status`: `synced`, `code_ahead`, `spec_ahead`, or `unknown`.
+- Features with `code_ahead` are shown as advisory Engineer work items.
 
 ---
 
@@ -153,17 +143,17 @@ Before writing a checkpoint:
 
 **Detection** — uses companion entries as a structured index:
 
-- **Companion debt** — code without entries is flagged HIGH severity.
+- **Code-ahead sync status** — features with `code_ahead` in the sync ledger are flagged HIGH severity.
 - **Impl-to-spec tracing** — `[IMPL]` references map code back to spec requirements.
 - **Stale notes** — code modified since the last companion entry is flagged MEDIUM.
 - **Coverage completeness** — features with only `[IMPL]` entries (no deviations) are deprioritized in deep comparison, since they signal spec-aligned implementation.
 
-**Reconciliation** — when companion debt has accumulated across multiple features, the audit's Phase 3 writes companion entries in bulk:
+**Reconciliation** — when code-ahead status has accumulated across multiple features, the audit's Phase 3 writes companion entries in bulk:
 
-- For each feature with debt: reads the spec and implementation, writes `[IMPL]` entries documenting what was built.
+- For each feature with `code_ahead` status: reads the spec and implementation, writes `[IMPL]` entries documenting what was built.
 - Uses deviation tags (`[DEVIATION]`, `[DISCOVERY]`) where code doesn't match spec.
 - Commits all companion updates together.
-- This is the recommended path when `purlin:status` shows multiple features with companion debt.
+- This is the recommended path when `purlin:status` shows multiple features with `code_ahead` sync status.
 
 ---
 
@@ -177,7 +167,7 @@ Before writing a checkpoint:
 4. For each commit batch, write companion entries:
    - `[IMPL]` for work that matches the spec.
    - Deviation tags for anything else.
-5. The mode switch gate blocks if you haven't written any companion files. If debt accumulates, run `purlin:spec-code-audit` to catch up in bulk.
+5. If companion entries are missing, `purlin:status` shows the feature as `code_ahead`. Run `purlin:spec-code-audit` to catch up in bulk.
 
 **As a PM:**
 
@@ -196,6 +186,6 @@ Before writing a checkpoint:
 | Record a deviation | Add a row to the Active Deviations table with the appropriate tag |
 | Escalate something impossible | `purlin:infeasible feature-name` |
 | Suggest a spec change | `purlin:propose topic` |
-| Check for companion debt | `purlin:status` (scan detects it automatically) |
-| Reconcile debt in bulk | `purlin:spec-code-audit` (writes companion entries for all features with debt) |
+| Check sync status | `purlin:status` (reads sync ledger automatically) |
+| Reconcile code-ahead features | `purlin:spec-code-audit` (writes companion entries for features with `code_ahead` status) |
 | Review deviations (PM) | `purlin:status` then read the companion file |
