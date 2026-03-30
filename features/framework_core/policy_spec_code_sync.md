@@ -76,26 +76,28 @@ This policy defines the **Spec-Code Synchronization Model**: a protocol that gua
     │
     │
     │  ┌──────────────────────────────────────────────────────────┐
-    │  │              ENFORCEMENT GATES                           │
+    │  │              ENFORCEMENT & DETECTION                     │
     │  │                                                          │
-    │  │  Gate 1: purlin:build Step 4 (Status Tag Commit)           │
-    │  │  ─── Mechanical check: did impl file change? ───        │
-    │  │  Code commits exist without companion update? BLOCK.     │
-    │  │  No judgment call. No "matches spec exactly" exemption.  │
+    │  │  Hard Gate: Mode Switch out of Engineer                  │
+    │  │  ─── Session-level: code files written without ────     │
+    │  │  ─── companion files? BLOCK (except engineer→pm). ──   │
+    │  │  Write companion entries or run purlin:spec-code-audit.  │
     │  │                                                          │
-    │  │  Gate 2: Mode Switch out of Engineer                     │
-    │  │  ─── Mechanical check: companion debt exists? ───       │
-    │  │  Code was committed without companion entries? BLOCK.    │
-    │  │  No skip escape. Write at least [IMPL] lines first.     │
+    │  │  Advisory: purlin:build Step 4 (Status Tag Commit)       │
+    │  │  ─── Did companion file get new entries? ───            │
+    │  │  WARN if not. Hard enforcement is at mode switch.        │
     │  │                                                          │
-    │  │  Gate 3: purlin:resume save (Session End)                    │
+    │  │  Advisory: purlin:resume save (Session End)               │
     │  │  ─── Companion debt warning before checkpoint ───       │
     │  │  Surfaces unwritten impl notes before session ends.      │
     │  │                                                          │
-    │  │  Gate 4: Scan (Continuous Background Detection)          │
-    │  │  ─── scan_companion_debt() ───                          │
-    │  │  Compares code commit timestamps against companion file  │
-    │  │  modification. Catches everything the other gates miss.  │
+    │  │  Detection: scan_companion_debt()                        │
+    │  │  ─── Three signals: test dir git log, status tag ───    │
+    │  │  ─── timestamps, runtime session debt ───               │
+    │  │  Catches debt from any source. Surfaced in purlin:status.│
+    │  │                                                          │
+    │  │  Reconciliation: purlin:spec-code-audit                  │
+    │  │  ─── Bulk companion file writing for accumulated debt ──│
     │  └──────────────────────────────────────────────────────────┘
 
 
@@ -147,32 +149,33 @@ The `[IMPL]` tag is a new Engineer Decision Tag with severity NONE. It records w
 
 All enforcement gates MUST be **mechanical** (did the file change?) not **judgmental** (did the engineer deviate?). This removes the failure mode where the engineer decides "this matches the spec" and skips documentation.
 
-#### Gate 1: `purlin:build` Step 4 — Companion File Gate
+#### Hard Gate: Mode Switch out of Engineer
 
-- The gate checks: were code commits made for this feature during this session?
+- The `purlin_mode` MCP tool checks session-level write tracking: were code files modified in this session without any companion file (`.impl.md`) being written?
+- If companion debt exists and the target mode is QA or default: **BLOCK** the mode switch.
+- Engineer→PM switches are **exempt** — updating specs is a natural part of engineer work. Companion debt persists and must be resolved before switching to QA or default.
+- The engineer MUST write at least one companion file with `[IMPL]` entries, or run `purlin:spec-code-audit` to reconcile.
+- This is a session-level check (were code files written without any companion files?), not a per-feature mapping.
+
+#### Advisory: `purlin:build` Step 4 — Companion File Warning
+
+- The build checks: were code commits made for this feature during this session?
 - If yes: does the companion file (`features/<name>.impl.md`) have new entries from this session?
-- If no new entries: **BLOCK** the status tag commit. Write at least `[IMPL]` entries first.
-- The old conditional ("if all changes match the spec exactly: no companion entry required") is **removed**.
+- If no new entries: **WARN** and recommend writing `[IMPL]` entries. Allow the status tag commit to proceed.
+- Hard enforcement is at mode switch, not at build time.
 
-#### Gate 2: Mode Switch out of Engineer
+#### Advisory: `purlin:resume save` — Session Checkpoint
 
-- Before switching out of Engineer mode, check: were code commits made for ANY feature during this session without a corresponding companion file update?
-- If companion debt exists: **BLOCK** the mode switch. List the features with debt.
-- The "skip" escape hatch is **removed**. The engineer MUST write at least `[IMPL]` entries or the switch does not proceed.
-- This is a hard block, not a prompt. There is no "are you sure?" — the entries must be written.
-
-#### Gate 3: `purlin:resume save` — Session Checkpoint
-
-- Before writing a checkpoint, check for companion debt (same logic as Gate 2).
+- Before writing a checkpoint, check for companion debt (same session-level logic as the mode switch gate).
 - If debt exists: warn and prompt to write entries before saving.
 - This is a soft gate (warning, not block) because session save may be invoked during crashes or context limits where blocking could lose work.
 
-#### Gate 4: Scan — `scan_companion_debt()`
+#### Detection: Scan — `scan_companion_debt()`
 
-- The scan compares code commit timestamps against companion file modification timestamps for each feature.
-- If a feature has code commits more recent than its last companion file update: surface as `companion_debt` in scan results.
-- `purlin:status` routes companion debt to Engineer action items.
-- This gate catches debt that slipped through Gates 1-3 (session crashes, manual git commits outside Purlin, etc.).
+- Uses three signals to detect code activity per feature: (A) git log on `tests/<stem>/` directory, (B) status tag commit timestamps for COMPLETE/TESTING/VERIFIED features, (C) runtime session debt from the FileChanged hook.
+- If a feature has code activity more recent than its companion file: surface as `companion_debt` in scan results.
+- `purlin:status` routes companion debt to Engineer action items with a hint to run `purlin:spec-code-audit` for bulk reconciliation.
+- Catches debt from any source: manual git commits, session crashes, code outside test directories.
 
 ### 2.4 The Sync Guarantee
 

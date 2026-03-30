@@ -8,7 +8,7 @@ description: Available to all agents and modes
 Run `purlin_scan` with flags based on the current mode:
 
 - **PM mode:** Run `purlin_scan` (with `only: "features,discoveries,deviations,git"`)
-- **Engineer mode:** Run `purlin_scan` (with `only: "features,discoveries,plan,git"`, `tombstones: true`)
+- **Engineer mode:** Run `purlin_scan` (with `only: "features,discoveries,plan,git,companion_debt"`, `tombstones: true`)
 - **QA mode:** Run `purlin_scan` (with `only: "features,discoveries,git,smoke"`)
 - **Open mode (no mode active):** Run `purlin_scan` (with `tombstones: true`)
 
@@ -33,6 +33,7 @@ Analyze the scan JSON to classify features into mode-specific work items. **Only
 4. Features in TODO lifecycle with no open INFEASIBLE — new work
 5. Open BUG discoveries with `action_required: Engineer`
 6. Delivery plan features in current phase
+7. Features with companion debt (`companion_debt` scan entries) — companion file missing or stale since last code activity. Show as advisory items with hint: `"Run purlin:spec-code-audit to reconcile companion files in bulk."`
 
 **QA work:**
 - Features where tests pass, QA scenarios exist, lifecycle is TESTING

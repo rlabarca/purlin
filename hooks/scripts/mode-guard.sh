@@ -155,7 +155,7 @@ fi
 case "$CURRENT_MODE" in
     engineer)
         if [ "$FILE_CLASS" = "SPEC" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in Engineer mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"pm\\\").\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in Engineer mode. Switch to PM: purlin_mode(mode: \\\"pm\\\"), make the edit, then switch back: purlin_mode(mode: \\\"engineer\\\").\"}" >&2
             exit 2
         fi
         if [ "$FILE_CLASS" = "QA" ]; then

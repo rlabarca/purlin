@@ -72,10 +72,12 @@ Runs `purlin:unit-test` to check tests against the quality rubric. For features 
 Before committing the status tag, the agent runs five pre-checks:
 
 1. **Clean working tree** — No uncommitted changes.
-2. **Companion file gate** — All decision tags written, no loose implementation notes.
+2. **Companion file warning** — Warns if companion file has no new entries. The hard enforcement is the mode switch gate (see below).
 3. **Web test gate** — Visual spec features pass Playwright checks.
 4. **Spec & plan alignment audit** — Implementation matches spec requirements; delivery plan is consistent.
 5. **Scope declaration** — The commit includes `[Scope: <type>]` where type is `full`, `targeted:A,B`, `cosmetic`, or `dependency-only`.
+
+The mode switch gate is the hard enforcement for companion files: the engineer cannot leave engineer mode (except to PM) until at least one companion file has been written in the session. Run `purlin:spec-code-audit` to reconcile debt in bulk.
 
 A separate commit marks the feature's state:
 

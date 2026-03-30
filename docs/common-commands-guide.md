@@ -16,6 +16,7 @@ Output includes:
 
 - Feature counts by lifecycle (TODO / TESTING / COMPLETE / TOMBSTONE)
 - Work items grouped by mode, highest priority first
+- Companion debt (stale or missing companion files) as engineer action items
 - Open discoveries requiring attention
 - Active worktrees (if any)
 - A suggestion for which mode to enter (when no mode is active)

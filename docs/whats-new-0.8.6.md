@@ -64,6 +64,29 @@ The update skill detects the submodule-to-plugin transition and handles:
 
 After the update completes, exit and restart `claude`. The plugin model takes over.
 
+### Post-Upgrade: Figma Invariant Sync
+
+If your project has Figma-sourced design invariants (created by `purlin:invariant add-figma` or migrated from v0.8.5 Figma references), run these after upgrading:
+
+```
+purlin:invariant sync --all
+purlin:invariant validate
+```
+
+The sync populates new invariant sections introduced in v0.8.6:
+- **Design Variables** — variable names and types extracted via `get_variable_defs` (used for Token Map auto-seeding and drift detection)
+- **Code Connect** — presence indicator for component-to-code mappings (when your Figma org has Code Connect configured)
+
+Invariant Format-Version is bumped from 1.0 to 1.1. Existing 1.0 invariants remain valid — sync upgrades them to 1.1 automatically.
+
+If you don't have Figma MCP set up yet:
+
+```bash
+claude mcp add --transport http figma https://mcp.figma.com/mcp
+```
+
+Restart the session, run `/mcp` → select Figma → complete OAuth, then run the sync.
+
 ---
 
 ## Skill Renaming: `/pl-*` to `purlin:*`
@@ -205,7 +228,7 @@ Six hooks provide mechanical enforcement and automatic lifecycle management:
 | **Session End** | `SessionEnd` | Merges worktree branches, cleans session state. |
 | **Permission Manager** | `PermissionRequest` | Auto-approves most permission prompts when YOLO is enabled (excludes plan approval, user questions, remote triggers). |
 | **Pre-Compact Checkpoint** | `PreCompact` | Auto-saves session state before context compaction. |
-| **Companion Debt Tracker** | `FileChanged` | Tracks companion file debt when code files change. |
+| **Companion Debt Tracker** | `FileChanged` | Tracks code file and companion file writes per session. Powers the mode switch gate (blocks leaving engineer without companion updates) and feeds scan detection. |
 
 The mode guard hook is the biggest improvement. In v0.8.5, mode boundaries were enforced by instructing the agent not to write wrong-mode files (prompt-level). In v0.8.6, a script mechanically intercepts every Write/Edit call, checks the file against a classification map and the current mode, and returns a blocking error if the write violates boundaries.
 

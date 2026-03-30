@@ -742,10 +742,18 @@ def scan_unacknowledged_deviations():
 def scan_companion_debt():
     """Detect features with code commits more recent than companion file updates.
 
-    Compares git log timestamps for feature-related code against the companion
-    file's last modification time.  Returns a list of dicts with feature, file,
-    and debt_type ('missing' or 'stale').
+    Uses three signals to detect code activity per feature:
+      A) git log on tests/<stem>/ directory (existing, catches test changes)
+      B) Status tag commit timestamps (new, catches features without test dirs)
+      C) Runtime debt from session FileChanged hook (new, catches uncommitted)
+
+    Returns a list of dicts with feature, file, and debt_type
+    ('missing', 'stale', or 'session').
     """
+    global _status_commit_cache
+    if _status_commit_cache is None:
+        _status_commit_cache = _build_status_commit_index()
+
     debt = []
     if not os.path.isdir(FEATURES_DIR):
         return debt
@@ -763,10 +771,6 @@ def scan_companion_debt():
         except OSError:
             continue
 
-    # For each feature spec, check if there are code commits more recent
-    # than the companion file.  We use the tests/<stem>/ directory and
-    # the companion file's Tool Location / Source Mapping as proxies for
-    # "code files that belong to this feature."
     for filename, filepath in _iter_feature_files(FEATURES_DIR):
         if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
             continue
@@ -776,30 +780,41 @@ def scan_companion_debt():
         if _is_anchor_node(filename):
             continue
 
-        # Check if tests directory exists (proxy for "has implementation").
+        # Signal A: test directory git log timestamp.
+        test_dir_ts = None
         test_dir = os.path.join(TESTS_DIR, stem)
-        if not os.path.isdir(test_dir):
-            continue
+        if os.path.isdir(test_dir):
+            try:
+                result = subprocess.run(
+                    ["git", "log", "-1", "--format=%ct", "--", test_dir],
+                    capture_output=True, text=True, timeout=5,
+                    cwd=PROJECT_ROOT,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    test_dir_ts = float(result.stdout.strip())
+            except Exception:
+                pass
 
-        # Get the latest code commit timestamp for this feature's test dir.
-        try:
-            result = subprocess.run(
-                ["git", "log", "-1", "--format=%ct", "--", test_dir],
-                capture_output=True, text=True, timeout=5,
-                cwd=PROJECT_ROOT,
-            )
-            if result.returncode != 0 or not result.stdout.strip():
-                continue
-            latest_code_ts = float(result.stdout.strip())
-        except Exception:
+        # Signal B: status tag commit timestamp (from cached index).
+        # Only use tags that indicate code was written (not TODO, which means
+        # "reset to not-started").
+        status_tag_ts = None
+        status_entry = _status_commit_cache.get(filename)
+        if status_entry and status_entry["tag"] in (
+                "COMPLETE", "TESTING", "VERIFIED"):
+            status_tag_ts = float(status_entry["timestamp"])
+
+        # Take the latest signal across all sources.
+        timestamps = [t for t in (test_dir_ts, status_tag_ts) if t]
+        if not timestamps:
             continue
+        latest_code_ts = max(timestamps)
 
         companion_mtime = companion_mtimes.get(stem)
+        spec_dir = os.path.dirname(filepath)
 
         if companion_mtime is None:
             # No companion file at all — companion debt (missing).
-            # Suggest companion path alongside the feature spec.
-            spec_dir = os.path.dirname(filepath)
             debt.append({
                 "feature": stem,
                 "file": _relpath(os.path.join(spec_dir, f"{stem}.impl.md")),
@@ -821,6 +836,50 @@ def scan_companion_debt():
                     companion_mtime, tz=timezone.utc
                 ).strftime("%Y-%m-%dT%H:%M:%SZ"),
             })
+
+    # Signal C: merge real-time session debt from the FileChanged hook.
+    debt_stems = {d["feature"] for d in debt}
+    runtime_debt_file = os.path.join(
+        PROJECT_ROOT, ".purlin", "runtime", "companion_debt.json")
+    try:
+        with open(runtime_debt_file) as f:
+            runtime_debt = json.load(f)
+        for stem, entry in runtime_debt.items():
+            if stem not in debt_stems:
+                debt.append({
+                    "feature": stem,
+                    "file": f"features/*/{stem}.impl.md",
+                    "debt_type": "session",
+                    "files_changed": entry.get("files", []),
+                    "first_seen": entry.get("first_seen", ""),
+                })
+    except (IOError, json.JSONDecodeError):
+        pass
+
+    # Cap detailed output to prevent context bloat.  Return a summary
+    # with the full count and only the first 10 detailed entries.
+    MAX_DETAILED = 10
+    if len(debt) > MAX_DETAILED:
+        total = len(debt)
+        missing = sum(1 for d in debt if d["debt_type"] == "missing")
+        stale = sum(1 for d in debt if d["debt_type"] == "stale")
+        session = sum(1 for d in debt if d["debt_type"] == "session")
+        debt = debt[:MAX_DETAILED]
+        debt.append({
+            "summary": True,
+            "total": total,
+            "shown": MAX_DETAILED,
+            "omitted": total - MAX_DETAILED,
+            "missing": missing,
+            "stale": stale,
+            "session": session,
+            "message": (
+                f"{total} features with companion debt "
+                f"({missing} missing, {stale} stale, {session} session). "
+                f"Showing first {MAX_DETAILED}. "
+                f"Run purlin:spec-code-audit for full list."
+            ),
+        })
 
     return debt
 

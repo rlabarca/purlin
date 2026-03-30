@@ -108,7 +108,7 @@ Examples: `Eng(main) | add auth flow`, `PM(dev/0.8.6) | spec scan engine`, `QA(m
 ### 4.2 Pre-Switch Check
 Before switching OUT of Engineer mode:
 1. If uncommitted work exists: prompt to commit first.
-2. **Companion file gate (mechanical):** Check if code was committed for any feature without a corresponding companion file update in this session. This is a mechanical check — did the companion file get new entries? — not a judgment call about whether the code deviated. If companion debt exists: **BLOCK the switch.** List the features with debt. There is no "skip" option. The engineer writes at least `[IMPL]` entries or the switch does not proceed.
+2. **Companion file gate (session-level):** The `purlin_mode` MCP tool checks `session_writes.json`: were code files written without any companion files? If debt exists and target is QA or default: **BLOCK.** Engineer→PM switches are exempt (spec edits are natural engineer work — switch to PM, edit, switch back). The engineer writes companion `[IMPL]` entries or runs `purlin:spec-code-audit` to reconcile.
 3. Then switch.
 
 Before switching out of other modes: check for uncommitted work only.

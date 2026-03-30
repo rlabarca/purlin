@@ -92,12 +92,13 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - This is NOT optional. It is how PM discovers what was built. Skipping it creates silent spec drift.
 - For deviations, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, `[INFEASIBLE]`) instead of or in addition to `[IMPL]`.
 - Scan.py surfaces unacknowledged deviation entries to PM via `purlin:status`. `[IMPL]` entries are informational and are not surfaced to PM.
-- **Five mechanical enforcement gates:**
+- **Enforcement and detection:**
   1. `purlin:build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
-  2. `purlin:build` Step 4 — Companion File Gate: Mechanical check — did the companion file get new entries this session? If code was committed for a feature and the companion file has no new entries: **BLOCK.** No judgment call about whether the change "matches the spec."
-  3. Mode switch out of Engineer: Mechanical check — does companion debt exist for any feature? If yes: **BLOCK.** No skip escape. The engineer writes entries (at minimum `[IMPL]` lines) or the switch does not proceed.
-  4. Scan — `scan_companion_debt()`: Compares code commit timestamps against companion file modification timestamps. Surfaces debt missed by Gates 1-5 (session crashes, manual git commits).
-  5. `FileChanged` hook — Real-time companion debt tracker: A `FileChanged` hook tracks code file changes against companion files in `.purlin/runtime/companion_debt.json`. When a code file mapped to a feature changes, it records debt. When the corresponding `.impl.md` companion file changes, it clears the debt for that feature. The mode switch protocol (Gate 3) reads this file for its mechanical check. Format: `{ "feature_stem": { "files": ["path1", ...], "first_seen": "ISO" } }`.
+  2. `purlin:build` Step 4 — Companion File Gate (**advisory**): Warn if companion file has no new entries. Hard enforcement is at mode switch.
+  3. Mode switch out of Engineer (**hard gate**): Session-level check — were code files written without any companion files? If yes and target is QA or default: **BLOCK.** Engineer→PM switches are exempt (spec edits are a natural part of engineer work). The engineer writes companion entries or runs `purlin:spec-code-audit` to reconcile.
+  4. Scan — `scan_companion_debt()`: Uses three signals (test dir git log, status tag timestamps for COMPLETE/TESTING/VERIFIED, runtime session debt). Surfaces feature-level debt in `purlin:status` as engineer action items.
+  5. `FileChanged` hook — Session-level write tracker: Tracks code file writes and companion file writes in `.purlin/runtime/session_writes.json`. Also tracks feature-level debt for test files in `.purlin/runtime/companion_debt.json`. The mode switch gate reads `session_writes.json`; the scan merges `companion_debt.json`.
+  6. Reconciliation — `purlin:spec-code-audit`: Bulk companion file writing for accumulated debt (Dimension 13). The recommended path when `purlin:status` shows multiple features with debt.
 
 ### 2.9 PID-Scoped Mode State
 

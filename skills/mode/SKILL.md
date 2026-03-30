@@ -27,11 +27,12 @@ When invoked with no arguments, display current mode status. No mode change, no 
    - If yes, commit with mode-appropriate prefix, then switch.
    - If no, warn that changes will carry into the new mode.
 
-2. **Companion file gate (Engineer mode exit only).** When switching OUT of Engineer mode:
-   - Check: were code commits made for any feature during this session without a corresponding companion file update?
-   - If companion debt exists: **BLOCK the switch.** List the features with debt. There is no "skip" option.
-   - The engineer MUST write at least `[IMPL]` entries for each feature with debt before the switch proceeds.
-   - This is a mechanical check (did the companion file get new entries?), not a judgment call about deviation.
+2. **Companion file gate (Engineer mode exit only).** When switching OUT of Engineer mode to QA or default:
+   - The `purlin_mode` MCP tool checks session-level write tracking: were code files modified in this session without any companion file (`.impl.md`) being written?
+   - If companion debt exists: **BLOCK the switch.** The tool returns `"action": "blocked"` with the count of code files modified.
+   - The engineer MUST write at least one companion file with `[IMPL]` entries, OR run `purlin:spec-code-audit` to reconcile, before the switch proceeds.
+   - **Exception:** Engineer→PM switches are always allowed. Updating specs is a natural part of engineer work. The companion debt persists and must be resolved before switching to QA or default mode.
+   - This is a mechanical check (were code files written without any companion files?), not a per-feature mapping. Feature-level debt details are available via `purlin:status`.
 
 3. **Activate the new mode.**
    - Print the mode's command subset from `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md`.
@@ -50,4 +51,6 @@ When invoked with no arguments, display current mode status. No mode change, no 
 
 ## Internal Mode Switches
 
-`purlin:verify` Phase A.5 (auto-fix iteration loop) performs internal write-boundary toggles between QA and Engineer without invoking `purlin:mode`. These internal switches preserve mode guard enforcement but skip terminal badge updates and user-facing prompts. See the `purlin:verify` skill for the full protocol.
+**Engineer↔PM bounces:** When engineer mode needs to update a spec file (e.g., syncing enforcement gate descriptions after implementation changes), switch to PM mode, make the spec edits, then switch back to engineer. The companion debt gate exempts engineer→pm switches — debt persists until the engineer writes companion files and switches to QA or default mode.
+
+**QA↔Engineer auto-fix:** `purlin:verify` Phase A.5 (auto-fix iteration loop) performs internal write-boundary toggles between QA and Engineer without invoking `purlin:mode`. These internal switches preserve mode guard enforcement but skip terminal badge updates and user-facing prompts. See the `purlin:verify` skill for the full protocol.

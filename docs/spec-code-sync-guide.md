@@ -85,39 +85,43 @@ PM reviews these via `purlin:status` and marks each as:
 
 ---
 
-## Enforcement Gates
+## Enforcement and Detection
 
-Four gates ensure companion files stay current. All are **mechanical** — they check whether the file changed, not whether the engineer's judgment was correct.
+Companion file enforcement works at two levels: a **session-level gate** that blocks mode switches, and **scan-based detection** that surfaces feature-level debt in `purlin:status`.
 
-### Gate 1: Build Completion (`purlin:build` Step 4)
+### Session-Level Gate: Mode Switch
 
-Before committing a status tag (`[Complete]` or `[Ready for Verification]`):
+The hard enforcement point. When switching out of Engineer mode, the `purlin_mode` tool checks whether code files were modified during the session without any companion files being written:
 
-- Were code commits made for this feature during the session?
-- Does the companion file have new entries?
-- If no new entries: **blocked.** Write at least `[IMPL]` entries first.
+- Code files modified + zero companion files written → **blocked** (when switching to QA or default mode).
+- **Engineer→PM switches are exempt** — updating specs is a natural part of engineer work. Companion debt persists until resolved.
+- The engineer must write at least one companion file with `[IMPL]` entries, or run `purlin:spec-code-audit` to reconcile.
+- This is project-agnostic — it tracks file writes, not file-to-feature mappings. Works for any language or project structure.
+- The gate resets after a successful non-PM mode switch.
 
-### Gate 2: Mode Switch
+### Build Advisory: Step 4 Pre-check
 
-Before switching out of Engineer mode:
+Before committing a status tag, `purlin:build` checks whether the companion file was updated:
 
-- Were code commits made for any feature without companion updates?
-- If companion debt exists: **blocked.** No skip option. Write the entries.
+- If no new entries: **warns** (not blocks). Recommends writing `[IMPL]` entries.
+- The mode switch gate provides the hard enforcement — the build check is an early reminder.
 
-### Gate 3: Session Save (`purlin:resume save`)
+### Scan Detection: Feature-Level Debt
+
+`purlin:status` includes companion debt as Engineer action items. The scan uses three signals to detect which features have stale or missing companions:
+
+1. **Test directory commits:** `git log` on `tests/<stem>/` — catches code changes in test files.
+2. **Status tag timestamps:** If a feature was tagged (Complete, Testing, etc.), the tag timestamp represents "code work happened." Compares against companion file modification time.
+3. **Session debt:** The FileChanged hook tracks code changes in real-time. Uncommitted changes and in-progress work are captured here.
+
+This catches features that were implemented but never got companion entries, regardless of where the code lives.
+
+### Session Save (`purlin:resume save`)
 
 Before writing a checkpoint:
 
-- Same companion debt check as Gate 2.
+- Same session-level companion debt check as the mode switch gate.
 - **Warning only** (not blocking) — session saves during crashes shouldn't lose work.
-
-### Gate 4: Scan (Background)
-
-The scan compares code commit timestamps against companion file timestamps:
-
-- If code is newer than the companion: flagged as `companion_debt`.
-- `purlin:status` routes it to Engineer action items.
-- Catches debt from manual git commits, session crashes, or anything Gates 1-3 missed.
 
 ---
 
@@ -143,14 +147,23 @@ The scan compares code commit timestamps against companion file timestamps:
 
 ---
 
-## The Spec-Code Audit
+## The Spec-Code Audit (Reconciliation Tool)
 
-`purlin:spec-code-audit` uses companion entries as a structured index:
+`purlin:spec-code-audit` serves two purposes: detection and **bulk reconciliation**.
+
+**Detection** — uses companion entries as a structured index:
 
 - **Companion debt** — code without entries is flagged HIGH severity.
 - **Impl-to-spec tracing** — `[IMPL]` references map code back to spec requirements.
 - **Stale notes** — code modified since the last companion entry is flagged MEDIUM.
 - **Coverage completeness** — features with only `[IMPL]` entries (no deviations) are deprioritized in deep comparison, since they signal spec-aligned implementation.
+
+**Reconciliation** — when companion debt has accumulated across multiple features, the audit's Phase 3 writes companion entries in bulk:
+
+- For each feature with debt: reads the spec and implementation, writes `[IMPL]` entries documenting what was built.
+- Uses deviation tags (`[DEVIATION]`, `[DISCOVERY]`) where code doesn't match spec.
+- Commits all companion updates together.
+- This is the recommended path when `purlin:status` shows multiple features with companion debt.
 
 ---
 
@@ -164,7 +177,7 @@ The scan compares code commit timestamps against companion file timestamps:
 4. For each commit batch, write companion entries:
    - `[IMPL]` for work that matches the spec.
    - Deviation tags for anything else.
-5. The gates handle the rest — you'll be reminded if you forget.
+5. The mode switch gate blocks if you haven't written any companion files. If debt accumulates, run `purlin:spec-code-audit` to catch up in bulk.
 
 **As a PM:**
 
@@ -184,4 +197,5 @@ The scan compares code commit timestamps against companion file timestamps:
 | Escalate something impossible | `purlin:infeasible feature-name` |
 | Suggest a spec change | `purlin:propose topic` |
 | Check for companion debt | `purlin:status` (scan detects it automatically) |
+| Reconcile debt in bulk | `purlin:spec-code-audit` (writes companion entries for all features with debt) |
 | Review deviations (PM) | `purlin:status` then read the companion file |

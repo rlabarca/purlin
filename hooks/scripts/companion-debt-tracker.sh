@@ -1,9 +1,12 @@
 #!/bin/bash
 # FileChanged hook — track companion file debt.
-# When a code file changes, check if the corresponding feature's
-# companion file was also updated. Records debt in
-# .purlin/runtime/companion_debt.json so the mode-switch gate (Gate 3)
-# can mechanically block switching out of Engineer mode with unpaid debt.
+#
+# Two tracking levels:
+#   1. Feature-level: maps tests/<stem>/ changes to feature stems in
+#      companion_debt.json (for scan-based detection in purlin:status).
+#   2. Session-level: records all code file writes and companion file writes
+#      in session_writes.json (for mode-switch gate — blocks engineer exit
+#      when code was written but no companion files were updated).
 #
 # Exit codes:
 #   0 = always (this hook is informational, never blocks)
@@ -54,60 +57,117 @@ case "$REL_PATH" in
 esac
 
 DEBT_FILE="$PROJECT_ROOT/.purlin/runtime/companion_debt.json"
+SESSION_WRITES_FILE="$PROJECT_ROOT/.purlin/runtime/session_writes.json"
 
 # Use inline python for all JSON manipulation and feature mapping
 python3 -c "
-import json, os, sys, re, glob
+import json, os, sys, re
 from datetime import datetime, timezone
 
 rel_path = '$REL_PATH'
 project_root = '$PROJECT_ROOT'
 debt_file = '$DEBT_FILE'
+session_writes_file = '$SESSION_WRITES_FILE'
 features_dir = os.path.join(project_root, 'features')
+runtime_dir = os.path.join(project_root, '.purlin', 'runtime')
 
-# Load existing debt
-debt = {}
-if os.path.isfile(debt_file):
-    try:
-        with open(debt_file) as f:
-            debt = json.load(f)
-    except (json.JSONDecodeError, IOError):
-        debt = {}
+# --- JSON helpers ---
+
+def load_json(path, default):
+    if os.path.isfile(path):
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return default
+
+def save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+# --- State ---
+
+debt = load_json(debt_file, {})
+session_writes = load_json(session_writes_file, {
+    'code_files': [], 'companion_files_written': []
+})
 
 def save_debt():
-    os.makedirs(os.path.dirname(debt_file), exist_ok=True)
-    with open(debt_file, 'w') as f:
-        json.dump(debt, f, indent=2)
+    save_json(debt_file, debt)
+
+def save_session_writes():
+    save_json(session_writes_file, session_writes)
+
+def get_mode():
+    \"\"\"Read current mode from the runtime mode file.\"\"\"
+    mode_file = os.path.join(runtime_dir, 'current_mode')
+    try:
+        with open(mode_file) as f:
+            return f.read().strip() or None
+    except (IOError, OSError):
+        return None
 
 def feature_spec_exists(stem):
     \"\"\"Check if a feature spec exists in any category subdirectory.\"\"\"
+    if not os.path.isdir(features_dir):
+        return False
     for category in os.listdir(features_dir):
         spec_path = os.path.join(features_dir, category, stem + '.md')
         if os.path.isfile(spec_path):
             return True
     return False
 
-# Case 1: Companion file changed — clear debt for that feature
+# --- Non-code file patterns (skip for session-level tracking) ---
+
+_SKIP_SESSION_TRACKING = re.compile(
+    r'^('
+    r'docs/|'                    # documentation directories
+    r'references/|'              # Purlin reference docs
+    r'instructions/|'            # Purlin instruction files
+    r'README|'                   # README files
+    r'LICENSE|'                  # license files
+    r'CHANGELOG|'               # changelogs
+    r'CLAUDE\.md$|'             # Claude config
+    r'\.gitignore$|'            # git config
+    r'\.gitattributes$|'        # git config
+    r'package-lock\.json$|'     # lock files (auto-generated)
+    r'yarn\.lock$|'
+    r'Cargo\.lock$|'
+    r'go\.sum$|'
+    r'poetry\.lock$'
+    r')',
+    re.IGNORECASE
+)
+
+# --- Case 1: Companion file changed ---
+
 m = re.match(r'features/[^/]+/([^/]+)\.impl\.md$', rel_path)
 if m:
     stem = m.group(1)
+    # Clear feature-level debt
     if stem in debt:
         del debt[stem]
         save_debt()
+    # Record in session writes
+    if stem not in session_writes['companion_files_written']:
+        session_writes['companion_files_written'].append(stem)
+        save_session_writes()
     sys.exit(0)
 
 # Skip feature specs and discovery sidecars (not code changes)
 if re.match(r'features/', rel_path):
     sys.exit(0)
 
-# Case 2: Test file changed — map to feature stem
+# --- Case 2: Test file changed — map to feature stem ---
+
 m = re.match(r'tests/([^/]+)/', rel_path)
 if m:
     stem = m.group(1)
-    # Validate that a feature spec exists for this stem
-    if not os.path.isdir(features_dir) or not feature_spec_exists(stem):
+    if not feature_spec_exists(stem):
         sys.exit(0)
-    # Add or update debt entry
+    # Feature-level debt tracking
     if stem in debt:
         files = debt[stem].get('files', [])
         if rel_path not in files:
@@ -119,9 +179,31 @@ if m:
             'first_seen': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         }
     save_debt()
+    # Session-level tracking (test files are code)
+    if get_mode() == 'engineer':
+        code_files = session_writes['code_files']
+        if len(code_files) < _MAX_CODE_FILES and rel_path not in code_files:
+            code_files.append(rel_path)
+            save_session_writes()
     sys.exit(0)
 
-# Everything else — no tracking
+# --- Case 3: Any other file — session-level tracking only ---
+# Cap code_files list to prevent unbounded growth.  The mode switch gate
+# only needs to know 'were any code files written?' — the count is for
+# the user message, and exact paths beyond 50 are not useful.
+
+_MAX_CODE_FILES = 50
+
+if get_mode() == 'engineer' and not _SKIP_SESSION_TRACKING.search(rel_path):
+    code_files = session_writes['code_files']
+    if len(code_files) < _MAX_CODE_FILES and rel_path not in code_files:
+        code_files.append(rel_path)
+        save_session_writes()
+    elif len(code_files) >= _MAX_CODE_FILES:
+        # Already at cap — just bump the count marker if present
+        if not any(f.startswith('... and ') for f in code_files):
+            code_files.append('... and more')
+            save_session_writes()
 " 2>/dev/null
 
 exit 0

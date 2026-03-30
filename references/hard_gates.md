@@ -11,14 +11,14 @@ These mechanical checks apply **regardless of how work started** — skill invoc
 - **Role-blocked skip:** In delivery plans, skip features with `architect: TODO`, `builder: BLOCKED`, or `builder: INFEASIBLE`. Log skip and proceed to next.
 
 **During implementation:**
-- **Companion file minimum:** Every code commit for a feature MUST include a companion file update — at minimum one `[IMPL]` line. No "matches spec = no entry needed" exemption.
+- **Companion file minimum:** Every code session MUST include companion file updates — at minimum one `[IMPL]` line per feature worked on. No "matches spec = no entry needed" exemption. Hard enforcement: mode switch gate blocks leaving engineer mode (except to PM) until at least one companion file is written. `purlin:spec-code-audit` reconciles debt in bulk.
 - **Execution group dispatch:** When delivery plan has 2+ independent features in the active group, check `dependency_graph.json` pairwise independence and spawn `engineer-worker` sub-agents. Sequential processing of independent features is a protocol violation.
 - **Fast feedback only:** Engineer's build loop runs unit tests (seconds) and web tests (seconds per page). Regression suites (minutes) are QA-owned and MUST NOT gate the build cycle. If a feature has no unit tests, write them — don't substitute regression scenarios.
 
 **Before status tag:**
 - **Status tag is a separate commit.** Never combine with implementation work.
 - **Pre-checks (ALL must pass):**
-  - Companion file has new entries this session
+  - Companion file has new entries this session (advisory — warn if missing, mode switch is the hard gate)
   - Web test passed with zero BUG and zero DRIFT if feature has `> Web Test:` or `> AFT Web:` metadata
   - Spec alignment: re-read spec, walk each requirement and scenario, verify implementation addresses each, log gaps as `[DISCOVERY]`
   - Plan alignment: if delivery plan was used, verify deliverables match

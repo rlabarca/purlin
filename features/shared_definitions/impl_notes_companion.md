@@ -55,7 +55,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - The minimum entry is a `[IMPL]` line describing what was implemented. See `features/active_deviations.md` §2.4 for tag definitions.
 - The old exemption ("if all changes match the spec exactly: no companion entry required") is removed. Every code change gets documented.
 - Multiple rapid commits for the same feature MAY batch their entries into a single companion update committed with the last commit in the batch.
-- The companion file gate in `purlin:build` Step 4 enforces this mechanically: it checks whether the companion file has new entries from the current session, not whether deviations exist.
+- `purlin:build` Step 4 warns if the companion file has no new entries. The hard enforcement is the mode switch gate: the engineer cannot leave engineer mode (except to PM) without writing at least one companion file. `purlin:spec-code-audit` can reconcile debt in bulk.
 
 ### 2.9 Integration Test Fixture Tags
 

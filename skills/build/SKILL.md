@@ -143,11 +143,11 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
         *   **Uncommitted tracked changes:** All files modified during this build MUST be committed before the status tag. If uncommitted changes exist, commit them with the appropriate `feat()`/`fix()`/`test()` prefix.
         *   **Untracked files:** For each untracked file, determine: is it a generated artifact (cache, log, build output) or a file that should be tracked? Generated artifacts → add to `.gitignore` and commit the gitignore change. Trackable files → `git add` and commit. Do NOT leave untracked files behind.
     *   The status tag commit MUST be on a clean working tree. No dangling changes.
-*   **Pre-check -- Companion File Gate (Mechanical):**
+*   **Pre-check -- Companion File Gate (Advisory):**
     *   Check: were code commits made for this feature during this session?
     *   If yes: does the companion file (`<name>.impl.md (in the same folder as the spec)`) have new entries from this session? (Check file modification time or diff against the pre-build state.)
-    *   If the companion file has NO new entries: **BLOCK the status tag commit.** Write at least `[IMPL]` entries describing what was implemented. For deviations from spec, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, etc.) instead of or in addition to `[IMPL]`.
-    *   This is a mechanical check — "did the companion file get updated?" — not a judgment call about whether the code deviated from the spec. Every code change gets documented.
+    *   If the companion file has NO new entries: **WARN** that companion debt exists. Recommend writing `[IMPL]` entries describing what was implemented. For deviations from spec, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, etc.) instead of or in addition to `[IMPL]`.
+    *   Allow the status tag commit to proceed. Companion debt is tracked in `purlin:status` and the mode switch gate will enforce before leaving Engineer mode. Debt can also be reconciled in bulk via `purlin:spec-code-audit`.
 *   **Pre-check -- Web Test Gate:**
     *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `purlin:web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `purlin:web-test` first.
     *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.

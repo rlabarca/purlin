@@ -417,6 +417,9 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 3. Commit all escalation entries together.
 4. Run `purlin_scan` after committing to refresh project state (the scan will surface these as Engineer action items).
 
+**Companion Debt Escalation (PM ESCALATE — Dimension 13):**
+For features flagged with companion debt (missing or stale companion files): record `[DISCOVERY]` in the companion file noting that companion entries are missing or stale. The Engineer will see these as action items in `purlin:status`.
+
 ### If Running as Engineer
 
 **FIX (code-side gaps you own):**
@@ -440,6 +443,21 @@ Cycle resolution is a spec edit (removing a `> Prerequisite:` line), so it is PM
 
 3. Commit all escalation entries together.
 4. The scan will surface these as PM action items at the next PM session.
+
+### Dimension 13 (Companion Coverage) Reconciliation
+
+Bulk catch-up for accumulated companion debt. This is the primary reconciliation path when multiple features have stale or missing companion files.
+
+**If Running as Engineer:**
+1. For each feature flagged with companion debt (missing or stale):
+   a. Read the feature spec and scan the implementation code.
+   b. Create or update `<name>.impl.md` (in the same folder as the spec).
+   c. Write `[IMPL]` entries summarizing what was implemented, referencing spec requirements where applicable.
+   d. If code deviates from spec, use `[DEVIATION]` or `[DISCOVERY]` tags instead of or in addition to `[IMPL]`.
+2. Commit all companion file updates together: `docs(companions): reconcile companion debt for N features`
+
+**If Running as PM:**
+- Companion debt is escalated to Engineer (see PM section above). PM does not write `[IMPL]` entries — only the Engineer who built the code can accurately document what was implemented.
 
 ### Dimension 14 (Invariant Source Compliance) Remediation
 
