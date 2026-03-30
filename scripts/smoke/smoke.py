@@ -44,21 +44,8 @@ _TIER_TABLE_HEADER = """## Test Priority Tiers
 _TIER_ROW_PATTERN = re.compile(r'^\|\s*(\S+)\s*\|\s*(\S+)\s*\|$')
 
 
-def _find_overrides_path(project_root):
-    """Find the active overrides file (PURLIN or legacy QA)."""
-    purlin_dir = os.path.join(project_root, '.purlin')
-    purlin_path = os.path.join(purlin_dir, 'PURLIN_OVERRIDES.md')
-    qa_path = os.path.join(purlin_dir, 'QA_OVERRIDES.md')
-
-    if os.path.exists(purlin_path):
-        return purlin_path
-    if os.path.exists(qa_path):
-        return qa_path
-    return purlin_path  # Default to purlin path for creation
-
-
-def read_tier_table(project_root):
-    """Read the Test Priority Tiers table from override files.
+def _read_tier_table_from_markdown(project_root):
+    """Fallback: read tier table from legacy markdown override files.
 
     Reads from BOTH PURLIN_OVERRIDES.md and QA_OVERRIDES.md, merging results.
     Returns dict mapping feature_name -> tier_string.
@@ -93,64 +80,58 @@ def read_tier_table(project_root):
     return result
 
 
-def add_to_tier_table(project_root, feature, tier='smoke', dry_run=False):
-    """Add a feature to the Test Priority Tiers table.
+def read_tier_table(project_root):
+    """Read the Test Priority Tiers from .purlin/config.json.
 
-    Creates the table section if it doesn't exist.
+    Falls back to parsing legacy markdown override files for
+    backward compatibility with un-migrated projects.
+    Returns dict mapping feature_name -> tier_string.
+    """
+    config_path = os.path.join(project_root, '.purlin', 'config.json')
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        tiers = config.get('test_priority_tiers')
+        if tiers:
+            return tiers
+    except (IOError, OSError, json.JSONDecodeError):
+        pass
+
+    # Fallback to legacy markdown parsing for un-migrated projects
+    return _read_tier_table_from_markdown(project_root)
+
+
+def add_to_tier_table(project_root, feature, tier='smoke', dry_run=False):
+    """Add a feature to the test_priority_tiers key in .purlin/config.json.
+
     Returns dict with 'action' and 'file' keys.
     """
-    overrides_path = _find_overrides_path(project_root)
+    config_path = os.path.join(project_root, '.purlin', 'config.json')
 
-    if os.path.exists(overrides_path):
-        with open(overrides_path, 'r') as f:
-            content = f.read()
-    else:
-        content = ''
+    # Read existing config
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+    except (IOError, OSError, json.JSONDecodeError):
+        config = {}
+
+    tiers = config.get('test_priority_tiers', {})
 
     # Check if feature already in table
-    existing = read_tier_table(project_root)
-    if feature in existing:
-        return {'action': 'already_exists', 'file': overrides_path,
-                'current_tier': existing[feature]}
+    if feature in tiers:
+        return {'action': 'already_exists', 'file': config_path,
+                'current_tier': tiers[feature]}
 
-    new_row = f"| {feature} | {tier} |"
-
-    if '## Test Priority Tiers' in content:
-        # Find the end of the table to append
-        lines = content.splitlines()
-        insert_idx = None
-        in_table = False
-        for i, line in enumerate(lines):
-            if '## Test Priority Tiers' in line:
-                in_table = True
-                continue
-            if in_table:
-                if line.startswith('## ') and 'Test Priority Tiers' not in line:
-                    insert_idx = i
-                    break
-                if _TIER_ROW_PATTERN.match(line.strip()):
-                    insert_idx = i + 1  # After last row
-
-        if insert_idx is None:
-            insert_idx = len(lines)
-
-        lines.insert(insert_idx, new_row)
-        new_content = '\n'.join(lines)
-        if not new_content.endswith('\n'):
-            new_content += '\n'
-        action = 'added'
-    else:
-        # Create the table section
-        table = f"\n{_TIER_TABLE_HEADER}\n{new_row}\n"
-        new_content = content.rstrip() + '\n' + table + '\n' if content.strip() else table.lstrip() + '\n'
-        action = 'created_table'
+    tiers[feature] = tier
+    config['test_priority_tiers'] = tiers
 
     if not dry_run:
-        os.makedirs(os.path.dirname(overrides_path), exist_ok=True)
-        with open(overrides_path, 'w') as f:
-            f.write(new_content)
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2)
+            f.write('\n')
 
-    return {'action': action, 'file': overrides_path}
+    return {'action': 'added', 'file': config_path}
 
 
 # ---------------------------------------------------------------------------
