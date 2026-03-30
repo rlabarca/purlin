@@ -54,14 +54,23 @@ class MigrationStep(ABC):
         """
 
     def _stamp_version(self, project_root):
-        """Write _migration_version to consumer config."""
-        config_path = os.path.join(project_root, '.purlin', 'config.json')
-        config = _read_json(config_path) or {}
-        config['_migration_version'] = self.step_id
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=4)
-            f.write('\n')
+        """Write _migration_version to consumer config.
+
+        Stamps BOTH config.json and config.local.json (if it exists).
+        The version detector reads config.local.json first, so if we
+        only stamp config.json, re-detection between steps sees a stale
+        version and steps 4/5 think step 3 hasn't completed yet.
+        """
+        for filename in ('config.json', 'config.local.json'):
+            config_path = os.path.join(project_root, '.purlin', filename)
+            if filename == 'config.local.json' and not os.path.isfile(config_path):
+                continue  # Only stamp config.local.json if it already exists
+            config = _read_json(config_path) or {}
+            config['_migration_version'] = self.step_id
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=4)
+                f.write('\n')
 
     def _has_uncommitted_changes(self, project_root):
         """Check for uncommitted changes in the project."""
@@ -769,14 +778,26 @@ class Step5RemoveOverrides(MigrationStep):
                         tiers[feature] = tier
         return tiers
 
+    # Submodule-era boilerplate patterns to strip entirely
+    _OBSOLETE_KEYWORDS = [
+        'submodule', 'read-only', 'Read-Only', 'READ-ONLY',
+        'HARD PROHIBITION', 'hard prohibition',
+        'pl-run.sh', 'pl-init.sh', 'purlin/',
+        'Do not modify anything inside purlin/',
+        'Do not write to purlin/',
+        'never modify the purlin directory',
+    ]
+
     def _strip_boilerplate(self, content):
-        """Strip tier table, template boilerplate, and HTML comments.
+        """Strip tier table, template boilerplate, HTML comments, and
+        submodule-era content that is no longer relevant.
 
         Returns remaining meaningful content or empty string.
         """
         lines = content.splitlines()
         result = []
         in_tier_table = False
+        in_skip_section = False
         skip_next_blank = False
 
         for line in lines:
@@ -790,7 +811,19 @@ class Step5RemoveOverrides(MigrationStep):
             if in_tier_table:
                 if stripped.startswith('## ') and 'Test Priority Tiers' not in stripped:
                     in_tier_table = False
-                    # Fall through to process this line
+                else:
+                    continue
+
+            # Skip sections with obsolete submodule-era headings
+            if stripped.startswith('#') and any(kw in stripped for kw in
+                    ['Read-Only', 'READ-ONLY', 'Submodule', 'PROHIBITION']):
+                in_skip_section = True
+                skip_next_blank = True
+                continue
+            if in_skip_section:
+                if stripped.startswith('#') and not any(kw in stripped for kw in
+                        ['Read-Only', 'READ-ONLY', 'Submodule', 'PROHIBITION']):
+                    in_skip_section = False
                 else:
                     continue
 
@@ -807,6 +840,10 @@ class Step5RemoveOverrides(MigrationStep):
             if stripped.startswith('>') and any(kw in stripped for kw in
                     ['Project-specific rules', 'Project-wide context',
                      'Build commands', 'Domain context', 'Test tiers']):
+                continue
+
+            # Skip individual lines with submodule-era keywords
+            if any(kw in line for kw in self._OBSOLETE_KEYWORDS):
                 continue
 
             if skip_next_blank and not stripped:
