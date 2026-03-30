@@ -521,8 +521,10 @@ def classify_file(filepath):
                     'README.md', 'CHANGELOG.md', 'LICENSE'):
         return 'CODE'
 
-    # Default: everything else is CODE (most restrictive for PM/QA)
-    return 'CODE'
+    # Default: UNKNOWN — file doesn't match any explicit rule.
+    # The mode guard will prompt the user (permissionDecision: "ask")
+    # instead of silently blocking or allowing.
+    return 'UNKNOWN'
 
 
 if __name__ == '__main__':

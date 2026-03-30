@@ -18,6 +18,13 @@ _allow() {
     exit 0
 }
 
+# Output permissionDecision:ask JSON and exit 0 — let user decide
+_ask() {
+    local reason="${1:-Purlin mode guard: unrecognized file — user approval required}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"$reason\"}}"
+    exit 0
+}
+
 set -e
 
 # Read the hook input from stdin
@@ -110,52 +117,60 @@ try:
         if re.search(rule['pattern'], path):
             print(rule['classification'] + '|none')
             sys.exit(0)
-    print('CODE|none')
+    print('UNKNOWN|none')
 except Exception:
     print('')
 " 2>/dev/null)
 fi
 
 if [ -z "$CLASSIFICATION" ]; then
-    # Cannot classify — allow (fail open)
-    _allow "File classification unavailable — fail open"
+    # Cannot classify — ask user
+    _ask "File classification unavailable for $REL_PATH — approve manually?"
 fi
 
 FILE_CLASS=$(echo "$CLASSIFICATION" | cut -d'|' -f1)
 CURRENT_MODE=$(echo "$CLASSIFICATION" | cut -d'|' -f2)
 
-# If no mode is active, block all writes
-if [ "$CURRENT_MODE" = "none" ] || [ "$CURRENT_MODE" = "None" ]; then
-    echo '{"error":"Default mode is read-only. Activate a mode (purlin:mode engineer|pm|qa) before making changes."}' >&2
+# UNKNOWN files — guard doesn't have a rule for this file.
+# Ask the user instead of silently blocking or allowing.
+if [ "$FILE_CLASS" = "UNKNOWN" ]; then
+    _ask "Unrecognized file type: $REL_PATH — not in any mode's access list. Approve?"
+fi
+
+# Invariant files blocked regardless of mode (including default)
+if [ "$FILE_CLASS" = "INVARIANT" ]; then
+    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. No mode can write to invariant files.\"}" >&2
     exit 2
 fi
 
-# Check mode-file compatibility
+# Default mode (no mode active) — allow basic file operations.
+# Only INVARIANT files are blocked above. All other writes are allowed
+# so the agent can do housekeeping (move files, edit configs, etc.)
+# without needing to activate a mode first.
+if [ "$CURRENT_MODE" = "none" ] || [ "$CURRENT_MODE" = "None" ]; then
+    _allow "Default mode: $FILE_CLASS write allowed"
+fi
+
+# Mode-active: check mode-file compatibility
 case "$CURRENT_MODE" in
     engineer)
-        if [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "QA" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
+        if [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "QA" ]; then
             echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in Engineer mode.\"}" >&2
             exit 2
         fi
         ;;
     pm)
-        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "QA" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
+        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "QA" ]; then
             echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in PM mode.\"}" >&2
             exit 2
         fi
         ;;
     qa)
-        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "INVARIANT" ]; then
+        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "SPEC" ]; then
             echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in QA mode.\"}" >&2
             exit 2
         fi
         ;;
 esac
-
-# Invariant files blocked regardless of mode
-if [ "$FILE_CLASS" = "INVARIANT" ]; then
-    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. No mode can write to invariant files.\"}" >&2
-    exit 2
-fi
 
 _allow "$CURRENT_MODE mode: $FILE_CLASS write authorized"
