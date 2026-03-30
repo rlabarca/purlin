@@ -51,8 +51,24 @@ except Exception:
     print('false')
 " 2>/dev/null)
 
+# Extract the tool name from the permission request
+TOOL_NAME=$(echo "$INPUT" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(data.get('tool_name', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
 if [ "$YOLO" = "true" ]; then
-    echo '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
+    # Auto-approve tool execution permissions, but NOT user-facing prompts.
+    # AskUserQuestion is how the agent asks the user to make choices —
+    # auto-approving it silently answers "yes" to things like migration
+    # confirmations, which removes user agency.
+    if [ "$TOOL_NAME" != "AskUserQuestion" ]; then
+        echo '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
+    fi
 fi
 
 exit 0

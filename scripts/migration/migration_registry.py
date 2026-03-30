@@ -371,16 +371,28 @@ class Step3PluginRefresh(MigrationStep):
 
 
 def _find_design_anchors_with_figma(project_root):
-    """Find design_*.md anchors that declare a Figma source in metadata."""
+    """Find design_*.md anchors that declare a Figma source in metadata.
+
+    Matches multiple Figma reference formats:
+    - Full URL: > Figma-URL: https://figma.com/...
+    - Markdown link: [text](https://figma.com/...)
+    - File key metadata: > **Figma File:** <key> or > Figma File: <key>
+    - Also checks for companion brief.json with figma_file_key
+    """
     features_dir = os.path.join(project_root, 'features')
     if not os.path.isdir(features_dir):
         return []
 
-    metadata_re = re.compile(
+    # Full Figma URL patterns
+    metadata_url_re = re.compile(
         r'>\s*Figma-URL:\s*(https?://(?:www\.)?figma\.com/[^\s>]+)'
     )
     link_re = re.compile(
         r'\[(?:[^\]]*)\]\((https?://(?:www\.)?figma\.com/[^)]+)\)'
+    )
+    # Figma file key patterns (no full URL, just the key)
+    figma_key_re = re.compile(
+        r'>\s*\*{0,2}Figma[- ]File:?\*{0,2}\s*([A-Za-z0-9_-]{20,})'
     )
     results = []
 
@@ -396,13 +408,40 @@ def _find_design_anchors_with_figma(project_root):
                 except OSError:
                     continue
 
-                match = metadata_re.search(content)
+                # Try full URL first
+                match = metadata_url_re.search(content)
                 if not match:
                     match = link_re.search(content)
                 if match:
-                    figma_url = match.group(1).rstrip('.,;:"\'>)')
+                    figma_ref = match.group(1).rstrip('.,;:"\'>)')
                     stem = fname[len('design_'):-len('.md')]
-                    results.append((fpath, figma_url, stem))
+                    results.append((fpath, figma_ref, stem))
+                    continue
+
+                # Try file key in metadata
+                match = figma_key_re.search(content)
+                if match:
+                    figma_ref = f'figma:file:{match.group(1)}'
+                    stem = fname[len('design_'):-len('.md')]
+                    results.append((fpath, figma_ref, stem))
+                    continue
+
+                # Check for companion brief.json with figma_file_key
+                brief_path = os.path.join(
+                    dirpath, 'design',
+                    fname[len('design_'):-len('.md')], 'brief.json'
+                )
+                if os.path.isfile(brief_path):
+                    try:
+                        with open(brief_path, encoding='utf-8') as bf:
+                            brief = json.loads(bf.read())
+                        fkey = brief.get('figma_file_key')
+                        if fkey:
+                            figma_ref = f'figma:file:{fkey}'
+                            stem = fname[len('design_'):-len('.md')]
+                            results.append((fpath, figma_ref, stem))
+                    except (OSError, json.JSONDecodeError):
+                        pass
 
     return results
 
