@@ -1,6 +1,6 @@
 # PM Mode Guide
 
-How to use PM mode to write feature specs, ingest designs, and define project standards.
+How to use PM mode to write feature specs, manage designs, and define project standards.
 
 ---
 
@@ -11,7 +11,7 @@ PM mode is where you define **what** to build. It translates your ideas — whet
 PM mode:
 
 - Creates feature specs with requirements, scenarios, and optional visual specifications.
-- Ingests Figma designs by extracting tokens, components, and annotations.
+- Imports Figma designs as invariants and extracts tokens, components, and annotations.
 - Asks structured questions to fill gaps before the spec is handed off.
 - Manages anchor nodes — shared design standards and policy rules that apply across features.
 - Never writes code. Specs and design artifacts are PM's domain.
@@ -30,11 +30,13 @@ Or run a PM skill directly — `purlin:spec`, `purlin:invariant`, and `purlin:an
 
 ## Creating a Feature Spec
 
+The agent first runs `purlin:find` to check if a spec already exists for the topic. If not:
+
 ```
 purlin:spec user-settings
 ```
 
-If the spec doesn't exist yet, PM mode walks you through a series of questions across five areas:
+PM mode walks you through a series of questions across five areas:
 
 1. **Scope** — What screens, data, and user goals are involved?
 2. **Edge cases** — What happens on errors, loading, and different screen sizes?
@@ -84,7 +86,7 @@ For org-wide or shared design systems, create a design invariant:
 purlin:invariant add-figma https://www.figma.com/design/ABC123/My-App-Designs
 ```
 
-This creates `features/i_design_<name>.md` — an immutable pointer to the Figma document. PM provides the purpose, and Purlin extracts annotations and metadata via Figma MCP. See the [Figma Guide](figma-guide.md) for the full workflow.
+This creates `features/_invariants/i_design_<name>.md` — an immutable pointer to the Figma document. PM provides the purpose, and Purlin extracts annotations and metadata via Figma MCP. See the [Figma Guide](figma-guide.md) for the full workflow.
 
 To upgrade an existing local design anchor to a Figma invariant:
 
@@ -149,13 +151,17 @@ When an anchor changes, all features that depend on it are flagged for re-verifi
 | Command | What It Does |
 |---------|--------------|
 | `purlin:spec <topic>` | Create or update a feature spec. |
+| `purlin:invariant add <repo-url>` | Import an invariant from an external git repo. |
 | `purlin:invariant add-figma <url>` | Import a Figma design as an immutable invariant. |
-| `purlin:invariant sync <file>` | Sync an invariant when its Figma source changes. |
-| `purlin:invariant check-updates` | Check if any invariants have newer upstream versions. |
-| `purlin:invariant list` | Show all invariants with sync status. |
+| `purlin:invariant sync <file>` | Sync an invariant when its source changes. |
 | `purlin:invariant remove <file>` | Remove an invariant and clean up prerequisites. |
-| `purlin:design-audit` | Check design artifacts for consistency. |
-| `purlin:anchor <name>` | Create or update a design/policy anchor. |
+| `purlin:invariant list` | Show all invariants with sync status. |
+| `purlin:invariant check-updates` | Check if any invariants have newer upstream versions. |
+| `purlin:invariant check-conflicts` | Find contradictions between invariants (any mode). |
+| `purlin:invariant check-feature <name>` | Verify a feature meets its applicable invariants (any mode). |
+| `purlin:invariant validate` | Check all invariants for format/metadata (any mode). |
+| `purlin:design-audit` | Audit design artifacts for staleness, reference integrity, token conflicts, and invariant sync status. |
+| `purlin:anchor <name>` | Create or update a design/policy anchor. `arch_*` anchors activate Engineer mode. |
 | `purlin:find <topic>` | Search specs for where a topic is discussed. |
 | `purlin:status` | Check feature states and what needs attention. |
 | `purlin:help` | Full command list for PM mode. |

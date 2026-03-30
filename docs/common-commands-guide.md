@@ -18,7 +18,7 @@ Output includes:
 - Work items grouped by mode, highest priority first
 - Open discoveries requiring attention
 - Active worktrees (if any)
-- A suggestion for which mode to enter
+- A suggestion for which mode to enter (when no mode is active)
 
 Run this whenever you want to know what's next. It's the starting point after every session launch.
 
@@ -275,6 +275,6 @@ Prints the full command table for your current mode. If no mode is active, shows
 
 These commands activate and are documented in their respective mode guides:
 
-- **PM mode:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit`, `purlin:design-ingest` — see [PM Mode Guide](pm-agent-guide.md)
+- **PM mode:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit` — see [PM Mode Guide](pm-agent-guide.md)
 - **Engineer mode:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Mode Guide](engineer-agent-guide.md)
 - **QA mode:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report`, `purlin:fixture` — see [QA Mode Guide](qa-agent-guide.md)

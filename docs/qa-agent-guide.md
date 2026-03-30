@@ -38,11 +38,17 @@ Verification has two phases: automated first, then manual.
 
 ### Choosing a Strategy
 
-At the start of verification, the agent presents a strategy menu:
+When automated failures or regression gaps exist, the agent presents a strategy menu:
 
-- **Targeted** — Verify specific features you name.
-- **Full** — Verify everything in TESTING state.
-- **Regression-only** — Re-run regression suites without full verification.
+| Option | What It Does |
+|--------|-------------|
+| **1. Auto-fix loop** | Run Phase A.5 — fix failures, re-verify, repeat until clean. Same as `--auto-verify`. |
+| **2. Automated only** | Run Phase A automated scenarios only, skip manual Phase B. |
+| **3. Smoke only** | Re-run the smoke gate and return to the menu. |
+| **4. Manual only** | Skip to Phase B manual checklist. |
+| **5. Exit** | Stop verification. |
+
+If there are no failures, the agent proceeds directly to Phase B.
 
 ### Phase A — Automated
 
@@ -126,23 +132,17 @@ Regression tests catch things that used to work but broke after a change. QA mod
 
 Suites with too many Tier 1 assertions are flagged as shallow.
 
-**2. Run the suite** — The agent composes a command for you to run in a separate terminal:
+**2. Run the suite** — The agent executes regression suites directly using `harness_runner.py`. All harness types (custom scripts, agent behavior tests) run in-session. Results land in `tests/<feature>/regression.json`.
 
-```bash
-./tests/qa/run_all.sh
-```
-
-Results land in `tests/<feature>/regression.json`.
-
-**3. Evaluate results** — QA mode reads the results, creates `[BUG]` discoveries for failures, and reports the assertion quality distribution.
+**3. Evaluate results** — QA mode reads the results automatically after execution, records `[DISCOVERY]` entries in companion files for failures, and reports the assertion quality distribution.
 
 ### Commands
 
 | Command | What It Does |
 |---------|--------------|
 | `purlin:regression author` | Write regression test files from specs. |
-| `purlin:regression run` | Generate the command to run the suite. |
-| `purlin:regression evaluate` | Process results and create discoveries for failures. |
+| `purlin:regression run` | Execute regression suites directly (auto-evaluates on completion). |
+| `purlin:regression evaluate` | Re-process results manually if needed. |
 
 ### Staleness
 
@@ -189,12 +189,13 @@ purlin:complete feature-name
 
 QA mode marks a feature complete when all gates pass:
 
-1. Feature is in TESTING state.
-2. All QA scenarios passed.
-3. Zero open discoveries.
-4. Not blocked by a pending delivery plan phase.
-
-The completion commit includes a `[Verified]` tag.
+1. **TESTING state** — Feature must be in TESTING lifecycle.
+2. **All scenarios verified** — Every QA scenario passed.
+3. **Zero open discoveries** — No OPEN or SPEC_UPDATED entries in the `.discoveries.md` sidecar.
+4. **Regression gate** — `regression_status` is not FAIL or STALE. Broken or stale regressions must be resolved via `purlin:regression` first.
+5. **Companion file gate** — No unacknowledged `[DEVIATION]`, `[DISCOVERY]`, or `[INFEASIBLE]` entries in the `.impl.md` companion. PM must review these before completion.
+6. **Delivery plan check** — Not blocked by a pending delivery plan phase.
+7. **`[Verified]` tag** — The completion commit includes a `[Verified]` tag.
 
 ---
 
@@ -202,7 +203,7 @@ The completion commit includes a `[Verified]` tag.
 
 | Command | What It Does |
 |---------|--------------|
-| `purlin:verify [name] [--auto-fix]` | Run the verification workflow. `--auto-fix` enables the auto-fix iteration loop. |
+| `purlin:verify [name] [--auto-verify]` | Run the verification workflow. `--auto-verify` enables the auto-fix iteration loop. |
 | `purlin:complete <name>` | Mark a verified feature as complete. |
 | `purlin:discovery [name]` | Record a structured finding. |
 | `purlin:regression <cmd>` | Author, run, or evaluate regression suites. |

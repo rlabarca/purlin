@@ -22,9 +22,8 @@ If no delivery plan exists:
 **Context Tier Resolution:**
 
 Before assessing scope, resolve Engineer mode's context tier:
-1. Read Engineer mode's configured model from agent config (`agents.builder.model`).
-2. Look up that model ID in the config `models` array to get `context_window_tokens`.
-3. If `context_window_tokens > 200000`, use **Extended** tier. Otherwise, use **Standard** tier.
+1. Determine the current model from the active Claude Code session (the model in use, not a config value).
+2. If the model has a context window > 200,000 tokens (e.g., Opus 4.6 with 1M context), use **Extended** tier. Otherwise, use **Standard** tier.
 4. If the agent config contains a `phase_sizing` override block, those values take precedence over tier defaults for any key present.
 
 **Tier Defaults:**

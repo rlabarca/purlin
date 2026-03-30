@@ -39,9 +39,10 @@ When implementing a feature, the agent follows four steps.
 
 Before writing code, the agent:
 
-- Reads the companion file (`features/<name>.impl.md`) for prior decisions.
-- Checks anchor node constraints (forbidden patterns, invariants).
+- Reads the companion file (`features/<category>/<name>.impl.md`) for prior decisions.
+- **Invariant FORBIDDEN pre-scan** — Scans code files for patterns banned by applicable invariants. Violations are **hard blockers** — the build will not proceed until they are resolved. Global invariants apply to every feature automatically.
 - Loads visual design sources if the feature has a Visual Specification — reads the Token Map and checks `brief.json` staleness. See the [Design Guide](design-guide.md) for details.
+- Checks web test readiness (Playwright, server availability) for features with `> Web Test:` metadata.
 - Detects whether this is new work or re-verification of existing code.
 
 ### Step 1 — Plan
@@ -60,7 +61,7 @@ Writes code and tests. When it makes a decision the spec doesn't cover, it recor
 | `[DISCOVERY]` | Found an unstated requirement. |
 | `[INFEASIBLE]` | Cannot implement as specified — halts work. |
 
-HIGH and CRITICAL tags show up as PM action items in `purlin:status`.
+Each tag includes a severity level (INFO, WARN, HIGH, CRITICAL). HIGH and CRITICAL tags show up as PM action items in `purlin:status`. Tags that deviate from an invariant constraint are escalated as invariant conflicts. When fixing a `[BUG]` from a discovery sidecar, update its status from OPEN to RESOLVED.
 
 ### Step 3 — Verify
 
@@ -68,10 +69,18 @@ Runs `purlin:unit-test` to check tests against the quality rubric. For features 
 
 ### Step 4 — Status Tag
 
+Before committing the status tag, the agent runs five pre-checks:
+
+1. **Clean working tree** — No uncommitted changes.
+2. **Companion file gate** — All decision tags written, no loose implementation notes.
+3. **Web test gate** — Visual spec features pass Playwright checks.
+4. **Spec & plan alignment audit** — Implementation matches spec requirements; delivery plan is consistent.
+5. **Scope declaration** — The commit includes `[Scope: <type>]` where type is `full`, `targeted:A,B`, `cosmetic`, or `dependency-only`.
+
 A separate commit marks the feature's state:
 
-- **`[Complete]`** — All tests pass, no manual verification needed. QA never sees this feature.
-- **`[Ready for Verification]`** — Has QA scenarios that need manual or automated verification. QA picks it up.
+- **`[Complete features/<category>/<name>.md]`** — All tests pass, no manual verification needed.
+- **`[Ready for Verification]`** — Has QA scenarios that need manual or automated verification.
 
 ---
 
@@ -91,7 +100,7 @@ Test results land in `tests/<feature>/tests.json`.
 
 ## Web Testing
 
-For features with a Visual Specification section and `> Web Test:` metadata:
+For features with a Visual Specification section and `> Web Test: <url>` (or `> AFT Web:`) metadata:
 
 ```
 purlin:web-test feature-name
@@ -109,7 +118,7 @@ When multiple features need implementation, the agent creates a work plan and de
 purlin:delivery-plan
 ```
 
-The work plan is a flat, priority-ordered list of features — no numbered phases or sizing caps. Each feature independently progresses through PM → Engineer → QA stages. Independent features at different stages run in parallel via cross-mode sub-agents in isolated worktrees.
+The work plan is a flat, priority-ordered list of features — no numbered phases or sizing caps. Each feature independently progresses through PM → Engineer → QA stages. Independent features within the same phase build in parallel — the agent spawns one `engineer-worker` sub-agent per feature in isolated worktrees. When `auto_start` is `false` (default), the agent halts after completing each phase for review. Set `purlin:config auto-start on` to auto-advance.
 
 Features that share interaction surface (data models, APIs, UI components) are grouped into **verification groups**. When all features in a group finish building, cross-feature regression testing runs:
 
@@ -125,9 +134,11 @@ See the [Parallel Execution Guide](parallel-execution-guide.md) for details on c
 
 The agent creates `features/<name>.impl.md` alongside the spec to document implementation decisions. This is the durable communication channel between Engineer and PM.
 
-**What goes in:** Decision tags with rationale, test quality results, visual verification results.
+**What goes in:** Decision tags with rationale and severity, test quality results, visual verification results, invariant references.
 
 **What doesn't:** The implementation itself (that's in the code), spec content (that's in the feature file), or temporary debugging notes.
+
+Bug discoveries from QA land in a separate sidecar file (`features/<category>/<name>.discoveries.md`). When fixing a bug, update its status from OPEN to RESOLVED in the sidecar.
 
 ---
 

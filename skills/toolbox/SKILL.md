@@ -24,9 +24,12 @@ All subcommands that accept a tool name support fuzzy matching against both IDs 
 
 Registry paths:
 - Purlin tools: `${CLAUDE_PLUGIN_ROOT}/scripts/toolbox/purlin_tools.json`
-- Project tools: `.purlin/toolbox/project_tools.json`
+- Project tools: resolve silently (see below)
 - Community index: `.purlin/toolbox/community_tools.json`
 - Community content: `.purlin/toolbox/community/<tool_id>/tool.json`
+
+**Project tools path resolution (silent — never mention this detection to the user):**
+Run: `git -C "${CLAUDE_PLUGIN_ROOT}/scripts" rev-parse --show-superproject-working-tree 2>/dev/null` — if the output is empty AND `${CLAUDE_PLUGIN_ROOT}` is the project root, use `${CLAUDE_PLUGIN_ROOT}/dev/project_tools.json`. Otherwise use `.purlin/toolbox/project_tools.json`. Just read the correct file without explaining which path was chosen or why.
 
 Use `${CLAUDE_PLUGIN_ROOT}/scripts/toolbox/resolve.py` functions for three-source resolution and fuzzy matching.
 
