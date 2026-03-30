@@ -544,6 +544,14 @@ class Step4DesignToInvariant(MigrationStep):
                     f'Extract Figma from {rel} → features/_invariants/i_design_{stem}.md '
                     f'(add prerequisite to feature, keep feature file)'
                 )
+            # Check for companion design data to move
+            features_dir = os.path.join(project_root, 'features')
+            for dname in ('design', '_design'):
+                dpath = os.path.join(features_dir, dname, stem)
+                if os.path.isdir(dpath):
+                    actions.append(
+                        f'Move features/{dname}/{stem}/ → features/_invariants/{stem}/'
+                    )
         actions.append('Update prerequisite references in dependent features.')
         actions.append('Stamp _migration_version: 4.')
         return actions
@@ -622,6 +630,27 @@ class Step4DesignToInvariant(MigrationStep):
             invariant_path = os.path.join(invariants_dir, f'i_design_{stem}.md')
             with open(invariant_path, 'w', encoding='utf-8') as f:
                 f.write(invariant_content)
+
+            # Move companion design data (brief.json, etc.) into _invariants/
+            # alongside the invariant file. Check both design/ and _design/ folders.
+            for design_dir_name in ('design', '_design'):
+                design_data_dir = os.path.join(features_dir, design_dir_name, stem)
+                if os.path.isdir(design_data_dir):
+                    target_data_dir = os.path.join(invariants_dir, stem)
+                    if os.path.exists(target_data_dir):
+                        # Merge contents
+                        for item in os.listdir(design_data_dir):
+                            src = os.path.join(design_data_dir, item)
+                            dst = os.path.join(target_data_dir, item)
+                            if os.path.isfile(src):
+                                shutil.copy2(src, dst)
+                    else:
+                        shutil.copytree(design_data_dir, target_data_dir)
+                    shutil.rmtree(design_data_dir)
+                    # Clean up empty parent design dir
+                    parent = os.path.join(features_dir, design_dir_name)
+                    if os.path.isdir(parent) and not os.listdir(parent):
+                        os.rmdir(parent)
 
             new_filename = f'i_design_{stem}.md'
 
