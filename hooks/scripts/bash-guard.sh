@@ -98,12 +98,12 @@ SHELL_WRITE='(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|[^0-9]>\s*[
 DANGEROUS='(git\s+push|git\s+reset\s+--hard|rm\s+-rf\s|rm\s+-r\s)'
 
 if echo "$COMMAND" | grep -qE "$SHELL_WRITE"; then
-    echo '{"error":"Shell file writes blocked in default mode — use Write/Edit tools instead, or call purlin_mode(mode: \"engineer\") to activate a mode."}' >&2
+    echo '{"error":"Shell file writes blocked in default mode — use Write/Edit tools instead, or call the MCP tool: purlin_mode(mode: \"engineer\") to activate a mode."}' >&2
     exit 2
 fi
 
 if echo "$COMMAND" | grep -qE "$DANGEROUS"; then
-    echo '{"error":"Dangerous command blocked in default mode. Call purlin_mode(mode: \"engineer\") to activate a mode first."}' >&2
+    echo '{"error":"Dangerous command blocked in default mode. Activate a mode by calling the MCP tool: purlin_mode(mode: \"engineer\")."}' >&2
     exit 2
 fi
 

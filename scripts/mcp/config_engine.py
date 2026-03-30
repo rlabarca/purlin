@@ -479,7 +479,12 @@ def classify_file(filepath):
     path = filepath.replace('\\', '/')
 
     # --- INVARIANT — no mode can write ---
+    # Match i_ prefix files AND anything in _invariants/ folder
     if '/features/i_' in path or path.startswith('features/i_'):
+        return 'INVARIANT'
+    if '/_invariants/' in path or path.startswith('_invariants/'):
+        return 'INVARIANT'
+    if '/features/_invariants/' in path or path.startswith('features/_invariants/'):
         return 'INVARIANT'
 
     # --- QA-owned ---

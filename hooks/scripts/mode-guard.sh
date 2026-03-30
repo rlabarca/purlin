@@ -139,7 +139,7 @@ fi
 
 # Invariant files blocked regardless of mode (including default)
 if [ "$FILE_CLASS" = "INVARIANT" ]; then
-    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. No mode can write to invariant files.\"}" >&2
+    echo "{\"error\":\"Mode guard: $REL_PATH is an invariant file. Invariants are immutable — use purlin:invariant sync to update from the external source.\"}" >&2
     exit 2
 fi
 
@@ -155,31 +155,31 @@ fi
 case "$CURRENT_MODE" in
     engineer)
         if [ "$FILE_CLASS" = "SPEC" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in Engineer mode. Call purlin_mode(mode: \\\"pm\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in Engineer mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"pm\\\").\"}" >&2
             exit 2
         fi
         if [ "$FILE_CLASS" = "QA" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in Engineer mode. Call purlin_mode(mode: \\\"qa\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in Engineer mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"qa\\\").\"}" >&2
             exit 2
         fi
         ;;
     pm)
         if [ "$FILE_CLASS" = "CODE" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in PM mode. Call purlin_mode(mode: \\\"engineer\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in PM mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"engineer\\\").\"}" >&2
             exit 2
         fi
         if [ "$FILE_CLASS" = "QA" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in PM mode. Call purlin_mode(mode: \\\"qa\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in PM mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"qa\\\").\"}" >&2
             exit 2
         fi
         ;;
     qa)
         if [ "$FILE_CLASS" = "CODE" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in QA mode. Call purlin_mode(mode: \\\"engineer\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in QA mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"engineer\\\").\"}" >&2
             exit 2
         fi
         if [ "$FILE_CLASS" = "SPEC" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in QA mode. Call purlin_mode(mode: \\\"pm\\\") to switch.\"}" >&2
+            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in QA mode. Switch by calling the MCP tool: purlin_mode(mode: \\\"pm\\\").\"}" >&2
             exit 2
         fi
         ;;
