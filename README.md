@@ -19,7 +19,7 @@
 ### 1. Add the Purlin marketplace (one-time)
 
 ```bash
-claude plugin marketplace add https://bitbucket.org/boomerangdev/purlin.git
+claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 ```
 
 ### 2. Install in your project
@@ -56,7 +56,7 @@ If a teammate installed Purlin with `--scope project`, the repo's `.claude/setti
 
 ```bash
 git clone <repo-url> && cd <project-name>
-claude plugin marketplace add https://bitbucket.org/boomerangdev/purlin.git
+claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 claude
 ```
 

@@ -20,7 +20,7 @@ Purlin is a Claude Code plugin installed per-project via the marketplace. You re
 ### Step 1: Add the Purlin Marketplace (One Time)
 
 ```bash
-claude plugin marketplace add https://bitbucket.org/boomerangdev/purlin.git
+claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 ```
 
 This registers the Purlin catalog with Claude Code. No plugins are installed yet.
@@ -108,7 +108,7 @@ When a teammate already installed Purlin with `--scope project`, the repo's `.cl
 ```bash
 git clone <repo-url>
 cd <project-name>
-claude plugin marketplace add https://bitbucket.org/boomerangdev/purlin.git
+claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 claude
 ```
 
@@ -192,7 +192,7 @@ Sensitive values (Figma access token, deploy token, Confluence credentials) are 
 ## Troubleshooting
 
 **Plugin not loading?** Verify both layers:
-1. You've run `claude plugin marketplace add https://bitbucket.org/boomerangdev/purlin.git`.
+1. You've run `claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git`.
 2. `.claude/settings.json` in your project has `enabledPlugins: { "purlin@purlin": true }`.
 
 **Skills not found?** Make sure you're running `claude` from the project root where `.claude/settings.json` exists. The plugin only loads when the project has it enabled.
