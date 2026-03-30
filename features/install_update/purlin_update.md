@@ -5,7 +5,9 @@
 
 ## 1. Overview
 
-A single `purlin:update` command that detects the consumer project's current Purlin installation model and version, computes the migration path to the current plugin version, and executes each step in order. Replaces both the former submodule-only `purlin:update` and the one-time `purlin:upgrade` (submodule-to-plugin migration) with a unified, version-aware flow. The command is idempotent --- interrupted runs resume from the last completed step, and running on an already-current project produces "Already up to date."
+A single `purlin:update` command that detects the consumer project's current Purlin installation model and version, computes the migration path to the current plugin version, and executes each step in order. The command is idempotent — interrupted runs resume from the last completed step, and running on an already-current project produces "Already up to date."
+
+After migration steps complete, the skill runs post-migration feature file organization (idempotent housekeeping on every invocation).
 
 ---
 
@@ -14,32 +16,25 @@ A single `purlin:update` command that detects the consumer project's current Pur
 ### 2.1 Command Interface
 
 ```
-purlin:update [<version>] [--dry-run] [--auto-approve]
+purlin:update [--dry-run] [--auto-approve]
 ```
 
-- `<version>`: Optional explicit target. If omitted, targets the current plugin version.
 - `--dry-run`: Show the migration plan without modifying files.
 - `--auto-approve`: Skip confirmation prompts.
 
-### 2.2 Standalone Mode Guard
-
-Before any work, detect if this is the Purlin plugin repo itself (not a consumer project):
-- Detection: `${CLAUDE_PLUGIN_ROOT}` resolves to the current project root AND `.claude-plugin/plugin.json` exists at project root.
-- If true: "purlin:update is for consumer projects. This is the Purlin framework repo." Stop.
-
-### 2.3 Three-Layer Architecture
+### 2.2 Three-Layer Architecture
 
 The update flow uses three layers:
 
 1. **Version Detector** (`scripts/migration/version_detector.py`): Examines the consumer project and emits a structured fingerprint.
 2. **Migration Registry** (`scripts/migration/migration_registry.py`): Ordered list of migration steps with preconditions, `plan()` (dry-run), and `execute()` methods.
-3. **Skill orchestration** (`skills/update/SKILL.md`): Calls detector, computes path, shows plan, executes steps, produces summary.
+3. **Skill orchestration** (`skills/update/SKILL.md`): Calls detector, computes path, shows plan, executes steps, runs post-migration organization, produces summary.
 
-### 2.4 Version Detection
+### 2.3 Version Detection
 
-The version detector examines the consumer project directory and produces a fingerprint: `{model, era, version_hint, migration_version}`.
+The version detector examines the consumer project directory and produces a fingerprint: `{model, era, version_hint, migration_version, submodule_path}`.
 
-#### 2.4.1 Distribution Model Detection
+#### 2.3.1 Distribution Model Detection
 
 Signals are checked in priority order:
 
@@ -50,30 +45,11 @@ Signals are checked in priority order:
 | 3 | `.purlin/` exists but no submodule or plugin declaration | `fresh` |
 | 4 | No Purlin-related artifacts found | `none` |
 
-#### 2.4.2 Submodule Era Detection
+#### 2.3.2 Migration Version
 
-When the model is `submodule`, the detector inspects the consumer's `.purlin/config.json` (or `.purlin/config.local.json`) to determine the version era:
+`_migration_version` is read from `.purlin/config.json` ONLY — never from `config.local.json`. The migration version is project-level state that must be committed and survive `git reset`. `config.local.json` is gitignored.
 
-| Signal | Era | Version Range |
-|--------|-----|---------------|
-| `agents.architect` with `startup_sequence` key | `pre-unified-legacy` | v0.7.x |
-| `agents.architect` with `find_work` key, no `agents.pm` | `pre-unified-modern` | v0.8.0-v0.8.3 |
-| `agents.pm` exists, no `agents.purlin` | `pre-unified-with-pm` | v0.8.4 |
-| `agents.purlin` exists, `_migration_version` present | `unified` | v0.8.5 |
-| `agents.purlin` with only `model`+`effort`, `agents.builder` still present | `unified-partial` | v0.8.4 partial migration |
-
-Additional signals:
-- `.purlin/.upstream_sha` --- submodule version tracker file.
-- `tools_root` config key --- submodule-era path resolution.
-- Role-specific launchers (`pl-run-architect.sh`, etc.) vs unified launcher (`pl-run.sh`) at project root.
-
-#### 2.4.3 Plugin Version Detection
-
-When the model is `plugin`:
-- Read `_migration_version` from consumer config to determine migration completeness.
-- Current plugin version is available via `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
-
-#### 2.4.4 Fingerprint Schema
+#### 2.3.3 Fingerprint Schema
 
 ```json
 {
@@ -85,144 +61,125 @@ When the model is `plugin`:
 }
 ```
 
-#### 2.4.5 CLI Interface
+### 2.4 Migration Registry
 
-The detector MUST be callable as a CLI for testing:
-```
-python3 scripts/migration/version_detector.py --project-root <path>
-```
-Output: JSON fingerprint to stdout.
-
-### 2.5 Migration Registry
-
-#### 2.5.1 Step Interface
+#### 2.4.1 Step Interface
 
 Each migration step is a Python class with:
-- `step_id: int` --- the `_migration_version` value this step stamps on completion.
-- `name: str` --- human-readable name (e.g., "Unified Agent Model").
-- `from_era: str` --- the era this step migrates FROM.
-- `to_era: str` --- the era this step migrates TO.
-- `preconditions(fingerprint, project_root) -> (bool, str)` --- checks if this step can run. Returns `(True, "")` or `(False, "reason")`.
-- `plan(fingerprint, project_root) -> list[str]` --- dry-run: returns list of actions that would be taken.
-- `execute(fingerprint, project_root, auto_approve=False) -> bool` --- runs the migration. Returns True on success. Stamps `_migration_version` on completion.
+- `step_id: int` — the `_migration_version` value this step stamps on completion.
+- `name: str` — human-readable name.
+- `preconditions(fingerprint, project_root) -> (bool, str)` — checks if this step can run.
+- `plan(fingerprint, project_root) -> list[str]` — dry-run: returns list of actions.
+- `execute(fingerprint, project_root, auto_approve=False) -> bool` — runs the migration. Stamps `_migration_version` on completion.
 
-#### 2.5.2 Step Definitions
+#### 2.4.2 Step Definitions
 
-| Step | `_migration_version` | From -> To | Name | Key Actions |
-|------|---------------------|-----------|------|-------------|
-| 1 | 1 | Pre-unified submodule -> Unified submodule | Unified Agent Model | Advance submodule to v0.8.5+. Consolidate 4-role config into `agents.purlin`. Merge override files. Clean old launchers. |
-| 2 | 2 | Unified submodule -> Plugin | Submodule to Plugin | Remove submodule. Clean stale artifacts (launchers, commands, agents, `.upstream_sha`). Declare plugin in `.claude/settings.json`. Migrate config (remove `tools_root`, `models`, deprecated agents). Update CLAUDE.md and .gitignore. Remove old hooks from settings. |
-| 3 | 3 | Plugin -> Current | Plugin Refresh | Check plugin version. Diff skills/agents/hooks between versions. Config sync (add missing keys). MCP manifest diff (report added/removed/changed servers). Stale artifact cleanup. |
+| Step | `_migration_version` | Name | Key Actions |
+|------|---------------------|------|-------------|
+| 1 | 1 | Unified Agent Model | Consolidate 4-role config into `agents.purlin`. Clean old role-specific launchers. |
+| 2 | 2 | Submodule to Plugin | Remove submodule. Clean stale artifacts. Declare plugin in `.claude/settings.json`. Migrate config. |
+| 3 | 3 | Plugin Refresh | Force-remove purlin/ dir, .gitmodules, symlinks. Delete ALL stale artifacts (pl-* glob, CRITIC_REPORT.md, old override files, .purlin/release/). Rewrite CLAUDE.md (strip old boilerplate). |
+| 4 | 4 | Figma to Design Invariant | Scan ALL feature .md files for Figma references. Create `i_design_*` invariants in `_invariants/`. Move companion design data (brief.json) to `_invariants/`. Strip Figma metadata from feature files. Add prerequisite references. |
+| 5 | 5 | Remove Override System | Parse test priority tiers from PURLIN_OVERRIDES.md / QA_OVERRIDES.md into config.json. Strip submodule-era boilerplate. Delete override files. |
 
-#### 2.5.3 Path Computation
+#### 2.4.3 Path Computation
 
-`compute_path(fingerprint, target_migration_version) -> list[Step]`
+Steps with `step_id > migration_version` (or 0 if null) and `<= CURRENT_MIGRATION_VERSION` are included. Steps whose preconditions fail are **skipped** (not halted) — this allows plugin-model projects to skip submodule-only steps and reach Steps 3-5.
 
-The function returns the ordered list of steps whose `step_id` is greater than the fingerprint's `migration_version` (or 0 if null) and less than or equal to `target_migration_version`.
+Re-detection runs between each step so later steps see updated state (e.g., Step 4 sees `migration_version: 3` after Step 3 completes).
 
-Examples:
-- Fingerprint `{migration_version: null, era: "pre-unified-legacy"}` -> steps [1, 2, 3]
-- Fingerprint `{migration_version: null, era: "pre-unified-with-pm"}` -> steps [1, 2, 3]
-- Fingerprint `{migration_version: 1, era: "unified"}` -> steps [2, 3]
-- Fingerprint `{migration_version: 2, era: "plugin"}` -> steps [3]
-- Fingerprint `{migration_version: 3, era: "plugin"}` -> [] (already current)
+#### 2.4.4 Version Stamping
 
-Special cases:
-- `unified-partial` era: step 1 runs in repair mode (completes the partial migration).
-- `fresh` model with no `_migration_version`: inform user to run `purlin:init` first if `.purlin/` is missing, or run step 3 if plugin is already declared.
-- `none` model: "Not a Purlin project. Run `purlin:init` to set up." Stop.
+`_stamp_version()` writes to `.purlin/config.json` ONLY. Never stamps `config.local.json`.
 
-#### 2.5.4 CLI Interface
+### 2.5 Step 3: Plugin Refresh (Detail)
 
-The registry MUST be callable as a CLI for testing:
-```
-python3 scripts/migration/migration_registry.py --project-root <path> [--dry-run]
-```
-Output: The computed migration path with step names and planned actions.
+This is the most common step for existing projects and the most comprehensive cleanup. It runs for any project at `migration_version < 3`.
 
-### 2.6 Execution Flow
+**Stale artifact cleanup:**
+- `purlin/` directory (force-remove even if git deinit fails)
+- `.gitmodules` (delete entirely — only submodule was purlin)
+- `.git/modules/purlin/` cache
+- ALL `pl-*` files/symlinks at project root (glob match)
+- `purlin-start.sh`, `purlin-stop.sh`
+- `CRITIC_REPORT.md`
+- `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, `.purlin/PM_OVERRIDES.md`, `.purlin/HOW_WE_WORK_OVERRIDES.md`
+- `.purlin/gitignore.purlin`, `.purlin/.upstream_sha`
+- `.purlin/release/` directory
+- `.claude/commands/pl-*.md`, `.claude/agents/*.md`
 
-1. **Detect:** Run version detector on the consumer project.
-2. **Guard:** If model is `none`, advise `purlin:init`. If standalone, reject.
-3. **Compute path:** Call `compute_path(fingerprint, current_migration_version)`.
-4. **Empty path:** "Already up to date." Stop.
-5. **Show plan:** List each step with name and planned actions. If `--dry-run`, stop here.
-6. **Confirm:** Prompt user for confirmation. Skip if `--auto-approve`.
-7. **Execute:** Run each step sequentially. Each step stamps `_migration_version` on completion.
-8. **Summary:** Report what was done, what version the project is now at.
+**CLAUDE.md rewrite:**
+- Strip `<!-- purlin:start -->...<!-- purlin:end -->` block (old 4-role boilerplate)
+- Strip `## Project Rules (migrated from Purlin overrides)` section
+- If nothing remains, write minimal plugin reference
 
-### 2.7 Step 1: Unified Agent Model (Detail)
+### 2.6 Step 4: Figma to Design Invariant (Detail)
 
-Precondition: Submodule exists, consumer has pre-unified config (`migration_version` < 1 or null).
+Scans ALL `.md` files in `features/` (not just `design_*` files) for Figma references. Old Purlin versions (<=0.8.5) put Figma references in feature specs instead of design anchors.
 
-Actions:
-- Advance submodule to latest tag with unified agent support.
-- Run `init.sh --quiet` from submodule to refresh artifacts.
-- Execute migration module: consolidate 4-role config into `agents.purlin`, merge override files into single `PURLIN_OVERRIDES.md`, clean old role-specific launchers.
-- Stamp `_migration_version: 1`.
+**Figma detection patterns (first match wins):**
+- Full URL: `> Figma-URL: https://figma.com/...`
+- Markdown link: `[text](https://figma.com/...)`
+- File key metadata: `> **Figma File:** <key>`
+- Companion `brief.json` with `figma_file_key`
 
-Repair mode (for `unified-partial` era): Complete the partial migration --- add missing `find_work`/`auto_start`/`default_mode` to `agents.purlin`, deprecate old agent entries.
+**For design_*.md files (Figma-sourced anchors):**
+- Create `i_design_<stem>.md` in `_invariants/`
+- Update prerequisite references in dependent features
+- Delete the original design_*.md file
 
-### 2.8 Step 2: Submodule to Plugin (Detail)
+**For regular feature files (Figma ref was inline):**
+- Create `i_design_<stem>.md` in `_invariants/`
+- Strip Figma metadata lines from the feature file
+- Add `> Prerequisite: features/_invariants/i_design_<stem>.md` to the feature
+- Keep existing prerequisites intact
 
-Precondition: Submodule exists, `migration_version >= 1`.
+**For both:**
+- Move companion design data (`features/design/<stem>/` or `features/_design/<stem>/`) into `features/_invariants/<stem>/` alongside the invariant file
+- Clean up empty design parent directories
 
-Actions:
-1. Pre-flight: Verify clean working tree. Create safety commit with current state.
-2. Preserve: Verify `features/`, `.purlin/PURLIN_OVERRIDES.md`, `.purlin/config.json`, `tests/` are intact.
-3. Remove submodule: `git submodule deinit -f`, `git rm -f`, clean `.git/modules/`.
-4. Clean stale artifacts: delete `pl-run.sh`, `pl-init.sh`, `.claude/commands/pl-*.md`, `.claude/agents/*.md`, `.purlin/.upstream_sha`.
-5. Declare plugin: Add inline marketplace + `enabledPlugins` to `.claude/settings.json`, preserving existing permissions and settings.
-6. Migrate config: Remove `tools_root`, `models` array, deprecated agent entries (`agents.architect`, `agents.builder`, `agents.qa`, `agents.pm`). Preserve `agents.purlin`.
-7. Update CLAUDE.md: Replace submodule references with plugin template.
-8. Update .gitignore: Remove submodule entries, add plugin patterns.
-9. Remove old hooks: Remove `SessionStart`/`SessionEnd` entries from `.claude/settings.json` that reference old `tools/hooks/` paths.
-10. Verify: Validate all JSON files, check `features/` intact, display summary.
-11. Commit: `chore(purlin): migrate from submodule to plugin distribution`.
-12. Stamp `_migration_version: 2`.
+### 2.7 Step 5: Remove Override System (Detail)
 
-### 2.9 Step 3: Plugin Refresh (Detail)
+Removes PURLIN_OVERRIDES.md and QA_OVERRIDES.md. Extracts test priority tiers to `config.json`. Strips submodule-era boilerplate before migrating any remaining content to CLAUDE.md.
 
-Precondition: Plugin model active (`migration_version >= 2`).
+**Boilerplate filter strips:**
+- `# Purlin Agent Overrides` heading
+- `## General (all modes)`, `## Engineer Mode`, `## PM Mode`, `## QA Mode` template sections
+- `HARD PROHIBITION` and `Read-Only` sections
+- Lines containing submodule keywords (purlin/, pl-run.sh, etc.)
+- HTML comments, blockquote template instructions
 
-Actions:
-1. Check current plugin version vs running plugin version.
-2. If already at target: check for pending config sync, run it if needed. Otherwise "Already up to date."
-3. Config sync: Add missing keys from plugin template config to consumer's `config.local.json`.
-4. MCP manifest diff: Compare consumer's MCP server list against plugin's `.mcp.json`. Report added/removed/changed servers with reconfiguration commands.
-5. Stale artifact cleanup: Check for and remove any leftover pre-plugin artifacts.
-6. Stamp `_migration_version: 3` (or current target).
+Only genuinely project-specific content survives the filter and is appended to CLAUDE.md.
 
-### 2.10 Idempotency
+### 2.8 Post-Migration: Feature File Organization
 
-- Each step checks `_migration_version` before running. If the step's `step_id` is <= the current `_migration_version`, it is skipped.
-- Interruption recovery: If the process is interrupted mid-step, the `_migration_version` is NOT stamped (it stamps on completion). The next run re-executes the interrupted step from scratch.
-- Running `purlin:update` on an already-current project always produces "Already up to date." with no file modifications.
+Runs on EVERY `purlin:update` invocation (not just migration). Idempotent.
 
-### 2.11 Error Handling
+**The skill activates Engineer mode** (Step 0) before any file operations.
 
-- **Uncommitted changes** (steps 1, 2): "Commit or stash changes before updating." Stop.
-- **Network failure** (step 1 submodule fetch): "Could not fetch from submodule remote." Stop.
-- **Invalid explicit version**: "Version '<v>' not found in tags." Stop.
-- **Missing `.purlin/`**: "Not a Purlin project. Run `purlin:init` to set up." Stop.
-- **Submodule removal failure** (step 2): Report error, do NOT proceed. Safety commit provides rollback.
+1. Rename legacy special folders: `features/tombstones/` → `features/_tombstones/`, `features/digests/` → `features/_digests/`, `features/design/` → `features/_design/`.
+2. Scan `features/` root for `.md` files not in a category subfolder.
+3. For each root-level file: extract `> Category:` metadata, slugify to folder name (lowercase, spaces to underscores), create folder, move file + companions.
+4. Invariant files (`i_*` prefix) go to `_invariants/`.
+5. Files with no `> Category:` metadata are skipped with a warning.
+6. Drift detection: scan subfolders, compare slugified category to folder name, warn on mismatches (no auto-move).
 
-### 2.12 Regression Testing
+### 2.9 Idempotency
 
-Regression tests use the fixture-based harness (`scripts/test_support/harness_runner.py`).
+- Each step checks `_migration_version` before running. Steps with `step_id <= migration_version` are skipped.
+- Interrupted runs resume from the last completed step (the interrupted step's version was not stamped).
+- Steps whose preconditions fail are skipped (not halted), allowing later steps to run.
+- Running `purlin:update` on an already-current project runs only the post-migration organize step.
 
-**Fixture setup script:** `dev/setup_version_fixtures.sh` creates deterministic consumer project snapshots for each version era, tagged in the fixture repository.
+### 2.10 Error Handling
 
-**Fixture tags:**
-| Tag | Era | Key State |
-|-----|-----|-----------|
-| `main/purlin_update/submodule-v0.7.x` | v0.7.x | `agents.architect` with `startup_sequence`, role-specific `run_*.sh` launchers |
-| `main/purlin_update/submodule-v0.8.0-v0.8.3` | v0.8.0-v0.8.3 | `agents.architect` with `find_work`, `pl-run-*.sh` launchers, `pl-cdd-*.sh` |
-| `main/purlin_update/submodule-v0.8.4` | v0.8.4 | `agents.pm` added, no `agents.purlin`, 4 role launchers |
-| `main/purlin_update/submodule-v0.8.4-partial` | v0.8.4 partial | Submodule at v0.8.5 but migration incomplete |
-| `main/purlin_update/submodule-v0.8.5` | v0.8.5 | `agents.purlin`, `_migration_version: 1`, single `pl-run.sh` |
-| `main/purlin_update/plugin-v0.9.0` | v0.9.0 | Plugin model, no submodule, `_migration_version: 2` |
-| `main/purlin_update/fresh-project` | Fresh | Just `.purlin/` and `features/`, no version markers |
+| Condition | Message | Action |
+|-----------|---------|--------|
+| Not a Purlin project | `✗ Not a Purlin project. Run purlin:init to set up.` | Stop |
+| Fresh project, no migration | `✗ Fresh project detected. Run purlin:init first.` | Stop |
+| Already up to date | `✓ Already up to date.` | Run organize step only |
+| Step precondition failure | `Step <id> (<name>) skipped: <reason>` | Continue to next step |
+| Step execution failure | `✗ Step <id> failed.` | Stop (version not stamped, safe to retry) |
 
 ---
 
@@ -230,190 +187,104 @@ Regression tests use the fixture-based harness (`scripts/test_support/harness_ru
 
 ### Unit Tests
 
-#### Scenario: Detect v0.7.x submodule project
-
-    Given a consumer project with submodule-v0.7.x fixture state
-    When the version detector runs
-    Then the fingerprint model is "submodule"
-    And the fingerprint era is "pre-unified-legacy"
-    And migration_version is null
-
-#### Scenario: Detect v0.8.4 submodule project
-
-    Given a consumer project with submodule-v0.8.4 fixture state
-    When the version detector runs
-    Then the fingerprint model is "submodule"
-    And the fingerprint era is "pre-unified-with-pm"
-    And migration_version is null
-
-#### Scenario: Detect v0.8.5 unified submodule project
-
-    Given a consumer project with submodule-v0.8.5 fixture state
-    When the version detector runs
-    Then the fingerprint model is "submodule"
-    And the fingerprint era is "unified"
-    And migration_version is 1
-
-#### Scenario: Detect v0.8.4 partial migration
-
-    Given a consumer project with submodule-v0.8.4-partial fixture state
-    When the version detector runs
-    Then the fingerprint model is "submodule"
-    And the fingerprint era is "unified-partial"
-
 #### Scenario: Detect plugin-based project
 
-    Given a consumer project with plugin-v0.9.0 fixture state
+    Given a consumer project with enabledPlugins in .claude/settings.json
     When the version detector runs
     Then the fingerprint model is "plugin"
-    And migration_version is 2
 
-#### Scenario: Detect fresh project
+#### Scenario: Detect submodule project
 
-    Given a consumer project with fresh-project fixture state
+    Given a consumer project with .gitmodules containing purlin
     When the version detector runs
-    Then the fingerprint model is "fresh"
+    Then the fingerprint model is "submodule"
 
-#### Scenario: Detect non-Purlin project
+#### Scenario: Compute path from no migration to current
 
-    Given a directory with no .purlin/ and no Purlin artifacts
-    When the version detector runs
-    Then the fingerprint model is "none"
+    Given a fingerprint with migration_version null
+    When compute_path is called with target migration_version 5
+    Then the path contains steps [1, 2, 3, 4, 5]
 
-#### Scenario: Compute path from v0.7.x to current
+#### Scenario: Compute path from plugin v0.8.5 to current
 
-    Given a fingerprint with era "pre-unified-legacy" and migration_version null
-    When compute_path is called with target migration_version 3
-    Then the path contains steps [1, 2, 3]
-
-#### Scenario: Compute path from v0.8.5 to current
-
-    Given a fingerprint with era "unified" and migration_version 1
-    When compute_path is called with target migration_version 3
-    Then the path contains steps [2, 3]
-
-#### Scenario: Compute path from plugin v0.9.0 to current
-
-    Given a fingerprint with migration_version 2
-    When compute_path is called with target migration_version 3
-    Then the path contains steps [3]
+    Given a fingerprint with migration_version 1
+    When compute_path is called with target migration_version 5
+    Then the path contains steps [2, 3, 4, 5]
 
 #### Scenario: Already current produces empty path
 
-    Given a fingerprint with migration_version 3
-    When compute_path is called with target migration_version 3
+    Given a fingerprint with migration_version 5
+    When compute_path is called with target migration_version 5
     Then the path is empty
 
-#### Scenario: Partial migration computes repair path
+#### Scenario: Inapplicable steps are skipped not halted
 
-    Given a fingerprint with era "unified-partial" and migration_version null
-    When compute_path is called with target migration_version 3
-    Then the path contains steps [1, 2, 3]
-    And step 1 runs in repair mode
+    Given a plugin project (model=plugin) with migration_version null
+    When migration executes
+    Then steps 1 and 2 are skipped (preconditions fail: not a submodule)
+    And steps 3, 4, 5 execute successfully
 
-#### Scenario: Fresh project with no plugin advises init
+#### Scenario: Step 3 removes all stale artifacts
 
-    Given a fingerprint with model "fresh"
-    When purlin:update runs
-    Then the output contains "Run purlin:init first"
-
-#### Scenario: Standalone mode guard rejects Purlin repo
-
-    Given the current directory is the Purlin plugin repo itself
-    When purlin:update runs
-    Then the output contains "purlin:update is for consumer projects"
-
-#### Scenario: Dry-run shows plan without modifying files
-
-    Given a consumer project with submodule-v0.8.5 fixture state
-    When purlin:update --dry-run runs
-    Then the output lists steps 2 and 3 with planned actions
-    And no files are modified
-
-#### Scenario: Idempotency --- second run is no-op
-
-    Given purlin:update has already migrated a project to current
-    When purlin:update runs again
-    Then the output is "Already up to date."
-    And no files are modified
-
-#### Scenario: Uncommitted changes block migration
-
-    Given a consumer project with uncommitted changes
-    When purlin:update runs and step 2 would execute
-    Then the output contains "Commit or stash changes"
-    And no migration steps execute
-
-#### Scenario: Step stamps migration_version on completion
-
-    Given a consumer project at migration_version 1
-    When step 2 executes successfully
-    Then config contains _migration_version: 2
-
-#### Scenario: Interrupted step does not stamp version
-
-    Given step 2 fails mid-execution
-    When checking _migration_version in config
-    Then the value is still 1
-
-#### Scenario: Step 2 removes submodule and declares plugin
-
-    Given a consumer project with submodule-v0.8.5 fixture state at migration_version 1
-    When step 2 executes
-    Then .gitmodules no longer contains a purlin entry
-    And .claude/settings.json contains enabledPlugins with purlin
-    And pl-run.sh does not exist at project root
-    And .purlin/.upstream_sha does not exist
-    And config.json does not contain tools_root key
-
-#### Scenario: Step 2 preserves features and tests
-
-    Given a consumer project with 3 feature specs and test fixtures
-    When step 2 executes
-    Then all 3 feature specs still exist unchanged
-    And test fixtures are intact
-
-#### Scenario: Step 3 syncs new config keys
-
-    Given a plugin project at migration_version 2
-    And the plugin template config has a new key "server_port"
+    Given a project with purlin/ dir, .gitmodules, pl-run-*.sh symlinks, CRITIC_REPORT.md, old override files
     When step 3 executes
-    Then config.local.json contains the new key with the template default
+    Then all listed artifacts are deleted
+    And CLAUDE.md is rewritten without old boilerplate
 
-#### Scenario: Version detector CLI outputs valid JSON
+#### Scenario: Step 4 extracts Figma from feature files
 
-    Given a consumer project directory
-    When python3 scripts/migration/version_detector.py --project-root <path> runs
-    Then stdout is valid JSON matching the fingerprint schema
+    Given a feature file with > **Figma File:** metadata
+    When step 4 executes
+    Then features/_invariants/i_design_<stem>.md is created
+    And the feature file has > Prerequisite: features/_invariants/i_design_<stem>.md
+    And the Figma metadata lines are removed from the feature file
+    And brief.json is moved to features/_invariants/<stem>/
 
-#### Scenario: Migration registry CLI shows computed path
+#### Scenario: Step 4 skips files without Figma
 
-    Given a consumer project at migration_version 1
-    When python3 scripts/migration/migration_registry.py --project-root <path> runs
-    Then stdout shows steps 2 and 3 with names and action summaries
+    Given a design_*.md anchor with no Figma reference
+    When step 4 executes
+    Then the anchor is NOT converted to an invariant
+    And it remains in its original location
+
+#### Scenario: Step 5 strips submodule boilerplate from overrides
+
+    Given PURLIN_OVERRIDES.md with "HARD PROHIBITION" and empty template sections
+    When step 5 executes
+    Then nothing is appended to CLAUDE.md (all content was boilerplate)
+    And PURLIN_OVERRIDES.md is deleted
+
+#### Scenario: Migration version read from config.json only
+
+    Given config.json has _migration_version: null
+    And config.local.json has _migration_version: 5
+    When the version detector runs
+    Then migration_version is null (not 5)
+
+#### Scenario: Post-migration organizes features by category
+
+    Given root-level feature files with > Category: "UI" and > Category: "Architecture"
+    When the organize step runs
+    Then features/ui/ and features/architecture/ are created
+    And files are moved with their companions
 
 ### QA Scenarios
 
-#### @manual Scenario: Full migration from v0.7.x submodule to current plugin
-
-    Given a consumer project created from the submodule-v0.7.x fixture
-    When purlin:update is run interactively
-    Then all three migration steps execute in order
-    And the project is fully functional as a plugin consumer
-    And purlin:resume runs successfully in the migrated project
-
 #### @manual Scenario: Full migration from v0.8.5 submodule to current plugin
 
-    Given a consumer project created from the submodule-v0.8.5 fixture
+    Given a consumer project with submodule, old launchers, Figma in feature specs, override files
     When purlin:update is run interactively
-    Then steps 2 and 3 execute
-    And the project has no submodule artifacts remaining
-    And purlin:resume runs successfully
+    Then all applicable steps execute
+    And no stale artifacts remain (purlin/, .gitmodules, pl-*, CRITIC_REPORT, overrides)
+    And Figma references are in _invariants/ with brief.json
+    And features are organized into category folders
+    And CLAUDE.md has no submodule boilerplate
 
 ## Regression Guidance
 
-- Version detection is the foundation --- any detection error cascades to wrong migration path. Test detection against ALL fixture states.
-- Step 2 (submodule removal) is destructive and hard to reverse. The safety commit MUST be created before any submodule operations.
-- Idempotency is critical for user trust. Running update twice must never corrupt state.
-- The `_migration_version` stamp is the single source of truth for migration state. It must be written atomically (no partial stamps).
-- Fixture states must be deterministic. The setup script must produce byte-identical results on repeated runs.
+- `_migration_version` is read from config.json ONLY. Never config.local.json.
+- Steps whose preconditions fail are SKIPPED, not halted. This allows plugin projects to reach Steps 3-5.
+- Step 3 uses `glob pl-*` to catch all naming conventions for old launcher scripts.
+- Step 4 scans ALL .md files in features/ for Figma (not just design_* files).
+- Step 5 boilerplate filter must strip submodule-era content to avoid polluting CLAUDE.md.
+- Post-migration organize slugifies categories directly — no canonical table lookup.
