@@ -2,7 +2,7 @@
 
 ## Overview
 
-Purlin is a Claude Code plugin. There are two ways to load it: point Claude Code at a local clone with `--plugin-dir`, or register the plugin source in your user settings for automatic loading. Either way, you start sessions with `claude` and initialize projects with `purlin:init` from inside the session.
+Purlin is a Claude Code plugin installed per-project via the marketplace. You register the marketplace once, then install in each project where you want spec-driven development.
 
 ---
 
@@ -10,82 +10,37 @@ Purlin is a Claude Code plugin. There are two ways to load it: point Claude Code
 
 - Git (any recent version)
 - Python 3.8+ (used by the MCP server and tooling scripts)
-- Claude Code CLI (`claude`) **2.1.81 or later**, installed and authenticated
+- Claude Code CLI (`claude`) **1.0.33 or later**, installed and authenticated
 - Node.js (optional, for web testing via Playwright)
 
 ---
 
-## Option A: Load from a Local Clone (Simplest)
+## Install
 
-Clone the Purlin repo and use `--plugin-dir` to load it. No marketplace registration or settings changes needed.
-
-```bash
-git clone git@bitbucket.org:boomerangdev/purlin.git
-```
-
-Then create your project and initialize:
+### Step 1: Add the Purlin Marketplace (One Time)
 
 ```bash
-mkdir my-project && cd my-project
-git init
-claude --plugin-dir ../purlin
+claude plugin marketplace add boomerangdev/purlin
 ```
 
-Inside the Claude Code session:
+This registers the Purlin catalog with Claude Code. No plugins are installed yet.
 
-```
-purlin:init
-```
-
-Every subsequent session, load the plugin the same way:
+### Step 2: Install in Your Project
 
 ```bash
-claude --plugin-dir ../purlin
+cd my-project
+git init  # if not already a git repo
+
+# Project scope — committed to .claude/settings.json, shared with teammates
+claude plugin install purlin@boomerangdev-purlin --scope project
+
+# Or local scope — gitignored, just for you in this repo
+claude plugin install purlin@boomerangdev-purlin --scope local
 ```
 
-> **Tip:** Create a shell alias to avoid typing the flag every time:
-> ```bash
-> alias purlin='claude --plugin-dir /path/to/purlin'
-> ```
-
----
-
-## Option B: Register via Marketplace (Persistent)
-
-Register the plugin source once in your user-level settings. After that, `claude` loads Purlin automatically in any project that has it enabled — no `--plugin-dir` flag needed.
-
-### Step 1: Register the Plugin Source (One Time)
-
-Edit `~/.claude/settings.json`:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp__purlin__*"
-    ]
-  },
-  "extraKnownMarketplaces": {
-    "purlin": {
-      "source": "settings",
-      "plugins": [{
-        "name": "purlin",
-        "source": { "source": "url", "url": "https://bitbucket.org/boomerangdev/purlin.git" }
-      }]
-    }
-  }
-}
-```
-
-If you already have content in `~/.claude/settings.json`, merge the `permissions` and `extraKnownMarketplaces` keys into your existing file.
-
-The `permissions.allow` entry pre-approves Purlin's MCP tools so you aren't prompted for each one on first use.
-
-### Step 2: Create and Initialize Your Project
+### Step 3: Initialize
 
 ```bash
-mkdir my-project && cd my-project
-git init
 claude
 ```
 
@@ -95,17 +50,15 @@ Inside the Claude Code session:
 purlin:init
 ```
 
-Exit and re-enter Claude Code so the plugin loads fully:
+This scaffolds the project structure. Commit the result:
 
 ```bash
-claude
+git add -A && git commit -m "init purlin"
 ```
 
 ---
 
 ## What `purlin:init` Creates
-
-Both options produce the same project structure:
 
 ```
 my-project/
@@ -113,7 +66,6 @@ my-project/
 │   └── settings.json          # Plugin enablement (committed)
 ├── .purlin/
 │   ├── config.json            # Agent settings
-│   ├── PURLIN_OVERRIDES.md    # Project-specific rules
 │   ├── cache/                 # Scan output (gitignored)
 │   ├── runtime/               # Session state (gitignored)
 │   └── toolbox/               # Project and community tools
@@ -130,23 +82,15 @@ my-project/
 }
 ```
 
-This file is committed to git so that everyone who clones the repo gets the plugin activated automatically (if they have the marketplace source registered, or use `--plugin-dir`).
-
-### Commit the scaffold
-
-```bash
-git add -A && git commit -m "init purlin"
-```
+This file is committed to git so that everyone who clones the repo gets the plugin activated automatically (once they have the marketplace registered).
 
 ### Start working
 
-On first launch in a new project, the agent enters PM mode and asks what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
-
-Just tell the agent what you want in plain language:
+On first launch in a new project, the agent enters PM mode and asks what you're building. Just tell the agent what you want in plain language:
 
 > "spec a login feature, then build and verify it"
 
-The agent switches modes automatically as the work progresses. You can also use explicit commands when you want precision:
+The agent switches modes automatically. You can also use explicit commands:
 
 ```
 purlin:spec login             # PM mode — create a spec
@@ -159,18 +103,16 @@ purlin:mode engineer          # switch modes without starting a workflow
 
 ## Joining an Existing Project
 
-When a team member clones a Purlin project, the plugin is already enabled via the committed `.claude/settings.json`:
+When a teammate already installed Purlin with `--scope project`, the repo's `.claude/settings.json` has the plugin enabled. You just need the marketplace registered:
 
 ```bash
 git clone <repo-url>
 cd <project-name>
-claude                        # if marketplace source registered (Option B)
-claude --plugin-dir ../purlin # or point at a local clone (Option A)
+claude plugin marketplace add boomerangdev/purlin
+claude
 ```
 
-The plugin loads automatically because `.claude/settings.json` contains `enabledPlugins`. The `SessionStart` hook handles context recovery.
-
-**Prerequisite:** The team member must have either registered the marketplace source ([Option B](#option-b-register-via-marketplace-persistent)) or use `--plugin-dir` to point at a local clone of Purlin.
+The plugin loads automatically. The `SessionStart` hook handles context recovery.
 
 If `.purlin/` doesn't exist yet (first team member to use Purlin on this project), run `purlin:init` inside the session.
 
@@ -178,11 +120,9 @@ If `.purlin/` doesn't exist yet (first team member to use Purlin on this project
 
 ## How the Plugin Layers Work
 
-The Purlin plugin combines two layers of configuration:
-
 ### Global layer (user-level)
 
-`~/.claude/settings.json` registers the plugin source. This is shared across all projects on your machine. It tells Claude Code "Purlin exists and can be found at this repo." It does NOT activate Purlin in any project.
+The marketplace registration tells Claude Code where to find Purlin. It does NOT activate Purlin in any project — it just makes it available for install.
 
 ### Project layer
 
@@ -193,7 +133,7 @@ The Purlin plugin combines two layers of configuration:
 3. The plugin's `settings.json` activates the Purlin agent, replacing the default Claude behavior.
 4. Hooks register (mode guard, session recovery, checkpoint, companion tracking).
 5. The MCP server starts (scan engine, dependency graph, mode state).
-6. Your `CLAUDE.md` and `.purlin/PURLIN_OVERRIDES.md` layer on top.
+6. Your `CLAUDE.md` layers on top with project-specific context.
 
 When you run `claude` in a directory without Purlin enabled, you get standard Claude Code with zero Purlin interference.
 
@@ -201,18 +141,16 @@ When you run `claude` in a directory without Purlin enabled, you get standard Cl
 
 | Setting | Where | Scope |
 |---|---|---|
-| Plugin source registration | `~/.claude/settings.json` | All projects (makes plugin available) |
+| Marketplace registration | `~/.claude/settings.json` | All projects (makes plugin available) |
 | Plugin enablement | `.claude/settings.json` (project) | This project only |
 | Agent settings (model, auto-start) | `.purlin/config.json` | This project |
 | Local overrides (not committed) | `.purlin/config.local.json` | Your machine only |
-| Project-specific rules | `.purlin/PURLIN_OVERRIDES.md` | This project |
+| Project-specific rules | `CLAUDE.md` | This project |
 | Credentials (Figma, deploy tokens) | macOS keychain (via plugin userConfig) | Your machine only |
 
 ---
 
 ## Updating Purlin
-
-### Agent-Assisted Update (Recommended)
 
 Inside any agent session:
 
@@ -222,42 +160,7 @@ purlin:update v0.8.7             # Update to a specific version
 purlin:update --dry-run          # Preview without modifying anything
 ```
 
-The agent fetches the latest version, refreshes skills and hooks, and resolves any conflicts with your local customizations.
-
-### What Gets Updated
-
-- Skills, hooks, agents, references, templates (plugin internals)
-- MCP server and script updates
-
-### What Is Never Touched
-
-- `.purlin/config.json` and `config.local.json`
-- `.purlin/PURLIN_OVERRIDES.md`
-- `features/` directory
-- `.purlin/toolbox/` (your project and community tools)
-
----
-
-## Upgrading from v0.8.5 (Submodule to Plugin)
-
-If your project currently uses the submodule model (has a `purlin/` directory):
-
-1. Complete [Step 1](#step-1-register-the-plugin-one-time) if you haven't already.
-
-2. Inside an agent session on your project:
-   ```
-   purlin:update
-   ```
-
-3. The update skill detects the submodule and handles the transition:
-   - Removes the `purlin/` submodule and `.gitmodules` entry
-   - Deletes stale artifacts (`pl-run.sh`, `pl-init.sh`, `.claude/commands/pl-*.md`)
-   - Creates `.claude/settings.json` with `enabledPlugins`
-   - Migrates config paths
-
-4. Exit and restart `claude`. The plugin model takes over.
-
-Your specs, config, overrides, and toolbox tools are preserved. The migration only removes submodule-era artifacts and adds plugin enablement.
+This handles all updates including file/format transitions from v0.8.5 (submodule removal, stale artifact cleanup, plugin model switch). Your specs, config, and toolbox are never touched — only plugin internals are updated.
 
 ---
 
@@ -278,7 +181,7 @@ Create `.purlin/config.local.json` to override settings without modifying the sh
 
 ### Project-Specific Rules
 
-`.purlin/PURLIN_OVERRIDES.md` contains project-specific rules organized by mode. Each section is only writable by its corresponding mode. Use `purlin:override-edit` inside a session for guided editing.
+Project-specific rules belong in `CLAUDE.md`, which is loaded automatically by Claude Code. Structured configuration (test tiers, agent settings) lives in `.purlin/config.json`.
 
 ### Credentials
 
@@ -288,13 +191,13 @@ Sensitive values (Figma access token, deploy token, Confluence credentials) are 
 
 ## Troubleshooting
 
-**Plugin not loading?** If using `--plugin-dir`, verify the path points to the Purlin repo root (containing `.claude-plugin/plugin.json`). If using marketplace registration, verify both layers:
-1. `~/.claude/settings.json` has the `extraKnownMarketplaces` entry for Purlin.
+**Plugin not loading?** Verify both layers:
+1. You've run `claude plugin marketplace add boomerangdev/purlin`.
 2. `.claude/settings.json` in your project has `enabledPlugins: { "purlin@purlin": true }`.
 
 **Skills not found?** Make sure you're running `claude` from the project root where `.claude/settings.json` exists. The plugin only loads when the project has it enabled.
 
-**MCP tools not available?** Check that `~/.claude/settings.json` includes `"permissions": { "allow": ["mcp__purlin__*"] }`. Without this, you'll be prompted for each MCP tool on first use.
+**MCP tools not available?** The YOLO mode (`bypass_permissions: true` in `.purlin/config.json`) auto-approves MCP tool access. If you've disabled YOLO, you'll be prompted for each MCP tool on first use.
 
 **Stale submodule artifacts?** If you upgraded from v0.8.5 and still see `purlin/`, `pl-run.sh`, or `.claude/commands/pl-*.md`, run `purlin:update` again inside a session to clean them up.
 

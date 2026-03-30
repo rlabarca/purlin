@@ -16,29 +16,13 @@
 
 **Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 1.0.33+
 
-### Option A: Local development (`--plugin-dir`)
-
-Clone Purlin and point Claude Code at it directly. Best for trying Purlin or contributing to it.
-
-```bash
-git clone git@bitbucket.org:boomerangdev/purlin.git
-cd my-app
-claude --plugin-dir /path/to/purlin
-```
-
-You'll need `--plugin-dir` every session, or add it to a shell alias.
-
-### Option B: Marketplace install (per-project)
-
-Register the Purlin marketplace once, then install per-project.
-
-**1. Add the marketplace** (one-time):
+### 1. Add the Purlin marketplace (one-time)
 
 ```bash
 claude plugin marketplace add boomerangdev/purlin
 ```
 
-**2. Install in your project:**
+### 2. Install in your project
 
 ```bash
 # Project scope — committed to .claude/settings.json, shared with teammates
@@ -48,7 +32,7 @@ claude plugin install purlin@boomerangdev-purlin --scope project
 claude plugin install purlin@boomerangdev-purlin --scope local
 ```
 
-**3. Initialize** (first time only):
+### 3. Initialize (first time only)
 
 ```
 purlin:init

@@ -34,18 +34,16 @@ A `PermissionRequest` hook auto-approves remaining permission dialogs (MCP tool 
 purlin:config yolo off
 ```
 
-## Installation Methods Compared
+## What Works Out of the Box
 
-| Capability | `--plugin-dir` | Marketplace |
-|---|---|---|
-| Write/Edit guard (mode enforcement) | Works | Works |
-| Bash guard (default-mode safety) | Works | Works |
-| `permissionDecision: "allow"` (auto-approve) | Works | Works |
-| YOLO auto-approve (PermissionRequest hook) | Works | Works |
-| `permissionMode: bypassPermissions` on agents | Works (but unnecessary) | Silently stripped |
-| MCP tool first-use prompt | Skipped (YOLO) | Skipped (YOLO) |
+| Capability | Status |
+|---|---|
+| Write/Edit guard (mode enforcement) | Auto-approved by hook |
+| Bash guard (default-mode safety) | Auto-approved by hook |
+| YOLO auto-approve (MCP tools, Read, etc.) | On by default |
+| MCP tool first-use prompt | Skipped (YOLO) |
 
-Both methods get the same effective behavior when YOLO mode is on. The hook-based approach replaces `bypassPermissions` entirely.
+Purlin does not use `permissionMode: bypassPermissions` (which is stripped for marketplace plugins). The hook-based approach provides the same autonomous experience.
 
 ## File Classification
 
@@ -78,7 +76,7 @@ When set, this **blocks all plugin MCP servers**. Purlin's `purlin_mode`, `purli
 
 ### Managed Plugin Force-Enable
 
-Admins can force-enable Purlin via managed settings. Force-enabled plugins cannot be overridden by `--plugin-dir` local copies.
+Admins can force-enable Purlin via managed settings. Force-enabled plugins cannot be disabled by individual users.
 
 ## Hook Authoring Rules
 
@@ -99,4 +97,4 @@ Worker subagents (`engineer-worker`, `pm-worker`, `qa-worker`) do not use `permi
 3. Authorized writes are auto-approved via `permissionDecision: "allow"`
 4. Unauthorized writes are blocked via exit 2
 
-This works identically for `--plugin-dir` and marketplace installs.
+This works for all installation methods.

@@ -28,13 +28,13 @@ Purlin is no longer distributed as a git submodule. It's now a **Claude Code plu
 
 ## How to Install (New Projects)
 
-**Quickest path** — clone the repo and use `--plugin-dir`:
+Add the marketplace and install per-project:
 
 ```bash
-git clone git@bitbucket.org:boomerangdev/purlin.git
-mkdir my-app && cd my-app
-git init
-claude --plugin-dir ../purlin
+claude plugin marketplace add boomerangdev/purlin
+cd my-app && git init
+claude plugin install purlin@boomerangdev-purlin --scope project
+claude
 ```
 
 Inside the session:
@@ -43,9 +43,7 @@ Inside the session:
 purlin:init
 ```
 
-That's it. No submodule, no init script, no symlinks, no settings file edits.
-
-Alternatively, register the plugin source in `~/.claude/settings.json` for automatic loading without the `--plugin-dir` flag. See the [Installation Guide](installation-guide.md) for both options.
+That's it. No submodule, no init script, no symlinks. See the [Installation Guide](installation-guide.md) for full details.
 
 ---
 
@@ -122,7 +120,7 @@ The Purlin plugin is installed **globally** (user-level) but **enabled per-proje
    - The plugin's `settings.json` activates the Purlin agent (`agents/purlin.md`), which replaces the default Claude behavior with Purlin's three-mode system.
    - Hooks register (mode guard, session recovery, auto-checkpoint, companion tracking).
    - The MCP server starts (scan engine, dependency graph, mode state, file classification).
-   - Your project's `CLAUDE.md` and `.purlin/PURLIN_OVERRIDES.md` layer on top.
+   - Your project's `CLAUDE.md` layers on top with project-specific context.
 
 4. **When you run `claude` outside a Purlin project:** Nothing happens. Standard Claude Code with zero Purlin interference.
 
@@ -130,7 +128,6 @@ The Purlin plugin is installed **globally** (user-level) but **enabled per-proje
 
 ```bash
 claude                              # Plugin auto-activates, SessionStart hook restores context
-claude --plugin-dir ../purlin       # Or: load from a local clone
 ```
 
 Inside the session, just tell the agent what you want in plain language:
@@ -225,7 +222,6 @@ my-project/
 ├── .purlin/
 │   ├── config.json            # Agent settings (models, auto-start, etc.)
 │   ├── config.local.json      # Local overrides (gitignored)
-│   ├── PURLIN_OVERRIDES.md    # Project-specific rules
 │   ├── cache/                 # Scan cache, dependency graph (gitignored)
 │   ├── runtime/               # PID files, session state (gitignored)
 │   └── toolbox/               # Project and community tools
@@ -329,7 +325,7 @@ See the [Configuration Guide](config-guide.md) for the full reference.
 
 ## Tips and Tricks
 
-**Just run `claude` and talk.** No launcher, no special startup command. The plugin handles everything. Use `--plugin-dir ../purlin` if loading from a local clone, or just `claude` if you registered the marketplace source. Tell the agent what you want in plain language — it switches modes automatically.
+**Just run `claude` and talk.** No launcher, no special startup command. The plugin handles everything. Tell the agent what you want in plain language — it switches modes automatically.
 
 **Let hooks do the work.** Session recovery, checkpoint saves, and mode enforcement all happen automatically. The `SessionStart` hook restores context on every launch. The `PreCompact` hook saves checkpoints before context compaction.
 
@@ -341,4 +337,4 @@ See the [Configuration Guide](config-guide.md) for the full reference.
 
 **Upgrading is one command.** `purlin:update` handles the submodule-to-plugin transition automatically. It removes the submodule, cleans artifacts, and declares the plugin.
 
-**Your overrides survive.** `.purlin/config.json`, `.purlin/PURLIN_OVERRIDES.md`, and everything in `features/` are untouched by the migration. Your project-specific rules carry forward exactly as they were.
+**Your config survives.** `.purlin/config.json` and everything in `features/` are untouched by the migration. Project-specific rules carry forward in `CLAUDE.md`.
