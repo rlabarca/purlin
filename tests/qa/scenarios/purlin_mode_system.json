@@ -1,0 +1,262 @@
+{
+  "feature": "purlin_mode_system",
+  "description": "Comprehensive regression tests for mode switching, write restrictions, bash guards, file classification, mode state persistence, and implicit mode detection rules.",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "write-guard-enforcement",
+      "script_path": "tests/purlin_mode_system/test_write_guard.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "default mode blocks CODE file",
+          "context": "Default mode (no mode active) blocks writes to CODE files"
+        },
+        {
+          "tier": 2,
+          "pattern": "default mode blocks SPEC file",
+          "context": "Default mode blocks writes to SPEC files"
+        },
+        {
+          "tier": 2,
+          "pattern": "default mode blocks INVARIANT file",
+          "context": "Default mode blocks writes to INVARIANT files"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer allows CODE file \\(src\\)",
+          "context": "Engineer mode allows writing source code files"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer allows companion file",
+          "context": "Engineer mode allows writing .impl.md companion files"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer blocks SPEC file",
+          "context": "Engineer mode blocks writes to feature spec files"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer blocks INVARIANT file",
+          "context": "Engineer mode blocks writes to invariant files"
+        },
+        {
+          "tier": 2,
+          "pattern": "pm allows SPEC file",
+          "context": "PM mode allows writing feature spec files"
+        },
+        {
+          "tier": 2,
+          "pattern": "pm blocks CODE file \\(src\\)",
+          "context": "PM mode blocks writes to source code files"
+        },
+        {
+          "tier": 2,
+          "pattern": "pm blocks companion file",
+          "context": "PM mode blocks writes to .impl.md companion files"
+        },
+        {
+          "tier": 2,
+          "pattern": "qa allows discovery sidecar",
+          "context": "QA mode allows writing .discoveries.md files"
+        },
+        {
+          "tier": 2,
+          "pattern": "qa blocks CODE file",
+          "context": "QA mode blocks writes to code files"
+        },
+        {
+          "tier": 2,
+          "pattern": "qa blocks SPEC file",
+          "context": "QA mode blocks writes to spec files"
+        }
+      ]
+    },
+    {
+      "name": "bash-guard-enforcement",
+      "script_path": "tests/purlin_mode_system/test_bash_guard.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "default blocks rm",
+          "context": "Default mode blocks rm commands"
+        },
+        {
+          "tier": 2,
+          "pattern": "default blocks git add",
+          "context": "Default mode blocks git add commands"
+        },
+        {
+          "tier": 2,
+          "pattern": "default blocks git commit",
+          "context": "Default mode blocks git commit commands"
+        },
+        {
+          "tier": 2,
+          "pattern": "default blocks redirect",
+          "context": "Default mode blocks shell output redirects"
+        },
+        {
+          "tier": 2,
+          "pattern": "default allows ls",
+          "context": "Default mode allows read-only ls command"
+        },
+        {
+          "tier": 2,
+          "pattern": "default allows git status",
+          "context": "Default mode allows read-only git status"
+        },
+        {
+          "tier": 2,
+          "pattern": "default allows git diff",
+          "context": "Default mode allows read-only git diff"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer allows rm",
+          "context": "Engineer mode allows all bash commands including rm"
+        },
+        {
+          "tier": 2,
+          "pattern": "engineer allows git commit",
+          "context": "Engineer mode allows git commit"
+        },
+        {
+          "tier": 2,
+          "pattern": "qa allows rm",
+          "context": "QA mode allows all bash commands"
+        }
+      ]
+    },
+    {
+      "name": "mode-state-persistence",
+      "script_path": "tests/purlin_mode_system/test_mode_state.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "set_mode engineer then get_mode returns engineer",
+          "context": "Mode state persists to disk and can be read back"
+        },
+        {
+          "tier": 2,
+          "pattern": "set_mode None clears mode",
+          "context": "Setting mode to None clears the active mode"
+        },
+        {
+          "tier": 2,
+          "pattern": "session A has engineer mode",
+          "context": "PID-scoped mode files isolate concurrent sessions"
+        },
+        {
+          "tier": 2,
+          "pattern": "session B has pm mode \\(independent\\)",
+          "context": "Different sessions have independent mode state"
+        },
+        {
+          "tier": 2,
+          "pattern": "session A still engineer after B changed",
+          "context": "Changing one session's mode does not affect another"
+        },
+        {
+          "tier": 2,
+          "pattern": "empty PID-scoped file is authoritative",
+          "context": "Empty PID-scoped file returns none, does not fall back to stale unscoped"
+        },
+        {
+          "tier": 2,
+          "pattern": "no session ID falls back to unscoped file",
+          "context": "Without SESSION_ID, get_mode reads unscoped current_mode"
+        }
+      ]
+    },
+    {
+      "name": "file-classification-rules",
+      "script_path": "tests/purlin_mode_system/test_file_classification.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "invariant file detected",
+          "context": "Files in features/_invariants/i_*.md classified as INVARIANT"
+        },
+        {
+          "tier": 2,
+          "pattern": "discovery sidecar is QA",
+          "context": "Files ending in .discoveries.md classified as QA"
+        },
+        {
+          "tier": 2,
+          "pattern": "feature spec is SPEC",
+          "context": "Feature spec .md files classified as SPEC"
+        },
+        {
+          "tier": 2,
+          "pattern": "companion \\(\\.impl\\.md\\) is CODE",
+          "context": "Companion .impl.md files classified as CODE (Engineer-writable)"
+        },
+        {
+          "tier": 2,
+          "pattern": "python source is CODE",
+          "context": "Python source files classified as CODE"
+        },
+        {
+          "tier": 2,
+          "pattern": "agent definition is CODE",
+          "context": "Agent definition classified as CODE"
+        },
+        {
+          "tier": 2,
+          "pattern": "skill file is CODE",
+          "context": "Skill SKILL.md files classified as CODE"
+        }
+      ]
+    },
+    {
+      "name": "implicit-mode-detection-rules",
+      "script_path": "tests/purlin_mode_system/test_implicit_mode_detection.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "opening uses MANDATORY language",
+          "context": "Agent definition opening statement uses forceful MANDATORY language"
+        },
+        {
+          "tier": 2,
+          "pattern": "opening says FORBIDDEN",
+          "context": "Agent definition forbids writes without active mode"
+        },
+        {
+          "tier": 2,
+          "pattern": "section 4.4 says activate directly",
+          "context": "Section 4.4 says activate mode directly, don't ask"
+        },
+        {
+          "tier": 2,
+          "pattern": "section 4.4 says Call purlin_mode MCP tool",
+          "context": "Section 4.4 instructs to call purlin_mode MCP tool"
+        },
+        {
+          "tier": 2,
+          "pattern": "section 4.4 does NOT say invoke skill",
+          "context": "Section 4.4 does not redirect to full skill invocation"
+        },
+        {
+          "tier": 2,
+          "pattern": "mode guard uses Open mode label",
+          "context": "Mode guard uses terse Open mode language, not soft default mode"
+        },
+        {
+          "tier": 2,
+          "pattern": "mode guard does NOT say can read and research",
+          "context": "Mode guard does not include comfort language about reading"
+        },
+        {
+          "tier": 2,
+          "pattern": "activation priority includes config default_mode",
+          "context": "Mode activation priority chain includes config default_mode"
+        }
+      ]
+    }
+  ]
+}
