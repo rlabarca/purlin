@@ -467,7 +467,7 @@ Maintain a session-local tracker (in conversation context, not a file) for each 
 ━━━ Auto-Fix Iteration N of 5 ━━━
 ```
 
-1.  **Collect failures.** Read all `regression.json` AND `tests.json` for in-scope features. Gather `[BUG]` discoveries from Phase A. Skip tests with status PASS or ESCALATED in the tracker. Skip scenario files where ALL scenarios passed (do not re-run passed tests). Unit test failures (`tests.json` with `status: "FAIL"`) are included because the internal mode switch to Engineer (step 4) provides write access to fix Engineer-owned test code.
+1.  **Collect failures.** Read all `regression.json` AND `tests.json` for in-scope features. Gather `[BUG]` discoveries from Phase A. Skip tests with status PASS or ESCALATED in the tracker. Skip scenario files where ALL scenarios passed (do not re-run passed tests). Unit test failures (`tests.json` with `status: "FAIL"`) are included — the fix phase (step 4) handles both code fixes and test fixes.
 
 2.  **If zero failures remain:** exit the loop (success).
 

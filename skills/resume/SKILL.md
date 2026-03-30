@@ -139,7 +139,7 @@ This step runs ONLY when the system prompt does NOT contain the Purlin agent ins
 
 When instruction reload is needed:
 1. Read the base instructions from the plugin agent definition (`agents/purlin.md`).
-2. Present a condensed "Mode Compact" -- key mandates, prohibitions, and protocol summaries. Not a full file dump; a focused digest of the most critical rules.
+2. Present a condensed protocol digest -- key mandates, prohibitions, and protocol summaries. Not a full file dump; a focused digest of the most critical rules.
 
 When the system prompt already contains the Purlin instructions (plugin auto-activated), skip this step silently.
 

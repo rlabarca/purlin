@@ -201,8 +201,9 @@ When the skill orchestrates step 3:
 When the skill orchestrates step 6 (mode_to_sync):
 
 - **Precondition:** Only relevant for projects that had the mode system (mode state files or mode hooks exist). Projects without mode artifacts skip this step.
-- **Actions:** Deletes mode state files (`.purlin/runtime/current_mode*`), deletes `session_writes.json` and `companion_debt.json`, creates empty `.purlin/sync_ledger.json`, removes mode-related config keys (`default_mode`, `mode_on_start`), updates `.gitignore` for `sync_state.json`.
-- Hook config updates happen via the plugin update itself (new hook files ship with the plugin). The migration step only handles consumer-side artifacts.
+- **Actions:** Deletes mode state files (`.purlin/runtime/current_mode*`), deletes `session_writes.json` and `companion_debt.json`, creates empty `.purlin/sync_ledger.json`, removes mode-related config keys (`default_mode`, `mode_on_start`), updates `.gitignore` to add `sync_state.json` and remove `session_writes.json`.
+- **New state created:** `.purlin/sync_ledger.json` (empty object, populated by sync-ledger-update pre-commit hook on subsequent commits).
+- Hook config updates happen via the plugin update itself (new hook files replace `mode-guard.sh` with `write-guard.sh` and `companion-debt-tracker.sh` with `sync-tracker.sh`). The migration step only handles consumer-side artifacts.
 
 ---
 
