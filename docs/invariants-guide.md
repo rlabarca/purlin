@@ -64,14 +64,14 @@ In PM mode:
 purlin:invariant add https://github.com/your-org/standards features/arch_api_standards.md
 ```
 
-This clones the repo, copies the file into your `features/` folder with an `i_` prefix (e.g., `i_arch_api_standards.md`), injects sync metadata, and integrates it into the dependency graph.
+This clones the repo, copies the file into `features/_invariants/` with an `i_` prefix (e.g., `i_arch_api_standards.md`), injects sync metadata, and integrates it into the dependency graph.
 
 ### Import from Figma
 
 **Prerequisites:**
-1. Install the Figma plugin: `/plugin install figma@claude-plugins-official`
-2. Authenticate: Claude Code Settings → Manage MCP Servers → Figma → Authenticate with your Figma account
-3. Restart the session
+1. Add the Figma MCP server: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
+2. Restart the session
+3. Authenticate: run `/mcp`, select Figma, and complete OAuth in the browser
 
 In PM mode:
 
@@ -79,7 +79,7 @@ In PM mode:
 purlin:invariant add-figma https://figma.com/file/abc123/Design-System
 ```
 
-This creates a thin pointer file (e.g., `i_design_system.md`) that references the Figma document. Actual design data stays in Figma — Purlin reads it via MCP when needed.
+This creates a thin pointer file (e.g., `features/_invariants/i_design_system.md`) that references the Figma document. Purlin calls `get_metadata` (version tracking), `get_design_context` (annotations, Code Connect detection), and `get_variable_defs` (design variable vocabulary). Actual design data stays in Figma — the pointer stores only metadata, variable names/types, and advisory annotations.
 
 ---
 
@@ -144,7 +144,7 @@ purlin:invariant sync --all
 - **MINOR version bump** (new constraints): Features reset with a warning.
 - **PATCH bump** (corrections): No cascade — just updates the local file.
 
-For Figma-sourced invariants, sync compares the Figma version ID and re-extracts annotations if the design changed.
+For Figma-sourced invariants, sync fetches the current version via `get_metadata`, compares against the stored version ID, and if changed: re-extracts annotations via `get_design_context`, re-extracts variable definitions via `get_variable_defs`, and updates Code Connect availability.
 
 ### Check Without Syncing
 
@@ -172,7 +172,7 @@ All read-only commands work in any mode. Write commands (`add`, `add-figma`, `sy
 
 ## Invariant File Format
 
-Invariant files live in `features/` with an `i_` prefix. The prefix tells Purlin it's an invariant:
+Invariant files live in `features/_invariants/` with an `i_` prefix:
 
 - `i_arch_*.md` — Architecture standards
 - `i_design_*.md` — Design system rules
@@ -183,7 +183,7 @@ Invariant files live in `features/` with an `i_` prefix. The prefix tells Purlin
 Every invariant includes metadata at the top:
 
 ```markdown
-> Format-Version: 1.0
+> Format-Version: 1.1
 > Invariant: true
 > Version: 2.1.0
 > Source: https://github.com/your-org/standards
@@ -206,6 +206,20 @@ This produces a structured report with:
 1. **Invariant Status** — Is each invariant synced or stale?
 2. **Feature Compliance** — Per-feature check against all applicable invariants.
 3. **Violations** — Numbered findings with severity (HIGH/MEDIUM/LOW), evidence, fix instructions, and which mode owns the fix.
+
+---
+
+## Canonical Specifications
+
+The invariant system is defined by these files in the Purlin repo:
+
+| Document | What it defines |
+|----------|----------------|
+| [Invariant Model](../references/invariant_model.md) | Conceptual model — tiers, scope, cascade behavior, enforcement points |
+| [Invariant Format](../references/invariant_format.md) | File format spec — required metadata, sections by type, versioning rules |
+| [Invariant Template](../scripts/feature_templates/_invariant.md) | Starter template for new invariant files |
+| [purlin:invariant Spec](../features/skills_pm/purlin_invariant.md) | Feature spec for the invariant skill (add, sync, check, remove) |
+| [purlin:invariant Skill](../skills/invariant/SKILL.md) | Skill implementation (subcommands, Figma integration, conflict detection) |
 
 ---
 
