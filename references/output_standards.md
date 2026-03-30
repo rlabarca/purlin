@@ -110,7 +110,7 @@ Group items under bold headers. Use status symbols for items:
 ```
 **TESTING** (3)
   ▸ file_classification
-  ▸ purlin_agent_launcher
+  ▸ purlin_resume
   ▸ purlin_worktree_identity
 
 **TODO** (35)

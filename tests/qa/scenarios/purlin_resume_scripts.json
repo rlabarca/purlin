@@ -1,11 +1,11 @@
 {
-  "feature": "purlin_agent_launcher",
+  "feature": "purlin_resume",
   "description": "Regression scenarios for Purlin unified agent session entry point: instruction stack assembly and help flag presence.",
   "harness_type": "custom_script",
   "scenarios": [
     {
       "name": "instruction-stack-assembly",
-      "script_path": "tests/purlin_agent_launcher/test_instruction_stack.sh",
+      "script_path": "tests/purlin_resume/test_instruction_stack.sh",
       "assertions": [
         {
           "tier": 2,
@@ -26,7 +26,7 @@
     },
     {
       "name": "help-output-flags",
-      "script_path": "tests/purlin_agent_launcher/test_help_flags.sh",
+      "script_path": "tests/purlin_resume/test_help_flags.sh",
       "assertions": [
         {
           "tier": 2,
@@ -47,7 +47,7 @@
     },
     {
       "name": "config-persistence-types",
-      "script_path": "tests/purlin_agent_launcher/test_config_types.sh",
+      "script_path": "tests/purlin_resume/test_config_types.sh",
       "assertions": [
         {
           "tier": 2,

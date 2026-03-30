@@ -100,7 +100,7 @@ Analyze the project and suggest features that should be smoke tier.
 
    agent_launchers_common — prerequisite for 12 features, has passing regression
    purlin_scan_engine — core work discovery, no smoke coverage yet
-   purlin_agent_launcher — launcher is critical path, regression PASS
+   purlin_resume — session entry point is critical path, regression PASS
 
    Promote any of these? Type feature name(s) or "skip".
    ```

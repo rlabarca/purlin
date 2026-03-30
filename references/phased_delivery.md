@@ -199,7 +199,7 @@ The pipeline dispatch model replaces the previous execution group model. Instead
 ### Cross-References
 
 - Sub-agent spec: `features/install_update/subagent_parallel_builder.md`
-- Agent launcher spec: `features/framework_core/purlin_agent_launcher.md`
+- Session entry point spec: `features/framework_core/purlin_resume.md`
 
 ## 10.13 Blocked Feature Protocol
 
