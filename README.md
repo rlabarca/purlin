@@ -26,10 +26,10 @@ claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 
 ```bash
 # Project scope — committed to .claude/settings.json, shared with teammates
-claude plugin install purlin@bitbucket-boomerangdev-purlin --scope project
+claude plugin install purlin@purlin --scope project
 
 # Or local scope — gitignored, just for you in this repo
-claude plugin install purlin@bitbucket-boomerangdev-purlin --scope local
+claude plugin install purlin@purlin --scope local
 ```
 
 ### 3. Initialize (first time only)
@@ -50,29 +50,71 @@ The agent switches modes automatically. You can also use `purlin:spec`, `purlin:
 
 ---
 
+## Update Purlin
+
+There are two layers to update:
+
+**1. Update the plugin code** (pulls latest skills, hooks, scripts from the repo):
+
+```bash
+claude plugin update purlin@purlin
+```
+
+**2. Run project migration** (handles config changes, file format transitions, stale artifact cleanup):
+
+```bash
+claude
+```
+
+Inside the session:
+
+```
+purlin:update                    # Migrate project to current version
+purlin:update --dry-run          # Preview the migration plan
+```
+
+Your specs, features, and toolbox are never touched — only plugin internals and project config are updated.
+
+---
+
 ## Join an Existing Project
 
-If a teammate installed Purlin with `--scope project`, the repo's `.claude/settings.json` already has the plugin enabled. Just add the marketplace and the plugin auto-loads:
+If a teammate already set up Purlin in a repo, add the marketplace, install, and run the project migration:
 
 ```bash
 git clone <repo-url> && cd <project-name>
 claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
+claude plugin install purlin@purlin --scope local
 claude
+```
+
+Inside the session:
+
+```
+purlin:update
 ```
 
 ---
 
-## Update Purlin
+## Remove Purlin
 
-Inside any agent session:
+Remove the plugin from your project:
 
+```bash
+# Remove from project scope (if installed with --scope project)
+claude plugin uninstall purlin@purlin --scope project
+
+# Remove from local scope (if installed with --scope local)
+claude plugin uninstall purlin@purlin --scope local
 ```
-purlin:update                    # Latest release
-purlin:update v0.8.7             # Specific version
-purlin:update --dry-run          # Preview only
-```
 
-This handles all updates including file/format transitions from v0.8.5 (submodule removal, stale artifact cleanup, plugin model switch). Your specs, config, and toolbox are never touched — only plugin internals are updated. Exit and restart `claude` to complete the transition.
+This removes the plugin from Claude Code. Your project files (`.purlin/`, `features/`, specs) are left intact.
+
+To also remove the marketplace registration:
+
+```bash
+claude plugin marketplace remove purlin
+```
 
 ---
 

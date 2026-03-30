@@ -33,7 +33,7 @@ Add the marketplace and install per-project:
 ```bash
 claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
 cd my-app && git init
-claude plugin install purlin@bitbucket-boomerangdev-purlin --scope project
+claude plugin install purlin@purlin --scope project
 claude
 ```
 

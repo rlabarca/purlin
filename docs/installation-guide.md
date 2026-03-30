@@ -32,10 +32,10 @@ cd my-project
 git init  # if not already a git repo
 
 # Project scope — committed to .claude/settings.json, shared with teammates
-claude plugin install purlin@bitbucket-boomerangdev-purlin --scope project
+claude plugin install purlin@purlin --scope project
 
 # Or local scope — gitignored, just for you in this repo
-claude plugin install purlin@bitbucket-boomerangdev-purlin --scope local
+claude plugin install purlin@purlin --scope local
 ```
 
 ### Step 3: Initialize
@@ -152,15 +152,54 @@ When you run `claude` in a directory without Purlin enabled, you get standard Cl
 
 ## Updating Purlin
 
-Inside any agent session:
+There are two layers to update:
+
+### 1. Update the plugin code
+
+This pulls the latest skills, hooks, and scripts from the Purlin repo into your local plugin cache:
+
+```bash
+claude plugin update purlin@purlin
+```
+
+### 2. Run project migration
+
+This handles config changes, file format transitions, and stale artifact cleanup for your project:
+
+```bash
+claude
+```
+
+Inside the session:
 
 ```
-purlin:update                    # Update to latest release tag
-purlin:update v0.8.7             # Update to a specific version
-purlin:update --dry-run          # Preview without modifying anything
+purlin:update                    # Migrate project to current version
+purlin:update --dry-run          # Preview the migration plan
 ```
 
-This handles all updates including file/format transitions from v0.8.5 (submodule removal, stale artifact cleanup, plugin model switch). Your specs, config, and toolbox are never touched — only plugin internals are updated.
+Your specs, features, and toolbox are never touched — only plugin internals and project config are updated.
+
+---
+
+## Removing Purlin
+
+Remove the plugin from your project:
+
+```bash
+# Remove from project scope (if installed with --scope project)
+claude plugin uninstall purlin@purlin --scope project
+
+# Remove from local scope (if installed with --scope local)
+claude plugin uninstall purlin@purlin --scope local
+```
+
+This removes the plugin from Claude Code. Your project files (`.purlin/`, `features/`, specs) are left intact.
+
+To also remove the marketplace registration:
+
+```bash
+claude plugin marketplace remove purlin
+```
 
 ---
 
