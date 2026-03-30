@@ -12,16 +12,18 @@ Usage:
 import json
 import os
 import glob as glob_mod
+import re
 import shutil
 import subprocess
 import sys
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from version_detector import detect_version, _read_json
 
 
 # Current migration version — the target for all migrations.
-CURRENT_MIGRATION_VERSION = 3
+CURRENT_MIGRATION_VERSION = 5
 
 
 class MigrationStep(ABC):
@@ -368,11 +370,425 @@ class Step3PluginRefresh(MigrationStep):
         return True
 
 
+def _find_design_anchors_with_figma(project_root):
+    """Find design_*.md anchors that declare a Figma source in metadata."""
+    features_dir = os.path.join(project_root, 'features')
+    if not os.path.isdir(features_dir):
+        return []
+
+    metadata_re = re.compile(
+        r'>\s*Figma-URL:\s*(https?://(?:www\.)?figma\.com/[^\s>]+)'
+    )
+    link_re = re.compile(
+        r'\[(?:[^\]]*)\]\((https?://(?:www\.)?figma\.com/[^)]+)\)'
+    )
+    results = []
+
+    for dirpath, _dirnames, filenames in os.walk(features_dir):
+        for fname in filenames:
+            if fname.startswith('design_') and fname.endswith('.md'):
+                if fname.endswith('.impl.md') or fname.endswith('.discoveries.md'):
+                    continue
+                fpath = os.path.join(dirpath, fname)
+                try:
+                    with open(fpath, encoding='utf-8') as f:
+                        content = f.read()
+                except OSError:
+                    continue
+
+                match = metadata_re.search(content)
+                if not match:
+                    match = link_re.search(content)
+                if match:
+                    figma_url = match.group(1).rstrip('.,;:"\'>)')
+                    stem = fname[len('design_'):-len('.md')]
+                    results.append((fpath, figma_url, stem))
+
+    return results
+
+
+def _count_prerequisite_refs(project_root, anchor_filepath):
+    """Count how many OTHER feature files reference this anchor in Prerequisite metadata."""
+    features_dir = os.path.join(project_root, 'features')
+    anchor_filename = os.path.basename(anchor_filepath)
+    prereq_re = re.compile(
+        r'>\s*Prerequisite:.*' + re.escape(anchor_filename)
+    )
+    count = 0
+    for dirpath, _dirnames, filenames in os.walk(features_dir):
+        for fname in filenames:
+            if not fname.endswith('.md'):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            if os.path.abspath(fpath) == os.path.abspath(anchor_filepath):
+                continue
+            try:
+                with open(fpath, encoding='utf-8') as f:
+                    for line in f:
+                        if prereq_re.search(line):
+                            count += 1
+                            break
+            except OSError:
+                continue
+    return count
+
+
+class Step4DesignToInvariant(MigrationStep):
+    """Step 4: Convert Figma-sourced design_*.md anchors to i_design_*.md invariants."""
+
+    step_id = 4
+    name = 'Design Anchor to Invariant'
+    from_era = 'current'
+    to_era = 'current'
+
+    def preconditions(self, fingerprint, project_root):
+        mv = fingerprint.get('migration_version')
+        if mv is not None and mv >= self.step_id:
+            return False, f'Already at migration_version {mv}.'
+        if mv is None or mv < 3:
+            return False, 'Step 3 (Plugin Refresh) must complete first.'
+        return True, ''
+
+    def plan(self, fingerprint, project_root):
+        anchors = _find_design_anchors_with_figma(project_root)
+        if not anchors:
+            return [
+                'No design_*.md anchors with Figma URLs found.',
+                'Stamp _migration_version: 4.',
+            ]
+
+        actions = []
+        for fpath, figma_url, stem in anchors:
+            rel = os.path.relpath(fpath, project_root)
+            actions.append(
+                f'Convert {rel} → features/_invariants/i_design_{stem}.md '
+                f'(Figma: {figma_url[:60]}...)'
+            )
+        actions.append('Update prerequisite references in dependent features.')
+        actions.append('Delete converted design_*.md anchor files.')
+        actions.append('Stamp _migration_version: 4.')
+        return actions
+
+    def execute(self, fingerprint, project_root, auto_approve=False):
+        anchors = _find_design_anchors_with_figma(project_root)
+
+        if not anchors:
+            self._stamp_version(project_root)
+            return True
+
+        features_dir = os.path.join(project_root, 'features')
+        invariants_dir = os.path.join(features_dir, '_invariants')
+        os.makedirs(invariants_dir, exist_ok=True)
+
+        now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        converted = []
+
+        for fpath, figma_url, stem in anchors:
+            old_filename = os.path.basename(fpath)
+
+            ref_count = _count_prerequisite_refs(project_root, fpath)
+            scope = 'global' if ref_count >= 3 else 'scoped'
+
+            category = 'Design'
+            try:
+                with open(fpath, encoding='utf-8') as f:
+                    for line in f:
+                        cat_match = re.match(r'>\s*Category:\s*"?([^"\n]+)"?', line)
+                        if cat_match:
+                            category = cat_match.group(1).strip()
+                            break
+            except OSError:
+                pass
+
+            display_name = stem.replace('_', ' ').title()
+
+            invariant_content = (
+                f'# Design: {display_name}\n'
+                f'\n'
+                f'> Label: "Design: {display_name}"\n'
+                f'> Category: "{category}"\n'
+                f'> Format-Version: 1.0\n'
+                f'> Invariant: true\n'
+                f'> Version: pending-sync\n'
+                f'> Source: figma\n'
+                f'> Figma-URL: {figma_url}\n'
+                f'> Synced-At: {now_iso}\n'
+                f'> Scope: {scope}\n'
+                f'\n'
+                f'## Purpose\n'
+                f'\n'
+                f'Migrated from `{old_filename}`. Run `purlin:invariant sync` '
+                f'to fetch Figma metadata and update this section.\n'
+                f'\n'
+                f'## Figma Source\n'
+                f'\n'
+                f'This invariant is governed by the Figma document linked above.\n'
+                f'Design tokens, constraints, and visual standards are defined in Figma\n'
+                f'and cached locally in per-feature `brief.json` files during spec authoring.\n'
+                f'\n'
+                f'## Annotations\n'
+                f'\n'
+                f'- *(Run `purlin:invariant sync` to extract annotations from Figma)*\n'
+            )
+
+            invariant_path = os.path.join(invariants_dir, f'i_design_{stem}.md')
+            with open(invariant_path, 'w', encoding='utf-8') as f:
+                f.write(invariant_content)
+
+            new_filename = f'i_design_{stem}.md'
+            old_rel_from_features = os.path.relpath(fpath, features_dir)
+            new_rel_from_features = os.path.relpath(invariant_path, features_dir)
+
+            old_forms = [
+                old_filename,
+                old_rel_from_features,
+                f'features/{old_rel_from_features}',
+            ]
+            new_forms = [
+                new_filename,
+                new_rel_from_features,
+                f'features/{new_rel_from_features}',
+            ]
+
+            ref_line_re = re.compile(
+                r'^(>\s*(?:Prerequisite|[*]*Design Anchor[*]*):\s*)'
+            )
+
+            for dirpath, _dirnames, filenames in os.walk(features_dir):
+                for fname in filenames:
+                    if not fname.endswith('.md'):
+                        continue
+                    ref_path = os.path.join(dirpath, fname)
+                    if os.path.abspath(ref_path) in (
+                        os.path.abspath(fpath),
+                        os.path.abspath(invariant_path),
+                    ):
+                        continue
+                    try:
+                        with open(ref_path, encoding='utf-8') as f:
+                            content = f.read()
+                    except OSError:
+                        continue
+                    if old_filename not in content:
+                        continue
+
+                    lines = content.split('\n')
+                    changed = False
+                    for i, line in enumerate(lines):
+                        if not ref_line_re.match(line):
+                            continue
+                        new_line = line
+                        for old_form, new_form in zip(old_forms, new_forms):
+                            if old_form in new_line:
+                                new_line = new_line.replace(old_form, new_form)
+                        if new_line != line:
+                            lines[i] = new_line
+                            changed = True
+
+                    if changed:
+                        with open(ref_path, 'w', encoding='utf-8') as f:
+                            f.write('\n'.join(lines))
+
+            os.remove(fpath)
+            converted.append(f'i_design_{stem}.md')
+
+        try:
+            subprocess.run(
+                ['git', 'add', '-A'], cwd=project_root,
+                capture_output=True, timeout=10
+            )
+            names = ', '.join(converted)
+            subprocess.run(
+                ['git', 'commit', '-m',
+                 f'chore(purlin): convert design anchors to invariants ({names})'],
+                cwd=project_root, capture_output=True, timeout=10
+            )
+        except subprocess.SubprocessError:
+            pass
+
+        self._stamp_version(project_root)
+        return True
+
+
+_TIER_ROW_RE = re.compile(r'^\|\s*(\S+)\s*\|\s*(\S+)\s*\|$')
+
+# Template boilerplate section headers to strip
+_TEMPLATE_SECTIONS = {
+    '## General (all modes)',
+    '## Engineer Mode',
+    '## PM Mode',
+    '## QA Mode',
+    '# Purlin Agent Overrides',
+}
+
+
+class Step5RemoveOverrides(MigrationStep):
+    """Step 5: Remove PURLIN_OVERRIDES.md system, migrate tiers to config.json."""
+
+    step_id = 5
+    name = 'Remove Override System'
+    from_era = 'current'
+    to_era = 'current'
+
+    def preconditions(self, fingerprint, project_root):
+        mv = fingerprint.get('migration_version')
+        if mv is not None and mv >= self.step_id:
+            return False, f'Already at migration_version {mv}.'
+        if mv is None or mv < 4:
+            return False, 'Step 4 (Design Anchor to Invariant) must complete first.'
+        return True, ''
+
+    def plan(self, fingerprint, project_root):
+        purlin_dir = os.path.join(project_root, '.purlin')
+        actions = []
+
+        for filename in ('PURLIN_OVERRIDES.md', 'QA_OVERRIDES.md'):
+            if os.path.exists(os.path.join(purlin_dir, filename)):
+                actions.append(f'Parse Test Priority Tiers from {filename} → config.json.')
+                actions.append(f'Migrate meaningful content from {filename} → CLAUDE.md.')
+                actions.append(f'Delete {filename}.')
+
+        if not actions:
+            actions.append('No override files found.')
+
+        actions.append('Stamp _migration_version: 5.')
+        return actions
+
+    def _parse_tiers(self, content):
+        """Extract tier table from markdown content."""
+        tiers = {}
+        in_table = False
+        for line in content.splitlines():
+            if '## Test Priority Tiers' in line:
+                in_table = True
+                continue
+            if in_table:
+                if line.startswith('## ') and 'Test Priority Tiers' not in line:
+                    break
+                m = _TIER_ROW_RE.match(line.strip())
+                if m:
+                    feature, tier = m.group(1), m.group(2)
+                    if feature.lower() not in ('feature', '---', '---------'):
+                        tiers[feature] = tier
+        return tiers
+
+    def _strip_boilerplate(self, content):
+        """Strip tier table, template boilerplate, and HTML comments.
+
+        Returns remaining meaningful content or empty string.
+        """
+        lines = content.splitlines()
+        result = []
+        in_tier_table = False
+        skip_next_blank = False
+
+        for line in lines:
+            stripped = line.strip()
+
+            # Skip tier table section
+            if '## Test Priority Tiers' in line:
+                in_tier_table = True
+                skip_next_blank = True
+                continue
+            if in_tier_table:
+                if stripped.startswith('## ') and 'Test Priority Tiers' not in stripped:
+                    in_tier_table = False
+                    # Fall through to process this line
+                else:
+                    continue
+
+            # Skip HTML comments
+            if stripped.startswith('<!--') and stripped.endswith('-->'):
+                continue
+
+            # Skip template section headers
+            if stripped in _TEMPLATE_SECTIONS:
+                skip_next_blank = True
+                continue
+
+            # Skip blockquote boilerplate (template instructions)
+            if stripped.startswith('>') and any(kw in stripped for kw in
+                    ['Project-specific rules', 'Project-wide context',
+                     'Build commands', 'Domain context', 'Test tiers']):
+                continue
+
+            if skip_next_blank and not stripped:
+                skip_next_blank = False
+                continue
+            skip_next_blank = False
+
+            result.append(line)
+
+        # Trim leading/trailing blank lines
+        while result and not result[0].strip():
+            result.pop(0)
+        while result and not result[-1].strip():
+            result.pop()
+
+        return '\n'.join(result)
+
+    def execute(self, fingerprint, project_root, auto_approve=False):
+        purlin_dir = os.path.join(project_root, '.purlin')
+        config_path = os.path.join(purlin_dir, 'config.json')
+        config = _read_json(config_path) or {}
+        all_tiers = config.get('test_priority_tiers', {})
+        migrated_content = []
+
+        for filename in ('PURLIN_OVERRIDES.md', 'QA_OVERRIDES.md'):
+            filepath = os.path.join(purlin_dir, filename)
+            if not os.path.exists(filepath):
+                continue
+
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except (IOError, OSError):
+                continue
+
+            # Parse tiers
+            tiers = self._parse_tiers(content)
+            all_tiers.update(tiers)
+
+            # Strip boilerplate and check for meaningful content
+            remaining = self._strip_boilerplate(content)
+            if remaining.strip():
+                migrated_content.append(remaining)
+
+            # Delete the override file
+            os.remove(filepath)
+
+        # Write tiers to config
+        if all_tiers:
+            config['test_priority_tiers'] = all_tiers
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=4)
+                f.write('\n')
+
+        # Append meaningful content to CLAUDE.md
+        if migrated_content:
+            claude_md = os.path.join(project_root, 'CLAUDE.md')
+            existing = ''
+            if os.path.exists(claude_md):
+                with open(claude_md, 'r', encoding='utf-8') as f:
+                    existing = f.read()
+
+            section = '\n\n## Project Rules (migrated from Purlin overrides)\n\n'
+            section += '\n\n'.join(migrated_content) + '\n'
+
+            with open(claude_md, 'w', encoding='utf-8') as f:
+                f.write(existing.rstrip() + section)
+
+        self._stamp_version(project_root)
+        return True
+
+
 # Registry: ordered list of all migration steps.
 STEPS = [
     Step1UnifiedAgentModel(),
     Step2SubmoduleToPlugin(),
     Step3PluginRefresh(),
+    Step4DesignToInvariant(),
+    Step5RemoveOverrides(),
 ]
 
 
@@ -456,20 +872,30 @@ def main():
     if args.dry_run or not steps:
         sys.exit(0)
 
-    # Execute
+    # Execute — skip steps whose preconditions fail (e.g. submodule steps
+    # on a plugin project), re-detect fingerprint after each successful step
+    # so later steps see updated state (e.g. Step 4 sees migration_version: 3
+    # after Step 3 completes).
+    executed = 0
     for step in steps:
         ok, reason = step.preconditions(fingerprint, project_root)
         if not ok:
-            print(f'\nStep {step.step_id} ({step.name}) blocked: {reason}')
-            sys.exit(1)
+            print(f'\nStep {step.step_id} ({step.name}) skipped: {reason}')
+            continue
         print(f'\nExecuting step {step.step_id}: {step.name}...')
         success = step.execute(fingerprint, project_root)
         if not success:
             print(f'Step {step.step_id} failed.')
             sys.exit(1)
         print(f'Step {step.step_id} complete.')
+        executed += 1
         # Re-detect for next step
         fingerprint = detect_version(project_root)
+
+    if executed == 0:
+        print('\nAlready up to date.')
+    else:
+        print(f'\nMigration complete. ({executed} step(s) executed)')
 
     print('\nMigration complete.')
 
