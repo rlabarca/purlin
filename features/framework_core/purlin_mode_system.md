@@ -128,7 +128,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     Then Engineer mode is activated
     And the agent can write to code files
 
-#### Scenario: Mode guard blocks write in wrong mode
+#### Scenario: Mode guard blocks write in wrong mode @auto
 
     Given the agent is in QA mode
     When the agent attempts to write to src/app.py
@@ -251,7 +251,7 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     And the entry includes the expected assertion pattern
     And the entry includes the actual output
 
-#### Scenario: Concurrent terminals have independent mode state
+#### Scenario: Concurrent terminals have independent mode state @auto
 
     Given terminal A has PURLIN_SESSION_ID=1000 in Engineer mode
     And terminal B has PURLIN_SESSION_ID=2000 in PM mode
@@ -267,20 +267,20 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     When the session ends (SessionEnd hook fires)
     Then .purlin/runtime/current_mode_1000 is deleted
 
-#### Scenario: Bash guard blocks destructive commands in default mode
+#### Scenario: Bash guard blocks destructive commands in default mode @auto
 
     Given no mode is active (default read-only)
     When the agent runs a Bash command containing "rm -rf build/"
     Then the command is blocked with exit code 2
     And the error message suggests activating a mode first
 
-#### Scenario: Bash guard allows all commands when mode is active
+#### Scenario: Bash guard allows all commands when mode is active @auto
 
     Given Engineer mode is active
     When the agent runs a Bash command containing "rm -rf build/"
     Then the command is allowed through (exit code 0)
 
-#### Scenario: Empty PID-scoped mode file means mode cleared
+#### Scenario: Empty PID-scoped mode file means mode cleared @auto
 
     Given PURLIN_SESSION_ID=1000
     And .purlin/runtime/current_mode_1000 exists but is empty
@@ -336,6 +336,15 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     And pl-edit-base.md does not exist
 
 ## Regression Guidance
+
+**Automated regression suite:** `tests/qa/scenarios/purlin_mode_system.json` (5 scenarios, 45 assertions)
+- `write-guard-enforcement` — Full mode-file compatibility matrix (Engineer/PM/QA/default x CODE/SPEC/QA/INVARIANT)
+- `bash-guard-enforcement` — Destructive command blocking in default mode, all-allow in active modes
+- `mode-state-persistence` — PID-scoped persistence, concurrent isolation, authoritative empty file
+- `file-classification-rules` — classify_file() correctness for all file types
+- `implicit-mode-detection-rules` — Agent definition regression guard (proactive mode-switching language)
+
+**Additional manual verification:**
 - Verify all 33 skill files have both legacy and new headers
 - Verify no skill file has ONLY the new header (breaks legacy agents)
 - Verify cross-mode test execution does not leave QA in Engineer mode
