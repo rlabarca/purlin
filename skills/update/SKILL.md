@@ -29,14 +29,7 @@ Print the skill banner per output standards:
 ━━━ purlin:update ━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Step 1 -- Standalone Mode Guard
-
-Detect if this is the Purlin plugin repo itself (not a consumer project):
-- Detection: `${CLAUDE_PLUGIN_ROOT}` resolves to the current project root AND `.claude-plugin/plugin.json` exists at project root.
-- If true: print `✗ purlin:update is for consumer projects. This is the Purlin framework repo.` Stop.
-- **Do NOT narrate** the guard check or its result. Only print if it fails.
-
-### Step 2 -- Resolve Project Root
+### Step 1 -- Resolve Project Root
 
 Resolve the consumer project root:
 - Use `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there.
@@ -46,7 +39,7 @@ Resolve the consumer project root:
 
 Set `<project_root>` to the resolved path.
 
-### Step 3 -- Version Detection
+### Step 2 -- Version Detection
 
 Run the version detector:
 
@@ -67,7 +60,7 @@ Print detection result:
 - If `model` is `"none"`: print `✗ Not a Purlin project. Run purlin:init to set up.` Stop.
 - If `model` is `"fresh"` and `migration_version` is null: print `✗ Fresh project detected. Run purlin:init first.` Stop.
 
-### Step 4 -- Compute Migration Path
+### Step 3 -- Compute Migration Path
 
 Run the migration registry to compute the path:
 
@@ -88,7 +81,7 @@ Print the plan:
       <N> step(s) required: <step names joined by " → ">
 ```
 
-### Step 5 -- Show Plan and Confirm
+### Step 4 -- Show Plan and Confirm
 
 List each step with its planned actions:
 
@@ -112,7 +105,7 @@ Step <id>: <name> (<from_era> → <to_era>)
 
 **If `--auto-approve`:** Proceed without prompting.
 
-### Step 6 -- Execute Migration Steps
+### Step 5 -- Execute Migration Steps
 
 Execute each step sequentially:
 
@@ -139,7 +132,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/migration/migration_registry.py --project-
 
 Or orchestrate step-by-step by calling the Python modules directly. The registry CLI handles sequential execution with re-detection between steps.
 
-### Step 7 -- Summary
+### Step 6 -- Summary
 
 ```
 [4/4] Summary
@@ -223,8 +216,8 @@ After all migration steps complete (or if already up to date), run feature file 
 3. **For each root-level `.md` file** (excluding `.impl.md` and `.discoveries.md`):
    a. If the file has an `i_*` prefix (invariant), target folder is `_invariants/`.
    b. Otherwise, extract `> Category:` metadata from the file.
-   c. Look up the category slug from the canonical table in `references/feature_format.md`.
-   d. If the category is missing or unrecognized, print a warning and skip: `⚠ <filename>: unknown category "<category>" — skipped`
+   c. Slugify the category to derive the folder name: lowercase, strip quotes, replace spaces with `_`, replace non-alphanumeric characters (except `_`) with nothing. Examples: `"UI"` → `ui`, `"Framework Core"` → `framework_core`, `"Install, Update & Scripts"` → `install_update_scripts`.
+   d. If no `> Category:` metadata exists, print a warning and skip: `⚠ <filename>: no category metadata — skipped`
    e. Create the target folder if it doesn't exist.
    f. Move the file into the target folder.
    g. Move companion files alongside it: if `<name>.impl.md` exists at root, move it too. Same for `<name>.discoveries.md`.
@@ -236,8 +229,8 @@ After all migration steps complete (or if already up to date), run feature file 
 ### Organize Step -- Drift Detection
 
 After organizing, scan all category subfolders for drift:
-- For each feature file in a subfolder, extract `> Category:` and look up its expected folder slug.
-- If the file is in the wrong folder (metadata says category X but file is in folder Y), print: `⚠ <path>: category "<category>" does not match folder "<folder>"`
+- For each feature file in a subfolder, extract `> Category:` and slugify it.
+- If the file is in the wrong folder (slugified category doesn't match the containing folder name), print: `⚠ <path>: category "<category>" does not match folder "<folder>"`
 - Do NOT move these files automatically — drift requires investigation.
 
 ---
