@@ -34,6 +34,7 @@ Print the skill banner per output standards:
 Detect if this is the Purlin plugin repo itself (not a consumer project):
 - Detection: `${CLAUDE_PLUGIN_ROOT}` resolves to the current project root AND `.claude-plugin/plugin.json` exists at project root.
 - If true: print `✗ purlin:update is for consumer projects. This is the Purlin framework repo.` Stop.
+- **Do NOT narrate** the guard check or its result. Only print if it fails.
 
 ### Step 2 -- Resolve Project Root
 
@@ -41,6 +42,7 @@ Resolve the consumer project root:
 - Use `PURLIN_PROJECT_ROOT` env var if set and `.purlin/` exists there.
 - Otherwise, detect from the current working directory by climbing until `.purlin/` is found.
 - If no `.purlin/` found: print `✗ Not a Purlin project. Run purlin:init to set up.` Stop.
+- **Do NOT narrate** the resolution process. Only print if it fails.
 
 Set `<project_root>` to the resolved path.
 
