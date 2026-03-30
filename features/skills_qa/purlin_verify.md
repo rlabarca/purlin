@@ -96,16 +96,16 @@ After Phase A Steps 0c–5a complete, print a summary of automated results (auto
 
 **Dispatch logic:**
 
-"Automated failures" means the union of: (1) regression suite failures (`regression.json` with `status: "FAIL"` or `"STALE"`), (2) @auto scenario failures from Phase A Step 3, AND (3) unit test failures (`tests.json` with `status: "FAIL"` for any in-scope feature). All three sources MUST be checked — if any single source has failures, the dispatch enters Phase A.5.
+"Automated failures" means the union of: (1) regression suite failures (`regression.json` with `status: "FAIL"` or `"STALE"`) across ALL suites that were run — not just in-scope TESTING features, (2) @auto scenario failures from Phase A Step 3, AND (3) unit test failures (`tests.json` with `status: "FAIL"` for any in-scope feature). All three sources MUST be checked — if any single source has failures, the dispatch enters Phase A.5. **Regression failures are never scoped:** `--auto-verify` runs all regression suites and any failure in any suite triggers the auto-fix loop regardless of that feature's lifecycle status.
 
-- If `--auto-verify` or `auto_start: true`: auto-proceed to Phase A.5 if any automated failures exist (per definition above). Skip to Phase B if zero failures across all three sources.
+- If `--auto-verify` or `auto_start: true`: MUST proceed to Phase A.5 if any automated failures exist (per definition above). This is mandatory — the agent MUST NOT skip failures, defer them, or proceed to Phase B while failures exist. The auto-fix loop uses internal mode switches (QA → Engineer → QA) to fix and re-run. Skip to Phase B only when zero failures across all three sources.
 - If interactive (`auto_start: false`, no `--auto-verify`): present the strategy menu (Section 2.2.3) if failures or gaps exist. If zero failures and zero gaps, skip directly to Phase B.
 
 ### 2.3.2 Phase A.5 -- Auto-Fix Iteration Loop
 
 Activates when: `--auto-verify` flag is present, OR `auto_start: true`, OR user selects "Auto-fix" from the interactive strategy menu.
 
-**Purpose:** Automatically resolve all automated test failures before presenting any manual verification. The agent iterates between Engineer mode (fixing code/tests) and QA mode (re-running failed tests) until all automated tests pass or the maximum iteration count is reached.
+**Purpose:** Automatically resolve ALL automated test failures before presenting any manual verification. The agent MUST iterate between Engineer mode (fixing code/tests) and QA mode (re-running failed tests) until all automated tests pass or the maximum iteration count is reached. The internal mode switches are mandatory — the agent MUST NOT skip them, present failures without attempting fixes, or defer to a later session.
 
 #### Iteration Protocol (max 5 iterations)
 
@@ -150,7 +150,7 @@ After the loop exits (success, max iterations, or all escalated):
 
 ### 2.3.3 Internal Mode Switch Protocol (Auto-Fix Only)
 
-Phase A.5 requires crossing the QA/Engineer write boundary within a single verification session. This uses a lightweight "internal mode switch" that preserves safety while avoiding the full ceremony of `purlin:mode`.
+Phase A.5 requires crossing the QA/Engineer write boundary within a single verification session. The agent MUST use the `purlin_mode` MCP tool (or `set_mode()` in config_engine) to toggle between QA and Engineer modes. These mode switches are mandatory — the agent cannot fix code without switching to Engineer, and cannot re-run tests without switching back to QA. This is a lightweight "internal mode switch" that preserves safety while avoiding the full ceremony of `purlin:mode`.
 
 **Invariants:**
 - Write-boundary enforcement (mode guard) remains active. Engineer cannot write QA files; QA cannot write code files.
