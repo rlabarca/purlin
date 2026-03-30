@@ -151,7 +151,11 @@ Status:       ✓ Migration complete
 If step 4 (Figma to Design Invariant) created any invariant files, append:
 
 ```
-Next: Run purlin:invariant sync to fetch Figma metadata for the new design invariants.
+Next: To sync Figma design data:
+  1. Install Figma MCP if not already: /plugin install figma@claude-plugins-official
+  2. Go to Claude Code Settings → Manage MCP Servers → Figma → Authenticate
+  3. Restart the session
+  4. Run purlin:invariant sync
 ```
 
 If the project was migrated from submodule to plugin (step 2 or 3 removed the submodule), append:

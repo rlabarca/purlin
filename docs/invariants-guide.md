@@ -68,7 +68,12 @@ This clones the repo, copies the file into your `features/` folder with an `i_` 
 
 ### Import from Figma
 
-In PM mode (requires Figma MCP):
+**Prerequisites:**
+1. Install the Figma plugin: `/plugin install figma@claude-plugins-official`
+2. Authenticate: Claude Code Settings → Manage MCP Servers → Figma → Authenticate with your Figma account
+3. Restart the session
+
+In PM mode:
 
 ```
 purlin:invariant add-figma https://figma.com/file/abc123/Design-System
