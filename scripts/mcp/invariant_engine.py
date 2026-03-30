@@ -21,7 +21,7 @@ ANCHOR_PREFIXES = ('arch_', 'design_', 'policy_', 'ops_', 'prodbrief_')
 INVARIANT_PREFIX = 'i_'
 
 # Current supported format version.
-SUPPORTED_FORMAT_VERSION = '1.0'
+SUPPORTED_FORMAT_VERSION = '1.1'
 
 # Required metadata fields for ALL invariant files.
 _REQUIRED_METADATA = (
@@ -47,6 +47,7 @@ _FIGMA_REQUIRED_METADATA = (
 
 # Required sections by anchor type prefix (after stripping i_).
 # Maps type prefix -> list of section heading regexes.
+# Canonical specs: references/invariant_type_{arch,design,policy,ops,prodbrief}.md
 _REQUIRED_SECTIONS = {
     'arch_':      [r'##\s+Purpose', r'##\s+\w.*Invariants'],
     'policy_':    [r'##\s+Purpose', r'##\s+\w.*Invariants'],
@@ -54,6 +55,9 @@ _REQUIRED_SECTIONS = {
     'design_':    [r'##\s+Purpose', r'##\s+(?:\w.*Invariants|Figma Source)'],
     'prodbrief_': [r'##\s+Purpose', r'##\s+User Stories', r'##\s+Success Criteria'],
 }
+
+# Additional required sections for Figma-sourced design invariants.
+_FIGMA_DESIGN_REQUIRED_SECTIONS = [r'##\s+Annotations']
 
 # Early-termination regex for metadata lines.
 _METADATA_RE = re.compile(r'^>\s*([A-Za-z][\w-]*):\s*(.*)')
@@ -239,6 +243,14 @@ def validate_invariant(filepath):
         for field in _FIGMA_REQUIRED_METADATA:
             if field not in metadata:
                 issues.append(f'{filename}: Figma-sourced invariant missing > {field}:')
+        # Warn about unsynced Figma invariants.
+        version = metadata.get('Version', '')
+        if version == 'pending-sync':
+            issues.append(
+                f'{filename}: Figma invariant not yet synced (Version: pending-sync). '
+                f'Run purlin:invariant sync to fetch metadata, design variables, '
+                f'and annotations.'
+            )
     elif source:
         for field in _GIT_REQUIRED_METADATA:
             if field not in metadata:
@@ -257,5 +269,11 @@ def validate_invariant(filepath):
         for pattern in _REQUIRED_SECTIONS[anchor_type]:
             if not re.search(pattern, content, re.IGNORECASE):
                 issues.append(f'{filename}: missing required section matching /{pattern}/')
+
+        # Figma-sourced design invariants have additional required sections.
+        if anchor_type == 'design_' and source == 'figma':
+            for pattern in _FIGMA_DESIGN_REQUIRED_SECTIONS:
+                if not re.search(pattern, content, re.IGNORECASE):
+                    issues.append(f'{filename}: Figma design invariant missing required section matching /{pattern}/')
 
     return issues
