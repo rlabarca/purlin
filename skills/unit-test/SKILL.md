@@ -1,9 +1,9 @@
 ---
 name: unit-test
-description: This skill activates Engineer mode. If QA mode is active, runs in verify-only cross-mode (can run tests and read resu...
+description: Author and run unit tests for a feature, with quality rubric enforcement
 ---
 
-**Purlin mode: Engineer (QA cross-mode: verify-only)**
+**Writes:** test files, tests/*/tests.json, .impl.md
 
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 
@@ -20,7 +20,7 @@ Read the feature spec to determine the feature type (Python tool, shell script, 
 
 **Grepping or reading source code to verify its presence is NOT testing.**
 
-Engineer mode MUST NEVER verify a feature by opening source files and checking whether code exists, patterns match, or strings are present. That validates structure, not behavior. A test MUST import, call, or execute the implementation and assert on its outputs.
+You MUST NEVER verify a feature by opening source files and checking whether code exists, patterns match, or strings are present. That validates structure, not behavior. A test MUST import, call, or execute the implementation and assert on its outputs.
 
 If your test file contains `open('features/...')` or `open('instructions/...')` and reads file contents as part of the assertion, STOP. You are writing an AP-1 test (see Section 3).
 
@@ -39,7 +39,7 @@ What constitutes behavioral testing depends on the feature category:
 
 ### Test Tier Decision Matrix
 
-Defines what Engineer mode runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
+Defines what runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
 
 | Feature Type | Step 3 Testing | Regression Tier |
 |---|---|---|
@@ -49,7 +49,7 @@ Defines what Engineer mode runs during Step 3 versus what defers to the Regressi
 | Web UI without `> Web Test:` | Unit tests only | N/A |
 | Claude skill/command | Test infrastructure (parsers, validators, state) | Regression harness for interaction flow |
 
-**Engineer rule:** Run `purlin:web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
+Run `purlin:web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
 
 ### Fixture Exclusion
 
@@ -59,7 +59,7 @@ Fixture-based testing (checkout fixture state, run harness against snapshot) is 
 
 ## Section 3 -- Anti-Pattern Checklist
 
-Five named anti-patterns Engineer mode MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
+Five named anti-patterns you MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
 
 **AP-1: Prose Inspection**
 Test reads a documentation, markdown, or instruction file and asserts string presence instead of importing and calling the implementation code.

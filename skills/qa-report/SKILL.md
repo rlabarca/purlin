@@ -1,7 +1,9 @@
 ---
 name: qa-report
-description: This skill activates QA mode. If another mode is active, confirm switch first
+description: Generate a structured QA status report from scan results
 ---
+
+**Reads:** scan results, test results
 
 Run `purlin_scan` (with `only: "features,discoveries,plan"`) and read the JSON result to get feature status. Then produce a QA-focused structured summary:
 

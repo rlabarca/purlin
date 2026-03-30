@@ -1,9 +1,9 @@
 ---
 name: web-test
-description: "This skill activates Engineer mode. Exception: when invoked from QA mode, runs in verify-only cross-mode (can execute..."
+description: Automated visual and scenario verification via Playwright MCP
 ---
 
-**Purlin mode: Engineer (QA cross-mode: verify-only)**
+**Writes:** .purlin/runtime/web-test/ (transient), .discoveries.md
 
 ## Arguments
 
@@ -162,8 +162,8 @@ For each in-scope manual scenario:
 ### Step 5.5 — Figma MCP Pre-Check (Visual Spec Only)
 
 Before visual spec verification, check for Figma MCP tool availability:
-1. Check for Figma MCP tools (e.g., `get_file`, `get_node`) in the available tool list.
-2. If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the Figma node ID from the reference URL.
+1. Check for Figma MCP tools (e.g., `get_design_context`, `get_metadata`, `get_variable_defs`) in the available tool list.
+2. If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the fileKey and nodeId from the reference URL (see URL parsing rules in the Figma MCP server instructions).
 3. If Figma MCP is NOT available, note: "Figma MCP not available -- triangulated verification skipped." Proceed with spec-only verification in Step 6.
 4. Figma MCP access is read-only. Do NOT write to Figma.
 
@@ -174,26 +174,26 @@ For each in-scope visual spec screen:
 **6.1 — If Figma MCP is available and screen has a Figma reference:**
 
 Read all three sources:
-- **Figma:** Fetch ONLY the specific node (using node-id from Reference URL) via Figma MCP. Extract dimensions, colors, fonts, spacing, layout.
+- **Figma:** Call `get_design_context` (fileKey + nodeId from Reference URL) to extract dimensions, colors, fonts, spacing, layout, design token CSS variables, and Code Connect snippets (if configured). For token value verification, also call `get_variable_defs` (fileKey) to get resolved variable values.
 - **Spec:** Read Token Map entries and checklist items from the feature file.
 - **App:** Navigate to the page via Playwright MCP. Read computed styles via `browser_evaluate`.
 
 **6.2 — Per checklist item (measurable):**
-1. Read the Figma property value via MCP.
+1. Read the Figma property value from the `get_design_context` response (design tokens, layout hints, component data).
 2. Read the spec's expected value from the checklist.
 3. Read the app's actual value via `browser_evaluate("getComputedStyle(el).property")`.
 4. Assign verdict: PASS (all agree), BUG (app wrong), STALE (Figma updated, spec outdated), SPEC_DRIFT (app matches Figma, not spec).
 
 **6.3 — Token Map verification:**
 For each Token Map entry (e.g., `surface -> var(--bg)`):
-1. Read the Figma design variable value via MCP.
+1. Read the Figma design variable's resolved value from `get_variable_defs` response (or from `get_design_context` CSS variable output).
 2. Read the app's computed CSS property value via `browser_evaluate`.
 3. Compare. Flag drift between Figma and app values.
 
 **6.4 — Non-measurable items (visual judgment):**
-1. Take screenshot via Playwright `browser_screenshot`.
-2. Read the Figma frame/node rendering via MCP.
-3. Vision-compare the screenshot against the Figma render.
+1. Take screenshot via Playwright `browser_take_screenshot`.
+2. Fetch the Figma frame screenshot via `get_screenshot` (fileKey + nodeId).
+3. Vision-compare the browser screenshot against the Figma screenshot.
 
 **6.5 — Fallback (no Figma MCP or no Figma reference):**
 1. Navigate to the appropriate page/view state via Playwright MCP.
@@ -258,12 +258,5 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
 
 ### Step 8 — Completion Gate
 
-**Detect invoking role** by checking the system prompt for role identity markers ("Role Definition: Engineer mode" vs "Role Definition: The QA Agent").
-
-**QA Agent invocation:**
-- If all scenarios and visual items passed (zero failures, zero inconclusive): prompt "All web verification passed. Run `purlin:complete <name>` to mark done?"
-- If confirmed, run `purlin:complete <name>`.
-
-**Engineer invocation:**
-- If all passed: print summary only. Add note: "Suggest QA agent run `purlin:complete <name>` after verification."
-- Do NOT mark complete.
+If all scenarios and visual items passed (zero failures, zero inconclusive): prompt "All web verification passed. Run `purlin:complete <name>` to mark done?"
+If confirmed, run `purlin:complete <name>`.

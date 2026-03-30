@@ -1,6 +1,6 @@
 ---
 name: update
-description: Available to all agents and modes
+description: Version-aware Purlin update with migration path detection
 ---
 
 **Version-Aware Purlin Update**
@@ -23,13 +23,11 @@ purlin:update [<version>] [--dry-run] [--auto-approve]
 
 ### Step 0 -- Setup
 
-Print the skill banner and activate Engineer mode:
+Print the skill banner:
 
 ```
 ━━━ purlin:update ━━━━━━━━━━━━━━━━━━━━━
 ```
-
-Activate Engineer mode by calling `purlin_mode(mode: "engineer")`. This is required before any Bash or file operations — the mode guard blocks all writes in default mode.
 
 ### Step 1 -- Resolve Project Root
 
@@ -151,11 +149,14 @@ Status:       ✓ Migration complete
 If step 4 (Figma to Design Invariant) created any invariant files, append:
 
 ```
-Next: To sync Figma design data:
-  1. Install Figma MCP if not already: /plugin install figma@claude-plugins-official
-  2. Go to Claude Code Settings → Manage MCP Servers → Figma → Authenticate
-  3. Restart the session
-  4. Run purlin:invariant sync
+Next: To sync Figma design data and populate Design Variables:
+  1. Set up Figma MCP if not already: claude mcp add --transport http figma https://mcp.figma.com/mcp
+  2. Restart the session, then run /mcp → select Figma → complete OAuth
+  3. Run: purlin:invariant sync --all
+     This fetches version IDs, extracts design variable definitions (via get_variable_defs),
+     re-extracts annotations (via get_design_context), and detects Code Connect availability.
+  4. Run: purlin:invariant validate
+     Verify all invariants pass format checks.
 ```
 
 If the project was migrated from submodule to plugin (step 2 or 3 removed the submodule), append:
@@ -195,6 +196,14 @@ When the skill orchestrates step 3:
 - The registry's `Step3PluginRefresh.execute()` handles config sync, stale artifact cleanup, and version stamping.
 - This is the most common step for existing plugin consumers — it runs alone when the project is already on the plugin model.
 
+### Step 6: Mode to Sync Migration
+
+When the skill orchestrates step 6 (mode_to_sync):
+
+- **Precondition:** Only relevant for projects that had the mode system (mode state files or mode hooks exist). Projects without mode artifacts skip this step.
+- **Actions:** Deletes mode state files (`.purlin/runtime/current_mode*`), deletes `session_writes.json` and `companion_debt.json`, creates empty `.purlin/sync_ledger.json`, removes mode-related config keys (`default_mode`, `mode_on_start`), updates `.gitignore` for `sync_state.json`.
+- Hook config updates happen via the plugin update itself (new hook files ship with the plugin). The migration step only handles consumer-side artifacts.
+
 ---
 
 ## Error Handling
@@ -215,7 +224,7 @@ When the skill orchestrates step 3:
 
 After all migration steps complete (or if already up to date), run feature file organization as permanent housekeeping. This step runs on every `purlin:update` invocation and is idempotent.
 
-Engineer mode was activated in Step 0.
+**Writes:** feature files, .purlin/ config files
 
 ### Organize Step -- Feature File Placement
 

@@ -1,7 +1,9 @@
 ---
 name: toolbox
-description: This skill is shared across all modes. List and run are available in any mode. Write operations (create, edit, copy, ...
+description: Manage project, purlin, and community agentic tools
 ---
+
+**Writes:** project_tools.json, .purlin/toolbox/
 
 ## Usage
 
@@ -82,7 +84,7 @@ Execution logic per tool:
 
 ### create
 
-Interactive flow (Engineer mode required):
+Interactive flow:
 1. Prompt for tool ID (validate: non-empty, no `purlin.` or `community.` prefix, no collision)
 2. Prompt for friendly name
 3. Prompt for description
@@ -101,7 +103,7 @@ Resolve tool name via fuzzy matching.
 
 ### copy
 
-Copy a purlin tool to project for customization (Engineer mode required).
+Copy a purlin tool to project for customization.
 - Suggest new ID by stripping `purlin.` prefix (e.g., `purlin.verify_zero_queue` → `verify_zero_queue`)
 - Copy all fields, set `metadata.last_updated` to today
 - Write to `project_tools.json`
@@ -109,7 +111,7 @@ Copy a purlin tool to project for customization (Engineer mode required).
 
 ### delete
 
-Resolve tool name via fuzzy matching (Engineer mode required).
+Resolve tool name via fuzzy matching.
 - **Purlin tool (submodule context):** `"Purlin tools cannot be deleted in consumer projects. They are distributed with the framework."` (Same submodule detection as edit — `git rev-parse --show-superproject-working-tree`.)
 - **Purlin tool (framework repo):** Allow deletion. Show dry-run preview, confirm, then remove from `purlin_tools.json`.
 - **Project tool:** Show dry-run preview, confirm, then remove from `project_tools.json`.

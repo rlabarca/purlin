@@ -9,10 +9,8 @@ description: Session recovery. Saves/restores checkpoints, recovers merge failur
 purlin:resume [OPTIONS]
 
 Session setup (cold start or post-clear recovery):
-  --mode <pm|engineer|qa>    Activate a mode
-  --build                    Shortcut: --mode engineer + auto-start
-  --verify [feature]         Shortcut: --mode qa + auto-start [+ feature]
-  --pm                       Shortcut: --mode pm
+  --build                    Shortcut: auto-start + invoke purlin:build
+  --verify [feature]         Shortcut: auto-start + invoke purlin:verify [+ feature]
   --worktree                 Enter an isolated git worktree
   --yolo                     Enable auto-approve for all permission prompts (persists)
   --no-yolo                  Disable auto-approve (persists)
@@ -23,7 +21,7 @@ Subcommands (do NOT run the startup flow):
   purlin:resume save            Save checkpoint before /clear or terminal close
   purlin:resume merge-recovery  Resolve pending worktree merge failures
 
-  No options: run checkpoint recovery + scan + suggest mode
+  No options: run checkpoint recovery + scan + discover work
 ```
 
 ---
@@ -35,7 +33,7 @@ Subcommands (do NOT run the startup flow):
 - `save` -- go to **Save Mode** section below. Stop after save confirmation.
 - `merge-recovery` -- go to **Merge Recovery Mode** section below. Stop after summary.
 - Any `--flag` or no argument -- continue to **Execution Flow** below.
-- Unrecognized argument (not a `--flag`, not `save`, not `merge-recovery`) -- print error: `"Unknown argument '<arg>'. Valid subcommands: save, merge-recovery. Valid flags: --mode, --build, --verify, --pm, --worktree, --yolo, --no-yolo, --find-work, --no-save."` Stop.
+- Unrecognized argument (not a `--flag`, not `save`, not `merge-recovery`) -- print error: `"Unknown argument '<arg>'. Valid subcommands: save, merge-recovery. Valid flags: --build, --verify, --worktree, --yolo, --no-yolo, --find-work, --no-save."` Stop.
 
 > **Model & effort:** Use `/model` and `/effort` (native Claude Code settings). These are not managed by Purlin config.
 
@@ -43,21 +41,20 @@ Subcommands (do NOT run the startup flow):
 
 ## When to Run `purlin:resume`
 
-**You do NOT need `purlin:resume` to start working.** Invoke any mode-activating skill directly:
-- `purlin:build feature_name` -- activates Engineer mode and starts building
-- `purlin:spec topic` -- activates PM mode and starts spec authoring
-- `purlin:verify feature_name` -- activates QA mode and starts verification
-- `purlin:mode engineer` -- activates Engineer mode for general work
+**You do NOT need `purlin:resume` to start working.** Invoke any skill directly:
+- `purlin:build feature_name` -- starts building
+- `purlin:spec topic` -- starts spec authoring
+- `purlin:verify feature_name` -- starts verification
 
 **Run `purlin:resume` when you want to:**
 - **Recover a previous session** after `/clear` or context compaction (checkpoint restore)
-- **Discover what needs doing** across all modes (scan + work plan)
+- **Discover what needs doing** across all roles (scan + work plan)
 - **Resolve failed merges** from crashed worktree sessions
 - **Save your progress** before intentionally clearing context (`purlin:resume save`)
 
 **What you miss if you skip it:**
 - Previous session's work plan and progress (checkpoint not restored)
-- Terminal identity badge (cosmetic -- set on first mode activation anyway)
+- Terminal identity badge (cosmetic -- set on first skill invocation anyway)
 - Stale checkpoint cleanup (harmless disk clutter, cleaned up eventually)
 - Failed merge recovery (deferred until next `purlin:resume` or manual cleanup)
 
@@ -86,7 +83,7 @@ This means `purlin:resume` already ran once this session (cold start). The agent
 
 ### Step 1 -- Flag Processing (cold start only)
 
-- `--no-save`: When present, sticky flags (`--yolo`, `--no-yolo`, `--find-work`) apply to this session but are NOT written to config. Has no effect on first-run interactive selection (which always persists).
+- `--no-save`: When present, sticky flags (`--yolo`, `--no-yolo`, `--find-work`) apply to this session but are NOT written to config.
 - `--yolo`: Write `bypass_permissions: true` to `.purlin/config.json` (unless `--no-save`). The PermissionRequest hook reads this and auto-approves all permission dialogs.
 - `--no-yolo`: Write `bypass_permissions: false` (unless `--no-save`).
 - `--find-work`: Write `find_work` to config (unless `--no-save`).
@@ -102,7 +99,7 @@ This means `purlin:resume` already ran once this session (cold start). The agent
 2. Rename session to the same unified string.
 
 ```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<label>"
 ```
 
 `<label>` is the project name by default. When `--build` or `--verify` is used, replace it with a short task description (3-4 words) derived from the target feature or plan.
@@ -129,11 +126,11 @@ Check for checkpoint files in priority order. Use Bash `test -f` for existence d
 **Detection priority:**
 1. **PID-scoped:** If `PURLIN_SESSION_ID` is set, check `.purlin/cache/session_checkpoint_${PURLIN_SESSION_ID}.md`. This is the current terminal's own checkpoint.
 2. **Unscoped (migration):** Check `.purlin/cache/session_checkpoint_purlin.md`. This is the pre-PID-scoping format -- treat as a one-time migration path.
-3. **Legacy role-scoped:** Check for `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`. Map role to mode (`builder`/`architect` -> `engineer`, `qa` -> `qa`, `pm` -> `pm`).
+3. **Legacy role-scoped:** Check for `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`. These are legacy format — treat as valid checkpoints.
 
 Stop at the first match. A PID-scoped file from a DIFFERENT terminal is never consumed -- only the current terminal's PID matches.
 
-- **EXISTS (any level):** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. The checkpoint's **Mode** field determines which mode to re-enter. Record which file was matched (needed for deletion in Step 11).
+- **EXISTS (any level):** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan. Record which file was matched (needed for deletion in Step 11).
 - **MISSING (all levels):** Proceed silently to Step 6.
 
 ### Step 6 -- Instruction Reload (Fresh Sessions Only)
@@ -152,9 +149,9 @@ Print: `Use purlin:help for commands`
 
 Do NOT read or print the full command table. The command table is owned by `purlin:help`.
 
-### Step 8 -- Orphaned Sub-Agent Branch Recovery (Engineer mode checkpoint only)
+### Step 8 -- Orphaned Sub-Agent Branch Recovery
 
-When the checkpoint mode is `engineer`, check for orphaned worktree branches:
+When the checkpoint references Engineer work, check for orphaned worktree branches:
 
 ```bash
 git branch --list 'worktree-*'
@@ -170,14 +167,9 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 **Reading startup flags:** Check `$PURLIN_SESSION_ID` env var (set by the launcher, inherited by the agent). If set, look for `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`. This file is PID-scoped so concurrent agents (10+ in the same project) don't clobber each other. If found, verify the PID is still alive (`kill -0 $PURLIN_SESSION_ID`). If alive, read `find_work` and `auto_start` from the file. If dead (stale from crash), delete the file and fall back to config. If `PURLIN_SESSION_ID` is not set (manual `purlin:resume`), fall back to the resolved config (`agents.purlin`). Defaults: `find_work: true`, `auto_start: false`.
 
 **When a checkpoint exists (warm resume):**
-- Startup flags (`find_work`, `auto_start`) are NOT consulted -- the checkpoint is the authority for both mode and work plan.
-- Run a **mode-scoped scan** based on the checkpoint's mode:
-  - Engineer: `purlin_scan(only: "features,discoveries,plan,git", cached: true)`
-  - PM: `purlin_scan(only: "features,discoveries,deviations,git", cached: true)`
-  - QA: `purlin_scan(only: "features,discoveries,git,smoke", cached: true)`
-  - Unknown/none: `purlin_scan(only: "features,discoveries,git,plan", cached: true)`
+- Startup flags (`find_work`, `auto_start`) are NOT consulted -- the checkpoint is the authority for the work plan.
+- Run a scan: `purlin_scan(only: "features,discoveries,git,plan", cached: true)`.
 - The work plan comes from the checkpoint's "Next" list. The scan provides fresh project state context.
-- Re-enter the mode recorded in the checkpoint.
 
 **When no checkpoint exists (cold start):**
 
@@ -187,23 +179,19 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 2. **Run a lightweight startup scan:** `purlin_scan(only: "features,discoveries,git,plan")`. This is enough for mode suggestion and work discovery. Skips `deps`, `smoke`, `deviations`, and `invariants` (~20-30% smaller than a full scan). Individual skills run their own focused scans when activated.
 
-3. **Run `purlin:status`** to interpret the scan results and present work organized by mode.
+3. **Run `purlin:status`** to interpret the scan results and present work organized by role.
 
 4. **Generate work plan:**
-   - Use `purlin:status` output to generate a full work plan organized by mode.
-   - Suggest the mode with highest-priority work.
-   - **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS/PENDING phases, highlight it and suggest Engineer mode. If launched with `--auto-build`, enter Engineer mode and resume immediately.
-   - **Engineer phasing:** If no delivery plan exists and phasing is recommended, run `purlin:delivery-plan` before proposing the work plan.
+   - Use `purlin:status` output to generate a full work plan organized by role.
+   - Suggest the role with highest-priority work.
+   - **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS/PENDING phases, highlight it. If launched with `--build`, invoke `purlin:build` and resume immediately.
+   - **Phasing:** If no delivery plan exists and phasing is recommended, run `purlin:delivery-plan` before proposing the work plan.
 
 5. **Check `auto_start`:**
    - `auto_start: false` -- present the work plan and wait for user approval before executing.
-   - `auto_start: true` -- present the work plan and begin executing immediately. Requires a resolved mode (see below); without one, `auto_start` is a no-op.
+   - `auto_start: true` -- present the work plan and begin executing immediately.
 
-**Mode activation priority (cold start only):**
-- CLI `--mode` (inferred from session message directing mode entry, e.g., "Enter Engineer mode") > `.purlin_session.lock` mode > user input.
-- **`auto_start` without a resolved mode** (no CLI `--mode`, no session lock): `auto_start` is a no-op -- the agent presents mode suggestions and waits.
-
-**Worktree context:** If `.purlin_worktree_label` exists, read the label and include it in the recovery summary badge. If `.purlin_session.lock` exists and no checkpoint is found, read the mode from the lock as a fallback for mode activation.
+**Worktree context:** If `.purlin_worktree_label` exists, read the label and include it in the recovery summary badge.
 
 ### Step 10 -- Present Recovery Summary
 
@@ -211,7 +199,6 @@ Print this structured summary:
 
 ```
 Context Restored
-Mode:           <Engineer | PM | QA | none>
 Branch:         <main | <branch-name>>
 Checkpoint:     <found -- resuming from <timestamp> | none>
 
@@ -223,22 +210,19 @@ Next Steps:
 
 <When checkpoint exists, or find_work is not false:>
 Action Items:   <count> items from scan results
-<Engineer>      Delivery plan: Phase X of Y -- next: <feature>
-<QA>            Verification queue: N features in TESTING
-<PM>            Figma MCP: <available | not available>
+  Engineer:     Delivery plan: Phase X of Y -- next: <feature>
+  QA:           Verification queue: N features in TESTING
+  PM:           Spec gaps, unacknowledged deviations
 Uncommitted:    <none | summary>
 ```
 
-### Step 11 -- Mode Activation, Cleanup, and Continue
+### Step 11 -- Cleanup and Continue
 
-- **Mode activation priority:** CLI flag > checkpoint mode > user input.
-  - If `--build`: activate Engineer + invoke `purlin:build`.
-  - If `--verify`: activate QA + invoke `purlin:verify`.
-  - If `--pm`: activate PM mode.
-  - If `--mode <mode>`: activate the specified mode.
-- **Update terminal identity** to reflect the determined mode. If a mode was resolved (from checkpoint or session message), run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"`. The `<label>` is the project name by default, or a short task description from the checkpoint's current work. This detects branch/worktree context automatically and produces the unified format `<short_mode>(<context>) | <label>`. If no mode was resolved, leave the launcher's initial badge in place.
+- **Shortcut dispatch:**
+  - If `--build`: invoke `purlin:build`.
+  - If `--verify`: invoke `purlin:verify`.
+- **Update terminal identity:** Run `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<label>"`. The `<label>` is the project name by default, or a short task description from the checkpoint's current work.
 - If a checkpoint file was read in Step 5, **delete whichever file was consumed** (PID-scoped, unscoped, or legacy). The checkpoint has been consumed and must not be restored again.
-- If the checkpoint specified a mode, activate that mode.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 10) gives the user visibility; they can interrupt if needed.
 
 ---
@@ -257,7 +241,6 @@ Compose the file based on your own understanding of your current session state. 
 ```markdown
 # Session Checkpoint
 
-**Mode:** <engineer | pm | qa | none>
 **Timestamp:** <ISO 8601>
 **Branch:** <current git branch>
 
@@ -281,11 +264,11 @@ Compose the file based on your own understanding of your current session state. 
 <open questions, blockers, or anything the resuming agent should know>
 ```
 
-### Mode-Specific Fields
+### Role-Specific Context
 
-Append these sections after the common fields:
+Append relevant sections after the common fields based on the work in progress:
 
-**Engineer mode:**
+**If doing Engineer work:**
 ```markdown
 ## Engineer Context
 **Protocol Step:** <0-preflight | 1-acknowledge/plan | 2-implement/document | 3-verify locally | 4-commit status tag>
@@ -296,7 +279,7 @@ Append these sections after the common fields:
 **Pending Decisions:** <decisions not yet recorded in companion files, or "None">
 ```
 
-**QA mode:**
+**If doing QA work:**
 ```markdown
 ## QA Context
 **Scenario Progress:** <e.g., "5 of 8 scenarios completed">
@@ -305,7 +288,7 @@ Append these sections after the common fields:
 **Verification Queue:** <features verified vs. remaining>
 ```
 
-**PM mode:**
+**If doing PM work:**
 ```markdown
 ## PM Context
 **Spec Drafts:** <which feature specs are being authored or refined>
@@ -318,7 +301,7 @@ Print confirmation:
 
 ```
 Checkpoint saved to .purlin/cache/session_checkpoint_<session_id>.md
-Mode: <mode> | Branch: <branch> | Feature: <feature or "none">
+Branch: <branch> | Feature: <feature or "none">
 You can now /clear or close the terminal. Run purlin:resume to recover.
 ```
 
@@ -371,9 +354,9 @@ This ensures that normal session closure does not leave orphaned checkpoint file
 |---|---|---|
 | SessionStart | session-start.sh | Context reminder: "Purlin active, run purlin:resume" |
 | SessionEnd | session-end-merge.sh | Merge worktrees, cleanup |
-| PreToolUse (Write/Edit) | mode-guard.sh | Mechanical mode guard |
+| PreToolUse (Write/Edit) | write-guard.sh | File classification guard (INVARIANT/UNKNOWN) |
 | PermissionRequest | permission-manager.sh | YOLO auto-approve |
 | PreCompact | pre-compact-checkpoint.sh | Auto-save checkpoint |
-| FileChanged | companion-debt-tracker.sh | Real-time companion debt |
+| FileChanged | sync-tracker.sh | Real-time sync state tracking |
 
 **Design decision:** SessionStart hook does NOT auto-run the full startup. It only injects a brief reminder. Full protocol runs via `purlin:resume`. This avoids heavy scan+status on every context clear.

@@ -1,7 +1,9 @@
 ---
 name: regression
-description: This skill activates QA mode. If another mode is active, confirm switch first
+description: Author, run, and evaluate regression test suites
 ---
+
+**Writes:** tests/qa/scenarios/*.json, tests/*/regression.json
 
 ## Usage
 
@@ -96,7 +98,7 @@ Evaluate regression results — read the result files, report status, and docume
    **Suggested fix:** <what the Engineer should investigate>
    ```
 
-   This gives the Engineer everything they need to fix it without running QA mode themselves.
+   This gives the Engineer everything they need to fix it without running QA themselves.
 
 4. **Report summary.**
    ```

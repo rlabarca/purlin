@@ -1,9 +1,9 @@
 ---
 name: fixture
-description: Available in any mode. Does not switch modes. When invoked from QA mode, runs in setup-only cross-mode (can create/ma...
+description: Manage test fixture repos, tags, and setup scripts for deterministic testing
 ---
 
-**Purlin mode: shared (QA cross-mode: setup-only)**
+**Writes:** fixture repo tags, setup scripts
 
 The test fixture system provides deterministic, reproducible project state for automated
 testing. Fixture states are immutable git tags in a dedicated bare repo. See
@@ -30,12 +30,12 @@ Fixtures are needed when a test scenario requires specific, controlled project s
    - Project-level: `fixture_repo_url` in `.purlin/config.json`
    - Convention path: `.purlin/runtime/fixture-repo`
 5. If no fixture repo exists, present options to the user:
-   - **Option A (recommended):** "I'll have Engineer mode create a local fixture repo at `.purlin/runtime/fixture-repo`. It stays on your machine and is gitignored."
+   - **Option A (recommended):** "I'll create a local fixture repo at `.purlin/runtime/fixture-repo`. It stays on your machine and is gitignored."
    - **Option B:** "If you have a shared git repo for fixtures, give me the URL and I'll configure it in `.purlin/config.json`."
    - **Option C:** "Skip fixtures for now. These scenarios stay as manual verification until fixtures are set up."
-6. Record the decision in `tests/qa/fixture_recommendations.md` for Engineer mode.
+6. Record the decision in `tests/qa/fixture_recommendations.md`.
 
-## For PM mode: Fixture-Aware Feature Design
+## Fixture-Aware Feature Design (PM guidance)
 
 ### When to Use Fixtures
 
@@ -76,10 +76,10 @@ scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`.
 
 When adding fixtures to a feature for the first time, explain to the user what they are and
 why: "These scenarios need controlled project state. I am adding fixture tags -- immutable
-snapshots that tests check out automatically. Engineer mode will create a setup script to
+snapshots that tests check out automatically. The Engineer will create a setup script to
 generate them."
 
-## For Engineer mode: Fixture Setup Workflow
+## Fixture Setup Workflow (Engineer guidance)
 
 Fixtures are set up when explicitly directed by the user or when the feature spec contains a fixture tag section.
 
@@ -108,7 +108,7 @@ When no setup script exists:
    `fixture add-tag <tag> --from-dir <tmpdir> --message "<state description>"`.
 3. Save the script at the project-appropriate location:
    - **Purlin:** `dev/setup_fixture_repo.sh` (not distributed to consumers)
-   - **Consumer:** Engineer mode's choice, documented in companion file
+   - **Consumer:** Engineer's choice, documented in companion file
 
 ### State Construction Guidance
 
@@ -116,9 +116,9 @@ Start with a minimal valid project structure (config files, basic features direc
 layer the specific state the scenario requires. Each tag's temp directory should contain only
 the files needed for that scenario's Given preconditions.
 
-## For QA: Fixture Awareness
+## Fixture Awareness (QA guidance)
 
 If the fixture infrastructure has not been created yet, inform the
 user. Web-verify and automated test
-results for fixture-backed scenarios will be INCONCLUSIVE until Engineer mode creates the
-fixture repo. This is Engineer-routable, not a QA failure -- do not record as a discovery.
+results for fixture-backed scenarios will be INCONCLUSIVE until the
+fixture repo is created. This is Engineer-routable, not a QA failure -- do not record as a discovery.

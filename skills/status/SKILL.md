@@ -1,22 +1,15 @@
 ---
 name: status
-description: Available to all agents and modes
+description: Show project status with sync state and actionable work items
 ---
 
-## Mode-Scoped Scan
+## Scan
 
-Run `purlin_scan` with flags based on the current mode:
-
-- **PM mode:** Run `purlin_scan` (with `only: "features,discoveries,deviations,git"`)
-- **Engineer mode:** Run `purlin_scan` (with `only: "features,discoveries,plan,git,companion_debt"`, `tombstones: true`)
-- **QA mode:** Run `purlin_scan` (with `only: "features,discoveries,git,smoke"`)
-- **Open mode (no mode active):** Run `purlin_scan` (with `tombstones: true`)
-
-Interpret the scan results to present actionable work for the **current mode only**. In open mode, show work for all modes.
+Run `purlin_scan` (with `tombstones: true`) to get full project state.
 
 ## Work Interpretation Rules
 
-Analyze the scan JSON to classify features into mode-specific work items. **Only show the work items for the active mode.** In open mode, show all.
+Analyze the scan JSON to classify features into role-based work items. Show all work grouped by role.
 
 > **MANDATORY RULE — spec_modified_after_completion:**
 > When a feature has `spec_modified_after_completion: true`, it IS Engineer work. Period.
@@ -54,7 +47,7 @@ Analyze the scan JSON to classify features into mode-specific work items. **Only
 
 ## Work Item Priority Ranking
 
-Action items within each mode MUST be sorted in this order (highest priority first):
+Action items within each role MUST be sorted in this order (highest priority first):
 
 1. **Tombstones** — Engineer processes tombstones before any regular work
 2. **FAIL** — Test failures or regression failures require immediate attention
@@ -64,22 +57,17 @@ Action items within each mode MUST be sorted in this order (highest priority fir
 
 ## Output Format
 
-**Always shown (all modes):**
+**Always shown:**
 - Feature counts by lifecycle (TODO / TESTING / COMPLETE)
-- **Worktree summary** (when worktrees exist): scan `git worktree list` for entries under `.purlin/worktrees/`, read `.purlin_session.lock` for PID liveness, display one-line summary: `Worktrees: W1 (Engineer, active), W2 (PM, stale)`. Use `purlin:worktree list` for full detail.
+- **Worktree summary** (when worktrees exist): scan `git worktree list` for entries under `.purlin/worktrees/`, read `.purlin_session.lock` for PID liveness, display one-line summary: `Worktrees: W1 (active), W2 (stale)`. Use `purlin:worktree list` for full detail.
 
-**Mode-scoped:**
-- Work items for the **current mode only**, sorted by priority, with reason annotations
-- Open discoveries relevant to the current mode
-- In open mode: work items grouped by all modes, plus mode suggestion
-
-**Never shown in scoped mode:**
-- Work items belonging to other modes
-- The "suggest which mode" prompt (only in open mode)
+**Work items:**
+- Show work items grouped by role (Engineer, QA, PM), sorted by priority, with reason annotations
+- Open discoveries grouped by role
 
 **Status values and what they mean:**
 
-| Mode | Status | Meaning |
+| Role | Status | Meaning |
 |------|--------|---------|
 | PM | DONE | No spec gaps, no pending disputes or decisions |
 | PM | TODO | Spec gate failures, unacknowledged decisions, or open disputes |
@@ -94,15 +82,15 @@ Action items within each mode MUST be sorted in this order (highest priority fir
 | QA | DISPUTED | OPEN SPEC_DISPUTEs exist |
 | QA | N/A | No test coverage or no QA-relevant items |
 
-**PM-specific: Uncommitted Changes Check**
+**Uncommitted Changes Check**
 
-After completing the standard output above, if you are the PM, check for uncommitted changes:
+After completing the standard output above, check for uncommitted changes:
 
 1.  Run `git status` and `git diff` to identify staged changes, unstaged modifications, and untracked files.
-2.  **PM-owned files** (`features/**/*.md`, `features/**/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/toolbox/*.json`, `.purlin/config.json`):
+2.  **Spec files** (`features/**/*.md`, `features/**/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/toolbox/*.json`, `.purlin/config.json`):
     *   Present a summary of changed files grouped by change type (new, modified, deleted).
     *   Read the diffs to understand the substance of each change.
     *   Propose a commit message following the project's commit convention (e.g., `spec(feature_name): add edge-case scenarios`, `docs(readme): update release history`). The message must reflect the "why" not just the "what."
-    *   Ask the user: **"These PM-owned files have uncommitted changes. Commit with the above message?"**
-3.  **Non-PM-owned files** (Engineer source, scripts, tests, etc.): Note them in the output but take no action -- the Engineer handles their own commits.
+    *   Ask the user: **"These spec files have uncommitted changes. Commit with the above message?"**
+3.  **Other files** (source, scripts, tests, etc.): Note them in the output but take no action.
 4.  **Clean working tree:** Report "No uncommitted changes."

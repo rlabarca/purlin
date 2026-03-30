@@ -1,7 +1,9 @@
 ---
 name: smoke
-description: This skill activates QA mode
+description: Promote features to smoke tier and manage smoke test coverage
 ---
+
+**Writes:** .purlin/config.json tiers, tests/qa/scenarios/*_smoke.json
 
 ## Usage
 

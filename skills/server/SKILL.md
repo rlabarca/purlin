@@ -1,11 +1,9 @@
 ---
 name: server
-description: "This skill activates Engineer mode. Exception: when invoked from QA mode, runs in run-only cross-mode (can start/stop..."
+description: Dev server lifecycle management for web test verification
 ---
 
-**Purlin mode: Engineer (QA cross-mode: run-only)**
-
----
+**Writes:** .purlin/runtime/dev_server.json
 
 ## Server Lifecycle Management
 

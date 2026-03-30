@@ -1,7 +1,9 @@
 ---
 name: verify
-description: This skill activates QA mode. If another mode is active, confirm switch first
+description: Orchestrate feature verification — automated tests, visual checks, manual checklist
 ---
+
+**Writes:** .impl.md, .discoveries.md, status tag commits
 
 > **Hard gates (lifecycle diagnostic, regression readiness, auto-start silence, scoped verification modes, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: Phase A/B execution, auto-fix iteration loop, checklist assembly, and strategy dispatch.
 
@@ -16,10 +18,10 @@ description: This skill activates QA mode. If another mode is active, confirm sw
 You MUST update the terminal identity before starting verification work. Derive a short task label (3-4 words max) from the feature being verified or the batch scope. Do NOT leave the label as the project name — always derive a work-specific label.
 
 ```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "QA" "<task label>"
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
 ```
 
-Examples: `QA(main) | verify auth flow`, `QA(dev/0.8.6) | batch verify`.
+Examples: `(main) verify auth flow`, `(dev/0.8.6) batch verify`.
 
 ---
 
@@ -106,9 +108,44 @@ If zero TESTING features found in scan:
 
 ---
 
+## Verification Orientation
+
+After scan and lifecycle diagnostic, orient the user before execution begins. This uses data already gathered — no additional reads or scans.
+
+**`--auto-verify` / `auto_start: true`:** Print the orientation block but do NOT prompt or wait for input. Proceed directly to Phase A.
+
+**Interactive mode (`auto_start: false`, no `--auto-verify`):** Print the orientation block and proceed immediately to Phase A. Informational, not a gate.
+
+Print:
+
+```
+━━━ Verification Scope ━━━
+Features (N):
+  <feature_name> — <lifecycle> | <scenario summary> | regression: <status>
+  <feature_name> — ...
+
+Pipeline: <phases that will run>
+Prep: <manual verification notice, if applicable>
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Content rules:**
+1. **Feature list:** One line per in-scope feature from scan results. Show lifecycle status, scenario counts (e.g. `3 @auto, 1 @manual, 2 untagged`), and regression suite status (`PASS` / `STALE` / `FAIL` / `NOT_RUN` / `n/a`). Cap at 10 features; if more, show first 10 and `"... and N more"`.
+2. **Pipeline line:** Derive from execution mode flag:
+   - Full (no flag): `"Phase A (full) → Phase B (manual checklist)"`
+   - `--mode smoke`: `"Phase A (smoke only)"`
+   - `--mode auto`: `"Phase A (auto scenarios only)"`
+   - `--mode regression`: `"Phase A (regression only)"`
+   - `--mode manual`: `"Phase B (manual checklist only)"`
+   - `--auto-verify`: `"Phase A → A.5 (auto-fix) → Phase B"`
+3. **Prep line:** Only printed when @manual or untagged scenarios exist in scope. Alerts the user that human input will be needed after automated steps so they can prepare (e.g., have the app running, screenshots ready). Example: `"Prep: 4 manual items will need human verification after automated steps."`
+4. **Voice:** Direct, no filler. Mikey energy is in the brevity.
+
+---
+
 ## Phase A -- Automated Execution
 
-**Update terminal identity (MANDATORY):** Before any verification work, derive a short task label (3-4 words max) from the feature being verified or the batch scope. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "qa" "<task label>"`. Examples: `QA(main) | verify auth flow`, `QA(dev/0.8.6) | batch verify`. The label MUST describe the current work, not the project name.
+**Update terminal identity (MANDATORY):** Before any verification work, derive a short task label (3-4 words max) from the feature being verified or the batch scope. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"`. Examples: `(main) verify auth flow`, `(dev/0.8.6) batch verify`. The label MUST describe the current work, not the project name.
 
 **Mode gate:** Skip this entire phase if `--mode manual`. If `--mode smoke`, execute only Step 2. If `--mode regression`, execute only Step 0b + regression checkpoint (Step 5a-B). If `--mode auto`, execute Steps 2-5 (skip Step 1 auto-pass and Step 4 classification). If no mode flag (full), execute all steps.
 
@@ -140,10 +177,8 @@ Before any tests run, ensure all in-scope @auto scenarios have regression JSON. 
 1.  Scan all in-scope features for @auto scenarios that lack `tests/qa/scenarios/<feature>.json`.
 2.  Check smoke-tier features for missing `_smoke.json` files.
 3.  **If `--auto-verify` or `auto_start: true`:**
-    *   Use an internal mode switch to Engineer (see Phase A.5 Internal Mode Switch Protocol).
     *   Author ALL missing regression JSON and smoke JSON upfront using `purlin:regression` logic.
-    *   Commit authored files: `engineer(<scope>): author regression scenarios`
-    *   Switch back to QA.
+    *   Commit authored files: `qa(<scope>): author regression scenarios`
     *   Output: `"Readiness: authored N regression files, M smoke files."`
 4.  **If interactive (`auto_start: false`, no `--auto-verify`):**
     *   Count gaps. Do NOT author them now — surface them in the strategy menu (Phase A Summary).
@@ -193,7 +228,7 @@ Credit features where Engineer status is DONE and zero QA scenarios exist. These
     Fix before continuing? [yes to stop / no to continue anyway]
     ━━━━━━━━━━━━━━━━━━━━━
     ```
-    *   "yes": Abort the batch. Record the failure as a `[BUG]` discovery. Route to Engineer mode.
+    *   "yes": Abort the batch. Record the failure as a `[BUG]` discovery. Route to Engineer.
     *   "no": Continue to Step 3. The failure is still recorded as a discovery.
 5.  **Suggest smoke promotion.** After running smoke, if any non-smoke feature in scope is a prerequisite for 3+ other features and has no smoke classification, suggest: "Consider promoting `<feature>` to smoke tier with `purlin:smoke <feature>`." Do this once per session, not per feature.
 
@@ -378,7 +413,7 @@ After the Phase A Summary, regression table, and gap table, dispatch based on fl
 **"Automated failures" definition:** The union of (1) regression suite failures (`regression.json` with `status: "FAIL"` or `"STALE"`) across ALL suites that were run (not just in-scope TESTING features), (2) @auto scenario failures from Phase A Step 3, AND (3) unit test failures (`tests.json` with `status: "FAIL"` for any in-scope feature). All three sources MUST be checked — if any single source has failures, the dispatch enters Phase A.5. **Regression failures are never scoped:** `--auto-verify` runs ALL regression suites and ANY failure in ANY suite triggers the auto-fix loop, regardless of the failing feature's lifecycle status.
 
 **When `--auto-verify` or `auto_start: true`:**
-*   If any automated failures exist (per definition above): MUST proceed to Phase A.5 auto-fix loop. This is mandatory — the agent MUST NOT skip failures, defer them, or proceed to Phase B while failures exist. The auto-fix loop uses internal mode switches (QA → Engineer → QA) to fix code and re-run tests until all suites pass or the iteration limit is reached.
+*   If any automated failures exist (per definition above): MUST proceed to Phase A.5 auto-fix loop. This is mandatory — the agent MUST NOT skip failures, defer them, or proceed to Phase B while failures exist. The auto-fix loop iterates between fixing code and re-running tests until all suites pass or the iteration limit is reached.
 *   If zero failures across all three sources and zero gaps: skip to Phase B (or skip Phase B if zero manual items).
 
 **When interactive (`auto_start: false`, no `--auto-verify`):**
@@ -413,29 +448,9 @@ Choose [1-5]:
 
 **Activation:** `--auto-verify` flag, `auto_start: true`, or user selected [1] from strategy menu.
 
-**Purpose:** Automatically resolve ALL automated test failures before presenting any manual verification. The agent iterates between Engineer mode (fixing code/tests) and QA mode (re-running failed tests) until all automated tests pass or the maximum iteration count is reached.
+**Purpose:** Automatically resolve ALL automated test failures before presenting any manual verification. The agent iterates between fixing code and re-running failed tests until all automated tests pass or the maximum iteration count is reached.
 
-**MANDATORY BEHAVIOR:** When Phase A.5 is activated, the agent MUST execute the internal mode switch protocol below. It MUST switch to Engineer mode to diagnose and fix failures, then switch back to QA mode to re-run tests. This back-and-forth is not optional — the agent MUST NOT skip the mode switches, defer failures to a later session, or present failures to the user without attempting fixes first. The iteration loop continues until all tests pass, max iterations (5) are reached, all remaining failures are escalated, or zero progress is made.
-
-### Internal Mode Switch Protocol
-
-Phase A.5 crosses the QA/Engineer write boundary. The agent MUST use internal mode switches (`purlin_mode` MCP tool or `set_mode()`) to toggle between QA and Engineer. This is a lightweight protocol that preserves safety while avoiding the full `purlin:mode` ceremony:
-
-**Invariants:**
-*   Write-boundary enforcement (mode guard) remains active. Engineer cannot write QA files; QA cannot write code files.
-*   Terminal badge stays in QA format (`QA(<branch>) | <label>`) throughout. The user is in a QA verification session; rapid mode flips are invisible.
-*   Pending work is committed before each switch.
-
-**QA → Engineer:**
-1.  Commit any pending QA artifacts (regression JSON, scenario tags).
-2.  Activate Engineer write permissions.
-3.  Log internally: `"Auto-fix: Engineer mode (iteration N)."`
-
-**Engineer → QA:**
-1.  Run companion file gate: verify `[CLARIFICATION]` entries exist for all fixes made.
-2.  Commit any pending Engineer changes with `fix(scope):` prefix.
-3.  Activate QA write permissions.
-4.  Log internally: `"Auto-fix: QA mode (iteration N)."`
+**MANDATORY BEHAVIOR:** When Phase A.5 is activated, the agent MUST attempt to fix failures. It MUST NOT skip failures, defer them to a later session, or present failures to the user without attempting fixes first. The iteration loop continues until all tests pass, max iterations (5) are reached, all remaining failures are escalated, or zero progress is made.
 
 ### Failure Tracker
 
@@ -463,7 +478,7 @@ Maintain a session-local tracker (in conversation context, not a file) for each 
       feature_b: 1 scenario (scenario_m assertion N)
     ```
 
-4.  **Engineer fix phase.** Internal switch to Engineer.
+4.  **Fix phase.**
     For each feature with failures:
     a.  For regression failures: read `regression.json` details (`expected`, `actual_excerpt`, `scenario_ref`). Read the source code referenced by `scenario_ref`. Read the test scenario assertions from `tests/qa/scenarios/<feature>.json`.
     b.  For unit test failures (`tests.json` FAIL): re-run the feature's unit test suite to capture detailed failure output, then read the failing test source code and application code under test.
@@ -475,8 +490,8 @@ Maintain a session-local tracker (in conversation context, not a file) for each 
     d.  Update companion file with `[CLARIFICATION]` auto-fix entry: `"Auto-fix iteration N: fixed <what> to resolve <failure description>."`
     e.  **Scope is minimal:** Fix ONLY the specific failure. No refactoring, no feature additions, no extras.
 
-5.  **QA fix phase.** Internal switch to QA.
-    *   Fix any test scenarios flagged as stale by Engineer in step 4c: update assertion patterns, remove brittle Tier-1 checks, adjust expected output. Commit: `qa(<scope>): fix stale regression assertion`.
+5.  **Test fix phase.**
+    *   Fix any test scenarios flagged as stale in step 4c: update assertion patterns, remove brittle Tier-1 checks, adjust expected output. Commit: `qa(<scope>): fix stale regression assertion`.
     *   If no stale tests were flagged, this phase is a no-op.
 
 6.  **Re-run failed tests only.** For each scenario file that had at least one failure (and was not escalated):
@@ -538,7 +553,7 @@ Collect remaining testable items (those NOT handled in Phase A) across in-scope 
 4.  Auto-skip builder-verified features (zero manual scenarios, zero visual items).
 5.  Assign flat sequential numbers (1, 2, ... N) across all features. Do not restart numbering per feature.
 6.  Visual items from `## Visual Specification` sections are interleaved under their feature, tagged with `[V]` prefix, sharing the numbering sequence.
-7.  **Web-test visual dedup:** For features with `> Web Test:` metadata, exclude visual `[V]` items from the QA checklist. These were verified by Engineer mode via `purlin:web-test` during implementation and by Phase A Step 5. Include only manual scenarios that require human interaction. If a web-test feature has zero manual scenarios remaining after this exclusion, auto-skip it: `"Feature X: visual items verified via purlin:web-test. Auto-pass."`
+7.  **Web-test visual dedup:** For features with `> Web Test:` metadata, exclude visual `[V]` items from the QA checklist. These were verified via `purlin:web-test` during implementation and by Phase A Step 5. Include only manual scenarios that require human interaction. If a web-test feature has zero manual scenarios remaining after this exclusion, auto-skip it: `"Feature X: visual items verified via purlin:web-test. Auto-pass."`
 8.  **Tier labels:** If tier classification exists in `QA_OVERRIDES.md`, prefix each feature group with its tier: `[SMOKE]`, `[STD]`, or `[FULL]`.
 9.  **Condensing rule:** For each functional scenario, produce a two-line entry: line 1 = **what to do** (setup + action, imperative voice), line 2 = **what to verify** (expected outcome). Strip Gherkin boilerplate but keep essential setup context. Visual items use `[V]` prefix with verbatim checklist text (single line).
 10. Cross-validation warnings: insert an advisory line before affected feature's items.

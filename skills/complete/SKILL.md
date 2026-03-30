@@ -1,7 +1,9 @@
 ---
 name: complete
-description: This skill activates QA mode. If another mode is active, confirm switch first
+description: Gate feature completion on all quality requirements
 ---
+
+**Writes:** status tag commits
 
 Given the feature name provided as an argument, gate completion on all requirements:
 

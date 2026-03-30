@@ -1,7 +1,9 @@
 ---
 name: discovery
-description: This skill activates QA mode. If another mode is active, confirm switch first
+description: Record and classify QA findings for a feature
 ---
+
+**Writes:** features/<name>.discoveries.md
 
 ## Scope
 
