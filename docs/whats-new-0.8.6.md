@@ -21,8 +21,8 @@ Purlin is no longer distributed as a git submodule. It's now a **Claude Code plu
 - **No submodule in your repo.** The `purlin/` directory is gone. Plugin code lives in Claude Code's plugin cache, completely separate from your project files.
 - **Just run `claude`.** The plugin activates automatically when you open a session in a Purlin-enabled project. No special launcher needed.
 - **Mechanical mode guard.** Write-access boundaries are now enforced by a `PreToolUse` hook that physically blocks wrong-mode writes. The agent literally cannot write files outside its mode's domain. This replaces the v0.8.5 prompt-level enforcement.
-- **Automatic context recovery.** A `SessionStart` hook restores your session state on every launch. No more depending on the agent to remember `purlin:resume`.
-- **Auto-checkpoint before compaction.** A `PreCompact` hook saves session state before the context window fills. You never lose work to context limits.
+- **Context recovery prompting.** A `SessionStart` hook reminds the agent to run `purlin:resume` after context clears and compaction events. A `PreCompact` hook auto-saves checkpoints before the context window fills.
+- **Companion debt tracking.** A `FileChanged` hook tracks code and companion file writes per session. The mode switch gate blocks leaving Engineer mode without companion updates, and `purlin:status` surfaces feature-level debt.
 
 ---
 
@@ -150,14 +150,14 @@ The Purlin plugin is installed **globally** (user-level) but **enabled per-proje
 ### Session Startup
 
 ```bash
-claude                              # Plugin auto-activates, SessionStart hook restores context
+claude                              # Plugin auto-activates, hooks set up terminal identity
 ```
 
 Inside the session, just tell the agent what you want in plain language:
 
 > "spec a login feature, then build and verify it"
 
-The agent switches modes automatically as the work progresses. You can also use explicit commands (`purlin:build`, `purlin:spec`, `purlin:verify`, `purlin:mode engineer`) when you want precision.
+Skills activate the appropriate mode when invoked — `purlin:build` activates Engineer, `purlin:spec` activates PM, `purlin:verify` activates QA. You can also switch explicitly with `purlin:mode engineer`.
 
 ### When to Use `purlin:resume`
 
@@ -224,7 +224,7 @@ Six hooks provide mechanical enforcement and automatic lifecycle management:
 | Hook | Event | What It Does |
 |---|---|---|
 | **Mode Guard** | `PreToolUse` (Write/Edit) | Blocks file writes that violate mode boundaries. Exit code 2 = hard block. |
-| **Session Start** | `SessionStart` | Restores session context (checkpoint, mode, terminal identity). |
+| **Session Start** | `SessionStart` | Sets terminal identity on launch; prompts `purlin:resume` after clear/compact. Clears stale session state. |
 | **Session End** | `SessionEnd` | Merges worktree branches, cleans session state. |
 | **Permission Manager** | `PermissionRequest` | Auto-approves most permission prompts when YOLO is enabled (excludes plan approval, user questions, remote triggers). |
 | **Pre-Compact Checkpoint** | `PreCompact` | Auto-saves session state before context compaction. |
@@ -348,13 +348,15 @@ See the [Configuration Guide](config-guide.md) for the full reference.
 
 ## Tips and Tricks
 
-**Just run `claude` and talk.** No launcher, no special startup command. The plugin handles everything. Tell the agent what you want in plain language — it switches modes automatically.
+**Just run `claude` and talk.** No launcher, no special startup command. The plugin activates automatically in any Purlin-enabled project. Use explicit commands (`purlin:build`, `purlin:spec`, `purlin:mode engineer`) when you want precision, or invoke skills that activate modes on your behalf.
 
-**Let hooks do the work.** Session recovery, checkpoint saves, and mode enforcement all happen automatically. The `SessionStart` hook restores context on every launch. The `PreCompact` hook saves checkpoints before context compaction.
+**Hooks handle the guardrails.** Mode enforcement and checkpoint saves happen automatically. The `PreCompact` hook saves session state before context compaction. On startup, the `SessionStart` hook reminds the agent to run `purlin:resume` for full context recovery.
 
-**Mode guard is mechanical now.** If you accidentally try to write a spec in Engineer mode, the hook blocks it with an error. No more relying on the agent to self-police. This is the single biggest reliability improvement.
+**Mode guard tells you what to do.** If Engineer mode tries to write a spec, the hook blocks the write and tells the agent exactly how to fix it — switch to PM, make the edit, switch back. The agent handles mode bounces without manual intervention.
 
-**YOLO mode persists.** Run `purlin:config yolo on` and most permission prompts are auto-approved for subsequent sessions. Plan approval, user questions, and remote triggers always prompt regardless of YOLO — the agent can't approve its own plans. Run `purlin:config yolo off` to turn it off. The `--yolo`/`--no-yolo` flags on `purlin:resume` still work as shortcuts.
+**Companion debt is visible, not hidden.** `purlin:status` shows which features have stale or missing companion files. The mode switch gate blocks leaving Engineer mode (except to PM) until at least one companion file is written. Run `purlin:spec-code-audit` to reconcile debt across multiple features in bulk.
+
+**YOLO mode persists.** Run `purlin:config yolo on` and most permission prompts are auto-approved for subsequent sessions. Plan approval, user questions, and remote triggers always prompt regardless of YOLO — the agent can't approve its own plans. Run `purlin:config yolo off` to turn it off.
 
 **Model and effort are native Claude settings.** Use `/model` and `/effort` inside a session, or `claude --model claude-sonnet-4-6` at launch. These are no longer part of Purlin's config — they're Claude Code built-ins that apply to all tool use.
 
