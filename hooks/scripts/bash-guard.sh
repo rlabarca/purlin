@@ -87,15 +87,24 @@ if [ -n "$CURRENT_MODE" ] && [ "$CURRENT_MODE" != "none" ] && [ "$CURRENT_MODE" 
 fi
 
 # Default mode (no mode active) — allow basic file operations and safe git.
-# Only block truly dangerous operations (git push, rm -rf, etc.)
-DANGEROUS_PATTERNS='(^|[;&|]\s*)(git\s+push|git\s+reset\s+--hard|rm\s+-rf\s|rm\s+-r\s)'
+# Block dangerous operations and shell writes to files (bypasses mode guard).
 
-if echo "$COMMAND" | grep -qE "$DANGEROUS_PATTERNS"; then
+# Shell write patterns — these bypass the Write/Edit mode guard
+SHELL_WRITE='(echo\s+.*[>]|printf\s+.*[>]|cat\s+.*[>]|tee\s|sed\s+-i|>\s*[/a-zA-Z.]|>>\s*[/a-zA-Z.])'
+
+# Dangerous operations
+DANGEROUS='(git\s+push|git\s+reset\s+--hard|rm\s+-rf\s|rm\s+-r\s)'
+
+if echo "$COMMAND" | grep -qE "$SHELL_WRITE"; then
+    echo '{"error":"Shell file writes blocked in default mode — use Write/Edit tools instead, or activate a mode (purlin:mode engineer|pm|qa)."}' >&2
+    exit 2
+fi
+
+if echo "$COMMAND" | grep -qE "$DANGEROUS"; then
     echo '{"error":"Dangerous command blocked in default mode. Activate a mode (purlin:mode engineer|pm|qa) first."}' >&2
     exit 2
 fi
 
 # Everything else is allowed in default mode — mv, cp, mkdir, git add,
-# git commit, basic rm, etc. The mode guard on Write/Edit handles
-# file-level access control; the bash guard only blocks truly dangerous ops.
+# git commit, git checkout, basic rm, python, node, etc.
 _allow "Default mode: command allowed"
