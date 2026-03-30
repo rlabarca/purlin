@@ -4,11 +4,17 @@
 # Blocks: UNKNOWN files (add classification to CLAUDE.md)
 # Allows: everything else (with permissionDecision:allow for marketplace)
 #
+# INVARIANT bypass: purlin:invariant creates a lock file at
+# .purlin/runtime/invariant_write_lock containing the target path.
+# write-guard allows the write if the lock matches, then the skill
+# removes the lock. This keeps invariant protection intact for all
+# other callers.
+#
 # Exit codes:
 #   0 = allow the write (with permissionDecision JSON)
 #   2 = block the write (error on stderr)
 
-set -euo pipefail
+set -eo pipefail
 
 _allow() {
     local reason="${1:-Authorized by Purlin write guard}"
@@ -17,6 +23,10 @@ _allow() {
 }
 
 INPUT=$(cat)
+
+if [ -z "$INPUT" ]; then
+    _allow "No hook input — fail open"
+fi
 
 FILE_PATH=$(echo "$INPUT" | python3 -c "
 import json, sys
@@ -63,11 +73,19 @@ print(classify_file('$REL_PATH'))
 
 case "$CLASSIFICATION" in
     INVARIANT)
+        # Check for bypass lock from purlin:invariant skill
+        LOCK_FILE="$PROJECT_ROOT/.purlin/runtime/invariant_write_lock"
+        if [ -f "$LOCK_FILE" ]; then
+            LOCK_PATH=$(cat "$LOCK_FILE" 2>/dev/null)
+            if [ "$LOCK_PATH" = "$REL_PATH" ] || [ "$LOCK_PATH" = "$FILE_PATH" ] || [ "$LOCK_PATH" = "*" ]; then
+                _allow "Invariant write authorized via purlin:invariant bypass lock"
+            fi
+        fi
         echo "BLOCKED: $REL_PATH is INVARIANT. Use purlin:invariant sync to update from the external source." >&2
         exit 2
         ;;
     UNKNOWN)
-        echo "BLOCKED: $REL_PATH has no classification rule. Add a rule to CLAUDE.md: \`$(echo "$REL_PATH" | sed 's|/[^/]*$|/|')\` → CODE (or SPEC)." >&2
+        echo "BLOCKED: $REL_PATH has no classification rule. Add a rule to CLAUDE.md under '## Purlin File Classifications': \`$(dirname "$REL_PATH")/\` → CODE (or SPEC)." >&2
         exit 2
         ;;
     *)

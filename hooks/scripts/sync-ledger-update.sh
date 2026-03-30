@@ -6,7 +6,7 @@
 # Exit codes:
 #   0 = always (informational, never blocks commits)
 
-set -euo pipefail
+set -eo pipefail
 
 # Detect project root
 _find_project_root() {
@@ -25,20 +25,15 @@ PROJECT_ROOT="$(_find_project_root)"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 LEDGER_FILE="$PROJECT_ROOT/.purlin/sync_ledger.json"
 
-# Get staged files
-STAGED=$(git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null || true)
-if [ -z "$STAGED" ]; then
-    exit 0
-fi
-
-python3 -c "
+# Get staged files — pipe to Python via stdin for robustness
+# (avoids shell quoting issues with unusual filenames)
+git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null | python3 -c "
 import json, os, sys, re
 from datetime import datetime, timezone
 
-project_root = '$PROJECT_ROOT'
+project_root = os.environ.get('PURLIN_PROJECT_ROOT', '$PROJECT_ROOT')
 plugin_root = '$PLUGIN_ROOT'
 ledger_file = '$LEDGER_FILE'
-staged_raw = '''$STAGED'''
 
 sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
 os.environ.setdefault('PURLIN_PROJECT_ROOT', project_root)
@@ -48,12 +43,11 @@ try:
 except Exception:
     sys.exit(0)
 
-staged = [f.strip() for f in staged_raw.strip().splitlines() if f.strip()]
+staged = [line.strip() for line in sys.stdin if line.strip()]
 if not staged:
     sys.exit(0)
 
 # --- Map staged files to features ---
-# Per-feature: track which types changed in this commit
 feature_changes = {}  # stem -> {'code': bool, 'spec': bool, 'impl': bool}
 
 for path in staged:
@@ -150,7 +144,9 @@ with open(ledger_file, 'w') as f:
     f.write('\n')
 
 # Stage the updated ledger so it's included in the commit
-os.system(f'git -C \"{project_root}\" add \"{ledger_file}\" 2>/dev/null')
+import subprocess
+subprocess.run(['git', '-C', project_root, 'add', ledger_file],
+               capture_output=True, timeout=10)
 " 2>/dev/null
 
 exit 0
