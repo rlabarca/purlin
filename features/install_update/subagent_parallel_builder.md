@@ -2,7 +2,7 @@
 
 > Label: "Tool: Sub-Agent Pipeline Delivery"
 > Category: "Install, Update & Scripts"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 
 ## 1. Overview
 

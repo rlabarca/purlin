@@ -1,4 +1,4 @@
-# Companion: purlin_agent_launcher
+# Companion: purlin_resume
 
 ## [DISCOVERY] [ACKNOWLEDGED] --effort and --find-work flags support interactive selection (2026-03-26)
 

@@ -39,7 +39,10 @@ A shared Python utility at `tools/config/resolve_config.py` that centralizes all
 - **CLI modes:** The script is also callable from the command line for shell consumers:
   - `--dump`: Print the full resolved config as JSON to stdout.
   - `--key <name>`: Print the value of a single top-level key to stdout.
-  - `<role>` (positional: `architect`, `builder`, `qa`, `pm`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_FIND_WORK=`, `AGENT_AUTO_START=`.
+  - `<role>` (positional: `architect`, `builder`, `qa`, `pm`, `purlin`): Print shell variable assignments for agent settings: `AGENT_BYPASS=`, `AGENT_FIND_WORK=`, `AGENT_AUTO_START=`, `PROJECT_NAME=`. The `purlin` role falls back to `agents.builder` config when `agents.purlin` is absent.
+  - `has_agent_config <role>`: Print `true` if `agents.<role>` exists in resolved config, `false` otherwise. Used by session entry point to detect first-run state.
+  - `set_agent_config <role> <key> <value>`: Set `agents.<role>.<key>` in `config.local.json`. Boolean config fields (`bypass_permissions`, `find_work`, `auto_start`) are coerced from CLI strings to proper JSON booleans. Writes atomically via temp file + rename.
+  - `acknowledge_warning <model_id>`: Add a model ID to the `acknowledged_warnings` list in `config.local.json`. Used for dismissing model compatibility warnings.
 - **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.1 of `project_init.md`).
 
 ### 2.2 Reader Migration
@@ -147,7 +150,26 @@ When `purlin:update` runs (pulling a new Purlin version), the resolver's `sync_c
 
     Given config.local.json exists with agent settings
     When resolve_config.py architect is invoked
-    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_FIND_WORK=, AGENT_AUTO_START=, AGENT_MODEL_WARNING=, AGENT_MODEL_WARNING_DISMISSED=
+    Then stdout contains AGENT_BYPASS=, AGENT_FIND_WORK=, AGENT_AUTO_START=, PROJECT_NAME=
+
+#### Scenario: CLI Mode has_agent_config Returns Presence Check
+
+    Given config.local.json exists with agents.purlin section
+    When resolve_config.py has_agent_config purlin is invoked
+    Then stdout contains "true"
+
+#### Scenario: CLI Mode set_agent_config Writes to Local Config
+
+    Given config.local.json exists
+    When resolve_config.py set_agent_config purlin model claude-opus-4-6 is invoked
+    Then config.local.json contains agents.purlin.model = "claude-opus-4-6"
+    And the write is atomic (temp file + rename)
+
+#### Scenario: CLI Mode set_agent_config Coerces Boolean Fields
+
+    Given config.local.json exists
+    When resolve_config.py set_agent_config purlin find_work true is invoked
+    Then config.local.json contains agents.purlin.find_work = true (boolean, not string "true")
 
 #### Scenario: Agent Config Command Writes to Local Not Shared
 

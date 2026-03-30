@@ -2,7 +2,7 @@
 
 > Label: "Tool: Plugin Architecture Migration"
 > Category: "Framework Core"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 > Prerequisite: purlin_scan_engine.md
 > Prerequisite: purlin_instruction_architecture.md
 > Prerequisite: submodule_command_path_resolution.md

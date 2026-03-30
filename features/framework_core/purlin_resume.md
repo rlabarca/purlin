@@ -1,6 +1,6 @@
-# Feature: Purlin Unified Agent Session Entry Point
+# Feature: purlin:resume — Session Entry Point
 
-> Label: "Tool: Purlin Unified Agent Session Entry Point"
+> Label: "Tool: purlin:resume Session Entry Point"
 > Category: "Framework Core"
 > Prerequisite: agent_launchers_common.md
 
@@ -33,10 +33,10 @@ Sticky flags write their resolved value to `config.local.json` via `resolve_conf
 | Flag | Config key | Description |
 |------|-----------|-------------|
 | `--model [id]` | `agents.purlin.model` | Set default model. Bare `--model` triggers interactive model+effort selection. With argument (e.g., `--model opus`), selects that model. Short names resolve: `opus` -> `claude-opus-4-6`, `sonnet` -> `claude-sonnet-4-6`, `haiku` -> `claude-haiku-4-5-20251001`. Persists the resolved full model ID. |
-| `--effort <level>` | `agents.purlin.effort` | Set default effort level (high, medium). Persists the selected level. |
+| `--effort [level]` | `agents.purlin.effort` | Set default effort level (high, medium). Bare `--effort` triggers interactive effort menu. With argument, selects that level. Persists the selected level. |
 | `--yolo` | `agents.purlin.bypass_permissions` -> `true` | Enable YOLO mode: passes `--dangerously-skip-permissions` to Claude, skipping all permission prompts. Persists to config. |
 | `--no-yolo` | `agents.purlin.bypass_permissions` -> `false` | Disable YOLO mode: restores normal permission prompts. Persists to config. |
-| `--find-work <bool>` | `agents.purlin.find_work` | Set default work discovery (true/false). Persists the value. |
+| `--find-work [bool]` | `agents.purlin.find_work` | Set default work discovery (true/false). Bare `--find-work` triggers interactive work discovery menu. With argument, selects that value. Persists the value. |
 
 - Sticky flags MUST persist proper JSON types: booleans for `bypass_permissions` and `find_work`, strings for `model` and `effort`. The resolver's `set_agent_config` MUST coerce `"true"`/`"false"` CLI strings to Python booleans for boolean config fields.
 - The session entry point MUST resolve startup control dependencies and validate the result BEFORE persisting sticky values. Invalid combinations MUST fail without modifying config. See Section 2.8.
@@ -70,10 +70,12 @@ Start a Purlin agent session.
 Saved preferences (written to .purlin/config.local.json):
   --model [id]         Set default model (opus, sonnet, haiku, or full ID).
                        Interactive if no value. Saves to config.
-  --effort <level>     Set default effort level (high, medium). Saves to config.
+  --effort [level]     Set default effort level (high, medium). Saves to config.
+                       Interactive if no value.
   --yolo               Enable YOLO mode (skip all permission prompts). Saves to config.
   --no-yolo            Disable YOLO mode (restore permission prompts). Saves to config.
-  --find-work <bool>   Set default work discovery (true/false). Saves to config.
+  --find-work [bool]   Set default work discovery (true/false). Saves to config.
+                       Interactive if no value.
 
   Use --no-save to apply any of the above for THIS SESSION ONLY
   without changing your saved config.
@@ -205,7 +207,7 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
 
     Given purlin:resume is available
     When invoked with --help
-    Then the output contains a "Saved preferences" section with --model, --effort, --yolo, --no-yolo, --find-work
+    Then the output contains a "Saved preferences" section with --model, --effort (interactive if bare), --yolo, --no-yolo, --find-work (interactive if bare)
     And the output contains a "Session options" section with --mode, --build, --auto-verify, --pm, --qa, --verify, --auto-start, --worktree
     And the output contains --no-save with an inline explanation after the sticky group
     And every sticky flag description includes "Saves to config"
@@ -301,6 +303,21 @@ CLI flags that activate `auto_start` (`--auto-start`, `--build`, `--auto-verify`
     Given config.local.json has agents.purlin.find_work = false and agents.purlin.auto_start = true
     When purlin:resume is invoked with no CLI flags
     Then the session entry point exits with error about find_work=false with auto_start=true being invalid
+
+#### Scenario: Bare --effort triggers interactive effort menu
+
+    Given purlin:resume is invoked with --effort (no value)
+    When the session entry point processes arguments
+    Then an interactive effort level menu is presented
+    And the selected value is persisted to config.local.json
+    And the session uses the selected effort level
+
+#### Scenario: Bare --find-work triggers interactive work discovery menu
+
+    Given purlin:resume is invoked with --find-work (no value)
+    When the session entry point processes arguments
+    Then an interactive work discovery menu is presented
+    And the selected value is persisted to config.local.json (as boolean)
 
 #### Scenario: Interactive --find-work selecting false with --auto-verify exits with error
 

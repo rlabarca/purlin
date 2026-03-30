@@ -2,7 +2,7 @@
 
 > Label: "Tool: Purlin Worktree Concurrency"
 > Category: "Framework Core"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 
 ## 1. Overview
 

@@ -2,7 +2,7 @@
 
 > Label: "Agent Skills: Common: purlin:remote Branch Collaboration"
 > Category: "Agent Skills: Common"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 > Prerequisite: policy_branch_collab.md
 
 [Complete]

@@ -2,7 +2,7 @@
 
 > Label: "Tool: Purlin Migration Module"
 > Category: "Framework Core"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 > Prerequisite: purlin_scan_engine.md
 
 ## 1. Overview

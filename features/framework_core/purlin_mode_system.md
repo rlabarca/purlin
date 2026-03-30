@@ -2,7 +2,7 @@
 
 > Label: "Tool: Purlin Mode System"
 > Category: "Framework Core"
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 
 ## 1. Overview
 
@@ -32,6 +32,17 @@ The mode system is the core behavioral mechanism of the Purlin unified agent. Th
 - If no mode is active: suggest the appropriate mode.
 - If wrong mode is active: suggest switching.
 - **Narration is not activation.** Stating an intent to switch modes ("Let me do this as PM") does NOT change the active mode. The mode switch MUST be executed (badge updated, terminal identity set, mode announced) before any writes to that mode's files. The agent MUST NOT write to a different mode's files based on a planned or described switch that hasn't been executed.
+
+#### 2.3.1 File Write Guard (PreToolUse: Write|Edit|NotebookEdit)
+
+The file-write mode guard is a `PreToolUse` hook on `Write`, `Edit`, and `NotebookEdit` tools. It classifies the target file path against the active mode's write-access list and blocks unauthorized writes.
+
+#### 2.3.2 Bash Command Guard (PreToolUse: Bash)
+
+A separate `PreToolUse` hook on `Bash` commands enforces default-mode read-only safety:
+- **When no mode is active (default):** Blocks Bash commands matching known write/destructive patterns: `rm`, `mv`, `cp`, `mkdir`, `touch`, `chmod`, `git add`, `git commit`, `git push`, `git reset`, `git checkout`, `git stash`, shell redirects (`>`, `>>`), `sed -i`, `tee`, and similar.
+- **When a mode IS active:** Allows all Bash commands through. Full per-mode classification of shell commands is inherently fragile, so mode-active sessions rely on the file-write guard for enforcement.
+- The blocked-command error directs the agent to activate a mode first.
 
 ### 2.4 Pre-Switch Check
 
@@ -73,19 +84,20 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
 - This is NOT optional. It is how PM discovers what was built. Skipping it creates silent spec drift.
 - For deviations, use the appropriate deviation tag (`[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, `[INFEASIBLE]`) instead of or in addition to `[IMPL]`.
 - Scan.py surfaces unacknowledged deviation entries to PM via `purlin:status`. `[IMPL]` entries are informational and are not surfaced to PM.
-- **Four mechanical enforcement gates:**
+- **Five mechanical enforcement gates:**
   1. `purlin:build` Step 4 — Clean Working Tree Gate: ALL modified files must be committed. Untracked files must be either `git add`'d or `.gitignore`'d. No dangling changes allowed before the status tag.
   2. `purlin:build` Step 4 — Companion File Gate: Mechanical check — did the companion file get new entries this session? If code was committed for a feature and the companion file has no new entries: **BLOCK.** No judgment call about whether the change "matches the spec."
   3. Mode switch out of Engineer: Mechanical check — does companion debt exist for any feature? If yes: **BLOCK.** No skip escape. The engineer writes entries (at minimum `[IMPL]` lines) or the switch does not proceed.
-  4. Scan — `scan_companion_debt()`: Compares code commit timestamps against companion file modification timestamps. Surfaces debt missed by Gates 1-3 (session crashes, manual git commits).
+  4. Scan — `scan_companion_debt()`: Compares code commit timestamps against companion file modification timestamps. Surfaces debt missed by Gates 1-5 (session crashes, manual git commits).
+  5. `FileChanged` hook — Real-time companion debt tracker: A `FileChanged` hook tracks code file changes against companion files in `.purlin/runtime/companion_debt.json`. When a code file mapped to a feature changes, it records debt. When the corresponding `.impl.md` companion file changes, it clears the debt for that feature. The mode switch protocol (Gate 3) reads this file for its mechanical check. Format: `{ "feature_stem": { "files": ["path1", ...], "first_seen": "ISO" } }`.
 
 ### 2.9 PID-Scoped Mode State
 
 - Mode state MUST be scoped to the session PID to prevent concurrent terminals from clobbering each other's mode.
 - When `PURLIN_SESSION_ID` is set, the mode file MUST be `.purlin/runtime/current_mode_${PURLIN_SESSION_ID}`.
 - When `PURLIN_SESSION_ID` is not set (manual invocation), the mode file MUST fall back to `.purlin/runtime/current_mode` (unscoped).
-- `get_mode()` MUST read the PID-scoped file first, then fall back to the unscoped file.
-- `set_mode()` MUST write to the PID-scoped file when `PURLIN_SESSION_ID` is set, and the unscoped file otherwise.
+- `get_mode()` MUST read the PID-scoped file first, then fall back to the unscoped file. **Authoritative empty file:** If the PID-scoped file EXISTS but is empty or contains an invalid mode, `get_mode()` MUST return `None` (no mode active) and MUST NOT fall back to the unscoped file. This ensures that `plan-exit-mode-clear` (which empties the file to clear mode) is not bypassed by a stale unscoped file.
+- `set_mode()` MUST write to the PID-scoped file when `PURLIN_SESSION_ID` is set, and the unscoped file otherwise. Setting mode to `None` writes an empty string (preserving the file's existence as an authoritative signal).
 - The SessionEnd hook MUST clean up PID-scoped mode files (same as it cleans up PID-scoped checkpoints).
 - Hook scripts (mode guard, plan-exit-mode-clear) MUST read from the PID-scoped file when `PURLIN_SESSION_ID` is available.
 - **Migration:** The unscoped `current_mode` file continues to work for sessions without `PURLIN_SESSION_ID`. No migration step required.
@@ -254,6 +266,41 @@ Per `features/policy_spec_code_sync.md`, every engineer code commit for a featur
     And .purlin/runtime/current_mode_1000 exists
     When the session ends (SessionEnd hook fires)
     Then .purlin/runtime/current_mode_1000 is deleted
+
+#### Scenario: Bash guard blocks destructive commands in default mode
+
+    Given no mode is active (default read-only)
+    When the agent runs a Bash command containing "rm -rf build/"
+    Then the command is blocked with exit code 2
+    And the error message suggests activating a mode first
+
+#### Scenario: Bash guard allows all commands when mode is active
+
+    Given Engineer mode is active
+    When the agent runs a Bash command containing "rm -rf build/"
+    Then the command is allowed through (exit code 0)
+
+#### Scenario: Empty PID-scoped mode file means mode cleared
+
+    Given PURLIN_SESSION_ID=1000
+    And .purlin/runtime/current_mode_1000 exists but is empty
+    And .purlin/runtime/current_mode contains "engineer" (stale unscoped)
+    When get_mode() is called
+    Then it returns None (no mode active)
+    And it does NOT fall back to the unscoped file
+
+#### Scenario: FileChanged hook records companion debt for code changes
+
+    Given Engineer mode is active
+    When a code file tests/auth_flow/test_login.py is modified
+    Then .purlin/runtime/companion_debt.json contains an entry for "auth_flow"
+    And the entry lists the changed file path
+
+#### Scenario: FileChanged hook clears debt when companion file updated
+
+    Given .purlin/runtime/companion_debt.json has debt for "auth_flow"
+    When features/framework_core/auth_flow.impl.md is modified
+    Then the "auth_flow" entry is removed from companion_debt.json
 
 ### QA Scenarios
 

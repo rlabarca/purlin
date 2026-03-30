@@ -8,8 +8,8 @@
 ### [INTENT_DRIFT] Stale PURLIN_BASE.md reference in spec and regression test (Discovered: 2026-03-25)
 - **Scenario:** Instruction stack assembly (regression T7, T10)
 - **Observed Behavior:** `pl-run.sh` does NOT load `PURLIN_BASE.md` — only `PURLIN_BASE.md`. Code aligns with `purlin_instruction_architecture.md` which explicitly says "does NOT concatenate PURLIN_BASE.md."
-- **Expected Behavior:** `purlin_agent_launcher.md` line 20 says launcher MUST assemble `PURLIN_BASE.md` + `PURLIN_BASE.md`. Regression test T7 and T10 enforce this stale expectation.
-- **Action Required:** PM (update purlin_agent_launcher spec to remove PURLIN_BASE.md from instruction stack requirement) + QA (update regression test script `tests/qa/test_purlin_agent_launcher_regression.sh` T7/T10 — regression scripts are QA-owned)
+- **Expected Behavior:** `purlin_resume.md` line 20 says launcher MUST assemble `PURLIN_BASE.md` + `PURLIN_BASE.md`. Regression test T7 and T10 enforce this stale expectation.
+- **Action Required:** PM (update purlin_resume spec to remove PURLIN_BASE.md from instruction stack requirement) + QA (update regression test script `tests/qa/test_purlin_resume_regression.sh` T7/T10 — regression scripts are QA-owned)
 - **Status:** RESOLVED
 
 ### [DISCOVERY] show_help switched from self-parsing to heredoc (Discovered: 2026-03-25)
@@ -36,6 +36,6 @@
 ### [BUG] --no-save flag missing from purlin:resume skill (Discovered: 2026-03-28)
 - **Scenario:** Help output includes yolo and no-save flags @auto
 - **Observed Behavior:** The `skills/resume/SKILL.md` file contains `--yolo` and `--no-yolo` flags but does not contain `--no-save`. Regression assertion for `--no-save` presence fails.
-- **Expected Behavior:** Per `features/purlin_agent_launcher.md` section 2.2.3, `--no-save` is a meta flag that suppresses persistence for all sticky flags. The skill file should document this flag in its usage section.
+- **Expected Behavior:** Per `features/purlin_resume.md` section 2.2.3, `--no-save` is a meta flag that suppresses persistence for all sticky flags. The skill file should document this flag in its usage section.
 - **Action Required:** Engineer (add `--no-save` flag to `skills/resume/SKILL.md` usage section and implementation)
 - **Status:** RESOLVED — fixed in auto-fix iteration 2 (2026-03-28)

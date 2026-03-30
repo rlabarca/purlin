@@ -3,7 +3,7 @@
 > Label: "Tool: Remote Session Naming"
 > Category: "Install, Update & Scripts"
 > Prerequisite: agent_launchers_common.md
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 > Prerequisite: config_layering.md
 
 ## 1. Overview

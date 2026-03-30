@@ -3,7 +3,7 @@
 > Label: "Dev: Agent Behavior Tests"
 > Category: "Test Infrastructure"
 > Prerequisite: test_fixture_repo.md
-> Prerequisite: purlin_agent_launcher.md
+> Prerequisite: purlin_resume.md
 
 [TODO]
 
