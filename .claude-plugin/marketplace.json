@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "purlin",
-      "source": ".",
+      "source": "./",
       "description": "Unified workflow agent with three modes (PM, Engineer, QA) for spec-driven development."
     }
   ]
