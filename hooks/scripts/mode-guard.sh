@@ -154,20 +154,32 @@ fi
 # Mode-active: check mode-file compatibility
 case "$CURRENT_MODE" in
     engineer)
-        if [ "$FILE_CLASS" = "SPEC" ] || [ "$FILE_CLASS" = "QA" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in Engineer mode.\"}" >&2
+        if [ "$FILE_CLASS" = "SPEC" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in Engineer mode. Call purlin_mode(mode: \\\"pm\\\") to switch.\"}" >&2
+            exit 2
+        fi
+        if [ "$FILE_CLASS" = "QA" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in Engineer mode. Call purlin_mode(mode: \\\"qa\\\") to switch.\"}" >&2
             exit 2
         fi
         ;;
     pm)
-        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "QA" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in PM mode.\"}" >&2
+        if [ "$FILE_CLASS" = "CODE" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in PM mode. Call purlin_mode(mode: \\\"engineer\\\") to switch.\"}" >&2
+            exit 2
+        fi
+        if [ "$FILE_CLASS" = "QA" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is QA-owned, not writable in PM mode. Call purlin_mode(mode: \\\"qa\\\") to switch.\"}" >&2
             exit 2
         fi
         ;;
     qa)
-        if [ "$FILE_CLASS" = "CODE" ] || [ "$FILE_CLASS" = "SPEC" ]; then
-            echo "{\"error\":\"Mode guard: $REL_PATH is $FILE_CLASS-owned, not writable in QA mode.\"}" >&2
+        if [ "$FILE_CLASS" = "CODE" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is CODE-owned, not writable in QA mode. Call purlin_mode(mode: \\\"engineer\\\") to switch.\"}" >&2
+            exit 2
+        fi
+        if [ "$FILE_CLASS" = "SPEC" ]; then
+            echo "{\"error\":\"Mode guard: $REL_PATH is SPEC-owned, not writable in QA mode. Call purlin_mode(mode: \\\"pm\\\") to switch.\"}" >&2
             exit 2
         fi
         ;;
