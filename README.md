@@ -137,7 +137,7 @@ Purlin uses **hook-based permission management** instead of `bypassPermissions`.
 
 **How it works:** Two `PreToolUse` hooks intercept every Write/Edit and Bash call. The mode guard classifies the target file against the active mode's write-access list. Authorized writes return `permissionDecision: "allow"` (auto-approved, no prompt). Unauthorized writes are blocked with `exit 2` (tool call rejected).
 
-**YOLO mode is on by default.** The `PermissionRequest` hook auto-approves remaining permission dialogs (MCP tools, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`. Disable with `purlin:config yolo off`.
+**YOLO mode is on by default.** The `PermissionRequest` hook auto-approves most permission dialogs (MCP tools, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`. User-facing decisions (plan approval, migration confirmations, remote triggers) always prompt regardless of YOLO. Disable with `purlin:config yolo off`.
 
 **Marketplace caveats:**
 - MCP tools (`purlin_mode`, `purlin_scan`, etc.) may prompt on first use per session — the PermissionRequest hook auto-approves these when YOLO is on.

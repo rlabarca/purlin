@@ -27,12 +27,17 @@ Every `Bash` call is intercepted:
 
 ### YOLO Mode (`permission-manager.sh`)
 
-A `PermissionRequest` hook auto-approves remaining permission dialogs (MCP tool calls, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`.
+A `PermissionRequest` hook auto-approves most permission dialogs (MCP tool calls, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`.
 
 **YOLO is on by default.** Disable with:
 ```
 purlin:config yolo off
 ```
+
+**Excluded from auto-approve** (user always prompted, even in YOLO mode):
+- `AskUserQuestion` — agent asking the user to make a choice (migration confirmations, options, etc.)
+- `ExitPlanMode` — agent proposing a plan for execution — user must review before it runs
+- `RemoteTrigger` — triggers external scheduled agents with side effects outside the local session
 
 ## What Works Out of the Box
 

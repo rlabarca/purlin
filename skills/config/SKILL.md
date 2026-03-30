@@ -44,7 +44,7 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 ## Setting: `yolo` (maps to `bypass_permissions`)
 
-**What it controls:** When ON, Purlin auto-approves every permission prompt. No confirmation dialogs for bash commands, file writes, network requests, or any other action. Claude Code runs uninterrupted. When OFF, Claude Code's normal permission prompts appear and you review each action before it runs.
+**What it controls:** When ON, Purlin auto-approves most permission prompts — bash commands, file writes, MCP tools, network requests all run without confirmation. When OFF, Claude Code's normal permission prompts appear for each action. User-facing decisions are NEVER auto-approved regardless of YOLO: plan approval (`ExitPlanMode`), user questions (`AskUserQuestion`), and remote triggers (`RemoteTrigger`) always prompt.
 
 **When to turn it ON:** You trust Purlin to work autonomously and don't want to babysit every action. Best for focused implementation sessions where you'll review the results at the end.
 
@@ -56,7 +56,7 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.bypass_permissions"`.
 2. **No argument** (just `purlin:config yolo`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.bypass_permissions"`, `value: true`). Print: `"YOLO mode is now ON. All permission prompts will be auto-approved."`
+3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.bypass_permissions"`, `value: true`). Print: `"YOLO mode is now ON. Most permission prompts will be auto-approved (plan approval, user questions, and remote triggers still prompt)."`
 4. **With `off`**: Write `false`. Print: `"YOLO mode is now OFF. Permission prompts will appear for each action."`
 
 ---

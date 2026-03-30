@@ -203,7 +203,7 @@ Six hooks provide mechanical enforcement and automatic lifecycle management:
 | **Mode Guard** | `PreToolUse` (Write/Edit) | Blocks file writes that violate mode boundaries. Exit code 2 = hard block. |
 | **Session Start** | `SessionStart` | Restores session context (checkpoint, mode, terminal identity). |
 | **Session End** | `SessionEnd` | Merges worktree branches, cleans session state. |
-| **Permission Manager** | `PermissionRequest` | Auto-approves permission prompts when YOLO mode is enabled. |
+| **Permission Manager** | `PermissionRequest` | Auto-approves most permission prompts when YOLO is enabled (excludes plan approval, user questions, remote triggers). |
 | **Pre-Compact Checkpoint** | `PreCompact` | Auto-saves session state before context compaction. |
 | **Companion Debt Tracker** | `FileChanged` | Tracks companion file debt when code files change. |
 
@@ -331,7 +331,7 @@ See the [Configuration Guide](config-guide.md) for the full reference.
 
 **Mode guard is mechanical now.** If you accidentally try to write a spec in Engineer mode, the hook blocks it with an error. No more relying on the agent to self-police. This is the single biggest reliability improvement.
 
-**YOLO mode persists.** Run `purlin:config yolo on` and all permission prompts are auto-approved for subsequent sessions. The `PermissionRequest` hook reads the flag from config. Run `purlin:config yolo off` to turn it off. The `--yolo`/`--no-yolo` flags on `purlin:resume` still work as shortcuts.
+**YOLO mode persists.** Run `purlin:config yolo on` and most permission prompts are auto-approved for subsequent sessions. Plan approval, user questions, and remote triggers always prompt regardless of YOLO — the agent can't approve its own plans. Run `purlin:config yolo off` to turn it off. The `--yolo`/`--no-yolo` flags on `purlin:resume` still work as shortcuts.
 
 **Model and effort are native Claude settings.** Use `/model` and `/effort` inside a session, or `claude --model claude-sonnet-4-6` at launch. These are no longer part of Purlin's config — they're Claude Code built-ins that apply to all tool use.
 
