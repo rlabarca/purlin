@@ -54,23 +54,19 @@ class MigrationStep(ABC):
         """
 
     def _stamp_version(self, project_root):
-        """Write _migration_version to consumer config.
+        """Write _migration_version to config.json ONLY.
 
-        Stamps BOTH config.json and config.local.json (if it exists).
-        The version detector reads config.local.json first, so if we
-        only stamp config.json, re-detection between steps sees a stale
-        version and steps 4/5 think step 3 hasn't completed yet.
+        config.local.json is gitignored — stamping it causes stale
+        values to survive git resets, breaking re-detection between
+        migration steps. The version detector reads config.json only.
         """
-        for filename in ('config.json', 'config.local.json'):
-            config_path = os.path.join(project_root, '.purlin', filename)
-            if filename == 'config.local.json' and not os.path.isfile(config_path):
-                continue  # Only stamp config.local.json if it already exists
-            config = _read_json(config_path) or {}
-            config['_migration_version'] = self.step_id
-            os.makedirs(os.path.dirname(config_path), exist_ok=True)
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=4)
-                f.write('\n')
+        config_path = os.path.join(project_root, '.purlin', 'config.json')
+        config = _read_json(config_path) or {}
+        config['_migration_version'] = self.step_id
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4)
+            f.write('\n')
 
     def _has_uncommitted_changes(self, project_root):
         """Check for uncommitted changes in the project."""

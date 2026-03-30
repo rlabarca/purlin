@@ -120,15 +120,17 @@ def detect_version(project_root):
     """
     project_root = os.path.abspath(project_root)
 
+    # Read migration_version from config.json ONLY (not config.local.json).
+    # _migration_version is project-level state that must be committed and
+    # survive git resets. config.local.json is gitignored and would retain
+    # stale values after a reset.
+    config_json = _read_json(
+        os.path.join(project_root, '.purlin', 'config.json')
+    ) or {}
+    migration_version = config_json.get('_migration_version')
+
     # Priority 1: Plugin model
     if _settings_has_purlin_plugin(project_root):
-        config = _read_json(
-            os.path.join(project_root, '.purlin', 'config.local.json')
-        ) or _read_json(
-            os.path.join(project_root, '.purlin', 'config.json')
-        ) or {}
-        migration_version = config.get('_migration_version')
-
         return {
             'model': 'plugin',
             'era': 'plugin',
@@ -140,13 +142,10 @@ def detect_version(project_root):
     # Priority 2: Submodule model
     submodule_path = _gitmodules_has_purlin(project_root)
     if submodule_path:
+        # Read config for era detection (local overrides OK here, just not for migration_version)
         config = _read_json(
             os.path.join(project_root, '.purlin', 'config.local.json')
-        ) or _read_json(
-            os.path.join(project_root, '.purlin', 'config.json')
-        ) or {}
-
-        migration_version = config.get('_migration_version')
+        ) or config_json
         era, version_hint = _detect_submodule_era(config)
 
         return {
@@ -159,17 +158,11 @@ def detect_version(project_root):
 
     # Priority 3: Fresh project (has .purlin/ but no submodule or plugin)
     if os.path.isdir(os.path.join(project_root, '.purlin')):
-        config = _read_json(
-            os.path.join(project_root, '.purlin', 'config.local.json')
-        ) or _read_json(
-            os.path.join(project_root, '.purlin', 'config.json')
-        ) or {}
-
         return {
             'model': 'fresh',
             'era': None,
             'version_hint': None,
-            'migration_version': config.get('_migration_version'),
+            'migration_version': migration_version,
             'submodule_path': None,
         }
 
