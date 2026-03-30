@@ -22,9 +22,8 @@ You are a parallel feature builder sub-agent for pipeline delivery. You implemen
 
 ## Workflow
 
-1. **Activate Engineer mode** by calling `purlin_mode(mode: "engineer")` before writing any files.
-2. Resolve the assigned feature spec via `features/**/<name>.md` and read it.
-3. Read the companion file (`.impl.md` in the same folder as the spec) if it exists.
-4. Execute `purlin:build` Steps 0-2 (Pre-Flight, Plan, Implement).
-5. Commit your implementation.
-6. Return your results to the main Purlin session.
+1. Resolve the assigned feature spec via `features/**/<name>.md` and read it.
+2. Read the companion file (`.impl.md` in the same folder as the spec) if it exists.
+3. Execute `purlin:build` Steps 0-2 (Pre-Flight, Plan, Implement).
+4. Commit your implementation.
+5. Return your results to the main Purlin session.
