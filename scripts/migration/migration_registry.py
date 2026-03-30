@@ -345,10 +345,23 @@ class Step3PluginRefresh(MigrationStep):
 
         actions = []
         if _gitmodules_has_purlin(project_root):
-            actions.append('Remove stale purlin submodule.')
+            actions.append('Remove purlin git submodule, .gitmodules, .git/modules/purlin.')
+        if os.path.exists(os.path.join(project_root, 'purlin')):
+            actions.append('Delete purlin/ directory.')
+        # Check for symlinks and stale scripts
+        stale_names = ['pl-run.sh', 'pl-init.sh', 'pl-cdd-start.sh',
+                       'pl-cdd-stop.sh', 'pl-cdd-status.sh']
+        found_stale = [n for n in stale_names
+                       if os.path.exists(os.path.join(project_root, n))
+                       or os.path.islink(os.path.join(project_root, n))]
+        if found_stale:
+            actions.append(f'Delete stale scripts/symlinks: {", ".join(found_stale)}.')
+        if glob_mod.glob(os.path.join(project_root, '.claude/commands/pl-*.md')):
+            actions.append('Delete old .claude/commands/pl-*.md files.')
+        if glob_mod.glob(os.path.join(project_root, '.claude/agents/*.md')):
+            actions.append('Delete old .claude/agents/*.md files.')
         actions.extend([
             'Sync config: add missing keys from plugin template.',
-            'Check for stale pre-plugin artifacts and clean up.',
             'Stamp _migration_version: 3.',
         ])
         return actions
@@ -357,17 +370,56 @@ class Step3PluginRefresh(MigrationStep):
         # Remove stale submodule if plugin was installed while submodule still exists
         _remove_stale_submodule(project_root)
 
+        # Force-remove purlin/ directory if it still exists after submodule deinit
+        # (can happen if deinit fails or the dir was already unregistered)
+        purlin_dir = os.path.join(project_root, 'purlin')
+        if os.path.exists(purlin_dir):
+            shutil.rmtree(purlin_dir, ignore_errors=True)
+            # Also git rm it if it's tracked
+            try:
+                subprocess.run(
+                    ['git', 'rm', '-rf', 'purlin'],
+                    cwd=project_root, capture_output=True, timeout=10
+                )
+            except subprocess.SubprocessError:
+                pass
+
+        # Remove .gitmodules if it still exists (even if not empty — the only
+        # submodule was purlin, so any remaining content is stale)
+        gitmodules = os.path.join(project_root, '.gitmodules')
+        if os.path.isfile(gitmodules):
+            try:
+                subprocess.run(
+                    ['git', 'rm', '-f', '.gitmodules'],
+                    cwd=project_root, capture_output=True, timeout=10
+                )
+            except subprocess.SubprocessError:
+                os.remove(gitmodules)
+
+        # Clean .git/modules/purlin cache
+        git_modules = os.path.join(project_root, '.git', 'modules', 'purlin')
+        if os.path.isdir(git_modules):
+            shutil.rmtree(git_modules, ignore_errors=True)
+
         config_path = os.path.join(project_root, '.purlin', 'config.json')
         config = _read_json(config_path) or {}
 
-        # Clean any leftover pre-plugin artifacts
-        stale = [
+        # Clean ALL stale pre-plugin artifacts: scripts, symlinks, old commands
+        stale_files = [
             os.path.join(project_root, 'pl-run.sh'),
             os.path.join(project_root, 'pl-init.sh'),
             os.path.join(project_root, '.purlin', '.upstream_sha'),
         ]
-        for f in stale:
-            if os.path.exists(f):
+        # Symlinks from old purlin launcher system
+        for name in ('pl-cdd-start.sh', 'pl-cdd-stop.sh', 'pl-cdd-status.sh',
+                     'purlin-start.sh', 'purlin-stop.sh'):
+            stale_files.append(os.path.join(project_root, name))
+        for f in stale_files:
+            if os.path.exists(f) or os.path.islink(f):
+                os.remove(f)
+        # Old command files
+        for pattern in ['.claude/commands/pl-*.md', '.claude/agents/*.md']:
+            for f in glob_mod.glob(os.path.join(project_root, pattern)):
                 os.remove(f)
 
         # Stamp version

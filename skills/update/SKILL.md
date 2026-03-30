@@ -148,7 +148,13 @@ Status:       ✓ Migration complete
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-If the project was migrated from submodule to plugin (step 2 ran), append:
+If step 4 (Figma to Design Invariant) created any invariant files, append:
+
+```
+Next: Run purlin:invariant sync to fetch Figma metadata for the new design invariants.
+```
+
+If the project was migrated from submodule to plugin (step 2 or 3 removed the submodule), append:
 
 ```
 Next: Run purlin:resume to verify the plugin works.
