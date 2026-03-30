@@ -1,0 +1,16 @@
+{
+  "name": "purlin",
+  "owner": {
+    "name": "rlabarca"
+  },
+  "metadata": {
+    "description": "Purlin — spec-driven development for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "purlin",
+      "source": ".",
+      "description": "Unified workflow agent with three modes (PM, Engineer, QA) for spec-driven development."
+    }
+  ]
+}
