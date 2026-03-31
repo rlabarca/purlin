@@ -262,4 +262,4 @@ These commands are documented in their respective role guides:
 
 - **PM:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit` — see [PM Guide](pm-agent-guide.md)
 - **Engineer:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Guide](engineer-agent-guide.md)
-- **QA:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report`, `purlin:fixture` — see [QA Guide](qa-agent-guide.md)
+- **QA:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report` — see [QA Guide](qa-agent-guide.md)

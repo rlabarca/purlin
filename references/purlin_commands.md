@@ -101,7 +101,6 @@ Activate a mode with purlin:mode or invoke a mode-specific skill.
   purlin:regression evaluate [feature]
                                 Evaluate results against baselines
   purlin:smoke [feature]        Promote tests to smoke tier (bare: suggest candidates)
-  purlin:fixture                Test fixture management (mode-aware)
 
   Also available from QA (no mode switch):
   purlin:unit-test              Run tests (verify-only, cannot edit code)

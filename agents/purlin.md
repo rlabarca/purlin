@@ -155,7 +155,6 @@ Skills encode workflows. Any user can invoke any skill — there are no role res
 
 Any skill can be invoked at any time:
 - `purlin:unit-test` and `purlin:web-test` run tests without restriction.
-- `purlin:fixture` manages test fixtures.
 - `purlin:server` starts/stops dev servers.
 - `purlin:toolbox` manages agent-executable tools.
 

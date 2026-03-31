@@ -209,7 +209,6 @@ QA mode marks a feature complete when all gates pass:
 | `purlin:regression <cmd>` | Author, run, or evaluate regression suites. |
 | `purlin:smoke <feature>` | Promote a feature to the smoke tier. |
 | `purlin:qa-report` | Summary of discoveries and verification status. |
-| `purlin:fixture` | Manage test fixtures — create, list, verify, or push to remote. |
 | `purlin:web-test [name]` | Playwright visual verification (cross-mode from QA). |
 | `purlin:unit-test [name]` | Run unit tests (cross-mode from QA). |
 | `purlin:server` | Start/stop dev server for web testing (cross-mode from QA). |

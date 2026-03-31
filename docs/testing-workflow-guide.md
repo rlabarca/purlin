@@ -159,11 +159,9 @@ Every project should have 5-15 smoke features covering the functionality users w
 
 Some test scenarios need controlled project state — specific config values, git history, or branch structures. Purlin uses **fixture tags**: immutable git tags in a dedicated repo, each representing a snapshot of project state.
 
-When QA mode encounters a scenario that needs fixtures, it offers three options:
+PMs declare fixture tags in specs (`### 2.x Integration Test Fixture Tags`). Engineers create the fixture repo and tags during `purlin:build`. QA references tags in regression scenario JSON. The harness runner checks out tags at test time and cleans up after each scenario.
 
-1. **Local repo** — Created at `.purlin/runtime/fixture-repo`. Good for most projects.
-2. **Remote repo** — You provide a git URL. Good for team-shared fixtures.
-3. **Inline setup** — Shell commands in the regression file. Good for simple state.
+**Fixture repos** live at `.purlin/runtime/fixture-repo` (local, gitignored) or at a URL configured via `fixture_repo_url` in `.purlin/config.json` (team-shared). For simple state (one file, one env var), use inline `setup_commands` in scenario JSON instead.
 
 Tags are immutable once created. The fixture repo is derived (not precious state) and can be regenerated from project files.
 

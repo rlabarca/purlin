@@ -176,7 +176,6 @@ You verify **what was built matches what was specified**. Your main tools:
 | Promote a feature to smoke tier | `purlin:smoke <feature>` |
 | Get smoke tier suggestions | `purlin:smoke suggest` |
 | View verification status | `purlin:qa-report` |
-| Manage test fixtures | `purlin:fixture` |
 
 **Start here:** Run `purlin:verify` to verify all features waiting for QA, or `purlin:verify <name>` for a specific one. The agent runs automated scenarios first, then walks you through manual checks.
 
@@ -287,4 +286,3 @@ Run `purlin:help` inside any session for the full list.
 | `purlin:regression` | Author, run, or evaluate regression suites. |
 | `purlin:smoke <feature>` | Promote a feature to smoke tier, or suggest candidates. |
 | `purlin:qa-report` | Summarize open discoveries and verification status. |
-| `purlin:fixture` | Manage test fixtures — create, list, verify, push. |
