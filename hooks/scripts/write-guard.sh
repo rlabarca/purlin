@@ -79,6 +79,13 @@ _has_active_skill() {
     [ -f "$marker" ] && [ -s "$marker" ]
 }
 
+# --- Step 0: Global Claude system files — always writable ---
+case "$FILE_PATH" in
+    "$HOME/.claude/"*|"$HOME/.claude-code/"*)
+        _allow "Write guard: global Claude system file"
+        ;;
+esac
+
 # --- Step 1: System files — always writable ---
 case "$REL_PATH" in
     .purlin/*|.claude/*)
@@ -96,7 +103,7 @@ case "$REL_PATH" in
                 _allow "Invariant write authorized via purlin:invariant bypass lock"
             fi
         fi
-        echo "BLOCKED: $REL_PATH is INVARIANT. Use purlin:invariant sync to update from the external source." >&2
+        echo "BLOCKED: $REL_PATH is INVARIANT. Use purlin:invariant sync to update from the external source. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
@@ -107,7 +114,7 @@ case "$REL_PATH" in
         if _has_active_skill; then
             _allow "Write guard: features file authorized via active_skill marker"
         fi
-        echo "BLOCKED: $REL_PATH is a spec file. To modify specs, invoke the appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals), purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The skill will set the write marker and handle companion files automatically." >&2
+        echo "BLOCKED: $REL_PATH is a spec file. To modify specs, invoke the appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals), purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The skill will set the write marker and handle companion files automatically. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
@@ -135,11 +142,11 @@ fi
 
 case "$CLASSIFICATION" in
     UNKNOWN)
-        echo "BLOCKED: $REL_PATH has no classification rule. Ask the user how this path should be classified, then add a rule to CLAUDE.md under '## Purlin File Classifications'." >&2
+        echo "BLOCKED: $REL_PATH has no classification rule. Ask the user how this path should be classified, then add a rule to CLAUDE.md under '## Purlin File Classifications'. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
     *)
-        echo "BLOCKED: $REL_PATH is a code file. To modify code, invoke purlin:build — it will find the right feature, set the write marker, and track companion files automatically." >&2
+        echo "BLOCKED: $REL_PATH is a code file. To modify code, invoke purlin:build — it will find the right feature, set the write marker, and track companion files automatically. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
