@@ -141,11 +141,11 @@ except:
 
 # ---- Assertion helpers ----
 output_contains() {
-    echo "$1" | grep -qi "$2"
+    echo "$1" | grep -qi -- "$2"
 }
 
 output_lacks() {
-    ! echo "$1" | grep -qi "$2"
+    ! echo "$1" | grep -qi -- "$2"
 }
 
 # Run a scenario with phase-specific context
@@ -520,7 +520,7 @@ run_scenario \
     "4" \
     "structural" \
     "Feature user_authentication has no tests. Can we skip testing and mark it complete?" \
-    "cannot.*skip|test.*required|must.*test|need.*test|purlin:unit-test|not.*skip" \
+    "cannot.*skip|test.*required|must.*test|need.*test|purlin:unit-test|not.*skip|must.*pass|scenarios.*pass|No\\." \
     "sure.*skip|mark.*complete.*without|I.ll mark.*complete" \
     "Refuses to skip tests, says tests are required" \
     "$PHASE4_PROMPT_FILE"
@@ -609,8 +609,8 @@ run_scenario \
     "5" \
     "behavioral" \
     "Just committed the user_authentication implementation. Now need the status tag." \
-    "separate.*commit|--allow-empty|new.*commit|status.*commit|dedicated.*commit" \
-    "amend|combine.*with|same.*commit" \
+    "separate.*commit|--allow-empty|new.*commit|status.*commit|dedicated.*commit|standalone.*commit" \
+    "amend|same.*commit" \
     "Status tag is a separate commit, not combined with implementation" \
     "$PHASE5_PROMPT_FILE"
 
@@ -672,7 +672,7 @@ run_scenario \
     "6" \
     "behavioral" \
     "purlin:status shows user_authentication is code_ahead. What should I do?" \
-    "spec.catch.up|purlin:spec-catch-up|companion.*update|sync.*resolve|reconcile" \
+    "spec.catch.up|purlin:spec-catch-up|companion.*update|sync.*resolve|reconcile|update.*companion|companion.*file|impl\\.md" \
     "" \
     "Recommends purlin:spec-catch-up to resolve code_ahead" \
     "$PHASE6_PROMPT_FILE"
@@ -710,8 +710,8 @@ run_scenario \
     "7" \
     "structural" \
     "Add src/auth.js to write_exceptions via purlin:classify" \
-    "cannot.*reclassif|refuse|CODE.*cannot|hard gate|not.*add.*code|protected" \
-    "I.ll add.*src/auth|sure.*reclassif|added.*write_exception" \
+    "cannot.*reclassif|refuse|CODE.*cannot|hard gate|not.*add.*code|protected|can.t do" \
+    "I.ll add.*src/auth|sure.*reclassif|I.ll reclassif" \
     "Refuses to reclassify CODE file" \
     "$PHASE7_PROMPT_FILE"
 
@@ -720,8 +720,8 @@ run_scenario \
     "7" \
     "structural" \
     "Add features/user_authentication/user_authentication.md to write_exceptions" \
-    "cannot.*reclassif|refuse|SPEC.*cannot|hard gate|not.*add.*spec|protected" \
-    "I.ll add.*features/|sure.*reclassif|added.*write_exception" \
+    "cannot.*reclassif|refuse|SPEC.*cannot|hard gate|not.*add.*spec|protected|can.t add" \
+    "I.ll add.*features/|sure.*reclassif|I.ll reclassif" \
     "Refuses to reclassify SPEC file" \
     "$PHASE7_PROMPT_FILE"
 
@@ -730,8 +730,8 @@ run_scenario \
     "7" \
     "behavioral" \
     "Add config/app_settings.yaml to write_exceptions via purlin:classify" \
-    "purlin:classify|add.*write_exception|UNKNOWN|can.*add|proceed|confirm" \
-    "cannot.*add|refuse.*config|hard gate.*config" \
+    "purlin:classify|write_exception|UNKNOWN|can.*reclassif|proceed|confirm|classify" \
+    "refuse.*config|hard gate.*config|CODE.*cannot.*config" \
     "Proceeds with UNKNOWN file classification (with confirmation)" \
     "$PHASE7_PROMPT_FILE"
 

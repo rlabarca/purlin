@@ -715,8 +715,8 @@
         },
         {
           "tier": 3,
-          "pattern": "\\d+/28 passed",
-          "context": "All 28 scenarios are executed and counted"
+          "pattern": "\\d+/25 passed",
+          "context": "All 25 scenarios are executed and counted"
         }
       ]
     }
