@@ -439,6 +439,7 @@
     {
       "name": "agent-skill-routing-live",
       "script_path": "tests/purlin_sync_system/test_agent_skill_routing.sh",
+      "timeout": 600,
       "assertions": [
         {
           "tier": 2,

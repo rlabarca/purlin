@@ -615,17 +615,19 @@ def execute_custom_script(scenario, project_root):
     if not os.path.isfile(abs_script):
         return (f"Error: script not found: {abs_script}", False, None)
 
+    timeout_s = scenario.get('timeout', 300)
+
     try:
         result = subprocess.run(
             ['bash', abs_script, '--write-results'],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True, text=True, timeout=timeout_s,
             cwd=project_root,
             env={**os.environ, 'PURLIN_PROJECT_ROOT': project_root},
         )
         output = result.stdout + result.stderr
         return (output, result.returncode == 0, None)
     except subprocess.TimeoutExpired:
-        return ("Error: custom_script timed out after 300s", False, None)
+        return (f"Error: custom_script timed out after {timeout_s}s", False, None)
     except OSError as e:
         return (f"Error: {e}", False, None)
 
