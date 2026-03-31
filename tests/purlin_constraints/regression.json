@@ -1,0 +1,114 @@
+{
+  "status": "PASS",
+  "passed": 15,
+  "failed": 0,
+  "total": 15,
+  "test_file": "tests/qa/scenarios/purlin_constraints.json",
+  "details": [
+    {
+      "name": "constraint-resolution-full-suite:Direct anchor prerequisites are classified as anchors",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Direct anchor prerequisites are classified as anchors",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Scoped invariants (i_* prefix) are classified separately from anchors",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Scoped invariants (i_* prefix) are classified separately from anchors",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Transitive prerequisites are resolved through invariant chains",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Transitive prerequisites are resolved through invariant chains",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Global invariants (Scope: global) apply to features",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Global invariants (Scope: global) apply to features",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Global invariants apply even to features with no prerequisites",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Global invariants apply even to features with no prerequisites",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Deep transitive chains (3+ levels) are fully resolved",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Deep transitive chains (3+ levels) are fully resolved",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Diamond dependencies deduplicate shared ancestors",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Diamond dependencies deduplicate shared ancestors",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Error handling for missing features",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Error handling for missing features",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Error handling when no graph is available",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Error handling when no graph is available",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:All 5 anchor prefixes (arch_, design_, policy_, ops_, prodbrief_) detected",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "All 5 anchor prefixes (arch_, design_, policy_, ops_, prodbrief_) detected",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:All 5 invariant prefixes (i_arch_, i_design_, i_policy_, i_ops_, i_prodbrief_) detected",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "All 5 invariant prefixes (i_arch_, i_design_, i_policy_, i_ops_, i_prodbrief_) detected",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:*.impl.md and *.discoveries.md files are not graph nodes",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "*.impl.md and *.discoveries.md files are not graph nodes",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:Ancestor files with FORBIDDEN sections are reachable via constraints",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "Ancestor files with FORBIDDEN sections are reachable via constraints",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:API response structure is stable (feature, ancestors, anchors, scoped_invariants, global_invariants)",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "API response structure is stable (feature, ancestors, anchors, scoped_invariants, global_invariants)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "constraint-resolution-full-suite:All constraint resolution assertions pass",
+      "status": "PASS",
+      "scenario_ref": "features/purlin_constraints.md:constraint-resolution-full-suite",
+      "expected": "All constraint resolution assertions pass",
+      "assertion_tier": 3
+    }
+  ]
+}

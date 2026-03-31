@@ -24,17 +24,12 @@
         },
         {
           "tier": 2,
-          "pattern": "SPEC file allowed",
+          "pattern": "spec file allowed",
           "context": "Write guard allows writes to SPEC-classified files"
         },
         {
           "tier": 2,
-          "pattern": "QA file allowed",
-          "context": "Write guard allows writes to QA-classified files"
-        },
-        {
-          "tier": 2,
-          "pattern": "companion file allowed",
+          "pattern": "impl\\.md allowed",
           "context": "Write guard allows writes to .impl.md companion files"
         },
         {

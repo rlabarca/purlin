@@ -1,0 +1,359 @@
+{
+  "status": "PASS",
+  "passed": 50,
+  "failed": 0,
+  "total": 50,
+  "test_file": "tests/qa/scenarios/purlin_sync_system.json",
+  "details": [
+    {
+      "name": "write-guard-enforcement:Write guard blocks writes to INVARIANT files regardless of user",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard blocks writes to INVARIANT files regardless of user",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-enforcement:Write guard blocks writes to files with no classification rule",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard blocks writes to files with no classification rule",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-enforcement:Write guard allows writes to CODE-classified files",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard allows writes to CODE-classified files",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-enforcement:Write guard allows writes to SPEC-classified files",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard allows writes to SPEC-classified files",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-enforcement:Write guard allows writes to .impl.md companion files",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard allows writes to .impl.md companion files",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-enforcement:Write guard allows INVARIANT write when bypass lock matches",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-enforcement",
+      "expected": "Write guard allows INVARIANT write when bypass lock matches",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Files in features/_invariants/i_*.md classified as INVARIANT",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Files in features/_invariants/i_*.md classified as INVARIANT",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Files ending in .discoveries.md classified as QA",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Files ending in .discoveries.md classified as QA",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Feature spec .md files classified as SPEC",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Feature spec .md files classified as SPEC",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Companion .impl.md files classified as CODE",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Companion .impl.md files classified as CODE",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Python source files classified as CODE",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Python source files classified as CODE",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Agent definition classified as CODE",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Agent definition classified as CODE",
+      "assertion_tier": 2
+    },
+    {
+      "name": "file-classification-rules:Skill SKILL.md files classified as CODE",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:file-classification-rules",
+      "expected": "Skill SKILL.md files classified as CODE",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Unclassified files return UNKNOWN when no custom rules exist",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Unclassified files return UNKNOWN when no custom rules exist",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Custom CLAUDE.md classification overrides UNKNOWN",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Custom CLAUDE.md classification overrides UNKNOWN",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Multiple custom classifications work in same file",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Multiple custom classifications work in same file",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:INVARIANT cannot be assigned via CLAUDE.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "INVARIANT cannot be assigned via CLAUDE.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Built-in rules still work alongside custom rules",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Built-in rules still work alongside custom rules",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:No CLAUDE.md file: unclassified files are UNKNOWN",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "No CLAUDE.md file: unclassified files are UNKNOWN",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Malformed classification lines are silently ignored",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Malformed classification lines are silently ignored",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Consumer projects can reclassify their own directories via CLAUDE.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Consumer projects can reclassify their own directories via CLAUDE.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "custom-classification-rules:Plugin files (absolute paths) are immune to project custom rules",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:custom-classification-rules",
+      "expected": "Plugin files (absolute paths) are immune to project custom rules",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:Writing a CODE file adds it to sync_state.json features",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "Writing a CODE file adds it to sync_state.json features",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:Writing a SPEC file sets spec_changed in sync_state.json",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "Writing a SPEC file sets spec_changed in sync_state.json",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:Writing an .impl.md file sets impl_changed in sync_state.json",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "Writing an .impl.md file sets impl_changed in sync_state.json",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:Files that cannot map to a feature go to unclassified_writes",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "Files that cannot map to a feature go to unclassified_writes",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:.purlin/ directory files are not tracked",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": ".purlin/ directory files are not tracked",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:skills/<name>/ maps to purlin_<name> if feature exists, no bogus keys",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "skills/<name>/ maps to purlin_<name> if feature exists, no bogus keys",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:System directory features/_tombstones/ is not tracked as a feature",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "System directory features/_tombstones/ is not tracked as a feature",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:System directory features/_invariants/ is not tracked as a feature",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": "System directory features/_invariants/ is not tracked as a feature",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:.discoveries.md files set qa_changed on the correct feature",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": ".discoveries.md files set qa_changed on the correct feature",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-tracker-state:.claude/ directory files are not tracked",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-tracker-state",
+      "expected": ".claude/ directory files are not tracked",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Committing only code files sets sync_status to code_ahead",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Committing only code files sets sync_status to code_ahead",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Committing only spec files sets sync_status to spec_ahead",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Committing only spec files sets sync_status to spec_ahead",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Committing both code and spec sets sync_status to synced",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Committing both code and spec sets sync_status to synced",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Committing code with impl sets sync_status to synced",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Committing code with impl sets sync_status to synced",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:--sha argument replaces 'pending' commit SHAs with real hash",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "--sha argument replaces 'pending' commit SHAs with real hash",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Impl-only commit resolves existing code_ahead debt",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Impl-only commit resolves existing code_ahead debt",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Impl-only commit does not falsely resolve spec_ahead status",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Impl-only commit does not falsely resolve spec_ahead status",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Discoveries files are not mapped to a feature stem in the ledger",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Discoveries files are not mapped to a feature stem in the ledger",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Files in tests/<stem>/ directory map to the feature stem",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Files in tests/<stem>/ directory map to the feature stem",
+      "assertion_tier": 2
+    },
+    {
+      "name": "sync-ledger-update:Skill directory maps to purlin_<name> when matching feature exists",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Skill directory maps to purlin_<name> when matching feature exists",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-update:Skill with no matching feature creates no false ledger entries",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Skill with no matching feature creates no false ledger entries",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-update:PURLIN_COMMIT_MSG scope extraction maps otherwise-unmapped files",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "PURLIN_COMMIT_MSG scope extraction maps otherwise-unmapped files",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-update:Files with no path match and no commit scope are not added to ledger",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-update",
+      "expected": "Files with no path match and no commit scope are not added to ledger",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-scan-overlay:scan_sync_ledger() returns entries from sync_ledger.json",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
+      "expected": "scan_sync_ledger() returns entries from sync_ledger.json",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-scan-overlay:Session sync_state.json overlays onto ledger entries",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
+      "expected": "Session sync_state.json overlays onto ledger entries",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-scan-overlay:Unclassified session writes appear as _unclassified entry",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
+      "expected": "Unclassified session writes appear as _unclassified entry",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-scan-overlay:No data produces empty scan result",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
+      "expected": "No data produces empty scan result",
+      "assertion_tier": 3
+    },
+    {
+      "name": "sync-ledger-scan-overlay:Features only in session state are included in scan output",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
+      "expected": "Features only in session state are included in scan output",
+      "assertion_tier": 3
+    }
+  ]
+}
