@@ -2,24 +2,21 @@
 
 ## Unified Format
 
-`<short_mode>(<context>) | <label>` — e.g., `Eng(main) | add auth flow`, `QA(dev/0.8.6) | verify login`.
-
-**Mode shortening:** `Engineer`/`engineer` -> `Eng`; `PM`/`pm`, `QA`/`qa` unchanged; `none`/empty -> `Purlin`.
+`(<context>) <label>` — e.g., `(main) purlin`, `(dev/0.8.6) building webhook_delivery`, `(W1) verifying auth`.
 
 **Context:** Worktree label (from `.purlin_worktree_label`) if present, otherwise branch via `git rev-parse --abbrev-ref HEAD`. Context MUST always be present.
 
 ```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<mode>" "<label>"
+source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<label>"
 ```
 
-## When to Update the Label
+## When Identity Is Set
 
-| Event | Label |
-|-------|-------|
-| Mode activation (no specific task yet) | Project name |
-| **Starting work on a feature** (implementing, spec authoring, verifying, auditing, testing) | Short task description (3-4 words) derived from the feature name or topic |
-| Switching to a different feature | New task description |
-| Phase transition in delivery plan | `Phase N/M: <task>` |
-| Completing a feature / returning to idle | Project name |
+Terminal identity is a **session-level concern**, not a per-skill concern. It is set in two places:
 
-**The task label rule is mandatory.** Whenever you begin focused work on a feature — whether via `purlin:build`, via the resume work plan, via user instruction, or via auto-start — update the terminal identity with a short description of what you're doing. Do NOT leave the label as the project name while actively working on a feature. The user has multiple terminals and needs to see at a glance what each one is doing.
+1. **Session start** — via `purlin:resume` (Step 3) or the SessionStart hook. Label defaults to the project name.
+2. **Manual override** — via `purlin:session-name <label>` when the user wants a different label.
+
+Individual skills (build, spec, verify, etc.) do NOT update terminal identity. This avoids wasting context tokens on cosmetic updates during every skill invocation.
+
+The `purlin:merge` skill resets identity after a worktree merge (the context changes from worktree to source branch).
