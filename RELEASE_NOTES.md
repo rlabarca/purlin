@@ -71,7 +71,7 @@ Install with one command, enable per-project. No more submodule management, laun
 - `purlin:mode` -- switch modes or check current mode status without arguments
 - `purlin:remote` -- consolidates `purlin:remote-push`, `purlin:remote-pull`, and `purlin:remote-add` into one skill
 - `purlin:regression` -- consolidates `purlin:regression-author`, `purlin:regression-run`, and `purlin:regression-evaluate`
-- `purlin:smoke` -- smoke-first verification gate for QA
+- `purlin:smoke` -- smoke-first verification gate for QA (retired in v0.8.6; now `purlin:regression promote/suggest`)
 - `purlin:whats-different` -- now includes companion staleness detection and mode-aware impact briefing
 
 **Scan Engine**
@@ -250,11 +250,9 @@ Install with one command, enable per-project. No more submodule management, laun
 - Engineer now owns all automated verification (AFT:Web, AFT:TestOnly, AFT:Skip). QA only sees manual items.
 - New B1/B2/B3 sub-phase protocol for phased delivery: Build, Test (cross-feature regression), Fix (analyze-first).
 
-**Test Fixtures (`purlin:fixture`)**
-- New test fixture system for scenarios that need controlled project state (specific git history, config values, branch topologies). Each fixture is an immutable git tag in a dedicated fixture repo -- no complex setup code needed.
-- `tools/fixtures/setup_fixture_repo.sh` ships with 74 pre-built fixture tags covering CDD lifecycle, branch collaboration, agent configuration, and more.
-- Convention-over-configuration: the fixture repo lives at `tests/fixtures/fixture-repo/` and is auto-created on first test run.
-- `purlin:fixture` skill available to all roles for managing fixtures.
+**Test Fixtures**
+- Test fixture system for scenarios that need controlled project state (specific git history, config values, branch topologies). Each fixture is an immutable git tag in a dedicated fixture repo.
+- Fixture guidance is built into `purlin:spec` (PM declares tags), `purlin:build` (Engineer creates fixtures), and `purlin:verify` (QA detects missing fixtures). The dedicated `purlin:fixture` skill was retired in v0.8.6.
 
 **Automated Test Expansion**
 - Fixtures and Web Verify work together to simulate real interface testing across different configuration states. A fixture tag sets up the project state (branch topology, config values, feature lifecycle), then Web Verify launches the dashboard against that state and validates the UI in a real browser. This combination makes it possible to automatically test scenarios that previously required a human to manually set up a project, open a browser, and click through the dashboard.

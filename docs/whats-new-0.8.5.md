@@ -46,7 +46,7 @@ Switch mid-session with `purlin:mode engineer`, `purlin:mode pm`, or `purlin:mod
 - Runs the full verification workflow: `purlin:verify` with auto-fix, strategy menu, and regression readiness checks.
 - **Cross-mode test execution:** QA can run `purlin:unit-test`, `purlin:web-test`, and `purlin:server` for verification without switching to Engineer.
 - `purlin:regression` is now a single unified command (replaces three separate commands).
-- Smoke testing tiers still work — `purlin:smoke` promotes features to higher priority.
+- Smoke testing tiers still work — use `purlin:regression promote` to promote features to higher priority (as of v0.8.6).
 
 ---
 

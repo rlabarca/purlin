@@ -28,7 +28,7 @@ The scan now includes a `smoke_candidates` field that surfaces completed feature
 with 3+ dependents that aren't already smoke-classified. Implementation reuses
 `suggest_smoke_features()` from `scripts/smoke/smoke.py` and applies two additional
 filters: lifecycle must be COMPLETE, and dependents must be >= 3. This is the
-scan-level signal described in `features/purlin_smoke.md` Section 2.7.
+scan-level signal formerly described in purlin_smoke.md (retired; smoke management now in `purlin:regression promote/suggest`).
 
 ## [DISCOVERY] [ACKNOWLEDGED] Focused output and tombstone exclusion flags (2026-03-26)
 
