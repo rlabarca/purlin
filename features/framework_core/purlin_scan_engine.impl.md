@@ -25,10 +25,13 @@ before completion are correctly ignored.
 ## [DISCOVERY] [ACKNOWLEDGED] Smoke candidate detection added to scan output (2026-03-26)
 
 The scan now includes a `smoke_candidates` field that surfaces completed features
-with 3+ dependents that aren't already smoke-classified. Implementation reuses
-`suggest_smoke_features()` from `scripts/smoke/smoke.py` and applies two additional
-filters: lifecycle must be COMPLETE, and dependents must be >= 3. This is the
-scan-level signal formerly described in purlin_smoke.md (retired; smoke management now in `purlin:regression promote/suggest`).
+with 3+ dependents that aren't already smoke-classified. Implementation is
+self-contained in `_scan_smoke_candidates()` — reads the dep graph from cache,
+tier table from config.json, and `_smoke.json` files directly. No external module
+dependency. Filters: lifecycle must be COMPLETE, dependents must be >= 3, not
+already smoke-classified. Output contract unchanged. The former
+`scripts/smoke/smoke.py` module was deleted (2026-03-31); all suggestion logic
+now lives in scan_engine.py.
 
 ## [DISCOVERY] [ACKNOWLEDGED] Focused output and tombstone exclusion flags (2026-03-26)
 

@@ -24,15 +24,12 @@ from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
-# Add scripts/ parent for smoke module access
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
 from bootstrap import detect_project_root, atomic_write
 from invariant_engine import (
     is_invariant_node, is_anchor_node as _invariant_is_anchor,
     ANCHOR_PREFIXES as _ALL_ANCHOR_PREFIXES, extract_metadata as _extract_inv_metadata,
     compute_content_hash, validate_invariant,
 )
-from smoke.smoke import suggest_smoke_features
 
 PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 FEATURES_DIR = os.path.join(PROJECT_ROOT, "features")
@@ -1060,44 +1057,94 @@ def scan_invariant_integrity():
 # Smoke candidate detection
 # ---------------------------------------------------------------------------
 
+_SMOKE_CATEGORIES = {"Install, Update & Scripts", "Coordination & Lifecycle"}
+_SMOKE_NAME_KEYWORDS = {"launcher", "init", "config", "cdd", "status"}
+
+
 def _scan_smoke_candidates(features):
     """Identify completed features that should be promoted to smoke tier.
 
-    Reuses suggest_smoke_features() from tools/smoke/smoke.py and filters
-    to only include features with COMPLETE lifecycle status.
+    Surfaces actionable candidates: COMPLETE features with high fan-out
+    (3+ dependents) that aren't already smoke-classified. Used by
+    purlin:verify Step 2 (smoke promotion suggestion) and
+    purlin:regression suggest.
     """
-    try:
-        scan_data = {"features": features}
-        # Let suggest_smoke_features load the raw dep graph from disk
-        suggestions = suggest_smoke_features(
-            PROJECT_ROOT, scan_data=scan_data, dep_graph=None
-        )
-    except Exception:
-        return []
+    # Load dependency graph for fan-out analysis.
+    dep_graph = _read_json_safe(DEP_GRAPH_FILE) or {"features": []}
 
-    # Build lifecycle index from scanned features
-    lifecycle_by_name = {f["name"]: f.get("lifecycle") for f in features}
+    # Read existing smoke tier classifications.
+    config = _read_json_safe(
+        os.path.join(PROJECT_ROOT, ".purlin", "config.json")) or {}
+    tier_table = config.get("test_priority_tiers", {})
+    smoke_set = {k for k, v in tier_table.items() if v == "smoke"}
 
-    # Filter: only completed features with 3+ dependents (high fan-out)
+    # Also check for _smoke.json files.
+    scenarios_dir = os.path.join(PROJECT_ROOT, "tests", "qa", "scenarios")
+    if os.path.isdir(scenarios_dir):
+        for fname in os.listdir(scenarios_dir):
+            if fname.endswith("_smoke.json"):
+                smoke_set.add(fname.replace("_smoke.json", ""))
+
+    # Count dependents (fan-out) from the dependency graph.
+    dependents = {}
+    for f in dep_graph.get("features", []):
+        for prereq in f.get("prerequisites", []):
+            basename = prereq.split(" ")[0].replace(".md", "").split("/")[-1]
+            dependents[basename] = dependents.get(basename, 0) + 1
+
+    # Build category index from dep graph.
+    category_by_name = {}
+    for f in dep_graph.get("features", []):
+        basename = os.path.basename(f["file"]).replace(".md", "")
+        category_by_name[basename] = f.get("category", "")
+
+    # Build lifecycle + test status index from scanned features.
+    lifecycle_by_name = {}
+    test_status_by_name = {}
+    for f in features:
+        lifecycle_by_name[f["name"]] = f.get("lifecycle")
+        test_status_by_name[f["name"]] = f.get("test_status")
+
+    # Collect all feature names from dep graph.
+    all_features = set()
+    for f in dep_graph.get("features", []):
+        all_features.add(os.path.basename(f["file"]).replace(".md", ""))
+
     candidates = []
-    for s in suggestions:
-        if lifecycle_by_name.get(s["feature"]) != "COMPLETE":
+    for feature in sorted(all_features):
+        if feature in smoke_set:
             continue
-        dep_count = 0
-        for reason in s["reasons"]:
-            if reason.startswith("prerequisite for "):
-                try:
-                    dep_count = int(reason.split()[2])
-                except (IndexError, ValueError):
-                    pass
-                break
+        if lifecycle_by_name.get(feature) != "COMPLETE":
+            continue
+
+        dep_count = dependents.get(feature, 0)
         if dep_count < 3:
             continue
+
+        reasons = [f"prerequisite for {dep_count} features"]
+
+        if feature.startswith(
+                ("arch_", "design_", "policy_", "ops_", "prodbrief_", "i_")):
+            reasons.append("foundational constraint (anchor node)")
+
+        category = category_by_name.get(feature, "")
+        if category in _SMOKE_CATEGORIES:
+            reasons.append(f"core category: {category}")
+
+        for keyword in _SMOKE_NAME_KEYWORDS:
+            if keyword in feature:
+                reasons.append(f'name contains "{keyword}"')
+                break
+
         candidates.append({
-            "feature": s["feature"],
+            "feature": feature,
             "dependents": dep_count,
-            "reasons": s["reasons"],
+            "reasons": reasons,
+            "has_passing_tests": test_status_by_name.get(feature) == "PASS",
         })
+
+    # Most dependents first, then alphabetical.
+    candidates.sort(key=lambda c: (-c["dependents"], c["feature"]))
 
     return candidates
 
