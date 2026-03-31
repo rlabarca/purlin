@@ -176,6 +176,14 @@ When creating or updating any feature file, check each row and declare `> Prereq
 
 ---
 
+## Test Fixture Guidance
+
+When a scenario requires specific, controlled project state (git history, branch topologies, config combinations, database state), declare fixture tags in the spec under `### 2.x Integration Test Fixture Tags` with a Tag/State Description table. Tag format: `<project-ref>/<feature-name>/<slug>` (slug = 2-4 word kebab-case state description).
+
+**When fixtures are overkill:** If a scenario's Given steps can be satisfied by simple inline setup (create a file, set an env var), don't use fixtures. Fixtures are for state that is fragile to construct at test time or non-deterministic to reproduce.
+
+---
+
 ## Constraint Advisory (Pre-Commit)
 
 Before committing a new or updated spec, call `purlin_constraints` with the feature stem. Display the results:

@@ -136,7 +136,7 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
 
 ### Step 2 -- Implement and Document
 
-*   Write code and tests.
+*   Write code and tests. When tests need controlled project state (git history, branch topologies, config combinations), use fixture tags declared in the spec. Create fixtures as immutable git tags in a bare repo at `.purlin/runtime/fixture-repo` (or per `fixture_repo_url` in config). For simple state (one file, one env var), use inline setup instead.
 *   **Knowledge Colocation:** Record non-obvious discoveries in `<name>.impl.md (in the same folder as the spec)` (never in the feature `.md`). Create the companion file if needed. See `${CLAUDE_PLUGIN_ROOT}/references/formats/companion_format.md` for the canonical companion file format.
 *   **Companion Code Files Section:** When writing code files, maintain a `## Code Files` section in the companion (`<name>.impl.md`):
     *   If companion has `## Code Files` → append new file paths not already listed.

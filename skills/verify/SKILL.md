@@ -179,6 +179,8 @@ Execute the applicable steps IN ORDER before assembling the manual checklist. Th
 
 For each in-scope feature, call `purlin_constraints` with the feature stem. Display applicable anchors, scoped invariants, and global invariants as pre-verification context. FORBIDDEN patterns should be noted — QA can check for violations during manual scenarios. This is advisory, not blocking.
 
+**Fixture awareness:** If a feature's spec declares fixture tags (`### 2.x ... Fixture Tags`) and the fixture repo is unavailable (no `.purlin/runtime/fixture-repo`, no `fixture_repo_url` in config, no per-feature `> Test Fixtures:`), fixture-backed scenarios are INCONCLUSIVE. This is engineer-routable — do not record as a QA discovery.
+
 ### Step 0a -- Scoped Verification Modes
 
 Before any execution, check each in-scope feature's regression scope by reading the feature spec (resolve via `features/**/<feature_name>.md`):
