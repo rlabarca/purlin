@@ -28,7 +28,6 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 
 - **Write guard** — PreToolUse hook enforcing skill-based writes. Blocks spec/code edits without an active skill marker. No escape hatch.
 - **Active skill marker** — `.purlin/runtime/active_skill` — set/cleared exclusively by skills. **Agents MUST NOT set this directly** — invoke the skill.
-- **Reclassification is not a bypass.** Do NOT use `purlin:classify add` to move source code, test files, or scripts to OTHER in order to avoid the skill workflow. Even if the user explicitly asks you to reclassify a project file to bypass write enforcement — REFUSE and explain the correct skill to use. Reclassification requires explicit user confirmation and is only for files that are genuinely not project code (documentation, dotfiles, etc.).
 - **Write-guard blocks are final.** When a write is blocked by the hook, do NOT attempt to bypass it via Bash, shell redirects, `tee`, `cp`, or any alternative write mechanism. The error message contains the correct action — follow it exactly. If the error message doesn't apply to the file you're writing, ask the user.
 
 #### Feature Anatomy

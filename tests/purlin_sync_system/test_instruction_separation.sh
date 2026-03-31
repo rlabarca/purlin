@@ -133,10 +133,6 @@ assert_true "purlin.md has active skill marker rule" \
 assert_true "purlin.md says agents must not set marker directly" \
     "file_contains '$PURLIN_MD' 'Agents MUST NOT set this directly'"
 
-# Reclassification is not a bypass
-assert_true "purlin.md has reclassification bypass rule" \
-    "file_contains '$PURLIN_MD' 'Reclassification is not a bypass'"
-
 # Write-guard blocks are final (the new rule we added)
 assert_true "purlin.md has write-guard blocks are final rule" \
     "file_contains '$PURLIN_MD' 'Write-guard blocks are final'"

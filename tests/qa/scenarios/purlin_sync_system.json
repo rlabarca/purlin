@@ -446,7 +446,7 @@
         },
         {
           "tier": 3,
-          "pattern": "35/35 passed, 0 failed",
+          "pattern": "34/34 passed, 0 failed",
           "context": "All instruction separation assertions pass"
         }
       ]
