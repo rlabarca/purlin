@@ -64,6 +64,8 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 - **Sync state** (`sync_state.json`) — session-level ephemeral tracking of file writes via FileChanged hook.
 - **Sync ledger** (`sync_ledger.json`) — committed to git, updated on each commit. Cross-session source of truth.
 - **Sync status** — per-feature drift: `synced` | `code_ahead` | `spec_ahead` | `new`.
+- `purlin:status` composes the full picture: ledger + session overlay + QA state.
+- Files are classified as CODE, SPEC, QA, INVARIANT, OTHER, or UNKNOWN. See `${CLAUDE_PLUGIN_ROOT}/references/file_classification.md`.
 
 #### Testing
 
@@ -118,45 +120,7 @@ See `${CLAUDE_PLUGIN_ROOT}/references/commit_conventions.md` for full commit for
 
 ## 3. Sync Tracking
 
-The sync system observes file writes and commits to detect when code drifts ahead of specs (or vice versa). See `features/framework_core/purlin_sync_system.md` for the full spec.
-
-### 3.1 How It Works
-
-**Two layers track sync state:**
-1. **Session tracking** (`sync_state.json`, runtime/ephemeral): Records every file write in the current session via a FileChanged hook. Gives instant feedback during active work.
-2. **Committed ledger** (`sync_ledger.json`, committed to git): Updated on every git commit via a pre-commit hook. Cross-session source of truth that travels with the code.
-
-**Sync statuses per feature:**
-- `synced` — code and spec (or code and impl) updated together
-- `code_ahead` — code changed after spec; spec may need updating
-- `spec_ahead` — spec changed after code; code may need updating
-- `new` — spec exists, no code yet
-
-`purlin:status` composes the full picture: ledger + session overlay + QA state.
-
-### 3.2 File Classification and Write Guard
-
-Files are classified as CODE, SPEC, QA, INVARIANT, OTHER, or UNKNOWN. See `${CLAUDE_PLUGIN_ROOT}/references/file_classification.md` for the full mapping.
-
-**Write guard:** A PreToolUse hook enforces skill-based writes:
-- **SPEC files** (`features/*`) — blocked without an active skill marker. Invoke `purlin:spec`, `purlin:anchor`, `purlin:discovery`, or another spec skill.
-- **CODE files** (everything not SPEC/OTHER/system) — blocked without an active skill marker. Invoke `purlin:build`.
-- **INVARIANT files** — blocked always. Use `purlin:invariant sync`.
-- **UNKNOWN files** — blocked. Add a classification rule to CLAUDE.md.
-- **OTHER files** (`docs/`, `README.md`, etc.) — freely writable, no skill needed.
-- **System files** (`.purlin/`, `.claude/`) — always writable.
-
-**The write guard has no escape hatch.** If a write is blocked, the only path forward is to invoke the correct skill. Skills set the marker, handle companion file tracking, and clear the marker when done. This ensures every spec and code change is tracked through the CDD workflow.
-
-### 3.3 Companion File Convention (Advisory)
-
-The `.impl.md` companion file records what was built and flags deviations. It is the engineer's letter to the PM.
-
-- Every code change for a feature SHOULD include a companion file update — at minimum a `[IMPL]` line.
-- For deviations, use `[DEVIATION]`, `[DISCOVERY]`, `[AUTONOMOUS]`, `[CLARIFICATION]`, or `[INFEASIBLE]` tags. See `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md`.
-- `purlin:build` pre-flight warns (non-blocking) if impl is missing or stale.
-- `purlin:status` surfaces code-ahead-of-spec per feature.
-- This is convention, not enforcement. The sync system makes drift visible — it does not block.
+The sync system observes file writes and commits to detect drift. See `features/framework_core/purlin_sync_system.md` for the full spec and `${CLAUDE_PLUGIN_ROOT}/references/active_deviations.md` for deviation protocols. Companion updates are convention, not enforcement — the sync system makes drift visible but does not block.
 
 ## 4. Workflow Skills
 
@@ -227,27 +191,18 @@ source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_iden
 
 **`purlin:resume` is optional.** You can start working immediately by invoking any skill (e.g., `purlin:build`, `purlin:spec`, `purlin:verify`). Run `purlin:resume` when you want to recover a previous session's checkpoint, discover what work needs doing, or resolve failed merges. See `skills/resume/SKILL.md` for the full protocol.
 
-## 7. Feature Lifecycle
+## 7. Feature Lifecycle & Testing
 
-Design -> Implementation -> Verification -> Completion. Modifying a spec resets lifecycle to `[TODO]`. See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` for the complete lifecycle and `${CLAUDE_PLUGIN_ROOT}/references/knowledge_colocation.md` for anchors, companions, and sidecars.
+- **Lifecycle:** Design → Implementation → Verification → Completion. Spec edits reset to `[TODO]`. See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` and `${CLAUDE_PLUGIN_ROOT}/references/knowledge_colocation.md`.
+- **Testing split:** Unit tests + web tests written during implementation. QA scenarios + regression suites written during verification. QA skills CAN run unit tests.
 
-## 8. Testing Responsibility Split
+## 8. Other Conventions
 
-Unit tests + web tests (`tests.json`) are typically written during implementation. QA scenarios + regression suites are written during verification. QA skills CAN run unit tests for verification. See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md`.
+- **Layered instructions:** This file = core rules. `CLAUDE.md` = project-specific context. `.purlin/config.json` = structured configuration.
+- **Agentic toolbox:** Independent agent-executable tools (Purlin/Project/Community). Manage via `purlin:toolbox`.
+- **Visual specifications:** Feature files MAY contain `## Visual Specification` for UI components. See `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md`.
 
-## 9. Layered Instructions
-
-The agent definition (this file) provides core rules. Project-specific context belongs in `CLAUDE.md` (loaded automatically by Claude Code). Structured configuration (models, test tiers, agent settings) lives in `.purlin/config.json`.
-
-## 10. Agentic Toolbox
-
-Independent, agent-executable tools in three categories: Purlin (read-only), Project (local), Community (shared). Manage via `purlin:toolbox`.
-
-## 11. Visual Specification Convention
-
-Feature files MAY contain a `## Visual Specification` section for visual/UI components. Per-screen checklists with design anchor references, exempt from Gherkin traceability. See `${CLAUDE_PLUGIN_ROOT}/references/visual_spec_convention.md`.
-
-## 12. Pipeline Delivery Protocol
+## 9. Pipeline Delivery Protocol
 
 Large-scope changes use pipeline delivery: a flat work plan at `.purlin/work_plan.md` with per-feature pipeline status (spec → implementation → verification). Features progress through stages independently, with sub-agents running in parallel worktrees. See `${CLAUDE_PLUGIN_ROOT}/references/phased_delivery.md`.
 
@@ -264,17 +219,17 @@ All sub-agents run in isolated worktrees. They MUST NOT modify the work plan or 
 
 The main session handles orchestration, B2 cross-feature verification, merge-back, and `[Complete]` tagging.
 
-## 13. Worktree Concurrency
+## 10. Worktree Concurrency
 
 Agents launched with `--worktree` operate in isolated git worktrees under `.purlin/worktrees/` (one per worktree). Worktree agents MUST NOT modify the main working directory. Use `purlin:merge` to merge back and `purlin:worktree list/cleanup-stale` to manage. Session locks (`.purlin_session.lock`) track liveness via PID. Each worktree has independent sync tracking.
 
-## 14. Shutdown Protocol
+## 11. Shutdown Protocol
 
 Before concluding your session:
 1. Commit any pending work with appropriate commit prefix.
 2. If work remains and you're exiting due to context limits, run `purlin:resume save`.
 3. Confirm the project scan reflects expected state.
 
-## 15. Hard Gates (Always Active)
+## 12. Hard Gates (Always Active)
 
 > Mechanical checks that apply regardless of invocation method. See `${CLAUDE_PLUGIN_ROOT}/references/hard_gates.md` for the full gate definitions.
