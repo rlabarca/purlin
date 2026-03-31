@@ -163,6 +163,20 @@ TOOLS = [
         },
     },
     {
+        "name": "purlin_constraints",
+        "description": "Get all constraint files (anchors, scoped invariants, global invariants) governing a feature via transitive prerequisite walk. Use during purlin:build Step 0 pre-flight.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "feature": {
+                    "type": "string",
+                    "description": "Feature stem (e.g., 'purlin_build') or filename ('purlin_build.md')",
+                },
+            },
+            "required": ["feature"],
+        },
+    },
+    {
         "name": "purlin_classify",
         "description": "Classify a file path as CODE, SPEC, QA, or INVARIANT for write guard enforcement.",
         "inputSchema": {
@@ -354,6 +368,15 @@ def handle_purlin_graph(params):
     return {"total": 0, "cycles": [], "orphans": [], "features": []}
 
 
+def handle_purlin_constraints(params):
+    """Handle purlin_constraints tool call."""
+    feature = params.get("feature", "")
+    if not feature:
+        return {"error": "feature parameter is required"}
+    engine = _get_graph_engine()
+    return engine.get_feature_constraints(feature)
+
+
 def handle_purlin_classify(params):
     """Handle purlin_classify tool call."""
     filepath = params.get("filepath", "")
@@ -473,6 +496,7 @@ TOOL_HANDLERS = {
     "purlin_scan": handle_purlin_scan,
     "purlin_status": handle_purlin_status,
     "purlin_graph": handle_purlin_graph,
+    "purlin_constraints": handle_purlin_constraints,
     "purlin_classify": handle_purlin_classify,
     "purlin_sync": handle_purlin_sync,
     "purlin_config": handle_purlin_config,

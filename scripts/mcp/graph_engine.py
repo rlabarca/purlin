@@ -420,5 +420,95 @@ def run_full_generation(features_dir=None, output_file=None, mmd_file=None):
     return graph
 
 
+def get_feature_constraints(feature_stem, graph=None):
+    """Return all constraint files governing a feature via transitive prerequisite walk.
+
+    Reads the cached dependency graph (or accepts one) and walks the full
+    prerequisite tree.  Collects:
+    - **ancestors**: all prerequisite specs (transitive), with anchor/invariant flags
+    - **anchors**: ancestor anchors (arch_*, design_*, policy_*, ops_*, prodbrief_*)
+    - **scoped_invariants**: ancestor invariants (i_*) reached via prerequisites
+    - **global_invariants**: all global-scope invariants (apply to every non-anchor feature)
+
+    Args:
+        feature_stem: Feature stem (e.g., "purlin_build") or filename ("purlin_build.md").
+        graph: Pre-loaded graph dict.  If None, reads from cache.
+
+    Returns:
+        Dict with keys: feature, ancestors, anchors, scoped_invariants, global_invariants.
+        Returns {"error": ...} if the feature is not found.
+    """
+    from invariant_engine import is_anchor_node, is_invariant_node
+
+    if graph is None:
+        if os.path.isfile(DEPENDENCY_GRAPH_FILE):
+            with open(DEPENDENCY_GRAPH_FILE, 'r') as f:
+                graph = json.load(f)
+        else:
+            return {"error": "No dependency graph. Run purlin_scan first."}
+
+    # Build lookup: filename -> feature entry
+    by_filename = {}
+    for entry in graph.get("features", []):
+        fn = os.path.basename(entry["file"])
+        by_filename[fn] = entry
+
+    # Resolve stem to filename
+    stem = feature_stem.replace(".md", "")
+    target_fn = stem + ".md"
+    if target_fn not in by_filename:
+        return {"error": f"Feature '{feature_stem}' not found in dependency graph."}
+
+    # Walk transitive prerequisites (BFS)
+    visited = set()
+    queue = [target_fn]
+    ancestors = []
+
+    while queue:
+        current = queue.pop(0)
+        if current in visited or current == target_fn:
+            if current != target_fn or current in visited:
+                continue
+            visited.add(current)
+            # Don't add target itself to ancestors
+            for prereq in by_filename.get(current, {}).get("prerequisites", []):
+                if prereq not in visited:
+                    queue.append(prereq)
+            continue
+        visited.add(current)
+        entry = by_filename.get(current)
+        if entry:
+            ancestors.append(entry)
+            for prereq in entry.get("prerequisites", []):
+                if prereq not in visited:
+                    queue.append(prereq)
+
+    # Classify ancestors
+    anchors = []
+    scoped_invariants = []
+    for entry in ancestors:
+        fn = os.path.basename(entry["file"])
+        if is_invariant_node(fn):
+            scoped_invariants.append(entry["file"])
+        elif is_anchor_node(fn):
+            anchors.append(entry["file"])
+
+    return {
+        "feature": by_filename[target_fn]["file"],
+        "ancestors": [e["file"] for e in ancestors],
+        "anchors": anchors,
+        "scoped_invariants": scoped_invariants,
+        "global_invariants": graph.get("global_invariants", []),
+    }
+
+
 if __name__ == "__main__":
-    run_full_generation()
+    import sys as _sys
+    if len(_sys.argv) > 1 and _sys.argv[1] == "constraints":
+        if len(_sys.argv) < 3:
+            print("Usage: graph_engine.py constraints <feature_stem>", file=_sys.stderr)
+            _sys.exit(1)
+        result = get_feature_constraints(_sys.argv[2])
+        print(json.dumps(result, indent=2))
+    else:
+        run_full_generation()

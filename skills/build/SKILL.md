@@ -107,12 +107,9 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
     *   If `sync_status` is `code_ahead` or `code_ahead_no_impl`: note that prior code changes exist without spec/impl updates — this is expected when resuming work.
     *   If the feature has no ledger entry or the ledger doesn't exist yet, skip silently (new features and projects without the ledger are normal).
 *   **Re-Verification Detection:** Check scan results for this feature's `reset_context`. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
-*   **Constraint File Mandate:** Walk the feature's full `> Prerequisite:` tree (transitive closure). Every anchor and invariant in the tree MUST be read and its constraints followed during implementation. Global invariants (from `dependency_graph.json` -> `global_invariants`) apply to all non-anchor features automatically without explicit prerequisite links.
-*   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
-*   **Invariant Preflight:** Collect all invariants applicable to this feature:
-    1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants` list. Read each file.
-    2. **Scoped invariants:** From the feature's transitive `> Prerequisite:` chain, collect any `i_*` files.
-    3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each applicable invariant. For each pattern entry, grep the feature's code files (scoped to feature files only, excluding paths classified as OTHER via `write_exceptions`). If violations found, **block the build** with an actionable message:
+*   **Constraint Collection (MANDATORY):** Call `purlin_constraints` with the feature stem. This returns all constraint files governing the feature in one call: `anchors` (from transitive prerequisite tree), `scoped_invariants` (i_* files in the tree), and `global_invariants` (apply to all non-anchor features). **Read every file listed.** Anchors and invariants contain binding constraints that MUST be followed during implementation. Also read each ancestor spec listed in `ancestors` — especially those in `[TODO]` status, whose contracts may be unstable.
+    If an anchor's domain intersects the feature but is NOT in the prerequisite tree, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
+*   **FORBIDDEN Pre-Scan:** From each constraint file (anchors + invariants from the collection above), extract `## FORBIDDEN Patterns`. For each pattern, grep the feature's code files (excluding paths classified as OTHER via `write_exceptions`). If violations found, **block the build**:
        ```
        INVARIANT VIOLATION -- build blocked
        i_policy_security.md (INV-3): No eval() in user-facing code
@@ -121,17 +118,12 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
        Fix: Replace eval() with ast.literal_eval() or json.loads()
        ```
        Do NOT proceed to Step 1 until all FORBIDDEN violations are resolved.
-    4. **Behavioral reminders:** Surface non-FORBIDDEN invariant statements as awareness reminders (not blockers):
-       ```
-       Applicable invariants (for awareness during implementation):
-       - i_arch_api_standards.md: All endpoints must return structured error responses (INV-2)
-       - i_policy_gdpr.md: User data access must be logged (INV-5)
-       ```
-    5. **Figma brief staleness** (design invariants only): If the feature has a `brief.json` at `features/_design/<stem>/brief.json`, compare its version against the Figma invariant pointer's `> Version:`. Warn if stale.
+*   **Behavioral Reminders:** Surface non-FORBIDDEN constraint statements from anchors and invariants as awareness reminders (not blockers).
+*   **Figma Brief Staleness** (design invariants only): If the feature has a `brief.json` at `features/_design/<stem>/brief.json`, compare its version against the Figma invariant pointer's `> Version:`. Warn if stale.
 *   **Visual Design Sources:** When the feature has a `## Visual Specification`, read in priority: Token Map (in spec) -> `brief.json` (at `features/_design/<stem>/brief.json`) -> Figma MCP (last resort, read-only).
 *   **Web Test Readiness:** When the feature has `## Visual Specification` AND web test metadata (`> Web Test:` or `> AFT Web:`), check for Playwright MCP availability now (look for `browser_navigate` in the available tool list). If MCP is not available, attempt auto-setup: verify package via `npx @playwright/mcp@latest --help`, then run `claude mcp add playwright -- npx @playwright/mcp --headless`. If setup succeeds, inform the user a session restart is needed and HALT -- do not begin implementation without MCP ready. If the feature has `## Visual Specification` but NO web test metadata, log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file and continue.
 *   **Companion File:** Read `<name>.impl.md (in the same folder as the spec)` if it exists. Also read prerequisite companion files.
-*   **Prerequisite Stability:** For each `> Prerequisite:` link to a non-anchor feature, check if that feature is in `[TODO]` status. If so, read its full spec (`the prereq's spec (resolve via glob)`) to understand the unstable contract. Log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
+*   **Prerequisite Stability:** For each non-anchor ancestor from the constraint collection that is in `[TODO]` status, log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
 *   **Verify Status:** Confirm the target feature is in the expected state per CDD status.
 *   **Role-Blocked Detection (delivery plan only):** When a delivery plan is active, check if the feature is role-blocked: `architect: TODO`, `builder: BLOCKED`, or `builder: INFEASIBLE`. If role-blocked, skip this feature with: `"Skipping <feature> -- <role> <status> (role-blocked)"`. Proceed to the next feature in the phase. See Phase Deferral Protocol below.
 *   **New Scenario Detection:** Diff `#### Scenario:` headings against existing tests. New headings without coverage = real work. When `tests.json` reports `total: 0` or is missing, treat as "no tests exist."

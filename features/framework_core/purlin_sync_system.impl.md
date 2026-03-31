@@ -13,7 +13,11 @@
 
 **[IMPL]** Slimmed `engineer-worker.md`, `pm-worker.md`, `qa-worker.md`, and `verification-runner.md` to frontmatter stubs referencing §12. Frontmatter preserved for Agent tool registry. Body text reduced from ~30 lines to 1 line each, pointing to the single source of truth.
 
-**[IMPL]** Restructured constraint file documentation. Definitions (anchor prefixes, glob patterns, invariant `i_` prefix) stay in `agents/purlin.md` §2.0 Vocabulary. Build-specific mandate ("walk prerequisite tree, read every constraint file") moved to `skills/build/SKILL.md` Step 0 as a new "Constraint File Mandate" bullet before Anchor Review. purlin.md now has a workflow-routing line pointing to each skill's enforcement checkpoint instead of embedding build details.
+**[IMPL]** Restructured constraint file documentation. Definitions (anchor prefixes, glob patterns, invariant `i_` prefix) stay in `agents/purlin.md` §2.0 Vocabulary. purlin.md now has a workflow-routing line pointing to each skill's enforcement checkpoint instead of embedding build details.
+
+**[IMPL]** Added `get_feature_constraints()` to `graph_engine.py` — walks the transitive prerequisite tree via BFS and returns all connected ancestors, anchors, scoped invariants, and global invariants in one call. Exposed as `purlin_constraints` MCP tool in `purlin_server.py`. CLI: `python3 scripts/mcp/graph_engine.py constraints <feature_stem>`.
+
+**[IMPL]** Refactored build SKILL.md Step 0: replaced manual "Constraint File Mandate" + separate "Anchor Review" + "Invariant Preflight" (steps 1-2) with single "Constraint Collection (MANDATORY)" bullet that calls `purlin_constraints`. FORBIDDEN pre-scan, behavioral reminders, and Figma staleness checks remain as separate bullets consuming the collection output. Prerequisite Stability simplified to reference ancestors from the collection.
 
 ## Code Files
 - agents/purlin.md
@@ -21,3 +25,6 @@
 - agents/pm-worker.md
 - agents/qa-worker.md
 - agents/verification-runner.md
+- scripts/mcp/graph_engine.py
+- scripts/mcp/purlin_server.py
+- skills/build/SKILL.md
