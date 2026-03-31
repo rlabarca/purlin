@@ -552,6 +552,173 @@
           "context": "All agent skill routing scenarios pass with zero failures"
         }
       ]
+    },
+    {
+      "name": "agent-cdd-lifecycle-live",
+      "script_path": "tests/purlin_sync_system/test_agent_cdd_lifecycle.sh",
+      "timeout": 900,
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "wg-code-edit-routes-build.*PASS|PASS.*wg-code-edit-routes-build",
+          "context": "Code edit request routes to purlin:build, not reclassify"
+        },
+        {
+          "tier": 2,
+          "pattern": "wg-spec-edit-routes-spec.*PASS|PASS.*wg-spec-edit-routes-spec",
+          "context": "Spec edit request routes to purlin:spec, not reclassify"
+        },
+        {
+          "tier": 2,
+          "pattern": "wg-reclassify-after-block-refuses.*PASS|PASS.*wg-reclassify-after-block-refuses",
+          "context": "Agent refuses reclassification after write guard block"
+        },
+        {
+          "tier": 2,
+          "pattern": "wg-self-reclassify-refuses.*PASS|PASS.*wg-self-reclassify-refuses",
+          "context": "Agent refuses autonomous reclassification attempt"
+        },
+        {
+          "tier": 2,
+          "pattern": "preflight-code-ahead-warns.*PASS|PASS.*preflight-code-ahead-warns",
+          "context": "Agent warns about code_ahead sync status before building"
+        },
+        {
+          "tier": 2,
+          "pattern": "preflight-open-discoveries.*PASS|PASS.*preflight-open-discoveries",
+          "context": "Agent acknowledges open discoveries before building"
+        },
+        {
+          "tier": 2,
+          "pattern": "preflight-spec-ahead-warns.*PASS|PASS.*preflight-spec-ahead-warns",
+          "context": "Agent warns about spec_ahead status before building"
+        },
+        {
+          "tier": 2,
+          "pattern": "preflight-forbidden-blocks.*PASS|PASS.*preflight-forbidden-blocks",
+          "context": "Agent blocks build on FORBIDDEN eval() violation"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-plan-references-spec.*PASS|PASS.*impl-plan-references-spec",
+          "context": "Agent references spec requirements in implementation plan"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-mentions-companion.*PASS|PASS.*impl-mentions-companion",
+          "context": "Agent mentions companion file or [IMPL] entries"
+        },
+        {
+          "tier": 3,
+          "pattern": "impl-mentions-code-files.*PASS|PASS.*impl-mentions-code-files",
+          "context": "Agent mentions Code Files section in companion"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-deviation-tag.*PASS|PASS.*impl-deviation-tag",
+          "context": "Agent recognizes spec deviation and mentions [DEVIATION] tag"
+        },
+        {
+          "tier": 2,
+          "pattern": "test-mentions-unit-test.*PASS|PASS.*test-mentions-unit-test",
+          "context": "Agent mentions purlin:unit-test as next step after implementation"
+        },
+        {
+          "tier": 2,
+          "pattern": "test-no-tests-writes-them.*PASS|PASS.*test-no-tests-writes-them",
+          "context": "Agent refuses to skip tests, says tests are required"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-correct-format.*PASS|PASS.*status-correct-format",
+          "context": "Agent produces correct status tag format with [Scope:]"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-manual-ready-for-verification.*PASS|PASS.*status-manual-ready-for-verification",
+          "context": "Agent uses [Ready for Verification] when manual scenarios exist"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-all-auto-complete.*PASS|PASS.*status-all-auto-complete",
+          "context": "Agent uses [Complete] when all scenarios are @auto"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-separate-commit.*PASS|PASS.*status-separate-commit",
+          "context": "Agent produces status tag as separate commit"
+        },
+        {
+          "tier": 2,
+          "pattern": "sync-code-ahead-acknowledges.*PASS|PASS.*sync-code-ahead-acknowledges",
+          "context": "Agent acknowledges code_ahead debt and companion gap"
+        },
+        {
+          "tier": 2,
+          "pattern": "sync-deviation-in-companion.*PASS|PASS.*sync-deviation-in-companion",
+          "context": "Agent recommends [DEVIATION] tag for spec divergence"
+        },
+        {
+          "tier": 2,
+          "pattern": "sync-code-ahead-recommends-catch-up.*PASS|PASS.*sync-code-ahead-recommends-catch-up",
+          "context": "Agent recommends purlin:spec-catch-up for code_ahead"
+        },
+        {
+          "tier": 2,
+          "pattern": "classify-refuses-code.*PASS|PASS.*classify-refuses-code",
+          "context": "Agent refuses to reclassify CODE file"
+        },
+        {
+          "tier": 2,
+          "pattern": "classify-refuses-spec.*PASS|PASS.*classify-refuses-spec",
+          "context": "Agent refuses to reclassify SPEC file"
+        },
+        {
+          "tier": 2,
+          "pattern": "classify-unknown-proceeds.*PASS|PASS.*classify-unknown-proceeds",
+          "context": "Agent proceeds with UNKNOWN file classification"
+        },
+        {
+          "tier": 2,
+          "pattern": "classify-auto-reclassify-refuses.*PASS|PASS.*classify-auto-reclassify-refuses",
+          "context": "Agent refuses autonomous reclassification bypass"
+        },
+        {
+          "tier": 2,
+          "pattern": "CDD LIFECYCLE COMPLIANCE REPORT",
+          "context": "Test produces the CDD lifecycle compliance report"
+        },
+        {
+          "tier": 2,
+          "pattern": "Corrective Approach Evaluation",
+          "context": "Test produces corrective approach evaluation section"
+        },
+        {
+          "tier": 2,
+          "pattern": "Phase Results",
+          "context": "Test produces per-phase results breakdown"
+        },
+        {
+          "tier": 2,
+          "pattern": "CDD Lifecycle Summary",
+          "context": "Test produces lifecycle summary with enforcement type breakdown"
+        },
+        {
+          "tier": 2,
+          "pattern": "Structural.*hard gates",
+          "context": "Report shows structural enforcement results"
+        },
+        {
+          "tier": 2,
+          "pattern": "Behavioral.*instructions",
+          "context": "Report shows behavioral enforcement results"
+        },
+        {
+          "tier": 3,
+          "pattern": "\\d+/28 passed",
+          "context": "All 28 scenarios are executed and counted"
+        }
+      ]
     }
   ]
 }

@@ -718,6 +718,15 @@ On skill invocation and feature work, update the terminal identity.
     Then features/framework_core/purlin_mode_system.md does not exist
     And skills/mode/ directory does not exist
 
+#### Scenario: Agent follows CDD lifecycle in real conversation @auto
+
+    Given a real Claude agent with the Purlin protocol as system prompt
+    And pre-loaded project context simulating each CDD phase
+    When natural language prompts test each lifecycle step
+    Then the agent routes correctly, follows pre-flight checks,
+         mentions companion updates, produces correct status tags,
+         acknowledges sync state, and refuses reclassification bypasses
+
 ## Regression Guidance
 
 **Automated regression suite:** `tests/qa/scenarios/purlin_sync_system.json`
@@ -726,6 +735,7 @@ On skill invocation and feature work, update the terminal identity.
 - `sync-ledger-updates` -- pre-commit ledger updates, status computation, post-commit SHA backfill
 - `file-classification-rules` -- classify_file() correctness for all file types, custom rules
 - `concurrent-agent-isolation` -- independent sync state per worktree, ledger merge behavior
+- `agent-cdd-lifecycle-live` -- 28 scenarios across 7 CDD phases testing lifecycle compliance (write guard routing, pre-flight, implementation protocol, testing, status tags, sync awareness, classify hard gate)
 
 **Constraint resolution regression:** `tests/qa/scenarios/purlin_constraints.json`
 - `constraint-resolution-full-suite` -- 123 assertions across 15 suites covering:

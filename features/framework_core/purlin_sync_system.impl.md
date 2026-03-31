@@ -23,6 +23,8 @@
 
 **[IMPL]** Hardened reclassification bypass prevention. Added hard gate to `purlin:classify add` that structurally refuses to reclassify CODE, SPEC, or INVARIANT files as OTHER — no user override path exists. Updated write-guard block messages for CODE, SPEC, and INVARIANT files to explicitly warn "Do NOT reclassify this file via purlin:classify — TYPE files cannot be added to write_exceptions." Added bypass prevention test assertions (Section 3 now verifies anti-reclassify warnings are present, not just that classify isn't suggested). Added `self-reclassify-after-block` adversarial scenario to agent skill routing tests covering the exact failure mode where an agent autonomously pivots to reclassification after being blocked. Updated regression JSON with new assertions. This closes the loophole where the prior defense (user confirmation + message omission) was insufficient because agents have independent knowledge of the classify skill from system context.
 
+**[IMPL]** CDD lifecycle agent verification test suite. Created `test_agent_cdd_lifecycle.sh` with 28 scenarios across 7 CDD phases, each invoking a real Claude agent via `claude --print` with `agents/purlin.md` as system prompt. Unlike the skill routing test (which verifies agents route to the right skill), this suite tests lifecycle compliance within each skill's protocol: pre-flight sync awareness (code_ahead/spec_ahead warnings, discovery acknowledgment, FORBIDDEN blocking), implementation protocol (spec reference, companion mentions, Code Files section, [DEVIATION] tags), testing requirement enforcement, status tag format correctness ([Complete] vs [Ready for Verification], separate commit, [Scope:] annotation), sync debt awareness (code_ahead acknowledgment, spec-catch-up recommendation), and classify hard gate enforcement (refuses CODE/SPEC/INVARIANT reclassification, allows UNKNOWN). Each phase group gets phase-specific context injected into the system prompt to simulate what the agent would see at each lifecycle stage. The compliance report splits results by enforcement type (structural vs behavioral) and evaluates 5 corrective approaches. Added regression JSON entry with 31 assertions. (Severity: INFO)
+
 ## Code Files
 - agents/purlin.md
 - agents/engineer-worker.md
@@ -37,5 +39,6 @@
 - tests/purlin_sync_system/test_write_guard.sh
 - tests/purlin_sync_system/test_write_guard_bypass_prevention.sh
 - tests/purlin_sync_system/test_agent_skill_routing.sh
+- tests/purlin_sync_system/test_agent_cdd_lifecycle.sh
 - tests/qa/scenarios/purlin_sync_system.json
 - references/file_classification.md
