@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 50,
+  "passed": 77,
   "failed": 0,
-  "total": 50,
+  "total": 77,
   "test_file": "tests/qa/scenarios/purlin_sync_system.json",
   "details": [
     {
@@ -353,6 +353,195 @@
       "status": "PASS",
       "scenario_ref": "features/framework_core/purlin_sync_system.md:sync-ledger-scan-overlay",
       "expected": "Features only in session state are included in scan output",
+      "assertion_tier": 3
+    },
+    {
+      "name": "write-guard-bypass-prevention:Invariant BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Invariant BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Spec BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Spec BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Code BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Code BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Unknown BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Unknown BLOCKED message contains 'Do NOT use Bash' anti-bypass language",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Global ~/.claude/plans/ paths bypass write guard (plan file fix)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Global ~/.claude/plans/ paths bypass write guard (plan file fix)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Global ~/.claude/ system files are freely writable",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Global ~/.claude/ system files are freely writable",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Global bypass is strictly scoped to ~/.claude/ and ~/.claude-code/",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Global bypass is strictly scoped to ~/.claude/ and ~/.claude-code/",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:BLOCKED messages never suggest reclassification as a workaround",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "BLOCKED messages never suggest reclassification as a workaround",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Each file type gets a type-specific message (no generic catch-all confusion)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Each file type gets a type-specific message (no generic catch-all confusion)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Spec block message correctly identifies the file type",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Spec block message correctly identifies the file type",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Unknown block message correctly identifies the classification gap",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Unknown block message correctly identifies the classification gap",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:All BLOCKED messages go to stderr (Claude Code ignores stdout for exit-2)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "All BLOCKED messages go to stderr (Claude Code ignores stdout for exit-2)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:Anti-bypass language covers the full set of bypass vectors",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "Anti-bypass language covers the full set of bypass vectors",
+      "assertion_tier": 2
+    },
+    {
+      "name": "write-guard-bypass-prevention:All bypass prevention assertions pass",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:write-guard-bypass-prevention",
+      "expected": "All bypass prevention assertions pass",
+      "assertion_tier": 3
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:CLAUDE.md must not contain agent behavioral directives",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "CLAUDE.md must not contain agent behavioral directives",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Anti-bypass rules belong in purlin.md, not CLAUDE.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Anti-bypass rules belong in purlin.md, not CLAUDE.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Write enforcement language belongs in purlin.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Write enforcement language belongs in purlin.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Key anti-bypass rule exists in agents/purlin.md (global scope)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Key anti-bypass rule exists in agents/purlin.md (global scope)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Anti-bypass rule specifically calls out Bash as forbidden bypass vector",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Anti-bypass rule specifically calls out Bash as forbidden bypass vector",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Core write enforcement rule is in purlin.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Core write enforcement rule is in purlin.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:CLAUDE.md contains project-specific content (positive check)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "CLAUDE.md contains project-specific content (positive check)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:CLAUDE.md correctly defers to purlin.md for the full protocol",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "CLAUDE.md correctly defers to purlin.md for the full protocol",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:File bucket model is behavioral, belongs in purlin.md",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "File bucket model is behavioral, belongs in purlin.md",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:CLAUDE.md stays under 100 lines (project overrides should be small)",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "CLAUDE.md stays under 100 lines (project overrides should be small)",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:Bulk of behavioral rules live in purlin.md where all consumers see them",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "Bulk of behavioral rules live in purlin.md where all consumers see them",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:CLAUDE.md self-identifies its limited scope",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "CLAUDE.md self-identifies its limited scope",
+      "assertion_tier": 2
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin:All instruction separation assertions pass",
+      "status": "PASS",
+      "scenario_ref": "features/framework_core/purlin_sync_system.md:instruction-separation-claude-vs-purlin",
+      "expected": "All instruction separation assertions pass",
       "assertion_tier": 3
     }
   ]

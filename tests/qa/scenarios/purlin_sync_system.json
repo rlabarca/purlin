@@ -288,6 +288,153 @@
           "context": "Features only in session state are included in scan output"
         }
       ]
+    },
+    {
+      "name": "write-guard-bypass-prevention",
+      "script_path": "tests/purlin_sync_system/test_write_guard_bypass_prevention.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "invariant block has anti-bypass warning",
+          "context": "Invariant BLOCKED message contains 'Do NOT use Bash' anti-bypass language"
+        },
+        {
+          "tier": 2,
+          "pattern": "spec block has anti-bypass warning",
+          "context": "Spec BLOCKED message contains 'Do NOT use Bash' anti-bypass language"
+        },
+        {
+          "tier": 2,
+          "pattern": "code block has anti-bypass warning",
+          "context": "Code BLOCKED message contains 'Do NOT use Bash' anti-bypass language"
+        },
+        {
+          "tier": 2,
+          "pattern": "unknown block has anti-bypass warning",
+          "context": "Unknown BLOCKED message contains 'Do NOT use Bash' anti-bypass language"
+        },
+        {
+          "tier": 2,
+          "pattern": "plan file at ~/\\.claude/plans/ allowed",
+          "context": "Global ~/.claude/plans/ paths bypass write guard (plan file fix)"
+        },
+        {
+          "tier": 2,
+          "pattern": "global ~/\\.claude/settings\\.json allowed",
+          "context": "Global ~/.claude/ system files are freely writable"
+        },
+        {
+          "tier": 2,
+          "pattern": "~/\\.claude-but-not-really does not match",
+          "context": "Global bypass is strictly scoped to ~/.claude/ and ~/.claude-code/"
+        },
+        {
+          "tier": 2,
+          "pattern": "code block does not suggest purlin:classify",
+          "context": "BLOCKED messages never suggest reclassification as a workaround"
+        },
+        {
+          "tier": 2,
+          "pattern": "invariant block says INVARIANT",
+          "context": "Each file type gets a type-specific message (no generic catch-all confusion)"
+        },
+        {
+          "tier": 2,
+          "pattern": "spec block says 'spec file'",
+          "context": "Spec block message correctly identifies the file type"
+        },
+        {
+          "tier": 2,
+          "pattern": "unknown block says 'no classification rule'",
+          "context": "Unknown block message correctly identifies the classification gap"
+        },
+        {
+          "tier": 2,
+          "pattern": "invariant block writes to stderr",
+          "context": "All BLOCKED messages go to stderr (Claude Code ignores stdout for exit-2)"
+        },
+        {
+          "tier": 2,
+          "pattern": "code block mentions 'shell redirects'",
+          "context": "Anti-bypass language covers the full set of bypass vectors"
+        },
+        {
+          "tier": 3,
+          "pattern": "46/46 passed, 0 failed",
+          "context": "All bypass prevention assertions pass"
+        }
+      ]
+    },
+    {
+      "name": "instruction-separation-claude-vs-purlin",
+      "script_path": "tests/purlin_sync_system/test_instruction_separation.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md does not say 'agents must'",
+          "context": "CLAUDE.md must not contain agent behavioral directives"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md does not tell agents to not bypass write guard",
+          "context": "Anti-bypass rules belong in purlin.md, not CLAUDE.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md does not contain 'no escape hatch'",
+          "context": "Write enforcement language belongs in purlin.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin\\.md has write-guard blocks are final rule",
+          "context": "Key anti-bypass rule exists in agents/purlin.md (global scope)"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin\\.md anti-bypass rule mentions Bash",
+          "context": "Anti-bypass rule specifically calls out Bash as forbidden bypass vector"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin\\.md says agents must not set marker directly",
+          "context": "Core write enforcement rule is in purlin.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md has File Classifications section",
+          "context": "CLAUDE.md contains project-specific content (positive check)"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md references agents/purlin\\.md as protocol source",
+          "context": "CLAUDE.md correctly defers to purlin.md for the full protocol"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md does not define file bucket model",
+          "context": "File bucket model is behavioral, belongs in purlin.md"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md is concise",
+          "context": "CLAUDE.md stays under 100 lines (project overrides should be small)"
+        },
+        {
+          "tier": 2,
+          "pattern": "purlin\\.md has substantial behavioral content",
+          "context": "Bulk of behavioral rules live in purlin.md where all consumers see them"
+        },
+        {
+          "tier": 2,
+          "pattern": "CLAUDE\\.md declares itself project-specific",
+          "context": "CLAUDE.md self-identifies its limited scope"
+        },
+        {
+          "tier": 3,
+          "pattern": "35/35 passed, 0 failed",
+          "context": "All instruction separation assertions pass"
+        }
+      ]
     }
   ]
 }
