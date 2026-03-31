@@ -14,9 +14,10 @@ The knowledge colocation reference (`references/knowledge_colocation.md`) define
 
 ### 2.1 Anchor Node Taxonomy
 
-- MUST define three prefixes: `arch_*.md` (Engineer, technical), `design_*.md` (PM, visual), `policy_*.md` (PM, governance).
+- MUST define five prefixes: `arch_*.md` (Engineer, technical), `design_*.md` (PM, visual), `policy_*.md` (PM, governance), `ops_*.md` (PM, operational), `prodbrief_*.md` (PM, product goals).
 - MUST state: editing an anchor resets all dependent features to TODO.
 - MUST state: every feature anchors to relevant nodes via `> Prerequisite:` links.
+- MUST state: any anchor type can also exist as an invariant (`i_` prefix, externally-sourced, locally-immutable). See `references/invariant_model.md`.
 
 ### 2.2 Cross-Cutting Standards Pattern
 
@@ -50,13 +51,15 @@ The knowledge colocation reference (`references/knowledge_colocation.md`) define
 
 ### Unit Tests
 
-#### Scenario: Three anchor prefixes defined with ownership
+#### Scenario: Five anchor prefixes defined with ownership
 
     Given references/knowledge_colocation.md exists
     When the anchor taxonomy section is parsed
     Then arch_*.md is Engineer-owned
     And design_*.md is PM-owned
     And policy_*.md is PM-owned
+    And ops_*.md is PM-owned
+    And prodbrief_*.md is PM-owned
 
 #### Scenario: Companion file conventions complete
 

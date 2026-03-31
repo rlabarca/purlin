@@ -13,7 +13,7 @@
 
 **[IMPL]** Slimmed `engineer-worker.md`, `pm-worker.md`, `qa-worker.md`, and `verification-runner.md` to frontmatter stubs referencing §12. Frontmatter preserved for Agent tool registry. Body text reduced from ~30 lines to 1 line each, pointing to the single source of truth.
 
-**[IMPL]** Restructured constraint file documentation. Definitions (anchor prefixes, glob patterns, invariant `i_` prefix) stay in `agents/purlin.md` §2.0 Vocabulary. purlin.md now has a workflow-routing line pointing to each skill's enforcement checkpoint instead of embedding build details.
+**[IMPL]** Restructured constraint file documentation. Created `docs/constraints-guide.md` as the single reference for how constraints flow through the build process (purlin_constraints tool, enforcement points, cascade behavior, FORBIDDEN patterns). Slimmed purlin.md §2.0 Constraint Files from 9 lines to 4 — definitions only, detail deferred to constraints guide. Updated `knowledge_colocation.md` spec to require 5 anchor prefixes (was 3) and invariant mention.
 
 **[IMPL]** Added `get_feature_constraints()` to `graph_engine.py` — walks the transitive prerequisite tree via BFS and returns all connected ancestors, anchors, scoped invariants, and global invariants in one call. Exposed as `purlin_constraints` MCP tool in `purlin_server.py`. CLI: `python3 scripts/mcp/graph_engine.py constraints <feature_stem>`.
 

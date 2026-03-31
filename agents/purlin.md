@@ -54,13 +54,10 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 
 #### Constraint Files (Anchors & Invariants)
 
-Constraint files define cross-cutting rules that govern features. Two kinds exist — **anchors** (local) and **invariants** (external) — both detected by filename prefix, not folder.
-
-- **Anchor** — locally-authored constraint in `features/<category>/`. Five prefixes: `arch_*` (technical, Engineer-owned), `design_*`, `policy_*`, `ops_*`, `prodbrief_*` (all PM-owned). Find: glob `features/**/{arch_,design_,policy_,ops_,prodbrief_}*.md`. Created via `purlin:anchor`. Format: `references/formats/anchor_format.md`.
-- **Invariant** — externally-sourced, locally-immutable constraint in `features/_invariants/i_*.md`. The `i_` prefix wraps an anchor prefix (e.g., `i_arch_*`, `i_design_*`). No agent may edit directly — changes come only via `purlin:invariant sync`. Format: `references/formats/invariant_format.md`.
-- **Prerequisite** — dependency declared with `> Prerequisite: <name>.md`, resolved recursively across category folders. The transitive closure determines which anchors/invariants govern a feature.
-- **FORBIDDEN patterns** — regex patterns in `## FORBIDDEN Patterns` sections of anchors/invariants. Enforced by skills at their respective checkpoints.
-- **Constraint enforcement:** `purlin:build` enforces at pre-flight (Step 0 — FORBIDDEN blocks build, other constraints are binding). `purlin:spec` surfaces applicable constraints as advisory context. `purlin:spec-code-audit` and `purlin:invariant audit` check compliance post-hoc.
+- **Anchor** — locally-authored constraint in `features/<category>/`. Prefixes: `arch_*`, `design_*`, `policy_*`, `ops_*`, `prodbrief_*`. Created via `purlin:anchor`. See `docs/constraints-guide.md`.
+- **Invariant** — externally-sourced, immutable constraint in `features/_invariants/i_*.md`. The `i_` prefix wraps an anchor prefix. Changes only via `purlin:invariant sync`.
+- **Prerequisite** — `> Prerequisite: <name>.md`, resolved recursively. The transitive closure determines which constraints govern a feature.
+- **FORBIDDEN patterns** — regex patterns in anchors/invariants that block builds. See `docs/constraints-guide.md` for full enforcement flow.
 
 #### Sync Tracking
 
