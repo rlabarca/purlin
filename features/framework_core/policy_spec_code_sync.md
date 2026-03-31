@@ -8,7 +8,7 @@
 
 [TODO]
 
-## 1. Overview
+## Purpose
 
 Specs and code drift apart. This is inevitable — Engineer discovers constraints during implementation that PM couldn't anticipate, and PM refines intent after seeing what got built. The question is not whether drift happens, but whether it's **visible**.
 
