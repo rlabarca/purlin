@@ -36,6 +36,8 @@ Purlin is a spec-first development framework. You write specs, build from them, 
 * [Agentic Toolbox](toolbox-guide.md) — Reusable project tools the agent can run on demand.
 * [Configuration](config-guide.md) — YOLO mode, find-work, auto-start, config layering.
 * [Credential Storage](credential-storage-guide.md) — Secure API token and deploy key management.
+* [Common Commands](common-commands-guide.md) — Status, collaboration, session recovery, and other universal skills.
+* [Plugin Permissions](plugin-permissions.md) — How Purlin handles write access, YOLO mode, and enterprise environments.
 
 ## What's New
 
