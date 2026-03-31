@@ -41,6 +41,7 @@ Every file in a Purlin project is classified into one of six categories. Classif
 - No trailing `/` = exact filename match at project root (`README.md`).
 - OTHER files are freely editable without a skill — no feature tracking needed.
 - Managed via `purlin:classify add|remove|list`. Adding exceptions requires explicit user confirmation (`AskUserQuestion`).
+- **Hard gate:** `purlin:classify add` refuses to reclassify files currently classified as CODE, SPEC, or INVARIANT. Only UNKNOWN files can be added to `write_exceptions`. This prevents agents from bypassing the write guard by reclassifying protected files.
 
 **Custom classification format in CLAUDE.md:**
 
@@ -77,7 +78,7 @@ The write guard is a `PreToolUse` hook on `Write`, `Edit`, and `NotebookEdit`. I
                                                UNKNOWN → BLOCK (add classification)
 ```
 
-**Block messages are actionable:** each blocked write tells the agent exactly which skill to invoke. There is no escape hatch — skills are the only authorized path for writing spec and code files. Error messages do not suggest reclassification; agents that believe a file should be OTHER must explain to the user and let them decide.
+**Block messages are actionable:** each blocked write tells the agent exactly which skill to invoke. There is no escape hatch — skills are the only authorized path for writing spec and code files. Error messages explicitly warn against reclassification via `purlin:classify` — CODE, SPEC, and INVARIANT files cannot be added to `write_exceptions`, and the classify skill enforces this with a hard refusal (no user override).
 
 #### 2.2.1 INVARIANT Bypass for purlin:invariant
 
@@ -117,7 +118,7 @@ Skills that write files set this marker at start and clear it at end. The write 
 - Spec writers: `spec`, `anchor`, `discovery`, `propose`, `tombstone`, `spec-from-code`, `spec-code-audit`, `infeasible`, `spec-catch-up`
 - Code writers: `build`, `unit-test`, `regression`, `smoke`, `fixture`, `toolbox`, `verify`
 - Invariant: `invariant` (plus existing bypass lock for invariant files)
-- No escape hatch — agents MUST invoke a skill; direct marker setting is not authorized. Reclassification via `purlin:classify add` requires explicit user confirmation (`AskUserQuestion`) and is not suggested in error messages.
+- No escape hatch — agents MUST invoke a skill; direct marker setting is not authorized. Reclassification via `purlin:classify add` is structurally blocked for CODE, SPEC, and INVARIANT files (hard refusal, no user override). Only UNKNOWN files can be reclassified to OTHER, and that requires explicit user confirmation (`AskUserQuestion`). Write guard error messages explicitly warn against reclassification attempts.
 
 **Constraints:**
 - One skill at a time per session; worktrees have separate runtime dirs.
@@ -491,6 +492,41 @@ On skill invocation and feature work, update the terminal identity.
     When classify_file("/Users/.../plugins/purlin/skills/build/SKILL.md") is called with an absolute path
     Then it returns "CODE" (absolute path, custom prefix rule does not match)
 
+#### Scenario: Classify refuses to reclassify CODE file as OTHER @auto
+
+    Given a file classified as CODE (e.g., scripts/mcp/scan_engine.py)
+    When purlin:classify add is invoked for that file
+    Then the skill refuses with "Cannot reclassify — it is classified as CODE"
+    And no user confirmation is offered
+    And write_exceptions is not modified
+
+#### Scenario: Classify refuses to reclassify SPEC file as OTHER @auto
+
+    Given a file classified as SPEC (e.g., features/skills_engineer/purlin_build.md)
+    When purlin:classify add is invoked for that file
+    Then the skill refuses with "Cannot reclassify — it is classified as SPEC"
+    And no user confirmation is offered
+
+#### Scenario: Classify refuses to reclassify INVARIANT file as OTHER @auto
+
+    Given a file classified as INVARIANT (e.g., features/_invariants/i_arch_api.md)
+    When purlin:classify add is invoked for that file
+    Then the skill refuses with "Cannot reclassify — it is classified as INVARIANT"
+    And no user confirmation is offered
+
+#### Scenario: Classify allows reclassifying UNKNOWN file as OTHER @auto
+
+    Given a file classified as UNKNOWN (e.g., unknown/config.yaml)
+    When purlin:classify add is invoked for that file
+    Then the skill asks the user for confirmation via AskUserQuestion
+    And if confirmed, the file is added to write_exceptions
+
+#### Scenario: Write guard block messages warn against reclassification @auto
+
+    Given no active_skill marker exists
+    When the write guard blocks a CODE, SPEC, or INVARIANT file
+    Then the error message contains "Do NOT reclassify this file via purlin:classify"
+
 #### Scenario: Sync state tracks code change without spec update
 
     Given the agent writes scripts/webhook.py (mapped to webhook_delivery)
@@ -700,6 +736,12 @@ On skill invocation and feature work, update the terminal identity.
   - Response structure validation (exactly 5 keys), graph generation correctness
   - Existing test project (my-app-v0.8.5) compatibility
 - Test projects: `tests/test_projects/constraints-{anchors-only,with-invariants,global-invariants,deep-chain,mixed,no-prereqs,forbidden}`
+- `regression-write-guard-enforcement` -- 18 assertions verifying:
+  - `tests/qa/scenarios/*.json` files blocked without active_skill marker (CODE classification)
+  - Writes allowed with regression, verify, or any active skill marker
+  - Test infrastructure paths (`tests/purlin_constraints/`, `tests/test_projects/`) remain OTHER
+  - Regression result files (`regression.json`) also require skill marker
+  - Edge cases: empty marker file, non-JSON files, smoke scenario JSON
 
 **Manual verification:**
 - Run /build on a feature, confirm code writes tracked in sync_state.json

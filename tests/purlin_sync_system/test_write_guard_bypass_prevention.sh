@@ -170,25 +170,33 @@ assert_message_contains "unknown block names CLAUDE.md" \
     "$TEST_DIR/unknown/file.xyz" "CLAUDE.md"
 
 # ============================================================
-# SECTION 3: BLOCKED messages must NOT suggest workaround paths
-# These are the things creative agents try when they see a block
+# SECTION 3: BLOCKED messages warn against reclassification
+# Agents that get blocked sometimes try to reclassify the file
+# via purlin:classify to bypass the write guard. Messages must
+# explicitly warn against this and state it won't work.
 # ============================================================
 echo ""
-echo "=== Section 3: No workaround suggestions in BLOCKED messages ==="
+echo "=== Section 3: Anti-reclassification warnings in BLOCKED messages ==="
 
 clear_marker
 
-# Code block should not mention classify (reclassification is not a bypass)
-assert_message_not_contains "code block does not suggest purlin:classify" \
-    "$TEST_DIR/src/main.py" "purlin:classify"
+# Code block explicitly warns against reclassification
+assert_message_contains "code block warns against purlin:classify" \
+    "$TEST_DIR/src/main.py" "Do NOT reclassify"
+assert_message_contains "code block says classify won't work" \
+    "$TEST_DIR/src/main.py" "cannot be added to write_exceptions"
 
-# Spec block should not suggest reclassification
-assert_message_not_contains "spec block does not suggest reclassification" \
-    "$TEST_DIR/features/skills_engineer/purlin_build.md" "reclassif"
+# Spec block explicitly warns against reclassification
+assert_message_contains "spec block warns against purlin:classify" \
+    "$TEST_DIR/features/skills_engineer/purlin_build.md" "Do NOT reclassify"
+assert_message_contains "spec block says classify won't work" \
+    "$TEST_DIR/features/skills_engineer/purlin_build.md" "cannot be added to write_exceptions"
 
-# Invariant block should not suggest reclassification
-assert_message_not_contains "invariant block does not suggest reclassification" \
-    "$TEST_DIR/features/_invariants/i_external.md" "reclassif"
+# Invariant block explicitly warns against reclassification
+assert_message_contains "invariant block warns against purlin:classify" \
+    "$TEST_DIR/features/_invariants/i_external.md" "Do NOT reclassify"
+assert_message_contains "invariant block says classify won't work" \
+    "$TEST_DIR/features/_invariants/i_external.md" "cannot be added to write_exceptions"
 
 # No block message should suggest using a different tool
 assert_message_not_contains "code block does not suggest 'try'" \

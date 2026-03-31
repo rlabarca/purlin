@@ -50,22 +50,37 @@ If no exceptions exist: `"No write exceptions configured. All non-spec, non-syst
 1. Read the current config from **both** `.purlin/config.json` and `.purlin/config.local.json`.
 2. Check if `<path>` already exists in `write_exceptions`:
    - If duplicate: `"'<path>' is already in write_exceptions. No change needed."` Stop.
-3. **User confirmation required.** Call `purlin_classify` MCP tool to get the current classification of `<path>`, then ask the user for explicit approval via `AskUserQuestion`:
+3. **Hard gate: Refuse protected file types.** Call `purlin_classify` MCP tool to get the current classification of `<path>`. If the classification is **CODE**, **SPEC**, or **INVARIANT**, refuse immediately — do NOT offer user confirmation:
+
+```
+Cannot reclassify '<path>' as OTHER — it is classified as <TYPE>.
+
+  CODE files must be modified through purlin:build.
+  SPEC files must be modified through purlin:spec (or related spec skills).
+  INVARIANT files are external sources of truth managed by purlin:invariant.
+
+  Reclassifying protected file types would bypass write guard enforcement
+  and break sync tracking. Only UNKNOWN files can be added to write_exceptions.
+```
+
+   Stop. No override path exists.
+
+4. **User confirmation required (UNKNOWN files only).** Ask the user for explicit approval via `AskUserQuestion`:
 
 ```
 Reclassifying '<path>' as OTHER (freely editable without a skill).
 
-  Current classification: <result from purlin_classify>
-  Effect: This path will no longer require purlin:build.
+  Current classification: UNKNOWN
+  Effect: This path will no longer require a classification rule.
           Changes will NOT be tracked against any feature.
 
 Confirm? (yes / no)
 ```
 
    - If user declines: `"Reclassification cancelled."` Stop.
-   - If user confirms: proceed to step 4.
-4. Append `<path>` to `write_exceptions` in **both** files. Preserve all other config keys. Write with `indent=4` formatting.
-5. Print confirmation:
+   - If user confirms: proceed to step 5.
+5. Append `<path>` to `write_exceptions` in **both** files. Preserve all other config keys. Write with `indent=4` formatting.
+6. Print confirmation:
 
 ```
 Added '<path>' to write_exceptions.

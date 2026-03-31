@@ -298,8 +298,8 @@ clear_marker
 # Error message is actionable — directs to the right skill
 assert_blocked_with_message "code block message mentions purlin:build" \
     "$TEST_DIR/src/main.py" "purlin:build"
-assert_blocked_without_message "code block message does NOT mention purlin:classify (no escape hatch)" \
-    "$TEST_DIR/src/main.py" "purlin:classify"
+assert_blocked_with_message "code block message warns against purlin:classify" \
+    "$TEST_DIR/src/main.py" "Do NOT reclassify"
 assert_blocked_with_message "code block message says it sets the write marker" \
     "$TEST_DIR/src/main.py" "set the write marker"
 

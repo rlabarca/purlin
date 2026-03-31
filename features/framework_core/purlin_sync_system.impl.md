@@ -21,6 +21,8 @@
 
 **[IMPL]** User-in-the-loop reclassification: closed the escape hatch where agents could self-reclassify files as OTHER to bypass `purlin:build`. Three-layer defense: (1) write-guard error messages no longer suggest `purlin:classify add` as an alternative, (2) agent protocol explicitly prohibits self-reclassification, (3) `purlin:classify add` now requires explicit user confirmation via `AskUserQuestion` (which cannot be auto-approved even in YOLO mode). Added `assert_blocked_without_message` test helper to verify the escape hatch is removed. Tests remain classified as CODE — intentional friction ensures test changes are tracked against features. (Severity: INFO)
 
+**[IMPL]** Hardened reclassification bypass prevention. Added hard gate to `purlin:classify add` that structurally refuses to reclassify CODE, SPEC, or INVARIANT files as OTHER — no user override path exists. Updated write-guard block messages for CODE, SPEC, and INVARIANT files to explicitly warn "Do NOT reclassify this file via purlin:classify — TYPE files cannot be added to write_exceptions." Added bypass prevention test assertions (Section 3 now verifies anti-reclassify warnings are present, not just that classify isn't suggested). Added `self-reclassify-after-block` adversarial scenario to agent skill routing tests covering the exact failure mode where an agent autonomously pivots to reclassification after being blocked. Updated regression JSON with new assertions. This closes the loophole where the prior defense (user confirmation + message omission) was insufficient because agents have independent knowledge of the classify skill from system context.
+
 ## Code Files
 - agents/purlin.md
 - agents/engineer-worker.md
@@ -33,4 +35,7 @@
 - skills/classify/SKILL.md
 - hooks/scripts/write-guard.sh
 - tests/purlin_sync_system/test_write_guard.sh
+- tests/purlin_sync_system/test_write_guard_bypass_prevention.sh
+- tests/purlin_sync_system/test_agent_skill_routing.sh
+- tests/qa/scenarios/purlin_sync_system.json
 - references/file_classification.md

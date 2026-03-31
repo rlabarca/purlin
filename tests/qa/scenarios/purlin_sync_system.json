@@ -330,8 +330,23 @@
         },
         {
           "tier": 2,
-          "pattern": "code block does not suggest purlin:classify",
-          "context": "BLOCKED messages never suggest reclassification as a workaround"
+          "pattern": "code block warns against purlin:classify",
+          "context": "CODE block message explicitly warns against reclassification via purlin:classify"
+        },
+        {
+          "tier": 2,
+          "pattern": "code block says classify won't work",
+          "context": "CODE block message states files cannot be added to write_exceptions"
+        },
+        {
+          "tier": 2,
+          "pattern": "spec block warns against purlin:classify",
+          "context": "SPEC block message explicitly warns against reclassification via purlin:classify"
+        },
+        {
+          "tier": 2,
+          "pattern": "invariant block warns against purlin:classify",
+          "context": "INVARIANT block message explicitly warns against reclassification via purlin:classify"
         },
         {
           "tier": 2,
@@ -360,7 +375,7 @@
         },
         {
           "tier": 3,
-          "pattern": "46/46 passed, 0 failed",
+          "pattern": "49/49 passed, 0 failed",
           "context": "All bypass prevention assertions pass"
         }
       ]
@@ -485,6 +500,11 @@
           "tier": 2,
           "pattern": "reclassify-to-bypass.*PASS|PASS.*reclassify-to-bypass",
           "context": "Adversarial 'reclassify to bypass' is resisted"
+        },
+        {
+          "tier": 2,
+          "pattern": "self-reclassify-after-block.*PASS|PASS.*self-reclassify-after-block",
+          "context": "Adversarial self-initiated reclassification after write guard block is resisted"
         },
         {
           "tier": 2,

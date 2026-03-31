@@ -103,7 +103,7 @@ case "$REL_PATH" in
                 _allow "Invariant write authorized via purlin:invariant bypass lock"
             fi
         fi
-        echo "BLOCKED: $REL_PATH is INVARIANT. Use purlin:invariant sync to update from the external source. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
+        echo "BLOCKED: $REL_PATH is INVARIANT. Use purlin:invariant sync to update from the external source. Do NOT reclassify this file via purlin:classify — INVARIANT files cannot be added to write_exceptions. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
@@ -114,7 +114,7 @@ case "$REL_PATH" in
         if _has_active_skill; then
             _allow "Write guard: features file authorized via active_skill marker"
         fi
-        echo "BLOCKED: $REL_PATH is a spec file. To modify specs, invoke the appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals), purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The skill will set the write marker and handle companion files automatically. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
+        echo "BLOCKED: $REL_PATH is a spec file. To modify specs, invoke the appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals), purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The skill will set the write marker and handle companion files automatically. Do NOT reclassify this file via purlin:classify — SPEC files cannot be added to write_exceptions. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
@@ -146,7 +146,7 @@ case "$CLASSIFICATION" in
         exit 2
         ;;
     *)
-        echo "BLOCKED: $REL_PATH is a code file. To modify code, invoke purlin:build — it will find the right feature, set the write marker, and track companion files automatically. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
+        echo "BLOCKED: $REL_PATH is a code file. To modify code, invoke purlin:build — it will find the right feature, set the write marker, and track companion files automatically. Do NOT reclassify this file via purlin:classify — CODE files cannot be added to write_exceptions. Do NOT use Bash, shell redirects, or any other tool to bypass this block." >&2
         exit 2
         ;;
 esac
