@@ -43,7 +43,7 @@ Everyone can write any classified file type. Purlin tracks what changed and surf
 |------|-------|------------|
 | PM | Spec authoring, design anchors | `purlin:spec`, `purlin:anchor`, `purlin:invariant` |
 | Engineer | Build, test, delivery | `purlin:build`, `purlin:unit-test`, `purlin:delivery-plan` |
-| QA | Verification, discovery, regression | `purlin:verify`, `purlin:regression`, `purlin:smoke` |
+| QA | Verification, discovery, regression | `purlin:verify`, `purlin:regression` |
 
 ---
 
@@ -262,4 +262,4 @@ These commands are documented in their respective role guides:
 
 - **PM:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit` — see [PM Guide](pm-agent-guide.md)
 - **Engineer:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Guide](engineer-agent-guide.md)
-- **QA:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report` — see [QA Guide](qa-agent-guide.md)
+- **QA:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:qa-report` — see [QA Guide](qa-agent-guide.md)

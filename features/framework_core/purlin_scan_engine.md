@@ -148,7 +148,7 @@ Skills that call scan.sh SHOULD use `--only` to request only the sections they n
 | `purlin:status` (open) | `--tombstones` | *(none)* | Full scan for cross-mode overview |
 | `purlin:build` (verify) | `features,plan` | `spec_modified` | Verifying lifecycle + phase, not spec drift |
 | `purlin:verify` | `features` | `spec_modified` | Just identifying TESTING features |
-| `purlin:smoke` | `features,smoke,deps` | `spec_modified` | Smoke is about dependency fan-out |
+| `purlin:regression promote/suggest` | `features,smoke,deps` | `spec_modified` | Smoke is about dependency fan-out |
 | `purlin:web-test` | `features` | `spec_modified` | Finding TESTING features with web test metadata |
 | `purlin:tombstone` | `features --tombstones` | `spec_modified,test_status,regression_status` | Tombstones don't need computed fields |
 | `purlin:qa-report` | `features,discoveries,plan` | `spec_modified` | QA report doesn't use spec_modified |

@@ -159,10 +159,10 @@ Smoke tests are your critical-path checks — the features that, if broken, mean
 Promote a feature to the smoke tier:
 
 ```
-purlin:smoke feature-name
+purlin:regression promote feature-name
 ```
 
-This adds the feature to the test priority table and optionally creates a simplified smoke regression (1-3 scenarios, under 30 seconds).
+This adds the feature to the test priority table and optionally creates a simplified smoke regression (1-3 scenarios, under 30 seconds). Use `purlin:regression suggest` to get recommendations for which features should be smoke.
 
 ### How Smoke Tests Fit into Verification
 
@@ -206,8 +206,7 @@ QA mode marks a feature complete when all gates pass:
 | `purlin:verify [name] [--auto-verify]` | Run the verification workflow. `--auto-verify` enables the auto-fix iteration loop. |
 | `purlin:complete <name>` | Mark a verified feature as complete. |
 | `purlin:discovery [name]` | Record a structured finding. |
-| `purlin:regression <cmd>` | Author, run, or evaluate regression suites. |
-| `purlin:smoke <feature>` | Promote a feature to the smoke tier. |
+| `purlin:regression <cmd>` | Author, run, evaluate regression suites, and manage smoke tier (`promote`, `suggest`). |
 | `purlin:qa-report` | Summary of discoveries and verification status. |
 | `purlin:web-test [name]` | Playwright visual verification (cross-mode from QA). |
 | `purlin:unit-test [name]` | Run unit tests (cross-mode from QA). |

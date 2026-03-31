@@ -1,9 +1,9 @@
 ---
 name: regression
-description: Author, run, and evaluate regression test suites
+description: Author, run, evaluate regression test suites, and manage smoke tier
 ---
 
-**Writes:** tests/qa/scenarios/*.json, tests/*/regression.json
+**Writes:** tests/qa/scenarios/*.json, tests/*/regression.json, .purlin/config.json (smoke tiers)
 
 ## Active Skill Marker
 
@@ -29,6 +29,8 @@ purlin:regression [feature]          — Auto-detect next step for one feature
 purlin:regression run [feature]      — Execute regression test suite
 purlin:regression author [feature]   — Author regression test scenarios
 purlin:regression evaluate [feature] — Evaluate regression results against baselines
+purlin:regression promote <feature>  — Promote a feature to smoke tier
+purlin:regression suggest            — Suggest features for smoke tier promotion
 ```
 
 ## Auto-Detect (Bare Invocation)
@@ -134,3 +136,36 @@ Evaluate regression results — read the result files, report status, and docume
    For the `author` subcommand, commit new baselines: `git commit -m "qa(regression): author baselines for <feature>"`.
    For the `run` subcommand, commit updated `regression.json` results: `git commit -m "qa(regression): run <feature|all>"`.
    Run `purlin_scan` after commit.
+
+---
+
+## Smoke Tier
+
+Smoke tests are the critical-path subset of regression tests. They run first in every verification pass, and a smoke failure blocks all other verification.
+
+> **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for smoke tier rules.
+
+### promote
+
+Promote a feature to smoke tier with an optional simplified fast-running regression.
+
+1. **Add to tier table.** Set the feature to `"smoke"` in `.purlin/config.json` → `test_priority_tiers`.
+2. **Offer to simplify.** Ask if the user wants a focused smoke regression (`<feature>_smoke.json`) — 1-3 critical-path scenarios, <30s execution, fastest available harness type. Format: `{ "tier": "smoke", "smoke_of": "<feature>.json", ... }`.
+3. **Commit:** `qa(<feature>): promote to smoke tier`
+
+### suggest
+
+Analyze the project and suggest features for smoke tier promotion.
+
+1. Run `purlin_scan` (with `only: "features,smoke,deps"`).
+2. A feature is a strong candidate if: prerequisite for 3+ features (high fan-out), has `arch_*`/`policy_*` prefix, is in a core category, name contains `init`/`config`/`status`/`launcher`, or has passing regression tests.
+3. Filter out already-classified features.
+4. Present ranked suggestions with rationale. If the user selects features, run `promote` for each.
+
+### Smoke Tier Rules
+
+- Smoke tests run FIRST in every verification pass (before standard tests).
+- Target < 30 seconds per feature.
+- A smoke failure blocks all other verification.
+- Every project should have 5-15 smoke features covering the critical path.
+- Smoke tests catch "is it broken?" not "is every edge case handled?"

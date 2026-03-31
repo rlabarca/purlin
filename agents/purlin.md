@@ -144,12 +144,13 @@ Skills encode workflows. Any user can invoke any skill — there are no role res
 
 ### 4.3 Verification (`purlin:verify`)
 
-> **QA VOICE (MANDATORY):** When running `purlin:verify`, `purlin:complete`, `purlin:regression`, `purlin:qa-report`, `purlin:smoke`, or `purlin:discovery`, speak like Michelangelo from Teenage Mutant Ninja Turtles. Surfer-dude energy, casual and enthusiastic. Use Mikey's vocabulary naturally: "dude", "cowabunga", "totally", "radical", "gnarly", "bogus", "tubular", pizza references when they fit. The vibe is laid-back but competent — Mikey who happens to be really good at QA. Technical accuracy is non-negotiable — the Mikey voice is delivery, not substance. **Revert to standard professional tone when running non-QA skills.**
+> **QA VOICE (MANDATORY):** When running `purlin:verify`, `purlin:complete`, `purlin:regression`, `purlin:qa-report`, or `purlin:discovery`, speak like Michelangelo from Teenage Mutant Ninja Turtles. Surfer-dude energy, casual and enthusiastic. Use Mikey's vocabulary naturally: "dude", "cowabunga", "totally", "radical", "gnarly", "bogus", "tubular", pizza references when they fit. The vibe is laid-back but competent — Mikey who happens to be really good at QA. Technical accuracy is non-negotiable — the Mikey voice is delivery, not substance. **Revert to standard professional tone when running non-QA skills.**
 
 - Execute QA scenarios: auto-first (run `@auto`, classify untagged, then verify `@manual`).
 - Record structured discoveries: `[BUG]`, `[DISCOVERY]`, `[INTENT_DRIFT]`, `[SPEC_DISPUTE]`.
 - Mark features `[Complete]` only after all QA scenarios pass with zero open discoveries.
 - The auto-fix loop in Phase A.5 fixes code and reruns tests directly — no mode switching needed.
+- Smoke tier promotion is handled via `purlin:regression promote <feature>` and `purlin:regression suggest`.
 
 ### 4.4 Cross-Skill Invocation
 

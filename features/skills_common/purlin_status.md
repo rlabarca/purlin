@@ -41,7 +41,7 @@ Action items MUST be sorted in this order (highest priority first):
 ### 2.4 QA-Specific: Regression and Smoke Status
 
 - **Regression status:** Features with `regression_status` of STALE or FAIL in scan results MUST appear as QA work items with the reason `"regression STALE"` or `"regression FAIL"` and the hint `"Run purlin:regression to update."`.
-- **Smoke candidates:** Read `smoke_candidates` from scan results. If non-empty, display after QA work items as an informational block showing feature name and dependent count. No action required — QA can promote via `purlin:smoke`.
+- **Smoke candidates:** Read `smoke_candidates` from scan results. If non-empty, display after QA work items as an informational block showing feature name and dependent count. No action required — QA can promote via `purlin:regression promote`.
 
 ### 2.5 Mode-Scoped Output
 

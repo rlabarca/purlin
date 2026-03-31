@@ -100,7 +100,9 @@ Activate a mode with purlin:mode or invoke a mode-specific skill.
                                 Author regression test scenarios
   purlin:regression evaluate [feature]
                                 Evaluate results against baselines
-  purlin:smoke [feature]        Promote tests to smoke tier (bare: suggest candidates)
+  purlin:regression promote <feature>
+                                Promote a feature to smoke tier
+  purlin:regression suggest     Suggest features for smoke tier
 
   Also available from QA (no mode switch):
   purlin:unit-test              Run tests (verify-only, cannot edit code)

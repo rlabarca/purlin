@@ -252,7 +252,7 @@ Credit features where Engineer status is DONE and zero QA scenarios exist. These
     ```
     *   "yes": Abort the batch. Record the failure as a `[BUG]` discovery. Route to Engineer.
     *   "no": Continue to Step 3. The failure is still recorded as a discovery.
-5.  **Suggest smoke promotion.** After running smoke, if any non-smoke feature in scope is a prerequisite for 3+ other features and has no smoke classification, suggest: "Consider promoting `<feature>` to smoke tier with `purlin:smoke <feature>`." Do this once per session, not per feature.
+5.  **Suggest smoke promotion.** After running smoke, if any non-smoke feature in scope is a prerequisite for 3+ other features and has no smoke classification, suggest: "Consider promoting `<feature>` to smoke tier with `purlin:regression promote <feature>`." Do this once per session, not per feature.
 
 ### Step 3 -- Run @auto scenarios
 

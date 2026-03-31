@@ -104,7 +104,7 @@ A feature is a smoke candidate if ALL of:
 - Not already classified as smoke
 - Has `[Complete]` lifecycle status
 
-Additional signals (used by `purlin:smoke suggest`):
+Additional signals (used by `purlin:regression suggest`):
 - `arch_*` or `policy_*` prefix (foundational constraint)
 - Category: "Install, Update & Scripts" or "Coordination & Lifecycle"
 - Name contains: launcher, init, config, status, scan

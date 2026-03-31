@@ -135,7 +135,7 @@ Smoke tests are the critical-path checks that run before everything else.
 | Role | Responsibility |
 |------|----------------|
 | **PM** | Writes the scenarios that become smoke tests. |
-| **QA** | Decides which features are smoke-tier (`purlin:smoke`), authors simplified smoke regressions. |
+| **QA** | Decides which features are smoke-tier (`purlin:regression`), authors simplified smoke regressions. |
 | **Engineer** | Fixes smoke test failures (they're blocking). |
 
 ### How It Fits In
@@ -145,8 +145,8 @@ During QA verification, smoke-tier features run first (Phase A, Step 2). If any 
 ### Setting It Up
 
 ```
-purlin:smoke config-layering         # Promote a feature to smoke tier
-purlin:smoke suggest                 # Get suggestions for which features to promote
+purlin:regression promote config-layering  # Promote a feature to smoke tier
+purlin:regression suggest                 # Get suggestions for which features to promote
 ```
 
 QA mode adds the feature to the smoke tier and optionally creates a quick regression (1-3 scenarios, under 30 seconds).
@@ -178,7 +178,7 @@ Tags are immutable once created. The fixture repo is derived (not precious state
 | Fix bugs found during QA | `purlin:build`, then `purlin:verify` |
 | Resolve a spec dispute | `purlin:spec`, then `purlin:build`, then `purlin:verify` |
 | Set up regression coverage | `purlin:regression author` |
-| Add smoke tests | `purlin:smoke feature-name` |
+| Add smoke tests | `purlin:regression promote feature-name` |
 | Run the full regression suite | Terminal: `./tests/qa/run_all.sh` |
 
 ### Key Commands
@@ -188,6 +188,5 @@ Tags are immutable once created. The fixture repo is derived (not precious state
 | `purlin:spec <topic>` | PM | Create or update a feature spec. |
 | `purlin:build [name]` | Engineer | Implement a feature from its spec. |
 | `purlin:verify [name]` | QA | Run the verification workflow. |
-| `purlin:regression <cmd>` | QA | Author, run, or evaluate regressions. |
-| `purlin:smoke <feature>` | QA | Promote a feature to smoke tier. |
+| `purlin:regression <cmd>` | QA | Author, run, evaluate regressions, and manage smoke tier (`promote`, `suggest`). |
 | `purlin:status` | Everyone | See what needs doing. |

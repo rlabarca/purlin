@@ -173,8 +173,8 @@ You verify **what was built matches what was specified**. Your main tools:
 | Mark a feature complete | `purlin:complete <name>` |
 | Record a bug or finding | `purlin:discovery [name]` |
 | Manage regression suites | `purlin:regression` |
-| Promote a feature to smoke tier | `purlin:smoke <feature>` |
-| Get smoke tier suggestions | `purlin:smoke suggest` |
+| Promote a feature to smoke tier | `purlin:regression promote <feature>` |
+| Get smoke tier suggestions | `purlin:regression suggest` |
 | View verification status | `purlin:qa-report` |
 
 **Start here:** Run `purlin:verify` to verify all features waiting for QA, or `purlin:verify <name>` for a specific one. The agent runs automated scenarios first, then walks you through manual checks.
@@ -195,8 +195,8 @@ Purlin has three testing tiers. They run in order during verification.
 
 Smoke tests cover your critical path — the 5-15 features users would notice first if broken. They run before anything else during `purlin:verify`.
 
-- **Promote a feature:** `purlin:smoke config-layering`
-- **Get suggestions:** `purlin:smoke suggest`
+- **Promote a feature:** `purlin:regression promote config-layering`
+- **Get suggestions:** `purlin:regression suggest`
 - **If smoke fails:** QA halts and asks whether to stop or continue. Smoke failures are blocking.
 
 ### Auto Scenarios — Run After Smoke
@@ -283,6 +283,5 @@ Run `purlin:help` inside any session for the full list.
 | `purlin:verify [name]` | Run the verification workflow. |
 | `purlin:complete <name>` | Mark a verified feature as complete. |
 | `purlin:discovery [name]` | Record a bug, spec dispute, or finding. |
-| `purlin:regression` | Author, run, or evaluate regression suites. |
-| `purlin:smoke <feature>` | Promote a feature to smoke tier, or suggest candidates. |
+| `purlin:regression` | Author, run, evaluate regression suites, and manage smoke tier. |
 | `purlin:qa-report` | Summarize open discoveries and verification status. |
