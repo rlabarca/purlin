@@ -13,10 +13,15 @@ Claude Code plugins cannot use `bypassPermissions` in marketplace installs — i
 Every `Write`, `Edit`, and `NotebookEdit` call is intercepted by a PreToolUse hook:
 
 1. Extracts the target file path from the tool input
-2. Classifies the file as **CODE**, **SPEC**, **QA**, **INVARIANT**, or **UNKNOWN** using `classify_file()`
-3. **INVARIANT files**: blocked — use `purlin:invariant sync` to update from external source
-4. **UNKNOWN files**: blocked — add classification to CLAUDE.md
-5. **All other classified files**: returns `permissionDecision: "allow"` — the tool call proceeds with no user prompt
+2. Classifies the file using `classify_file()`
+3. **System files** (`.purlin/`, `.claude/`): always allowed
+4. **INVARIANT files**: blocked — use `purlin:invariant sync`
+5. **SPEC files** (`features/*`): requires active skill marker (set by `purlin:spec`, `purlin:anchor`, etc.)
+6. **OTHER files** (write_exceptions): freely allowed, no marker needed
+7. **CODE files**: requires active skill marker (set by `purlin:build`)
+8. **UNKNOWN files**: blocked — ask user, then add classification to CLAUDE.md
+9. Skills handle the marker lifecycle automatically — agents do not set it directly
+10. **Reclassification** (`purlin:classify add`): requires user confirmation via `AskUserQuestion` — cannot be auto-approved even in YOLO mode
 
 ### YOLO Mode (`permission-manager.sh`)
 
@@ -49,13 +54,14 @@ The write guard's `classify_file()` function is the permission gate. It classifi
 
 | Classification | Writable | Examples |
 |---|---|---|
-| **CODE** | Yes | `src/`, `scripts/`, `tests/`, `agents/`, `hooks/`, config files, `.impl.md` companions |
-| **SPEC** | Yes | `features/*.md` (except `.impl.md`), `design_*.md`, `policy_*.md` |
-| **QA** | Yes | `.discoveries.md`, `regression.json`, `tests/qa/scenarios/` |
-| **INVARIANT** | No | `features/i_*` (imported standards — use `purlin:invariant sync`) |
-| **UNKNOWN** | No | Unclassified files — add a rule to CLAUDE.md |
+| **CODE** | Via skill | `src/`, `scripts/`, `tests/`, `agents/`, `hooks/`, config files, `.impl.md` companions — invoke `purlin:build` |
+| **SPEC** | Via skill | `features/*.md` (except `.impl.md`) — invoke `purlin:spec`, `purlin:anchor`, etc. |
+| **QA** | Via skill | `.discoveries.md`, `regression.json`, `tests/qa/scenarios/` — invoke QA skills |
+| **OTHER** | Freely | `docs/`, `README.md`, `LICENSE` (write_exceptions) — no skill needed |
+| **INVARIANT** | Blocked | `features/i_*` (imported standards — use `purlin:invariant sync`) |
+| **UNKNOWN** | Blocked | Unclassified files — add a rule to CLAUDE.md |
 
-There are no role-based write restrictions. Any classified file type (CODE, SPEC, QA) is writable by anyone. The write guard only blocks INVARIANT and UNKNOWN files.
+There are no role-based write restrictions. The write guard enforces skill-based writes for CODE and SPEC files via the active_skill marker. Skills set and clear this marker automatically. OTHER files are freely writable without a skill.
 
 ## Enterprise Environments
 
@@ -93,7 +99,7 @@ Worker subagents (`engineer-worker`, `pm-worker`, `qa-worker`) do not use `permi
 
 1. The write guard hook fires for all subagent tool calls (PreToolUse hooks apply to subagents)
 2. Classified writes (CODE, SPEC, QA) are auto-approved via `permissionDecision: "allow"`
-3. INVARIANT and UNKNOWN writes are blocked via exit 2
-4. Each worker's skill instructions define what it writes — the write guard enforces file classification
+3. INVARIANT and UNKNOWN writes are blocked; SPEC and CODE writes require an active skill marker
+4. Each worker's skill instructions define what it writes — the write guard enforces skill-based access
 
 This works for all installation methods.

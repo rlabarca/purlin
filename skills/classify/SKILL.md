@@ -50,8 +50,22 @@ If no exceptions exist: `"No write exceptions configured. All non-spec, non-syst
 1. Read the current config from **both** `.purlin/config.json` and `.purlin/config.local.json`.
 2. Check if `<path>` already exists in `write_exceptions`:
    - If duplicate: `"'<path>' is already in write_exceptions. No change needed."` Stop.
-3. Append `<path>` to `write_exceptions` in **both** files. Preserve all other config keys. Write with `indent=4` formatting.
-4. Print confirmation:
+3. **User confirmation required.** Call `purlin_classify` MCP tool to get the current classification of `<path>`, then ask the user for explicit approval via `AskUserQuestion`:
+
+```
+Reclassifying '<path>' as OTHER (freely editable without a skill).
+
+  Current classification: <result from purlin_classify>
+  Effect: This path will no longer require purlin:build.
+          Changes will NOT be tracked against any feature.
+
+Confirm? (yes / no)
+```
+
+   - If user declines: `"Reclassification cancelled."` Stop.
+   - If user confirms: proceed to step 4.
+4. Append `<path>` to `write_exceptions` in **both** files. Preserve all other config keys. Write with `indent=4` formatting.
+5. Print confirmation:
 
 ```
 Added '<path>' to write_exceptions.

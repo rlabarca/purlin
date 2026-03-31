@@ -66,6 +66,8 @@ Files explicitly excepted from code tracking via `write_exceptions` in `.purlin/
 - Shown informationally in `purlin:status` and `purlin:whats-different`.
 - Managed via `purlin:classify add|remove|list`.
 
+**User confirmation required.** `purlin:classify add` requires explicit user approval (via `AskUserQuestion`) before modifying `write_exceptions`. This prevents agents from silently reclassifying code files to avoid skill-based writes.
+
 **Default exceptions** are seeded by `purlin:init` and stored in `.purlin/config.json`:
 ```json
 {

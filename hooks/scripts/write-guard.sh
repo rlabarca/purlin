@@ -13,9 +13,10 @@
 #                                                  absent  → BLOCK (use purlin:build)
 #
 # Active skill marker: .purlin/runtime/active_skill
-#   - Set by skills at start, cleared at end
+#   - Set ONLY by skills at start, cleared at end
 #   - Cleared by session-init-identity.sh on session start
 #   - Non-empty file = authorized; empty/missing = not authorized
+#   - Agents MUST NOT set this marker directly — invoke the skill instead
 #
 # INVARIANT bypass: purlin:invariant creates a lock file at
 # .purlin/runtime/invariant_write_lock containing the target path.
@@ -106,7 +107,7 @@ case "$REL_PATH" in
         if _has_active_skill; then
             _allow "Write guard: features file authorized via active_skill marker"
         fi
-        echo "BLOCKED: $REL_PATH is a spec file. Use purlin:spec, purlin:anchor, purlin:discovery, or another spec skill. Or for a one-off edit: echo spec > .purlin/runtime/active_skill" >&2
+        echo "BLOCKED: $REL_PATH is a spec file. To modify specs, invoke the appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals), purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The skill will set the write marker and handle companion files automatically." >&2
         exit 2
         ;;
 esac
@@ -134,11 +135,11 @@ fi
 
 case "$CLASSIFICATION" in
     UNKNOWN)
-        echo "BLOCKED: $REL_PATH has no classification rule. Add a rule to CLAUDE.md under '## Purlin File Classifications': \`$(dirname "$REL_PATH")/\` → CODE (or SPEC)." >&2
+        echo "BLOCKED: $REL_PATH has no classification rule. Ask the user how this path should be classified, then add a rule to CLAUDE.md under '## Purlin File Classifications'." >&2
         exit 2
         ;;
     *)
-        echo "BLOCKED: $REL_PATH requires purlin:build. If this path isn't code, run: purlin:classify add $REL_PATH. Or for a one-off edit: echo build > .purlin/runtime/active_skill" >&2
+        echo "BLOCKED: $REL_PATH is a code file. To modify code, invoke purlin:build — it will find the right feature, set the write marker, and track companion files automatically." >&2
         exit 2
         ;;
 esac

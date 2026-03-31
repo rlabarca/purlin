@@ -40,7 +40,7 @@ Every file in a Purlin project is classified into one of six categories. Classif
 - Trailing `/` = directory prefix match (`docs/` matches `docs/anything`).
 - No trailing `/` = exact filename match at project root (`README.md`).
 - OTHER files are freely editable without a skill — no feature tracking needed.
-- Managed via `purlin:classify add|remove|list`.
+- Managed via `purlin:classify add|remove|list`. Adding exceptions requires explicit user confirmation (`AskUserQuestion`).
 
 **Custom classification format in CLAUDE.md:**
 
@@ -77,7 +77,7 @@ The write guard is a `PreToolUse` hook on `Write`, `Edit`, and `NotebookEdit`. I
                                                UNKNOWN → BLOCK (add classification)
 ```
 
-**Block messages are actionable:** each blocked write tells the agent exactly which skill to use, or how to set the escape hatch marker for a one-off edit.
+**Block messages are actionable:** each blocked write tells the agent exactly which skill to invoke. There is no escape hatch — skills are the only authorized path for writing spec and code files. Error messages do not suggest reclassification; agents that believe a file should be OTHER must explain to the user and let them decide.
 
 #### 2.2.1 INVARIANT Bypass for purlin:invariant
 
@@ -117,7 +117,7 @@ Skills that write files set this marker at start and clear it at end. The write 
 - Spec writers: `spec`, `anchor`, `discovery`, `propose`, `tombstone`, `spec-from-code`, `spec-code-audit`, `infeasible`, `spec-catch-up`
 - Code writers: `build`, `unit-test`, `regression`, `smoke`, `fixture`, `toolbox`, `verify`
 - Invariant: `invariant` (plus existing bypass lock for invariant files)
-- Escape hatch: `direct` (for one-off edits outside skill workflow)
+- No escape hatch — agents MUST invoke a skill; direct marker setting is not authorized. Reclassification via `purlin:classify add` requires explicit user confirmation (`AskUserQuestion`) and is not suggested in error messages.
 
 **Constraints:**
 - One skill at a time per session; worktrees have separate runtime dirs.
@@ -453,11 +453,11 @@ On skill invocation and feature work, update the terminal identity.
     When a new session starts (session-init-identity.sh runs)
     Then .purlin/runtime/active_skill is removed
 
-#### Scenario: Escape hatch marker allows one-off edits @auto
+#### Scenario: Unrecognized marker value still allows writes @auto
 
-    Given .purlin/runtime/active_skill contains "direct"
+    Given .purlin/runtime/active_skill contains any non-empty value
     When the agent writes to any non-INVARIANT file
-    Then the write is allowed
+    Then the write is allowed (marker check is non-empty, not value-specific)
 
 #### Scenario: Custom CLAUDE.md classification overrides UNKNOWN @auto
 
@@ -690,6 +690,16 @@ On skill invocation and feature work, update the terminal identity.
 - `sync-ledger-updates` -- pre-commit ledger updates, status computation, post-commit SHA backfill
 - `file-classification-rules` -- classify_file() correctness for all file types, custom rules
 - `concurrent-agent-isolation` -- independent sync state per worktree, ledger merge behavior
+
+**Constraint resolution regression:** `tests/qa/scenarios/purlin_constraints.json`
+- `constraint-resolution-full-suite` -- 123 assertions across 15 suites covering:
+  - Anchors-only, scoped invariants, global invariants, deep transitive chains, mixed topologies
+  - All 5 anchor prefixes (arch_, design_, policy_, ops_, prodbrief_) and their i_* variants
+  - Diamond dependency deduplication, companion/discovery file exclusion
+  - Error handling (missing feature, missing graph, .md suffix normalization)
+  - Response structure validation (exactly 5 keys), graph generation correctness
+  - Existing test project (my-app-v0.8.5) compatibility
+- Test projects: `tests/test_projects/constraints-{anchors-only,with-invariants,global-invariants,deep-chain,mixed,no-prereqs,forbidden}`
 
 **Manual verification:**
 - Run /build on a feature, confirm code writes tracked in sync_state.json

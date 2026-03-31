@@ -94,6 +94,24 @@ assert_blocked_with_message() {
     fi
 }
 
+assert_blocked_without_message() {
+    local desc="$1" file_path="$2" forbidden_fragment="$3"
+    ((total++))
+    local stderr_output
+    stderr_output=$(run_guard_stderr "$file_path")
+    local exit_code=$?
+    if [ $exit_code -eq 0 ]; then
+        echo "FAIL: $desc (expected block, got allow)"
+        ((failed++))
+    elif echo "$stderr_output" | grep -q "$forbidden_fragment"; then
+        echo "FAIL: $desc (blocked but message should NOT contain '$forbidden_fragment', got: $stderr_output)"
+        ((failed++))
+    else
+        echo "PASS: $desc"
+        ((passed++))
+    fi
+}
+
 set_marker() {
     echo "$1" > "$TEST_DIR/.purlin/runtime/active_skill"
 }
@@ -211,16 +229,13 @@ set_marker "tombstone"
 assert_allowed "features/_tombstones/ allowed with marker" "$TEST_DIR/features/_tombstones/old_feature.md"
 clear_marker
 
-# Escape hatch — marker="direct" allows any features file
-set_marker "direct"
-assert_allowed "features file allowed with escape hatch (marker=direct)" "$TEST_DIR/features/skills_engineer/purlin_build.md"
-clear_marker
-
-# Error message is actionable
-assert_blocked_with_message "spec block message mentions spec skills" \
+# Error message is actionable — directs to the right skill
+assert_blocked_with_message "spec block message mentions purlin:spec" \
     "$TEST_DIR/features/skills_engineer/purlin_build.md" "purlin:spec"
-assert_blocked_with_message "spec block message mentions escape hatch" \
-    "$TEST_DIR/features/skills_engineer/purlin_build.md" "echo spec"
+assert_blocked_with_message "spec block message mentions purlin:anchor" \
+    "$TEST_DIR/features/skills_engineer/purlin_build.md" "purlin:anchor"
+assert_blocked_with_message "spec block message says skill sets marker" \
+    "$TEST_DIR/features/skills_engineer/purlin_build.md" "skill will set the write marker"
 
 # ============================================================
 # STEP 4: OTHER files (write_exceptions) — always ALLOW
@@ -280,18 +295,13 @@ assert_allowed "CODE file allowed (scripts, marker=build)" "$TEST_DIR/scripts/mc
 assert_allowed "CODE file allowed (tests, marker=build)" "$TEST_DIR/tests/purlin_sync_system/test_guard.sh"
 clear_marker
 
-# Escape hatch — marker="direct" allows code files
-set_marker "direct"
-assert_allowed "CODE file allowed with escape hatch (marker=direct)" "$TEST_DIR/src/main.py"
-clear_marker
-
-# Error message is actionable
+# Error message is actionable — directs to the right skill
 assert_blocked_with_message "code block message mentions purlin:build" \
     "$TEST_DIR/src/main.py" "purlin:build"
-assert_blocked_with_message "code block message mentions purlin:classify" \
+assert_blocked_without_message "code block message does NOT mention purlin:classify (no escape hatch)" \
     "$TEST_DIR/src/main.py" "purlin:classify"
-assert_blocked_with_message "code block message mentions escape hatch" \
-    "$TEST_DIR/src/main.py" "echo build"
+assert_blocked_with_message "code block message says it sets the write marker" \
+    "$TEST_DIR/src/main.py" "set the write marker"
 
 # ============================================================
 # UNKNOWN files — always blocked
@@ -511,7 +521,7 @@ assert_blocked "lifecycle: spec blocked after marker cleared" "$TEST_DIR/feature
 echo ""
 echo "=== Multiple marker skill names ==="
 
-for skill in build spec anchor discovery propose tombstone spec-from-code spec-code-audit infeasible spec-catch-up unit-test regression smoke fixture toolbox verify invariant direct; do
+for skill in build spec anchor discovery propose tombstone spec-from-code spec-code-audit infeasible spec-catch-up unit-test regression smoke fixture toolbox verify invariant; do
     set_marker "$skill"
     assert_allowed "marker=$skill allows code write" "$TEST_DIR/src/main.py"
 done

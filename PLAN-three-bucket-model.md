@@ -17,10 +17,10 @@ Agents bypass Purlin skills and directly edit files. We want simple rules that p
 | Bucket | Tracked against features? | How? | When it fails |
 |--------|--------------------------|------|---------------|
 | **Spec** | Always | Path maps directly: `features/<cat>/<stem>.md` | Never — deterministic |
-| **Code** | When skills used | Build writes `.impl.md` companions; `tests/<stem>/` and `skills/<name>/` map by convention; commit scope fallback | Escape hatch bypasses build → unclassified |
+| **Code** | When skills used | Build writes `.impl.md` companions; `tests/<stem>/` and `skills/<name>/` map by convention; commit scope fallback | Rare — write guard blocks all code writes without a skill |
 | **Other** | Never | Not connected to any feature | By design — these don't need tracking |
 
-**Untracked code is rare if the hook logic is right.** The write guard blocks all code writes without a skill. The escape hatch exists but requires explicit action. purlin:spec-code-audit catches any remaining gaps.
+**Untracked code is rare if the hook logic is right.** The write guard blocks all code writes without a skill. Reclassification via `purlin:classify add` requires explicit user confirmation — agents cannot self-reclassify. `purlin:spec-code-audit` catches any remaining gaps.
 
 ---
 
@@ -44,17 +44,21 @@ Agents bypass Purlin skills and directly edit files. We want simple rules that p
 
 **Spec file blocked (step 3):**
 ```
-BLOCKED: features/auth/login.md is a spec file.
-Use purlin:spec, purlin:anchor, purlin:discovery, or another spec skill.
-Or for a one-off edit: echo spec > .purlin/runtime/active_skill
+BLOCKED: features/auth/login.md is a spec file. To modify specs, invoke the
+appropriate skill: purlin:spec (create/update specs), purlin:anchor (anchor
+nodes), purlin:discovery (QA findings), purlin:propose (spec change proposals),
+purlin:tombstone (retire features), purlin:infeasible (mark infeasible). The
+skill will set the write marker and handle companion files automatically.
 ```
 
 **Code file blocked (step 5):**
 ```
-BLOCKED: src/auth.ts requires purlin:build.
-If this path isn't code, run: purlin:classify add src/auth.ts
-Or for a one-off edit: echo build > .purlin/runtime/active_skill
+BLOCKED: src/auth.ts is a code file. To modify code, invoke purlin:build — it
+will find the right feature, set the write marker, and track companion files
+automatically.
 ```
+
+**No escape hatch.** There is no `echo X > active_skill` bypass, and the error message does not suggest reclassification. The only way to write spec or code files is through a skill. Reclassification (`purlin:classify add`) requires explicit user confirmation via `AskUserQuestion`. This ensures every change is tracked through companion files and the sync system.
 
 ### Exception Matching
 
@@ -69,13 +73,17 @@ Write guard reads `write_exceptions` from `.purlin/config.json`:
 
 File: `.purlin/runtime/active_skill`
 
-Skills set it at start, clear it at end:
+**Set ONLY by skills** at start, cleared at end:
 ```bash
 mkdir -p .purlin/runtime && echo "build" > .purlin/runtime/active_skill  # start
 rm -f .purlin/runtime/active_skill                                        # end
 ```
 
 Write guard checks: file exists and non-empty → ALLOW.
+
+**Agents MUST NOT set this marker directly.** The marker is a skill-internal
+mechanism. Invoking the skill is the only authorized path — it handles the
+marker lifecycle, companion file tracking, and format compliance automatically.
 
 Lifecycle:
 - Set by each writing skill at start
@@ -93,7 +101,7 @@ Manages `write_exceptions` — paths classified as OTHER.
 
 | Subcommand | Description |
 |---|---|
-| `add <path>` | Add path/prefix to OTHER list |
+| `add <path>` | Add path/prefix to OTHER list (requires user confirmation) |
 | `remove <path>` | Remove from OTHER list |
 | `list` | Show all current exceptions |
 
@@ -123,7 +131,31 @@ Update `config_engine.py:classify_file()` to return `"OTHER"` for paths matching
 
 ---
 
+## Format Specifications
+
+All file format specs live in `references/formats/` for easy discovery:
+
+| Format | File | Used By |
+|--------|------|---------|
+| Regular features | `references/formats/feature_format.md` | `purlin:spec`, `purlin:spec-from-code`, `purlin:spec-catch-up` |
+| Anchor nodes | `references/formats/anchor_format.md` | `purlin:anchor`, `purlin:spec` (anchor creation) |
+| Companion files | `references/formats/companion_format.md` | `purlin:build`, `purlin:spec-code-audit` |
+| Invariant files | `references/formats/invariant_format.md` | `purlin:invariant` |
+| Invariant: arch | `references/formats/invariant_type_arch.md` | `purlin:invariant` (arch_* type) |
+| Invariant: design | `references/formats/invariant_type_design.md` | `purlin:invariant` (design_* type) |
+| Invariant: ops | `references/formats/invariant_type_ops.md` | `purlin:invariant` (ops_* type) |
+| Invariant: policy | `references/formats/invariant_type_policy.md` | `purlin:invariant` (policy_* type) |
+| Invariant: prodbrief | `references/formats/invariant_type_prodbrief.md` | `purlin:invariant` (prodbrief_* type) |
+
+Skills load these automatically. The agent definition (`agents/purlin.md`) points
+agents to `references/formats/` so they know where to find format specs when
+routing to a skill.
+
+---
+
 ## .impl.md Companion Role
+
+See `references/formats/companion_format.md` for the canonical format.
 
 With the three-bucket model, companions serve two purposes:
 
@@ -728,7 +760,7 @@ OTHER files (not audited — no spec required):
 9. `docs/guide.md` no marker, `docs/` excepted → ALLOW (OTHER)
 10. `docs/guide.md` no marker, not excepted → BLOCK (code)
 11. `README.md` excepted → ALLOW
-12. Escape hatch marker="direct" → ALLOW any file
+12. No escape hatch — blocked writes require invoking the correct skill
 
 ### Classification
 13. `classify_file("docs/guide.md")` with exception → "OTHER"
@@ -736,7 +768,7 @@ OTHER files (not audited — no spec required):
 15. `classify_file("features/auth/login.md")` → "SPEC"
 
 ### Integration
-16. purlin:classify add/list/remove
+16. purlin:classify add (requires user confirmation)/list/remove
 17. Build reverse lookup: test/ path → correct feature
 18. Build reverse lookup: impl reference → correct feature
 19. Build reverse lookup: no match → offers create/attach/one-off

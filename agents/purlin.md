@@ -28,6 +28,7 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 
 - **Write guard** — PreToolUse hook enforcing skill-based writes. Blocks spec/code edits without an active skill marker. No escape hatch.
 - **Active skill marker** — `.purlin/runtime/active_skill` — set/cleared exclusively by skills. **Agents MUST NOT set this directly** — invoke the skill.
+- **Reclassification is not a bypass.** Do NOT use `purlin:classify add` to avoid skill routing. Reclassification requires explicit user confirmation and is only for files that are genuinely not project code (documentation, dotfiles, etc.).
 
 #### Feature Anatomy
 
@@ -166,7 +167,7 @@ When the user's request implies a specific skill without invoking one, route dir
 - "build X", "implement X", "fix the tests", "fix the bug" -> invoke `purlin:build`
 - "verify X", "check if X works", "run QA" -> invoke `purlin:verify`
 
-**When asked to make changes:** `purlin:build` will find the right feature via reverse lookup. The write guard enforces skill usage — there is no bypass. Direct file edits to spec or code files are blocked without a skill-set marker. Do not attempt to set the marker yourself; invoke the skill. OTHER files (docs, README, etc.) can be edited freely without a skill.
+**When asked to make changes:** `purlin:build` will find the right feature via reverse lookup. The write guard enforces skill usage — there is no bypass. Direct file edits to spec or code files are blocked without a skill-set marker. Do not attempt to set the marker yourself; invoke the skill. OTHER files (docs, README, etc.) can be edited freely without a skill. If the write guard blocks a file you believe should be OTHER, explain to the user why and let them decide. Never self-reclassify to avoid using `purlin:build`.
 
 **Format references:** When creating or modifying spec files, consult `${CLAUDE_PLUGIN_ROOT}/references/formats/` for the canonical format for each file type (features, anchors, invariants). Skills load these automatically, but understanding the format helps you route to the correct skill.
 

@@ -93,16 +93,20 @@ Features with `code_ahead` sync status appear as engineer advisories with a hint
 
 ---
 
-## Only Two Hard Blocks
+## Write Guard: Skills Are the Only Path
 
-The write guard blocks exactly two file types:
+The write guard enforces skill-based writes for spec and code files. There is no escape hatch — blocked writes require invoking the correct skill. Reclassification via `purlin:classify add` requires explicit user confirmation.
 
-| Classification | Blocked | What to Do |
+| Classification | Behavior | What to Do |
 |---|---|---|
-| **INVARIANT** | Yes | Use `purlin:invariant sync` to update from the external source |
-| **UNKNOWN** | Yes | Add a classification rule to CLAUDE.md |
+| **SPEC** (`features/*`) | Blocked without active skill | Invoke `purlin:spec`, `purlin:anchor`, `purlin:discovery`, or another spec skill |
+| **CODE** (everything else) | Blocked without active skill | Invoke `purlin:build` |
+| **INVARIANT** | Always blocked | Use `purlin:invariant sync` to update from the external source |
+| **UNKNOWN** | Always blocked | Ask the user, then add a classification rule to CLAUDE.md |
+| **OTHER** (`docs/`, `README.md`, etc.) | Freely writable | No skill needed |
+| **System** (`.purlin/`, `.claude/`) | Always writable | No skill needed |
 
-Everything else — CODE, SPEC, QA — is writable by anyone, anytime. The write guard auto-approves these with no prompt.
+Skills set the active_skill marker automatically when invoked, and clear it when done. This ensures every spec and code change flows through companion file tracking and the sync system.
 
 ---
 

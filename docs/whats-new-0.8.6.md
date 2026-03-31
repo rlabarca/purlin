@@ -30,10 +30,10 @@ The pm/engineer/qa **mode system is gone**. In v0.8.5, you had to explicitly swi
 
 **What changed:**
 
-- **Write freely.** Everyone can write any classified file type (CODE, SPEC, QA). No role-based restrictions.
+- **Skill-based writes.** The write guard ensures all spec and code changes flow through skills (`purlin:spec`, `purlin:build`, etc.), which handle companion file tracking automatically. OTHER files (docs, README) are freely editable without a skill.
 - **Sync tracking replaces mode enforcement.** A two-layer system (session + cross-session ledger) watches what you change. `purlin:status` shows which features are synced, which have code ahead of specs, and which need attention.
 - **Companion debt is advisory.** `purlin:status` surfaces features where code changed but the companion file wasn't updated. It's a warning, not a gate.
-- **Only two hard blocks remain:** INVARIANT files (use `purlin:invariant sync`) and UNKNOWN files (add a classification rule to CLAUDE.md).
+- **No escape hatches.** INVARIANT and UNKNOWN files are always blocked. SPEC and CODE files require invoking the correct skill — there is no manual marker bypass. Reclassification via `purlin:classify add` requires explicit user confirmation, preventing agents from silently bypassing skill routing.
 - **`purlin:mode` is removed.** Just use skills directly: `purlin:build`, `purlin:spec`, `purlin:verify`.
 
 ---
@@ -231,7 +231,7 @@ Five hooks provide mechanical enforcement and automatic lifecycle management:
 
 | Hook | Event | What It Does |
 |---|---|---|
-| **Write Guard** | `PreToolUse` (Write/Edit) | Blocks INVARIANT and UNKNOWN file writes. All classified files (CODE, SPEC, QA) are auto-approved. |
+| **Write Guard** | `PreToolUse` (Write/Edit) | Enforces skill-based writes. SPEC and CODE files require an active skill marker. INVARIANT and UNKNOWN are always blocked. OTHER files are freely writable. |
 | **Session Start** | `SessionStart` | Sets terminal identity on launch; prompts `purlin:resume` after clear/compact. Clears stale session state. |
 | **Session End** | `SessionEnd` | Merges worktree branches, cleans session state. |
 | **Permission Manager** | `PermissionRequest` | Auto-approves most permission prompts when YOLO is enabled (excludes plan approval, user questions, remote triggers). |

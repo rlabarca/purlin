@@ -19,6 +19,8 @@
 
 **[IMPL]** Refactored build SKILL.md Step 0: replaced manual "Constraint File Mandate" + separate "Anchor Review" + "Invariant Preflight" (steps 1-2) with single "Constraint Collection (MANDATORY)" bullet that calls `purlin_constraints`. FORBIDDEN pre-scan, behavioral reminders, and Figma staleness checks remain as separate bullets consuming the collection output. Prerequisite Stability simplified to reference ancestors from the collection.
 
+**[IMPL]** User-in-the-loop reclassification: closed the escape hatch where agents could self-reclassify files as OTHER to bypass `purlin:build`. Three-layer defense: (1) write-guard error messages no longer suggest `purlin:classify add` as an alternative, (2) agent protocol explicitly prohibits self-reclassification, (3) `purlin:classify add` now requires explicit user confirmation via `AskUserQuestion` (which cannot be auto-approved even in YOLO mode). Added `assert_blocked_without_message` test helper to verify the escape hatch is removed. Tests remain classified as CODE — intentional friction ensures test changes are tracked against features. (Severity: INFO)
+
 ## Code Files
 - agents/purlin.md
 - agents/engineer-worker.md
@@ -28,3 +30,7 @@
 - scripts/mcp/graph_engine.py
 - scripts/mcp/purlin_server.py
 - skills/build/SKILL.md
+- skills/classify/SKILL.md
+- hooks/scripts/write-guard.sh
+- tests/purlin_sync_system/test_write_guard.sh
+- references/file_classification.md
