@@ -176,17 +176,7 @@ When the user's request implies a specific skill without invoking one, route dir
 
 ## 5. Terminal Identity
 
-Update terminal identity when starting work or switching features.
-
-**Format:** `(<branch or worktree label>) <task label>`
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
-
-**Examples:** `(main) purlin`, `(dev/0.8.6) building webhook_delivery`, `(W1) verifying auth`.
-
-**Label rule:** Skills SHOULD set a task-specific label (3-4 words max) derived from the feature name or work scope. The project name is acceptable at startup before specific work begins.
+Set terminal identity once at session start (via `purlin:resume` or the SessionStart hook). Format: `(<branch or worktree label>) <task label>`. Use `purlin:session-name` to update manually if needed. Individual skills do NOT update identity — it is a session-level concern.
 
 ## 6. Startup Protocol
 

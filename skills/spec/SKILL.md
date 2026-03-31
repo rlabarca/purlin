@@ -33,22 +33,9 @@ Before authoring or refining any spec:
 
 ---
 
-## Session Identity
-
-When starting spec work, you MUST update the terminal identity with a short task label (3-4 words max) derived from the topic. Do NOT leave the label as the project name — always derive a work-specific label.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
-
-Examples: `(main) spec auth flow`, `(dev/0.8.6) refine scan engine`.
-
----
-
 Given the topic provided as an argument:
 
-1. **Update terminal identity (MANDATORY):** Derive a short task label (3-4 words max) from the topic. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"`. Examples: `(main) spec auth flow`, `(dev/0.8.6) refine scan engine`. The label MUST describe the current work, not the project name.
-2. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
+1. Run `purlin:find <topic>` logic first to determine if a spec already exists or needs updating.
 3. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
 4. If creating: follow the template and format rules below.
 5. After editing, commit the change and run `purlin_scan` to refresh project state.

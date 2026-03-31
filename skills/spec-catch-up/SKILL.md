@@ -25,18 +25,6 @@ Before catching up specs, read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_
 
 ---
 
-## Session Identity
-
-When starting spec catch-up work, you MUST update the terminal identity with a short task label (3-4 words max) derived from the feature(s) being reconciled.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
-
-Examples: `(main) catch-up auth`, `(dev/0.8.6) sync webhook spec`.
-
----
-
 ## Purpose
 
 Lightweight spec reconciliation for features where code landed ahead of spec updates. Bridges the gap between `purlin:spec` (forward authoring) and `purlin:spec-from-code` (heavy brownfield import). Reads sync tracking data, identifies what changed in code, proposes targeted spec additions/revisions, and applies them after PM approval.
@@ -83,16 +71,6 @@ Parse `$ARGUMENTS`:
    Catch up all? Or enter a number to catch up one at a time.
    ```
 4. Accept: "all", a number, or a feature name. Process selected features sequentially.
-
-### 0.3 — Update Session Identity
-
-Derive a task label from the target feature(s):
-- Single feature: `catch-up <feature_stem>`
-- Multiple features: `catch-up N features`
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
 
 ---
 

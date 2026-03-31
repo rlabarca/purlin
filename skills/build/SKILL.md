@@ -3,18 +3,6 @@ name: build
 description: Implement features from specs with full CDD lifecycle. Writes CODE and TEST files
 ---
 
-## Session Identity
-
-When starting work on a feature, you MUST update the terminal identity with a short task label (3-4 words max) derived from the feature name or plan. Do NOT leave the label as the project name — always derive a work-specific label.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
-
-Examples: `(main) add auth flow`, `(dev/0.8.6) fix scan engine`.
-
----
-
 ## Scope
 
 If an argument was provided, resolve the feature file via `features/**/<arg>.md` and implement it.
@@ -130,7 +118,6 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
 
 ### Step 1 -- Acknowledge and Plan
 
-*   **Update terminal identity:** Derive a short task label (3-4 words max) from the feature name or delivery plan context. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"`. Examples: `(main) add auth flow`, `(dev/0.8.6) fix scan engine`.
 *   State which feature you are implementing.
 *   Briefly outline your plan, referencing any companion file notes that influenced your strategy.
 

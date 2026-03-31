@@ -29,18 +29,6 @@ rm -f .purlin/runtime/active_skill
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 > **Testing lifecycle:** See `${CLAUDE_PLUGIN_ROOT}/references/testing_lifecycle.md` for the complete lifecycle across all modes (define, implement, verify, complete).
 
-## Session Identity
-
-You MUST update the terminal identity before starting verification work. Derive a short task label (3-4 words max) from the feature being verified or the batch scope. Do NOT leave the label as the project name — always derive a work-specific label.
-
-```bash
-source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"
-```
-
-Examples: `(main) verify auth flow`, `(dev/0.8.6) batch verify`.
-
----
-
 ## Argument Parsing
 
 Parse `$ARGUMENTS` for three orthogonal filters:
@@ -160,8 +148,6 @@ Prep: <manual verification notice, if applicable>
 ---
 
 ## Phase A -- Automated Execution
-
-**Update terminal identity (MANDATORY):** Before any verification work, derive a short task label (3-4 words max) from the feature being verified or the batch scope. Call: `source ${CLAUDE_PLUGIN_ROOT}/scripts/terminal/identity.sh && update_session_identity "<task label>"`. Examples: `(main) verify auth flow`, `(dev/0.8.6) batch verify`. The label MUST describe the current work, not the project name.
 
 **Mode gate:** Skip this entire phase if `--mode manual`. If `--mode smoke`, execute only Step 2. If `--mode regression`, execute only Step 0b + regression checkpoint (Step 5a-B). If `--mode auto`, execute Steps 2-5 (skip Step 1 auto-pass and Step 4 classification). If no mode flag (full), execute all steps.
 
