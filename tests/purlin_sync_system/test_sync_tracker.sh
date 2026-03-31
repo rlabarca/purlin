@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test: Sync tracker state management
 # Verifies that sync-tracker.sh correctly tracks file writes in sync_state.json,
-# mapping files to features and classifying changes.
+# mapping files to features using path-based type detection.
 set -uo pipefail
 
 PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
@@ -21,12 +21,6 @@ mkdir -p "$TEST_DIR/.purlin/runtime"
 mkdir -p "$TEST_DIR/features/skills_engineer"
 mkdir -p "$TEST_DIR/scripts/mcp"
 mkdir -p "$TEST_DIR/src"
-
-# Copy file_classification.json for fallback
-if [ -f "$PLUGIN_ROOT/references/file_classification.json" ]; then
-    mkdir -p "$TEST_DIR/references"
-    cp "$PLUGIN_ROOT/references/file_classification.json" "$TEST_DIR/references/"
-fi
 
 STATE_FILE="$TEST_DIR/.purlin/runtime/sync_state.json"
 
@@ -50,10 +44,9 @@ assert_fail() {
     ((failed++))
 }
 
-# === CODE file tracking ===
+# === CODE file tracking (unclassified - no feature stem match) ===
 fire_tracker "$TEST_DIR/scripts/mcp/config_engine.py"
 
-# scripts/mcp/config_engine.py can't map to a feature stem, so it goes to unclassified
 if [ -f "$STATE_FILE" ] && python3 -c "
 import json, sys
 with open('$STATE_FILE') as f:
@@ -122,7 +115,6 @@ fire_tracker "$TEST_DIR/.purlin/config.json"
 if [ ! -f "$STATE_FILE" ]; then
     assert_pass "purlin runtime files skipped"
 else
-    # File may exist but should be empty/default
     if python3 -c "
 import json, sys
 with open('$STATE_FILE') as f:
@@ -135,6 +127,99 @@ sys.exit(0 if not feats and not uw else 1)
     else
         assert_fail "purlin runtime files skipped"
     fi
+fi
+
+# === Skill file maps to purlin_<name> if feature exists, no spurious keys ===
+rm -f "$STATE_FILE"
+mkdir -p "$TEST_DIR/skills/build"
+fire_tracker "$TEST_DIR/skills/build/SKILL.md"
+
+if [ -f "$STATE_FILE" ] && python3 -c "
+import json, sys
+with open('$STATE_FILE') as f:
+    data = json.load(f)
+# skills/build/ maps to purlin_build (if that feature exists) -- not 'build' or 'SKILL'
+feats = data.get('features', {})
+has_spurious = any('build' == k or 'SKILL' in k for k in feats)
+sys.exit(0 if not has_spurious else 1)
+" 2>/dev/null; then
+    assert_pass "skill file does not create spurious feature entry"
+else
+    assert_fail "skill file does not create spurious feature entry"
+fi
+
+# === System folder _tombstones/ excluded from feature mapping ===
+rm -f "$STATE_FILE"
+mkdir -p "$TEST_DIR/features/_tombstones"
+fire_tracker "$TEST_DIR/features/_tombstones/old_feature.md"
+
+if python3 -c "
+import json, sys
+try:
+    with open('$STATE_FILE') as f:
+        data = json.load(f)
+except FileNotFoundError:
+    data = {'features': {}, 'unclassified_writes': []}
+feats = data.get('features', {})
+sys.exit(0 if 'old_feature' not in feats else 1)
+" 2>/dev/null; then
+    assert_pass "_tombstones/ file excluded from feature mapping"
+else
+    assert_fail "_tombstones/ file excluded from feature mapping"
+fi
+
+# === System folder _invariants/ excluded from feature mapping ===
+rm -f "$STATE_FILE"
+mkdir -p "$TEST_DIR/features/_invariants"
+fire_tracker "$TEST_DIR/features/_invariants/i_arch_api.md"
+
+if python3 -c "
+import json, sys
+try:
+    with open('$STATE_FILE') as f:
+        data = json.load(f)
+except FileNotFoundError:
+    data = {'features': {}, 'unclassified_writes': []}
+feats = data.get('features', {})
+sys.exit(0 if 'i_arch_api' not in feats else 1)
+" 2>/dev/null; then
+    assert_pass "_invariants/ file excluded from feature mapping"
+else
+    assert_fail "_invariants/ file excluded from feature mapping"
+fi
+
+# === Discoveries file maps to feature with qa_changed ===
+rm -f "$STATE_FILE"
+fire_tracker "$TEST_DIR/features/skills_engineer/purlin_build.discoveries.md"
+
+if [ -f "$STATE_FILE" ] && python3 -c "
+import json, sys
+with open('$STATE_FILE') as f:
+    data = json.load(f)
+feat = data.get('features', {}).get('purlin_build', {})
+sys.exit(0 if feat.get('qa_changed') else 1)
+" 2>/dev/null; then
+    assert_pass "discoveries file maps to feature with qa_changed"
+else
+    assert_fail "discoveries file maps to feature with qa_changed"
+fi
+
+# === .claude/ directory skipped by tracker ===
+rm -f "$STATE_FILE"
+mkdir -p "$TEST_DIR/.claude"
+fire_tracker "$TEST_DIR/.claude/settings.json"
+
+if [ ! -f "$STATE_FILE" ] || python3 -c "
+import json, sys
+with open('$STATE_FILE') as f:
+    data = json.load(f)
+feats = data.get('features', {})
+uw = data.get('unclassified_writes', [])
+sys.exit(0 if not feats and not uw else 1)
+" 2>/dev/null; then
+    assert_pass ".claude/ directory skipped by tracker"
+else
+    assert_fail ".claude/ directory skipped by tracker"
 fi
 
 # Cleanup

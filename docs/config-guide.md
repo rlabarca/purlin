@@ -80,7 +80,11 @@ Controls whether Purlin begins executing work immediately after discovering it.
 
 **When to use OFF:** You want to review the work plan before anything happens. You might want to pick a different feature, change the order, or give specific instructions.
 
-**Interaction with find-work:** Auto-start has no effect when find-work is OFF. If Purlin didn't scan for work, there's nothing to auto-start — it waits for your instruction regardless.
+**Coupling with find-work:** Auto-start requires find-work. You can have find-work without auto-start, but not the reverse. These settings are automatically coupled:
+- Turning **auto-start ON** automatically turns **find-work ON** (if it was off).
+- Turning **find-work OFF** automatically turns **auto-start OFF** (if it was on).
+
+Purlin tells you when a coupled change happens.
 
 ---
 
@@ -92,6 +96,8 @@ Controls whether Purlin begins executing work immediately after discovering it.
 | **Trusted** | ON | ON | OFF | Purlin scans and presents work, you pick what to do, and it runs without interruption. Good balance of control and speed. |
 | **Autopilot** | ON | ON | ON | Purlin scans, picks the top item, and starts building. Full autonomy. |
 | **Direct** | ON | OFF | OFF | No scan, no prompts. You tell Purlin exactly what to do and it executes immediately. Fastest for targeted tasks. |
+
+> **Note:** auto-start requires find-work, so find-work OFF + auto-start ON is not a valid state. Attempting it will automatically enable find-work.
 
 ---
 

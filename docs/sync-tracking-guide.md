@@ -66,14 +66,16 @@ Each feature gets a sync status based on what changed:
 
 ## How `purlin:status` Uses Sync Data
 
-When you run `purlin:status`, it composes the full picture:
+Status classification happens server-side in the MCP tool. When you run `purlin:status`:
 
-1. Reads the committed ledger for per-feature sync state.
-2. Overlays session state for uncommitted writes (in-session changes override ledger).
-3. Reads QA state: regression results, open discoveries, scenario counts.
-4. Outputs per-feature status with drift indicators.
+1. The MCP server runs a full scan internally (features, tests, discoveries, deviations, git state).
+2. Reads the committed ledger and overlays session state.
+3. Classifies everything into role-based work items (Engineer, QA, PM) with priority sorting.
+4. Returns only the classified summary — the raw feature array never enters the conversation.
 
-Features with `code_ahead` status appear as engineer advisories with a hint to run `purlin:spec-code-audit` to reconcile companion files in bulk.
+You can scope by role: `purlin:status pm` returns only PM work items. This is fast and focused.
+
+Features with `code_ahead` sync status appear as engineer advisories with a hint to run `purlin:spec-code-audit`. Features with `spec_ahead` appear as PM items. Per-feature sync details (timestamps, drift direction) are included for actionable entries.
 
 ---
 
@@ -135,8 +137,9 @@ See the [Spec-Code Sync Guide](spec-code-sync-guide.md) for companion file forma
 
 | You want to... | What to do |
 |---|---|
-| Check sync status | `purlin:status` |
-| See what changed in this session | Session state is read automatically by `purlin:status` |
+| Check sync status | `purlin:status` (all roles) or `purlin:status engineer` |
+| See what changed since last session | `purlin:whats-different` |
+| See what changed, PM-focused | `purlin:whats-different pm` |
 | Reconcile companion debt | `purlin:spec-code-audit` |
 | Understand why a feature shows `code_ahead` | Read the ledger: code committed without companion file update |
 | Clear session state | Starts fresh every session automatically |

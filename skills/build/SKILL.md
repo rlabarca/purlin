@@ -64,15 +64,43 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker to authorize writes through the write guard:
+
+```bash
+mkdir -p .purlin/runtime && echo "build" > .purlin/runtime/active_skill
+```
+
+Set this at skill start (before Step 0). Clear it at skill end (after Step 4 completes or on any early exit):
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+When using Execution Group Dispatch, set the marker before spawning workers and clear it after the merge protocol completes. Each worker in a worktree has its own `.purlin/runtime/` directory.
+
+---
+
 ## Per-Feature Implementation Protocol
 
 ### Step 0 -- Pre-Flight (MANDATORY)
 
-*   **Spec Existence Check:** If a feature name was provided as an argument, verify the spec exists (glob `features/**/<name>.md`). If it does NOT exist:
-    1. Inform the user: `"No spec exists for '<name>'. In Purlin, specs come before code."`
-    2. Offer: `"No spec exists — create one? (purlin:spec <name>)"`
-    3. If confirmed: invoke `purlin:spec <name>`. STOP — do not continue with purlin:build.
-    4. If declined: STOP — do not implement without a spec.
+*   **Feature Resolution (mandatory before any writes):**
+    1. **Feature name provided:** Resolve via `features/**/<name>.md`.
+       - If found: proceed with that spec.
+       - If NOT found: inform `"No spec exists for '<name>'. In Purlin, specs come before code."` Offer: `"Create one? (purlin:spec <name>)"`. If confirmed: invoke `purlin:spec <name>`, then STOP. If declined: STOP.
+    2. **No feature name, but request targets specific file(s):** Run the Reverse Lookup Cascade (first confident match wins):
+       - **Signal 1 — Path Convention** (DETERMINISTIC): `tests/<stem>/` → feature `<stem>`. `skills/<name>/` → feature `purlin_<name>`. No confirmation needed.
+       - **Signal 2 — Companion Code Files** (HIGH confidence): Grep `## Code Files` sections in `features/**/*.impl.md` for the target path. If single match: proceed. Multiple matches: ask engineer to pick.
+       - **Signal 3 — Commit Scope History** (MEDIUM confidence): `git log --oneline -20 -- <target_file>`. Extract `feat(<scope>):` patterns. Most frequent scope matching a known feature stem = match. Confirm with engineer if ambiguous.
+       - **Signal 4 — Spec Content Search** (LOW-MEDIUM confidence): Use `purlin_scan` cached data to keyword-match the engineer's request against feature names, scenario titles, and requirement text. Always confirm. Present top 3 candidates.
+    3. **No feature name, no specific file:** Run `purlin:status`, pick the highest-priority Engineer work item (existing behavior).
+    4. **Resolution outcomes:**
+       - High-confidence single match → state it and proceed: `"This belongs to feature '<name>'. Proceeding."`
+       - Ambiguous / multiple matches → ask engineer to pick.
+       - No match + `auto_create_features: true` (from `.purlin/config.json` `agents.purlin.auto_create_features`) → generate a feature spec from context (infer requirements from the code change, generate scenarios from the engineer's description, place in appropriate category folder) and proceed.
+       - No match + `auto_create_features: false` (default) → offer three options: (a) Attach to an existing spec (show closest matches), (b) Create a new spec via `purlin:spec <name>`, (c) Continue as one-off (no feature tracking — marker still authorizes writes but no companion or sync tracking).
 *   **Sync Ledger Check:** Read `.purlin/sync_ledger.json` for the target feature's entry (if the file exists). Surface relevant drift:
     *   If `sync_status` is `spec_ahead` (spec updated since last code change): warn `"Spec updated since last implementation — review spec changes before building."` This is advisory, not blocking.
     *   If `open_discoveries > 0`: warn `"Feature has N open discovery/ies — review before implementing."`
@@ -83,7 +111,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 *   **Invariant Preflight:** Collect all invariants applicable to this feature:
     1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants` list. Read each file.
     2. **Scoped invariants:** From the feature's transitive `> Prerequisite:` chain, collect any `i_*` files.
-    3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each applicable invariant. For each pattern entry, grep the feature's code files (scoped to feature files only). If violations found, **block the build** with an actionable message:
+    3. **FORBIDDEN pre-scan:** Extract `## FORBIDDEN Patterns` from each applicable invariant. For each pattern entry, grep the feature's code files (scoped to feature files only, excluding paths classified as OTHER via `write_exceptions`). If violations found, **block the build** with an actionable message:
        ```
        INVARIANT VIOLATION -- build blocked
        i_policy_security.md (INV-3): No eval() in user-facing code
@@ -117,6 +145,11 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 
 *   Write code and tests.
 *   **Knowledge Colocation:** Record non-obvious discoveries in `<name>.impl.md (in the same folder as the spec)` (never in the feature `.md`). Create the companion file if needed.
+*   **Companion Code Files Section:** When writing code files, maintain a `## Code Files` section in the companion (`<name>.impl.md`):
+    *   If companion has `## Code Files` → append new file paths not already listed.
+    *   If companion exists but has no `## Code Files` section → add the section listing all code files touched this session.
+    *   If creating a new companion → always include `## Code Files` with the files being written.
+    *   This section is the primary mechanism for reverse lookup (Signal 2) and should list every file the feature's implementation touches.
 *   **Engineer Decision Tags:** Use these in companion files (`<name>.impl.md (in the same folder as the spec)`):
     *   `[CLARIFICATION]` (INFO) -- Interpreted ambiguous spec language.
     *   `[AUTONOMOUS]` (WARN) -- Spec was silent; you filled the gap.
@@ -128,6 +161,12 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 *   **Invariant References in Companion Entries:** When code addresses a specific invariant constraint, companion entries SHOULD reference it: `[IMPL] Implemented correlation ID header per i_arch_api_standards.md INV-2`. When code deviates from an invariant, use `[DEVIATION]` referencing the invariant — but note that invariant deviations escalate as **invariant conflict** (harder than regular spec deviation, since invariants are immutable and externally-sourced). The deviation is surfaced to PM as "invariant conflict" rather than "spec deviation."
 *   **Bug Fix Resolution:** When fixing an OPEN `[BUG]` in the discovery sidecar, update status from `OPEN` to `RESOLVED` in the same commit.
 *   **Commit:** `git commit -m "feat(scope): implement FEATURE_NAME"`. No status tag in this commit.
+*   **Sync Ledger Update:** After the commit succeeds, update the sync ledger:
+    ```bash
+    PURLIN_COMMIT_MSG="feat(scope): implement FEATURE_NAME" bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-ledger-update.sh"
+    bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-ledger-update.sh" --sha "$(git rev-parse HEAD)"
+    ```
+    This records which features had code/spec changes and backfills the commit SHA. The `PURLIN_COMMIT_MSG` allows scope-based mapping for files that can't be mapped by path alone.
 
 ### Step 3 -- Verify Locally
 
@@ -179,6 +218,7 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
     | `dependency-only` | Prerequisite update, no direct code changes. |
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
+*   **C2. Sync Ledger:** `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-ledger-update.sh" --sha "$(git rev-parse HEAD)"`
 *   **D. Verify:** Run `purlin_scan` with `only: "features,plan"` and confirm expected state.
 *   **E. Group check:** If a delivery plan exists, check phase completion status:
     *   **Phase fully complete** (all features done): Mark phase COMPLETE, record commit hash, commit plan update.
@@ -195,6 +235,17 @@ After all parallel `engineer-worker` sub-agents complete, merge branches sequent
 ---
 
 > **Hard gates (companion file minimum, status tag pre-checks, FORBIDDEN pre-scan, re-verification fast path, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: step-by-step execution, parallel dispatch, merge protocol, and output formatting.
+
+---
+
+## Spec-Then-Build Chaining
+
+When the engineer's request implies both spec and code changes (keywords: "update the spec", "change the requirement", "add a scenario and build it"):
+
+1. Build detects spec change intent in the request.
+2. Reverse lookup resolves the feature (or engineer provides it).
+3. Build chains: clear its own marker → invoke `purlin:spec <feature>` (spec sets/clears its own marker) → re-set build marker → continue with implementation against the updated spec.
+4. This avoids requiring the engineer to manually invoke two separate skills.
 
 ---
 

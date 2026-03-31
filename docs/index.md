@@ -116,7 +116,8 @@ You define **what** to build. Your main tools:
 | Import external rules (git repo) | `purlin:invariant add <repo-url> <file>` |
 | Sync an invariant after source changes | `purlin:invariant sync <file>` |
 | Audit design health across features | `purlin:design-audit` |
-| Check what needs your attention | `purlin:status` |
+| Check what needs your attention | `purlin:status pm` |
+| See what changed since last session | `purlin:whats-different pm` |
 
 **Start here:** Run `purlin:spec <topic>` to write your first spec. The agent asks structured questions about scope, edge cases, and constraints, then produces a spec with requirements, QA scenarios, and optional visual specifications.
 
@@ -124,7 +125,7 @@ You define **what** to build. Your main tools:
 
 **Without Figma:** Describe the feature in plain language. Create local design anchors (`purlin:anchor design_tokens`) for project-wide visual standards.
 
-**Review Engineer deviations:** After a build, check `purlin:status` for companion file entries tagged `[DEVIATION]`, `[AUTONOMOUS]`, or `[DISCOVERY]`. These are places where the implementation diverged from your spec.
+**Review Engineer deviations:** After a build, run `purlin:status pm` to see companion file entries tagged `[DEVIATION]`, `[AUTONOMOUS]`, or `[DISCOVERY]`. These are places where the implementation diverged from your spec.
 
 See the full [PM Guide](pm-agent-guide.md) and [Design Guide](design-guide.md).
 
@@ -136,6 +137,8 @@ You build **from specs**. Your main tools:
 
 | What you want to do | Command |
 |---|---|
+| Check what needs building | `purlin:status engineer` |
+| See what changed since last session | `purlin:whats-different engineer` |
 | Implement a feature | `purlin:build [name]` |
 | Run unit tests | `purlin:unit-test [name]` |
 | Run visual tests (Playwright) | `purlin:web-test [name]` |
@@ -162,6 +165,8 @@ You verify **what was built matches what was specified**. Your main tools:
 
 | What you want to do | Command |
 |---|---|
+| Check what needs verification | `purlin:status qa` |
+| See what changed since last session | `purlin:whats-different qa` |
 | Verify features | `purlin:verify [name] [--auto-fix]` |
 | Mark a feature complete | `purlin:complete <name>` |
 | Record a bug or finding | `purlin:discovery [name]` |

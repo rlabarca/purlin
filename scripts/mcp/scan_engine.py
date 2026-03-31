@@ -1103,6 +1103,297 @@ def _scan_smoke_candidates(features):
 
 
 # ---------------------------------------------------------------------------
+# Work item classification
+# ---------------------------------------------------------------------------
+
+# Priority constants for sort ordering (lower = higher priority).
+_P_TOMBSTONE = 1
+_P_FAIL = 2
+_P_SPEC_MODIFIED = 3
+_P_TODO = 4
+_P_BUG = 5
+_P_PLAN = 6
+_P_ADVISORY = 7
+
+
+def _deduplicate_items(items):
+    """Keep only the highest-priority (lowest number) item per feature name."""
+    by_name = {}
+    for item in items:
+        key = item["name"]
+        if key not in by_name or item["priority"] < by_name[key]["priority"]:
+            by_name[key] = item
+    return list(by_name.values())
+
+
+def classify_work_items(scan_result, sync_summary=None):
+    """Classify scan results into role-based work items.
+
+    Args:
+        scan_result: Full scan result dict from run_scan().
+        sync_summary: Per-feature sync dict from get_sync_summary(), or None.
+
+    Returns a dict with lifecycle counts, sync counts, per-feature sync
+    details, and work items grouped by role (deduplicated, one item per
+    feature per role at highest priority). COMPLETE features with no
+    issues are counted but not listed.
+    """
+    features = scan_result.get("features", [])
+    discoveries = scan_result.get("open_discoveries", [])
+    deviations = scan_result.get("unacknowledged_deviations", [])
+    plan = scan_result.get("delivery_plan")
+    smoke = scan_result.get("smoke_candidates", [])
+    git_state = scan_result.get("git_state", {})
+    sync = sync_summary or {}
+
+    # --- Lifecycle counts ---
+    lifecycle_counts = {}
+    for f in features:
+        lc = f.get("lifecycle", "UNKNOWN")
+        lifecycle_counts[lc] = lifecycle_counts.get(lc, 0) + 1
+
+    # --- Sync counts + per-feature sync details ---
+    sync_counts = {"synced": 0, "code_ahead": 0, "spec_ahead": 0,
+                   "new": 0, "unknown": 0}
+    sync_details = []
+    for stem, info in sync.items():
+        status = info.get("sync_status", "unknown")
+        if status in sync_counts:
+            sync_counts[status] += 1
+        else:
+            sync_counts["unknown"] += 1
+        # Only include actionable sync entries (not synced/unknown).
+        if status not in ("synced", "unknown"):
+            sync_details.append({
+                "name": stem,
+                "sync_status": status,
+                "last_code_date": info.get("last_code_date"),
+                "last_spec_date": info.get("last_spec_date"),
+                "last_impl_date": info.get("last_impl_date"),
+            })
+
+    # --- Cross-reference helpers ---
+    # Discoveries grouped by feature.
+    disc_by_feature = {}
+    for d in discoveries:
+        feat = d.get("feature", "")
+        disc_by_feature.setdefault(feat, []).append(d)
+
+    # Deviations grouped by feature.
+    dev_by_feature = {}
+    for d in deviations:
+        feat = d.get("feature", "")
+        dev_by_feature.setdefault(feat, []).append(d)
+
+    # Features with open INFEASIBLE deviations (Engineer should not work these).
+    infeasible_features = {
+        d["feature"] for d in deviations if d.get("tag") == "INFEASIBLE"
+    }
+
+    # Current delivery plan phase features.
+    plan_features = set()
+    plan_summary = None
+    if plan and plan.get("phases"):
+        phases = plan["phases"]
+        current = None
+        for p in phases:
+            if p.get("status") in ("IN_PROGRESS", "PENDING"):
+                current = p
+                break
+        if current:
+            plan_features = set(current.get("features", []))
+        plan_summary = {
+            "current_phase": current["number"] if current else None,
+            "total_phases": len(phases),
+            "status": current["status"] if current else "COMPLETE",
+            "phase_features": list(plan_features),
+        }
+
+    # --- Classify into roles ---
+    engineer_items = []
+    qa_items = []
+    pm_items = []
+
+    for f in features:
+        name = f.get("name", "")
+        file_path = f.get("file", "")
+        lifecycle = f.get("lifecycle", "")
+        test_status = f.get("test_status")
+        regression_status = f.get("regression_status")
+        spec_modified = f.get("spec_modified_after_completion")
+        sections = f.get("sections", {})
+        is_tombstone = f.get("tombstone", False)
+        feat_sync = sync.get(name, {}).get("sync_status", "unknown")
+
+        # ---- Engineer work (highest-priority reason wins via dedup) ----
+        if is_tombstone:
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "tombstone", "priority": _P_TOMBSTONE,
+            })
+
+        if test_status == "FAIL" or regression_status == "FAIL":
+            detail = []
+            if test_status == "FAIL":
+                detail.append("test FAIL")
+            if regression_status == "FAIL":
+                detail.append("regression FAIL")
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "fail", "priority": _P_FAIL,
+                "details": ", ".join(detail),
+            })
+
+        if spec_modified is True:
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "spec_modified_after_completion",
+                "priority": _P_SPEC_MODIFIED,
+            })
+
+        if lifecycle == "TODO" and name not in infeasible_features:
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "todo", "priority": _P_TODO,
+            })
+
+        # Open BUGs routed to engineer (first BUG only per feature).
+        for d in disc_by_feature.get(name, []):
+            if (d.get("type") == "BUG"
+                    and d.get("action_required") == "Engineer"):
+                engineer_items.append({
+                    "name": name, "file": file_path,
+                    "reason": "open_bug", "priority": _P_BUG,
+                    "details": d.get("title", ""),
+                })
+                break  # One item per feature.
+
+        # Delivery plan current phase.
+        stem_md = name + ".md"
+        if stem_md in plan_features or name in plan_features:
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "delivery_plan", "priority": _P_PLAN,
+            })
+
+        # Sync advisory.
+        if feat_sync == "code_ahead":
+            engineer_items.append({
+                "name": name, "file": file_path,
+                "reason": "code_ahead", "priority": _P_ADVISORY,
+                "details": "Run purlin:spec-code-audit to reconcile.",
+            })
+
+        # ---- QA work ----
+        if regression_status in ("STALE", "FAIL"):
+            qa_items.append({
+                "name": name, "file": file_path,
+                "reason": "regression_" + regression_status.lower(),
+                "priority": _P_FAIL if regression_status == "FAIL" else _P_TODO,
+                "details": ("Run purlin:regression to update."
+                            if regression_status == "STALE" else ""),
+            })
+
+        if (lifecycle == "TESTING"
+                and sections.get("qa_scenarios", False)):
+            qa_items.append({
+                "name": name, "file": file_path,
+                "reason": "testing", "priority": _P_TODO,
+            })
+
+        # ---- PM work (skip tombstones — engineer handles deletion) ----
+        if is_tombstone:
+            continue
+
+        if not sections.get("requirements", True):
+            pm_items.append({
+                "name": name, "file": file_path,
+                "reason": "incomplete_spec", "priority": _P_FAIL,
+                "details": "Missing requirements section.",
+            })
+
+        if feat_sync == "spec_ahead":
+            pm_items.append({
+                "name": name, "file": file_path,
+                "reason": "spec_ahead", "priority": _P_ADVISORY,
+            })
+
+    # PM: unacknowledged deviations (grouped by feature, count only).
+    for feat, devs in dev_by_feature.items():
+        pm_items.append({
+            "name": feat,
+            "file": "",
+            "reason": "unacknowledged_deviations",
+            "priority": _P_TODO,
+            "details": f"{len(devs)} unacknowledged deviation(s).",
+        })
+
+    # PM: SPEC_DISPUTE and INTENT_DRIFT discoveries.
+    for d in discoveries:
+        if d.get("type") in ("SPEC_DISPUTE", "INTENT_DRIFT"):
+            pm_items.append({
+                "name": d.get("feature", ""),
+                "file": d.get("file", ""),
+                "reason": d["type"].lower(),
+                "priority": _P_FAIL,
+                "details": d.get("title", ""),
+            })
+
+    # QA: discoveries with SPEC_UPDATED status (status, not type).
+    for d in discoveries:
+        if d.get("status") == "SPEC_UPDATED":
+            qa_items.append({
+                "name": d.get("feature", ""),
+                "file": d.get("file", ""),
+                "reason": "spec_updated",
+                "priority": _P_TODO,
+                "details": d.get("title", ""),
+            })
+
+    # Deduplicate: one item per feature per role, highest priority wins.
+    engineer_items = _deduplicate_items(engineer_items)
+    qa_items = _deduplicate_items(qa_items)
+    pm_items = _deduplicate_items(pm_items)
+
+    # Sort by priority, then name.
+    def _sort_key(item):
+        return (item["priority"], item["name"])
+
+    engineer_items.sort(key=_sort_key)
+    qa_items.sort(key=_sort_key)
+    pm_items.sort(key=_sort_key)
+
+    # --- OTHER files changed (from session sync state) ---
+    session_state_file = os.path.join(
+        PROJECT_ROOT, ".purlin", "runtime", "sync_state.json")
+    session_state = _read_json_safe(session_state_file) or {}
+    other_files_changed = len(session_state.get("unclassified_writes", []))
+
+    # Git state: include dirty file count for resume display.
+    dirty_files = git_state.get("dirty_files", [])
+
+    return {
+        "lifecycle_counts": lifecycle_counts,
+        "total_features": len(features),
+        "sync_counts": sync_counts,
+        "sync_details": sync_details,
+        "work": {
+            "engineer": {"count": len(engineer_items), "items": engineer_items},
+            "qa": {"count": len(qa_items), "items": qa_items},
+            "pm": {"count": len(pm_items), "items": pm_items},
+        },
+        "delivery_plan_summary": plan_summary,
+        "smoke_candidates": smoke,
+        "other_files_changed": other_files_changed,
+        "git_state": {
+            "branch": git_state.get("branch", "unknown"),
+            "clean": git_state.get("clean", True),
+            "dirty_file_count": len(dirty_files),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Main scan orchestration
 # ---------------------------------------------------------------------------
 

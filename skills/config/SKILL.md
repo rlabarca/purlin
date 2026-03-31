@@ -36,6 +36,10 @@ Purlin Configuration
 Config file: .purlin/config.local.json
 Change a setting: purlin:config <setting> on|off
 Model & effort: use /model and /effort (native Claude Code settings)
+
+Note: auto-start requires find-work. Turning on auto-start
+automatically enables find-work. Turning off find-work
+automatically disables auto-start.
 ```
 
 Map values: `true` -> `ON`, `false` -> `OFF`.
@@ -71,14 +75,14 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 **How it works:** `purlin:resume` Step 9 reads `agents.purlin.find_work` from the resolved config. If `true`, it runs `purlin_scan` and `purlin:status` to discover work. If `false`, it skips the scan entirely and prints `"find_work disabled -- awaiting instruction."`.
 
-**Interaction with auto-start:** If `find-work` is OFF, `auto-start` has no effect — there's nothing to auto-start because no work was discovered.
+**Coupling with auto-start:** auto-start requires find-work. You can have find-work without auto-start, but not auto-start without find-work. Turning off find-work automatically turns off auto-start (the MCP handler returns a `coupled` field when this happens). If auto-start was coupled off, append to the confirmation message: `" (auto-start was also turned OFF — it requires find-work.)"`
 
 ### Flow
 
 1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.find_work"`.
 2. **No argument** (just `purlin:config find-work`): Print current state and the description above.
 3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.find_work"`, `value: true`). Print: `"Find-work is now ON. Session startup will scan for work and suggest next steps."`
-4. **With `off`**: Write `false`. Print: `"Find-work is now OFF. Session startup will skip scanning — tell Purlin what to do."`
+4. **With `off`**: Write `false`. Check the response for a `coupled` field. Print: `"Find-work is now OFF. Session startup will skip scanning — tell Purlin what to do."` If coupled, append: `" (auto-start was also turned OFF — it requires find-work.)"`
 
 ---
 
@@ -92,8 +96,9 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 **How it works:** `purlin:resume` Step 9.5 reads `agents.purlin.auto_start` from the resolved config. If `true`, Purlin begins executing immediately after presenting the work plan. If `false`, it waits for user approval.
 
+**Coupling with find-work:** auto-start requires find-work. You can have find-work without auto-start, but not auto-start without find-work. Turning on auto-start automatically turns on find-work (the MCP handler returns a `coupled` field when this happens). If find-work was coupled on, append to the confirmation message: `" (find-work was also turned ON — auto-start requires it.)"`
+
 **Interaction with other settings:**
-- **find-work OFF + auto-start ON**: Auto-start has no effect. Nothing was discovered, so there's nothing to start.
 - **find-work ON + auto-start ON**: Full autopilot. Purlin scans for work and starts executing the top item.
 - **find-work ON + auto-start OFF**: Purlin scans and presents the plan, then waits. This is the default.
 
@@ -101,7 +106,7 @@ Map values: `true` -> `ON`, `false` -> `OFF`.
 
 1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.auto_start"`.
 2. **No argument** (just `purlin:config auto-start`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.auto_start"`, `value: true`). Print: `"Auto-start is now ON. Purlin will begin executing work immediately after scanning."`
+3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.auto_start"`, `value: true`). Check the response for a `coupled` field. Print: `"Auto-start is now ON. Purlin will begin executing work immediately after scanning."` If coupled, append: `" (find-work was also turned ON — auto-start requires it.)"`
 4. **With `off`**: Write `false`. Print: `"Auto-start is now OFF. Purlin will present the work plan and wait for approval."`
 
 ---

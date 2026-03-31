@@ -5,6 +5,22 @@ description: Record and classify QA findings for a feature
 
 **Writes:** features/<name>.discoveries.md
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "discovery" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Scope
 
 If an argument was provided, resolve the feature file via `features/**/<arg>.md`.

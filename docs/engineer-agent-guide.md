@@ -170,6 +170,7 @@ The engineer has three ways to flag issues for PM:
 | `purlin:spec-from-code` | Reverse-engineer feature specs from existing code. |
 | `purlin:tombstone <feature>` | Retire a feature with a tombstone record. |
 | `purlin:server` | Start, stop, or restart the dev server for web testing. |
-| `purlin:status` | Check feature states and what needs building. |
+| `purlin:status engineer` | Check what needs building (tombstones, failures, spec-modified, TODO). |
+| `purlin:whats-different engineer` | What changed since last session, focused on code and spec drift. |
 | `purlin:find <topic>` | Search specs for a topic. |
 | `purlin:help` | Full command list. |

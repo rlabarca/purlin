@@ -1,7 +1,7 @@
 #!/bin/bash
 # sync-tracker.sh — FileChanged hook.
 # Tracks all file writes in sync_state.json, grouped by feature.
-# Tracks all file writes grouped by feature for sync state.
+# File type is determined from path alone — no external classifier needed.
 #
 # Exit codes:
 #   0 = always (informational hook, never blocks)
@@ -46,26 +46,12 @@ case "$REL_PATH" in
     .purlin/*|.claude/*|*/__pycache__/*) exit 0 ;;
 esac
 
-PURLIN_PROJECT_ROOT="$PROJECT_ROOT" PURLIN_PLUGIN_ROOT="$PLUGIN_ROOT" PURLIN_REL_PATH="$REL_PATH" python3 -c "
-import json, os, sys, re
+PURLIN_PROJECT_ROOT="$PROJECT_ROOT" PURLIN_REL_PATH="$REL_PATH" python3 -c "
+import json, os, sys, re, glob as _glob
 from datetime import datetime, timezone
 
 rel_path = os.environ['PURLIN_REL_PATH']
 project_root = os.environ['PURLIN_PROJECT_ROOT']
-plugin_root = os.environ['PURLIN_PLUGIN_ROOT']
-
-# --- Classify file ---
-sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
-os.environ.setdefault('PURLIN_PROJECT_ROOT', project_root)
-try:
-    from config_engine import classify_file
-    classification = classify_file(rel_path)
-except Exception:
-    sys.exit(0)
-
-# Skip INVARIANT (can't be written) and UNKNOWN (blocked by write-guard)
-if classification in ('INVARIANT', 'UNKNOWN'):
-    sys.exit(0)
 
 # --- Skip non-project-content files ---
 _SKIP = re.compile(
@@ -79,35 +65,68 @@ _SKIP = re.compile(
 if _SKIP.search(rel_path):
     sys.exit(0)
 
+# --- Discover known feature stems from features/ directory ---
+known_stems = set()
+for f in _glob.glob(os.path.join(project_root, 'features', '*', '*.md')):
+    base = os.path.basename(f)
+    if base.startswith('_'):
+        continue
+    for suffix in ('.impl.md', '.discoveries.md'):
+        if base.endswith(suffix):
+            base = base[:-len(suffix)]
+            break
+    else:
+        if base.endswith('.md'):
+            base = base[:-3]
+    if base:
+        known_stems.add(base)
+
 # --- Map file to feature stem ---
+# Type detection is path-based:
+#   features/ -> spec, impl, or qa (discoveries)
+#   everything else -> code
 stem = None
+is_spec = False
 is_impl = False
 is_qa = False
 
-# features/<category>/<stem>.impl.md
+# Skip system directories under features/
+if re.match(r'features/(_tombstones|_digests|_design|_invariants)/', rel_path):
+    sys.exit(0)
+
+# features/<category>/<stem>.impl.md -> impl
 m = re.match(r'features/[^/]+/([^/]+)\.impl\.md$', rel_path)
 if m:
     stem = m.group(1)
     is_impl = True
 
-# features/<category>/<stem>.discoveries.md
+# features/<category>/<stem>.discoveries.md -> qa
 if not stem:
     m = re.match(r'features/[^/]+/([^/]+)\.discoveries\.md$', rel_path)
     if m:
         stem = m.group(1)
         is_qa = True
 
-# features/<category>/<stem>.md (not impl, not discoveries)
+# features/<category>/<stem>.md (not impl, not discoveries) -> spec
 if not stem:
     m = re.match(r'features/[^/]+/([^/]+)\.md$', rel_path)
     if m and not rel_path.endswith('.discoveries.md'):
         stem = m.group(1)
+        is_spec = True
 
-# tests/<stem>/ directory
+# tests/<stem>/ directory -> code
 if not stem:
     m = re.match(r'tests/([^/]+)/', rel_path)
     if m:
         stem = m.group(1)
+
+# skills/<name>/ -> purlin_<name> (if feature exists)
+if not stem:
+    m = re.match(r'skills/([^/]+)/', rel_path)
+    if m:
+        candidate = 'purlin_' + m.group(1).replace('-', '_')
+        if candidate in known_stems:
+            stem = candidate
 
 # --- Load sync state ---
 state_file = os.path.join(project_root, '.purlin', 'runtime', 'sync_state.json')
@@ -141,15 +160,15 @@ if stem:
 
     if is_impl:
         feat['impl_changed'] = True
-    elif is_qa or classification == 'QA':
+    elif is_qa:
         feat.setdefault('qa_changed', False)
         feat['qa_changed'] = True
-    elif classification == 'SPEC':
+    elif is_spec:
         feat['spec_changed'] = True
         if 'first_spec_change' not in feat:
             feat['first_spec_change'] = now
-    elif classification == 'CODE':
-        # Test files vs code files
+    else:
+        # Everything outside features/ is code
         if rel_path.startswith('tests/'):
             if rel_path not in feat['test_files']:
                 feat['test_files'].append(rel_path)
@@ -158,8 +177,8 @@ if stem:
                 feat['code_files'].append(rel_path)
         if 'first_code_change' not in feat:
             feat['first_code_change'] = now
-elif classification in ('CODE', 'SPEC'):
-    # Unclassified — can't map to a feature
+else:
+    # Can't map to a feature — track as unclassified
     uw = state.setdefault('unclassified_writes', [])
     if rel_path not in uw and len(uw) < 100:
         uw.append(rel_path)

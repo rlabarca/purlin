@@ -6,6 +6,22 @@ description: Manage externally-sourced invariant constraint files. Write ops use
 > **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` for the canonical format.
 > **Invariant model:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md` for identification, scope, and cascade rules.
 
+## Active Skill Marker
+
+Before any file writes (in addition to the existing invariant bypass lock), set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "invariant" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Usage
 
 ```

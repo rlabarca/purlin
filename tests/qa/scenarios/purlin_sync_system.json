@@ -39,7 +39,7 @@
         },
         {
           "tier": 2,
-          "pattern": "invariant bypass lock works",
+          "pattern": "invariant bypass lock",
           "context": "Write guard allows INVARIANT write when bypass lock matches"
         }
       ]
@@ -164,6 +164,31 @@
           "tier": 2,
           "pattern": "purlin runtime files skipped",
           "context": ".purlin/ directory files are not tracked"
+        },
+        {
+          "tier": 2,
+          "pattern": "skill file does not create spurious feature entry",
+          "context": "skills/<name>/ maps to purlin_<name> if feature exists, no bogus keys"
+        },
+        {
+          "tier": 2,
+          "pattern": "_tombstones/ file excluded from feature mapping",
+          "context": "System directory features/_tombstones/ is not tracked as a feature"
+        },
+        {
+          "tier": 2,
+          "pattern": "_invariants/ file excluded from feature mapping",
+          "context": "System directory features/_invariants/ is not tracked as a feature"
+        },
+        {
+          "tier": 2,
+          "pattern": "discoveries file maps to feature with qa_changed",
+          "context": ".discoveries.md files set qa_changed on the correct feature"
+        },
+        {
+          "tier": 2,
+          "pattern": "\\.claude/ directory skipped by tracker",
+          "context": ".claude/ directory files are not tracked"
         }
       ]
     },
@@ -195,6 +220,77 @@
           "tier": 2,
           "pattern": "sha backfill replaces pending",
           "context": "--sha argument replaces 'pending' commit SHAs with real hash"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-only commit resolves code_ahead to synced",
+          "context": "Impl-only commit resolves existing code_ahead debt"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-only keeps spec_ahead \\(no false resolution\\)",
+          "context": "Impl-only commit does not falsely resolve spec_ahead status"
+        },
+        {
+          "tier": 2,
+          "pattern": "discoveries file skipped by ledger",
+          "context": "Discoveries files are not mapped to a feature stem in the ledger"
+        },
+        {
+          "tier": 2,
+          "pattern": "regression\\.json maps to feature",
+          "context": "Files in tests/<stem>/ directory map to the feature stem"
+        },
+        {
+          "tier": 3,
+          "pattern": "skills/build/ maps to purlin_build feature",
+          "context": "Skill directory maps to purlin_<name> when matching feature exists"
+        },
+        {
+          "tier": 3,
+          "pattern": "skills/nonexistent/ stays unmapped \\(no matching feature\\)",
+          "context": "Skill with no matching feature creates no false ledger entries"
+        },
+        {
+          "tier": 3,
+          "pattern": "commit scope maps unmapped scripts/ to feature",
+          "context": "PURLIN_COMMIT_MSG scope extraction maps otherwise-unmapped files"
+        },
+        {
+          "tier": 3,
+          "pattern": "unmapped code file without commit scope stays unmapped",
+          "context": "Files with no path match and no commit scope are not added to ledger"
+        }
+      ]
+    },
+    {
+      "name": "sync-ledger-scan-overlay",
+      "script_path": "tests/purlin_sync_system/test_sync_overlay.sh",
+      "assertions": [
+        {
+          "tier": 3,
+          "pattern": "ledger entry appears in scan output",
+          "context": "scan_sync_ledger() returns entries from sync_ledger.json"
+        },
+        {
+          "tier": 3,
+          "pattern": "session overlay adds session_pending",
+          "context": "Session sync_state.json overlays onto ledger entries"
+        },
+        {
+          "tier": 3,
+          "pattern": "unclassified writes surfaced",
+          "context": "Unclassified session writes appear as _unclassified entry"
+        },
+        {
+          "tier": 3,
+          "pattern": "empty ledger and state returns empty",
+          "context": "No data produces empty scan result"
+        },
+        {
+          "tier": 3,
+          "pattern": "session-only feature appears without ledger entry",
+          "context": "Features only in session state are included in scan output"
         }
       ]
     }

@@ -14,7 +14,9 @@ When adding or modifying error paths in `write-guard.sh`, always include the spe
 
 ## Purlin File Classifications
 - `docs/` → SPEC
+- `references/` → CODE
 - `RELEASE_NOTES.md` → CODE
+- `PLAN-` → CODE
 
 ## Tool Folder Separation
 

@@ -3,6 +3,22 @@ name: spec-code-audit
 description: Bidirectional spec-code audit with role-aware remediation
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "spec-code-audit" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (Phase 3 remediation or early exit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 Call the `EnterPlanMode` tool immediately before doing anything else. Do not read any files or run any commands until plan mode is active.
 
 ---
@@ -146,7 +162,7 @@ Phase 0.5 runs in the parent agent after Phase 0 and before dispatching subagent
 - Use the confirmed scope from Scope Confirmation (already established before Phase 0).
 - Glob all files matching code extensions: `.py`, `.sh`, `.js`, `.ts`, `.go`, `.rs`, `.java`, `.rb`.
 - For `.claude/commands/`: include `.md` files (skill files are executable behavior).
-- Apply exclusions: `__pycache__/`, `node_modules/`, `vendor/`, `dist/`, `build/`, `.purlin/cache/`, `.purlin/runtime/`, binary files (`.pyc`, `.o`, `.so`), and files with `# DO NOT EDIT` or `// DO NOT EDIT` headers (auto-generated).
+- Apply exclusions: `__pycache__/`, `node_modules/`, `vendor/`, `dist/`, `build/`, `.purlin/cache/`, `.purlin/runtime/`, binary files (`.pyc`, `.o`, `.so`), files with `# DO NOT EDIT` or `// DO NOT EDIT` headers (auto-generated), and paths matching `write_exceptions` from `.purlin/config.json` (OTHER files — docs, README, config dotfiles). OTHER files are not code and don't need feature specs.
 - Output: `code_inventory[]` -- list of `{path, extension, size_bytes}`.
 
 ### Step 0.5.2 -- Build Ownership Map
@@ -167,6 +183,8 @@ For each code file, attempt to find an owning feature using a ranked heuristic c
 - Output: `ownership_map{}` -- `{file_path: {owners: [feature_names], heuristic: "<H1-H6>", confidence: "HIGH|MEDIUM|LOW"}}`.
 
 ### Step 0.5.3 -- Classify Unowned Files (Deep Mode Only)
+
+Before classifying, exclude files matching `write_exceptions` from `.purlin/config.json` — these are OTHER files (docs, README, config dotfiles), not orphans. Only CODE files can be orphans.
 
 Files with zero owners are classified into sub-categories:
 
@@ -199,7 +217,7 @@ Launch subagents wave by wave. All subagents in a wave are launched in a single 
 
 ### Code-Comparison Subagent Protocol
 
-Each subagent receives the following in its prompt, plus the transitive constraint payload:
+Each subagent receives the following in its prompt, plus the transitive constraint payload and the `write_exceptions` list from `.purlin/config.json` (exclude these OTHER patterns from analysis — they are not code files and don't need feature ownership):
 
 For each assigned feature:
 1. **Read spec** (resolve via `features/**/<name>.md`) -- extract all `#### Scenario:` entries with Given/When/Then.
@@ -316,6 +334,7 @@ Write the following to the plan file:
 **Transitive anchor constraints checked:** N invariants across M anchors
 **Invariant constraints included:** N global + K scoped invariants (M FORBIDDEN patterns)
 **Gaps found:** N (CRITICAL: N . HIGH: N . MEDIUM: N . LOW: N)
+**OTHER files (not audited — no spec required):** <summary of write_exceptions matches, e.g. "docs/ (8 files), README.md, CHANGELOG.md, LICENSE">
 **Will fix:** N | **Will escalate:** N
 
 | # | Feature | Severity | Dimension | Gap Description | Evidence | Anchor Source | Action | Planned Remediation |

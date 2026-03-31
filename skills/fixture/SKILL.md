@@ -5,6 +5,22 @@ description: Manage test fixture repos, tags, and setup scripts for deterministi
 
 **Writes:** fixture repo tags, setup scripts
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "fixture" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 The test fixture system provides deterministic, reproducible project state for automated
 testing. Fixture states are immutable git tags in a dedicated bare repo. See
 `features/test_fixture_repo.md` for the full specification.

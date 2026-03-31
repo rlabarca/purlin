@@ -3,6 +3,22 @@ name: propose
 description: Surface structured spec change proposals from implementation experience
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "propose" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 Given the topic provided as an argument, surface a structured spec change suggestion for PM review:
 
 1. Search the current spec system for the relevant feature or anchor node.

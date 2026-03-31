@@ -166,10 +166,12 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
 
 **Reading startup flags:** Check `$PURLIN_SESSION_ID` env var (set by the launcher, inherited by the agent). If set, look for `.purlin/cache/session_overrides_${PURLIN_SESSION_ID}.json`. This file is PID-scoped so concurrent agents (10+ in the same project) don't clobber each other. If found, verify the PID is still alive (`kill -0 $PURLIN_SESSION_ID`). If alive, read `find_work` and `auto_start` from the file. If dead (stale from crash), delete the file and fall back to config. If `PURLIN_SESSION_ID` is not set (manual `purlin:resume`), fall back to the resolved config (`agents.purlin`). Defaults: `find_work: true`, `auto_start: false`.
 
+**Session head tracking:** The session-init hook writes `git rev-parse HEAD` to `.purlin/runtime/last_session_head` on session start. This anchors `purlin:whats-different` solo mode. Do NOT duplicate this write here — the hook is the canonical source.
+
 **When a checkpoint exists (warm resume):**
 - Startup flags (`find_work`, `auto_start`) are NOT consulted -- the checkpoint is the authority for the work plan.
-- Run a scan: `purlin_scan(only: "features,discoveries,git,plan", cached: true)`.
-- The work plan comes from the checkpoint's "Next" list. The scan provides fresh project state context.
+- Run the `purlin_status` MCP tool (not the skill): `purlin_status(verbosity: "minimal")`. This returns pre-classified work items with lifecycle counts, sync counts, and git state (branch, clean flag, dirty file count). Use this for context in the recovery summary.
+- The work plan comes from the checkpoint's "Next" list. The MCP tool response provides fresh project state context.
 
 **When no checkpoint exists (cold start):**
 
@@ -177,17 +179,17 @@ Branch names encode the phase: `worktree-phase<N>-<feature_stem>`.
    - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` Skip the scan. Skip work plan generation. Proceed directly to the recovery summary (Step 10) with no action items.
    - `find_work: true` -- continue to step 2.
 
-2. **Run a lightweight startup scan:** `purlin_scan(only: "features,discoveries,git,plan")`. This is enough for work discovery. Skips `deps`, `smoke`, `deviations`, and `invariants` (~20-30% smaller than a full scan). Individual skills run their own focused scans when activated.
+2. **Get classified status.** The call depends on `auto_start`:
+   - `auto_start: false` (default) -- `purlin_status(verbosity: "focused")`. Returns all actionable work items grouped by role.
+   - `auto_start: true` -- `purlin_status(verbosity: "minimal")`. Returns counts + top 3 items per role. Minimal context, execution begins immediately.
 
-3. **Run `purlin:status`** to interpret the scan results and present work organized by role.
-
-4. **Generate work plan:**
-   - Use `purlin:status` output to generate a full work plan organized by role.
+3. **Generate work plan** from the pre-classified response:
+   - Use the role-keyed work items to compose the plan.
    - Suggest the role with highest-priority work.
-   - **Delivery plan resumption:** If a delivery plan exists with IN_PROGRESS/PENDING phases, highlight it. If launched with `--build`, invoke `purlin:build` and resume immediately.
+   - **Delivery plan resumption:** If `delivery_plan_summary` shows an active phase, highlight it. If launched with `--build`, invoke `purlin:build` immediately.
    - **Phasing:** If no delivery plan exists and phasing is recommended, run `purlin:delivery-plan` before proposing the work plan.
 
-5. **Check `auto_start`:**
+4. **Check `auto_start`:**
    - `auto_start: false` -- present the work plan and wait for user approval before executing.
    - `auto_start: true` -- present the work plan and begin executing immediately.
 

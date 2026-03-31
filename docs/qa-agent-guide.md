@@ -213,6 +213,7 @@ QA mode marks a feature complete when all gates pass:
 | `purlin:web-test [name]` | Playwright visual verification (cross-mode from QA). |
 | `purlin:unit-test [name]` | Run unit tests (cross-mode from QA). |
 | `purlin:server` | Start/stop dev server for web testing (cross-mode from QA). |
-| `purlin:status` | Check what needs verification. |
+| `purlin:status qa` | Check what needs verification (TESTING features, regression status). |
+| `purlin:whats-different qa` | What changed since last session, focused on test results and staleness. |
 | `purlin:find <topic>` | Search specs for a topic. |
 | `purlin:help` | Full command list. |

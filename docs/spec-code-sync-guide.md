@@ -186,6 +186,8 @@ Before committing a status tag, `purlin:build` checks the sync ledger for the ta
 | Record a deviation | Add a row to the Active Deviations table with the appropriate tag |
 | Escalate something impossible | `purlin:infeasible feature-name` |
 | Suggest a spec change | `purlin:propose topic` |
-| Check sync status | `purlin:status` (reads sync ledger automatically) |
-| Reconcile code-ahead features | `purlin:spec-code-audit` (writes companion entries for features with `code_ahead` status) |
-| Review deviations (PM) | `purlin:status` then read the companion file |
+| Check sync status (engineer) | `purlin:status engineer` |
+| Check sync status (PM) | `purlin:status pm` |
+| See what changed | `purlin:whats-different` (or scoped: `whats-different pm`) |
+| Reconcile code-ahead features | `purlin:spec-code-audit` |
+| Review deviations (PM) | `purlin:status pm` then read the companion file |

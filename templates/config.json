@@ -1,7 +1,15 @@
 {
     "agents": {
-        "purlin": { "bypass_permissions": true, "find_work": true, "auto_start": false }
+        "purlin": { "bypass_permissions": true, "find_work": true, "auto_start": false, "auto_create_features": false }
     },
+    "write_exceptions": [
+        "docs/",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        ".gitignore",
+        ".gitattributes"
+    ],
     "test_priority_tiers": {},
     "_migration_version": 6
 }

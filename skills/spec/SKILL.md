@@ -7,6 +7,22 @@ description: Author and refine feature specs. Writes SPEC files
 
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "spec" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Required Reading
 
 Before authoring or refining any spec, read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance. This guide applies to PM.

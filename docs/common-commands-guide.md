@@ -7,21 +7,23 @@ Commands you can run anytime — project status, collaboration, and session mana
 ## Checking Project Status
 
 ```
-purlin:status
+purlin:status                # Everything, all roles
+purlin:status engineer       # Just engineer work
+purlin:status pm             # Just PM work
+purlin:status qa             # Just QA work
 ```
 
-Scans the project and shows what needs doing, organized by mode. Each item includes a reason annotation so you know why it's listed.
+Shows what needs doing. Classification happens server-side — you get pre-bucketed work items, not raw scan data.
 
 Output includes:
 
 - Feature counts by lifecycle (TODO / TESTING / COMPLETE / TOMBSTONE)
-- Work items grouped by mode, highest priority first
-- Companion debt (stale or missing companion files) as engineer action items
-- Open discoveries requiring attention
+- Sync drift per feature (code ahead, spec ahead, new)
+- Work items grouped by role, highest priority first
+- Uncommitted changes summary
 - Active worktrees (if any)
-- A suggestion for what to work on next
 
-Run this whenever you want to know what's next. It's the starting point after every session launch.
+Pass a role to filter: `purlin:status pm` shows only PM action items (spec gaps, unacknowledged deviations, spec-ahead features). Much faster for focused work.
 
 ---
 
@@ -141,17 +143,22 @@ The remote name defaults to `origin`. Override it in `.purlin/config.json` under
 
 ---
 
-## Comparing Branches
+## What Changed?
 
 ```
-purlin:whats-different
+purlin:whats-different              # What changed since last session (or vs collab branch)
+purlin:whats-different pm           # PM-focused: spec changes, deviations, drift
+purlin:whats-different engineer     # Engineer-focused: code changes, spec updates affecting code
+purlin:whats-different qa           # QA-focused: test results, regression staleness
+purlin:whats-different webhook      # Detailed diff for one feature
 ```
 
-Shows a plain-English summary of what changed on the remote collaboration branch compared to your local `main`. Must be run from the `main` branch.
+Two modes, auto-detected:
 
-Produces a role-aware briefing: highlights spec changes, code changes, and verification state changes.
+- **Solo** (no collab branch): Shows what changed since your last session. Compares HEAD against the commit recorded at session start. Works on any branch.
+- **Collab** (active collaboration branch): Shows what your collaborator changed on the remote branch. Groups by file type for handoff context.
 
-**Setup:** Requires an active collaboration branch (set up via `purlin:remote branch create` or `purlin:remote branch join`).
+Output is grouped by file type (SPEC, CODE, IMPL, QA). With a role argument, prepends a role-specific action summary with numbered IDs — reply with an ID to drill into detail.
 
 ---
 

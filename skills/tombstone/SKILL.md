@@ -3,6 +3,22 @@ name: tombstone
 description: Create tombstone files for feature retirement
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "tombstone" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 Given the feature name provided as an argument:
 
 1. Resolve the feature file via `features/**/<name>.md` and read it to understand what the feature does.

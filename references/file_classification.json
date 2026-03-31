@@ -1,5 +1,5 @@
 {
-  "_comment": "Machine-readable file classification for mode guard hook fallback. Patterns are evaluated in order; first match wins.",
+  "_comment": "Machine-readable file classification rules (three-bucket model: SPEC/CODE/OTHER). Patterns are evaluated in order; first match wins. OTHER rules match write_exceptions defaults.",
   "rules": [
     {"pattern": "features/i_", "classification": "INVARIANT", "description": "Invariant files — no mode can write"},
     {"pattern": "\\.discoveries\\.md$", "classification": "QA", "description": "Discovery sidecars"},
@@ -14,6 +14,12 @@
     {"pattern": "^references/", "classification": "CODE", "description": "Reference docs (Engineer-owned for content)"},
     {"pattern": "^templates/", "classification": "CODE", "description": "Template files (Engineer-owned)"},
     {"pattern": "^tests/", "classification": "CODE", "description": "Test infrastructure (Engineer-owned)"},
+    {"pattern": "^docs/", "classification": "OTHER", "description": "Documentation (freely editable, no feature tracking)"},
+    {"pattern": "^README\\.md$", "classification": "OTHER", "description": "Project readme (freely editable)"},
+    {"pattern": "^CHANGELOG\\.md$", "classification": "OTHER", "description": "Changelog (freely editable)"},
+    {"pattern": "^LICENSE$", "classification": "OTHER", "description": "License file (freely editable)"},
+    {"pattern": "^\\.gitignore$", "classification": "OTHER", "description": "Git ignore (freely editable)"},
+    {"pattern": "^\\.gitattributes$", "classification": "OTHER", "description": "Git attributes (freely editable)"},
     {"pattern": "", "classification": "UNKNOWN", "description": "Default: unclassified files are UNKNOWN — project configures via CLAUDE.md"}
   ]
 }

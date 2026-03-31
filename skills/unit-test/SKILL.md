@@ -7,6 +7,22 @@ description: Author and run unit tests for a feature, with quality rubric enforc
 
 > **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "unit-test" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Scope
 
 If an argument was provided, resolve the feature file via `features/**/<arg>.md` and run the testing protocol.

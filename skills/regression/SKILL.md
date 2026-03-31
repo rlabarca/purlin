@@ -5,6 +5,22 @@ description: Author, run, and evaluate regression test suites
 
 **Writes:** tests/qa/scenarios/*.json, tests/*/regression.json
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "regression" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Usage
 
 ```

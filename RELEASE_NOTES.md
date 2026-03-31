@@ -17,6 +17,9 @@ Install with one command, enable per-project. No more submodule management, laun
 - **Feature specs organized by category** — Specs live in `features/<category>/` subfolders for faster navigation
 - **Credentials in keychain** — API tokens stored in macOS keychain instead of plain-text config
 - **`purlin:update`** — Migrates existing projects automatically. Handles edge cases, skips inapplicable steps, cleans up stale artifacts
+- **Server-side status classification** — `purlin:status` now classifies work items server-side via `classify_work_items()`. The raw feature array never enters the conversation — only a compact summary (~83-96% token reduction). Supports role argument (`/status pm`, `/status engineer`, `/status qa`) and verbosity levels (minimal/focused/full)
+- **Compact scan mode** — `purlin_scan(compact: true)` returns stripped feature entries (name, file, lifecycle only) for skills that need feature lists without full detail
+- **`/whats-different` dual-mode** — Works solo (since last session via `last_session_head`) and in collab mode (vs remote branch). Supports role-scoped briefings. No longer requires main branch checkout for solo mode
 
 **Removed**
 - `pl-run.sh` launcher — replaced by plugin hooks

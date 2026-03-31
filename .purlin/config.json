@@ -48,6 +48,14 @@
         }
     },
     "fixture_repo_url": "git@github.com:rlabarca/purlin-fixtures.git",
+    "write_exceptions": [
+        "docs/",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        ".gitignore",
+        ".gitattributes"
+    ],
     "test_priority_tiers": {
         "config_layering": "smoke",
         "project_init": "smoke",

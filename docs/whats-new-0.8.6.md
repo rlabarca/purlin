@@ -214,14 +214,14 @@ The scan engine, dependency graph, file classification, and config are now serve
 
 | MCP Tool | What It Does |
 |---|---|
-| `purlin_scan` | Full project scan (features, tests, status) |
-| `purlin_status` | Work items and sync state |
+| `purlin_scan` | Full project scan (features, tests, status). Supports `compact` mode for stripped feature lists. |
+| `purlin_status` | Pre-classified work items by role. Accepts `verbosity` (minimal/focused/full) and `role` (engineer/qa/pm/all). Server-side classification keeps raw scan data out of the conversation. |
 | `purlin_graph` | Dependency graph with cycle detection |
 | `purlin_classify` | File path classification (for write guard) |
 | `purlin_sync` | Sync state and ledger operations |
 | `purlin_config` | Read or write `.purlin/config.json` |
 
-You don't call these directly. Skills and hooks use them behind the scenes. The write guard hook calls `purlin_classify` on every write to determine if the file is writable.
+You don't call these directly. Skills and hooks use them behind the scenes. `purlin:status pm` calls `purlin_status(role: "pm")` which returns only PM work items — the full feature array never enters the conversation.
 
 ---
 

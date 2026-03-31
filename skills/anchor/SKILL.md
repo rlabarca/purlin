@@ -3,6 +3,22 @@ name: anchor
 description: Create or update anchor node constraint files in features/
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "anchor" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Required Reading
 
 Before creating or updating any anchor node, read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_guide.md` — specifically Section 3 (Anchor Node Classification Guide) — for detailed domain classification, boundary-case heuristics, and sizing guidance.

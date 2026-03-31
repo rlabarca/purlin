@@ -3,6 +3,22 @@ name: spec-from-code
 description: Reverse-engineer feature specs from an existing codebase
 ---
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "spec-from-code" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Purpose
 
 Reverse-engineer feature specs from an existing codebase. Scans source directories, proposes a category taxonomy interactively, and generates feature files, anchor nodes, and companion files. Uses a 5-phase, context-managed approach with durable state artifacts for cross-session continuity.

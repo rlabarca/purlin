@@ -163,7 +163,8 @@ When an anchor changes, all features that depend on it are flagged for re-verifi
 | `purlin:design-audit` | Audit design artifacts for staleness, reference integrity, token conflicts, and invariant sync status. |
 | `purlin:anchor <name>` | Create or update a design/policy anchor. `arch_*` anchors are engineer-owned. |
 | `purlin:find <topic>` | Search specs for where a topic is discussed. |
-| `purlin:status` | Check feature states and what needs attention. |
+| `purlin:status pm` | Check what needs attention (spec gaps, deviations, spec-ahead drift). |
+| `purlin:whats-different pm` | What changed since last session, focused on specs and deviations. |
 | `purlin:help` | Full command list. |
 
 ---
@@ -182,4 +183,4 @@ Discoveries flow back to PM for spec updates
 
 The engineer never needs Figma access — the spec, Token Map, and `brief.json` contain everything needed. QA doesn't re-verify visual items — that's the engineer's job during implementation.
 
-When the engineer or QA finds something the spec didn't cover, it shows up as an action item for PM. Check `purlin:status` to see what needs your attention.
+When the engineer or QA finds something the spec didn't cover, it shows up as a PM action item. Run `purlin:status pm` to see what needs your attention, or `purlin:whats-different pm` to see what changed since your last session.

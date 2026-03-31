@@ -242,6 +242,9 @@ def _cli_role(project_root, role):
     print(f'AGENT_FIND_WORK="{fw}"')
     print(f'AGENT_AUTO_START="{as_}"')
 
+    acf = 'true' if agent.get('auto_create_features', False) else 'false'
+    print(f'AGENT_AUTO_CREATE="{acf}"')
+
     # Project name: config key with basename fallback
     project_name = config.get('project_name', '') or os.path.basename(project_root)
     print(f'PROJECT_NAME="{project_name}"')
@@ -261,7 +264,7 @@ def _cli_set_agent_config(project_root, role, key, value):
     Boolean config fields (bypass_permissions, find_work, auto_start) are
     coerced from CLI strings to proper JSON booleans.
     """
-    _BOOLEAN_FIELDS = {'bypass_permissions', 'find_work', 'auto_start'}
+    _BOOLEAN_FIELDS = {'bypass_permissions', 'find_work', 'auto_start', 'auto_create_features'}
 
     purlin_dir = os.path.join(project_root, '.purlin')
     local_path = os.path.join(purlin_dir, 'config.local.json')
@@ -433,11 +436,25 @@ def _read_claude_md_classifications():
     return rules
 
 
+def _read_write_exceptions():
+    """Read write_exceptions from the project's .purlin/config.json.
+
+    Returns a list of exception patterns. Trailing '/' means directory prefix;
+    no trailing '/' means exact filename match at project root.
+    """
+    project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
+    if not project_root:
+        project_root = _find_project_root()
+    config = resolve_config(project_root)
+    return config.get('write_exceptions', [])
+
+
 def classify_file(filepath):
-    """Classify a file as CODE, SPEC, QA, or INVARIANT for write guard.
+    """Classify a file as CODE, SPEC, QA, INVARIANT, or OTHER for write guard.
 
     Rules are evaluated in order; first match wins.
     Custom rules from CLAUDE.md are checked before built-in rules.
+    OTHER is returned for paths matching write_exceptions in config.
     """
     path = filepath.replace('\\', '/')
 
@@ -472,6 +489,14 @@ def classify_file(filepath):
         return 'SPEC'
     if basename.startswith('policy_') and basename.endswith('.md'):
         return 'SPEC'
+
+    # --- OTHER (write exceptions from config) ---
+    for pattern in _read_write_exceptions():
+        if pattern.endswith('/'):
+            if path.startswith(pattern):
+                return 'OTHER'
+        elif basename == pattern or path == pattern:
+            return 'OTHER'
 
     # --- CODE — explicit patterns ---
     for prefix in ('skills/', 'scripts/', 'hooks/', 'agents/', 'references/',

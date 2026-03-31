@@ -15,6 +15,24 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 
 ## 2. Core Mandates
 
+### 2.0 Vocabulary
+
+Every project file falls into one of three buckets:
+
+- **Spec file** — a file in `features/`: feature specifications, invariants, anchors, implementation companions (`.impl.md`), and discovery sidecars (`.discoveries.md`). These are the authoritative design artifacts. Modified through spec skills (`purlin:spec`, `purlin:anchor`, `purlin:discovery`, etc.) or `purlin:build` (for `.impl.md` companions).
+- **Code file** — everything outside `features/` that isn't explicitly excepted: source code, tests, scripts, hooks, agents, skill definitions, references, templates. Modified through `purlin:build`.
+- **Other file** — paths classified as neither spec nor code via `write_exceptions` in `.purlin/config.json`: docs, README, LICENSE, config dotfiles. Freely editable without a skill. No feature tracking needed.
+
+Additional terms:
+- **System files** — `.purlin/`, `.claude/` — always writable, not project content.
+- **Active skill marker** — `.purlin/runtime/active_skill` — set by skills to authorize writes. The write guard checks this marker before allowing writes to spec or code files.
+
+Directory shortcuts:
+- **`docs/`** — contains **documentation**: user-facing guides, reference pages, and explanatory content. When a skill says "update the docs", it means a file here.
+- **`references/`** — contains **reference documents**: protocol definitions, conventions, and other framework-level reference material. These are code artifacts, not specs.
+
+Specs define what to build. Docs explain how to use what was built. These are different things — never conflate them.
+
 ### 2.1 Continuous Design-Driven (CDD)
 
 The single source of truth is the **Feature Specifications** in `features/`. Code is reproducible from specs. We never fix bugs in code first — we fix the specification that allowed the bug.
@@ -79,7 +97,7 @@ Skills encode workflows. Any user can invoke any skill — there are no role res
 
 ### 4.1 Spec Work (`purlin:spec`)
 
-- **Skill-routed spec edits (MANDATORY):** ALL feature spec modifications — creating, updating, refining, or even mechanical edits like path updates — MUST go through `purlin:spec`. Do NOT raw-edit feature spec files with Edit/Write. The skill provides section validation, lifecycle handling, scan refresh, and session identity. Batch path-reference updates across multiple specs are the ONLY exception (10+ files, identical find-replace, no semantic change) — and even then, run `purlin_scan` after.
+- **Skill-routed spec edits (MANDATORY):** ALL feature spec modifications — creating, updating, refining, or even mechanical edits like path updates — MUST go through `purlin:spec`. Do NOT raw-edit feature spec files with Edit/Write. The write guard blocks direct writes to `features/` without an active skill marker. The skill provides section validation, lifecycle handling, scan refresh, and session identity. Batch path-reference updates across multiple specs are the ONLY exception (10+ files, identical find-replace, no semantic change) — and even then, run `purlin_scan` after.
 - Proactively ask questions to clarify specifications — do not proceed with ambiguity.
 - When Figma MCP is available, design-related spec work can leverage Figma designs.
 - Review unacknowledged deviations from implementation and accept, reject, or request clarification.
@@ -116,6 +134,8 @@ When the user's request implies a specific skill without invoking one, route dir
 - "write a spec for X", "add scenarios", "update the spec for X" -> invoke `purlin:spec`
 - "build X", "implement X", "fix the tests", "fix the bug" -> invoke `purlin:build`
 - "verify X", "check if X works", "run QA" -> invoke `purlin:verify`
+
+**When asked to make changes:** `purlin:build` will find the right feature via reverse lookup. The write guard ensures skills are used — direct file edits to spec or code files are blocked without an active skill marker. OTHER files (docs, README, etc.) can be edited freely.
 
 **Ambiguous requests** require a suggestion:
 - "I want to change/add behavior", "new feature", "we should make it do X" -> suggest starting with a spec (`purlin:spec`) or implementing directly (`purlin:build`). Ask: "This sounds like new behavior. Start with a spec, or implement directly?"

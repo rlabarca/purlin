@@ -5,6 +5,22 @@ description: Orchestrate feature verification — automated tests, visual checks
 
 **Writes:** .impl.md, .discoveries.md, status tag commits
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "verify" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 > **Hard gates (lifecycle diagnostic, regression readiness, auto-start silence, scoped verification modes, etc.) are defined in the agent definition §14. They apply regardless of whether this skill was invoked.** This skill provides orchestration: Phase A/B execution, auto-fix iteration loop, checklist assembly, and strategy dispatch.
 
 ---

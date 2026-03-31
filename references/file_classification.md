@@ -1,8 +1,9 @@
 # File Classification
 
-> This file defines which files are CODE, SPEC, or QA-owned. The write guard
-> (`write-guard.sh`) and sync tracker reference this classification. When adding
-> a new file type, update this file — do not add it inline to other definitions.
+> Every project file falls into one of three buckets: **Spec**, **Code**, or **Other**.
+> The write guard (`write-guard.sh`) and sync tracker use this classification to route
+> writes through skills and track sync state. INVARIANT and QA are specialized subtypes.
+> When adding a new file type, update this file — do not add it inline to other definitions.
 
 ## CODE
 
@@ -49,6 +50,31 @@ Some files are owned by one classification but can be written to by any user:
 | `features/**/*.discoveries.md` | QA (lifecycle) | Anyone can add new OPEN entries |
 | `features/**/*.md` QA Scenarios section | SPEC (initial) | QA adds `@auto`/`@manual` tags |
 
+## OTHER (Freely editable, no feature tracking)
+
+Files explicitly excepted from code tracking via `write_exceptions` in `.purlin/config.json`. These are the third bucket in the three-bucket model — neither spec nor code.
+
+- Documentation (`docs/`)
+- Project readme (`README.md`)
+- Changelog (`CHANGELOG.md`)
+- License (`LICENSE`)
+- Git config (`.gitignore`, `.gitattributes`)
+
+**Behavior:**
+- Freely editable without a skill — no active_skill marker needed.
+- Not tracked against any feature — no sync drift, no orphan scanning.
+- Shown informationally in `purlin:status` and `purlin:whats-different`.
+- Managed via `purlin:classify add|remove|list`.
+
+**Default exceptions** are seeded by `purlin:init` and stored in `.purlin/config.json`:
+```json
+{
+  "write_exceptions": ["docs/", "README.md", "CHANGELOG.md", "LICENSE", ".gitignore", ".gitattributes"]
+}
+```
+
+Projects can add or remove exceptions at any time via `purlin:classify`.
+
 ## INVARIANT (External, immutable)
 
 Externally-sourced constraint documents that no local user can modify.
@@ -92,8 +118,9 @@ Before writing a file, check:
 
 | Target file matches... | Write guard behavior |
 |------------------------|---------------------|
-| Any CODE pattern above | **ALLOWED** — tracked by sync system |
-| Any SPEC pattern above | **ALLOWED** — tracked by sync system |
-| Any QA-OWNED pattern above | **ALLOWED** — tracked by sync system |
-| Any INVARIANT pattern above | **BLOCKED** — use `purlin:invariant` |
+| System files (`.purlin/`, `.claude/`) | **ALLOWED** — always writable |
+| Any INVARIANT pattern above | **BLOCKED** — use `purlin:invariant` with bypass lock |
+| Any SPEC pattern above (`features/`) | **ALLOWED** with active_skill marker; **BLOCKED** without |
+| Any OTHER pattern above | **ALLOWED** — freely editable, no skill needed |
+| Any CODE/QA pattern above | **ALLOWED** with active_skill marker; **BLOCKED** without |
 | UNKNOWN (no rule matches) | **BLOCKED** — ask user, add to CLAUDE.md |

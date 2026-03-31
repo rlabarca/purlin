@@ -5,6 +5,22 @@ description: Promote features to smoke tier and manage smoke test coverage
 
 **Writes:** .purlin/config.json tiers, tests/qa/scenarios/*_smoke.json
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "smoke" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Usage
 
 ```

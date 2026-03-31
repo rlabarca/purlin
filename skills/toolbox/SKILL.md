@@ -5,6 +5,22 @@ description: Manage project, purlin, and community agentic tools
 
 **Writes:** project_tools.json, .purlin/toolbox/
 
+## Active Skill Marker
+
+Before any file writes, set the active skill marker:
+
+```bash
+mkdir -p .purlin/runtime && echo "toolbox" > .purlin/runtime/active_skill
+```
+
+After all writes are complete (final commit), clear it:
+
+```bash
+rm -f .purlin/runtime/active_skill
+```
+
+---
+
 ## Usage
 
 ```

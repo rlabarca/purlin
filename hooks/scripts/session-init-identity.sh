@@ -13,6 +13,13 @@ purlin_save_tty
 # Clear stale session sync state from previous sessions
 rm -f ".purlin/runtime/sync_state.json" 2>/dev/null
 
+# Clear stale active_skill marker from previous sessions
+rm -f ".purlin/runtime/active_skill" 2>/dev/null
+
+# Record session start HEAD for whats-different solo mode.
+# This is the canonical write — resume Step 9 does NOT duplicate this.
+git rev-parse HEAD > ".purlin/runtime/last_session_head" 2>/dev/null
+
 # Detect project name from config or directory basename
 PROJECT_NAME=$(python3 "$PLUGIN_ROOT/scripts/mcp/config_engine.py" --key project_name 2>/dev/null)
 if [ -z "$PROJECT_NAME" ]; then

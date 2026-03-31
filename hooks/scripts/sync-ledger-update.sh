@@ -1,11 +1,14 @@
 #!/bin/bash
 # sync-ledger-update.sh — Updates .purlin/sync_ledger.json on git commit.
 # Intended to be called from skill commit steps or as a pre-commit hook.
-# Classifies staged files, maps to features, updates per-feature sync status.
+# Maps staged files to features via path, updates per-feature sync status.
 #
 # Usage:
 #   sync-ledger-update.sh              # Normal: reads staged files, uses 'pending' SHA
 #   sync-ledger-update.sh --sha <hash> # Backfill: updates 'pending' SHAs with real commit hash
+#
+# Environment:
+#   PURLIN_COMMIT_MSG  — optional commit message for scope-based stem fallback
 #
 # Exit codes:
 #   0 = always (informational, never blocks commits)
@@ -73,53 +76,78 @@ if changed:
     exit 0
 fi
 
-# --- Normal Mode: classify staged files and update ledger ---
+# --- Normal Mode: map staged files to features and update ledger ---
+# File type is determined from path alone — no external classifier needed.
+# features/ = spec or impl; everything else = code.
 
-# Get staged files — pipe to Python via stdin for robustness
-# (avoids shell quoting issues with unusual filenames)
 export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
-export PURLIN_PLUGIN_ROOT="$PLUGIN_ROOT"
 export PURLIN_LEDGER_FILE="$LEDGER_FILE"
+export PURLIN_COMMIT_MSG="${PURLIN_COMMIT_MSG:-}"
 
 git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null | python3 -c "
-import json, os, sys, re
+import json, os, sys, re, glob as _glob
 from datetime import datetime, timezone
 
 project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-plugin_root = os.environ.get('PURLIN_PLUGIN_ROOT', '')
 ledger_file = os.environ.get('PURLIN_LEDGER_FILE', '')
-
-sys.path.insert(0, os.path.join(plugin_root, 'scripts', 'mcp'))
-os.environ.setdefault('PURLIN_PROJECT_ROOT', project_root)
-
-try:
-    from config_engine import classify_file
-except Exception:
-    sys.exit(0)
+commit_msg = os.environ.get('PURLIN_COMMIT_MSG', '')
 
 staged = [line.strip() for line in sys.stdin if line.strip()]
 if not staged:
     sys.exit(0)
 
+# --- Discover known feature stems from features/ directory ---
+known_stems = set()
+for f in _glob.glob(os.path.join(project_root, 'features', '*', '*.md')):
+    base = os.path.basename(f)
+    if base.startswith('_'):
+        continue
+    for suffix in ('.impl.md', '.discoveries.md'):
+        if base.endswith(suffix):
+            base = base[:-len(suffix)]
+            break
+    else:
+        if base.endswith('.md'):
+            base = base[:-3]
+    if base:
+        known_stems.add(base)
+
+# --- Extract scope from commit message (fallback for unmapped files) ---
+commit_scope_stem = None
+if commit_msg:
+    scope_m = re.match(r'\w+\(([^)]+)\):', commit_msg)
+    if scope_m:
+        candidate = scope_m.group(1).replace('-', '_')
+        if candidate in known_stems:
+            commit_scope_stem = candidate
+
 # --- Map staged files to features ---
+# Type detection is path-based:
+#   features/ -> spec or impl
+#   everything else -> code
 feature_changes = {}  # stem -> {'code': bool, 'spec': bool, 'impl': bool}
 
 for path in staged:
-    classification = classify_file(path)
     stem = None
+    is_spec = False
     is_impl = False
 
-    # features/<category>/<stem>.impl.md
+    # Skip system directories under features/
+    if re.match(r'features/(_tombstones|_digests|_design|_invariants)/', path):
+        continue
+
+    # features/<category>/<stem>.impl.md -> impl
     m = re.match(r'features/[^/]+/([^/]+)\.impl\.md$', path)
     if m:
         stem = m.group(1)
         is_impl = True
 
-    # features/<category>/<stem>.md (not impl, not discoveries)
+    # features/<category>/<stem>.md (not impl, not discoveries) -> spec
     if not stem:
         m = re.match(r'features/[^/]+/([^/]+)\.md$', path)
         if m and not path.endswith('.discoveries.md'):
             stem = m.group(1)
+            is_spec = True
 
     # tests/<stem>/
     if not stem:
@@ -127,15 +155,27 @@ for path in staged:
         if m:
             stem = m.group(1)
 
+    # skills/<name>/ -> purlin_<name> (if feature exists)
+    if not stem:
+        m = re.match(r'skills/([^/]+)/', path)
+        if m:
+            candidate = 'purlin_' + m.group(1).replace('-', '_')
+            if candidate in known_stems:
+                stem = candidate
+
+    # Fallback: commit scope for anything not under features/
+    if not stem and not path.startswith('features/') and commit_scope_stem:
+        stem = commit_scope_stem
+
     if not stem:
         continue
 
     changes = feature_changes.setdefault(stem, {'code': False, 'spec': False, 'impl': False})
     if is_impl:
         changes['impl'] = True
-    elif classification == 'SPEC':
+    elif is_spec:
         changes['spec'] = True
-    elif classification in ('CODE', 'QA'):
+    else:
         changes['code'] = True
 
 if not feature_changes:

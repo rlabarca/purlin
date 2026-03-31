@@ -119,15 +119,33 @@ TOOLS = [
                     "type": "string",
                     "description": "Comma-separated per-feature fields to skip (spec_modified,test_status,regression_status)",
                 },
+                "compact": {
+                    "type": "boolean",
+                    "description": "Return compact feature entries (name, lifecycle, file only)",
+                    "default": False,
+                },
             },
         },
     },
     {
         "name": "purlin_status",
-        "description": "Get project status including per-feature sync state. Runs a scan and overlays sync tracking data.",
+        "description": "Get classified project status with role-based work items. Server-side summarization returns pre-bucketed work items instead of raw feature arrays.",
         "inputSchema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "verbosity": {
+                    "type": "string",
+                    "enum": ["minimal", "focused", "full"],
+                    "description": "minimal: counts + top 3 items per role. focused: all actionable items (default). full: adds complete feature names.",
+                    "default": "focused",
+                },
+                "role": {
+                    "type": "string",
+                    "enum": ["engineer", "qa", "pm", "all"],
+                    "description": "Filter work items to a specific role. Default: all.",
+                    "default": "all",
+                },
+            },
         },
     },
     {
@@ -251,20 +269,61 @@ def handle_purlin_scan(params):
             for field in skip_set:
                 feat.pop(field, None)
 
+    # Compact mode: reduce features to name, file, lifecycle only
+    if params.get("compact") and "features" in result:
+        result["features"] = [
+            {"name": f["name"], "file": f["file"],
+             "lifecycle": f.get("lifecycle", "UNKNOWN")}
+            for f in result["features"]
+        ]
+
     return result
 
 
 def handle_purlin_status(params):
-    """Handle purlin_status tool call."""
+    """Handle purlin_status tool call.
+
+    Returns pre-classified work items grouped by role, with verbosity
+    and role filtering applied server-side.  The raw feature array never
+    leaves the server — only the summary is returned.
+    """
+    verbosity = params.get("verbosity", "focused")
+    role_filter = params.get("role", "all")
+
     project_root = detect_project_root()
     engine = _get_scan_engine()
+
+    # Full scan internally (needed for classification), then cache.
     result = engine.run_scan()
     _set_scan_cache(result)
 
-    # Overlay sync summary
+    # Get sync summary for overlay.
     sync_summary = get_sync_summary(project_root)
 
-    return {"scan": result, "sync": sync_summary}
+    # Classify work items server-side.
+    classified = engine.classify_work_items(result, sync_summary)
+
+    # Apply role filter.
+    if role_filter != "all":
+        classified["work"] = {
+            role_filter: classified["work"].get(
+                role_filter, {"count": 0, "items": []}
+            )
+        }
+
+    # Apply verbosity.
+    if verbosity == "minimal":
+        # Counts + top 3 items per role.
+        for role_data in classified["work"].values():
+            role_data["items"] = role_data["items"][:3]
+    elif verbosity == "full":
+        # Add list of COMPLETE feature names for reference.
+        classified["complete_features"] = [
+            f["name"] for f in result.get("features", [])
+            if f.get("lifecycle") == "COMPLETE" and not f.get("tombstone")
+        ]
+
+    return classified
 
 
 def handle_purlin_graph(params):
@@ -353,11 +412,33 @@ def handle_purlin_config(params):
         current = current[part]
     current[parts[-1]] = value
 
+    # Enforce coupling: auto_start requires find_work
+    # - Turning on auto_start automatically turns on find_work
+    # - Turning off find_work automatically turns off auto_start
+    coupled = None
+    if key == "agents.purlin.auto_start" and value is True:
+        agents = config.get("agents", {})
+        purlin = agents.get("purlin", {})
+        if not purlin.get("find_work", True):
+            purlin["find_work"] = True
+            coupled = {"key": "agents.purlin.find_work", "value": True,
+                       "reason": "auto-start requires find-work"}
+    elif key == "agents.purlin.find_work" and value is False:
+        agents = config.get("agents", {})
+        purlin = agents.get("purlin", {})
+        if purlin.get("auto_start", False):
+            purlin["auto_start"] = False
+            coupled = {"key": "agents.purlin.auto_start", "value": False,
+                       "reason": "auto-start requires find-work"}
+
     with open(config_path, 'w') as f:
         json.dump(config, f, indent=4)
         f.write('\n')
 
-    return {"action": "write", "key": key, "value": value}
+    result = {"action": "write", "key": key, "value": value}
+    if coupled:
+        result["coupled"] = coupled
+    return result
 
 
 def handle_purlin_credentials(params):
