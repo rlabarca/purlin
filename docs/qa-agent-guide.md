@@ -1,14 +1,14 @@
-# QA Mode Guide
+# QA Guide
 
-How to use QA mode to verify features, run regression tests, and build smoke test coverage.
+How to verify features, run regression tests, and build smoke test coverage.
 
 ---
 
-## What QA Mode Does
+## What QA Skills Do
 
-QA mode verifies that implemented features match their specs. It automates what it can, walks you through what it can't, and routes findings back to the right mode for resolution.
+QA verifies that implemented features match their specs. It automates what it can, walks you through what it can't, and routes findings back to the right person for resolution.
 
-QA mode:
+QA:
 
 - Verifies features by walking through scenarios step by step.
 - Classifies scenarios as `@auto` (automatable) or `@manual` (needs human judgment).
@@ -18,17 +18,17 @@ QA mode:
 - Marks features complete when all checks pass.
 - Never writes application code. QA writes test scripts, discovery files, and scenario tags.
 
-### Entering QA Mode
+### Getting Started
 
-From any session:
+Run any QA skill directly:
 
 ```
-purlin:mode qa
+purlin:verify                   # Verify all TESTING features
+purlin:verify dashboard         # Verify a specific feature
+purlin:regression author        # Write regression tests from specs
 ```
 
-Or run a QA skill directly — `purlin:verify`, `purlin:regression`, and `purlin:discovery` all activate QA mode automatically.
-
-At startup, QA mode finds features in TESTING state and presents a verification plan.
+The agent finds features in TESTING state and presents a verification plan.
 
 ---
 
@@ -65,7 +65,7 @@ The agent works through these steps without needing you:
    - If it can't, the agent tags it `@manual` and moves it to the manual checklist.
    - After this step, every scenario is tagged.
 
-5. **Auto-fix loop.** When automated scenarios fail, the agent can fix them without leaving QA mode. An internal mode switch gives Engineer write access to fix the failing code, then QA re-verifies. This repeats until clean or a retry limit is reached.
+5. **Auto-fix loop.** When automated scenarios fail, the agent fixes the failing code inline, then re-verifies. This repeats until clean or a retry limit is reached.
 
 6. **Visual smoke check.** For features with visual specs, runs a quick Playwright check.
 
@@ -94,10 +94,10 @@ When verification finds a problem, QA mode records a structured discovery in the
 
 | Type | Meaning | Routed To |
 |------|---------|-----------|
-| `[BUG]` | Behavior contradicts an existing scenario. | Engineer mode |
-| `[DISCOVERY]` | Behavior exists but no scenario covers it. | PM mode |
-| `[INTENT_DRIFT]` | Matches the spec literally but misses the intent. | PM mode |
-| `[SPEC_DISPUTE]` | You disagree with the scenario's expected behavior. | PM mode |
+| `[BUG]` | Behavior contradicts an existing scenario. | Engineer |
+| `[DISCOVERY]` | Behavior exists but no scenario covers it. | PM |
+| `[INTENT_DRIFT]` | Matches the spec literally but misses the intent. | PM |
+| `[SPEC_DISPUTE]` | You disagree with the scenario's expected behavior. | PM |
 
 ### Lifecycle
 
@@ -215,4 +215,4 @@ QA mode marks a feature complete when all gates pass:
 | `purlin:server` | Start/stop dev server for web testing (cross-mode from QA). |
 | `purlin:status` | Check what needs verification. |
 | `purlin:find <topic>` | Search specs for a topic. |
-| `purlin:help` | Full command list for QA mode. |
+| `purlin:help` | Full command list. |

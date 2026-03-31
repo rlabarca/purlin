@@ -6,7 +6,7 @@
 
 ## Current Release: v0.8.6 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
 
-**Spec-driven development for Claude Code.** One agent, three modes (PM, Engineer, QA). You describe what to build — the agent writes specs, implements code, and verifies the result.
+**Spec-driven development for Claude Code.** One agent, three roles (PM, Engineer, QA). You describe what to build — the agent writes specs, implements code, and verifies the result.
 
 **[Full Documentation](docs/index.md)** | **[Release Notes](RELEASE_NOTES.md)** | **[What's New in v0.8.6](docs/whats-new-0.8.6.md)**
 
@@ -116,15 +116,15 @@ claude plugin marketplace remove purlin
 
 **Specs are the source of truth.** Every feature starts as a spec in `features/`. The agent reads specs to know what to build, what to test, and what done looks like. If implementation reveals something the spec missed, the spec gets updated — not just the code.
 
-**Three modes, strict boundaries.** PM writes specs. Engineer writes code. QA verifies. Each mode can read everything but only writes to its own domain. Write boundaries are enforced mechanically — violations are blocked before they happen.
+**Three roles, sync tracking.** PM writes specs. Engineer writes code. QA verifies. Everyone can write freely — Purlin tracks what changed and surfaces drift through `purlin:status`. Invariant files and unclassified files are the only hard blocks.
 
-**You talk, the agent routes.** Describe what you want in plain language. The agent picks the right mode and runs the workflow. Or use explicit commands when you want control.
+**You talk, the agent works.** Describe what you want in plain language. The agent picks the right workflow. Or use explicit commands when you want control.
 
 For deeper coverage, see the [Documentation](docs/index.md):
 
-- [PM Mode Guide](docs/pm-agent-guide.md) — Specs from ideas, Figma designs, or live pages
-- [Engineer Mode Guide](docs/engineer-agent-guide.md) — Build, test, delivery plans
-- [QA Mode Guide](docs/qa-agent-guide.md) — Verify, regress, smoke test
+- [PM Guide](docs/pm-agent-guide.md) — Specs from ideas, Figma designs, or live pages
+- [Engineer Guide](docs/engineer-agent-guide.md) — Build, test, delivery plans
+- [QA Guide](docs/qa-agent-guide.md) — Verify, regress, smoke test
 - [Installation Guide](docs/installation-guide.md) — Configuration, credentials, troubleshooting
 - [Invariants Guide](docs/invariants-guide.md) — Import and enforce external standards
 - [Plugin Permissions](docs/plugin-permissions.md) — How Purlin handles permissions, marketplace vs local
@@ -135,7 +135,7 @@ For deeper coverage, see the [Documentation](docs/index.md):
 
 Purlin uses **hook-based permission management** instead of `bypassPermissions`. This works with both `--plugin-dir` and marketplace installs.
 
-**How it works:** A `PreToolUse` hook intercepts every Write/Edit call. The write guard classifies the target file — INVARIANT and UNKNOWN files are blocked, all other classified files (CODE, SPEC, QA) are allowed with `permissionDecision: "allow"` (auto-approved, no prompt). A `FileChanged` hook tracks writes in `sync_state.json` for per-feature sync tracking.
+**How it works:** A `PreToolUse` hook intercepts every Write/Edit call. The write guard classifies the target file — INVARIANT and UNKNOWN files are blocked, all other classified files (CODE, SPEC, QA) are allowed with `permissionDecision: "allow"` (auto-approved, no prompt). A `FileChanged` hook tracks writes in `sync_state.json` for per-feature sync tracking. There is no role-based restriction — anyone can write any classified file type.
 
 **YOLO mode is on by default.** The `PermissionRequest` hook auto-approves most permission dialogs (MCP tools, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`. User-facing decisions (plan approval, migration confirmations, remote triggers) always prompt regardless of YOLO. Disable with `purlin:config yolo off`.
 

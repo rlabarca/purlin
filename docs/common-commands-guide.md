@@ -1,6 +1,6 @@
 # Common Commands Guide
 
-Commands you can run in any mode — project status, mode switching, collaboration, and session management.
+Commands you can run anytime — project status, collaboration, and session management.
 
 ---
 
@@ -19,32 +19,29 @@ Output includes:
 - Companion debt (stale or missing companion files) as engineer action items
 - Open discoveries requiring attention
 - Active worktrees (if any)
-- A suggestion for which mode to enter (when no mode is active)
+- A suggestion for what to work on next
 
 Run this whenever you want to know what's next. It's the starting point after every session launch.
 
 ---
 
-## Switching Modes
+## Roles and Skills
+
+Purlin organizes skills into three roles — **PM**, **Engineer**, and **QA** — but there's no mode switching. Use any skill directly:
 
 ```
-purlin:mode              # Show current mode and available commands
-purlin:mode pm           # Switch to PM mode
-purlin:mode engineer     # Switch to Engineer mode
-purlin:mode qa           # Switch to QA mode
+purlin:spec dashboard       # PM skill — writes a spec
+purlin:build dashboard      # Engineer skill — implements it
+purlin:verify dashboard     # QA skill — verifies it
 ```
 
-With no argument, shows your current mode and its commands. With an argument, switches to that mode.
+Everyone can write any classified file type. Purlin tracks what changed and surfaces drift through `purlin:status` — it doesn't block you from writing across role boundaries.
 
-If you have uncommitted changes when switching, the agent asks whether to commit first. Uncommitted work isn't lost — it carries into the new mode if you choose not to commit.
-
-You can also activate a mode by running any mode-specific skill directly. For example, `purlin:spec` activates PM mode, `purlin:build` activates Engineer, and `purlin:verify` activates QA.
-
-| Mode | What It Does | Write Access |
-|------|-------------|--------------|
-| `pm` | Spec authoring, design anchors | Feature specs, design/policy anchors |
-| `engineer` | Build, test, delivery | Code, tests, scripts, companions |
-| `qa` | Verification, discovery, regression | Discovery sidecars, QA tags, regression JSON |
+| Role | Focus | Key Skills |
+|------|-------|------------|
+| PM | Spec authoring, design anchors | `purlin:spec`, `purlin:anchor`, `purlin:invariant` |
+| Engineer | Build, test, delivery | `purlin:build`, `purlin:unit-test`, `purlin:delivery-plan` |
+| QA | Verification, discovery, regression | `purlin:verify`, `purlin:regression`, `purlin:smoke` |
 
 ---
 
@@ -73,7 +70,7 @@ purlin:find dark mode            # Is there a design anchor for theming?
 
 ## Session Recovery
 
-**You do not need to run `purlin:resume` to start working.** The `SessionStart` hook handles context recovery automatically on every launch. Just invoke any skill directly (e.g., `purlin:build`, `purlin:spec`, `purlin:mode engineer`).
+**You do not need to run `purlin:resume` to start working.** The `SessionStart` hook handles context recovery automatically on every launch. Just invoke any skill directly (e.g., `purlin:build`, `purlin:spec`, `purlin:verify`).
 
 Use `purlin:resume` manually in two situations:
 
@@ -86,10 +83,9 @@ purlin:resume merge-recovery            # Resolve pending worktree merge failure
 Recovery flags (used when restoring a session):
 
 ```
-purlin:resume --mode engineer           # Restore and activate a mode
-purlin:resume --build                   # Shortcut: Engineer mode + auto-start
-purlin:resume --verify [feature]        # Shortcut: QA mode + auto-start
-purlin:resume --worktree --build        # Isolated worktree + Engineer auto-start
+purlin:resume --build                   # Restore + start building
+purlin:resume --verify [feature]        # Restore + start verifying
+purlin:resume --worktree --build        # Isolated worktree + build
 purlin:resume --yolo                    # Enable auto-approve for permissions (persists)
 purlin:resume --no-yolo                 # Disable auto-approve (persists)
 purlin:resume --effort <high|medium>    # Set effort level for this session
@@ -104,7 +100,7 @@ purlin:resume save
 /clear
 ```
 
-The checkpoint captures your current mode, in-progress work, completed items, and next steps. On the next session start, the agent restores this state automatically.
+The checkpoint captures in-progress work, completed items, and next steps. On the next session start, the agent restores this state automatically.
 
 **Resolving failed merges:** If a worktree merge failed (e.g., due to conflicts), the agent detects it at startup. You can also trigger resolution manually:
 
@@ -153,7 +149,7 @@ purlin:whats-different
 
 Shows a plain-English summary of what changed on the remote collaboration branch compared to your local `main`. Must be run from the `main` branch.
 
-When a mode is active, produces a role-specific briefing: PM sees spec changes, Engineer sees code changes, QA sees verification state changes.
+Produces a role-aware briefing: highlights spec changes, code changes, and verification state changes.
 
 **Setup:** Requires an active collaboration branch (set up via `purlin:remote branch create` or `purlin:remote branch join`).
 
@@ -171,7 +167,7 @@ purlin:worktree cleanup-stale --dry-run   # Preview what would be cleaned
 
 Worktrees are isolated copies of the repository used for parallel feature builds. You typically don't create them manually — the agent spawns them during `purlin:build` when a delivery plan has independent features.
 
-`list` shows each worktree's label, mode, PID, status (active/stale/orphaned), and age. `cleanup-stale` removes dead worktrees, prompting before discarding any with uncommitted changes.
+`list` shows each worktree's label, PID, status (active/stale/orphaned), and age. `cleanup-stale` removes dead worktrees, prompting before discarding any with uncommitted changes.
 
 ---
 
@@ -249,14 +245,14 @@ The output is a copy-paste-ready report formatted for a Purlin Engineer debuggin
 purlin:help
 ```
 
-Prints the full command table for your current mode. If no mode is active, shows all commands across all modes.
+Prints the full command table, grouped by role.
 
 ---
 
-## Mode-Specific Skills
+## Role-Specific Skills
 
-These commands activate and are documented in their respective mode guides:
+These commands are documented in their respective role guides:
 
-- **PM mode:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit` — see [PM Mode Guide](pm-agent-guide.md)
-- **Engineer mode:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Mode Guide](engineer-agent-guide.md)
-- **QA mode:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report`, `purlin:fixture` — see [QA Mode Guide](qa-agent-guide.md)
+- **PM:** `purlin:spec`, `purlin:anchor`, `purlin:invariant`, `purlin:design-audit` — see [PM Guide](pm-agent-guide.md)
+- **Engineer:** `purlin:build`, `purlin:unit-test`, `purlin:web-test`, `purlin:delivery-plan`, `purlin:server`, `purlin:infeasible`, `purlin:propose`, `purlin:spec-code-audit`, `purlin:spec-from-code`, `purlin:tombstone` — see [Engineer Guide](engineer-agent-guide.md)
+- **QA:** `purlin:verify`, `purlin:complete`, `purlin:discovery`, `purlin:regression`, `purlin:smoke`, `purlin:qa-report`, `purlin:fixture` — see [QA Guide](qa-agent-guide.md)

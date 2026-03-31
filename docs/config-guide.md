@@ -46,16 +46,16 @@ Controls whether Claude Code's permission prompts appear during the session.
 purlin:config find-work [on|off]
 ```
 
-Controls whether Purlin scans the project for work when entering a mode or recovering a session.
+Controls whether Purlin scans the project for work when starting or recovering a session.
 
 | Value | Behavior |
 |-------|----------|
-| **ON** | Entering a mode triggers a project scan that finds unfinished features, open discoveries, pending verifications, and other work. Purlin presents what it found and suggests next steps. |
-| **OFF** | Purlin enters the mode silently and waits. No scan, no suggestions — you tell it what to do. |
+| **ON** | Starting a session triggers a project scan that finds unfinished features, open discoveries, pending verifications, and other work. Purlin presents what it found and suggests next steps. |
+| **OFF** | Purlin starts silently and waits. No scan, no suggestions — you tell it what to do. |
 
 **Default:** ON
 
-**When to use ON:** You want Purlin to orient itself at the start of a session. Useful when you're not sure what needs doing, when resuming after a break, or when you want the agent to find the highest-priority work across modes.
+**When to use ON:** You want Purlin to orient itself at the start of a session. Useful when you're not sure what needs doing, when resuming after a break, or when you want the agent to find the highest-priority work.
 
 **When to use OFF:** You already know exactly what you want to work on. Skipping the scan saves time and context window, especially in large projects with many features.
 

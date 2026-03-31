@@ -39,7 +39,7 @@ Purlin is a spec-first development framework. You write specs, build from them, 
 
 ## What's New
 
-* [What's New in v0.8.6](whats-new-0.8.6.md) — Plugin migration, MCP server, hooks, new install model, skill renaming.
+* [What's New in v0.8.6](whats-new-0.8.6.md) — Plugin migration, sync tracking replaces modes, MCP server, new install model.
 * [What's New in v0.8.5](whats-new-0.8.5.md) — Unified agent, Agentic Toolbox, dashboard removal, new launcher.
 
 ## Reference
@@ -172,7 +172,7 @@ You verify **what was built matches what was specified**. Your main tools:
 
 **Findings route automatically.** Bugs go to Engineer. Spec disputes and intent drift go to PM. Everything is tracked in discovery sidecar files.
 
-**Auto-fix loop:** Use `purlin:verify --auto-fix` and the agent will attempt to fix failing tests inline, then re-verify. No manual mode switching needed.
+**Auto-fix loop:** Use `purlin:verify --auto-fix` and the agent will attempt to fix failing tests inline, then re-verify.
 
 See the full [QA Guide](qa-agent-guide.md).
 

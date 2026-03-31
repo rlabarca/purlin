@@ -1,14 +1,14 @@
-# Engineer Mode Guide
+# Engineer Guide
 
-How to use Engineer mode to implement features, write tests, and manage delivery.
+How to implement features, write tests, and manage delivery.
 
 ---
 
-## What Engineer Mode Does
+## What Engineer Skills Do
 
-Engineer mode reads feature specs and turns them into working code, tests, and scripts. It's the only mode that writes implementation files.
+Engineer skills read feature specs and turn them into working code, tests, and scripts.
 
-Engineer mode:
+The engineer:
 
 - Implements features by reading specs from `features/` and writing code.
 - Writes automated tests against a quality rubric.
@@ -17,17 +17,17 @@ Engineer mode:
 - Manages phased delivery for large-scope work across multiple features.
 - Never writes specs. If it finds a gap, it records a finding — it doesn't edit the spec.
 
-### Entering Engineer Mode
+### Getting Started
 
-From any session:
+Run any engineer skill directly:
 
 ```
-purlin:mode engineer
+purlin:build                    # Build the next TODO feature
+purlin:build dashboard          # Build a specific feature
+purlin:delivery-plan            # Plan multi-feature delivery
 ```
 
-Or run an Engineer skill directly — `purlin:build`, `purlin:unit-test`, and `purlin:delivery-plan` all activate Engineer mode automatically.
-
-At startup, Engineer mode checks for TODO features and proposes a work plan. You approve, and it begins.
+The agent checks for TODO features and proposes a work plan. You approve, and it begins.
 
 ---
 
@@ -72,12 +72,12 @@ Runs `purlin:unit-test` to check tests against the quality rubric. For features 
 Before committing the status tag, the agent runs five pre-checks:
 
 1. **Clean working tree** — No uncommitted changes.
-2. **Companion file warning** — Warns if companion file has no new entries. The hard enforcement is the mode switch gate (see below).
+2. **Companion file warning** — Warns if companion file has no new entries. `purlin:status` surfaces companion debt as an action item.
 3. **Web test gate** — Visual spec features pass Playwright checks.
 4. **Spec & plan alignment audit** — Implementation matches spec requirements; delivery plan is consistent.
 5. **Scope declaration** — The commit includes `[Scope: <type>]` where type is `full`, `targeted:A,B`, `cosmetic`, or `dependency-only`.
 
-The mode switch gate is the hard enforcement for companion files: the engineer cannot leave engineer mode (except to PM) until at least one companion file has been written in the session. Run `purlin:spec-code-audit` to reconcile debt in bulk.
+Companion file debt is tracked by the sync system. `purlin:status` shows features where code changed but the companion file wasn't updated. Run `purlin:spec-code-audit` to reconcile debt in bulk.
 
 A separate commit marks the feature's state:
 
@@ -144,9 +144,9 @@ Bug discoveries from QA land in a separate sidecar file (`features/<category>/<n
 
 ---
 
-## Communicating with PM Mode
+## Communicating with PM
 
-Engineer mode has three ways to flag issues for PM:
+The engineer has three ways to flag issues for PM:
 
 | Situation | What to Do |
 |-----------|------------|
@@ -172,4 +172,4 @@ Engineer mode has three ways to flag issues for PM:
 | `purlin:server` | Start, stop, or restart the dev server for web testing. |
 | `purlin:status` | Check feature states and what needs building. |
 | `purlin:find <topic>` | Search specs for a topic. |
-| `purlin:help` | Full command list for Engineer mode. |
+| `purlin:help` | Full command list. |

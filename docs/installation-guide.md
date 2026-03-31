@@ -87,14 +87,13 @@ This file is committed to git so that everyone who clones the repo gets the plug
 ### Start working
 
 ```
-purlin:spec login             # PM mode — create a spec
-purlin:build login            # Engineer mode — implement it
-purlin:verify login           # QA mode — verify it
-purlin:mode engineer          # switch modes explicitly
-purlin:status                 # see what needs doing
+purlin:spec login             # Create a spec
+purlin:build login            # Implement it
+purlin:verify login           # Verify it
+purlin:status                 # See what needs doing
 ```
 
-Each skill activates the appropriate mode when invoked.
+Use skills directly — no mode switching needed.
 
 ---
 
@@ -128,7 +127,7 @@ The marketplace registration tells Claude Code where to find Purlin. It does NOT
 1. Claude Code sees `enabledPlugins: { "purlin@purlin": true }`.
 2. It loads the Purlin plugin from its cache.
 3. The plugin's `settings.json` activates the Purlin agent, replacing the default Claude behavior.
-4. Hooks register (mode guard, session recovery, checkpoint, companion tracking).
+4. Hooks register (write guard, session recovery, checkpoint, sync tracking).
 5. The MCP server starts (scan engine, dependency graph, mode state).
 6. Your `CLAUDE.md` layers on top with project-specific context.
 
@@ -231,4 +230,4 @@ Sensitive values (Figma access token, deploy token, Confluence credentials) are 
 
 **Stale submodule artifacts?** If you upgraded from v0.8.5 and still see `purlin/`, `pl-run.sh`, or `.claude/commands/pl-*.md`, run `purlin:update` again inside a session to clean them up.
 
-**Agent says "no mode active"?** This is expected. In open mode (no mode set), the agent blocks all file writes. Run `purlin:mode engineer` (or pm/qa) to activate a mode.
+**Writes blocked?** If the write guard blocks a file, check if it's classified as INVARIANT (use `purlin:invariant sync`) or UNKNOWN (add a classification rule to CLAUDE.md). All other file types are writable without restriction.

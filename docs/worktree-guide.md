@@ -21,17 +21,14 @@ Worktrees follow the **ephemeral by default, resumable when needed** model:
 Add `--worktree` to any `purlin:resume` invocation:
 
 ```
-# Engineer in a worktree
-purlin:resume --worktree --mode engineer
-
-# QA in a worktree
-purlin:resume --worktree --mode qa
-
-# Auto-build in a worktree
+# Build in a worktree
 purlin:resume --worktree --build
+
+# Verify in a worktree
+purlin:resume --worktree --verify
 ```
 
-Each `--worktree` launch creates an isolated copy of the repository under `.purlin/worktrees/` with a branch named `purlin-<mode>-<YYYYMMDD>-<HHMMSS>`. The agent works entirely inside this copy — it cannot modify the main working directory.
+Each `--worktree` launch creates an isolated copy of the repository under `.purlin/worktrees/` with a timestamped branch. The agent works entirely inside this copy — it cannot modify the main working directory.
 
 ---
 
@@ -58,12 +55,12 @@ Resuming updates the session lock with the new PID — no merge attempt, no clea
 Worktree agents get a distinct terminal badge so you can tell which terminal is which:
 
 ```
-Eng(W1) | purlin     # first worktree
-QA(W2) | purlin      # second worktree
-PM(W3) | purlin      # third worktree
+purlin(W1)     # first worktree
+purlin(W2)     # second worktree
+purlin(W3)     # third worktree
 ```
 
-The main session shows its branch: `Eng(main) | purlin`. Mode switches within a worktree update the mode part but keep the label: `Eng(W1)` becomes `PM(W1)`.
+The main session shows its branch: `purlin(main)`. Worktrees include their label.
 
 ---
 

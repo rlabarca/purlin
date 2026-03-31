@@ -1,6 +1,6 @@
 # Developing Purlin
 
-This repo IS the Purlin plugin framework. Rules here apply to developing Purlin itself — not to projects that install Purlin as a plugin. Anything we want Purlin to do for other projects using it should ONLY be in `agents/purlin.md`.
+This repo IS the Purlin plugin framework — and it uses Purlin to develop itself. The full Purlin protocol (`agents/purlin.md`) applies here: spec-driven development, sync tracking, skill workflows, commit conventions, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework. It does NOT replace or suppress the Purlin protocol.
 
 ## Hook Authoring Rules
 
@@ -14,6 +14,7 @@ When adding or modifying error paths in `write-guard.sh`, always include the spe
 
 ## Purlin File Classifications
 - `docs/` → SPEC
+- `RELEASE_NOTES.md` → CODE
 
 ## Tool Folder Separation
 

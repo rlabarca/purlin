@@ -1,14 +1,14 @@
-# PM Mode Guide
+# PM Guide
 
-How to use PM mode to write feature specs, manage designs, and define project standards.
+How to write feature specs, manage designs, and define project standards.
 
 ---
 
-## What PM Mode Does
+## What PM Skills Do
 
-PM mode is where you define **what** to build. It translates your ideas — whether from a conversation, a Figma design, or a live web page — into structured feature specs that Engineer mode can implement and QA mode can verify.
+PM is where you define **what** to build. PM skills translate your ideas — whether from a conversation, a Figma design, or a live web page — into structured feature specs that the engineer can implement and QA can verify.
 
-PM mode:
+The PM:
 
 - Creates feature specs with requirements, scenarios, and optional visual specifications.
 - Imports Figma designs as invariants and extracts tokens, components, and annotations.
@@ -16,15 +16,15 @@ PM mode:
 - Manages anchor nodes — shared design standards and policy rules that apply across features.
 - Never writes code. Specs and design artifacts are PM's domain.
 
-### Entering PM Mode
+### Getting Started
 
-From any session:
+Run any PM skill directly:
 
 ```
-purlin:mode pm
+purlin:spec user-settings       # Create a spec
+purlin:invariant add <url>      # Import an invariant
+purlin:anchor design_tokens     # Create a design anchor
 ```
-
-Or run a PM skill directly — `purlin:spec`, `purlin:invariant`, and `purlin:anchor` all activate PM mode automatically.
 
 ---
 
@@ -161,25 +161,25 @@ When an anchor changes, all features that depend on it are flagged for re-verifi
 | `purlin:invariant check-feature <name>` | Verify a feature meets its applicable invariants (any mode). |
 | `purlin:invariant validate` | Check all invariants for format/metadata (any mode). |
 | `purlin:design-audit` | Audit design artifacts for staleness, reference integrity, token conflicts, and invariant sync status. |
-| `purlin:anchor <name>` | Create or update a design/policy anchor. `arch_*` anchors activate Engineer mode. |
+| `purlin:anchor <name>` | Create or update a design/policy anchor. `arch_*` anchors are engineer-owned. |
 | `purlin:find <topic>` | Search specs for where a topic is discussed. |
 | `purlin:status` | Check feature states and what needs attention. |
-| `purlin:help` | Full command list for PM mode. |
+| `purlin:help` | Full command list. |
 
 ---
 
-## How PM Mode Connects to Other Modes
+## How PM Connects to Other Roles
 
 ```
-PM mode creates the spec
+PM creates the spec
     ↓
-Engineer mode reads the spec, writes code and tests
+Engineer reads the spec, writes code and tests
     ↓
-QA mode verifies behavior against the spec
+QA verifies behavior against the spec
     ↓
-Discoveries flow back to PM mode for spec updates
+Discoveries flow back to PM for spec updates
 ```
 
-Engineer mode never needs Figma access — the spec, Token Map, and `brief.json` contain everything needed. QA mode doesn't re-verify visual items — that's Engineer mode's job during implementation.
+The engineer never needs Figma access — the spec, Token Map, and `brief.json` contain everything needed. QA doesn't re-verify visual items — that's the engineer's job during implementation.
 
-When Engineer or QA mode finds something the spec didn't cover, it shows up as an action item for PM mode. Check `purlin:status` to see what needs your attention.
+When the engineer or QA finds something the spec didn't cover, it shows up as an action item for PM. Check `purlin:status` to see what needs your attention.

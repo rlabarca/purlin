@@ -1,6 +1,6 @@
 # Design Guide
 
-How Purlin manages design artifacts — from local anchors to Figma invariants — across all three modes.
+How Purlin manages design artifacts — from local anchors to Figma invariants — across all three roles.
 
 ---
 

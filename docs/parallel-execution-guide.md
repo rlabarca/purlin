@@ -1,6 +1,6 @@
 # Parallel Execution Guide
 
-How the agent delivers features faster using cross-mode pipeline parallelism and git worktrees.
+How the agent delivers features faster using pipeline parallelism and git worktrees.
 
 ---
 
@@ -16,11 +16,11 @@ This kicks in automatically during `purlin:build` when a work plan (`.purlin/wor
 
 1. The agent reads the work plan and dependency graph.
 2. For each feature, it determines the next pipeline stage (PM → Engineer → QA).
-3. It dispatches **cross-mode sub-agents** to available worktree slots (up to 3 concurrent by default).
-4. Each sub-agent works in an isolated worktree with its own mode:
-   - `pm-worker` — writes or refines a feature spec (PM mode)
-   - `engineer-worker` — implements a feature (Engineer mode, Steps 0-2)
-   - `qa-worker` — verifies a feature (QA mode, Phase A)
+3. It dispatches **sub-agents** to available worktree slots (up to 3 concurrent by default).
+4. Each sub-agent works in an isolated worktree:
+   - `pm-worker` — writes or refines a feature spec
+   - `engineer-worker` — implements a feature (Steps 0-2)
+   - `qa-worker` — verifies a feature (Phase A)
 5. Completed branches merge back to the main branch sequentially.
 6. The agent updates the work plan and dispatches the next batch of work.
 7. When all features in a **verification group** finish building, cross-feature regression testing (B2) runs.
@@ -60,7 +60,7 @@ Slot 3: [PM: feature_e]  ───→ [QA: feature_a]  ────────�
 Main:   orchestrating...      [B2: auth group]  orchestrating...
 ```
 
-Three modes active simultaneously, each on a different feature. The orchestrator merges completed work and dispatches the next feature as slots open up.
+Three workers active simultaneously, each on a different feature. The orchestrator merges completed work and dispatches the next feature as slots open up.
 
 ---
 

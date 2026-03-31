@@ -36,8 +36,8 @@ purlin:config yolo off
 
 | Capability | Status |
 |---|---|
-| Write/Edit guard (mode enforcement) | Auto-approved by hook |
-| Bash guard (default-mode safety) | Auto-approved by hook |
+| Write/Edit guard (file classification) | Auto-approved by hook |
+| Bash guard (safety checks) | Auto-approved by hook |
 | YOLO auto-approve (MCP tools, Read, etc.) | On by default |
 | MCP tool first-use prompt | Skipped (YOLO) |
 
@@ -45,16 +45,17 @@ Purlin does not use `permissionMode: bypassPermissions` (which is stripped for m
 
 ## File Classification
 
-The mode guard's `classify_file()` function is the permission gate. It determines which mode can write to which files:
+The write guard's `classify_file()` function is the permission gate. It classifies files to determine write access:
 
-| Classification | Writable by | Examples |
+| Classification | Writable | Examples |
 |---|---|---|
-| **CODE** | Engineer | `src/`, `scripts/`, `tests/`, `agents/`, `hooks/`, config files, `.impl.md` companions |
-| **SPEC** | PM | `features/*.md` (except `.impl.md`), `design_*.md`, `policy_*.md` |
-| **QA** | QA | `.discoveries.md`, `regression.json`, `tests/qa/scenarios/` |
-| **INVARIANT** | Nobody | `features/i_*` (imported standards) |
+| **CODE** | Yes | `src/`, `scripts/`, `tests/`, `agents/`, `hooks/`, config files, `.impl.md` companions |
+| **SPEC** | Yes | `features/*.md` (except `.impl.md`), `design_*.md`, `policy_*.md` |
+| **QA** | Yes | `.discoveries.md`, `regression.json`, `tests/qa/scenarios/` |
+| **INVARIANT** | No | `features/i_*` (imported standards — use `purlin:invariant sync`) |
+| **UNKNOWN** | No | Unclassified files — add a rule to CLAUDE.md |
 
-Default classification is CODE (most restrictive for PM/QA modes). Unknown files are never accidentally writable by the wrong mode.
+There are no role-based write restrictions. Any classified file type (CODE, SPEC, QA) is writable by anyone. The write guard only blocks INVARIANT and UNKNOWN files.
 
 ## Enterprise Environments
 
@@ -93,6 +94,6 @@ Worker subagents (`engineer-worker`, `pm-worker`, `qa-worker`) do not use `permi
 1. The write guard hook fires for all subagent tool calls (PreToolUse hooks apply to subagents)
 2. Classified writes (CODE, SPEC, QA) are auto-approved via `permissionDecision: "allow"`
 3. INVARIANT and UNKNOWN writes are blocked via exit 2
-4. Each worker's skill instructions define what it writes — the write guard enforces classification, not role
+4. Each worker's skill instructions define what it writes — the write guard enforces file classification
 
 This works for all installation methods.

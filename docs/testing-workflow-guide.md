@@ -6,24 +6,23 @@ The complete journey from idea to verified, regression-tested feature.
 
 ## The Big Picture
 
-Purlin uses one agent in three modes, working in sequence. Each mode discovers its own work from the previous mode's commits — you don't coordinate between them.
+Purlin uses one agent with three roles, working in sequence. Each role discovers its own work from the previous role's commits — you don't coordinate between them.
 
 ```
-PM mode → Engineer mode → QA mode
-  ↑                          |
-  +------ discoveries -------+
+PM → Engineer → QA
+↑                 |
++-- discoveries --+
 ```
 
-**PM mode** writes the spec. **Engineer mode** implements it. **QA mode** verifies it and automates what it can. When verification reveals problems, discoveries flow back to PM or Engineer mode for resolution.
+**PM** writes the spec. **Engineer** implements it. **QA** verifies it and automates what it can. When verification reveals problems, discoveries flow back to PM or Engineer for resolution.
 
 ---
 
-## Step 1: Write the Spec (PM Mode)
+## Step 1: Write the Spec (PM)
 
-Switch to PM mode and create a spec:
+Create a spec:
 
 ```
-purlin:mode pm
 purlin:spec dashboard-overview
 ```
 
@@ -50,12 +49,11 @@ Describe the feature in plain language. PM mode asks clarifying questions and bu
 
 ---
 
-## Step 2: Build and Test (Engineer Mode)
+## Step 2: Build and Test (Engineer)
 
-Switch to Engineer mode and build:
+Build the feature:
 
 ```
-purlin:mode engineer
 purlin:build dashboard-overview
 ```
 
@@ -68,16 +66,15 @@ Engineer mode reads the spec and:
    - `[Complete]` if only unit tests exist (QA never sees this feature).
    - `[Ready for Verification]` if QA scenarios exist (QA picks it up next).
 
-When Engineer mode discovers something the spec didn't anticipate, it records the decision in a companion file so PM mode can review it later.
+When the engineer discovers something the spec didn't anticipate, it records the decision in a companion file so PM can review it later.
 
 ---
 
-## Step 3: Verify (QA Mode)
+## Step 3: Verify (QA)
 
-Switch to QA mode and verify:
+Verify the feature:
 
 ```
-purlin:mode qa
 purlin:verify                        # Verify all TESTING features
 purlin:verify dashboard-overview     # Verify a specific feature
 purlin:verify --auto-fix             # Enable auto-fix iteration loop
@@ -113,9 +110,9 @@ Regression tests ensure that features keep working after future changes.
 
 | Role | Responsibility |
 |------|----------------|
-| **PM mode** | Writes QA scenarios in the spec (untagged). |
-| **Engineer mode** | Writes and maintains unit tests. Results in `tests.json`. |
-| **QA mode** | Authors regression scenario files, classifies scenarios, evaluates results. Results in `regression.json`. |
+| **PM** | Writes QA scenarios in the spec (untagged). |
+| **Engineer** | Writes and maintains unit tests. Results in `tests.json`. |
+| **QA** | Authors regression scenario files, classifies scenarios, evaluates results. Results in `regression.json`. |
 
 ### The Regression Cycle
 
@@ -137,9 +134,9 @@ Smoke tests are the critical-path checks that run before everything else.
 
 | Role | Responsibility |
 |------|----------------|
-| **PM mode** | Writes the scenarios that become smoke tests. |
-| **QA mode** | Decides which features are smoke-tier (`purlin:smoke`), authors simplified smoke regressions. |
-| **Engineer mode** | Fixes smoke test failures (they're blocking). |
+| **PM** | Writes the scenarios that become smoke tests. |
+| **QA** | Decides which features are smoke-tier (`purlin:smoke`), authors simplified smoke regressions. |
+| **Engineer** | Fixes smoke test failures (they're blocking). |
 
 ### How It Fits In
 
@@ -178,12 +175,12 @@ Tags are immutable once created. The fixture repo is derived (not precious state
 
 | You want to... | What to do |
 |----------------|------------|
-| Build a new feature from Figma | PM mode → Engineer mode → QA mode |
-| Build a feature without designs | PM mode → Engineer mode → QA mode |
-| Fix bugs found during QA | Engineer mode, then QA mode |
-| Resolve a spec dispute | PM mode, then Engineer mode, then QA mode |
-| Set up regression coverage | QA mode: `purlin:regression author` |
-| Add smoke tests | QA mode: `purlin:smoke feature-name` |
+| Build a new feature from Figma | `purlin:spec` → `purlin:build` → `purlin:verify` |
+| Build a feature without designs | `purlin:spec` → `purlin:build` → `purlin:verify` |
+| Fix bugs found during QA | `purlin:build`, then `purlin:verify` |
+| Resolve a spec dispute | `purlin:spec`, then `purlin:build`, then `purlin:verify` |
+| Set up regression coverage | `purlin:regression author` |
+| Add smoke tests | `purlin:smoke feature-name` |
 | Run the full regression suite | Terminal: `./tests/qa/run_all.sh` |
 
 ### Key Commands
@@ -195,4 +192,4 @@ Tags are immutable once created. The fixture repo is derived (not precious state
 | `purlin:verify [name]` | QA | Run the verification workflow. |
 | `purlin:regression <cmd>` | QA | Author, run, or evaluate regressions. |
 | `purlin:smoke <feature>` | QA | Promote a feature to smoke tier. |
-| `purlin:status` | Any | See what needs doing. |
+| `purlin:status` | Everyone | See what needs doing. |
