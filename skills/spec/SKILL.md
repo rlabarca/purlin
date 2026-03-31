@@ -25,7 +25,11 @@ rm -f .purlin/runtime/active_skill
 
 ## Required Reading
 
-Before authoring or refining any spec, read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance. This guide applies to PM.
+Before authoring or refining any spec:
+- Read `${CLAUDE_PLUGIN_ROOT}/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance.
+- For **regular features**: format rules in `${CLAUDE_PLUGIN_ROOT}/references/formats/feature_format.md`.
+- For **anchor nodes** (arch_*, design_*, policy_*, ops_*, prodbrief_*): format rules in `${CLAUDE_PLUGIN_ROOT}/references/formats/anchor_format.md`.
+- All format specs are in `${CLAUDE_PLUGIN_ROOT}/references/formats/`.
 
 ---
 
@@ -95,7 +99,7 @@ None.
 
 **No Implementation Notes section.** Feature files do NOT contain `## Implementation Notes`. All implementation knowledge belongs in companion files (`features/<category_slug>/<name>.impl.md`).
 
-**File placement:** New feature files MUST be placed in the category subfolder matching their `> Category:` metadata. See `references/feature_format.md` "Category Folder Mapping" for the slug table.
+**File placement:** New feature files MUST be placed in the category subfolder matching their `> Category:` metadata. See `references/formats/feature_format.md` "Category Folder Mapping" for the slug table.
 
 ---
 
@@ -172,20 +176,16 @@ When creating or updating any feature file, check each row and declare `> Prereq
 
 ---
 
-## Invariant Advisory (Pre-Commit)
+## Constraint Advisory (Pre-Commit)
 
-Before committing a new or updated spec, check for applicable invariants:
+Before committing a new or updated spec, call `purlin_constraints` with the feature stem. Display the results:
 
-1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants`. If any exist, display:
+1. **Applicable constraints:** Show all `anchors`, `scoped_invariants`, and `global_invariants` returned. Read each file and surface key constraint statements and FORBIDDEN patterns so PM is aware of what governs this feature.
    ```
-   This feature is subject to N global invariant(s):
-   - i_policy_security.md (v2.1.0)
-   - i_arch_coding_standards.md (v1.0.0)
-   - i_ops_monitoring.md (v1.2.0)
+   This feature is governed by:
+   Anchors: design_visual_standards.md, arch_data_model.md
+   Global invariants: i_policy_security.md (v2.1.0)
+   Scoped invariants: i_design_accessibility.md (via prerequisite chain)
    ```
-2. **Scoped invariant suggestions:** Check for `i_*` files whose domain overlaps with this feature (e.g., a feature with a Visual Specification should consider `i_design_*` invariants). If relevant scoped invariants are not already declared as prerequisites, suggest them:
-   ```
-   Consider adding prerequisite:
-   - i_design_accessibility.md (this feature has a Visual Specification)
-   ```
-3. This is **advisory only** -- it does not block the spec commit. The audit (`purlin:spec-code-audit`) catches gaps later.
+2. **Missing prerequisite suggestions:** Check for `i_*` files whose domain overlaps with this feature but are NOT in the prerequisite tree (e.g., a feature with a Visual Specification should consider `i_design_*` invariants). Suggest adding them.
+3. This is **advisory only** — it does not block the spec commit. The audit (`purlin:spec-code-audit`) catches gaps later.
