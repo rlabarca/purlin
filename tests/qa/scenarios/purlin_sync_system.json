@@ -665,6 +665,36 @@
         },
         {
           "tier": 2,
+          "pattern": "impl-produces-impl-entry.*PASS|PASS.*impl-produces-impl-entry",
+          "context": "Agent produces actual [IMPL] companion content, not just mentions it"
+        },
+        {
+          "tier": 2,
+          "pattern": "impl-updates-code-files-section.*PASS|PASS.*impl-updates-code-files-section",
+          "context": "Agent lists actual file paths when updating Code Files section"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-blocked-no-tests.*PASS|PASS.*status-blocked-no-tests",
+          "context": "Agent refuses status tag when tests.json does not exist"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-warns-no-companion-entries.*PASS|PASS.*status-warns-no-companion-entries",
+          "context": "Agent warns about missing companion entries before status tag"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-audit-finds-gaps.*PASS|PASS.*status-audit-finds-gaps",
+          "context": "Agent catches unimplemented requirements in spec alignment audit"
+        },
+        {
+          "tier": 2,
+          "pattern": "status-audit-finds-uncovered-scenarios.*PASS|PASS.*status-audit-finds-uncovered-scenarios",
+          "context": "Agent catches scenarios without test coverage in spec alignment audit"
+        },
+        {
+          "tier": 2,
           "pattern": "classify-refuses-code.*PASS|PASS.*classify-refuses-code",
           "context": "Agent refuses to reclassify CODE file"
         },
@@ -715,8 +745,8 @@
         },
         {
           "tier": 3,
-          "pattern": "\\d+/25 passed",
-          "context": "All 25 scenarios are executed and counted"
+          "pattern": "\\d+/32 passed",
+          "context": "All 32 scenarios are executed and counted"
         }
       ]
     }
