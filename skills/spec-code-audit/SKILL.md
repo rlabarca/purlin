@@ -80,20 +80,18 @@ Check the `cycles` array in the dependency graph JSON. If any cycles exist:
    - What alternative options exist (list all removable links in the cycle)
 4. Cycles MUST be resolved before the transitive prerequisite map can be reliably built — a cycle means the BFS in Step 0.2 could loop. If cycles exist, log a warning and exclude cyclic edges from the transitive map computation.
 
-### Step 0.2 -- Build Transitive Prerequisite Map
+### Step 0.2 -- Collect Constraints Per Feature
 
-For each feature in the dependency graph, walk all `> Prerequisite:` chains recursively (BFS) to collect the full set of ancestor anchor nodes. Output: `{feature_name: [list of all ancestor anchor filenames]}`.
+For each feature in the dependency graph, call `purlin_constraints` with the feature stem. This returns the transitive prerequisite closure in one call: `ancestors`, `anchors`, `scoped_invariants`, and `global_invariants`. Build the transitive map: `{feature_name: {anchors: [...], scoped_invariants: [...], global_invariants: [...]}}`.
 
-### Step 0.3 -- Collect Anchor Constraints
+### Step 0.3 -- Extract Constraint Content
 
-For each unique anchor node in the transitive map, read the anchor file and extract:
+For each unique anchor and invariant across all features' constraint sets, read the file and extract:
 - All `FORBIDDEN:` patterns (line + pattern text)
 - All numbered invariant statements (from `## Invariants` or numbered subsections under requirements)
 - All named constraints (conditional rules from subsections)
 
-**Global invariant injection:** Read `dependency_graph.json` -> `global_invariants`. Auto-include ALL global invariants (`> Scope: global`) in the constraint payload regardless of prerequisite links. These apply to every feature.
-
-**Invariant metadata extraction:** For each `i_*` anchor, also extract source metadata (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
+**Invariant metadata extraction:** For each `i_*` file, also extract source metadata (`Version`, `Source`, `Source-SHA`, `Synced-At`) for provenance reporting in Phase 2 gap tables.
 
 Output: `{anchor_name: {forbidden: [...], invariants: [...], constraints: [...], source_meta?: {version, source, source_sha, synced_at}}}`
 
@@ -114,8 +112,8 @@ Process ALL features in-agent (no subagents). For each feature:
 1. Read the feature file -- check spec completeness across all 14 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`.impl.md` in the same folder as the spec) if it exists -- check builder decisions, notes depth. **Extract `[IMPL]` entries as an implementation index** mapping what was built to spec requirements. A feature with only `[IMPL]` entries (no deviation tags) signals spec conformance — deprioritize deep code comparison.
 3. Read the feature spec directly to check section completeness and scenario count, and check `.purlin/cache/scan.json` for feature status.
-4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map — including auto-injected global invariants — verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage. For `i_*` invariants, also flag staleness if `Synced-At` is older than 90 days.
-5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from all transitive ancestors and all global invariants (auto-included in Step 0.3). Flag violations with invariant provenance (`i_<name> INV-N`).
+4. **Anchor constraint surface check**: For each anchor and invariant in the feature's constraint set (from Step 0.2), verify the feature's scenarios reference or account for the constraint's invariants. Flag invariants with zero scenario coverage. For `i_*` invariants, also flag staleness if `Synced-At` is older than 90 days.
+5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location within the confirmed scope). Grep for FORBIDDEN patterns from the feature's full constraint set (Step 0.3). Flag violations with invariant provenance (`i_<name> INV-N`).
 6. **Companion coverage check (dimension 13)**: Check the sync ledger for the feature's `sync_status`. Flag `code_ahead` (code changed without companion update) as HIGH. Flag stale companion notes (entries older than recent code changes) as MEDIUM.
 7. Skip scenario-by-scenario deep comparison.
 
