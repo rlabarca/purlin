@@ -23,6 +23,7 @@ Purlin is a spec-first development framework. You write specs, build from them, 
 ## Key Concepts
 
 * [Specs and Sync](spec-code-sync-guide.md) — How specs and code stay in sync through companion files and sync tracking.
+* [Sync Tracking](sync-tracking-guide.md) — How the two-layer sync system works, what gets tracked, and how to reconcile drift.
 * [Invariants](invariants-guide.md) — Import external rules (Figma designs, security policies, architecture standards) and enforce them automatically.
 * [Design Workflow](design-guide.md) — Local anchors, Figma integration, Token Maps, visual specs, and design audit.
 * [Figma Integration](figma-guide.md) — MCP setup, Token Map workflow, design briefs, three-source verification.
