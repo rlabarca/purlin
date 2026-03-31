@@ -58,9 +58,9 @@ Constraint files define cross-cutting rules that govern features. Two kinds exis
 
 - **Anchor** — locally-authored constraint in `features/<category>/`. Five prefixes: `arch_*` (technical, Engineer-owned), `design_*`, `policy_*`, `ops_*`, `prodbrief_*` (all PM-owned). Find: glob `features/**/{arch_,design_,policy_,ops_,prodbrief_}*.md`. Created via `purlin:anchor`. Format: `references/formats/anchor_format.md`.
 - **Invariant** — externally-sourced, locally-immutable constraint in `features/_invariants/i_*.md`. The `i_` prefix wraps an anchor prefix (e.g., `i_arch_*`, `i_design_*`). No agent may edit directly — changes come only via `purlin:invariant sync`. Format: `references/formats/invariant_format.md`.
-- **Build mandate:** During `purlin:build` Step 0, walk the feature's full `> Prerequisite:` tree. **Every anchor and invariant in the tree MUST be read and its constraints followed.** Global invariants (from `dependency_graph.json` → `global_invariants`) apply to all non-anchor features automatically. FORBIDDEN patterns block the build; other constraint statements are binding guidance.
-- **FORBIDDEN patterns** — regex patterns in `## FORBIDDEN Patterns` sections of anchors/invariants, checked at build pre-flight against feature code. Violations block the build.
-- **Prerequisite** — dependency declared with `> Prerequisite: <name>.md`, resolved recursively across category folders. The transitive closure determines which constraint files govern a feature.
+- **Prerequisite** — dependency declared with `> Prerequisite: <name>.md`, resolved recursively across category folders. The transitive closure determines which anchors/invariants govern a feature.
+- **FORBIDDEN patterns** — regex patterns in `## FORBIDDEN Patterns` sections of anchors/invariants. Enforced by skills at their respective checkpoints.
+- **Constraint enforcement:** `purlin:build` enforces at pre-flight (Step 0 — FORBIDDEN blocks build, other constraints are binding). `purlin:spec` surfaces applicable constraints as advisory context. `purlin:spec-code-audit` and `purlin:invariant audit` check compliance post-hoc.
 
 #### Sync Tracking
 

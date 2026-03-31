@@ -13,7 +13,7 @@
 
 **[IMPL]** Slimmed `engineer-worker.md`, `pm-worker.md`, `qa-worker.md`, and `verification-runner.md` to frontmatter stubs referencing §12. Frontmatter preserved for Agent tool registry. Body text reduced from ~30 lines to 1 line each, pointing to the single source of truth.
 
-**[IMPL]** Rewrote `agents/purlin.md` §2.0 Vocabulary → Constraint Files subsection. Previously 4 terse one-liners that didn't explain how to find anchors or that builds must read them. Now: explains five anchor prefixes with glob pattern, distinguishes anchors (local) from invariants (external/immutable with `i_` prefix), adds explicit "Build mandate" bullet requiring agents to walk the full prerequisite tree and read every connected anchor/invariant during Step 0. Kept net addition to ~4 lines.
+**[IMPL]** Restructured constraint file documentation. Definitions (anchor prefixes, glob patterns, invariant `i_` prefix) stay in `agents/purlin.md` §2.0 Vocabulary. Build-specific mandate ("walk prerequisite tree, read every constraint file") moved to `skills/build/SKILL.md` Step 0 as a new "Constraint File Mandate" bullet before Anchor Review. purlin.md now has a workflow-routing line pointing to each skill's enforcement checkpoint instead of embedding build details.
 
 ## Code Files
 - agents/purlin.md

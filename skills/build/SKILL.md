@@ -107,6 +107,7 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
     *   If `sync_status` is `code_ahead` or `code_ahead_no_impl`: note that prior code changes exist without spec/impl updates — this is expected when resuming work.
     *   If the feature has no ledger entry or the ledger doesn't exist yet, skip silently (new features and projects without the ledger are normal).
 *   **Re-Verification Detection:** Check scan results for this feature's `reset_context`. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
+*   **Constraint File Mandate:** Walk the feature's full `> Prerequisite:` tree (transitive closure). Every anchor and invariant in the tree MUST be read and its constraints followed during implementation. Global invariants (from `dependency_graph.json` -> `global_invariants`) apply to all non-anchor features automatically without explicit prerequisite links.
 *   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
 *   **Invariant Preflight:** Collect all invariants applicable to this feature:
     1. **Global invariants:** Read `dependency_graph.json` -> `global_invariants` list. Read each file.
@@ -144,7 +145,7 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
 ### Step 2 -- Implement and Document
 
 *   Write code and tests.
-*   **Knowledge Colocation:** Record non-obvious discoveries in `<name>.impl.md (in the same folder as the spec)` (never in the feature `.md`). Create the companion file if needed.
+*   **Knowledge Colocation:** Record non-obvious discoveries in `<name>.impl.md (in the same folder as the spec)` (never in the feature `.md`). Create the companion file if needed. See `${CLAUDE_PLUGIN_ROOT}/references/formats/companion_format.md` for the canonical companion file format.
 *   **Companion Code Files Section:** When writing code files, maintain a `## Code Files` section in the companion (`<name>.impl.md`):
     *   If companion has `## Code Files` → append new file paths not already listed.
     *   If companion exists but has no `## Code Files` section → add the section listing all code files touched this session.
