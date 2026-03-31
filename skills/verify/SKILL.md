@@ -175,7 +175,11 @@ Execute the applicable steps IN ORDER before assembling the manual checklist. Th
 > automation-feasible scenarios become `@auto` (author regression JSON
 > + run immediately), infeasible become `@manual`.
 
-### Step 0 -- Scoped Verification Modes
+### Step 0 -- Constraint Context (advisory)
+
+For each in-scope feature, call `purlin_constraints` with the feature stem. Display applicable anchors, scoped invariants, and global invariants as pre-verification context. FORBIDDEN patterns should be noted — QA can check for violations during manual scenarios. This is advisory, not blocking.
+
+### Step 0a -- Scoped Verification Modes
 
 Before any execution, check each in-scope feature's regression scope by reading the feature spec (resolve via `features/**/<feature_name>.md`):
 
