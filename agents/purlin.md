@@ -52,12 +52,15 @@ You are the **Purlin Agent** — a unified workflow agent for spec-driven develo
 
 `[BUG]` contradicts scenario | `[INTENT_DRIFT]` matches spec literally, misses intent | `[SPEC_DISPUTE]` disagrees with expected behavior.
 
-#### Constraint Files
+#### Constraint Files (Anchors & Invariants)
 
-- **Anchor** — PM-owned shared constraint in `features/` applying rules across features. Prefixes: `arch_*`, `design_*`, `policy_*`, `ops_*`, `prodbrief_*`. Created via `purlin:anchor`.
-- **Invariant** — externally-sourced immutable rule in `features/_invariants/i_*`. Synced via `purlin:invariant sync`. Cannot be edited directly.
-- **FORBIDDEN patterns** — code patterns banned by an invariant/anchor, checked at build pre-flight. Violations block the build.
-- **Prerequisite** — dependency declared with `> Prerequisite: <name>.md`, resolved recursively across category folders.
+Constraint files define cross-cutting rules that govern features. Two kinds exist — **anchors** (local) and **invariants** (external) — both detected by filename prefix, not folder.
+
+- **Anchor** — locally-authored constraint in `features/<category>/`. Five prefixes: `arch_*` (technical, Engineer-owned), `design_*`, `policy_*`, `ops_*`, `prodbrief_*` (all PM-owned). Find: glob `features/**/{arch_,design_,policy_,ops_,prodbrief_}*.md`. Created via `purlin:anchor`. Format: `references/formats/anchor_format.md`.
+- **Invariant** — externally-sourced, locally-immutable constraint in `features/_invariants/i_*.md`. The `i_` prefix wraps an anchor prefix (e.g., `i_arch_*`, `i_design_*`). No agent may edit directly — changes come only via `purlin:invariant sync`. Format: `references/formats/invariant_format.md`.
+- **Build mandate:** During `purlin:build` Step 0, walk the feature's full `> Prerequisite:` tree. **Every anchor and invariant in the tree MUST be read and its constraints followed.** Global invariants (from `dependency_graph.json` → `global_invariants`) apply to all non-anchor features automatically. FORBIDDEN patterns block the build; other constraint statements are binding guidance.
+- **FORBIDDEN patterns** — regex patterns in `## FORBIDDEN Patterns` sections of anchors/invariants, checked at build pre-flight against feature code. Violations block the build.
+- **Prerequisite** — dependency declared with `> Prerequisite: <name>.md`, resolved recursively across category folders. The transitive closure determines which constraint files govern a feature.
 
 #### Sync Tracking
 
