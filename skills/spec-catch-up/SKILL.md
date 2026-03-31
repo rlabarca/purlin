@@ -136,6 +136,10 @@ If `features/<category>/<feature_name>.impl.md` exists, read it for:
 
 Companion entries are curated signal — prioritize them over raw code reading.
 
+### 1.5 — Load Applicable Constraints
+
+Call `purlin_constraints` with the feature stem. Read every file listed in `anchors`, `scoped_invariants`, and `global_invariants`. Surface these as advisory context during the proposal (Step 3) — if the code being caught up violates a FORBIDDEN pattern or contradicts a constraint statement, the proposal MUST flag it so PM can decide whether to accept the code as-is, request a code fix, or escalate an invariant conflict.
+
 ---
 
 ## Step 2 — Analyze Gaps
@@ -238,7 +242,7 @@ Edit `features/<category>/<feature_name>.md`:
 - Revise changed requirements in place, preserving section numbering.
 - Append new scenarios to §3 with proper `#### Scenario:` heading and indented Given/When/Then format.
 - Update metadata fields as proposed.
-- Follow all format rules from `${CLAUDE_PLUGIN_ROOT}/references/feature_format.md`.
+- Follow all format rules from `${CLAUDE_PLUGIN_ROOT}/references/formats/feature_format.md`.
 
 ### 4.2 — Create or Update Companion File
 
