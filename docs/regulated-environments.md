@@ -12,6 +12,7 @@ What Purlin does provide: **structured, machine-readable artifacts** (specs with
 - **Not a signature system.** `@manual` stamps and `git config user.email` are developer conveniences, not legally binding electronic signatures. GPG-signed commits prove key possession, not identity or intent.
 - **Not tamper-proof.** Everything Purlin produces lives in the git repository, which is mutable. `git push --force` can erase any receipt.
 - **Not an audit trail.** Git history is a development log, not an immutable compliance record.
+- **Not a test quality gate.** Purlin proves that a test executed and passed. It does not prove that the test contains meaningful assertions. An AI agent can write `assert True` and produce a valid proof. Regulated teams must enforce independent human review of test logic (e.g., via CODEOWNERS or QMS-managed test approval) before accepting proof artifacts.
 
 ---
 
@@ -73,7 +74,7 @@ Purlin's `RULE-N` lines in specs and `PROOF-N` entries in proof files create a m
 
 ### Verification Evidence
 
-The `vhash` in verification receipts is a deterministic hash of rule IDs + proof statuses. Your CI pipeline can extract this from the git commit message and submit it to the QMS as evidence that verification occurred. The QMS — not Purlin — determines whether the evidence is sufficient.
+The `vhash` in verification receipts is a deterministic hash of rule IDs + proof statuses. Your CI pipeline can use the `vhash` to verify that the developer's local state matches the CI environment, before the CI runner executes its own clean-room verification to submit to the QMS. The local `vhash` is evidence that the developer ran the tests — the CI `--audit` run is the evidence that the tests pass in a trusted environment.
 
 ### Human Approval Workflow
 
@@ -81,7 +82,8 @@ When `@manual` stamps are required, the compliant flow is:
 1. Purlin flags the rule as needing manual verification (`sync_status` shows "MANUAL PROOF NEEDED")
 2. The human performs the verification
 3. Instead of `purlin:verify --manual` (which only writes a markdown stamp), the human approves through the QMS — which authenticates via MFA, records intent, and issues a signed approval token
-4. CI verifies the QMS approval token before accepting the manual proof
+4. The QMS (or CI pipeline) injects the cryptographically signed approval token into the spec file or a locked artifact, which Purlin reads to satisfy the local `sync_status` check — stopping the `→ MANUAL PROOF NEEDED` directives
+5. CI verifies the QMS approval token before accepting the manual proof
 
 ### External Invariant Validation
 
