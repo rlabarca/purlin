@@ -150,3 +150,7 @@ specs/
 **MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status` and `purlin_config` tools.
 **Gate Hook:** `scripts/gate.sh` — blocks writes to invariant files.
 **Proof Plugins:** `scripts/proof/` — pytest, Jest, and shell proof collectors.
+
+## Documentation
+
+See the [full documentation](docs/index.md) for guides on lifecycle workflows, testing, invariants, and more.
