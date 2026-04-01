@@ -6,7 +6,7 @@
 
 ## What it does
 
-A pytest plugin that collects `@pytest.mark.proof` markers from test functions and emits feature-scoped proof JSON files next to the corresponding spec files. It enables automated rule coverage tracking by mapping test results to spec rules.
+A pytest plugin that registers a `proof` marker via `pytest_configure` and installs a `ProofCollector` to intercept test results. During the "call" phase of `pytest_runtest_makereport`, it extracts `(feature, proof_id, rule_id, tier)` from each `@pytest.mark.proof` marker and records the test outcome (pass if `call.excinfo` is None, fail otherwise). In `pytest_sessionfinish`, it builds a feature-to-spec-directory mapping by globbing `specs/**/*.md`, then writes one `<feature>.proofs-<tier>.json` file per feature-tier pair using the feature-scoped overwrite pattern: load existing entries, purge entries matching the current feature, append new entries, and write the merged result.
 
 ## Rules
 

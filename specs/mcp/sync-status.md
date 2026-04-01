@@ -6,7 +6,7 @@
 
 ## What it does
 
-The core MCP tool that scans all specs and proof files, then produces a per-feature coverage report with actionable directives. It computes which rules are proved, failing, or missing proofs, and generates a vhash for fully-covered features.
+The core MCP tool that scans every `specs/**/*.md` file to extract RULE-N definitions, `> Requires:` dependencies, `> Scope:` file paths, and `@manual(...)` proof stamps, then reads all `*.proofs-*.json` files to collect test results. For each feature it computes the proved/total rule count, merges rules from required specs, checks manual proof staleness via git log, and emits a plain-text report with per-rule status (PASS, FAIL, NO PROOF, MANUAL PROOF STALE) and actionable `→` directives. Fully-covered features are marked READY with an 8-character vhash. Invariants are listed separately as global constraints. Specs with missing or malformed `## Rules` sections produce WARNINGs.
 
 ## Rules
 

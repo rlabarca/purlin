@@ -6,7 +6,7 @@
 
 ## What it does
 
-A Bash proof harness that provides `purlin_proof()` and `purlin_proof_finish()` functions for shell-based tests. Test scripts source this file, call `purlin_proof` for each assertion, then call `purlin_proof_finish` to emit proof JSON files.
+A Bash proof harness providing two functions: `purlin_proof` accumulates pipe-delimited proof entries (feature, proof_id, rule_id, status, test_name, test_file from `BASH_SOURCE[1]`, tier from `PURLIN_PROOF_TIER` or "default") into the `_PURLIN_PROOFS` variable. `purlin_proof_finish` pipes the accumulated entries into an inline Python script that parses them, builds a feature-to-spec-directory mapping by globbing `specs/**/*.md`, then writes one `<feature>.proofs-<tier>.json` file per feature-tier pair using the feature-scoped overwrite pattern: load existing entries, purge entries matching the current feature, append new entries, and write the merged result. After writing, the accumulator is reset to empty.
 
 ## Rules
 

@@ -6,7 +6,7 @@
 
 ## What it does
 
-An MCP tool that generates a structured JSON changelog by analyzing git history since a reference point. It classifies changed files into categories (CHANGED_SPECS, TESTS_ADDED, CHANGED_BEHAVIOR, NEW_BEHAVIOR, NO_IMPACT), detects new/removed rules in spec diffs, and includes proof coverage status per feature.
+An MCP tool that generates a structured JSON changelog by analyzing git history since a configurable reference point. It resolves a "since" anchor (explicit commit count, date, most recent `verify:` commit, most recent tag, or a 20-commit fallback), then collects all commits and changed files in that range. Each changed file is classified into exactly one of five categories: CHANGED_SPECS for spec markdown files, TESTS_ADDED for test and proof files, CHANGED_BEHAVIOR for files covered by a spec's `> Scope:`, NO_IMPACT for docs and config, and NEW_BEHAVIOR for everything else. Deleted files are filtered out. For changed spec files it diffs RULE-N lines to detect added and removed rules. The output is a JSON object containing commits, classified files with diff stats, spec rule changes, and per-feature proof coverage status.
 
 ## Rules
 

@@ -6,7 +6,7 @@
 
 ## What it does
 
-A Jest custom reporter that parses proof markers from test names and emits feature-scoped proof JSON files. Test names must contain `[proof:feature:PROOF-N:RULE-N:tier]` for the reporter to collect them.
+A Jest custom reporter (`PurlinProofReporter`) that scans each test result's title for `[proof:<feature>:<PROOF-N>:<RULE-N>:<tier>]` markers using a regex match. In `onTestResult`, it collects matching entries keyed by `feature:tier`, mapping Jest's "passed" status to "pass" and everything else to "fail". In `onRunComplete`, it builds a feature-to-spec-directory mapping by globbing `specs/**/*.md`, then writes one `<feature>.proofs-<tier>.json` file per feature-tier pair using the feature-scoped overwrite pattern: load existing entries, purge entries matching the current feature, append new entries, and write the merged result.
 
 ## Rules
 
