@@ -28,7 +28,8 @@ Same as anchors but with `i_` prefix:
 ```markdown
 # Invariant: i_design_tokens
 
-> Source: git@github.com:org/design-system.git#tokens.md
+> Type: design
+> Source: git@github.com:org/design-system.git
 > Path: docs/tokens.md
 > Pinned: abc1234def5678
 
@@ -52,6 +53,7 @@ Design token constraints imported from the shared design system repository.
 ```markdown
 # Invariant: i_design_navigation
 
+> Type: design
 > Source: https://www.figma.com/design/ABC123/Navigation
 > Pinned: 2026-03-31T12:00:00Z
 
@@ -74,9 +76,10 @@ Navigation layout and spacing constraints from the Figma design source.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `> Source:` | Yes | Git repo URL with `#path` fragment, or Figma URL |
+| `> Type:` | No | Invariant type: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief` |
+| `> Source:` | Yes | Git repo URL, or Figma URL |
 | `> Path:` | Git only | Path within the repo to the source file |
-| `> Pinned:` | Yes | Git SHA (for git-sourced) or ISO 8601 timestamp (for Figma-sourced) |
+| `> Pinned:` | Yes | Git commit SHA (git-sourced) or ISO 8601 timestamp (Figma-sourced) |
 
 ## Sync Behavior
 

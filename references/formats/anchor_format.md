@@ -21,6 +21,7 @@ Anchors are regular specs with type-prefixed names that define cross-cutting con
 # Anchor: <type_prefix><name>
 
 > Scope: <file patterns or modules this anchor governs>
+> Stack: <language/framework if relevant — optional for anchors>
 
 ## What it does
 

@@ -15,6 +15,7 @@ specs/<category>/<name>.md
 
 > Requires: <comma-separated spec names or invariant names>
 > Scope: <comma-separated file paths this feature touches>
+> Stack: <language>/<framework>, <key libraries>, <patterns>
 
 ## What it does
 
@@ -45,6 +46,7 @@ Every spec MUST have these 3 sections (case-insensitive heading match):
 |-------|----------|-------------|
 | `> Requires:` | No | Comma-separated list of other spec names or invariant names whose rules also apply |
 | `> Scope:` | No | Comma-separated file paths this feature touches (used for manual proof staleness) |
+| `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` (helps rebuild from spec) |
 
 ## Rules Format
 
@@ -77,6 +79,26 @@ Each proof is a line under `## Proof`:
 ```
 
 Proofs describe what a test should assert, not how to implement it. Each rule must have at least one proof. Multiple proofs can reference the same rule.
+
+### Tier tags
+
+Append a tier tag to proofs that aren't default:
+
+```
+- PROOF-1 (RULE-1): Parse config and return default values
+- PROOF-2 (RULE-2): POST to /api/users with database; verify 201 response @slow
+- PROOF-3 (RULE-3): Load checkout page in browser; verify 3-click flow @e2e
+- PROOF-4 (RULE-4): Review error messages against brand voice guide @manual
+```
+
+| Tag | When to use |
+|-----|------------|
+| (none) | Pure logic, in-memory, grep on local files |
+| `@slow` | Needs database, network, filesystem, or external service |
+| `@e2e` | Needs browser, full app stack, or UI rendering |
+| `@manual` | Requires human judgment |
+
+### Manual proofs
 
 For rules that require manual verification, append `@manual`:
 
