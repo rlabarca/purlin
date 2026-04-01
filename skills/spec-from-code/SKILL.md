@@ -23,7 +23,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ## Phase 1 — Parallel Exploration
 
-1. Ask the user (via `AskUserQuestion`) which directories to scan. Offer common defaults: `src/`, `lib/`, `app/`, `scripts/`. Everything not listed is automatically excluded. The following directories are always skipped (do not ask): `node_modules/`, `.venv/`, `vendor/`, `dist/`, `build/`, `.purlin/`, `.git/`.
+1. List the project's top-level directories (via `ls`). Ask the user (via `AskUserQuestion`) which directories to scan — offer the ones that look like source code as defaults. Everything not selected is automatically excluded. In the question, note which directories you will skip and why (e.g., "Skipping `docs/` (documentation), `templates/` (scaffolding), `.purlin/` (runtime)"). Base the skip list on what actually exists in the project, not a hardcoded list.
 
 2. Create `.purlin/cache/sfc_state.json`:
 
