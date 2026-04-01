@@ -13,17 +13,19 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 ```bash
 mkdir weather-app && cd weather-app
 git init
-npm init -y
-npm install react react-dom tailwindcss
 ```
 
-Then start Claude Code in the project directory:
+Then start Claude Code and set up the project:
 
 ```bash
 claude
 ```
 
-And initialize Purlin:
+```
+create a new React weather app project
+```
+
+Claude scaffolds the project with `package.json` and dependencies. Then initialize Purlin:
 
 ```
 purlin:init
