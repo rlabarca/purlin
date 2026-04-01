@@ -38,9 +38,21 @@ npx jest
 
 The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file. This is a **feature-scoped overwrite**: each run replaces all proof entries for the tested feature in that tier file, preserving entries from other features.
 
+### Proof File Freshness Check
+
+After tests run, before reporting results, verify that proof files (`*.proofs-*.json`) were modified AFTER the test command started. If proof files are older than the test run or don't exist, the proof plugin didn't emit — something went wrong. Report:
+
+```
+WARNING: Proof files were not updated by the test run. The proof plugin may not be loaded.
+→ Check: is the proof plugin registered in conftest.py / jest.config.js?
+→ Run: purlin:init --force to re-scaffold the proof plugin
+```
+
+Never write proof JSON files directly. Only the test framework plugin writes proof files.
+
 ## Step 3 — Report Coverage
 
-Call `sync_status` after tests complete. Display per-feature coverage:
+Call `sync_status` after tests complete. Display the full result. **This is not optional** — without `sync_status`, the agent doesn't know if coverage is complete.
 
 ```
 Test results:

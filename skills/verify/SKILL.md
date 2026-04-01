@@ -97,9 +97,11 @@ The directive block ensures the agent does not stop after the first batch of rec
 
 ### Step 4c — Handling Failing Proofs
 
-`purlin:verify` is a verification gate, not a build tool. When tests fail during verify:
+**NEVER modify code or test files during `purlin:verify`.** Verify is a read-only gate. If you find yourself about to edit a file during verify, STOP — you are in the wrong skill. Exit verify and switch to `purlin:build`.
 
-1. Do NOT fix code or tests during verify. Report the failures with diagnosis.
+When tests fail during verify:
+
+1. Do NOT fix code or tests. Do NOT iterate. Report the failures with diagnosis and stop.
 2. For each failing proof, output:
    - The rule it proves
    - What the test expected vs what it got

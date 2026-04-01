@@ -114,14 +114,21 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    Ask the user (via `AskUserQuestion`) to confirm, rename, or remove proposed anchors.
 
-7. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
+7. **Security anchor gate (mandatory, not skippable):** Before proceeding to Phase 3, verify that at least one `security_` prefixed anchor exists in the confirmed taxonomy. If none was confirmed:
+   - Run the FORBIDDEN pattern grep anyway (`eval(`, `exec(`, `os.system(`, `shell=True`, hardcoded credentials)
+   - If zero dangerous patterns found: propose `security_no_dangerous_patterns` with rules confirming absence
+   - If patterns found: propose `security_<name>` with FORBIDDEN rules
+   - Present to user for confirmation via `AskUserQuestion`
+   - Phase 3 cannot begin without at least one security anchor confirmed or explicitly rejected by the user
+
+8. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
    - Ordered anchor list (with type prefix and description)
    - Ordered category list with features
    - Per-feature: proposed file name, description, and anchor references
 
-8. Update state: `phase: 2, status: "complete"`.
+9. Update state: `phase: 2, status: "complete"`.
 
-9. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
+10. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
 
 ---
 
@@ -169,7 +176,7 @@ For each category:
 
    **Scope validation:** Before writing `> Scope:`, verify each file path exists on disk. If a file was detected in Phase 1 exploration but has since been deleted or moved, exclude it from the Scope line. Do not write broken scope references.
 
-   **Requires validation:** Before writing `> Requires:`, verify each referenced spec or anchor either (a) already exists on disk as `specs/**/<name>.md` from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), remove it from `> Requires:` and log a warning to the user: "Skipped > Requires: `<name>` — spec not found. Add manually after creation."
+   **Requires validation (blocking):** Before writing `> Requires:`, glob `specs/**/<name>.md` for EACH reference. A reference is valid only if it (a) already exists on disk from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), DO NOT write the spec with the broken reference — remove it from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
 3. For each feature in the category, write `specs/<category>/<name>.md`:
 

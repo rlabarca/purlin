@@ -29,12 +29,25 @@ specs/
 
 ## Step 3 — Detect Test Framework
 
-Check project files:
+Check project files and show the user what was detected and why:
+
 - `conftest.py` or `pyproject.toml` with `[tool.pytest]` → `"pytest"`
 - `package.json` with `jest` → `"jest"`
-- Neither → `"auto"` (detect at runtime)
+- `*.test.sh` files → `"shell"`
 
-Write the detected framework to `.purlin/config.json` under `test_framework`.
+Display the detection result:
+```
+Detected: pytest (found conftest.py at project root)
+Scaffolding: .purlin/plugins/purlin_proof.py
+```
+
+If no framework is detected, do NOT silently default to `"auto"` or `"shell"`. Ask the user:
+```
+No test framework detected (no conftest.py, package.json, or go.mod found).
+Which framework? [pytest / jest / shell / other]
+```
+
+Write the detected (or user-selected) framework to `.purlin/config.json` under `test_framework`.
 
 ## Step 4 — Scaffold Proof Plugin
 

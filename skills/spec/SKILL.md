@@ -127,8 +127,9 @@ Before committing, verify:
 - `## Rules` has at least one `RULE-N:` line, all numbered sequentially
 - `## Proof` has at least one `PROOF-N (RULE-N):` line, each mapping to a rule
 - Proof descriptions are observable assertions, not vague instructions
-- All `> Requires:` references point to existing specs
+- Every proof description has an appropriate tier tag per `references/spec_quality_guide.md` ("Tier Tags on Proofs")
 - All `> Scope:` file paths exist on disk
+- **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
 ```
 git commit -m "spec(<name>): <description of change>"

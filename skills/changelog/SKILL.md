@@ -41,7 +41,12 @@ Read the JSON and apply judgment in one pass:
 
 2. **Group related files.** Multiple files that belong to the same logical change should be grouped under a single summary line. Use commit messages from the `commits` list for context.
 
-3. **Write plain-English summaries.** For each group, write what changed in PM-readable language. "Rate limit threshold increased from 5 to 10 attempts" not "changed RATE_LIMIT in auth.js".
+3. **Write for the reader, not the coder.** The changelog is for PMs and QA, not engineers. Translate implementation details into user-visible impact:
+   - "Refactored the authentication middleware to use a strategy pattern" → "Changed how login works internally (no user-facing changes)"
+   - "Added rate limiting to /api/v2/users endpoint" → "Users who make too many API requests will now be temporarily blocked"
+   - "Fixed N+1 query in user list resolver" → "User list page loads faster"
+
+   Technical details go in NO IMPACT. Behavioral changes in CHANGED BEHAVIOR must describe what the USER sees, not what the CODE does.
 
 ## Step 3 — Format Output
 

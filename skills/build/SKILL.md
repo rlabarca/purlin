@@ -64,15 +64,24 @@ purlin_proof_finish
 
 Each RULE must have at least one PROOF. The proof plugin emits `<feature>.proofs-<tier>.json` next to the spec file.
 
-## Step 4 — Run Tests
+**Tier review (mandatory before running tests):**
+Review every proof marker just written. Apply tier heuristics from `references/spec_quality_guide.md`:
+- Test hits API/database/filesystem/subprocess → `@slow`
+- Test needs browser/UI rendering → `@e2e`
+- Test needs human judgment → `@manual`
+- Pure logic/in-memory → default (no tag)
 
-Run the test suite. Check that proof files were emitted and rules are covered.
+If ANY proof marker is missing a tier tag and the test clearly isn't default tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
+
+## Step 4 — Run Tests and Iterate
+
+The iteration loop is: **write code → write tests → run tests → call sync_status → read directives → fix → repeat**. The loop does NOT end until `sync_status` shows READY for the target feature.
 
 ```bash
 pytest                    # or: npx jest, or: bash test.sh
 ```
 
-Call `sync_status` to verify coverage. Follow any `→` directives for uncovered rules.
+After tests complete, call `sync_status` and display the full result. **This is not optional.** If `sync_status` is not called, the agent doesn't know if coverage is complete. Follow any `→` directives for uncovered rules.
 
 **When a test fails, diagnose the root cause before fixing:**
 1. Read the failing assertion — what did the test expect vs what did it get?
@@ -82,6 +91,19 @@ Call `sync_status` to verify coverage. Follow any `→` directives for uncovered
 5. If the rule itself is wrong → update the spec first, then fix code and test
 
 **Never weaken an assertion to make it pass.** If `assert response.status == 401` fails because the code returns 200, the code is wrong. See `references/spec_quality_guide.md` "When Tests Fail" for the full diagnostic guide.
+
+**Assertion change detection (mandatory after fixing a failing test):**
+After fixing a failing test, before running tests again, re-read the original proof description from the spec's `## Proof` section. Verify the assertion still matches. If the fix changed WHAT the test asserts (different status code, different field, looser check), flag it:
+
+```
+WARNING: Assertion for PROOF-2 (RULE-2) was changed during iteration.
+Original proof description: "POST invalid password; verify 401"
+New assertion: assert status == 400
+Reason: API returns 400 for validation errors, not 401. Spec rule may need updating.
+→ Run: purlin:spec <name> to review RULE-2
+```
+
+If you changed what a test asserts (not just how), the proof description in the spec may be wrong. The commit message MUST explain why the assertion changed.
 
 ## Step 5 — Commit
 

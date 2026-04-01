@@ -96,6 +96,10 @@ Every proof description must be tagged with the appropriate tier. Don't leave it
 
 **When in doubt, tag `@slow`.** A fast test with a `@slow` tag is harmless. A slow test with no tag blocks the default tier.
 
+### Mandatory Tier Review
+
+Tier tags are not optional metadata — they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing. An untagged proof that shells out to `subprocess` or hits a database will block the default tier and slow down every developer's iteration loop. Review every proof against the heuristics above and tag it before the tests run.
+
 ## FORBIDDEN Grep Precision
 
 FORBIDDEN proofs use grep to assert absence. The grep pattern must be precise enough to avoid false positives.
@@ -195,6 +199,19 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 - **Full lifecycle flows** → `integration/`. Rules describe end-to-end behavior. All proofs are `@e2e`. These run in CI nightly, not on every push.
 - **Don't mix levels.** A spec in `mcp/` tests the MCP server code. A spec in `integration/` tests the MCP server as part of the full lifecycle. Different specs, different tiers.
 
+## Audience-Appropriate Language
+
+Specs, changelogs, and reports serve different audiences. Match the language to the reader:
+
+| Artifact | Audience | Language |
+|----------|----------|----------|
+| Spec rules and proofs | Engineers and agents | Precise, technical — status codes, function names, exact inputs |
+| Changelog CHANGED BEHAVIOR | PMs and QA | User-visible impact — "login is faster", "error message changed" |
+| Changelog NO IMPACT | Engineers | Implementation details — "refactored middleware", "updated dependency" |
+| Verification reports | Engineers and CI | Concise, structured — feature names, rule counts, directives |
+
+**The test for good changelog language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
+
 ## When Tests Fail: Fix the Code, Not the Test
 
 When a proof-marked test fails, the agent must diagnose before fixing. There are three possibilities:
@@ -214,3 +231,14 @@ Never:
 - Delete a failing test
 
 If the spec itself is wrong (the rule describes behavior that shouldn't exist), update the spec first — change the rule, update the proof description, THEN update the test and code. The spec is the source of truth.
+
+### Assertion Integrity
+
+If you change WHAT a test asserts (not just HOW — e.g., changing `assert status == 401` to `assert status == 400`), the proof description in the spec may be wrong. This is a signal, not a bug:
+
+1. Re-read the original proof description from the spec's `## Proof` section
+2. If the new assertion contradicts the proof description, the spec likely needs updating
+3. Flag the change explicitly — in the commit message, in a WARNING to the user, or both
+4. The spec, proof description, test assertion, and code must all agree. If any one disagrees, find out which is wrong before proceeding
+
+Silently changing an assertion to match actual behavior — without checking whether the spec intended that behavior — is the most common way agents introduce correctness bugs.
