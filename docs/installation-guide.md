@@ -22,10 +22,11 @@ cd my-project
 Add Purlin as a project-level plugin. This installs it for this project only — other projects are unaffected:
 
 ```bash
-claude extension add purlin --project
+/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
+/plugin install purlin
 ```
 
-This registers Purlin's MCP server, hooks, and skills for the project. The plugin config is stored in the project directory so every team member who clones the repo gets Purlin automatically.
+The first command registers the Purlin repository as a plugin marketplace. The second installs the plugin. Run these commands inside Claude Code (they're `/` commands, not shell commands).
 
 Then start Claude Code and initialize the Purlin workspace:
 
@@ -96,7 +97,7 @@ your-project/
 ## Updating Purlin
 
 ```bash
-claude extension update purlin
+/plugin update purlin
 ```
 
 This pulls the latest version. Existing specs, proofs, and config are preserved.

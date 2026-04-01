@@ -17,7 +17,8 @@ git init
 Add Purlin as a project-level plugin (this installs it for this project only, not globally):
 
 ```bash
-claude extension add purlin --project
+/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
+/plugin install purlin
 ```
 
 Then start Claude Code and set up the project:

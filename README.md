@@ -33,10 +33,15 @@ auth_login: 2/3 rules proved
 
 ```bash
 cd my-project          # must be a git repo
-claude extension add purlin --project
+claude                 # start Claude Code
 ```
 
-This adds Purlin as a project-level plugin. Every team member who clones the repo gets Purlin automatically.
+Then inside Claude Code:
+
+```
+/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
+/plugin install purlin
+```
 
 ## Initialize a Project
 
