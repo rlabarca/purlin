@@ -65,7 +65,13 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 2. **Check for existing specs:** If specs already exist (glob `specs/**/*.md`), read them to extract existing category names and naming conventions. The proposed taxonomy MUST reuse existing category names where applicable. Only propose new categories when no existing one fits.
 
-3. Propose a category taxonomy grouping feature candidates into logical categories. For each category, list: name, feature count, and per-feature name + one-line description.
+3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
+   - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
+   - Cross-cutting contracts and format definitions → `schema/`
+   - Reference docs, skill definitions, and agent definitions (`references/`, `skills/`, `agents/`) → `instructions/`
+   - End-to-end lifecycle flows → `integration/`
+
+   Explain this categorization to the user when presenting the taxonomy. For each category, list: name, feature count, and per-feature name + one-line description.
 
 4. Present categories in batches of 2–3 via `AskUserQuestion`. Let the user:
    - Rename categories

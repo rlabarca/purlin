@@ -175,3 +175,22 @@ Populate from the **actual imports/dependencies in the feature's source files**,
 - Verify each file path exists on disk before listing it.
 - Used by `sync_status` to detect manual proof staleness (newer commits to scope files invalidate manual stamps).
 - Not used for verification hashing — purely informational for navigation and staleness.
+
+## Spec Categories
+
+Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-code` use this to determine the output directory.
+
+| Category dir | What goes here | Tier expectations | Example |
+|-------------|---------------|-------------------|---------|
+| Component dirs (`hooks/`, `mcp/`, `proof/`) | Behavioral specs for executable code | Default tier for unit-level proofs | `specs/hooks/gate-hook.md` |
+| `schema/` | Anchors defining formats, contracts, and cross-cutting standards | Default tier | `specs/schema/schema_spec_format.md` |
+| `integration/` | E2E flows testing the full system working together | All proofs tagged `@e2e` | `specs/integration/e2e_purlin_lifecycle.md` |
+| `instructions/` | Structural specs for agent instructions — reference docs, skill definitions, agent definitions | Default tier (grep-based structural checks) | `specs/instructions/purlin_references.md` |
+
+### Guidelines
+
+- **Executable code** (scripts, hooks, MCP server) → spec category matches the source directory.
+- **Cross-cutting contracts** (file formats, schemas, security rules) → `schema/`.
+- **AI instructions** (`references/`, `skills/`, `agents/`) → `instructions/`. Rules verify sections exist and contain required content. Proofs are grep-based. These catch accidental deletions and structural drift.
+- **Full lifecycle flows** → `integration/`. Rules describe end-to-end behavior. All proofs are `@e2e`. These run in CI nightly, not on every push.
+- **Don't mix levels.** A spec in `mcp/` tests the MCP server code. A spec in `integration/` tests the MCP server as part of the full lifecycle. Different specs, different tiers.

@@ -22,7 +22,11 @@ Search `specs/**/<name>.md` for an existing spec.
 
 - **Found:** Read the spec. Show current rules and proof coverage (call `sync_status`). Ask the user what to change.
 - **Not found:** Ask the user for:
-  - Category name
+  - Category name — suggest based on the target (see `references/spec_quality_guide.md` "Spec Categories"):
+    - If the target is a reference doc, skill definition, or agent definition → suggest `instructions/`
+    - If the user describes an end-to-end flow → suggest `integration/`
+    - If the target is executable code → suggest a category matching the source directory
+    - If the target is a cross-cutting contract or format → suggest `schema/`
   - Tech stack and key dependencies (for `> Stack:` metadata)
   - Whether any existing anchors should be referenced (check `specs/**/{api_,security_,design_,schema_,platform_,brand_,legal_,prodbrief_}*.md`)
 
