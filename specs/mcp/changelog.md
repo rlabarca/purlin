@@ -3,27 +3,40 @@
 
 > Requires: schema_spec_format
 > Scope: scripts/mcp/purlin_server.py
+> Stack: python/stdlib, subprocess (git), json
 
 ## What it does
 
-An MCP tool that generates a structured JSON changelog by analyzing git history since a configurable reference point. It resolves a "since" anchor (explicit commit count, date, most recent `verify:` commit, most recent tag, or a 20-commit fallback), then collects all commits and changed files in that range. Each changed file is classified into exactly one of five categories: CHANGED_SPECS for spec markdown files, TESTS_ADDED for test and proof files, CHANGED_BEHAVIOR for files covered by a spec's `> Scope:`, NO_IMPACT for docs and config, and NEW_BEHAVIOR for everything else. Deleted files are filtered out. For changed spec files it diffs RULE-N lines to detect added and removed rules. The output is a JSON object containing commits, classified files with diff stats, spec rule changes, and per-feature proof coverage status.
+Generates a structured changelog as JSON data by analyzing git history since the last verification commit, tag, or user-specified anchor. Classifies changed files into categories (CHANGED_BEHAVIOR, CHANGED_SPECS, TESTS_ADDED, NEW_BEHAVIOR, NO_IMPACT) by cross-referencing file paths against spec `> Scope:` metadata. Also detects spec rule additions/removals and includes per-feature proof status.
 
 ## Rules
 
-- RULE-1: The since anchor MUST resolve in order: explicit argument (integer for N commits, date string), most recent `verify:` commit, most recent tag, fallback to last 20 commits
-- RULE-2: Changed files MUST be classified into exactly one of: CHANGED_SPECS, TESTS_ADDED, CHANGED_BEHAVIOR, NEW_BEHAVIOR, NO_IMPACT
-- RULE-3: Files in `specs/*.md` MUST be classified as CHANGED_SPECS
-- RULE-4: Files matching test patterns (`.proofs-`, `test_`, `_test.`, `.test.`, `tests/`) MUST be classified as TESTS_ADDED
-- RULE-5: Files matching a spec's `> Scope:` MUST be classified as CHANGED_BEHAVIOR
-- RULE-6: Deleted files (no longer on disk) MUST be filtered out of the changed files list
-- RULE-7: For changed spec files, the tool MUST detect added and removed RULE-N lines via git diff
+- RULE-1: The `since` anchor resolves in priority order: explicit argument (integer for HEAD~N, date string), most recent `verify:` commit, most recent tag, fallback to HEAD~20
+- RULE-2: Changed files are classified into exactly one of 5 categories: CHANGED_SPECS, TESTS_ADDED, CHANGED_BEHAVIOR, NO_IMPACT, NEW_BEHAVIOR
+- RULE-3: Files under `specs/` ending in `.md` are classified as CHANGED_SPECS
+- RULE-4: Files matching test patterns (`.proofs-`, `test_`, `_test.`, `.test.`, `tests/`, `dev/test_`) are classified as TESTS_ADDED
+- RULE-5: Files listed in any spec's `> Scope:` are classified as CHANGED_BEHAVIOR with the matching spec name
+- RULE-6: Docs, config, and asset files matching `_NO_IMPACT_PATTERNS` are classified as NO_IMPACT
+- RULE-7: All remaining files are classified as NEW_BEHAVIOR (unscoped)
+- RULE-8: For changed spec files, new and removed RULE-N lines are detected by diffing against the since anchor
+- RULE-9: Deleted files (no longer on disk) are excluded from the changelog output
+- RULE-10: Each file entry includes a `diff_stat` with `+N -N` line count from `git diff --numstat`
 
 ## Proof
 
-- PROOF-1 (RULE-1): With no verify commits or tags, changelog returns "last 20 commits" as the since description
-- PROOF-2 (RULE-2): Every file entry in the output has exactly one category field
-- PROOF-3 (RULE-3): A changed `specs/mcp/sync-status.md` appears with category "CHANGED_SPECS"
-- PROOF-4 (RULE-4): A changed test file appears with category "TESTS_ADDED"
-- PROOF-5 (RULE-5): A changed file listed in a spec's Scope appears with category "CHANGED_BEHAVIOR"
-- PROOF-6 (RULE-6): A file that was deleted between commits does not appear in the output
-- PROOF-7 (RULE-7): A spec with a newly added RULE-3 appears in spec_changes with new_rules containing "RULE-3"
+- PROOF-1 (RULE-1): Call changelog with `since=5`; verify it uses HEAD~5. Call with no arg and a `verify:` commit; verify it anchors to that commit
+- PROOF-2 (RULE-2): Provide files from each category; verify each is classified into exactly one
+- PROOF-3 (RULE-3): Include a `specs/foo/bar.md` in diff; verify category is CHANGED_SPECS
+- PROOF-4 (RULE-4): Include a `test_foo.py` in diff; verify category is TESTS_ADDED
+- PROOF-5 (RULE-5): Create a spec with `> Scope: src/app.py`, include `src/app.py` in diff; verify CHANGED_BEHAVIOR with spec name
+- PROOF-6 (RULE-6): Include `README.md` in diff; verify NO_IMPACT category
+- PROOF-7 (RULE-7): Include a file not matching any pattern; verify NEW_BEHAVIOR category
+- PROOF-8 (RULE-8): Add a RULE-3 to a spec; verify `spec_changes` output shows new_rules containing RULE-3
+- PROOF-9 (RULE-9): Delete a file that was in the diff; verify it is excluded from output
+- PROOF-10 (RULE-10): Verify file entries include `diff_stat` with `+N -N` format
+
+## Implementation Notes
+
+- Data flow: `_resolve_since_anchor()` → git ref, `changelog()` → git log + git diff → classify files → detect spec changes → collect proof status (scripts/mcp/purlin_server.py:351-588)
+- Design pattern: scope-based classification uses a reverse index (source_file → [spec_names]) built from all specs' `> Scope:` metadata (scripts/mcp/purlin_server.py:480-483)
+- Key tradeoff: NO_IMPACT patterns are hardcoded rather than configurable — covers common doc/config patterns but may misclassify project-specific files

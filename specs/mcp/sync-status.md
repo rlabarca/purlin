@@ -3,31 +3,43 @@
 
 > Requires: schema_spec_format, schema_proof_file
 > Scope: scripts/mcp/purlin_server.py
+> Stack: python/stdlib, re, glob, hashlib, subprocess
 
 ## What it does
 
-The core MCP tool that scans every `specs/**/*.md` file to extract RULE-N definitions, `> Requires:` dependencies, `> Scope:` file paths, and `@manual(...)` proof stamps, then reads all `*.proofs-*.json` files to collect test results. For each feature it computes the proved/total rule count, merges rules from required specs, checks manual proof staleness via git log, and emits a plain-text report with per-rule status (PASS, FAIL, NO PROOF, MANUAL PROOF STALE) and actionable `→` directives. Fully-covered features are marked READY with an 8-character vhash. Invariants are listed separately as global constraints. Specs with missing or malformed `## Rules` sections produce WARNINGs.
+Core coverage tool that scans all spec files, reads proof JSON files, and generates a per-feature coverage report with actionable directives. For each feature, it reports which rules have passing proofs, which are failing, which need manual verification, and computes a verification hash (vhash) when fully proved. Also detects structural problems (missing `## Rules` section, unnumbered rule lines) and manual proof staleness.
 
 ## Rules
 
-- RULE-1: sync_status MUST report each feature's proved/total rule count
-- RULE-2: Features with 100% coverage MUST be reported as "READY" with a vhash
-- RULE-3: Rules with failing proofs MUST be reported as "FAIL" with the failing test name and a fix directive
-- RULE-4: Rules with no proof MUST be reported as "NO PROOF" with a directive showing the exact proof marker syntax
-- RULE-5: Specs without a `## Rules` section MUST produce a WARNING with a directive to run `purlin:spec`
-- RULE-6: Unnumbered lines under `## Rules` MUST produce a WARNING with the count of unnumbered lines
-- RULE-7: When a spec declares `> Requires:`, the required spec's rules MUST be included in coverage computation
-- RULE-8: Manual proofs with `@manual(email, date, commit)` stamps MUST be checked for staleness against git history of scope files
-- RULE-9: Invariant specs MUST be listed separately with their rule count and a note that they apply globally
+- RULE-1: Scans `specs/**/*.md` (excluding dotfiles) and extracts RULE-N lines from `## Rules` sections
+- RULE-2: Reads `specs/**/*.proofs-*.json` and matches proof entries to features by the `feature` field
+- RULE-3: A feature is reported as `READY` when all its own rules have at least one passing proof and no warnings exist
+- RULE-4: A failing proof (status `fail`) takes precedence over a passing proof for the same rule
+- RULE-5: When a spec has no `## Rules` section, sync_status reports `WARNING: No ## Rules section found`
+- RULE-6: Unnumbered lines under `## Rules` (not matching `RULE-N:` format) trigger a WARNING with count
+- RULE-7: Computes vhash as `sha256(sorted RULE IDs + "|" + sorted "PROOF-N:status" pairs)[:8]` for READY features
+- RULE-8: Invariant specs (under `_invariants/`) are listed separately with rule count and scope note
+- RULE-9: Manual proofs with `@manual(email, date, sha)` stamps are checked for staleness via `git log sha..HEAD -- <scope files>`
+- RULE-10: Stale manual proofs are reported as `MANUAL PROOF STALE` with a re-verify directive
+- RULE-11: Rules without any proof generate a `NO PROOF` status with a directive to write a test
 
 ## Proof
 
-- PROOF-1 (RULE-1): sync_status output contains `<feature>: N/M rules proved` for each feature
-- PROOF-2 (RULE-2): A feature with all rules passing shows "READY" and an 8-character vhash
-- PROOF-3 (RULE-3): A feature with a failing proof shows "FAIL" with the test name in the output
-- PROOF-4 (RULE-4): A feature with an unproved rule shows "NO PROOF" and `@pytest.mark.proof` syntax in the directive
-- PROOF-5 (RULE-5): A spec missing `## Rules` shows "no rules defined" with a `purlin:spec` directive
-- PROOF-6 (RULE-6): A spec with unnumbered rule lines shows "WARNING: N lines under ## Rules are not numbered"
-- PROOF-7 (RULE-7): A feature requiring another spec includes that spec's rules in its coverage count
-- PROOF-8 (RULE-8): A manual stamp with a commit older than recent scope file changes shows "MANUAL PROOF STALE"
-- PROOF-9 (RULE-9): Invariant specs appear with "(global — apply to all features with > Requires: <name>)"
+- PROOF-1 (RULE-1): Create a spec with 2 rules; run sync_status; verify both rules appear in output
+- PROOF-2 (RULE-2): Create a proof file with a passing entry; run sync_status; verify the rule shows PASS
+- PROOF-3 (RULE-3): Provide passing proofs for all rules; verify output contains `READY`
+- PROOF-4 (RULE-4): Create both a passing and failing proof for the same rule; verify FAIL is reported
+- PROOF-5 (RULE-5): Create a spec with no `## Rules` section; verify WARNING in output
+- PROOF-6 (RULE-6): Add an unnumbered line under `## Rules`; verify WARNING with count in output
+- PROOF-7 (RULE-7): Compute vhash manually for known rules/proofs; verify it matches sync_status output
+- PROOF-8 (RULE-8): Create an invariant spec; verify it appears in a separate section with rule count
+- PROOF-9 (RULE-9): Create a manual proof stamp with a known SHA; verify staleness check runs
+- PROOF-10 (RULE-10): Create a stale manual proof (scope files changed after stamp SHA); verify `MANUAL PROOF STALE` in output
+- PROOF-11 (RULE-11): Create a spec with unproved rules; verify `NO PROOF` directives in output
+
+## Implementation Notes
+
+- Data flow: `_scan_specs()` → dict of features, `_read_proofs()` → dict of proofs, `_report_feature()` → per-feature lines (scripts/mcp/purlin_server.py:43-336)
+- Caching strategy: none — re-scans filesystem on every call for freshness
+- Design pattern: regex-based spec parsing with `_RULE_RE`, `_REQUIRES_RE`, `_SCOPE_RE`, `_MANUAL_STAMPED_RE`, `_PROOF_LINE_RE` (scripts/mcp/purlin_server.py:31-40)
+- Key tradeoff: failing proof takes precedence over passing (line 253) — ensures a regression is always visible even if an older proof file has a stale pass

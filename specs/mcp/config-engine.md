@@ -2,27 +2,33 @@
 # Feature: config-engine
 
 > Scope: scripts/mcp/config_engine.py
+> Stack: python/stdlib, json, shutil
 
 ## What it does
 
-The configuration resolution engine for Purlin projects. It implements a two-file resolution system where `.purlin/config.local.json` (gitignored, per-user) takes precedence over `.purlin/config.json` (committed, team defaults). Includes copy-on-first-access semantics and atomic writes.
+Two-file configuration resolution system for Purlin projects. Reads settings from `.purlin/config.local.json` (gitignored, per-user) with fallback to `.purlin/config.json` (committed, team defaults). Implements copy-on-first-access: when only the shared config exists, it is automatically copied to create the local config. Provides project root detection via the `PURLIN_PROJECT_ROOT` environment variable or directory climbing to find a `.purlin/` marker.
 
 ## Rules
 
-- RULE-1: `resolve_config` MUST return config.local.json contents when it exists and is valid JSON
-- RULE-2: `resolve_config` MUST fall back to config.json when config.local.json does not exist
-- RULE-3: `resolve_config` MUST copy config.json to config.local.json on first access (copy-on-first-access)
-- RULE-4: `resolve_config` MUST fall back to config.json when config.local.json contains invalid JSON, logging a warning to stderr
-- RULE-5: `resolve_config` MUST return an empty dict when neither config file exists
-- RULE-6: `find_project_root` MUST check `PURLIN_PROJECT_ROOT` env var first, then climb the directory tree looking for a `.purlin/` marker
-- RULE-7: `update_config` MUST write to config.local.json using atomic replacement (write to tmp, then os.replace)
+- RULE-1: `resolve_config()` returns the contents of `config.local.json` if it exists and contains valid JSON
+- RULE-2: If `config.local.json` does not exist but `config.json` does, `config.json` is copied to `config.local.json` and its contents returned (copy-on-first-access)
+- RULE-3: If `config.local.json` contains invalid JSON, it falls back to `config.json` and logs a warning to stderr
+- RULE-4: If neither config file exists, `resolve_config()` returns an empty dict
+- RULE-5: `update_config()` writes to `config.local.json` using atomic replace (write to .tmp, then `os.replace`)
+- RULE-6: `find_project_root()` checks `PURLIN_PROJECT_ROOT` env var first; if unset, climbs from cwd looking for `.purlin/` directory
+- RULE-7: If no `.purlin/` directory is found during climbing, `find_project_root()` returns the current working directory
 
 ## Proof
 
-- PROOF-1 (RULE-1): With both files present, resolve_config returns the local file's contents
-- PROOF-2 (RULE-2): With only config.json present, resolve_config returns its contents
-- PROOF-3 (RULE-3): After resolve_config with only config.json, config.local.json exists as a copy
-- PROOF-4 (RULE-4): With a malformed config.local.json, resolve_config returns config.json contents and stderr contains "malformed"
-- PROOF-5 (RULE-5): With no config files, resolve_config returns {}
-- PROOF-6 (RULE-6): With PURLIN_PROJECT_ROOT set, find_project_root returns that path without climbing
-- PROOF-7 (RULE-7): After update_config, the key-value pair appears in config.local.json and no .tmp file remains
+- PROOF-1 (RULE-1): Create both config files; verify `resolve_config()` returns local file's contents
+- PROOF-2 (RULE-2): Create only `config.json`; call `resolve_config()`; verify `config.local.json` is created with same contents
+- PROOF-3 (RULE-3): Write invalid JSON to `config.local.json`; verify fallback returns `config.json` contents and stderr warning
+- PROOF-4 (RULE-4): Call `resolve_config()` with no config files; verify empty dict returned
+- PROOF-5 (RULE-5): Call `update_config()`; verify `config.local.json` contains the updated key and no `.tmp` file remains
+- PROOF-6 (RULE-6): Set `PURLIN_PROJECT_ROOT` env var; verify `find_project_root()` returns that path
+- PROOF-7 (RULE-7): Call `find_project_root()` from a directory with no `.purlin/` ancestor; verify cwd is returned
+
+## Implementation Notes
+
+- Design pattern: copy-on-first-access — shared config is a template that becomes the user's local config on first use (scripts/mcp/config_engine.py:73-78)
+- Key tradeoff: no merge between local and shared configs — local is a complete override, not a partial patch. Simpler but means shared changes require manual propagation to local.
