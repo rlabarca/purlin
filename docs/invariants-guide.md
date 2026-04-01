@@ -54,7 +54,7 @@ Color tokens from the design system.
 - **`> Path:`** — file path within the source repo
 - **`> Pinned:`** — commit SHA (git) or lastModified timestamp (Figma). This is the version.
 
-Full format: `references/formats/invariant_format.md`
+Full format: [references/formats/invariant_format.md](../references/formats/invariant_format.md)
 
 ## Write Protection
 

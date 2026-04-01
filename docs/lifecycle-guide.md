@@ -17,6 +17,48 @@ Every role can do every job. The arrows show the typical flow, not restrictions.
 
 That's it. No tracking system, no ledger, no state files. The filesystem is the state.
 
+### Spec Format
+
+```markdown
+# Feature: login
+
+> Requires: i_security_policy
+> Scope: src/auth/login.js, src/auth/session.js
+
+## What it does
+User authentication with email and password.
+
+## Rules
+- RULE-1: Passwords are hashed with bcrypt before storage
+- RULE-2: Failed logins are rate-limited to 5 per minute
+
+## Proof
+- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database
+- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429
+```
+
+**`## Rules`** — parsed by `sync_status`. Must use `RULE-N:` format.
+**`## Proof`** — NOT parsed (except `@manual` stamps). Blueprint for the agent writing tests.
+**`> Requires:`** — other specs/invariants whose rules also apply.
+**`> Scope:`** — files this feature covers. Documentation only.
+
+Full format: [references/formats/spec_format.md](../references/formats/spec_format.md)
+
+### Coverage States
+
+| State | Meaning |
+|-------|---------|
+| READY | All rules proved |
+| PASS | Rule has a passing proof |
+| FAIL | Rule has a failing proof |
+| NO PROOF | No test linked to this rule |
+| MANUAL PROOF STALE | Manual stamp exists but code changed since |
+| MANUAL PROOF NEEDED | Manual proof declared but not stamped |
+
+### Verification Receipts
+
+`purlin:verify` runs all tests and issues a receipt: `verify: [Complete:all] features=3 vhash=f7a2b9c1`. The `vhash` proves these rules had these test outcomes. CI `--audit` re-runs everything independently.
+
 ---
 
 ## PM Workflow

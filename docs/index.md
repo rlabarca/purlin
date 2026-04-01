@@ -14,12 +14,17 @@
 
 | Guide | What it covers |
 |-------|---------------|
-| [The Purlin Lifecycle](lifecycle-guide.md) | PM, Engineer, and QA workflows with Mermaid diagrams |
+| [The Purlin Lifecycle](lifecycle-guide.md) | Spec format, sync model, PM/Engineer/QA workflows, CI integration |
 | [Installation](installation-guide.md) | Installing Purlin, initializing a project, proof plugin setup |
-| [Spec-Code Sync](spec-code-sync-guide.md) | The rule-proof model: specs, rules, proofs, and `sync_status` |
-| [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof files, and the verify workflow |
+| [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
 | [Invariants](invariants-guide.md) | Read-only external constraints in `specs/_invariants/` |
 | [Worktrees](worktree-guide.md) | Running parallel agents in isolated git worktrees |
+
+## Example Workflows
+
+| Example | What it shows |
+|---------|---------------|
+| [Figma Web App Example](examples/figma-web-app.md) | Build a weather app from scratch using a Figma design invariant |
 
 ## Architecture at a Glance
 
@@ -48,7 +53,7 @@ specs/
 
 ## Skills Reference
 
-See `references/purlin_commands.md` for the full 13-skill reference. Key skills:
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference. Key skills:
 
 - `purlin:spec` — create/edit specs
 - `purlin:build` — implement from spec rules

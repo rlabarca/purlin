@@ -44,6 +44,21 @@ purlin:init
 
 This creates `.purlin/`, `specs/`, detects your test framework, and scaffolds the proof plugin.
 
+### Upgrading from an older version of Purlin
+
+If you have a pre-0.9.0 Purlin installation, remove the old artifacts first:
+
+```bash
+rm -rf features/ .purlin/ pl-* *.sh
+```
+
+Then run `purlin:init` and regenerate your specs:
+
+```
+purlin:init
+purlin:spec-from-code
+```
+
 ## Write a Spec
 
 ```
@@ -71,25 +86,23 @@ Handles user authentication via username/password and SSO.
 - PROOF-3 (RULE-3): GET /sso redirects to provider
 ```
 
-## Add Proof Markers to Tests
+## Build and Test
 
-**pytest:**
-```python
-@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1")
-def test_valid_login():
-    resp = client.post("/login", json={"user": "alice", "pass": "secret"})
-    assert resp.status_code == 200
-    assert "token" in resp.json()
+Just ask Claude. The agent writes code, adds proof markers to tests, and iterates until all rules pass:
+
+```
+build auth_login
 ```
 
-**Jest:**
-```javascript
-it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async () => {
-  const resp = await post("/login", { user: "alice", pass: "secret" });
-  expect(resp.status).toBe(200);
-  expect(resp.body.token).toBeDefined();
-});
+Or even simpler:
+
 ```
+test auth_login
+```
+
+Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows READY. You don't need to write proof markers yourself — the agent does it.
+
+Under the hood, proof markers link each test to a spec rule. The test framework plugin collects the results and emits proof files that `sync_status` reads. See the [Testing Workflow Guide](docs/testing-workflow-guide.md) for details on how proof markers work, manual proofs, tiers, and writing custom proof plugins.
 
 ## Check Coverage
 
