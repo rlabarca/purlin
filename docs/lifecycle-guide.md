@@ -77,6 +77,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 | See rule coverage | `/purlin:status` |
 | Write a new spec | `write a spec for notifications` |
 | Add a rule to a spec | `add a rule to login: passwords must expire after 90 days` |
+| Update a spec after code changed | `update the spec for login to reflect the recent changes` |
 | Stamp a manual proof | `/purlin:verify --manual login PROOF-3` |
 | Find a spec | `/purlin:find login` |
 
@@ -117,6 +118,69 @@ Claude translates complaints into rules: `RULE-1: Search returns results in unde
 - Review the drafted rules — are they right? Are any missing?
 - Answer gap questions — "You mentioned 'fast.' Under 200ms? Under 1 second?"
 - Stamp manual proofs for things automation can't check (brand voice, UX feel)
+
+### Updating specs when code changes
+
+Engineers change code. The PM needs to know: do the specs still match? Here's the workflow:
+
+**Step 1: See what changed**
+```
+/purlin:changelog --role pm
+```
+
+The changelog shows which features had code changes, which specs drifted, and which new code has no spec. Focus on the CHANGED BEHAVIOR and NEW BEHAVIOR categories.
+
+**Step 2: Update affected specs**
+
+For each feature with code changes:
+```
+update the spec for login to reflect the recent changes
+```
+
+Claude reads the existing spec and the code diff, then presents a **delta report** — showing exactly what will change and what stays:
+
+```
+Spec: specs/auth/login.md (5 rules currently)
+
+KEEPING (unchanged):
+  RULE-1: Returns 200 with JWT on valid credentials ✓
+  RULE-2: Returns 401 on invalid credentials ✓
+  RULE-3: Passwords compared using bcrypt ✓
+
+ADDING:
+  RULE-6 (new): Rate limiting blocks after 10 failed attempts per minute
+    Reason: rate_limit.js was added in recent commit
+
+UPDATING:
+  RULE-4 (changed): Session timeout after 60 minutes
+    Was: "Session timeout after 30 minutes"
+    Reason: config changed from 30 to 60
+
+REMOVING:
+  (none)
+
+Approve these changes? [y/n/edit]
+```
+
+The PM reviews and approves. Existing rules stay intact. New rules are added at the end. Changed rules are updated in place. Nothing happens without PM approval.
+
+**Step 3: Check coverage**
+```
+/purlin:status
+```
+
+After spec updates, new rules show as NO PROOF — which is correct. The engineer writes tests for the new rules.
+
+**What the PM DOESN'T do:**
+- Manually diff code against specs
+- Renumber rules or write RULE-N format
+- Figure out which specs are affected by code changes
+- Write proof descriptions from scratch
+
+**What the PM DOES do:**
+- Run changelog to see what changed
+- Say "update the spec for X" and review the proposed deltas
+- Approve or adjust the changes
 
 ### What PMs own
 
