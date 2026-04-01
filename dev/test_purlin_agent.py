@@ -91,8 +91,10 @@ class TestPurlinAgent:
                                   re.MULTILINE | re.DOTALL)
         assert routing_match
         section = routing_match.group(1)
-        for keyword in ('test', 'status', 'changelog', 'spec', 'verify'):
-            assert keyword in section.lower(), f"Missing routing for: {keyword}"
+        for keyword in ('test', 'status', 'changelog', 'spec', 'verify',
+                        'engineer', 'qa'):
+            assert keyword.lower() in section.lower(), \
+                f"Missing routing for: {keyword}"
 
     @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
     def test_skills_table_twelve_entries(self):
