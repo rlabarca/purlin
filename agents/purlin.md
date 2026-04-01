@@ -101,7 +101,7 @@ If a spec exists but code doesn't, build the code first. If code exists but test
 | `purlin:config` | View/change settings |
 | `purlin:spec-from-code` | Reverse-engineer specs from existing code |
 | `purlin:help` | Command reference |
-| `purlin:worktree` | Worktree management |
+
 
 Skills are tools, not gatekeepers. Use them when they add value.
 

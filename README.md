@@ -120,7 +120,7 @@ purlin:verify
 
 Runs ALL tests, issues verification receipts for every feature with 100% rule coverage.
 
-## 13 Skills
+## 12 Skills
 
 | Skill | Purpose |
 |-------|---------|
@@ -136,7 +136,7 @@ Runs ALL tests, issues verification receipts for every feature with 100% rule co
 | `purlin:config` | Read/write settings |
 | `purlin:spec-from-code` | Generate specs from code |
 | `purlin:help` | Command reference |
-| `purlin:worktree` | Worktree management |
+
 
 Skills are **optional** — you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
 

@@ -18,8 +18,6 @@
 | [Installation](installation-guide.md) | Installing Purlin, initializing a project, proof plugin setup |
 | [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
 | [Invariants](invariants-guide.md) | Read-only external constraints in `specs/_invariants/` |
-| [Worktrees](worktree-guide.md) | Running parallel agents in isolated git worktrees |
-
 ## Example Workflows
 
 | Example | What it shows |

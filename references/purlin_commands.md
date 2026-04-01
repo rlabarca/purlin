@@ -31,7 +31,6 @@ Purlin — Spec-Driven Development
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
   purlin:config [key] [value]   View or change .purlin/config.json settings
   purlin:invariant <cmd>        Sync read-only constraints from external sources
-  purlin:worktree <cmd>         Worktree management (list, cleanup)
   purlin:help                   This command reference
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -53,4 +52,3 @@ Purlin — Spec-Driven Development
 | `purlin:config` | Read/write config | `.purlin/config.json` |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
 | `purlin:help` | Command reference | Nothing (read-only) |
-| `purlin:worktree` | Worktree management | Nothing (cleanup only) |
