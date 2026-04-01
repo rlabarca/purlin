@@ -5,20 +5,20 @@
 
 ## What it does
 
-Defines the JSON schema for proof files emitted by test framework plugins. Proof files record which rules have passing or failing tests, enabling sync_status to compute coverage. All three proof plugins (pytest, Jest, shell) must emit files conforming to this schema.
+Defines the JSON schema for proof files emitted by test runners (pytest, Jest, shell). Each proof file is named `<feature>.proofs-<tier>.json`, lives next to its spec, and contains an array of proof entries with feature, id, rule, test_file, test_name, status, and tier fields. Proof plugins use feature-scoped overwrite: each run replaces entries for the tested feature while preserving entries from other features.
 
 ## Rules
 
-- RULE-1: Proof files MUST be named `<feature>.proofs-<tier>.json` and live in the same directory as their spec
-- RULE-2: The top-level JSON object MUST contain `tier` (string) and `proofs` (array) fields
-- RULE-3: Each proof entry MUST contain `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, and `tier` fields
-- RULE-4: The `status` field MUST be either `"pass"` or `"fail"`
-- RULE-5: Proof plugins MUST use feature-scoped overwrite — purge existing entries for the feature being tested, keep entries from other features, then append new entries
+- RULE-1: Proof files are named `<feature>.proofs-<tier>.json` where tier is `default`, `slow`, `e2e`, or a custom tier string
+- RULE-2: Proof file JSON has top-level keys `tier` (string) and `proofs` (array)
+- RULE-3: Each proof entry has required fields: `feature` (string), `id` (string matching `PROOF-\d+`), `rule` (string matching `RULE-\d+`), `test_file` (string), `test_name` (string), `status` (`pass` or `fail`), `tier` (string)
+- RULE-4: Feature-scoped overwrite — writing proofs for feature X removes all existing entries where `feature == X` but preserves entries for other features
+- RULE-5: Proof files live in the same directory as their corresponding spec file
 
 ## Proof
 
-- PROOF-1 (RULE-1): Proof plugins write files matching the `<feature>.proofs-<tier>.json` naming pattern in the spec directory
-- PROOF-2 (RULE-2): Emitted JSON contains a `tier` string and a `proofs` array at the top level
-- PROOF-3 (RULE-3): Each entry in the proofs array contains all seven required fields
-- PROOF-4 (RULE-4): Status values are constrained to "pass" or "fail"
-- PROOF-5 (RULE-5): Running tests for feature A does not remove existing proof entries for feature B in the same tier file
+- PROOF-1 (RULE-1): Create proof files with various tier names; verify filename pattern matches `<feature>.proofs-<tier>.json`
+- PROOF-2 (RULE-2): Load a proof file; verify top-level `tier` and `proofs` keys exist with correct types
+- PROOF-3 (RULE-3): Load a proof entry; verify all 7 required fields are present and correctly typed
+- PROOF-4 (RULE-4): Write proofs for feature A, then write proofs for feature B into same file; verify A's entries are preserved and B's are fresh
+- PROOF-5 (RULE-5): Emit proofs for a feature with a spec at `specs/mcp/foo.md`; verify proof file appears at `specs/mcp/foo.proofs-default.json`
