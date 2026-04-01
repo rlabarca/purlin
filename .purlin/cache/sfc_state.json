@@ -1,0 +1,10 @@
+{
+  "phase": 1,
+  "status": "complete",
+  "started_at": "2026-04-01T12:00:00Z",
+  "directories": {
+    "include": ["scripts/", "src/", "agents/", "skills/"],
+    "exclude": ["node_modules/", ".purlin/", "dist/", "dev/", "docs/"]
+  },
+  "completed_categories": []
+}
