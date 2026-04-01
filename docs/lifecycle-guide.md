@@ -74,6 +74,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 | What you want | What you type |
 |---------------|---------------|
 | See what changed | `/purlin:changelog --role pm` |
+| Handle all PM work | `handle PM items` |
 | See rule coverage | `/purlin:status` |
 | Write a new spec | `write a spec for notifications` |
 | Add a rule to a spec | `add a rule to login: passwords must expire after 90 days` |
@@ -128,11 +129,23 @@ Engineers change code. The PM needs to know: do the specs still match? Here's th
 /purlin:changelog --role pm
 ```
 
-The changelog shows which features had code changes, which specs drifted, and which new code has no spec. Focus on the CHANGED BEHAVIOR and NEW BEHAVIOR categories.
+The changelog shows NEEDS ATTENTION items and ends with ACTION ITEMS — a complete list of everything the PM needs to do:
 
-**Step 2: Update affected specs**
+```
+ACTION ITEMS (PM):
+  1. Spec drift: purlin_skills — 7 new behaviors not covered by existing rules → Run: purlin:spec purlin_skills
+  2. Spec drift: purlin_references — 3 new sections not covered → Run: purlin:spec purlin_references
+  3. Missing spec: notifications — new code with no spec → Run: purlin:spec notifications
+```
 
-For each feature with code changes:
+**Step 2: Handle all items at once**
+
+Instead of updating specs one by one, just say:
+```
+handle PM items
+```
+
+Claude runs through every item in the ACTION ITEMS list, invoking `purlin:spec` for each affected feature. Or update one at a time:
 ```
 update the spec for login to reflect the recent changes
 ```
@@ -210,8 +223,8 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 | See what needs work | `/purlin:changelog --role eng` |
 | Build a feature | `build login` |
 | Test a feature | `test login` |
-| Fix failing tests | `fix the engineer priorities` after changelog |
-| Work through all gaps | `work through the engineer priorities` after changelog |
+| Handle all engineer work | `handle engineer items` |
+| Work through all gaps | `work through the engineer action items` |
 | See coverage | `/purlin:status` |
 | Ship it | `/purlin:verify` |
 
@@ -248,6 +261,7 @@ You can also say `build login` to just write code (Claude injects the spec rules
 | What you want | What you type |
 |---------------|---------------|
 | See what needs testing | `/purlin:changelog --role qa` |
+| Handle all QA work | `handle QA items` |
 | See coverage gaps | `/purlin:status` |
 | Run all tests | `/purlin:unit-test` |
 | Verify and ship | `/purlin:verify` |
@@ -361,6 +375,8 @@ You don't need to write simulation tests for every reference doc. You need:
 - **One solid E2E flow** (expensive, `@e2e` tier, runs nightly) that proves the whole system works → `specs/integration/`
 
 The structural specs are the smoke detector. The E2E is the fire drill.
+
+`sync_status` flags features with structural-only proofs: `READY (structural only)`. This means the document's sections exist but no test verifies the system actually follows the instructions. When you see this, consider adding E2E proofs in `specs/integration/`.
 
 ---
 
