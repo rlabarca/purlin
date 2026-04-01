@@ -1,9 +1,9 @@
 {
-  "feature": "purlin_references",
-  "vhash": "2b240c30",
+  "feature": "purlin_agent",
+  "vhash": "45becb45",
   "commit": "ffec1b78215900315d3eee59ee005fbe6c7b0c1a",
   "timestamp": "2026-04-01T18:43:29Z",
-  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8", "RULE-9", "RULE-10", "RULE-11"],
+  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8"],
   "proofs": [
     {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
     {"id": "PROOF-2", "rule": "RULE-2", "status": "pass"},
@@ -12,9 +12,6 @@
     {"id": "PROOF-5", "rule": "RULE-5", "status": "pass"},
     {"id": "PROOF-6", "rule": "RULE-6", "status": "pass"},
     {"id": "PROOF-7", "rule": "RULE-7", "status": "pass"},
-    {"id": "PROOF-8", "rule": "RULE-8", "status": "pass"},
-    {"id": "PROOF-9", "rule": "RULE-9", "status": "pass"},
-    {"id": "PROOF-10", "rule": "RULE-10", "status": "pass"},
-    {"id": "PROOF-11", "rule": "RULE-11", "status": "pass"}
+    {"id": "PROOF-8", "rule": "RULE-8", "status": "pass"}
   ]
 }

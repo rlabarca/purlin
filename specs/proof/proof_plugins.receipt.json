@@ -1,124 +1,28 @@
 {
   "feature": "proof_plugins",
   "vhash": "5ee298d5",
-  "commit": "e8bbfb3d52fa7de87b025ad537f9910befd524df",
-  "timestamp": "2026-04-01T17:37:24Z",
-  "rules": [
-    "RULE-1",
-    "RULE-10",
-    "RULE-11",
-    "RULE-12",
-    "RULE-13",
-    "RULE-14",
-    "RULE-15",
-    "RULE-16",
-    "RULE-17",
-    "RULE-18",
-    "RULE-19",
-    "RULE-2",
-    "RULE-3",
-    "RULE-4",
-    "RULE-5",
-    "RULE-6",
-    "RULE-7",
-    "RULE-8",
-    "RULE-9"
-  ],
+  "commit": "ffec1b78215900315d3eee59ee005fbe6c7b0c1a",
+  "timestamp": "2026-04-01T18:43:29Z",
+  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8", "RULE-9", "RULE-10", "RULE-11", "RULE-12", "RULE-13", "RULE-14", "RULE-15", "RULE-16", "RULE-17", "RULE-18", "RULE-19"],
   "proofs": [
-    {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-12",
-      "rule": "RULE-12",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-13",
-      "rule": "RULE-13",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-14",
-      "rule": "RULE-14",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-15",
-      "rule": "RULE-15",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-16",
-      "rule": "RULE-16",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-17",
-      "rule": "RULE-17",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-18",
-      "rule": "RULE-18",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-19",
-      "rule": "RULE-19",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
-    }
+    {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
+    {"id": "PROOF-2", "rule": "RULE-2", "status": "pass"},
+    {"id": "PROOF-3", "rule": "RULE-3", "status": "pass"},
+    {"id": "PROOF-4", "rule": "RULE-4", "status": "pass"},
+    {"id": "PROOF-5", "rule": "RULE-5", "status": "pass"},
+    {"id": "PROOF-6", "rule": "RULE-6", "status": "pass"},
+    {"id": "PROOF-7", "rule": "RULE-7", "status": "pass"},
+    {"id": "PROOF-8", "rule": "RULE-8", "status": "pass"},
+    {"id": "PROOF-9", "rule": "RULE-9", "status": "pass"},
+    {"id": "PROOF-10", "rule": "RULE-10", "status": "pass"},
+    {"id": "PROOF-11", "rule": "RULE-11", "status": "pass"},
+    {"id": "PROOF-12", "rule": "RULE-12", "status": "pass"},
+    {"id": "PROOF-13", "rule": "RULE-13", "status": "pass"},
+    {"id": "PROOF-14", "rule": "RULE-14", "status": "pass"},
+    {"id": "PROOF-15", "rule": "RULE-15", "status": "pass"},
+    {"id": "PROOF-16", "rule": "RULE-16", "status": "pass"},
+    {"id": "PROOF-17", "rule": "RULE-17", "status": "pass"},
+    {"id": "PROOF-18", "rule": "RULE-18", "status": "pass"},
+    {"id": "PROOF-19", "rule": "RULE-19", "status": "pass"}
   ]
 }

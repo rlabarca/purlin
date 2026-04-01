@@ -1,9 +1,9 @@
 {
-  "feature": "gate_hook",
-  "vhash": "45becb45",
+  "feature": "schema_spec_format",
+  "vhash": "e492d09a",
   "commit": "ffec1b78215900315d3eee59ee005fbe6c7b0c1a",
   "timestamp": "2026-04-01T18:43:29Z",
-  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8"],
+  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7"],
   "proofs": [
     {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
     {"id": "PROOF-2", "rule": "RULE-2", "status": "pass"},
@@ -11,7 +11,6 @@
     {"id": "PROOF-4", "rule": "RULE-4", "status": "pass"},
     {"id": "PROOF-5", "rule": "RULE-5", "status": "pass"},
     {"id": "PROOF-6", "rule": "RULE-6", "status": "pass"},
-    {"id": "PROOF-7", "rule": "RULE-7", "status": "pass"},
-    {"id": "PROOF-8", "rule": "RULE-8", "status": "pass"}
+    {"id": "PROOF-7", "rule": "RULE-7", "status": "pass"}
   ]
 }
