@@ -95,6 +95,28 @@ This block MUST:
 
 The directive block ensures the agent does not stop after the first batch of receipts — it reads the remaining work and continues.
 
+### Step 4c — Handling Failing Proofs
+
+`purlin:verify` is a verification gate, not a build tool. When tests fail during verify:
+
+1. Do NOT fix code or tests during verify. Report the failures with diagnosis.
+2. For each failing proof, output:
+   - The rule it proves
+   - What the test expected vs what it got
+   - Diagnosis: is this likely a code bug, test bug, or spec drift?
+   - Directive: `→ Run: test <feature>` to fix in the build loop
+
+3. After reporting all failures:
+   ```
+   Verification incomplete. N proofs failing across M features.
+
+   Fix these in the build loop, then run purlin:verify again:
+     → Run: test <feature_1>
+     → Run: test <feature_2>
+   ```
+
+The verify skill should never silently fix a test to make verification pass. That defeats the purpose of verification as an independent check.
+
 ### Step 5 — Commit
 
 ```

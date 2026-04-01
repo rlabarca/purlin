@@ -74,6 +74,15 @@ pytest                    # or: npx jest, or: bash test.sh
 
 Call `sync_status` to verify coverage. Follow any `→` directives for uncovered rules.
 
+**When a test fails, diagnose the root cause before fixing:**
+1. Read the failing assertion — what did the test expect vs what did it get?
+2. Read the spec rule the proof is linked to — is the test asserting the right behavior?
+3. If the test is correct and the code is wrong → fix the code
+4. If the test has a bug (wrong mock, wrong expected value) → fix the test
+5. If the rule itself is wrong → update the spec first, then fix code and test
+
+**Never weaken an assertion to make it pass.** If `assert response.status == 401` fails because the code returns 200, the code is wrong. See `references/spec_quality_guide.md` "When Tests Fail" for the full diagnostic guide.
+
 ## Step 5 — Commit
 
 ```

@@ -194,3 +194,23 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 - **AI instructions** (`references/`, `skills/`, `agents/`) → `instructions/`. Rules verify sections exist and contain required content. Proofs are grep-based. These catch accidental deletions and structural drift.
 - **Full lifecycle flows** → `integration/`. Rules describe end-to-end behavior. All proofs are `@e2e`. These run in CI nightly, not on every push.
 - **Don't mix levels.** A spec in `mcp/` tests the MCP server code. A spec in `integration/` tests the MCP server as part of the full lifecycle. Different specs, different tiers.
+
+## When Tests Fail: Fix the Code, Not the Test
+
+When a proof-marked test fails, the agent must diagnose before fixing. There are three possibilities:
+
+| Diagnosis | What's wrong | Action |
+|-----------|-------------|--------|
+| Code bug | The test asserts the correct behavior but the code doesn't implement it | Fix the code. The test is right. |
+| Test bug | The test asserts the wrong thing (wrong status code, wrong field name, bad mock setup) | Fix the test. The code is right. |
+| Spec drift | The rule no longer matches the intended behavior | Update the spec rule first, then update code and test to match. |
+
+**The default assumption is: the code is wrong, not the test.** The test was written to prove a rule from the spec. If the test fails, the code probably doesn't satisfy the rule yet.
+
+Never:
+- Weaken an assertion to make a test pass (`assert status == 200` → `assert status in [200, 401]`)
+- Remove an assertion that was testing the right thing
+- Change the expected value to match the actual value without understanding why they differ
+- Delete a failing test
+
+If the spec itself is wrong (the rule describes behavior that shouldn't exist), update the spec first — change the rule, update the proof description, THEN update the test and code. The spec is the source of truth.
