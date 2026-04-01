@@ -65,6 +65,8 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 ## PM Workflow
 
+**The PM defines what the software must do.** They own the rules — the testable constraints that the code must satisfy. Purlin helps PMs transform raw ideas (PRDs, customer feedback, Slack threads) into structured specs with numbered rules and proof descriptions. When engineers build and test, the PM sees exactly which rules are proved and which aren't via `sync_status`. No more "is this feature done?" — the coverage number answers it.
+
 ![PM Workflow](../assets/lifecycle-pm-workflow.svg)
 
 ### Quick commands
@@ -133,6 +135,8 @@ Claude translates complaints into rules: `RULE-1: Search returns results in unde
 
 ## Engineer Workflow
 
+**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `sync_status` shows READY. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
+
 ![Engineer Workflow](../assets/lifecycle-eng-workflow.svg)
 
 ### Quick commands
@@ -170,6 +174,8 @@ You can also say `build login` to just write code (Claude injects the spec rules
 ---
 
 ## QA Workflow
+
+**QA verifies that the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows QA exactly which rules have proofs and which don't, which manual proofs are stale, and which features are ready for verification. QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` to issue the final verification receipt. QA is the last gate before code ships.
 
 ![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 
