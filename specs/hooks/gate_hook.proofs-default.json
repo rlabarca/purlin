@@ -1,0 +1,77 @@
+{
+  "tier": "default",
+  "proofs": [
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "hooks.json registers correct matcher",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "non-invariant file exits 0",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "no bypass lock blocks with exit 2",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "matching bypass lock allows write",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "wrong target blocks with exit 2",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "block message includes purlin:invariant sync on stderr",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "blocks both absolute and relative invariant paths",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "gate_hook",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_gate_hook.sh",
+      "test_name": "empty FILE_PATH exits 0",
+      "status": "pass",
+      "tier": "default"
+    }
+  ]
+}

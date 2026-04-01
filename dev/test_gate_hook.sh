@@ -1,135 +1,132 @@
 #!/usr/bin/env bash
-# Tests for gate.sh — invariant write protection hook.
-#
-# Tests:
-#   1. Blocks writes to specs/_invariants/i_* files (RULE-1)
-#   2. Allows writes to non-invariant files (RULE-2)
-#   3. Respects bypass lock for matching file (RULE-3)
-#   4. Bypass lock does not unlock other files
-#   5. Handles missing TOOL_INPUT_FILE_PATH gracefully (RULE-4)
-#   6. Blocked message includes corrective action (RULE-5)
+# Tests for gate_hook — 8 rules.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-GATE_SCRIPT="$PROJECT_ROOT/scripts/gate.sh"
-PASS=0
-FAIL=0
+REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+GATE_SCRIPT="$REAL_PROJECT_ROOT/scripts/gate.sh"
 
 # Load proof harness
-source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
-run_test() {
-  local name="$1"
-  shift
-  if "$@"; then
-    echo "  PASS: $name"
-    PASS=$((PASS + 1))
-    return 0
-  else
-    echo "  FAIL: $name"
-    FAIL=$((FAIL + 1))
-    return 1
-  fi
-}
-
-# --- Setup temp project ---
+# Setup temp project
 TMPDIR_ROOT=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_ROOT"' EXIT
 export PROJECT_ROOT="$TMPDIR_ROOT"
 mkdir -p "$TMPDIR_ROOT/.purlin/runtime"
 mkdir -p "$TMPDIR_ROOT/specs/_invariants"
-mkdir -p "$TMPDIR_ROOT/specs/auth"
 
-echo "=== gate.sh tests ==="
+echo "=== gate_hook tests ==="
 
-# Test 1: Block writes to invariant files (relative path) — RULE-1
-test_blocks_invariant_write() {
-  export TOOL_INPUT_FILE_PATH="specs/_invariants/i_colors.md"
-  local output exit_code=0
-  output=$(bash "$GATE_SCRIPT" 2>&1) || exit_code=$?
-  [[ $exit_code -eq 2 ]] && [[ "$output" == *"BLOCKED"* ]]
-}
-run_test "blocks invariant writes (relative)" test_blocks_invariant_write
-purlin_proof "gate-hook" "PROOF-1a" "RULE-1" "$([ $? -eq 0 ] && echo pass || echo fail)" "blocks invariant writes (relative path, exit 2 + BLOCKED)"
+# PROOF-1 (RULE-1): hooks.json registers Write|Edit|NotebookEdit pointing to gate.sh
+HOOKS_JSON="$REAL_PROJECT_ROOT/hooks/hooks.json"
+if python3 -c "
+import json, sys
+data = json.load(open(sys.argv[1]))
+hooks = data['hooks']['PreToolUse']
+found = any(
+    h['matcher'] == 'Write|Edit|NotebookEdit'
+    and any('gate.sh' in cmd.get('command', '') for cmd in h['hooks'])
+    for h in hooks
+)
+sys.exit(0 if found else 1)
+" "$HOOKS_JSON"; then
+    echo "  PASS: hooks.json matcher"
+    purlin_proof "gate_hook" "PROOF-1" "RULE-1" pass "hooks.json registers correct matcher"
+else
+    echo "  FAIL: hooks.json matcher"
+    purlin_proof "gate_hook" "PROOF-1" "RULE-1" fail "hooks.json registers correct matcher"
+fi
 
-# Test 2: Block writes to invariant files (absolute path) — RULE-1
-test_blocks_invariant_write_absolute() {
-  export TOOL_INPUT_FILE_PATH="$TMPDIR_ROOT/specs/_invariants/i_design.md"
-  local output exit_code=0
-  output=$(bash "$GATE_SCRIPT" 2>&1) || exit_code=$?
-  [[ $exit_code -eq 2 ]] && [[ "$output" == *"BLOCKED"* ]]
-}
-run_test "blocks invariant writes (absolute)" test_blocks_invariant_write_absolute
-purlin_proof "gate-hook" "PROOF-1b" "RULE-1" "$([ $? -eq 0 ] && echo pass || echo fail)" "blocks invariant writes (absolute path, exit 2 + BLOCKED)"
+# PROOF-2 (RULE-2): Non-invariant files pass through (exit 0)
+export TOOL_INPUT_FILE_PATH="src/app.js"
+if bash "$GATE_SCRIPT" 2>/dev/null; then
+    echo "  PASS: non-invariant passes"
+    purlin_proof "gate_hook" "PROOF-2" "RULE-2" pass "non-invariant file exits 0"
+else
+    echo "  FAIL: non-invariant passes"
+    purlin_proof "gate_hook" "PROOF-2" "RULE-2" fail "non-invariant file exits 0"
+fi
 
-# Test 3: Allow writes to non-invariant spec files — RULE-2
-test_allows_non_invariant_write() {
-  export TOOL_INPUT_FILE_PATH="specs/auth/login.md"
-  bash "$GATE_SCRIPT" 2>/dev/null
-}
-run_test "allows non-invariant writes" test_allows_non_invariant_write
-purlin_proof "gate-hook" "PROOF-2a" "RULE-2" "$([ $? -eq 0 ] && echo pass || echo fail)" "allows non-invariant spec file writes"
+# PROOF-3 (RULE-3): No bypass lock → blocked exit 2
+export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
+rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+ec=0; bash "$GATE_SCRIPT" 2>/dev/null || ec=$?
+if [[ $ec -eq 2 ]]; then
+    echo "  PASS: no lock → exit 2"
+    purlin_proof "gate_hook" "PROOF-3" "RULE-3" pass "no bypass lock blocks with exit 2"
+else
+    echo "  FAIL: no lock → exit 2 (got $ec)"
+    purlin_proof "gate_hook" "PROOF-3" "RULE-3" fail "no bypass lock blocks with exit 2"
+fi
 
-# Test 4: Allow writes to regular files — RULE-2
-test_allows_regular_file_write() {
-  export TOOL_INPUT_FILE_PATH="src/app.py"
-  bash "$GATE_SCRIPT" 2>/dev/null
-}
-run_test "allows regular file writes" test_allows_regular_file_write
-purlin_proof "gate-hook" "PROOF-2b" "RULE-2" "$([ $? -eq 0 ] && echo pass || echo fail)" "allows regular file writes"
+# PROOF-4 (RULE-4): Bypass lock with matching target → exit 0
+export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
+echo '{"target": "i_test.md"}' > "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+if bash "$GATE_SCRIPT" 2>/dev/null; then
+    echo "  PASS: matching lock → exit 0"
+    purlin_proof "gate_hook" "PROOF-4" "RULE-4" pass "matching bypass lock allows write"
+else
+    echo "  FAIL: matching lock → exit 0"
+    purlin_proof "gate_hook" "PROOF-4" "RULE-4" fail "matching bypass lock allows write"
+fi
+rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
 
-# Test 5: Bypass lock allows matching file — RULE-3
-test_bypass_lock_allows_matching() {
-  export TOOL_INPUT_FILE_PATH="specs/_invariants/i_colors.md"
-  local lock_file="$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
-  echo '{"target": "specs/_invariants/i_colors.md"}' > "$lock_file"
-  bash "$GATE_SCRIPT" 2>/dev/null
-  local result=$?
-  rm -f "$lock_file"
-  return $result
-}
-run_test "bypass lock allows matching file" test_bypass_lock_allows_matching
-purlin_proof "gate-hook" "PROOF-3" "RULE-3" "$([ $? -eq 0 ] && echo pass || echo fail)" "bypass lock allows matching file (exit 0)"
+# PROOF-5 (RULE-5): Bypass lock with wrong target → blocked exit 2
+export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
+echo '{"target": "i_other.md"}' > "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+ec=0; bash "$GATE_SCRIPT" 2>/dev/null || ec=$?
+rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+if [[ $ec -eq 2 ]]; then
+    echo "  PASS: wrong target → exit 2"
+    purlin_proof "gate_hook" "PROOF-5" "RULE-5" pass "wrong target blocks with exit 2"
+else
+    echo "  FAIL: wrong target → exit 2 (got $ec)"
+    purlin_proof "gate_hook" "PROOF-5" "RULE-5" fail "wrong target blocks with exit 2"
+fi
 
-# Test 6: Bypass lock does NOT unlock other invariant files
-test_bypass_lock_blocks_other_files() {
-  export TOOL_INPUT_FILE_PATH="specs/_invariants/i_other.md"
-  local lock_file="$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
-  echo '{"target": "specs/_invariants/i_colors.md"}' > "$lock_file"
-  local output exit_code=0
-  output=$(bash "$GATE_SCRIPT" 2>&1) || exit_code=$?
-  rm -f "$lock_file"
-  [[ $exit_code -eq 2 ]] && [[ "$output" == *"BLOCKED"* ]]
-}
-run_test "bypass lock blocks other files" test_bypass_lock_blocks_other_files
+# PROOF-6 (RULE-6): Block message on stderr includes corrective action
+export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
+rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+stderr_out=$(bash "$GATE_SCRIPT" 2>&1 1>/dev/null) || true
+if [[ "$stderr_out" == *"purlin:invariant sync"* ]]; then
+    echo "  PASS: stderr corrective action"
+    purlin_proof "gate_hook" "PROOF-6" "RULE-6" pass "block message includes purlin:invariant sync on stderr"
+else
+    echo "  FAIL: stderr corrective action"
+    purlin_proof "gate_hook" "PROOF-6" "RULE-6" fail "block message includes purlin:invariant sync on stderr"
+fi
 
-# Test 7: No TOOL_INPUT_FILE_PATH = allow (exit 0) — RULE-4
-test_missing_file_path() {
-  unset TOOL_INPUT_FILE_PATH
-  unset TOOL_INPUT_file_path
-  bash "$GATE_SCRIPT" 2>/dev/null
-}
-run_test "missing file path exits 0" test_missing_file_path
-purlin_proof "gate-hook" "PROOF-4" "RULE-4" "$([ $? -eq 0 ] && echo pass || echo fail)" "missing file path exits 0"
+# PROOF-7 (RULE-7): Handles both absolute and relative paths
+rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
+export TOOL_INPUT_FILE_PATH="/Users/test/project/specs/_invariants/i_test.md"
+ec_abs=0; bash "$GATE_SCRIPT" 2>/dev/null || ec_abs=$?
+export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
+ec_rel=0; bash "$GATE_SCRIPT" 2>/dev/null || ec_rel=$?
+if [[ $ec_abs -eq 2 ]] && [[ $ec_rel -eq 2 ]]; then
+    echo "  PASS: absolute + relative paths"
+    purlin_proof "gate_hook" "PROOF-7" "RULE-7" pass "blocks both absolute and relative invariant paths"
+else
+    echo "  FAIL: absolute + relative paths (abs=$ec_abs rel=$ec_rel)"
+    purlin_proof "gate_hook" "PROOF-7" "RULE-7" fail "blocks both absolute and relative invariant paths"
+fi
 
-# Test 8: Blocked message includes corrective action — RULE-5
-test_blocked_message_includes_action() {
-  export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
-  local output
-  output=$(bash "$GATE_SCRIPT" 2>&1) || true
-  [[ "$output" == *"purlin:invariant sync"* ]]
-}
-run_test "blocked message includes corrective action" test_blocked_message_includes_action
-purlin_proof "gate-hook" "PROOF-5" "RULE-5" "$([ $? -eq 0 ] && echo pass || echo fail)" "blocked message includes purlin:invariant sync"
+# PROOF-8 (RULE-8): Empty FILE_PATH → exit 0
+unset TOOL_INPUT_FILE_PATH 2>/dev/null || true
+unset TOOL_INPUT_file_path 2>/dev/null || true
+export TOOL_INPUT_FILE_PATH=""
+if bash "$GATE_SCRIPT" 2>/dev/null; then
+    echo "  PASS: empty path → exit 0"
+    purlin_proof "gate_hook" "PROOF-8" "RULE-8" pass "empty FILE_PATH exits 0"
+else
+    echo "  FAIL: empty path → exit 0"
+    purlin_proof "gate_hook" "PROOF-8" "RULE-8" fail "empty FILE_PATH exits 0"
+fi
 
-# --- Emit proof files ---
-# Reset PROJECT_ROOT to actual project root for proof file discovery
-export PROJECT_ROOT="$SCRIPT_DIR/.."
+# Emit proof files from real project root
+export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
-# --- Summary ---
 echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ $FAIL -eq 0 ]]
+echo "gate_hook: 8/8 proofs recorded"

@@ -1,0 +1,86 @@
+{
+  "tier": "default",
+  "proofs": [
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_spec_format_required_sections",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_proofs_format_fields_and_merge",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_proofs_format_three_frameworks",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_invariant_format_metadata",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_anchor_format_eight_prefixes",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_hard_gates_exactly_two",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_commit_conventions_eight_prefixes",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_purlin_commands_categories_and_skills",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_spec_quality_guide_coverage",
+      "status": "pass",
+      "tier": "default"
+    }
+  ]
+}
