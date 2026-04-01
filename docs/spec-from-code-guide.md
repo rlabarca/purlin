@@ -98,7 +98,7 @@ Completed categories are skipped. Questions already answered are not re-asked.
 
 ## After Generation
 
-Generated specs are a starting point, not a final product. Review them:
+Generated specs are a starting point, not a final product. Use the [Spec Quality Guide](../references/spec_quality_guide.md) as your review checklist. Key questions:
 
 - **Are the rules correct?** Do they describe what the code actually does?
 - **Are the proof descriptions observable?** Can you write a test that asserts the described outcome?

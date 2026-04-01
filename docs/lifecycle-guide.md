@@ -43,6 +43,7 @@ User authentication with email and password.
 **`> Scope:`** — files this feature covers. Documentation only.
 
 Full format: [references/formats/spec_format.md](../references/formats/spec_format.md)
+Quality guide: [references/spec_quality_guide.md](../references/spec_quality_guide.md) — how to write good rules, proofs, and anchors
 
 ### Coverage States
 

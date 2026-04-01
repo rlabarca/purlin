@@ -26,6 +26,8 @@ The pattern: **test the attack, not the defense.** Prove bad input is rejected, 
 
 Because `purlin:verify` runs all tests from scratch in a clean state. The verification receipt (`vhash`) proves the rules had these exact test outcomes. CI `--audit` mode re-runs everything independently — if a developer's local environment was rigged, CI catches it.
 
+For comprehensive guidance on writing rules, proofs, tiers, and anchors, see the [Spec Quality Guide](../references/spec_quality_guide.md).
+
 ## The Simplest Workflow
 
 Ask Claude:

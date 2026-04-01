@@ -121,6 +121,8 @@ def test_xss_prevention():
 
 The key insight: **there is no special FORBIDDEN mechanism in Purlin.** A FORBIDDEN pattern is just a rule with a proof that asserts absence. The proof system handles it identically to any other rule — if the proof passes, the pattern is absent. If it fails, the violation is visible in `sync_status`.
 
+For more on writing effective rules, proofs, and anchors, see the [Spec Quality Guide](../references/spec_quality_guide.md).
+
 ---
 
 ## Invariants

@@ -55,9 +55,10 @@ specs/
 
 See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference.
 
-| Skill | Guide |
-|-------|-------|
-| `purlin:spec-from-code` | [Generating Specs from Code](spec-from-code-guide.md) — onboarding existing projects |
+| Resource | What it covers |
+|----------|---------------|
+| [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
+| [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
 Key skills:
 
