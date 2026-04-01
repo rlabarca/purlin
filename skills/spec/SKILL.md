@@ -120,6 +120,22 @@ After the core spec (What it does, Rules, Proof) is solid, add metadata:
 
 Present the enhanced spec with metadata added and ask "anything to adjust?"
 
+### Structural-Only Proof Check
+
+After drafting the rules and proofs, if the spec covers files in `references/`, `skills/`, or `agents/` (instruction files), check: are ALL proofs grep-based or existence checks? If yes, suggest:
+
+```
+All proofs for this spec are structural (grep/existence checks). This catches
+deletions and drift but doesn't prove the instructions work.
+
+Want me to also create an E2E spec in specs/integration/ that tests actual
+behavior? For example:
+  RULE-1: Agent follows the core loop when given "build X" @e2e
+  RULE-2: Agent uses purlin:spec when asked to "update the spec" @e2e
+```
+
+Only suggest — do not create the E2E spec unless the user confirms.
+
 ### Validate Before Commit
 
 Before committing, verify:

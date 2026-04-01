@@ -72,6 +72,22 @@ No receipt (M features):
 
 Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
 
+### Step 4a2 — Structural-Only Coverage Summary
+
+After issuing receipts, check if any READY features have structural-only coverage (sync_status reports them as `READY (structural only)`). If so, add a summary section after the receipts table:
+
+```
+Structural-only coverage (no behavioral proofs):
+  purlin_agent (8 proofs — all grep/existence)
+  purlin_skills (6 proofs — all grep/existence)
+  purlin_references (9 proofs — all grep/existence)
+
+These specs prove documents have the right content, not that the system follows them.
+→ Consider: create specs/integration/e2e_purlin_lifecycle.md with @e2e proofs that test actual agent behavior
+```
+
+This is informational — not a gate. The receipts are still valid. The note makes it visible that the coverage is structural, not behavioral.
+
 ### Step 4b — Directive Block for Remaining Work
 
 If ANY features are partial or failing (i.e., `N < T`), print a directive block **after** the receipts table:

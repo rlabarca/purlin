@@ -38,6 +38,17 @@ _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+)\):\s*(.+)', re.MULTILINE
 )
+_STRUCTURAL_PROOF_RE = re.compile(
+    r'grep|verify\s.*exist|verify\s.*present|verify\s.*section'
+    r'|verify\s.*field|verify\s.*appear|verify\s.*contain',
+    re.IGNORECASE,
+)
+_BEHAVIORAL_PROOF_RE = re.compile(
+    r'\brun\b|\bcall\b|\bPOST\b|\bGET\b|assert\s.*response'
+    r'|assert\s.*status|assert\s.*return|exit\s+code'
+    r'|verify\s.*output|\bexecute\b',
+    re.IGNORECASE,
+)
 
 
 def _scan_specs(project_root):
@@ -89,8 +100,9 @@ def _scan_specs(project_root):
         if scope_match:
             scope = [s.strip() for s in scope_match.group(1).split(',') if s.strip()]
 
-        # Parse manual proof stamps from ## Proof section
+        # Parse manual proof stamps and collect proof descriptions from ## Proof section
         manual_proofs = {}
+        proof_descriptions = []
         proof_section = _extract_section(content, '## Proof')
         if proof_section:
             for line in proof_section.strip().splitlines():
@@ -100,6 +112,8 @@ def _scan_specs(project_root):
                     continue
                 proof_id = proof_match.group(1)
                 rule_id = proof_match.group(2)
+                proof_desc = proof_match.group(3).strip()
+                proof_descriptions.append(proof_desc)
                 stamp = _MANUAL_STAMPED_RE.search(line)
                 if stamp:
                     manual_proofs[proof_id] = {
@@ -124,6 +138,7 @@ def _scan_specs(project_root):
             'unnumbered_lines': unnumbered,
             'has_rules_section': rules_section is not None,
             'manual_proofs': manual_proofs,
+            'proof_descriptions': proof_descriptions,
         }
 
     return features
@@ -180,6 +195,18 @@ def _compute_vhash(rules, proofs):
     proof_parts = sorted(f"{p['id']}:{p['status']}" for p in proofs)
     payload = ','.join(rule_ids) + '|' + ','.join(proof_parts)
     return hashlib.sha256(payload.encode()).hexdigest()[:8]
+
+
+def _is_structural_only(proof_descriptions):
+    """Return True if ALL proof descriptions are grep/existence checks with no behavioral tests."""
+    if not proof_descriptions:
+        return False
+    for desc in proof_descriptions:
+        if not _STRUCTURAL_PROOF_RE.search(desc):
+            return False
+        if _BEHAVIORAL_PROOF_RE.search(desc):
+            return False
+    return True
 
 
 def sync_status(project_root, role=None):
@@ -267,12 +294,20 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role):
         return lines
 
     if proved == total and not warnings:
-        lines.append(f"{name}: READY")
+        structural_only = _is_structural_only(info.get('proof_descriptions', []))
+        if structural_only:
+            lines.append(f"{name}: READY (structural only)")
+        else:
+            lines.append(f"{name}: READY")
         lines.append(f"  {proved}/{total} rules proved ✓")
         # Compute vhash
         vhash = _compute_vhash(all_rules, feature_proofs)
         lines.append(f"  vhash={vhash}")
-        lines.append("  → No action needed.")
+        if structural_only:
+            lines.append(f"  → Note: all {total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
+            lines.append("  → Consider: create E2E proofs in specs/integration/ that test actual behavior")
+        else:
+            lines.append("  → No action needed.")
         return lines
 
     lines.append(f"{name}: {proved}/{total} rules proved")
@@ -570,11 +605,16 @@ def changelog(project_root, since=None, role=None):
         failing = [r for r in info['rules']
                    if proof_by_rule.get(r, {}).get('status') == 'fail']
         status = 'READY' if proved == total else 'FAILING' if failing else 'partial'
+        structural_only = (
+            status == 'READY'
+            and _is_structural_only(info.get('proof_descriptions', []))
+        )
         proof_status[name] = {
             'proved': proved,
             'total': total,
             'status': status,
             'failing_rules': failing,
+            'structural_only': structural_only,
         }
 
     result = {

@@ -81,10 +81,20 @@ Each entry must include:
 For each BEHAVIORAL change, check: do the existing spec rules cover this new behavior?
 
 - If the spec has rules that still match → `Spec up to date ✓`
-- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → Run: purlin:spec <feature>`
+- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → update the spec for <feature>`
 - If no spec exists → `No spec exists → Run: purlin:spec <name>`
 
 Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
+
+**Structural-only coverage check:** When `proof_status` reports a feature as `structural_only: true`, include that in the spec status line:
+
+```
+Spec: purlin_agent (8 rules, READY — structural only)
+⚠ All proofs are grep checks. No E2E test verifies the agent actually follows the new behavior.
+→ Run: purlin:spec purlin_agent (to add behavioral proofs)
+```
+
+A feature that is READY but structural-only AND appeared in NEEDS ATTENTION means the proofs don't actually test the changed behavior — they only verify the instruction text exists.
 
 ### 2e — Format by audience
 
@@ -133,23 +143,29 @@ Since <since field from JSON>:
 <TRIVIAL section from 2e>
 ```
 
-## Step 4 — TOP PRIORITIES
+## Step 4 — ACTION ITEMS
 
-After all sections, print a `---` separator and role-aware priorities. These MUST reference the actual analysis from Step 2, not just the raw proof counts from the MCP tool.
+After all sections, print a `---` separator and role-aware action items. These MUST reference the actual analysis from Step 2, not just the raw proof counts from the MCP tool. List ALL actionable items for each role — do not truncate. When the agent sees "handle PM items" it needs the complete list.
 
-### PM priorities (ordered)
+### PM action items (ordered)
+
+List every item that applies, in this order:
 
 1. **Missing specs** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
 2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `→ Run: purlin:spec <name>`
 3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `→ Run: test <name>`
 
-### Engineer priorities (ordered)
+### Engineer action items (ordered)
+
+List every item that applies, in this order:
 
 1. **Failing tests** — features with `status: "FAILING"` in `proof_status` → `→ Run: test <name>`
 2. **Unproved rules** — features with `status: "partial"` → `→ Run: test <name>`
 3. **New unspecced code** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
 
-### QA priorities (ordered)
+### QA action items (ordered)
+
+List every item that applies, in this order:
 
 1. **Stale manual proofs** — features with stale manual stamps → `→ Run: purlin:verify --manual <feature> <PROOF-N>`
 2. **Features ready for verification** — features with `status: "READY"` → `→ Run: purlin:verify`
@@ -157,27 +173,31 @@ After all sections, print a `---` separator and role-aware priorities. These MUS
 
 ### Consistency check
 
-Before emitting TOP PRIORITIES, cross-reference against the NEEDS ATTENTION entries:
-- If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM priorities, even if `proof_status` shows all rules proved (the proofs were from before the change)
-- If NEEDS ATTENTION says "no missing specs" → PM priorities should not list missing specs
+Before emitting ACTION ITEMS, cross-reference against the NEEDS ATTENTION entries:
+- If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM action items, even if `proof_status` shows all rules proved (the proofs were from before the change)
+- If NEEDS ATTENTION says "no missing specs" → PM action items should not list missing specs
+- **Structural-only with code changes:** If a feature is READY but `structural_only: true` AND it appeared in NEEDS ATTENTION (code changed), it must appear in PM action items: `Spec drift: <name> — code changed, all proofs are structural only (no behavioral coverage) → Run: purlin:spec <name>`
 - Do not contradict the detailed analysis with the summary
 
 ### Format
 
 ```
 ---
-TOP PRIORITIES (PM):
+ACTION ITEMS (PM):
   1. <description> — <action>
   2. <description> — <action>
+  ...
 
-TOP PRIORITIES (Engineer):
+ACTION ITEMS (Engineer):
   1. <description> — <action>
+  ...
 
-TOP PRIORITIES (QA):
+ACTION ITEMS (QA):
   1. <description> — <action>
+  ...
 ```
 
-Omit any role section with no priorities. Limit to 5 items per role.
+Omit any role section with no action items.
 
 ## Guidelines
 
