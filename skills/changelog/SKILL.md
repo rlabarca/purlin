@@ -139,21 +139,21 @@ After all sections, print a `---` separator and role-aware priorities. These MUS
 
 ### PM priorities (ordered)
 
-1. **Missing specs** — BEHAVIORAL changes with no spec → `purlin:spec <name>`
-2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `purlin:spec <name>`
-3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `purlin:unit-test`
+1. **Missing specs** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
+2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `→ Run: purlin:spec <name>`
+3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `→ Run: test <name>`
 
 ### Engineer priorities (ordered)
 
-1. **Failing tests** — features with `status: "FAILING"` in `proof_status` → fix code or tests
-2. **Unproved rules** — features with `status: "partial"` → `purlin:unit-test`
-3. **New unspecced code** — BEHAVIORAL changes with no spec → `purlin:spec <name>`
+1. **Failing tests** — features with `status: "FAILING"` in `proof_status` → `→ Run: test <name>`
+2. **Unproved rules** — features with `status: "partial"` → `→ Run: test <name>`
+3. **New unspecced code** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
 
 ### QA priorities (ordered)
 
-1. **Stale manual proofs** — features with stale manual stamps → `purlin:verify --manual`
-2. **Features ready for verification** — features with `status: "READY"` → `purlin:verify`
-3. **Coverage gaps** — features with `status: "partial"` → `purlin:unit-test`
+1. **Stale manual proofs** — features with stale manual stamps → `→ Run: purlin:verify --manual <feature> <PROOF-N>`
+2. **Features ready for verification** — features with `status: "READY"` → `→ Run: purlin:verify`
+3. **Coverage gaps** — features with `status: "partial"` → `→ Run: test <name>`
 
 ### Consistency check
 
