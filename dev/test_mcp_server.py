@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the Purlin v2 MCP server.
+"""Tests for the Purlin MCP server.
 
 Tests the JSON-RPC transport, tool listing, sync_status with empty and
 fixture specs, and purlin_config read/write.

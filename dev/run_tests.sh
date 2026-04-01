@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run all Purlin v2 dev tests and print summary.
+# Run all Purlin dev tests and print summary.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
