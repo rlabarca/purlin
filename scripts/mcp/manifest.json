@@ -8,6 +8,10 @@
     {
       "name": "purlin_config",
       "description": "Read or update Purlin configuration from .purlin/config.json."
+    },
+    {
+      "name": "changelog",
+      "description": "Structured changelog since last verification. Returns JSON with commits, categorized files, spec changes, and proof status."
     }
   ]
 }

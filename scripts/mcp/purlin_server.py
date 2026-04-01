@@ -337,6 +337,258 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role):
 
 
 # ---------------------------------------------------------------------------
+# changelog tool
+# ---------------------------------------------------------------------------
+
+_NO_IMPACT_PATTERNS = (
+    'docs/', 'assets/', 'templates/', 'references/', '.gitignore', 'LICENSE',
+    'CLAUDE.md', 'README.md', 'RELEASE_NOTES.md', '.mcp.json', 'settings.json',
+)
+
+_TEST_PATTERNS = ('.proofs-', 'test_', '_test.', '.test.', 'tests/', 'dev/test_')
+
+
+def _resolve_since_anchor(project_root, since_arg=None):
+    """Resolve the 'since' anchor to a (ref, description) tuple."""
+    def _run_git(args):
+        try:
+            r = subprocess.run(
+                ['git'] + args, capture_output=True, text=True,
+                cwd=project_root, timeout=10,
+            )
+            return r.stdout.strip() if r.returncode == 0 else ''
+        except (subprocess.SubprocessError, OSError):
+            return ''
+
+    if since_arg:
+        # Integer → HEAD~N
+        try:
+            n = int(since_arg)
+            ref = f'HEAD~{n}'
+            return ref, f'last {n} commits'
+        except ValueError:
+            pass
+        # Date → find earliest commit since that date
+        sha = _run_git(['log', '--oneline', '--reverse', f'--since={since_arg}',
+                         '--format=%H', '-1'])
+        if sha:
+            return f'{sha}^', f'since {since_arg}'
+        return 'HEAD~20', f'since {since_arg} (no commits found, using last 20)'
+
+    # Most recent verify: commit
+    verify_line = _run_git(['log', '--oneline', '--grep=^verify:', '-1',
+                             '--format=%H %ar'])
+    if verify_line:
+        parts = verify_line.split(' ', 1)
+        sha = parts[0]
+        relative = parts[1] if len(parts) > 1 else ''
+        return sha, f'last verification ({relative})'
+
+    # Most recent tag
+    tag = _run_git(['describe', '--tags', '--abbrev=0'])
+    if tag:
+        relative = _run_git(['log', '-1', '--format=%ar', tag])
+        return tag, f'{tag} ({relative})'
+
+    # Fallback
+    return 'HEAD~20', 'last 20 commits (no verification or tag found)'
+
+
+def _get_diff_stat(project_root, since_ref, filepath):
+    """Get +/- line counts for a single file."""
+    try:
+        r = subprocess.run(
+            ['git', 'diff', '--numstat', since_ref + '..HEAD', '--', filepath],
+            capture_output=True, text=True, cwd=project_root, timeout=5,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            parts = r.stdout.strip().split('\t')
+            if len(parts) >= 2:
+                return f'+{parts[0]} -{parts[1]}'
+    except (subprocess.SubprocessError, OSError):
+        pass
+    return ''
+
+
+def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
+    """For changed spec files, detect new/removed rules."""
+    changes = []
+    for spec_path in spec_files_in_diff:
+        feature_name = os.path.splitext(os.path.basename(spec_path))[0]
+        try:
+            r = subprocess.run(
+                ['git', 'diff', since_ref + '..HEAD', '--', spec_path],
+                capture_output=True, text=True, cwd=project_root, timeout=5,
+            )
+            diff_text = r.stdout if r.returncode == 0 else ''
+        except (subprocess.SubprocessError, OSError):
+            diff_text = ''
+
+        new_rules = []
+        removed_rules = []
+        for line in diff_text.splitlines():
+            m = _RULE_RE.search(line)
+            if m:
+                rule_id = m.group(1)
+                if line.startswith('+') and not line.startswith('+++'):
+                    new_rules.append(rule_id)
+                elif line.startswith('-') and not line.startswith('---'):
+                    removed_rules.append(rule_id)
+
+        changes.append({
+            'spec': feature_name,
+            'new_rules': new_rules,
+            'removed_rules': removed_rules,
+        })
+    return changes
+
+
+def changelog(project_root, since=None, role=None):
+    """Generate structured changelog data as JSON."""
+    since_ref, since_desc = _resolve_since_anchor(project_root, since)
+
+    # Gather commits
+    try:
+        r = subprocess.run(
+            ['git', 'log', '--oneline', since_ref + '..HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10,
+        )
+        commits = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()] \
+            if r.returncode == 0 else []
+    except (subprocess.SubprocessError, OSError):
+        commits = []
+
+    # Gather changed files
+    try:
+        r = subprocess.run(
+            ['git', 'diff', '--name-only', since_ref + '..HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10,
+        )
+        changed_files = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()] \
+            if r.returncode == 0 else []
+    except (subprocess.SubprocessError, OSError):
+        changed_files = []
+
+    # Filter deleted files — only keep files that exist on disk
+    changed_files = [
+        f for f in changed_files
+        if os.path.exists(os.path.join(project_root, f))
+    ]
+
+    # Build scope map from specs
+    features = _scan_specs(project_root)
+    scope_to_specs = {}  # source_file → [spec_names]
+    for name, info in features.items():
+        for scope_file in info.get('scope', []):
+            scope_to_specs.setdefault(scope_file, []).append(name)
+
+    # Classify each file
+    file_entries = []
+    spec_files_in_diff = []
+
+    for filepath in changed_files:
+        # specs/ → CHANGED_SPECS
+        if filepath.startswith('specs/') and filepath.endswith('.md'):
+            spec_files_in_diff.append(filepath)
+            spec_name = os.path.splitext(os.path.basename(filepath))[0]
+            file_entries.append({
+                'path': filepath,
+                'category': 'CHANGED_SPECS',
+                'spec': spec_name,
+                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+            })
+            continue
+
+        # Test files or proof files → TESTS_ADDED
+        if any(p in filepath for p in _TEST_PATTERNS):
+            # Try to find associated spec
+            spec_name = None
+            for sname in features:
+                if sname.replace('-', '_') in filepath or sname in filepath:
+                    spec_name = sname
+                    break
+            file_entries.append({
+                'path': filepath,
+                'category': 'TESTS_ADDED',
+                'spec': spec_name,
+                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+            })
+            continue
+
+        # Check scope map → CHANGED_BEHAVIOR
+        matched_specs = scope_to_specs.get(filepath, [])
+        if matched_specs:
+            file_entries.append({
+                'path': filepath,
+                'category': 'CHANGED_BEHAVIOR',
+                'spec': matched_specs[0],
+                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+            })
+            continue
+
+        # Docs/config/assets → NO_IMPACT
+        if any(filepath.startswith(p) or filepath == p or filepath.endswith(p)
+               for p in _NO_IMPACT_PATTERNS) or filepath.endswith('.md'):
+            file_entries.append({
+                'path': filepath,
+                'category': 'NO_IMPACT',
+                'spec': None,
+                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+            })
+            continue
+
+        # Everything else unscoped → NEW_BEHAVIOR
+        file_entries.append({
+            'path': filepath,
+            'category': 'NEW_BEHAVIOR',
+            'spec': None,
+            'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+        })
+
+    # Detect spec rule changes
+    spec_changes = _detect_spec_changes(project_root, since_ref, spec_files_in_diff)
+
+    # Collect proof status per feature
+    all_proofs = _read_proofs(project_root)
+    proof_status = {}
+    for name, info in features.items():
+        if info['is_invariant']:
+            continue
+        total = len(info['rules'])
+        if total == 0:
+            continue
+        feature_proofs = all_proofs.get(name, [])
+        proof_by_rule = {}
+        for p in feature_proofs:
+            rule = p.get('rule', '')
+            if rule not in proof_by_rule:
+                proof_by_rule[rule] = p
+            elif p.get('status') == 'fail':
+                proof_by_rule[rule] = p
+        proved = sum(1 for r in info['rules']
+                     if proof_by_rule.get(r, {}).get('status') == 'pass')
+        failing = [r for r in info['rules']
+                   if proof_by_rule.get(r, {}).get('status') == 'fail']
+        status = 'READY' if proved == total else 'FAILING' if failing else 'partial'
+        proof_status[name] = {
+            'proved': proved,
+            'total': total,
+            'status': status,
+            'failing_rules': failing,
+        }
+
+    result = {
+        'since': since_desc,
+        'commits': commits,
+        'files': file_entries,
+        'spec_changes': spec_changes,
+        'proof_status': proof_status,
+    }
+
+    return json.dumps(result, indent=2)
+
+
+# ---------------------------------------------------------------------------
 # purlin_config tool
 # ---------------------------------------------------------------------------
 
@@ -410,6 +662,25 @@ TOOLS = [
             },
             "required": []
         }
+    },
+    {
+        "name": "changelog",
+        "description": "Structured changelog since last verification. Returns JSON with commits, categorized files, spec changes, and proof status for the purlin:changelog skill to interpret.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "since": {
+                    "type": "string",
+                    "description": "Override anchor: integer for last N commits, or YYYY-MM-DD date."
+                },
+                "role": {
+                    "type": "string",
+                    "description": "Role filter for TOP PRIORITIES: pm, eng, qa, or all.",
+                    "enum": ["pm", "eng", "qa", "all"]
+                }
+            },
+            "required": []
+        }
     }
 ]
 
@@ -463,6 +734,23 @@ def handle_request(request, project_root):
                 result_text = handle_purlin_config(project_root, arguments)
             except Exception as e:
                 result_text = f"Error: {e}"
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": result_text}]
+                }
+            }
+
+        if tool_name == 'changelog':
+            try:
+                result_text = changelog(
+                    project_root,
+                    since=arguments.get('since'),
+                    role=arguments.get('role'),
+                )
+            except Exception as e:
+                result_text = f"Error running changelog: {e}"
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
