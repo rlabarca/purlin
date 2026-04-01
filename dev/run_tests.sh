@@ -20,8 +20,13 @@ run_suite() {
   fi
 }
 
-run_suite "MCP Server Tests" python3 "$SCRIPT_DIR/test_mcp_server.py" -v
+run_suite "MCP Server Tests" pytest "$SCRIPT_DIR/test_mcp_server.py" -v
+run_suite "Config Engine Tests" pytest "$SCRIPT_DIR/test_config_engine.py" -v
 run_suite "Gate Hook Tests" bash "$SCRIPT_DIR/test_gate_hook.sh"
+run_suite "Session Start Tests" bash "$SCRIPT_DIR/test_session_start.sh"
+run_suite "Proof Shell Tests" bash "$SCRIPT_DIR/test_proof_shell.sh"
+run_suite "Proof Jest Tests" bash "$SCRIPT_DIR/test_proof_jest.sh"
+run_suite "Proof Pytest Tests" bash "$SCRIPT_DIR/test_proof_pytest.sh"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━"

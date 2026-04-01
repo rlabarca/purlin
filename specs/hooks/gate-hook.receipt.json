@@ -1,0 +1,50 @@
+{
+  "feature": "gate-hook",
+  "vhash": "d9d851f1",
+  "commit": "151afb4452b4c7866d025460f566f3c7d6f2024b",
+  "timestamp": "2026-04-01T13:43:56.263818+00:00",
+  "rules": [
+    "RULE-1",
+    "RULE-2",
+    "RULE-3",
+    "RULE-4",
+    "RULE-5"
+  ],
+  "proofs": [
+    {
+      "id": "PROOF-1a",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-1b",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2a",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2b",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    }
+  ]
+}

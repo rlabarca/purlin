@@ -11,7 +11,7 @@ MCP server implementing JSON-RPC 2.0 over stdio. Exposes two tools — `sync_sta
 
 - RULE-1: Responds to `initialize` with protocol version, capabilities, and server info
 - RULE-2: Returns no response for `notifications/initialized` (notification handling)
-- RULE-3: `tools/list` returns exactly two tools: `sync_status` and `purlin_config`
+- RULE-3: `tools/list` returns exactly three tools: `sync_status`, `purlin_config`, and `changelog`
 - RULE-4: Unknown methods and unknown tools return JSON-RPC error code -32601
 - RULE-5: Invalid JSON input returns parse error with code -32700
 - RULE-6: `sync_status` scans `specs/**/*.md` for RULE-N lines and `specs/**/*.proofs-*.json` for proof entries, then reports coverage per feature
@@ -24,7 +24,7 @@ MCP server implementing JSON-RPC 2.0 over stdio. Exposes two tools — `sync_sta
 
 - PROOF-1 (RULE-1): `initialize` request returns `protocolVersion`, `capabilities`, and `serverInfo` with name "purlin"
 - PROOF-2 (RULE-2): `notifications/initialized` request produces no response (None)
-- PROOF-3 (RULE-3): `tools/list` response contains exactly `sync_status` and `purlin_config`
+- PROOF-3 (RULE-3): `tools/list` response contains exactly `sync_status`, `purlin_config`, and `changelog`
 - PROOF-4 (RULE-4): Request with unknown method returns error code -32601
 - PROOF-5 (RULE-5): Malformed JSON line produces response with error code -32700
 - PROOF-6 (RULE-6): With a spec containing RULE-1 and no proofs, sync_status reports "0/1 rules proved"

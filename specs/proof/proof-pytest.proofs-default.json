@@ -1,0 +1,50 @@
+{
+  "tier": "default",
+  "proofs": [
+    {
+      "feature": "proof-pytest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_pytest.sh",
+      "test_name": "pass status",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "proof-pytest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_pytest.sh",
+      "test_name": "all required fields",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "proof-pytest",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_pytest.sh",
+      "test_name": "proof file next to spec",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "proof-pytest",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_pytest.sh",
+      "test_name": "unknown feature falls back to specs/",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "proof-pytest",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_pytest.sh",
+      "test_name": "replace on rerun",
+      "status": "pass",
+      "tier": "default"
+    }
+  ]
+}
