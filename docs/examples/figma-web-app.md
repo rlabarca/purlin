@@ -5,7 +5,6 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- Purlin plugin installed (`claude plugin install purlin`)
 - Figma MCP available (for design extraction)
 
 ## Step 1: Create the Project and Initialize
@@ -13,6 +12,12 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 ```bash
 mkdir weather-app && cd weather-app
 git init
+```
+
+Add Purlin as a project-level plugin (this installs it for this project only, not globally):
+
+```bash
+claude plugin add purlin --project
 ```
 
 Then start Claude Code and set up the project:

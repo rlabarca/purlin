@@ -6,15 +6,7 @@
 - Python 3.8+
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
-## Install Purlin
-
-```bash
-claude plugin install purlin
-```
-
-This adds Purlin as a Claude Code plugin. The MCP server, hooks, and skills are available immediately.
-
-## Initialize a Project
+## Set Up a Project
 
 Your project must be a git repository. Purlin uses git for verification receipts, manual proof stamps, changelog history, and commit-based staleness detection.
 
@@ -27,7 +19,19 @@ git init
 cd my-project
 ```
 
-Then start Claude Code and initialize Purlin:
+Add Purlin as a project-level plugin. This installs it for this project only — other projects are unaffected:
+
+```bash
+claude plugin add purlin --project
+```
+
+This registers Purlin's MCP server, hooks, and skills for the project. The plugin config is stored in the project directory so every team member who clones the repo gets Purlin automatically.
+
+Then start Claude Code and initialize the Purlin workspace:
+
+```bash
+claude
+```
 
 ```
 purlin:init

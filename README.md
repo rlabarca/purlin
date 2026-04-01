@@ -32,9 +32,11 @@ auth_login: 2/3 rules proved
 **Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ```bash
-# Add as a Claude Code plugin
-claude plugin install purlin
+cd my-project          # must be a git repo
+claude plugin add purlin --project
 ```
+
+This adds Purlin as a project-level plugin. Every team member who clones the repo gets Purlin automatically.
 
 ## Initialize a Project
 
