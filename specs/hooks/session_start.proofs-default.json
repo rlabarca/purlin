@@ -5,7 +5,7 @@
       "feature": "session_start",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "dev/test_session_start.sh",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_session_start.sh",
       "test_name": "hooks.json SessionStart config matches spec",
       "status": "pass",
       "tier": "default"
@@ -14,7 +14,7 @@
       "feature": "session_start",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "test_file": "dev/test_session_start.sh",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_session_start.sh",
       "test_name": "removes invariant_write_lock when present",
       "status": "pass",
       "tier": "default"
@@ -23,7 +23,7 @@
       "feature": "session_start",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "test_file": "dev/test_session_start.sh",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_session_start.sh",
       "test_name": "no-op when .purlin/runtime does not exist",
       "status": "pass",
       "tier": "default"
@@ -32,7 +32,7 @@
       "feature": "session_start",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "test_file": "dev/test_session_start.sh",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_session_start.sh",
       "test_name": "no-op when lock file does not exist",
       "status": "pass",
       "tier": "default"
@@ -41,7 +41,7 @@
       "feature": "session_start",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "test_file": "dev/test_session_start.sh",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_session_start.sh",
       "test_name": "exit code is always 0",
       "status": "pass",
       "tier": "default"

@@ -81,6 +81,24 @@
       "test_name": "test_spec_quality_guide_coverage",
       "status": "pass",
       "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_quality_guide_test_failure_diagnosis",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_quality_guide_audience_language",
+      "status": "pass",
+      "tier": "default"
     }
   ]
 }

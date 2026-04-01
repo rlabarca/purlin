@@ -22,7 +22,7 @@ cd my-project
 Add Purlin as a project-level plugin. This installs it for this project only — other projects are unaffected:
 
 ```bash
-claude plugin add purlin --project
+claude extension add purlin --project
 ```
 
 This registers Purlin's MCP server, hooks, and skills for the project. The plugin config is stored in the project directory so every team member who clones the repo gets Purlin automatically.
@@ -96,7 +96,7 @@ your-project/
 ## Updating Purlin
 
 ```bash
-claude plugin update purlin
+claude extension update purlin
 ```
 
 This pulls the latest version. Existing specs, proofs, and config are preserved.

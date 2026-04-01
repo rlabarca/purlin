@@ -1,9 +1,6 @@
-M  README.md
-A  docs/examples/figma-web-app.md
-M  docs/index.md
-M  docs/installation-guide.md
-M  docs/invariants-guide.md
-M  docs/lifecycle-guide.md
-D  docs/spec-code-sync-guide.md
-M  docs/testing-workflow-guide.md
-?? .purlin/cache/
+M .purlin/cache/feature_status.json
+ M .purlin/cache/status.json
+ M .purlin/cache/status_commit_cache.json
+ M specs/hooks/session_start.proofs-default.json
+ M specs/instructions/purlin_references.proofs-default.json
+ M specs/instructions/purlin_skills.proofs-default.json

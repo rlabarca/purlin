@@ -54,6 +54,60 @@
       "test_name": "test_mcp_skills_reference_tools",
       "status": "pass",
       "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_build_and_unittest_require_sync_status",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_verify_prohibits_modifying_files",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_build_has_failure_diagnosis_guidance",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_changelog_requires_reading_diffs",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_spec_has_delta_report_structure",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_proof_writing_skills_have_tier_review",
+      "status": "pass",
+      "tier": "default"
     }
   ]
 }
