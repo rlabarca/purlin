@@ -5,16 +5,18 @@
 
 ## What it does
 
-Defines the format for verification receipts issued by `purlin:verify` when a feature achieves 100% rule coverage. Receipts contain a verification hash (vhash) computed from rule IDs and proof statuses, providing a tamper-evident record of full coverage at a specific commit.
+Defines the verification receipt format issued by `purlin:verify` when all rules for a feature have passing proofs. Receipts contain a vhash (verification hash) computed as `sha256(sorted rule IDs + sorted proof ID:status pairs)`, truncated to 8 hex characters. Receipts serve as a point-in-time attestation that a feature's rules are fully proved.
 
 ## Rules
 
-- RULE-1: A receipt MUST only be issued when every rule in the spec has a passing proof
-- RULE-2: The vhash MUST be computed as `sha256(sorted_rule_ids + "|" + sorted_proof_id:status_pairs)[:8]`
-- RULE-3: Receipts MUST record the commit SHA, timestamp, and complete list of rules and proof statuses
+- RULE-1: Receipt files are named `<feature>.receipt.json` and live in the same directory as their spec
+- RULE-2: The vhash is computed as `sha256(comma-joined sorted RULE IDs + "|" + comma-joined sorted "PROOF-N:status" pairs)`, truncated to 8 hex chars
+- RULE-3: A receipt is only issued when every RULE in the spec has at least one passing PROOF
+- RULE-4: The vhash changes when rules are added, removed, or when proof statuses change
 
 ## Proof
 
-- PROOF-1 (RULE-1): sync_status reports "READY" and displays vhash only when proved == total for a feature
-- PROOF-2 (RULE-2): The _compute_vhash function produces an 8-character hex string from sorted rule IDs and proof ID:status pairs joined by "|"
-- PROOF-3 (RULE-3): Receipt JSON files contain commit, timestamp, rules, and proof status fields
+- PROOF-1 (RULE-1): After verification, confirm `<feature>.receipt.json` exists next to the spec file
+- PROOF-2 (RULE-2): Compute vhash manually from known rule/proof sets; verify it matches the receipt's vhash field
+- PROOF-3 (RULE-3): Attempt verification with a missing proof; confirm no receipt is issued
+- PROOF-4 (RULE-4): Add a rule to a spec and re-verify; confirm vhash differs from previous receipt
