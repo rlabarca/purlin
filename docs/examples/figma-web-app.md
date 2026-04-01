@@ -4,17 +4,26 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 
 ## Prerequisites
 
-- A project directory with `package.json` (React, Next.js, or similar)
-- Purlin plugin installed
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- Purlin plugin installed (`claude plugin install purlin`)
 - Figma MCP available (for design extraction)
 
-## Step 1: Initialize
+## Step 1: Create the Project and Initialize
 
-```
-create a new weather app project with React and Tailwind
+```bash
+mkdir weather-app && cd weather-app
+git init
+npm init -y
+npm install react react-dom tailwindcss
 ```
 
-Claude creates the project. Then:
+Then start Claude Code in the project directory:
+
+```bash
+claude
+```
+
+And initialize Purlin:
 
 ```
 purlin:init

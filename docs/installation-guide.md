@@ -16,6 +16,19 @@ This adds Purlin as a Claude Code plugin. The MCP server, hooks, and skills are 
 
 ## Initialize a Project
 
+Your project must be a git repository. Purlin uses git for verification receipts, manual proof stamps, changelog history, and commit-based staleness detection.
+
+```bash
+# New project
+mkdir my-project && cd my-project
+git init
+
+# Existing project — just cd into it
+cd my-project
+```
+
+Then start Claude Code and initialize Purlin:
+
 ```
 purlin:init
 ```
