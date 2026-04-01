@@ -23,7 +23,8 @@ Purlin — Spec-Driven Development
   Reporting
   ──────
   purlin:status                 Show rule coverage via sync_status (with → directives)
-  purlin:changelog [--since N]  Plain-English summary of changes since last verify
+  purlin:changelog [pm|eng|qa] [--since N]
+                                Plain-English summary of changes since last verify
 
   Project
   ──────
