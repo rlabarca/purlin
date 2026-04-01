@@ -1,6 +1,6 @@
 # Purlin Commands
 
-> Read and printed by `purlin:help`. 12 skills, no modes, no permission system.
+> Read and printed by `purlin:help`. 13 skills, no modes, no permission system.
 
 ```
 Purlin — Spec-Driven Development
@@ -20,9 +20,13 @@ Purlin — Spec-Driven Development
   purlin:verify --audit         Clean-room re-execution, compare vhash to receipts
   purlin:verify --manual <f> <P>  Stamp a manual proof
 
-  Project
+  Reporting
   ──────
   purlin:status                 Show rule coverage via sync_status (with → directives)
+  purlin:changelog [--since N]  Plain-English summary of changes since last verify
+
+  Project
+  ──────
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
   purlin:config [key] [value]   View or change .purlin/config.json settings
   purlin:invariant <cmd>        Sync read-only constraints from external sources
@@ -41,6 +45,7 @@ Purlin — Spec-Driven Development
 | `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
 | `purlin:unit-test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
+| `purlin:changelog` | Changes since last verify | Nothing (read-only) |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
 | `purlin:invariant` | Sync external constraints | `specs/_invariants/i_*.md` |
 | `purlin:find` | Search specs | Nothing (read-only) |

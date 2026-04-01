@@ -74,6 +74,17 @@ Full format: `references/formats/proofs_format.md`
 
 Everything else is optional guidance. See `references/hard_gates.md`.
 
+## Implicit Routing
+
+When the user's intent is clear, act directly:
+- "test X" / "build X" / "fix X" → read `specs/**/X.md`, build code if missing, write tests, iterate until `sync_status` shows READY
+- "what's the status?" → call `sync_status`
+- "what changed?" / "changelog" / "what happened since last verify?" → use `purlin:changelog`
+- "write a spec for X" → use `purlin:spec`
+- "verify" / "ship" → run `purlin:verify`
+
+If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
+
 ## Skills (optional tools)
 
 | Skill | Purpose |
@@ -83,6 +94,7 @@ Everything else is optional guidance. See `references/hard_gates.md`.
 | `purlin:verify` | Run all tests, issue verification receipts |
 | `purlin:unit-test` | Run tests, emit proof files |
 | `purlin:status` | Show rule coverage via sync_status |
+| `purlin:changelog` | Plain-English summary of changes since last verification |
 | `purlin:init` | Initialize project, scaffold proof plugin |
 | `purlin:invariant` | Sync read-only constraints from external sources |
 | `purlin:find` | Search specs by name |
