@@ -80,20 +80,22 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - If consolidated: merge into a single spec whose rules cover the shared behavior and add per-implementation rules only where behavior diverges (e.g., marker syntax differences).
    - If kept separate: proceed, but note the overlap so the user is aware.
 
-6. **Detect anchor/invariant candidates** from cross-cutting concerns. Classify by type prefix:
+6. **Detect anchor/invariant candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
 
-   | Prefix | Domain |
-   |--------|--------|
-   | `api_` | API contracts, REST conventions |
-   | `security_` | Auth, access control, secrets |
-   | `design_` | Visual standards, layout |
-   | `brand_` | Voice, naming, identity |
-   | `platform_` | Platform constraints, browser support |
-   | `schema_` | Data models, validation |
-   | `legal_` | Privacy, data handling, compliance |
-   | `prodbrief_` | User stories, UX requirements |
+   | Prefix | Domain | Detection heuristics |
+   |--------|--------|---------------------|
+   | `api_` | API contracts, REST conventions | Shared route patterns, middleware chains, response envelope formats, error response shapes, pagination conventions. Look for: express Router, Flask blueprints, API versioning patterns |
+   | `security_` | Auth, access control, secrets | Auth middleware, password hashing, token validation, input sanitization, CORS config, rate limiting. Look for: bcrypt, JWT, helmet, csrf, rate-limit imports |
+   | `design_` | Visual standards, layout | Shared UI component libraries, CSS token files, theme configs, layout patterns. Look for: styled-components, tailwind config, design token files, shared component directories |
+   | `schema_` | Data models, validation | Database models, ORM definitions, migration files, validation schemas, shared types. Look for: sequelize/prisma/sqlalchemy models, zod/joi schemas, TypeScript interfaces in shared dirs |
+   | `platform_` | Platform constraints, browser support | Browser compat configs, polyfills, platform-specific code paths, accessibility helpers. Look for: browserslist, babel config, a11y utilities |
+   | `brand_` | Voice, naming, identity | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
+   | `prodbrief_` | User stories, UX requirements | User flow definitions, feature flags, A/B test configs, analytics event schemas. Look for: feature flag configs, analytics track calls, user journey comments |
+   | `legal_` | Privacy, data handling, compliance | Cookie consent, privacy policy references, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
 
-   **Security anchor detection (mandatory):** In addition to the general cross-cutting scan above, specifically grep the scanned directories for dangerous patterns:
+   **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor — not be buried in individual feature specs. After detecting candidates, group them: "These N features all use `<pattern>` → propose anchor: `<prefix>_<name>`." Present the grouping evidence to the user for confirmation.
+
+   **Security anchor detection (mandatory):** In addition to the heuristic scan above, specifically grep the scanned directories for dangerous patterns:
    - `eval(`, `exec(` — arbitrary code execution
    - `os.system(` — unquoted shell execution
    - `subprocess` calls with `shell=True` — shell injection vector
@@ -173,6 +175,7 @@ For each category:
 
 > Requires: <anchor_name> (if applicable)
 > Scope: <source files>
+> Stack: <language>/<framework>, <key libraries>, <patterns>
 
 ## What it does
 
@@ -190,12 +193,21 @@ For each category:
 
 ## Implementation Notes
 
-<!-- Include this section only if significant code comments were found -->
-Extracted from source:
-- TODO: <description> (file:line)
-- Architectural decision: <description> (file:line)
-- Known issue: <description> (file:line)
+Extracted from source (include when architecturally significant):
+- Design pattern: <description> (file:line)
+- Caching strategy: <description> (file:line)
+- Concurrency model: <description> (file:line)
+- Data flow: <description> (file:line)
+- Key tradeoff: <description> (file:line)
+- TODO/Known issue: <description> (file:line)
 ```
+
+**`> Stack:` metadata:** Populate from the actual imports/dependencies in the feature's source files, not the project-level tech stack. Phase 1 Agent B detects the project stack; Phase 3 narrows it per-feature by reading source imports.
+
+Examples:
+- `> Stack: python/stdlib, subprocess (list-only), json, hashlib`
+- `> Stack: node/express, axios, redis (cache), JWT auth`
+- `> Stack: shell/bash, jq, curl`
 
 4. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
@@ -248,10 +260,15 @@ Next:
 
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
-- **Conservative rule count.** Start with 2–5 rules per feature. Users can add more via `purlin:spec`.
+- **Thorough rule extraction.** Aim for 5–10 rules per feature to capture enough detail for rebuild scenarios. Specifically extract:
+  - Error handling paths (each distinct error response = a rule)
+  - Configuration behavior (defaults, overrides, env var fallbacks)
+  - Data flow rules (what goes in, what comes out, what gets cached/logged)
+  - Boundary conditions (max lengths, timeouts, retry limits)
+  Users can trim via `purlin:spec` if rules are excessive.
 - **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top.
 - **Anchors for cross-cutting concerns only.** Auth middleware is an anchor. A single utility function is not.
-- **Implementation Notes are optional.** Only include when source comments contain TODOs, architectural decisions, or known issues worth preserving.
+- **Implementation Notes capture architecture, not just TODOs.** Include whenever the source reveals decisions a rebuilding agent would need to replicate. Extract: design patterns used ("middleware chain for auth"), caching strategies ("write-through with 10min TTL"), concurrency model ("single-threaded event loop"), data flow ("request → validate → transform → persist → respond"), and key tradeoffs ("chose sliding window rate limiter over fixed window for fairness"). Omit the section only if the feature has trivially simple implementation with no architectural choices.
 - **Observable assertion quality.** Proof descriptions must specify concrete inputs and expected outputs so an agent can write the test without interpretation. Avoid vague verbs like "test", "verify", "check" without specifying *what* is asserted.
 
   Bad: `PROOF-1 (RULE-1): Test the login`
