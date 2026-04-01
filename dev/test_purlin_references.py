@@ -1,4 +1,4 @@
-"""Tests for purlin_references — 9 rules.
+"""Tests for purlin_references — 11 rules.
 
 Grep-based structural verification of the 8 reference documents
 that define Purlin's formats, conventions, and quality standards.
@@ -89,3 +89,17 @@ class TestPurlinReferences:
         assert re.search(r'5.{1,5}10', content), "Missing 5-10 rules guidance"
         assert 'FORBIDDEN' in content
         assert re.search(r'[Tt]ier', content)
+
+    @pytest.mark.proof("purlin_references", "PROOF-10", "RULE-10")
+    def test_quality_guide_test_failure_diagnosis(self):
+        content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
+        assert 'Code bug' in content, "Missing 'Code bug' diagnosis category"
+        assert 'Test bug' in content, "Missing 'Test bug' diagnosis category"
+        assert 'Spec drift' in content, "Missing 'Spec drift' diagnosis category"
+        assert 'Assertion Integrity' in content, "Missing Assertion Integrity section"
+
+    @pytest.mark.proof("purlin_references", "PROOF-11", "RULE-11")
+    def test_quality_guide_audience_language(self):
+        content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
+        assert 'Audience-Appropriate Language' in content, \
+            "Missing Audience-Appropriate Language section"

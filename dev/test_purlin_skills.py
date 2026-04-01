@@ -1,4 +1,4 @@
-"""Tests for purlin_skills — 6 rules.
+"""Tests for purlin_skills — 12 rules.
 
 Structural verification of the 12 skill definition files under skills/.
 """
@@ -76,3 +76,49 @@ class TestPurlinSkills:
             content = _read(path)
             assert tool_name in content, \
                 f"{skill} skill doesn't reference MCP tool '{tool_name}'"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-7", "RULE-7")
+    def test_build_and_unittest_require_sync_status(self):
+        for skill in ('build', 'unit-test'):
+            path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
+            content = _read(path)
+            assert 'sync_status' in content, \
+                f"{skill} skill doesn't reference sync_status"
+        build = _read(os.path.join(SKILLS_DIR, 'build', 'SKILL.md'))
+        assert 'not optional' in build, \
+            "build skill doesn't state sync_status is not optional"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-8", "RULE-8")
+    def test_verify_prohibits_modifying_files(self):
+        content = _read(os.path.join(SKILLS_DIR, 'verify', 'SKILL.md'))
+        assert 'NEVER modify' in content, \
+            "verify skill missing 'NEVER modify' read-only constraint"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-9", "RULE-9")
+    def test_build_has_failure_diagnosis_guidance(self):
+        content = _read(os.path.join(SKILLS_DIR, 'build', 'SKILL.md'))
+        assert 'diagnose' in content, \
+            "build skill missing test failure diagnosis guidance"
+        assert 'Never weaken' in content, \
+            "build skill missing 'Never weaken' assertion guardrail"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-10", "RULE-10")
+    def test_changelog_requires_reading_diffs(self):
+        content = _read(os.path.join(SKILLS_DIR, 'changelog', 'SKILL.md'))
+        assert 'git diff' in content, \
+            "changelog skill missing git diff requirement"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-11", "RULE-11")
+    def test_spec_has_delta_report_structure(self):
+        content = _read(os.path.join(SKILLS_DIR, 'spec', 'SKILL.md'))
+        for keyword in ('KEEPING', 'ADDING', 'REMOVING'):
+            assert keyword in content, \
+                f"spec skill missing '{keyword}' in delta report structure"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-12", "RULE-12")
+    def test_proof_writing_skills_have_tier_review(self):
+        for skill in ('build', 'spec'):
+            path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
+            content = _read(path)
+            assert re.search(r'(?i)tier', content), \
+                f"{skill} skill missing tier review requirement"
