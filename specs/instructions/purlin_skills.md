@@ -16,6 +16,12 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - RULE-4: Skill names in frontmatter match their directory names (e.g., `skills/build/SKILL.md` has `name: build`)
 - RULE-5: Skills that modify files (build, spec, unit-test, verify, init, invariant, config) include commit instructions or git operations
 - RULE-6: Skills that call MCP tools (status, changelog, config, find) reference the tool by name (`sync_status`, `changelog`, `purlin_config`)
+- RULE-7: Build and unit-test skills require calling `sync_status` after tests and state it is not optional
+- RULE-8: Verify skill prohibits modifying code or test files during verification
+- RULE-9: Build skill includes test failure diagnosis guidance requiring root cause analysis before fixing
+- RULE-10: Changelog skill requires reading git diffs for behavioral changes, not just interpreting MCP categories
+- RULE-11: Spec skill update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
+- RULE-12: Skills that write proof descriptions (build, spec, spec-from-code) include mandatory tier tag review
 
 ## Proof
 
@@ -25,3 +31,9 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - PROOF-4 (RULE-4): For each `skills/*/SKILL.md`, extract the `name:` from frontmatter and the directory name; verify they match
 - PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md` for `git commit` or `commit`; verify each contains commit-related instructions
 - PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/changelog/SKILL.md` for `changelog`; grep `skills/config/SKILL.md` for `purlin_config`; verify each references its MCP tool
+- PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` and `skills/unit-test/SKILL.md` for `sync_status`; verify both contain the reference. Grep build for "not optional"; verify present.
+- PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
+- PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both are present
+- PROOF-10 (RULE-10): Grep `skills/changelog/SKILL.md` for `git diff`; verify the diff-reading requirement is present
+- PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING` and `ADDING` and `REMOVING`; verify the delta report structure is present
+- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for `tier`; grep `skills/spec/SKILL.md` for `tier`; verify both contain tier review requirements
