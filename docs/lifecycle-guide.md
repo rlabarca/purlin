@@ -185,6 +185,76 @@ Four messages. Spec → code → tests → receipt.
 
 ---
 
+## How AI Instructions Fit into Rule-Proof Design
+
+Not all of Purlin's behavior lives in Python or shell scripts. Agent definitions (`agents/purlin.md`), skill definitions (`skills/*/SKILL.md`), and reference docs (`references/`) are instructions that control what the AI does. They're as much "code" as the MCP server — if someone changes the spec quality guide, Purlin's behavior changes.
+
+But instructions aren't testable the same way executable code is. You can't call a function on a markdown file. So Purlin uses two levels of verification:
+
+### Level 2: Structural specs (cheap, fast)
+
+Spec the structure of instructions — verify sections exist, required content is present, naming conventions are followed.
+
+```markdown
+# Feature: purlin_references
+
+> Scope: references/spec_quality_guide.md, references/formats/*.md
+
+## Rules
+- RULE-1: spec_quality_guide.md contains sections for Tier Tags, FORBIDDEN Grep Precision, and Edge Case Specificity
+- RULE-2: Every format file in references/formats/ has a Template section with a complete example
+
+## Proof
+- PROOF-1 (RULE-1): Grep spec_quality_guide.md for "## Tier Tags", "## FORBIDDEN Grep Precision", "## Edge Case"; verify all present
+- PROOF-2 (RULE-2): For each file in references/formats/, grep for "## Template"; verify present
+```
+
+These are default-tier tests. They catch accidental deletions and structural drift immediately.
+
+### Level 3: E2E integration tests (expensive, nightly)
+
+The real proof that instructions work is: **does the agent produce correct output when following them?**
+
+```markdown
+# Feature: e2e_purlin_lifecycle
+
+> Scope: agents/purlin.md, skills/*/SKILL.md, references/**
+> Requires: schema_spec_format, schema_proof_file
+
+## Rules
+- RULE-1: purlin:init creates .purlin/ and specs/ directories
+- RULE-2: purlin:spec-from-code generates specs with numbered rules and observable proofs
+- RULE-3: purlin:unit-test emits proof files next to specs
+- RULE-4: purlin:status reports coverage with → directives
+- RULE-5: purlin:verify issues receipts with valid vhash
+
+## Proof
+- PROOF-1 (RULE-1): Run purlin:init on empty project; verify directories exist @e2e
+- PROOF-2 (RULE-2): Run purlin:spec-from-code; verify generated specs have RULE-N and PROOF-N lines @e2e
+- PROOF-3 (RULE-3): Run tests with proof markers; verify .proofs-*.json files appear next to specs @e2e
+- PROOF-4 (RULE-4): Run sync_status; verify output contains → directives @e2e
+- PROOF-5 (RULE-5): Run purlin:verify; verify receipt.json with vhash @e2e
+```
+
+The E2E test exercises every instruction file in the system. If the agent definition is wrong, the E2E breaks. If the spec quality guide is missing a section, generated specs will lack that quality, and the structural spec catches it.
+
+### Where these specs live
+
+| Category | What goes there |
+|----------|----------------|
+| `specs/integration/` | E2E flows testing the full system |
+| `specs/instructions/` | Structural specs for agent instructions (references, skills) |
+
+### The bottom line
+
+You don't need to write simulation tests for every reference doc. You need:
+- **Structural specs** (cheap) that catch deletions and drift → `specs/instructions/`
+- **One solid E2E flow** (expensive, `@e2e` tier, runs nightly) that proves the whole system works → `specs/integration/`
+
+The structural specs are the smoke detector. The E2E is the fire drill.
+
+---
+
 ## CI Integration
 
 ```yaml
