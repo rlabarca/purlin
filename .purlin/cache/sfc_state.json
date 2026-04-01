@@ -1,7 +1,0 @@
-{
-  "phase": 2,
-  "status": "complete",
-  "started_at": "2026-04-01T00:00:00Z",
-  "directories": { "include": ["agents", "dev", "hooks", "references", "scripts", "skills"] },
-  "completed_categories": []
-}
