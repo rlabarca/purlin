@@ -81,8 +81,11 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    | `api_` | API contracts, REST conventions |
    | `security_` | Auth, access control, secrets |
    | `design_` | Visual standards, layout |
+   | `brand_` | Voice, naming, identity |
    | `platform_` | Platform constraints, browser support |
    | `schema_` | Data models, validation |
+   | `legal_` | Privacy, data handling, compliance |
+   | `prodbrief_` | User stories, UX requirements |
 
    Ask the user (via `AskUserQuestion`) to confirm, rename, or remove proposed anchors.
 
