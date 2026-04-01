@@ -1,192 +1,134 @@
 # Testing Workflow Guide
 
-The complete journey from idea to verified, regression-tested feature.
+Purlin's testing workflow connects spec rules to test results through **proof markers**. Tests emit proof files, and `sync_status` diffs them against spec rules to show coverage.
 
----
-
-## The Big Picture
-
-Purlin uses one agent with three roles, working in sequence. Each role discovers its own work from the previous role's commits — you don't coordinate between them.
+## The Flow
 
 ```
-PM → Engineer → QA
-↑                 |
-+-- discoveries --+
+Spec (RULE-1, RULE-2)  -->  Tests (@proof markers)  -->  Proof files (.proofs-*.json)  -->  sync_status report
 ```
 
-**PM** writes the spec. **Engineer** implements it. **QA** verifies it and automates what it can. When verification reveals problems, discoveries flow back to PM or Engineer for resolution.
+## Step 1: Write Proof Markers
 
----
+Add proof markers to your tests to link them to spec rules.
 
-## Step 1: Write the Spec (PM)
+### pytest
 
-Create a spec:
+```python
+@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1")
+def test_valid_login():
+    resp = client.post("/login", json={"user": "alice", "pass": "secret"})
+    assert resp.status_code == 200
 
-```
-purlin:spec dashboard-overview
-```
-
-PM mode asks questions about scope, edge cases, behavior, and constraints, then produces a feature spec with:
-
-- **Requirements** — behavioral rules.
-- **QA Scenarios** — verification steps (written untagged — QA classifies them later).
-- **Unit Tests** — what Engineer mode will automate.
-- **Visual Specification** — token maps and checklists (when designs exist).
-
-### With Figma Designs
-
-First, import the design as an invariant (one-time setup):
-
-```
-purlin:invariant add-figma https://www.figma.com/design/ABC123/My-App
+@pytest.mark.proof("auth_login", "PROOF-2", "RULE-2", tier="slow")
+def test_rate_limiting():
+    # tier="slow" writes to a separate proof file
+    ...
 ```
 
-Then reference it during spec authoring — `purlin:spec` reads the Figma design via MCP, extracts components and tokens, and generates `brief.json` (structured design data that Engineer mode reads instead of needing Figma access).
+### Jest
 
-### Without Designs
-
-Describe the feature in plain language. PM mode asks clarifying questions and builds the spec from your answers.
-
----
-
-## Step 2: Build and Test (Engineer)
-
-Build the feature:
-
-```
-purlin:build dashboard-overview
+```javascript
+it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async () => {
+  const resp = await post("/login", { user: "alice", pass: "secret" });
+  expect(resp.status).toBe(200);
+});
 ```
 
-Engineer mode reads the spec and:
+The marker is embedded in the test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
 
-1. **Implements** — writes application code, scripts, and config files.
-2. **Writes unit tests** — tested against a quality rubric (tests must fail when the implementation is removed, assert specific values, use realistic inputs).
-3. **Verifies visual specs** — for web features, checks every visual checklist item via Playwright.
-4. **Commits a status tag:**
-   - `[Complete]` if only unit tests exist (QA never sees this feature).
-   - `[Ready for Verification]` if QA scenarios exist (QA picks it up next).
+### Shell
 
-When the engineer discovers something the spec didn't anticipate, it records the decision in a companion file so PM can review it later.
+```bash
+source .purlin/plugins/purlin-proof.sh
 
----
-
-## Step 3: Verify (QA)
-
-Verify the feature:
-
-```
-purlin:verify                        # Verify all TESTING features
-purlin:verify dashboard-overview     # Verify a specific feature
-purlin:verify --auto-fix             # Enable auto-fix iteration loop
+purlin_proof "auth_login" "PROOF-1" "RULE-1" pass "valid login returns 200"
+purlin_proof "auth_login" "PROOF-2" "RULE-2" pass "invalid login returns 401"
+purlin_proof_finish  # writes proof files
 ```
 
-QA mode finds all features marked `[Ready for Verification]` and runs through them.
-
-### Automated Phase
-
-1. Credits features Engineer mode already completed (unit-tests-only).
-2. Runs smoke tests first (if configured) — catches critical breakage early.
-3. Executes `@auto` regression scenarios from prior sessions.
-4. Classifies new scenarios: proposes automation where possible, tags the rest `@manual`.
-5. Commits status tags for everything that passed automated checks.
-
-### Manual Phase
-
-Presents a numbered checklist of remaining `@manual` items. You perform each step and report pass/fail. Failures become discoveries routed to the appropriate mode.
-
-### After Verification
-
-- **Zero discoveries** — QA mode marks the feature `[Complete] [Verified]`.
-- **Bugs found** — Recorded as `[BUG]` discoveries, routed to Engineer mode.
-- **Spec issues** — Recorded as `[DISCOVERY]`, `[INTENT_DRIFT]`, or `[SPEC_DISPUTE]`, routed to PM mode.
-
----
-
-## How Regression Testing Works
-
-Regression tests ensure that features keep working after future changes.
-
-### Who Does What
-
-| Role | Responsibility |
-|------|----------------|
-| **PM** | Writes QA scenarios in the spec (untagged). |
-| **Engineer** | Writes and maintains unit tests. Results in `tests.json`. |
-| **QA** | Authors regression scenario files, classifies scenarios, evaluates results. Results in `regression.json`. |
-
-### The Regression Cycle
-
-1. **QA mode authors regression files** from the spec's QA scenarios (`purlin:regression author`). Regression scenario files (`tests/qa/scenarios/*.json`) are write-guard protected — they can only be written through `purlin:regression` or `purlin:verify`, not manually.
-2. **You run the suite** in a separate terminal (`./tests/qa/run_all.sh`).
-3. **QA mode evaluates results** (`purlin:regression evaluate`) — creates bug reports for failures, reports test quality.
-
-### When Results Go Stale
-
-A regression result becomes stale when the feature's source code changes, the test infrastructure changes, or the prior run failed. Stale features are prioritized for re-testing and can't be marked complete until they pass again.
-
----
-
-## How Smoke Testing Works
-
-Smoke tests are the critical-path checks that run before everything else.
-
-### Who Does What
-
-| Role | Responsibility |
-|------|----------------|
-| **PM** | Writes the scenarios that become smoke tests. |
-| **QA** | Decides which features are smoke-tier (`purlin:regression`), authors simplified smoke regressions. |
-| **Engineer** | Fixes smoke test failures (they're blocking). |
-
-### How It Fits In
-
-During QA verification, smoke-tier features run first (Phase A, Step 2). If any fail, QA mode halts and asks whether to stop or continue. This catches catastrophic breakage before you spend time on less critical features.
-
-### Setting It Up
+## Step 2: Run Tests
 
 ```
-purlin:regression promote config-layering  # Promote a feature to smoke tier
-purlin:regression suggest                 # Get suggestions for which features to promote
+purlin:unit-test
 ```
 
-QA mode adds the feature to the smoke tier and optionally creates a quick regression (1-3 scenarios, under 30 seconds).
+This runs your test suite. The proof plugin collects marked tests and writes proof JSON files next to the corresponding spec:
 
-Every project should have 5-15 smoke features covering the functionality users would notice first if broken.
+```
+specs/auth/auth_login.proofs-default.json
+specs/auth/auth_login.proofs-slow.json
+```
 
----
+Each proof file contains:
+```json
+{
+  "tier": "default",
+  "proofs": [
+    {
+      "feature": "auth_login",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "tests/test_login.py",
+      "test_name": "test_valid_login",
+      "status": "pass",
+      "tier": "default"
+    }
+  ]
+}
+```
 
-## Fixtures
+## Step 3: Check Coverage
 
-Some test scenarios need controlled project state — specific config values, git history, or branch structures. Purlin uses **fixture tags**: immutable git tags in a dedicated repo, each representing a snapshot of project state.
+```
+purlin:status
+```
 
-PMs declare fixture tags in specs (`### 2.x Integration Test Fixture Tags`). Engineers create the fixture repo and tags during `purlin:build`. QA references tags in regression scenario JSON. The harness runner checks out tags at test time and cleans up after each scenario.
+The `sync_status` MCP tool reads specs and proof files, then reports:
 
-**Fixture repos** live at `.purlin/runtime/fixture-repo` (local, gitignored) or at a URL configured via `fixture_repo_url` in `.purlin/config.json` (team-shared). For simple state (one file, one env var), use inline `setup_commands` in scenario JSON instead.
+```
+auth_login: 2/3 rules proved
+  RULE-1: PASS (PROOF-1 in tests/test_login.py)
+  RULE-2: PASS (PROOF-2 in tests/test_login.py)
+  RULE-3: NO PROOF
+  --> Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
+  --> Run: purlin:unit-test
+```
 
-Tags are immutable once created. The fixture repo is derived (not precious state) and can be regenerated from project files.
+When all rules are proved:
 
----
+```
+auth_login: READY
+  3/3 rules proved
+  vhash=a1b2c3d4
+  --> No action needed.
+```
 
-## Quick Reference
+## Step 4: Verify
 
-### By Situation
+```
+purlin:verify
+```
 
-| You want to... | What to do |
-|----------------|------------|
-| Build a new feature from Figma | `purlin:spec` → `purlin:build` → `purlin:verify` |
-| Build a feature without designs | `purlin:spec` → `purlin:build` → `purlin:verify` |
-| Fix bugs found during QA | `purlin:build`, then `purlin:verify` |
-| Resolve a spec dispute | `purlin:spec`, then `purlin:build`, then `purlin:verify` |
-| Set up regression coverage | `purlin:regression author` |
-| Add smoke tests | `purlin:regression promote feature-name` |
-| Run the full regression suite | Terminal: `./tests/qa/run_all.sh` |
+Runs ALL tests and issues verification receipts for features with 100% rule coverage. A receipt is the proof that every rule has been tested and passed.
 
-### Key Commands
+## Manual Proofs
 
-| Command | Mode | What It Does |
-|---------|------|--------------|
-| `purlin:spec <topic>` | PM | Create or update a feature spec. |
-| `purlin:build [name]` | Engineer | Implement a feature from its spec. |
-| `purlin:verify [name]` | QA | Run the verification workflow. |
-| `purlin:regression <cmd>` | QA | Author, run, evaluate regressions, and manage smoke tier (`promote`, `suggest`). |
-| `purlin:status` | Everyone | See what needs doing. |
+Some rules can't be tested automatically (visual checks, UX flows). Use manual proof stamps in the spec's `## Proof` section:
+
+```markdown
+## Proof
+- PROOF-1 (RULE-1): @manual(user@example.com, 2026-03-15, abc1234)
+```
+
+The stamp includes who verified, when, and which commit SHA was current. If scope files change after the stamp's commit, `sync_status` reports the proof as **STALE**.
+
+## Tiers
+
+Proof markers support a `tier` parameter (default: `"default"`). Tiers let you separate fast unit tests from slow integration tests:
+
+```python
+@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1", tier="integration")
+```
+
+Each tier writes to a separate file: `feature.proofs-integration.json`. The `sync_status` tool reads all tiers.
