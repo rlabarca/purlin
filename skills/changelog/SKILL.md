@@ -33,85 +33,134 @@ The tool returns structured JSON containing:
 
 Deleted files are already filtered out by the tool — only files that exist on disk are included.
 
-## Step 2 — Interpret and Refine
+## Step 2 — Analyze and Classify Each Change
 
-Read the JSON and apply judgment in one pass:
+For each file in the changelog MCP output, the agent must perform the following analysis. Do not summarize multiple files into one paragraph — analyze each change individually, then group by logical change.
 
-1. **Refine NEW_BEHAVIOR entries.** The tool mechanically flags all unscoped code files as NEW_BEHAVIOR. Review the file paths and diff_stats — reclassify internal helpers, utilities, build scripts, or trivial files as NO_IMPACT. Only keep genuinely new user-facing functionality as NEW_BEHAVIOR.
+### 2a — Read the actual diff
 
-2. **Group related files.** Multiple files that belong to the same logical change should be grouped under a single summary line. Use commit messages from the `commits` list for context.
+The MCP tool tells you WHICH files changed. You need to understand WHAT the changes mean. For every file categorized as CHANGED_BEHAVIOR or NEW_BEHAVIOR, read the git diff for that file:
 
-3. **Write for the reader, not the coder.** The changelog is for PMs and QA, not engineers. Translate implementation details into user-visible impact:
-   - "Refactored the authentication middleware to use a strategy pattern" → "Changed how login works internally (no user-facing changes)"
-   - "Added rate limiting to /api/v2/users endpoint" → "Users who make too many API requests will now be temporarily blocked"
-   - "Fixed N+1 query in user list resolver" → "User list page loads faster"
+```bash
+git diff <since_ref> -- <file_path>
+```
 
-   Technical details go in NO IMPACT. Behavioral changes in CHANGED BEHAVIOR must describe what the USER sees, not what the CODE does.
+Use the `since` field from the MCP output to determine the ref. Do not skip this step — the MCP tool's `category` and `diff_stat` are mechanical classifications, not semantic understanding.
+
+### 2b — Classify the significance
+
+For each changed file, assign a significance level based on the diff content (not just the MCP category):
+
+| Significance | Meaning | Who cares |
+|-------------|---------|-----------|
+| **BEHAVIORAL** | Changes what the software does — new features, changed rules, removed capabilities | PM, Engineer, QA |
+| **STRUCTURAL** | Changes how the software is organized — refactors, renames, file moves, dependency updates | Engineer |
+| **OPERATIONAL** | Changes how the software runs — CI config, deployment, env vars, Dockerfiles, Makefiles | Engineer, QA |
+| **DOCUMENTATION** | Changes to docs, comments, READMEs, guides | PM (if user-facing), otherwise no one |
+| **TRIVIAL** | Formatting, whitespace, typo fixes, auto-generated files | No one |
+
+The MCP tool's NO_IMPACT category maps roughly to DOCUMENTATION and TRIVIAL, but many files classified as CHANGED_BEHAVIOR might actually be STRUCTURAL (a refactor that doesn't change behavior) or OPERATIONAL (a Makefile change). The diff tells you which.
+
+### 2c — Write individual change descriptions
+
+For BEHAVIORAL and OPERATIONAL changes, write one entry per **logical change** — not one entry per file, and not one paragraph for all files.
+
+A "logical change" is a set of related files that implement one thing:
+- 3 skill files all adding the same guardrail pattern → one entry describing the guardrail
+- A Makefile + Dockerfile + CI config all changing the build → one entry describing the build change
+- One skill adding a completely new workflow step → its own entry
+
+Each entry must include:
+- **What changed** in plain English (PM-readable)
+- **Why it matters** — what's different for the user/developer/QA
+- **Which specs are affected** — and whether existing rules still cover the change or new rules are needed
+- **The directive** — what to do about it
+
+### 2d — Flag spec drift
+
+For each BEHAVIORAL change, check: do the existing spec rules cover this new behavior?
+
+- If the spec has rules that still match → `Spec up to date ✓`
+- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → update the spec for <feature>`
+- If no spec exists → `No spec exists → Run: purlin:spec <name>`
+
+Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
+
+### 2e — Format by audience
+
+Group the entries by significance, not by MCP category:
+
+```
+NEEDS ATTENTION:
+  <logical change title>
+    What: <plain English description of the change>
+    Files: <file1>, <file2>, <file3>
+    Spec: <spec_name> (<N> rules) — <spec drift status from 2d>
+    → <directive>
+
+  <logical change title>
+    What: <plain English description>
+    Files: <file1>
+    Spec: none — <reason no spec needed, or directive to create one>
+    → <directive>
+
+FOR AWARENESS:
+  <description>
+    Files: <file1>, <file2>
+    No spec impact.
+
+  <description>
+    Files: <file1>
+    No spec impact.
+
+TRIVIAL:
+  (nothing this cycle)
+```
+
+**NEEDS ATTENTION** includes all BEHAVIORAL and OPERATIONAL changes — anything that affects what the software does or how it runs. **FOR AWARENESS** includes STRUCTURAL and DOCUMENTATION changes. **TRIVIAL** includes formatting and whitespace. Omit empty sections.
 
 ## Step 3 — Format Output
 
-Print the report using the 5 categories. Omit empty sections.
+Print the report header, then the grouped entries from Step 2e.
 
 ```
 Since <since field from JSON>:
 
-NEW BEHAVIOR:
-  <plain English summary>
-  Files: <file1>, <file2>
-  No spec exists.
-  → Run: purlin:spec <suggested_name>
+<NEEDS ATTENTION section from 2e>
 
-CHANGED BEHAVIOR:
-  <spec_name> — <plain English description>
-  Files: <file1>, <file2>
-  Spec exists: specs/<category>/<name>.md (RULE-N may need updating)
-  → Review: purlin:find <spec_name>
+<FOR AWARENESS section from 2e>
 
-CHANGED SPECS:
-  <spec_name> — <what changed: new_rules/removed_rules from spec_changes>
-  Files: specs/<category>/<name>.md
-  → Run: purlin:unit-test
-
-TESTS ADDED:
-  <spec_name> — <summary from proof_status>
-  Files: <test_file1>, <test_file2>
-
-NO IMPACT:
-  <description>
-  Files: <file1>, <file2>
+<TRIVIAL section from 2e>
 ```
-
-### Directives per category
-
-| Category | Directive |
-|----------|-----------|
-| NEW BEHAVIOR | `→ Run: purlin:spec <suggested_name>` |
-| CHANGED BEHAVIOR | `→ Review: purlin:find <spec_name>` |
-| CHANGED SPECS | `→ Run: purlin:unit-test` |
-| TESTS ADDED | Show pass/fail from `proof_status`, or `→ Run: purlin:unit-test` |
-| NO IMPACT | No directive |
 
 ## Step 4 — TOP PRIORITIES
 
-After all category sections, print a `---` separator and role-aware priorities. Use the `proof_status` and `files` data from the JSON. If a role was specified, show only that role. Otherwise show all three.
+After all sections, print a `---` separator and role-aware priorities. These MUST reference the actual analysis from Step 2, not just the raw proof counts from the MCP tool.
 
 ### PM priorities (ordered)
 
-1. **Missing specs** — NEW BEHAVIOR items with no spec → `purlin:spec <name>`
-2. **Spec drift** — CHANGED BEHAVIOR where spec may be outdated → `purlin:find <name>`
-3. **Unproved new rules** — CHANGED SPECS with `new_rules` that lack proofs → `purlin:unit-test`
+1. **Missing specs** — BEHAVIORAL changes with no spec → `purlin:spec <name>`
+2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → update the spec for `<name>`
+3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `purlin:unit-test`
 
 ### Engineer priorities (ordered)
 
 1. **Failing tests** — features with `status: "FAILING"` in `proof_status` → fix code or tests
 2. **Unproved rules** — features with `status: "partial"` → `purlin:unit-test`
-3. **New unspecced code** — NEW BEHAVIOR items → `purlin:spec <name>`
+3. **New unspecced code** — BEHAVIORAL changes with no spec → `purlin:spec <name>`
 
 ### QA priorities (ordered)
 
 1. **Stale manual proofs** — features with stale manual stamps → `purlin:verify --manual`
 2. **Features ready for verification** — features with `status: "READY"` → `purlin:verify`
 3. **Coverage gaps** — features with `status: "partial"` → `purlin:unit-test`
+
+### Consistency check
+
+Before emitting TOP PRIORITIES, cross-reference against the NEEDS ATTENTION entries:
+- If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM priorities, even if `proof_status` shows all rules proved (the proofs were from before the change)
+- If NEEDS ATTENTION says "no missing specs" → PM priorities should not list missing specs
+- Do not contradict the detailed analysis with the summary
 
 ### Format
 
@@ -132,8 +181,8 @@ Omit any role section with no priorities. Limit to 5 items per role.
 
 ## Guidelines
 
-- **This is one LLM pass over structured data.** Do not make additional tool calls. The `changelog` MCP tool already did all the mechanical work.
+- **Read diffs for behavioral changes.** The MCP tool provides the file list; you must read the actual diffs to understand what changed. This is the only additional tool call this skill makes beyond the initial `changelog` MCP call.
 - **Write for a PM, not a developer.** Summarize behavior, not implementation details.
-- **One line per logical change.** Group related files under a single summary.
-- **Be conservative with NEW BEHAVIOR.** Reclassify helpers and internals to NO IMPACT.
+- **One entry per logical change.** Group related files under a single entry, but never collapse unrelated changes into one paragraph.
+- **Classify from the diff, not the MCP category.** The MCP tool's mechanical classification is a starting point. The diff tells you whether a CHANGED_BEHAVIOR file is actually STRUCTURAL or OPERATIONAL.
 - **No writes.** This skill reads and reports. It does not modify anything.
