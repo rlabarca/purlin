@@ -109,6 +109,7 @@ Skills are tools, not gatekeepers. Use them when they add value.
 
 | Document | What it covers |
 |----------|---------------|
+| `references/spec_quality_guide.md` | How to write good specs: rules, proofs, tiers, anchors |
 | `references/formats/spec_format.md` | Spec 3-section format, rules, metadata |
 | `references/formats/proofs_format.md` | Proof file schema, markers, manual stamps |
 | `references/formats/invariant_format.md` | Invariant file structure and sync protocol |
