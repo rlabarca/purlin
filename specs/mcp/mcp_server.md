@@ -28,6 +28,8 @@ MCP stdio server implementing JSON-RPC 2.0 transport for Purlin's three tools: `
 - RULE-15: `changelog` returns JSON with `since`, `commits`, `files`, `spec_changes`, and `proof_status` fields
 - RULE-16: Server logs startup to stderr — stdout is reserved for JSON-RPC responses
 - RULE-17: `vhash` is computed as `sha256(sorted rule IDs + "|" + sorted proof ID:status pairs)[:8]`
+- RULE-18: `sync_status` reports "READY (structural only)" when all proofs for a feature are grep/existence checks with no behavioral tests, and suggests creating E2E proofs in specs/integration/
+- RULE-19: `changelog` proof_status entries include a `structural_only` boolean, true when the feature is READY and all proofs are structural
 
 ## Proof
 
@@ -48,6 +50,8 @@ MCP stdio server implementing JSON-RPC 2.0 transport for Purlin's three tools: `
 - PROOF-15 (RULE-15): Call `changelog`; parse the JSON output; verify it contains all 5 top-level keys: `since`, `commits`, `files`, `spec_changes`, `proof_status` @slow
 - PROOF-16 (RULE-16): Start the server; verify startup message appears on stderr, not stdout @slow
 - PROOF-17 (RULE-17): Compute `_compute_vhash({"RULE-1": "desc"}, [{"id": "PROOF-1", "status": "pass"}])`; verify it equals `sha256("RULE-1|PROOF-1:pass")[:8]`
+- PROOF-18 (RULE-18): Create a spec where all proof descriptions are grep-based; run sync_status; verify output contains "READY (structural only)" and suggests E2E proofs @slow
+- PROOF-19 (RULE-19): Create a spec with only grep-based proofs and all rules proved; call changelog; verify the feature's proof_status has `structural_only: true` @slow
 
 ## Implementation Notes
 

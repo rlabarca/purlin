@@ -102,6 +102,15 @@
     },
     {
       "feature": "mcp_server",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_structural_only_detection",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
       "id": "PROOF-12",
       "rule": "RULE-12",
       "test_file": "dev/test_mcp_server.py",
@@ -133,6 +142,15 @@
       "rule": "RULE-15",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_changelog_json_structure",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_changelog_structural_only_flag",
       "status": "pass",
       "tier": "default"
     },

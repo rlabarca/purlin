@@ -1,9 +1,10 @@
-"""Tests for mcp_server — 17 rules.
+"""Tests for mcp_server — 19 rules.
 
 Covers JSON-RPC transport (initialize, tools/list, notifications, errors),
-sync_status (coverage, READY/vhash, warnings, Requires, manual staleness),
-purlin_config (read/write), changelog (since anchor, classification, structure),
-server output (stderr logging), and vhash computation.
+sync_status (coverage, READY/vhash, warnings, Requires, manual staleness,
+structural-only detection), purlin_config (read/write), changelog (since anchor,
+classification, structure, structural_only flag), server output (stderr logging),
+and vhash computation.
 """
 
 import hashlib
@@ -216,6 +217,24 @@ class TestSyncStatus:
         assert 'MANUAL PROOF STALE' in result
 
 
+    @pytest.mark.proof("mcp_server", "PROOF-18", "RULE-18")
+    def test_structural_only_detection(self):
+        self._write_spec('refs', (
+            '# Feature: refs\n\n'
+            '## What it does\nReference docs.\n\n'
+            '## Rules\n- RULE-1: Guide contains X section\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep guide.md for X; verify section exists\n'
+        ))
+        self._write_proofs('refs', [
+            {"feature": "refs", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_grep",
+             "status": "pass", "tier": "default"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        assert 'READY (structural only)' in result
+        assert 'E2E' in result or 'behavioral' in result
+
+
 class TestPurlinConfig:
     """RULE-12: purlin_config read and write."""
 
@@ -313,6 +332,37 @@ class TestChangelog:
         data = json.loads(result_text)
         for key in ('since', 'commits', 'files', 'spec_changes', 'proof_status'):
             assert key in data, f"Missing key: {key}"
+
+
+    @pytest.mark.proof("mcp_server", "PROOF-19", "RULE-19")
+    def test_changelog_structural_only_flag(self):
+        # Add a structural-only spec with passing proofs
+        spec_content = (
+            '# Feature: refs\n\n'
+            '## What it does\nReference docs.\n\n'
+            '## Rules\n- RULE-1: Guide contains X section\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep guide.md for X; verify section exists\n'
+        )
+        refs_dir = os.path.join(self.project_root, 'specs', 'instructions')
+        os.makedirs(refs_dir, exist_ok=True)
+        with open(os.path.join(refs_dir, 'refs.md'), 'w') as f:
+            f.write(spec_content)
+        with open(os.path.join(refs_dir, 'refs.proofs-default.json'), 'w') as f:
+            json.dump({"tier": "default", "proofs": [
+                {"feature": "refs", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test.py", "test_name": "test_grep",
+                 "status": "pass", "tier": "default"},
+            ]}, f)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add refs spec'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        assert 'refs' in data['proof_status']
+        assert data['proof_status']['refs']['structural_only'] is True
 
 
 class TestServerOutput:
