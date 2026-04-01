@@ -29,7 +29,7 @@ Accept ANY of these input types without asking which format it is:
 - A file path to code that needs a spec
 
 **If a spec name was given**, search `specs/**/<name>.md`:
-- **Found:** Read the spec. Call `sync_status` for coverage. Ask the user what to change. Go to Step 7 (Update).
+- **Found:** Read the spec. Call `sync_status` for coverage. Go to Step 7 (Update Existing Spec).
 - **Not found:** Use the name and any additional input to draft a new spec.
 
 **If no name was given**, read the user's input and infer the feature name from the topic.
@@ -135,15 +135,92 @@ Before committing, verify:
 git commit -m "spec(<name>): <description of change>"
 ```
 
-## Step 7 — Update from Code Changes
+## Step 7 — Update Existing Spec
 
-When updating an existing spec (the user says "update the login spec" or "the code changed"):
+When updating a spec that already exists on disk:
 
-1. Call the `changelog` MCP tool to see what changed since last verification
-2. Read the current spec and changed source files
-3. Propose additions/modifications — new error paths, changed boundaries, new config options
-4. Present the diff: "I'd add RULE-5 and update PROOF-2. Here's the updated spec."
-5. Validate and commit as above
+### 7a — Understand what changed
+
+1. Call the `changelog` MCP tool to see what changed since the last verification
+2. Read the CURRENT spec in full — every rule, every proof, every metadata line
+3. Read the changed source files referenced in the diff or in `> Scope:`
+4. Read changed skill/reference files if the feature covers instructions
+
+### 7b — Identify deltas
+
+Compare the current spec against the code changes. Categorize each finding:
+
+| Category | What it means | Action |
+|----------|--------------|--------|
+| NEW RULE NEEDED | Code added behavior not covered by any existing rule | Propose adding a new RULE-N |
+| RULE OUTDATED | Existing rule describes behavior that changed | Propose updating the rule text |
+| RULE OBSOLETE | Existing rule describes behavior that was removed | Propose removing the rule |
+| PROOF OUTDATED | Proof description no longer matches the rule | Propose updating the proof text |
+| METADATA STALE | `> Scope:` or `> Stack:` no longer accurate | Propose updating metadata |
+| NO CHANGE | Existing rule still matches code | Keep as-is (explicitly note this) |
+
+### 7c — Present the delta report
+
+Show the user EXACTLY what will change and what will stay:
+
+```
+Spec: specs/hooks/gate_hook.md (8 rules currently)
+
+KEEPING (unchanged):
+  RULE-1: The hook triggers on Write, Edit, and NotebookEdit ✓
+  RULE-2: Files not matching specs/invariants/i* pass through ✓
+  RULE-3: When no bypass lock exists, writes are blocked ✓
+  ...
+
+ADDING:
+  RULE-9 (new): Agent must re-read proof description after fixing a failing test
+    Reason: New guardrail added to build skill
+    Proposed proof: PROOF-9 (RULE-9): Fix a test, verify build skill re-reads the original proof description from the spec
+
+UPDATING:
+  RULE-5 (changed): Error message includes specific corrective action
+    Was: "Error message is written to stderr"
+    Now: "Error message is written to stderr AND includes the exact purlin:invariant sync command"
+    Reason: gate.sh error messages were enhanced
+
+REMOVING:
+  (none)
+
+METADATA:
+  ▎ Stack: unchanged
+  ▎ Scope: unchanged
+  ▎ Requires: unchanged
+
+Approve these changes? [y/n/edit]
+```
+
+### 7d — Apply approved changes
+
+1. Preserve ALL unchanged rules exactly as they are — same text, same numbering
+2. Add new rules at the end of the existing sequence (RULE-9 after RULE-8)
+3. Update changed rules in place — same RULE-N number, new text
+4. For removed rules: renumber remaining rules sequentially (no gaps)
+5. For each new or updated rule, add or update the corresponding PROOF-N line
+6. Apply tier tags to new proofs per `references/spec_quality_guide.md`
+7. Preserve any existing `@manual` stamps — do NOT remove manual proof stamps unless the rule they reference was removed
+8. Update `> Scope:` if new files were added to the feature
+9. Update `> Stack:` if new dependencies were introduced
+
+### 7e — Validate and commit
+
+Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags.
+
+```
+git commit -m "spec(<name>): update rules for <description>"
+```
+
+### Key principles for updates
+
+- **Never silently change existing rules.** Every change must be shown to the user.
+- **Never remove `@manual` stamps** unless the rule was deleted.
+- **Preserve rule numbering** when possible — renumber only when rules are removed.
+- **Show what's staying, not just what's changing.** The user needs to see the full picture to approve confidently.
+- **Ask before applying.** The delta report is a proposal, not a fait accompli.
 
 ---
 
