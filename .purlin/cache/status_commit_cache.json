@@ -1,0 +1,1270 @@
+{
+  "_metadata": {
+    "git_head": "078ca265075f10d60264af3b1be135bb422f813c",
+    "generated_at": 1775055061.2554638
+  },
+  "entries": {
+    "features/user_authentication/user_authentication.md": {
+      "complete_ts": 1774990934,
+      "complete_hash": "87a84c6b2f8b0a4740b595bb34b969b984aafa91",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full"
+    },
+    "features/framework_core/purlin_sync_system.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1774983378,
+      "testing_hash": "cb21216e17eff7b625ee57867c96ec9fc8c501c4",
+      "scope": "targeted:Agent follows CDD lifecycle in real conversation",
+      "spec_content_hash": "ba59d4f3109546f49abd90c6509d019bbde785a77459e358009c3c01ef905657"
+    },
+    "features/pl_remote.md": {
+      "complete_ts": 1774577725,
+      "complete_hash": "2691e0cc87ea47cdfdab8bb92e1368ff141d648b",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "9db7ff565c27b05e0c6719c6923c6118acc79f830c97dd834dbc7c8ab56fd145"
+    },
+    "features/pl_regression.md": {
+      "complete_ts": 1774577724,
+      "complete_hash": "b97008544795cbe5c93f3a952ba275d55cf3b361",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "2b0d31f0ef2f6d3d94309328f446e2448337d1015cc04956ad260f7ed306045d"
+    },
+    "features/pl_merge.md": {
+      "complete_ts": 1774577722,
+      "complete_hash": "299883fe69c67f1fe52d0b697352ec235233db1f",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "28b49ba537b76ec91cb82f4c2915abc39f5e9e39ed4aa1211e02e92d2bcb3e11"
+    },
+    "features/pl_smoke.md": {
+      "complete_ts": 1774577720,
+      "complete_hash": "3ae93d353f6db8bc5983ea03d02d96904d53ec6a",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "89f3c4992682b94bcc6a891c5bd375f9278b696321b81f35f4112912eab1103f"
+    },
+    "features/pl_session_name.md": {
+      "complete_ts": 1774577717,
+      "complete_hash": "a45f516142ab2b89fdfdcbcd223ee2c8faa98ed2",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "05ee300b83e2e0579ae06b4f53e5a8adcb113a7bb5b45a39c8caca10968fdbe5"
+    },
+    "features/pl_mode.md": {
+      "complete_ts": 1774577715,
+      "complete_hash": "640d27d34d2b978abf4c47153fe143704ec69896",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "66cc7c61166b1b86c30910d6f66bc8ca10d066531784c7592dce59de9879d2f9"
+    },
+    "features/purlin_instruction_architecture.md": {
+      "complete_ts": 1774488893,
+      "complete_hash": "1aa195d7d3312225174f027dfaefb74252920e6f",
+      "testing_ts": 1774455355,
+      "testing_hash": "956c192330bcbddfccfe55af73d9f002382f2519",
+      "scope": null,
+      "spec_content_hash": "5f124c038567cb9e2cf84db6a150005a8db19ba9cc6c42926c9872473127822e"
+    },
+    "features/purlin_scan_engine.md": {
+      "complete_ts": 1774457944,
+      "complete_hash": "994e64a7d49895706d2de0c7d1d809e701c42489",
+      "testing_ts": 1774455355,
+      "testing_hash": "0f4e769faf847f4f05da611f465dc1ea3bb3e4e0",
+      "scope": null,
+      "spec_content_hash": "a27edf9ea33e06c26fd9ba146c3fe0295f3e68596e2e3eaaf81cb5de18dbb297"
+    },
+    "features/purlin_mode_system.md": {
+      "complete_ts": 1774457944,
+      "complete_hash": "a83376a93ba4e830599326707181f45dc1d568d9",
+      "testing_ts": 1774455355,
+      "testing_hash": "c1a4a80956f62ff59416c8e99f77b06fd2e4c206",
+      "scope": null,
+      "spec_content_hash": "25a0a04f3898bf4f935103218782cb6c5e37bfa623d64b22952faa4d7f1938d5"
+    },
+    "features/test_fixture_repo.md": {
+      "complete_ts": 1774457943,
+      "complete_hash": "5c38a59f068bb664d6c939fd3251b97e227f3597",
+      "testing_ts": 1774455355,
+      "testing_hash": "5e2cf1ac9df1c2a4887bceb7d29169dec7ca56f0",
+      "scope": null,
+      "spec_content_hash": "756bf963b0ad670d387c81ea2b4920e2fe2ce36a394ddca29c792cb9c9e78e23"
+    },
+    "features/purlin_smoke_testing.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1774455355,
+      "testing_hash": "963d59dd966a46bbb08cee87a161b5803323e254",
+      "scope": "full",
+      "spec_content_hash": "1e8dc71a42460f9df0383f8fd4e5f71cc288f37a1ad6123c0b06986f225386bb"
+    },
+    "features/purlin_agent_launcher.md": {
+      "complete_ts": 1774450429,
+      "complete_hash": "b5f85dcb8882ea93a4ac9c85b1ca53a7298ea5c1",
+      "testing_ts": 1774455355,
+      "testing_hash": "6f37edd74d12cd2b880d6119352cb126eee28069",
+      "scope": "full",
+      "spec_content_hash": "12e90ec38b41bd13e9f34da97d000fab4ab50e14bb55bfaf44b75e935f2c4550"
+    },
+    "features/purlin_migration.md": {
+      "complete_ts": 1774454160,
+      "complete_hash": "5ea0aea9c85b4d9fde471847aac2c93cb834f7a0",
+      "testing_ts": 1774445513,
+      "testing_hash": "03228c8ad6be53f593dea7cd5ced2481c7883414",
+      "scope": null,
+      "spec_content_hash": "599e9cfdc98bb07b59ba592dac0cc45afd42a5020d7949c24af6000278dfbdc6"
+    },
+    "features/knowledge_colocation.md": {
+      "complete_ts": 1774453391,
+      "complete_hash": "7e2215bab3f0615dcee0f5e7d245370ee483d8ff",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "99926f2f33378d01622766e416351c73cb8b4132480191b21fb203f2075ee44f"
+    },
+    "features/active_deviations.md": {
+      "complete_ts": 1774453386,
+      "complete_hash": "6909cf03be7612d81ab4ca4e15b62ba1210066f2",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "f38b59d8c6a2a33e6bcf6601658421ac530f900f5705d35cbca287f724bfec2b"
+    },
+    "features/commit_conventions.md": {
+      "complete_ts": 1774453382,
+      "complete_hash": "b657552961d1f7948b599d3673362667a072a645",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "4e65e2cb35e66db9b4fe0bd981728fa23e3c5267f7672cc15323c56cf3f91059"
+    },
+    "features/file_classification.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1774453214,
+      "testing_hash": "02906f3c5c2e98151b9ceb3607191d87a9cb2487",
+      "scope": "full",
+      "spec_content_hash": "b935aeb14708f3cd458ee1ad7bc259903d63ec440c133855eaffa6d0c636e782"
+    },
+    "features/pl_session_resume.md": {
+      "complete_ts": 1774452456,
+      "complete_hash": "9bfb69269516672264750bfd1cdccf17c2257da8",
+      "testing_ts": 1774451237,
+      "testing_hash": "5f17833179275630122644dbc0693f7dc84beb5c",
+      "scope": null,
+      "spec_content_hash": "69f5ca12fe01c80ff028701b0dd0c860904c91eaf234949f2538a4f36fc0c152"
+    },
+    "features/pl_help.md": {
+      "complete_ts": 1774452456,
+      "complete_hash": "262ea33c5b3bc4fbc0a96dbd68d6516bcf27227c",
+      "testing_ts": 1774451082,
+      "testing_hash": "c44a01477d9a78da8618ba6b7c2a37ebd9d53649",
+      "scope": null,
+      "spec_content_hash": "4d992cdb39f0345eb72719b725d528bb07bb7c771de26bec9d32cd0ac5c985bf"
+    },
+    "features/pl_whats_different.md": {
+      "complete_ts": 1774448994,
+      "complete_hash": "0d90743ba62a9e9bf3c93c56cacde41376a73a11",
+      "testing_ts": 1772933544,
+      "testing_hash": "7e861ba5e8617852282d0da40ffd05c878420105",
+      "scope": "cosmetic",
+      "spec_content_hash": "0159d8d221dba8b2938102e47bd5a10b0c447623a5e286b1327a544045a65ca0"
+    },
+    "features/pl_cdd.md": {
+      "complete_ts": 1774448993,
+      "complete_hash": "02762d3c2c7db2e4de872d5e6ca28e1dd9de12ca",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "6577a7b807a476de1b8cfcf52d058569c06ea60a2c89eefaad3644ec63ce6381"
+    },
+    "features/cdd_lifecycle.md": {
+      "complete_ts": 1774448991,
+      "complete_hash": "c8628e76822bb46087381250e9fb91fb6e8b7677",
+      "testing_ts": 1773873987,
+      "testing_hash": "b71021fc6e72ba6b44c689ec454be33173b6c9c5",
+      "scope": "cosmetic",
+      "spec_content_hash": "bd893d4020a2b2db66f1e6bcb5eb0f9bc7db60d7ed7762cded050609a385fad2"
+    },
+    "features/agent_behavior_tests.md": {
+      "complete_ts": 1774448990,
+      "complete_hash": "1216c0098a690bcdcdd3efb20adbbf95262cd822",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "fa5ceb6a683be62b94918becb4fe89bcdb23f645e25a91f6d4aa3fe5d3cbdde0"
+    },
+    "features/purlin_worktree_identity.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1774448978,
+      "testing_hash": "2af44583d77f3526c85c8882b406e1a9fb05e0bc",
+      "scope": "cosmetic",
+      "spec_content_hash": "380b281f236527ff02cf1278f19b37a74d778da2f31613a205f6b4b6c91c0eb5"
+    },
+    "features/purlin_worktree_concurrency.md": {
+      "complete_ts": 1774448977,
+      "complete_hash": "8c261414e724ac286dad6398d41415dd6809e26e",
+      "testing_ts": 1774406460,
+      "testing_hash": "610aa591e974c76759120052d386647a6acdefff",
+      "scope": "full",
+      "spec_content_hash": "443f6d0a689919e6c8c1ed81897ce693b7cb87e6fc13fa6dd25cd766bbfd559f"
+    },
+    "features/release_sync_docs_github_wiki.md": {
+      "complete_ts": 1774410069,
+      "complete_hash": "63f210d01693cd306ec28b1dac7f2cb755b01923",
+      "testing_ts": 1774353353,
+      "testing_hash": "56fe4fd0ba6888fc47e4cc4f00efde17843c8e4b",
+      "scope": null,
+      "spec_content_hash": "df84934a04aa8caa17c3bbf000171426e5c370e49c0986bfe7ac148c4bba2cf0"
+    },
+    "features/pm_first_session_guide.md": {
+      "complete_ts": 1774410069,
+      "complete_hash": "28cefa146c90d8ed364e5110ec6170454136a317",
+      "testing_ts": 1774353504,
+      "testing_hash": "81a9844a9f692ca99486e1960de9a392cc1d5a9f",
+      "scope": null,
+      "spec_content_hash": "a1c77bd9c9fe6208b4dc874397c1f8e7e948b29a104f465abb794995bd0b9acf"
+    },
+    "features/regression_testing.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "5ed9283822a6843ccefb771325195be384a131d0",
+      "testing_ts": 1774350418,
+      "testing_hash": "4d31254c11817d56f7ed4607dfa28042f0348589",
+      "scope": null,
+      "spec_content_hash": "98d0f648cb6748127f16d2cb4772993431b6377abe164f85a63d0dbaea0835e4"
+    },
+    "features/release_verify_dependency_integrity.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "9aeb192e23e11d8aa2bda1d18294adc3f42efe20",
+      "testing_ts": 1774319837,
+      "testing_hash": "f135c732f54a1f7348f2fef8c17ee4e9a06efe0a",
+      "scope": null,
+      "spec_content_hash": "5624b2293402003b96f35dc05bd2e44d5ac261bc30abb135c6fb658c38e20e54"
+    },
+    "features/release_critic_consistency_check.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "94132962b14b5c0073f543e32bf159127959428b",
+      "testing_ts": 1774320571,
+      "testing_hash": "fe7417f4a5b7bcfdb2a482da445b1b2e9f15a925",
+      "scope": null,
+      "spec_content_hash": "c45bc0acb32521de3a7e4b687cf90d02f201193c2e4cefe39b31ff9fb4aa92f5"
+    },
+    "features/release_audit_automation.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "363bf02867b0d87f548782d79a0c4e2d1f0d35c8",
+      "testing_ts": 1774320571,
+      "testing_hash": "7ae7e89c0b0a9452a984ce90ff3cc5c7ce85e5d9",
+      "scope": null,
+      "spec_content_hash": "14593bf3154cdd591894a42a6d99e6414c9a243bb1dd9be90950811fcb7cf96e"
+    },
+    "features/pm_agent_launcher.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "496e6be364ec5dd78a1908344b7b695a162ec1d2",
+      "testing_ts": 1774319837,
+      "testing_hash": "2f6383e794053de5411e92a09fc70d02d69a334e",
+      "scope": null,
+      "spec_content_hash": "c65d43adf56c66c9c1997dbee8b73877c9bda26e4df614f46504d14be4ec29cd"
+    },
+    "features/pl_web_test.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "362ff90ba3e26c8d53f2ecacb8aee56b7247a830",
+      "testing_ts": 1774319837,
+      "testing_hash": "3d14225c36213a8e80d0feff468a1dc95a10b0f7",
+      "scope": null,
+      "spec_content_hash": "706615cf2d457fdafb2610d583e5170c52922fc52b85a445b31a79157517a73d"
+    },
+    "features/pl_spec_code_audit.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "7805ab1ed9c75c58353275d771bb87c9934f6e36",
+      "testing_ts": 1774350843,
+      "testing_hash": "27c78684dbec5b79b6d02de81e1d394bcc564d42",
+      "scope": null,
+      "spec_content_hash": "e4d0769b28c0ba70489f7786d199130a3cba2f5a61423c8210ca788c9a3dc496"
+    },
+    "features/pl_release_step.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "e4a2c9c8efcc42e541744e867ada863b4a0e31d7",
+      "testing_ts": 1774350843,
+      "testing_hash": "bcf99dc89a31eebcfc451b835ee50a3e2d57ba48",
+      "scope": null,
+      "spec_content_hash": "29bc39e404acfec9bed4422785d8a813f8945fa58a1cf8287f4a7b6bb8a4a8ae"
+    },
+    "features/pl_design_audit.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "3b99df14550bd74236c0e99c6f19751899d4abce",
+      "testing_ts": 1774319837,
+      "testing_hash": "e938b98eae56c39e8fc9cd0631c46bb878f37d6a",
+      "scope": null,
+      "spec_content_hash": "197e2bc8aef96f43eb4fbf92b336ddb66f3fa3a52d729f0f1559181d330cd6ba"
+    },
+    "features/critic_role_status.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "763d24a8ecbca1f7a73152d0e623ac2e5916a58e",
+      "testing_ts": 1774350386,
+      "testing_hash": "0f0d347754bb3557f792b51dd9a63e7e4e789be5",
+      "scope": null,
+      "spec_content_hash": "e75e44de61dc2d4342f23a223c7cec67ffdd1bcbda59353d6ad66efbab0b8f8b"
+    },
+    "features/context_recovery_hook.md": {
+      "complete_ts": 1774409699,
+      "complete_hash": "a868a4259d5838354e60429cd8c544dc5c332b7f",
+      "testing_ts": 1774319837,
+      "testing_hash": "ff547145870b1b17554fdd198e3cbf492c7a5165",
+      "scope": null,
+      "spec_content_hash": "a5f03ab0fd7f011da9387f6b96f44cb96f8e8dd83626bf61aef2a58a803cc1fb"
+    },
+    "features/cdd_status_monitor.md": {
+      "complete_ts": 1774367844,
+      "complete_hash": "82fabdab6b8388b0d47be5468b7ea465e77fda27",
+      "testing_ts": 1774350843,
+      "testing_hash": "d1467ee9bf6548cedb010f287c534a1886873da2",
+      "scope": "targeted:Git status clean filter",
+      "spec_content_hash": "c08237bb335b72cb7c4485d7ab9eddd42e21bf160c5b2b175eccaafcd1de8b13"
+    },
+    "features/release_record_version_notes.md": {
+      "complete_ts": 1774366927,
+      "complete_hash": "1ed413e632881a59aad756bf7d8752fa752f6171",
+      "testing_ts": 1774353569,
+      "testing_hash": "a06190779af5857e16f3e856263925772461cf10",
+      "scope": null,
+      "spec_content_hash": "8404be7097423dad623e9096d85f7c6217583798495182e877f9dda85223a45c"
+    },
+    "features/project_init.md": {
+      "complete_ts": 1774366925,
+      "complete_hash": "92d462cd0c93d86c5a6a465b586cc4e0531c73d3",
+      "testing_ts": 1774352936,
+      "testing_hash": "4465878d6d5fc1efc34dd76e0eb11be9dae6b6e4",
+      "scope": null,
+      "spec_content_hash": "e85d2e52212d96b5bf5570500768420a551f91830ef811bab6d5650f9f723bfd"
+    },
+    "features/critic_tool.md": {
+      "complete_ts": 1774366921,
+      "complete_hash": "d186653e5985fb6dc8de749706e89ceb918a010e",
+      "testing_ts": 1774350843,
+      "testing_hash": "ad8a21d75877912c0844a1389652e4f7f9dabc0d",
+      "scope": null,
+      "spec_content_hash": "70d0ff7ae51269c532635ac51f96b1f90f71d1e2c8f4f01b5a09a93ab7ca3194"
+    },
+    "features/release_checklist_ui.md": {
+      "complete_ts": 1774366753,
+      "complete_hash": "b0223d0a5a0dc6d82f7e5feb03bd5354fba876c5",
+      "testing_ts": 1774350317,
+      "testing_hash": "2b41d3fc0c7e9fded96ac6ae9002e89b35b88f1d",
+      "scope": null,
+      "spec_content_hash": "b67fdb81ba62b8a9a3a76c5c0ec7a8745c5fa243065fcf901ee50d1ad1b18a0d"
+    },
+    "features/cdd_spec_map.md": {
+      "complete_ts": 1774366748,
+      "complete_hash": "cc2e8d3db0b163f9e540afbb24de789e29934caf",
+      "testing_ts": 1774350317,
+      "testing_hash": "716f2f125cf194c2bd366bfe8ba2abcd8bfb86eb",
+      "scope": null,
+      "spec_content_hash": "2d29a956d8c9c49b4c0b97488cf9e94f2a1a143cf9273d1c5f5fe91c41effe8a"
+    },
+    "features/cdd_qa_effort_display.md": {
+      "complete_ts": 1774366745,
+      "complete_hash": "c06085d63e9145fe41db70de7f8c125a8864bef2",
+      "testing_ts": 1774320571,
+      "testing_hash": "28d303d520a7f9860bbcc56d919019408e77e97f",
+      "scope": null,
+      "spec_content_hash": "8f633764d5d9245f8edc1e1ae58a4a498cc4a56325c607cf8e94869ecb9a70f6"
+    },
+    "features/cdd_agent_configuration.md": {
+      "complete_ts": 1774366742,
+      "complete_hash": "5f2f5efda3c4cf75c88bdee058f0154feb070879",
+      "testing_ts": 1774350317,
+      "testing_hash": "1556780a9182efec8364443a8acc2898ba32a043",
+      "scope": null,
+      "spec_content_hash": "f51040345b584a37c9179c368d6b112071791022d71eb3f49dbfe7e4e1522633"
+    },
+    "features/pl_verify.md": {
+      "complete_ts": 1774366214,
+      "complete_hash": "5afca220dba56d3745e7ffd36f0c01eef7744181",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "b2604e486af9adb73b35d1f0fb0d883f38b1f6295e82b5c2672f0f55cd7e2d18"
+    },
+    "features/skill_behavior_regression.md": {
+      "complete_ts": 1774365386,
+      "complete_hash": "b609a5669e3d664a52f05fc17025b4dd74705e4b",
+      "testing_ts": 1774320571,
+      "testing_hash": "ce2b67d79a29c555524bdccab1524a26a3384c3e",
+      "scope": "targeted:scan_fixture_features,build_print_mode_context,print-mode-context-augmentation",
+      "spec_content_hash": "6d10e007f4b23e954c20db925c2d75bf223e626e55b4120f9ef26ddf1e450b37"
+    },
+    "features/release_checklist_core.md": {
+      "complete_ts": 1774358199,
+      "complete_hash": "6f44e424299a02f33d29c2b0e6897d71fc7f915a",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "targeted:record_version_notes agent_instructions phrasing",
+      "spec_content_hash": "ac0f4871ea5e822aabc8f0ece1aa9570f040651debb8318c0f1c3a5c33165abc"
+    },
+    "features/agent_launchers_common.md": {
+      "complete_ts": 1774358158,
+      "complete_hash": "b16c8d8b8af10e8ae2b60cbf1205737f37af13fd",
+      "testing_ts": 1772853642,
+      "testing_hash": "297263ed7625018d33c9c69d09abfb0fad2df1cc",
+      "scope": "targeted:Launcher Updates Claude CLI When Out of Date,Launcher Skips Update When Already Current,Launcher Continues When Update Fails,Launcher Skips Update Check When Claude Not on PATH",
+      "spec_content_hash": "037f3cee01439781aa36d4e77822a819aa2059d9e2124ab6e53ce8b738ea0784"
+    },
+    "features/release_framework_doc_consistency.md": {
+      "complete_ts": 1774357635,
+      "complete_hash": "ab0563d2c77fd60d864daf2d1c3864c555ea3412",
+      "testing_ts": 1772909051,
+      "testing_hash": "bef33236215ba262d61c264447a23ee2783f0df2",
+      "scope": "targeted:README inconsistent with instruction file content",
+      "spec_content_hash": "3d9c7dafe7d6c31ca0c478aa29e7f2711cf295794c033aa25b28bca7d761b34c"
+    },
+    "features/remote_session_naming.md": {
+      "complete_ts": 1774356274,
+      "complete_hash": "a071627f889be4e7ad496764d424085bdd58deaf",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "595553f84d7aad277ba3013206383ad9b9e14ab7ab224e0a6fec24713e421e0d"
+    },
+    "features/cdd_branch_collab.md": {
+      "complete_ts": 1774355678,
+      "complete_hash": "178fb770af74d2c78295e288021f29cf44804229",
+      "testing_ts": 1774350317,
+      "testing_hash": "998150c0eba7dfee157775b7d37ac2f307d0b64c",
+      "scope": "targeted:Join Branch Pre-Join Pulls When Current Branch Is BEHIND Remote,Join Branch Pre-Join Diverged Returns Guidance",
+      "spec_content_hash": "b84ab22f70fbd7a2ec3bef4ec14fa3f01d82f43944d8ad2661e94f5c6b5624a2"
+    },
+    "features/pl_remote_add.md": {
+      "complete_ts": 1774355678,
+      "complete_hash": "a73c72cea2a75bacc7905cf449207e1d1ad3bc13",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "2120d91218b7ae220babcee7b254d2094a44cd29207ce28f03b713560fd6fa9d"
+    },
+    "features/pl_remote_pull.md": {
+      "complete_ts": 1774355678,
+      "complete_hash": "3e9d53f00ab059fc9373df5289864bad78255ca9",
+      "testing_ts": 1772823079,
+      "testing_hash": "fe55d7042daa64cce16cc0c9f9bfc64c2b0ccbf5",
+      "scope": "targeted:pl-remote-pull Generates Digest After Successful Merge",
+      "spec_content_hash": "7341ca81ca4ec118f495a9f3ccc7cf3928381c12c83604e209f17c7e978e1f1a"
+    },
+    "features/pl_remote_push.md": {
+      "complete_ts": 1774355670,
+      "complete_hash": "7bd828f081c8810ec0601677611add2071260a40",
+      "testing_ts": 1774319837,
+      "testing_hash": "51d48b2fc2a16ad144f4b64b4a82549cc1b046a2",
+      "scope": "full",
+      "spec_content_hash": "b155483c867d948a7907e61d592fc3b7f8ddcbe2bea613a975b17f301e8f39c0"
+    },
+    "features/git_operation_cache.md": {
+      "complete_ts": 1774354692,
+      "complete_hash": "ffd008da1ce697436bd6a9b457afb5a0af080d3e",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "f1c906a3309805d58b08a8890c5b2797c5f921c15263ce1a58330981e61fe360"
+    },
+    "features/policy_branch_collab.md": {
+      "complete_ts": 1774354349,
+      "complete_hash": "6437652ebaa4b72920ef7fea86bc0f40a2515be9",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "46dc54ff00db833aed3335a9c0c54e66d2a334c1b6ef88e5eb1d05c26b3ba96a"
+    },
+    "features/pl_infeasible.md": {
+      "complete_ts": 1774353504,
+      "complete_hash": "90495545d627cbd11f678f98cdf94ba33f8c835c",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "189c6aa248650ee2cd669eee43d685ed4ebdf7c23864a0508e789d5e5708759d"
+    },
+    "features/pl_spec_from_code.md": {
+      "complete_ts": 1774353353,
+      "complete_hash": "c712fff34d82cd1666cad542a1ce21186a5ac50a",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "c524d8ca7a9e26bf4d961c67560174b69cf372b7b9fe4b0abdfe7f173258df36"
+    },
+    "features/pl_spec.md": {
+      "complete_ts": 1774353352,
+      "complete_hash": "af1352ac2a99adae2a5fb472a5b8cbd05035da31",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "83f0960d4a5c4cdc7aa1f40c1fe39741cd889728f88b449057773e0656ebda59"
+    },
+    "features/cdd_startup_controls.md": {
+      "complete_ts": 1774353352,
+      "complete_hash": "2bacac767f9181a01cff22d75b55226773df08e4",
+      "testing_ts": 1773346426,
+      "testing_hash": "da1d82633c1de93a6a2817777e8e052de4131dfb",
+      "scope": "re-verification",
+      "spec_content_hash": "90bccd16b76fd34d147d0b550346f851ba6cc43cd67879c4dcf89339be5325a9"
+    },
+    "features/python_environment.md": {
+      "complete_ts": 1774353352,
+      "complete_hash": "3fd935996387d7a5b9d3b96b88f3e2e545158fcc",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "d5f2f23aa4f6e3be12b582f9228e478a28cf0cfd475d79fcbc083d58f5b3fffa"
+    },
+    "features/config_layering.md": {
+      "complete_ts": 1774353352,
+      "complete_hash": "cb159493f9dfdb5d55294697789491e72d710de1",
+      "testing_ts": 1772853104,
+      "testing_hash": "62fb65efbea2b084e22cd385cb94cbea61087f11",
+      "scope": "re-verification",
+      "spec_content_hash": "07bbda289172fee38c3709d5c553596c4e830204491bc495ad41eb5b8f99ff22"
+    },
+    "features/impl_notes_companion.md": {
+      "complete_ts": 1774352939,
+      "complete_hash": "568f9a3cbf417b0cc90d8af67314825b65736ea0",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "25712e75ece1507df8f7b73f1b768889bad804896e897b555ebdafaf4e83d83f"
+    },
+    "features/pl_update_purlin.md": {
+      "complete_ts": 1774276825,
+      "complete_hash": "0089d63e1a20ff25af51eb8e630fb5bda4e0001a",
+      "testing_ts": 1774350843,
+      "testing_hash": "66336c52ebf5eb009b72b0703f8354b5a9d518a6",
+      "scope": "re-verification",
+      "spec_content_hash": "01e8bbdb6d26342a04c754850052d0a7e89edc6efd433454ddbce250efb82fd9"
+    },
+    "features/release_sync_docs_confluence.md": {
+      "complete_ts": 1774316377,
+      "complete_hash": "a98991a42549d06efba0c86c634e5c64b1fee810",
+      "testing_ts": 1774216642,
+      "testing_hash": "5530cd08df168edc224d08fa470272bf15ef845b",
+      "scope": "cosmetic",
+      "spec_content_hash": "2757f3ebddfb56fd32b3326748349627b24c4958d7d9aa616b3080dfeb79b440"
+    },
+    "features/models_configuration.md": {
+      "complete_ts": 1774316376,
+      "complete_hash": "b31d2d8c8a0b8f2a45b0b4e057bfdd117877832e",
+      "testing_ts": 1772853643,
+      "testing_hash": "cf02daf0a4566e9d4fcf7e8baa72effe80e990f2",
+      "scope": "cosmetic",
+      "spec_content_hash": "4695b0013d619a4c97ee4b518611ee6d6ebe22ec6fe263b2fc2d9f1e10dc505a"
+    },
+    "features/design_artifact_pipeline.md": {
+      "complete_ts": 1774316376,
+      "complete_hash": "2a81aaeb1ac47732de8e08235df33b7884d23bcf",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "a45d35f2bc22231a52ee15939af3ea0fcfab38038c2f2715e492cf26e63a5909"
+    },
+    "features/qa_verification_effort.md": {
+      "complete_ts": 1774316141,
+      "complete_hash": "a90261bc8a23c6db3ed57ead483b1e08c7e68fe5",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "21bfc494f8f3f9c5658365acebe80162a4b1ba5b106ff271de9744f6cf3907a2"
+    },
+    "features/init_preflight_checks.md": {
+      "complete_ts": 1774315932,
+      "complete_hash": "0fd2bd11ffbdb7adbbf0ad6e7dbc94d053002ca7",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "a93fe507c716ec8157c9653f69f61dce6d8d410a6242c724e571f41c9086c92b"
+    },
+    "features/policy_release.md": {
+      "complete_ts": 1774315543,
+      "complete_hash": "ef7165aeeee0e01f758151ef866797b71ecad4d2",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "dependency-only",
+      "spec_content_hash": "7ccc1c46bafdf532424783e55bbfe16e7fcb79b755f58c059b87f84c26e5b8c1"
+    },
+    "features/policy_critic.md": {
+      "complete_ts": 1774315318,
+      "complete_hash": "056d6577bfa50a0c4b06768f9e57d4d73d0462bf",
+      "testing_ts": 1773627834,
+      "testing_hash": "10c7ea01990f2fd52a4cf5afe3bef196cc47f01b",
+      "scope": "cosmetic",
+      "spec_content_hash": "220ca10142512c87d27bffc7e9cc292c612c4e9611373ae219c969cd36e3248e"
+    },
+    "features/arch_testing.md": {
+      "complete_ts": 1774292795,
+      "complete_hash": "c965afe945255baf2f7c1086f77c4d9a6d2ad830",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "22a2dafd396be81c13c97cf289ac1d635bf4ac37b981985aea118ab1a978b47d"
+    },
+    "features/pl_regression_evaluate.md": {
+      "complete_ts": 1774292676,
+      "complete_hash": "f3cca6ba97d44495ba274f49766fb83e7203aebd",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "aecc83767bb6edfd222b4d09e0fd13fc0497ff7e487a7231ed8d669c088fc218"
+    },
+    "features/pl_delivery_plan.md": {
+      "complete_ts": 1774288801,
+      "complete_hash": "cc85e555bd5dfd710f28a7b195c1c0cee3905311",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "efd110830293b7056789938c242510345a6cbf1511d2c31d1f9675ced3fa7545"
+    },
+    "features/pl_release_run.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "b5d38760cdcb37c56e6e22849a7d41f037365b60",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "3d67efa8c3a1266ce927dc1021494c0518d1280efc0ed2ebcbd1fc7de2ae1117"
+    },
+    "features/pl_release_check.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "df6140d7c3307cbd1102fc48c262043d940385b9",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "56f0f5b3df9307319c5fd4a7140127bd929b971bd3fe5a2ef5e3363d6efcd45b"
+    },
+    "features/pl_regression_run.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "ea6f9a099c115d3a1787099c4fe05dc7247224e4",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "0b433d3ad190a92e4ca80f76ab2df8fa989872afee9bf48939043a594792eba9"
+    },
+    "features/pl_regression_author.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "fcd2b4894a437a0bc6ddc7738b11a97052561b3e",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "f7d2c855467156e66fdcb7eac991ce38d0eac5303cb009da8b761ad22ac14aaa"
+    },
+    "features/pl_qa_report.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "b0e207ce259711e186901292093aaabfdb4c2405",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "8fdb0a54283cf64bf1aca64093fe5ae6c5d5e7c5503ac2ee97c6cf6e67324f89"
+    },
+    "features/pl_discovery.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "53d199fc1bff235300e891b3cae1fbea3cec5bf6",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "8f16c0f7f2eba1ffa98682bead310b22ddd7e96091b31326100a0aebdb61e888"
+    },
+    "features/pl_complete.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "4848a4b221e5efe6fe0cbead327b0b5e44ed60ef",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "47011b142ab9d559728611eaceaab04a4ed0060623254d73f44a9042396a7696"
+    },
+    "features/pl_tombstone.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "c64821a2b8abaf67f81adfbe2863c7c8da2712f9",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "6188f6d3f9f61b1d99d491917b6fcf8e7fe3dadd9c92058acfa936d4554d4d28"
+    },
+    "features/pl_edit_base.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "954361ed5d8dffb2e589d3d010e4c0e46f694709",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "f5dbdc5f13244c88f6daf171423262e962b97e447bd52b9a30252ca1336e9753"
+    },
+    "features/pl_override_edit.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "7343b9a86c6615b8d4203a6cb15083b05b0afcff",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "4bb7fc69eeb4acf1a858bd7dfb2d64f09330c248fa7bfd894982b920cc9a7c67"
+    },
+    "features/pl_anchor.md": {
+      "complete_ts": 1774285061,
+      "complete_hash": "cf71daf77dedda6cead8c5ab5de5eb358e8cc9d3",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "7d95af9b51fafcf822da8fa37f69a1574ce97fd1befb60f7552fe41730d28a8a"
+    },
+    "features/pl_propose.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "48e680f12fb4b98ea322ac9138b434a80012c2c2",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "69bce7daf617c660f918ca1a2d2e93e95c88f12d935bf22c1e9aefa10f1f2877"
+    },
+    "features/pl_server.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "eb4a346d66e5b8efa9e6106a325e5310de4986c3",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "ff5f9724f0aac03bac4ca4338aae98d13ad2dcd1e443785fd43a041df0ccd42f"
+    },
+    "features/pl_unit_test.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "436c046e92580a165f11acb064161245ec58efe5",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "f770a8f13fb6d01e62da2f8a0847d3b6fd97e0d9332aff86d6c51a6ee6c36f3a"
+    },
+    "features/pl_build.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "db8b70248b7eac4ac588e3e8c0465184ddf34f06",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "cdaebfef1a15b496a16b57ad2e3daa4a30943f067581da954c46125a4e982bff"
+    },
+    "features/pl_purlin_issue.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "869b2ee79430712640703a8e449b7ccd895198eb",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "d084ad70c8fdd356fb58470787c7c35afaf6c9d9f3d2fecc5f083e61e9a2ffae"
+    },
+    "features/pl_fixture.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "733addb1b53ce09454048924a818c59dd2ee9d19",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "77087dc5099809ba8ab9550c95a864063935f1aa25effa643e07dd1f494d5fc6"
+    },
+    "features/pl_find.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "9a2539844beb6ef5167ed5e7012fa5a06cd90903",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "9ff2e9f344554d7c89b4bc50ef5b3ba7ab53f7b907ee047b60abbc4c5a530e52"
+    },
+    "features/pl_status.md": {
+      "complete_ts": 1774284536,
+      "complete_hash": "9002a2f9256315b7947f06eee5e40880d3147c15",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "5d7621ea285dca2bc21f3a8b8550f810cbee91795bee31e7dda676a42b35a0c7"
+    },
+    "features/terminal_identity.md": {
+      "complete_ts": 1774267734,
+      "complete_hash": "38e7eba961ccffdeba86399acb6b179b84a955e1",
+      "testing_ts": 1774118684,
+      "testing_hash": "57c0c1855f7b7f988a2c899f7e5532b51f87c6b5",
+      "scope": null,
+      "spec_content_hash": "50d0d753277b9e54c1e21447d97673e65218bf23de198c0d81c5b38255f4d89c"
+    },
+    "features/release_submodule_safety_audit.md": {
+      "complete_ts": 1774267734,
+      "complete_hash": "3e1b456f051e6bb3ec283d9f7b799669c85e19f8",
+      "testing_ts": 1774020650,
+      "testing_hash": "5faf2d6c941efb31c425f1b121a2e8cd9dc0ce9c",
+      "scope": null,
+      "spec_content_hash": "d66b66fad0b62bc14ecf7c1ee9058551f0110e60ed7f4607c6f9329e01e95175"
+    },
+    "features/release_doc_consistency_check.md": {
+      "complete_ts": 1774267734,
+      "complete_hash": "0066af8d5013898a6acc0730294e58d8d1a51c17",
+      "testing_ts": 1773873980,
+      "testing_hash": "2c214c90f778da5920c373439f538aed7f43f548",
+      "scope": null,
+      "spec_content_hash": "b27615cb822d6c802bcfe51a2c746f7fc53b6abf8ea2dbd3412ce6e8638fb226"
+    },
+    "features/collab_whats_different.md": {
+      "complete_ts": 1774267729,
+      "complete_hash": "83f3640c81d163d7ae1dc344eefb972249c33218",
+      "testing_ts": 1772853640,
+      "testing_hash": "07c4c5e8c7ce3bdac71cc223ccf17e63c0a3ffd3",
+      "scope": null,
+      "spec_content_hash": "6f04560fb891fcb31ad3b6765a21c5ac9fc646a52c7cdf1ae2e8ac1881182caf"
+    },
+    "features/instruction_audit.md": {
+      "complete_ts": 1774234973,
+      "complete_hash": "d4a5956151fc4b652cb13acebbefab79a93c00a7",
+      "testing_ts": 1772909047,
+      "testing_hash": "4a247d2f9e87787ea214453a86025f2feec08982",
+      "scope": null,
+      "spec_content_hash": "1bb757c28d9fe188d60eab6faff20c46ef61abbe7939f4d75233150c41c09df8"
+    },
+    "features/release_refresh_docs.md": {
+      "complete_ts": 1774234415,
+      "complete_hash": "d70f2504b2891d4b7fd46a83a4b35c7cf08a9737",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "targeted:First occurrence linked,Self-reference skipped,Idempotent on second run,Code blocks and headings skipped,Existing links not double-wrapped",
+      "spec_content_hash": "d063ea0283fc25d1094a10ba05c309858d83a918c1ba99fd1640c251b243abb0"
+    },
+    "features/subagent_parallel_builder.md": {
+      "complete_ts": 1774228813,
+      "complete_hash": "afc0e63f2368fb7d44a254492efd98e7defe5417",
+      "testing_ts": 1774219083,
+      "testing_hash": "37075de96448fad3fb91f77b97caafdde411c427",
+      "scope": "targeted:Architect cannot use Write or Edit tools,Hook fallback blocks Write/Edit when AGENT_ROLE is architect",
+      "spec_content_hash": "8979fc5057cadb941fd629c66c33fe20101f2f86395e2e56feebbaf8cdb37e3f"
+    },
+    "features/architect_agent_launcher.md": {
+      "complete_ts": 1774227902,
+      "complete_hash": "38e1c4e727e2aa0890f45e6c8d6df57905ee44e8",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "d101894ff1332b1b09db5729cc9213f0c68b923c1aeb2b8f6a866e3b4f801e3f"
+    },
+    "features/release_verify_zero_queue.md": {
+      "complete_ts": 1774223241,
+      "complete_hash": "ca1d5f4f041905d2bfa02cad52bba6a681dc1ef3",
+      "testing_ts": 1772909055,
+      "testing_hash": "1d24c24d396360009bbff0b74ab981cd31464cc0",
+      "scope": "re-verification",
+      "spec_content_hash": "80eeca502c5924a451218498d63d587a55596ea0c0638205663498434dfe58dd"
+    },
+    "features/release_step_management.md": {
+      "complete_ts": 1774223241,
+      "complete_hash": "b20e2e35d360f8ff52194fefcf7362e8c0e7ae09",
+      "testing_ts": 1772933544,
+      "testing_hash": "5ade09d7b246b7e355d40c11eec7920acccaeb60",
+      "scope": "re-verification",
+      "spec_content_hash": "384899af248f733fceb0d968fd3cbd37f9670c3e9ce2c0b8560fa58dae6dcd13"
+    },
+    "features/release_push_to_remote.md": {
+      "complete_ts": 1774223241,
+      "complete_hash": "8371098f45dce010c879292e203fe62eb49d1bdb",
+      "testing_ts": 1772675566,
+      "testing_hash": "79ea7d54beb718cdcf3be2270b8e3756969a332b",
+      "scope": "re-verification",
+      "spec_content_hash": "d8ad9b8a38d2aa27d90381680f1458cb82d881dda7e7b22db0ec521b1e20d096"
+    },
+    "features/spec_from_code.md": {
+      "complete_ts": 1774223240,
+      "complete_hash": "08839f9ee480afdef88a69f3753e80b59d2a2cc3",
+      "testing_ts": 1772933544,
+      "testing_hash": "331a108407ab94b05fdfa5e4da686c6a6bb6e8bc",
+      "scope": "re-verification",
+      "spec_content_hash": "67ff5f9f413384197261df218a04891e92202a8f9343d1e23577aa77bdfc4da1"
+    },
+    "features/qa_agent_launcher.md": {
+      "complete_ts": 1774223240,
+      "complete_hash": "78ed8905e6a31545b06cd94e8b79a89707db6b69",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "8d359f3aa4fad274c69e08cd48769dc53a27d2f255067482ca38eabbb76c87b3"
+    },
+    "features/builder_agent_launcher.md": {
+      "complete_ts": 1774223240,
+      "complete_hash": "8d7198155e4132a8b71c304f2e05bb6fd666eab3",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "a58f30bfaa98bd9e55e5a2f6fb7f471742d36bcc2e8e5be76994b20b8af81dfd"
+    },
+    "features/cdd_modal_base.md": {
+      "complete_ts": 1774223029,
+      "complete_hash": "967605d7fef73597fd12d174134c56b9b1f68a5f",
+      "testing_ts": 1774118826,
+      "testing_hash": "75092f9cb32b1f1dfe842a87c38cadf6e6fe0a0b",
+      "scope": "re-verification",
+      "spec_content_hash": "06fdd52daba763060a6beb4289b387d9adff52f4faeabb9a392c8a06320bd158"
+    },
+    "features/pl_design_ingest.md": {
+      "complete_ts": 1774222803,
+      "complete_hash": "f5d0cb998976dc697476c0f230a94988ce97e430",
+      "testing_ts": 1773885646,
+      "testing_hash": "7d395ee5eb40e5d9f6dd7727050bafccf3ae9935",
+      "scope": "re-verification",
+      "spec_content_hash": "46e5864895c77908afe0fc63a9a3b7f814bc7eedd971b087b3059c3fb631f627"
+    },
+    "features/submodule_command_path_resolution.md": {
+      "complete_ts": 1774222803,
+      "complete_hash": "8b678ada4cd5327fe4a5b72bb5c362cbb993aaba",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "33fe0507501b884f6f7db84c5ce642c15ea7097b2c26ce93ada7eea0e596c246"
+    },
+    "features/tools_diagnostic_logging.md": {
+      "complete_ts": 1774222803,
+      "complete_hash": "38431b619043bad268cd235d3f7a3535b880d296",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "6a5dccc2d2db9a6b15730a508ec19cf089d08684b95148582fb4c50cfaf96278"
+    },
+    "features/tools_bootstrap_module.md": {
+      "complete_ts": 1774222802,
+      "complete_hash": "694208a23d759f2545cc602c232d5b4f129230af",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "3e2578c4b7d78f230e6ec06ae08e1b11784d4966c844e3fd1ce95445f692d993"
+    },
+    "features/git_timestamp_resilience.md": {
+      "complete_ts": 1774222802,
+      "complete_hash": "8e32ad7e2de149e74e891a1384d4b18ee44f6903",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "0e08c9c0ffbe46dbf8419834e332acb7827d055bf93ee3c9f82458b5ac31bb9a"
+    },
+    "features/builder_qa_mode.md": {
+      "complete_ts": 1774200839,
+      "complete_hash": "88b794a50eedd426b779cc37067195de8e1a69bb",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "c6b71206311e16948d3580552534cc030a2a95f363f6b3b994786c9976118a4e"
+    },
+    "features/continuous_phase_builder.md": {
+      "complete_ts": 1774058396,
+      "complete_hash": "edef2b93a7ebfd8d5ec49ba6a10c4b5ee26f29ea",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "420a7fca41aa331e86686ab38e5520f513811e7d33ae527fcb10c3b7e5818af6"
+    },
+    "features/pl_agent_config.md": {
+      "complete_ts": 1774018085,
+      "complete_hash": "d70725ecd0e0c55520dc8446efdf9688cd96a61b",
+      "testing_ts": 1772823806,
+      "testing_hash": "650febcd81e1adf25a5e4e55afab332b9723ea7e",
+      "scope": "full",
+      "spec_content_hash": "44d629ad6022afda3fa829af940ae78d65b527e2bdcfd630d4dcac9a3e3dca24"
+    },
+    "features/design_modal_standards.md": {
+      "complete_ts": 1773944651,
+      "complete_hash": "cf88b7d6d8bb091646628f603620a6497b364a27",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "re-verification",
+      "spec_content_hash": "f4db00191b52678d82be61fb2debc9ae0763f4d6a5f53b6aedf160dcd30c33a1"
+    },
+    "features/design_visual_standards.md": {
+      "complete_ts": 1773943807,
+      "complete_hash": "fdd526b51ddcbd142aa8794d124122eb81107394",
+      "testing_ts": 1772848978,
+      "testing_hash": "7573c360f505d74f69d3b3f14d86a65afcee5329",
+      "scope": "cosmetic",
+      "spec_content_hash": "fcc695001538e485f7ca1fadad1d9144b06677d353c103cf95e35c5881c512b4"
+    },
+    "features/policy_test_quality.md": {
+      "complete_ts": 1773943767,
+      "complete_hash": "31cc09486587406228a35a082a270474ddd7f0d5",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "9866a6a97e799877aa7e1b0d31048666d665577951cc411d2d55175cb6830d46"
+    },
+    "features/phase_analyzer.md": {
+      "complete_ts": 1773890117,
+      "complete_hash": "a729d2a54705c0a4dd34055774446eae54c5802b",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": null,
+      "spec_content_hash": "75164a356e7760bdac88d55ed45a27d4c5da4a42588e824a9e3490eeaacaf82a"
+    },
+    "features/aft_regression_testing.md": {
+      "complete_ts": 1773856043,
+      "complete_hash": "2befcd3107907be571edf93b17f8b7f725de574a",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "041978b8c8e62dbe7295fba3f6f2940d00d19330313cc083785a7174d1282fa6"
+    },
+    "features/arch_automated_feedback_tests.md": {
+      "complete_ts": 1773856040,
+      "complete_hash": "bdab3985c1040a7933a23db3ae7514f312191140",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "c431c6147dd4de77a09b82afd416110380d7995bcd1864c5e6bfcba49b616be4"
+    },
+    "features/critic_test_quality_audit.md": {
+      "complete_ts": 1773846537,
+      "complete_hash": "cb2d7be710381e74efa42cb848963b9a12a60192",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "c465e0208cf5daabecd0c30ca3c37c07fae903f5d560414c8891cfd4ee219f12"
+    },
+    "features/aft_agent.md": {
+      "complete_ts": 1773803639,
+      "complete_hash": "54af8c8a293c7a2bf9226f7e3eab0f9f29a08e2d",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "53d9b60a704bd85095bf8360100cfc190ee6603c6a39cf9b01fb41658c14f212"
+    },
+    "features/pl_aft_web.md": {
+      "complete_ts": 1773661974,
+      "complete_hash": "f6d78aa094af0104f8b3acc75507067b3ee8fdf5",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "d8719aa8d9d0490a3e6996abf992b59eea86ae99dc58c8734457552031b66c7e"
+    },
+    "features/pl_web_verify.md": {
+      "complete_ts": 1773616428,
+      "complete_hash": "2d42210a9a5e0b8b316c9ca1d26d148cf7b758c9",
+      "testing_ts": 1772840059,
+      "testing_hash": "62416543c376671798ce3cf4a9246a37de9a96ed",
+      "scope": "full",
+      "spec_content_hash": "904cf210ff15ef37a3ec8530e750af0a08ab12a7cb71f6481978b87d420a827f"
+    },
+    "features/critic_pm_column.md": {
+      "complete_ts": 1773344856,
+      "complete_hash": "71ecdc0559488b21024b06b12d9c1f1cf86661d6",
+      "testing_ts": 1773346182,
+      "testing_hash": "d4d0be2b27566b4afd36bc7ccd45af4b47ee1fc2",
+      "scope": "full",
+      "spec_content_hash": "90ae713fbd3ccfd01142c4fa7dc72ab203d84d682adff1399a055289b8080979"
+    },
+    "features/pl_context_guard.md": {
+      "complete_ts": 1773028102,
+      "complete_hash": "d9813ca7f1ad205de7147dfaa4372d4feb21ba42",
+      "testing_ts": 1773015188,
+      "testing_hash": "af4b6a00f8c78c0eacc0ec69027975aa63064d17",
+      "scope": "full"
+    },
+    "features/context_guard.md": {
+      "complete_ts": 1773024903,
+      "complete_hash": "408b718b0d2b073c9d0f9c0191c6c7494a3e252d",
+      "testing_ts": 1772851147,
+      "testing_hash": "3f91134754f08fa36e98f49905fe18d7afbee90b",
+      "scope": "full",
+      "spec_content_hash": "aa3e04cdb0367bea3aa39534da512865afce7a0019a3c49ccb1030199b8dc4a0"
+    },
+    "features/cdd_isolated_teams.md": {
+      "complete_ts": 1772933380,
+      "complete_hash": "64e4bae4e24aa2b4c34a9e88d5a857bf141b3c7b",
+      "testing_ts": 1773020781,
+      "testing_hash": "ac2b784de5c573940a7723847ff7fdc46280df3a",
+      "scope": "targeted:Kill Isolation Dry Run Returns Safety Status",
+      "spec_content_hash": "2d70735d653047c40fd8857e3138eec03a4eacc7caacc9cf037817e7cc809ece"
+    },
+    "features/policy_collaboration.md": {
+      "complete_ts": 1773014261,
+      "complete_hash": "02d20daaec7374d5274c212523daefee4623bdfe",
+      "testing_ts": 1772853104,
+      "testing_hash": "fccfb729337b66d713db47c0c60defa909d21add",
+      "scope": "dependency-only",
+      "spec_content_hash": "0bc7c5289c9301cf27c4e8dc68b964c561e111f6cf8976702583ee43da4d153b"
+    },
+    "features/isolated_teams.md": {
+      "complete_ts": 1772996414,
+      "complete_hash": "4816b0cb387d1b2fc349ba6f00e9443cb08c93ca",
+      "testing_ts": 1772933544,
+      "testing_hash": "a0fe3ec14fdfbc5c33c47795fbf44ba3c55360ad",
+      "scope": "full",
+      "spec_content_hash": "9159a8085b376223b96c653d71de4d0e637b4302689d96a234c9b242403b906b"
+    },
+    "features/spec_code_audit_role_clarity.md": {
+      "complete_ts": 1772933383,
+      "complete_hash": "2e02fe2216a106f92d36cc77f52dae4ba6aab176",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "6e291967cbf3c25e5a01367ac766f467099308c5fef8c3206e6ac9aa9dcace1f"
+    },
+    "features/workflow_checklist_system.md": {
+      "complete_ts": 1772928311,
+      "complete_hash": "e61e4448a48375e7cc947a53f203ebbe37287111",
+      "testing_ts": 1772071842,
+      "testing_hash": "693046080fea7747cabba2f8a7bc6ffbf5c4aec7",
+      "scope": "cosmetic",
+      "spec_content_hash": "628f3d6ad506fce1a4a3056a725114145eed509d57ed1ecbcbb85ccff41c39a6"
+    },
+    "features/pl_isolated_push.md": {
+      "complete_ts": 1772807788,
+      "complete_hash": "d817febb959fab1c9b7f5143f72337509f80ccfa",
+      "testing_ts": 1772823162,
+      "testing_hash": "23d0643e8db9bb30286c14a64db9c2f1babf5e16",
+      "scope": "cosmetic",
+      "spec_content_hash": "47ec70fd68e21b1e06969393e26392790e5195eee24bdfad5aaec613e99c9fd9"
+    },
+    "features/pl_isolated_pull.md": {
+      "complete_ts": 1772807786,
+      "complete_hash": "99fcce6d3e47aa5171098600b8c3c583a6cadcc4",
+      "testing_ts": 1772823162,
+      "testing_hash": "55e4464386a85b299eda29d4a745e06e9a1b8174",
+      "scope": "cosmetic",
+      "spec_content_hash": "359e79b7fc6a94c4f6b28b04b0649cc7f64e5cb3257d108f5c60c9e686c9f3dd"
+    },
+    "features/submodule_bootstrap.md": {
+      "complete_ts": 1772769832,
+      "complete_hash": "1dbbd7e15795b6411451d75985a39688a25f0fd8",
+      "testing_ts": 1771906257,
+      "testing_hash": "b5a065f4b3390124279a7c41059a2c91f67dc095",
+      "scope": "cosmetic",
+      "spec_content_hash": "d0179389fada9293c8e642b916901a653fc9d854657110b5fb082db9cd9ae74a"
+    },
+    "features/cdd_remote_collab.md": {
+      "complete_ts": 1772681191,
+      "complete_hash": "7c96b0a184442226d782efc4e27c7f90c62fc6a9",
+      "testing_ts": 1772769543,
+      "testing_hash": "fb6e82de54cf1a3584a94475e400ab149b8783f8",
+      "scope": "targeted:Refresh Sessions Button Fetches All Remote Refs,Section Heading Shows Shortened Remote URL,Section Heading Without Remote",
+      "spec_content_hash": "468fe5a2ed72b5a4985396e30ca6d8a6a5e7548217ba497cc86e188510d8e8d3"
+    },
+    "features/pl_collab_push.md": {
+      "complete_ts": 1772673065,
+      "complete_hash": "c51284e422faaec300ad01f217970edbf2ff4f1f",
+      "testing_ts": 1772673042,
+      "testing_hash": "d169d944339471dfb3360a0bd0386a0fc9ff3c92",
+      "scope": "full",
+      "spec_content_hash": "09ab26f8b2d165a50d17d10621addac1061ab3d0268860c38e1672c0ca679839"
+    },
+    "features/pl_collab_pull.md": {
+      "complete_ts": 1772673065,
+      "complete_hash": "586afef05d2c3d88b56451258afb4efee624830d",
+      "testing_ts": 1772673041,
+      "testing_hash": "5c07307569f839d1c21d9b8f3b20dc2597f6456d",
+      "scope": "full",
+      "spec_content_hash": "836047ab50b48eee851c4ab04aad0a0b85f4cdbca62eec3adc05f055b1ea88df"
+    },
+    "features/pl_local_push.md": {
+      "complete_ts": 1772673063,
+      "complete_hash": "821c4e7b38722224b8862ed82ea7a5184a7e0196",
+      "testing_ts": 1772673040,
+      "testing_hash": "b6dac2f03392f1d2be9b9c7f7bb8560ea237fcb4",
+      "scope": "full",
+      "spec_content_hash": "15b71ce9443d5175a051a31060cf2150744b13827cddea00e21f1755b8e19bef"
+    },
+    "features/pl_local_pull.md": {
+      "complete_ts": 1772673062,
+      "complete_hash": "15a9e8971484de163067bdeacf7b15d38d737f3e",
+      "testing_ts": 1772673039,
+      "testing_hash": "37b119a55ccf3c5f0a27ab1caa7e4b1f8330e38b",
+      "scope": "full",
+      "spec_content_hash": "d5607a1ce044a257ade67800ba2d4eba6ddf6568220bd64e408440238735212d"
+    },
+    "features/policy_remote_collab.md": {
+      "complete_ts": 1772672368,
+      "complete_hash": "aed9d88f8f9c3a713409fbb8d85e93f5d9b0edfe",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "cosmetic",
+      "spec_content_hash": "fb8fc0ba15d664b0d3778f9e881869f966edd97a07057a967c1908332d8f5131"
+    },
+    "features/submodule_sync.md": {
+      "complete_ts": 1772136237,
+      "complete_hash": "ebc3d9b35318c8f7683a93b62cf412fa5731f620",
+      "testing_ts": 1771799290,
+      "testing_hash": "91ed23556b51586b7fd4c2e8fa92718edc0146ca",
+      "scope": "full",
+      "spec_content_hash": "3b5a60dbbf27aa921bd5b1d7fcb8ca86b30420efa7e59cab16dd12a504aa1e57"
+    },
+    "features/cdd_agent_isolation.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1771940567,
+      "testing_hash": "9eec1adac7e104450803f555657804c68bac6695",
+      "scope": "targeted:Isolated Agents Sub-heading Shows Count When Collapsed With Active Worktrees,Visual:CDD Dashboard \u2014 Isolation Controls",
+      "spec_content_hash": "892235c9ea057572c9594995388771e79eec4b3a03a546caefe0b1eae97651a3"
+    },
+    "features/cdd_collab_mode.md": {
+      "complete_ts": 1771894948,
+      "complete_hash": "9ef49966693713d99d8f71ad49b4ff8c42c77461",
+      "testing_ts": 1771906623,
+      "testing_hash": "a55e5cad42a1190adedff5188b881b66bbc93220",
+      "scope": "full",
+      "spec_content_hash": "1e5e098435288100c78470f9eec649ba7b50df265515dbe05025884ad66856d5"
+    },
+    "features/isolated_agents.md": {
+      "complete_ts": 1771900916,
+      "complete_hash": "9fe7aaf658ea06ef61325556de7188d04998ddac",
+      "testing_ts": 0,
+      "testing_hash": "",
+      "scope": "full",
+      "spec_content_hash": "7989087586a3d869f5e364121397e801b4c48b49dae3bb2f934556f58a63e158"
+    },
+    "features/cdd_software_map.md": {
+      "complete_ts": 1771895036,
+      "complete_hash": "5f735673b5dbaabee55c4bdf30194f15344ea323",
+      "testing_ts": 1771897471,
+      "testing_hash": "41bbe2ffb3763f7718f24c6c9b5aa6a8dfb314a0",
+      "scope": "targeted:Node Position Preserved on Refresh When Manually Moved,Node Positions Discarded When Graph Changes Substantively,Recenter Graph Button Resets Node Positions,Inactivity Timeout Redraws Graph and Resets Zoom",
+      "spec_content_hash": "a518fbf885cf1ef318189c70dcd1dfdacac7df4f461682a9994e6fe2ce0e5b45"
+    },
+    "features/agent_launchers_multiuser.md": {
+      "complete_ts": 1771886450,
+      "complete_hash": "7faeee8d2921a652438bd75abe658ae7b57451a6",
+      "testing_ts": 1771897471,
+      "testing_hash": "8fc83feba06fc2b04c0db7da9ae0246b9425b7e1",
+      "scope": "targeted:setup_worktrees Removes .claude/commands/ From Each Worktree",
+      "spec_content_hash": "a7e767444c080555922be10c527902428c0a6093cee112666f9bce0f27d7f3e5"
+    },
+    "features/cdd_model_configuration.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1771782302,
+      "testing_hash": "c54e538613ff36f6fa09482385f5e223a84d4008",
+      "scope": "full",
+      "spec_content_hash": "92556be54b8f1580369907b3c5ecac0a20f1c80e8dbe21a9f3e5a159b9138ee2"
+    },
+    "features/release_process_animation_diagram_update.md": {
+      "complete_ts": 0,
+      "complete_hash": "",
+      "testing_ts": 1771777786,
+      "testing_hash": "4bee0041e9d9ce1404851e575b64cf630b89aa50",
+      "scope": "full",
+      "spec_content_hash": "57bea98fb4074e3d1a608e3cf9b9fe519ae4c4cb81f2fc096a3367cd8d037d4b"
+    },
+    "features/agent_configuration.md": {
+      "complete_ts": 1771726019,
+      "complete_hash": "1f48f934d6a4d8567dad313f832737505d686e51",
+      "testing_ts": 1771714458,
+      "testing_hash": "da811bae5fec67cff86d3a77dd1ab303c9b245c8",
+      "scope": "cosmetic",
+      "spec_content_hash": "77bb3603b34ff5fbbe9016e2cde62041a83d9b4cfddd7b6a62a863afe314440a"
+    },
+    "features/software_map_generator.md": {
+      "complete_ts": 1771701538,
+      "complete_hash": "e615b84d7a8e4c19010a49b13f3377ca8f97230b",
+      "testing_ts": 1771700811,
+      "testing_hash": "875d0faceb1eb1d3ca52710cdf7a61225c95e7fc",
+      "scope": null,
+      "spec_content_hash": "28ce37f148adfcb3e06780804e36bb68afc1d74f3e840ca3c3c1c505a76d89cc"
+    },
+    "features/arch_critic_policy.md": {
+      "complete_ts": 1771633533,
+      "complete_hash": "d96af3309c18c2adda5d363203e9330421f1de78",
+      "testing_ts": 1771548062,
+      "testing_hash": "9efb665d17779367a32619343afd9de3e471b0d1",
+      "scope": "full",
+      "spec_content_hash": "fc314c6a73ee00f482594771235cdbe1163acf0aeace8302b881402dff92e9a9"
+    }
+  }
+}

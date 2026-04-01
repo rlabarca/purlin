@@ -53,13 +53,20 @@ specs/
 
 ## Skills Reference
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference. Key skills:
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference.
+
+| Skill | Guide |
+|-------|-------|
+| `purlin:spec-from-code` | [Generating Specs from Code](spec-from-code-guide.md) — onboarding existing projects |
+
+Key skills:
 
 - `purlin:spec` — create/edit specs
 - `purlin:build` — implement from spec rules
 - `purlin:verify` — run all tests, issue verification receipts
 - `purlin:status` — show rule coverage via `sync_status`
 - `purlin:changelog` — PM-readable summary of what changed
+- `purlin:spec-from-code` — reverse-engineer specs from existing code
 - `purlin:init` — initialize a new project
 
 ## Hard Gates (only 2)
