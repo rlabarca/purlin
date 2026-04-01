@@ -1,13 +1,22 @@
+<p align="center">
+  <img src="../assets/purlin-logo.svg" alt="Purlin" width="400">
+</p>
+
 # Purlin Documentation
 
-Purlin is a spec-driven development plugin for Claude Code. Specs define rules, tests prove them, `sync_status` shows coverage.
+**Rule-Proof Spec-Driven Development**
+
+- Write better code through proof-based specs
+- Prove spec / code drift with signed verification
+- Enable multi-discipline collaboration with smart changelogs and remote invariant specs that cannot be adjusted during development
 
 ## Guides
 
 | Guide | What it covers |
 |-------|---------------|
+| [The Purlin Lifecycle](lifecycle-guide.md) | PM, Engineer, and QA workflows with Mermaid diagrams |
 | [Installation](installation-guide.md) | Installing Purlin, initializing a project, proof plugin setup |
-| [Spec–Code Sync](spec-code-sync-guide.md) | The rule-proof model: specs, rules, proofs, and `sync_status` |
+| [Spec-Code Sync](spec-code-sync-guide.md) | The rule-proof model: specs, rules, proofs, and `sync_status` |
 | [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof files, and the verify workflow |
 | [Invariants](invariants-guide.md) | Read-only external constraints in `specs/_invariants/` |
 | [Worktrees](worktree-guide.md) | Running parallel agents in isolated git worktrees |
@@ -39,12 +48,13 @@ specs/
 
 ## Skills Reference
 
-See `references/purlin_commands.md` for the full 12-skill reference. Key skills:
+See `references/purlin_commands.md` for the full 13-skill reference. Key skills:
 
 - `purlin:spec` — create/edit specs
 - `purlin:build` — implement from spec rules
 - `purlin:verify` — run all tests, issue verification receipts
 - `purlin:status` — show rule coverage via `sync_status`
+- `purlin:changelog` — PM-readable summary of what changed
 - `purlin:init` — initialize a new project
 
 ## Hard Gates (only 2)

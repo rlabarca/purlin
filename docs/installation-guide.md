@@ -55,7 +55,7 @@ Resolution: `config.local.json` wins if it exists. On first access, `config.json
 Default config:
 ```json
 {
-  "version": "2.0.0",
+  "version": "0.9.0",
   "test_framework": "auto",
   "spec_dir": "specs"
 }

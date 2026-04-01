@@ -79,7 +79,7 @@ Everything else is optional guidance. See `references/hard_gates.md`.
 When the user's intent is clear, act directly:
 - "test X" / "build X" / "fix X" → read `specs/**/X.md`, build code if missing, write tests, iterate until `sync_status` shows READY
 - "what's the status?" → call `sync_status`
-- "what changed?" / "changelog" / "what happened since last verify?" → use `purlin:changelog`
+- "what changed?" / "changelog" / "what did the team do?" → use `purlin:changelog`
 - "write a spec for X" → use `purlin:spec`
 - "verify" / "ship" → run `purlin:verify`
 

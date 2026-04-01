@@ -1,6 +1,14 @@
+<p align="center">
+  <img src="assets/purlin-logo.svg" alt="Purlin" width="400">
+</p>
+
 # Purlin
 
-**Spec-driven development for Claude Code.** Write specs with rules, prove them with tests, track coverage automatically.
+**Rule-Proof Spec-Driven Development**
+
+- Write better code through proof-based specs
+- Prove spec / code drift with signed verification
+- Enable multi-discipline collaboration with smart changelogs and remote invariant specs that cannot be adjusted during development
 
 ## How It Works
 
@@ -97,7 +105,7 @@ purlin:verify
 
 Runs ALL tests, issues verification receipts for every feature with 100% rule coverage.
 
-## 12 Skills
+## 13 Skills
 
 | Skill | Purpose |
 |-------|---------|
@@ -106,6 +114,7 @@ Runs ALL tests, issues verification receipts for every feature with 100% rule co
 | `purlin:verify` | Run all tests, issue receipts |
 | `purlin:unit-test` | Run tests, emit proof files |
 | `purlin:status` | Show coverage + directives |
+| `purlin:changelog` | PM-readable summary of changes |
 | `purlin:init` | Initialize project |
 | `purlin:invariant` | Sync external constraints |
 | `purlin:find` | Search specs |

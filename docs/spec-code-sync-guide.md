@@ -1,83 +1,90 @@
 # Spec-Code Sync Guide
 
-The rule-proof model is Purlin's core mechanism for keeping specs and code in sync.
+Purlin keeps specs and code in sync through one mechanism: **rules in specs, proofs in tests**.
 
-## The Model
+## How It Works
 
 ```
-Spec --> Rules --> Proofs --> sync_status
+Spec (RULE-1, RULE-2)  →  Tests (@proof markers)  →  Proof files  →  sync_status
 ```
 
-1. **Specs** describe what a feature does and define testable rules.
-2. **Rules** are numbered constraints (`RULE-1`, `RULE-2`, ...) that code must satisfy.
-3. **Proofs** are test results linked to rules via proof markers. Test runners emit proof JSON files.
-4. **`sync_status`** diffs rules against proofs and reports coverage with actionable directives.
+- A spec defines rules: `RULE-1: passwords must be hashed with bcrypt`
+- A test proves a rule: `@pytest.mark.proof("login", "PROOF-1", "RULE-1")`
+- The test runner emits a proof file: `specs/auth/login.proofs-default.json`
+- `sync_status` diffs rules against proofs and tells you what's missing
 
-## Spec Format (3 sections)
+No tracking system. No ledger. The filesystem is the state.
+
+## Spec Format
 
 ```markdown
-# Feature: feature_name
+# Feature: login
 
-> Requires: other_spec, i_invariant_name
-> Scope: src/feature.js, src/feature.test.js
+> Requires: i_security_policy
+> Scope: src/auth/login.js, src/auth/session.js
 
 ## What it does
-One paragraph explaining purpose and motivation.
+User authentication with email and password.
 
 ## Rules
-- RULE-1: First testable constraint
-- RULE-2: Second testable constraint
+- RULE-1: Passwords are hashed with bcrypt before storage
+- RULE-2: Failed logins are rate-limited to 5 per minute
+- RULE-3: Sessions expire after 30 minutes of inactivity
 
 ## Proof
-- PROOF-1 (RULE-1): Observable assertion for rule 1
-- PROOF-2 (RULE-2): Observable assertion for rule 2
+- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database
+- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429
+- PROOF-3 (RULE-3): Create session, wait 31 minutes, verify token rejected
 ```
 
-### Metadata
+**`## Rules`** — parsed by `sync_status`. Must use `RULE-N:` format.
+**`## Proof`** — NOT parsed (except `@manual` stamps). It's a blueprint for the agent writing tests.
+**`> Requires:`** — other specs/invariants whose rules also apply to this feature.
+**`> Scope:`** — files this feature covers. Used for manual proof staleness detection.
 
-- **`Requires:`** — other specs whose rules also apply. Commonly used for invariants.
-- **`Scope:`** — files this spec covers. Used for manual proof staleness detection.
+Full format: `references/formats/spec_format.md`
 
-## How sync_status Works
+## Reading sync_status
 
-The `sync_status` MCP tool:
+```
+purlin:status
+```
 
-1. Scans `specs/**/*.md` for `## Rules` sections, extracts `RULE-N` entries.
-2. Scans `specs/**/*.proofs-*.json` for proof results.
-3. Matches proofs to rules by feature name and rule ID.
-4. Reports coverage per feature with directives.
+Output:
+```
+login: 2/3 rules proved
+  RULE-1: PASS (PROOF-1 in test_login.py)
+  RULE-2: PASS (PROOF-2 in test_login.py)
+  RULE-3: NO PROOF
+  → Fix: write a test with @pytest.mark.proof("login", "PROOF-3", "RULE-3")
+  → Run: purlin:unit-test
+```
 
-### Coverage States
+Every problem has a `→` directive telling you exactly what to do. Follow the directives until all rules show PASS.
 
-| State | Meaning |
-|-------|---------|
-| `READY` | All rules proved, vhash computed |
-| `PASS` | This rule has a passing proof |
-| `FAIL` | This rule has a failing proof |
-| `NO PROOF` | No test is linked to this rule |
-| `MANUAL PROOF STALE` | Manual stamp exists but scope files changed |
-| `MANUAL PROOF NEEDED` | Manual proof declared but not yet stamped |
+## Coverage States
 
-### Directives
-
-`sync_status` output includes directives that tell the agent exactly what to do:
-
-- `Fix: write a test with @pytest.mark.proof(...)` — a rule needs a proof
-- `Fix: test_name is failing` — a proof is failing
-- `Run: purlin:unit-test` — run tests to emit proofs
-- `Run: purlin:spec feature_name` — spec needs rules
-- `No action needed.` — feature is fully proved
-
-## Required Invariants
-
-When a spec has `> Requires: i_design_colors`, the invariant's rules appear in `sync_status` output for that feature. Tests must prove both own rules and required rules.
+| State | Meaning | Action |
+|-------|---------|--------|
+| READY | All rules proved | `→ No action needed` or `purlin:verify` to ship |
+| PASS | Rule has a passing proof | None |
+| FAIL | Rule has a failing proof | Fix the code or the test |
+| NO PROOF | No test linked to this rule | Write a test with a proof marker |
+| MANUAL PROOF STALE | Manual stamp exists but code changed since | Re-verify manually |
+| MANUAL PROOF NEEDED | Manual proof declared but not stamped | Verify by hand, then stamp |
 
 ## Verification Receipts
 
-When `purlin:verify` runs tests and all rules pass, it writes a receipt:
+When all rules are proved, `purlin:verify` runs the full test suite and issues a receipt:
 
 ```
-specs/<category>/feature_name.receipt.json
+verify: [Complete:all] features=3 vhash=f7a2b9c1
 ```
 
-The receipt includes a `vhash` (verification hash) computed from sorted rule IDs and proof statuses. This serves as a tamper-evident proof that all rules were covered at a specific point in time.
+The `vhash` is `sha256(sorted rule IDs + sorted proof IDs/statuses)`. It proves these rules had these test outcomes. CI `--audit` mode re-runs all tests independently to confirm.
+
+## Required Specs and Invariants
+
+`> Requires: i_security_policy` means the invariant's rules apply to this feature too. `sync_status` includes required rules in the coverage report. Tests must prove both the feature's own rules and required rules.
+
+Invariants are read-only — see the [Invariants Guide](invariants-guide.md).

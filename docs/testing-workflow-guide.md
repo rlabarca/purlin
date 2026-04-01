@@ -1,50 +1,39 @@
 # Testing Workflow Guide
 
-Purlin's testing workflow connects spec rules to test results through **proof markers**. Tests emit proof files, and `sync_status` diffs them against spec rules to show coverage.
+Write tests with proof markers. Run them. `sync_status` shows what's proved.
 
-## The Flow
-
-```
-Spec (RULE-1, RULE-2)  -->  Tests (@proof markers)  -->  Proof files (.proofs-*.json)  -->  sync_status report
-```
-
-## Step 1: Write Proof Markers
-
-Add proof markers to your tests to link them to spec rules.
+## Step 1: Write Tests with Proof Markers
 
 ### pytest
 
 ```python
-@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1")
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")
 def test_valid_login():
     resp = client.post("/login", json={"user": "alice", "pass": "secret"})
     assert resp.status_code == 200
 
-@pytest.mark.proof("auth_login", "PROOF-2", "RULE-2", tier="slow")
+@pytest.mark.proof("login", "PROOF-2", "RULE-2", tier="slow")
 def test_rate_limiting():
-    # tier="slow" writes to a separate proof file
-    ...
+    for i in range(6):
+        client.post("/login", json={"user": "alice", "pass": "wrong"})
+    assert client.post("/login", json={"user": "alice", "pass": "wrong"}).status_code == 429
 ```
 
 ### Jest
 
 ```javascript
-it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async () => {
+it("returns 200 on valid login [proof:login:PROOF-1:RULE-1:default]", async () => {
   const resp = await post("/login", { user: "alice", pass: "secret" });
   expect(resp.status).toBe(200);
 });
 ```
 
-The marker is embedded in the test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
-
 ### Shell
 
 ```bash
 source .purlin/plugins/purlin-proof.sh
-
-purlin_proof "auth_login" "PROOF-1" "RULE-1" pass "valid login returns 200"
-purlin_proof "auth_login" "PROOF-2" "RULE-2" pass "invalid login returns 401"
-purlin_proof_finish  # writes proof files
+purlin_proof "login" "PROOF-1" "RULE-1" pass "valid login returns 200"
+purlin_proof_finish
 ```
 
 ## Step 2: Run Tests
@@ -53,30 +42,14 @@ purlin_proof_finish  # writes proof files
 purlin:unit-test
 ```
 
-This runs your test suite. The proof plugin collects marked tests and writes proof JSON files next to the corresponding spec:
+The proof plugin collects results and writes proof files next to the spec:
 
 ```
-specs/auth/auth_login.proofs-default.json
-specs/auth/auth_login.proofs-slow.json
+specs/auth/login.proofs-default.json
+specs/auth/login.proofs-slow.json
 ```
 
-Each proof file contains:
-```json
-{
-  "tier": "default",
-  "proofs": [
-    {
-      "feature": "auth_login",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "tests/test_login.py",
-      "test_name": "test_valid_login",
-      "status": "pass",
-      "tier": "default"
-    }
-  ]
-}
-```
+**Feature-scoped overwrite:** The plugin updates proofs for features tested in this run. Other features' proofs are untouched. No global wipe during development.
 
 ## Step 3: Check Coverage
 
@@ -84,51 +57,57 @@ Each proof file contains:
 purlin:status
 ```
 
-The `sync_status` MCP tool reads specs and proof files, then reports:
+Shows which rules are proved, which are failing, which have no proof. Follow the `→` directives.
 
-```
-auth_login: 2/3 rules proved
-  RULE-1: PASS (PROOF-1 in tests/test_login.py)
-  RULE-2: PASS (PROOF-2 in tests/test_login.py)
-  RULE-3: NO PROOF
-  --> Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
-  --> Run: purlin:unit-test
-```
-
-When all rules are proved:
-
-```
-auth_login: READY
-  3/3 rules proved
-  vhash=a1b2c3d4
-  --> No action needed.
-```
-
-## Step 4: Verify
+## Step 4: Verify and Ship
 
 ```
 purlin:verify
 ```
 
-Runs ALL tests and issues verification receipts for features with 100% rule coverage. A receipt is the proof that every rule has been tested and passed.
+Runs ALL tests, issues verification receipts for every feature with 100% coverage. One receipt commit for the whole project.
+
+## Test Tiers
+
+Not all tests are fast. Use tiers to separate them:
+
+```python
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")                    # default — runs always
+@pytest.mark.proof("login", "PROOF-5", "RULE-5", tier="slow")       # CI only
+@pytest.mark.proof("login", "PROOF-8", "RULE-8", tier="nightly")    # scheduled
+```
+
+| Command | What runs |
+|---------|-----------|
+| `purlin:unit-test` | Default tier only |
+| `purlin:unit-test --all` | All tiers |
+| `purlin:verify` | All tiers |
 
 ## Manual Proofs
 
-Some rules can't be tested automatically (visual checks, UX flows). Use manual proof stamps in the spec's `## Proof` section:
+Some rules can't be automated. Mark them `@manual` in the spec:
 
 ```markdown
 ## Proof
-- PROOF-1 (RULE-1): @manual(user@example.com, 2026-03-15, abc1234)
+- PROOF-3 (RULE-3): Review error copy against brand guide @manual
 ```
 
-The stamp includes who verified, when, and which commit SHA was current. If scope files change after the stamp's commit, `sync_status` reports the proof as **STALE**.
+After verifying by hand:
 
-## Tiers
-
-Proof markers support a `tier` parameter (default: `"default"`). Tiers let you separate fast unit tests from slow integration tests:
-
-```python
-@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1", tier="integration")
+```
+purlin:verify --manual login PROOF-3
 ```
 
-Each tier writes to a separate file: `feature.proofs-integration.json`. The `sync_status` tool reads all tiers.
+This auto-stamps: `@manual(alice@company.com, 2026-04-01, f8e9d0c)` — who, when, at what commit. If code changes after the stamp, `sync_status` flags it stale.
+
+## Proof Quality
+
+Tests must actually test the rule, not just exist. Key principles:
+
+- **Assert behavior, not implementation.** `assert response.status == 429` not `assert rate_limiter.count == 5`
+- **Never `assert True`.** Every proof needs a real check against actual output.
+- **Test the negative case.** Prove bad input is rejected, not just that good input works.
+- **Don't mock what you're testing.** If the rule is about encryption, don't mock the crypto layer.
+- **Security proofs test the attack.** Inject `<script>alert(1)</script>`, don't just check that `sanitize()` exists.
+
+Full format: `references/formats/proofs_format.md`

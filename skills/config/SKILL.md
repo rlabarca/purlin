@@ -20,7 +20,7 @@ Call `purlin_config` with `action: "read"` (no key). Display the full config:
 ```
 Purlin Configuration (.purlin/config.json):
 
-  version: 2.0.0
+  version: 0.9.0
   test_framework: auto
   spec_dir: specs
 ```
@@ -49,7 +49,7 @@ The config file is `.purlin/config.json`. Default contents (from `templates/conf
 
 ```json
 {
-  "version": "2.0.0",
+  "version": "0.9.0",
   "test_framework": "auto",
   "spec_dir": "specs"
 }
@@ -57,6 +57,6 @@ The config file is `.purlin/config.json`. Default contents (from `templates/conf
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `version` | string | `"2.0.0"` | Purlin config version |
+| `version` | string | `"0.9.0"` | Purlin config version |
 | `test_framework` | string | `"auto"` | Test framework: `"auto"`, `"pytest"`, `"jest"`, `"shell"` |
 | `spec_dir` | string | `"specs"` | Directory containing spec files |

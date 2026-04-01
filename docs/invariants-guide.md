@@ -1,80 +1,123 @@
 # Invariants Guide
 
-Invariants are read-only specs that define constraints from external sources (design systems, compliance policies, API contracts). They live in `specs/_invariants/` and are protected by a gate hook.
+Invariants are read-only specs from external sources. Your project must conform to them — you can't change them locally.
 
-## File Location
+## Where They Live
 
 ```
 specs/_invariants/
-  i_design_colors.md      # Design system color tokens
-  i_api_v2_contract.md    # API contract from external team
-  i_compliance_gdpr.md    # Compliance requirements
+  i_design_brand.md          # Design system tokens
+  i_api_v3_contract.md       # API contract from another team
+  i_security_owasp.md        # Security requirements
 ```
 
-All invariant files use the `i_` prefix.
+All invariant files use the `i_` prefix followed by a type prefix.
+
+## Invariant Types
+
+| Type | Prefix | Example |
+|------|--------|---------|
+| Design | `i_design_` | Colors, typography, spacing from Figma |
+| API | `i_api_` | Endpoint contracts, request/response shapes |
+| Security | `i_security_` | OWASP rules, encryption requirements |
+| Brand | `i_brand_` | Voice, naming conventions, forbidden terms |
+| Platform | `i_platform_` | App Store rules, WCAG accessibility |
+| Schema | `i_schema_` | Database fields, data types, constraints |
+| Legal | `i_legal_` | GDPR, data retention, consent rules |
+| Product Brief | `i_prodbrief_` | User stories, UX requirements |
 
 ## Format
 
-Invariants use the same 3-section format as regular specs, plus a `Source:` metadata line:
+Same 3-section format as regular specs, plus source metadata:
 
 ```markdown
-# Invariant: i_design_colors
+# Invariant: i_design_brand
 
-> Source: figma://file/abc123/Design-System
-> Scope: src/styles/, src/components/
+> Type: design
+> Source: git@github.com:acme/design-system.git
+> Path: tokens/colors.md
+> Pinned: a1b2c3d4
 
 ## What it does
-Color tokens from the design system. All UI components must use these values.
+Color tokens from the design system.
 
 ## Rules
 - RULE-1: Primary color is #1a73e8
 - RULE-2: Error color is #d93025
-- RULE-3: Background uses $surface-light token
 
 ## Proof
 - PROOF-1 (RULE-1): CSS variable --color-primary equals #1a73e8
 - PROOF-2 (RULE-2): CSS variable --color-error equals #d93025
-- PROOF-3 (RULE-3): Body background uses $surface-light
 ```
 
-Full format reference: `references/formats/invariant_format.md`
+- **`> Source:`** — git repo URL or Figma URL
+- **`> Path:`** — file path within the source repo
+- **`> Pinned:`** — commit SHA (git) or lastModified timestamp (Figma). This is the version.
+
+Full format: `references/formats/invariant_format.md`
 
 ## Write Protection
 
-The gate hook (`scripts/gate.sh`) blocks all writes to `specs/_invariants/i_*` files. This prevents accidental edits — invariants come from external sources, not from the codebase.
-
-If you try to edit an invariant file, you'll see:
+The gate hook blocks all writes to `specs/_invariants/i_*`. If you try:
 
 ```
 BLOCKED: Invariant files are read-only. Use purlin:invariant sync to update from the external source.
 ```
 
-## Updating Invariants
+This is the **only** hard write block in Purlin.
 
-Use `purlin:invariant sync` to pull updates from the external source. This temporarily unlocks the file via a bypass lock in `.purlin/runtime/invariant_write_lock`, writes the update, then removes the lock.
+## Syncing from External Sources
+
+### Git-sourced (all types)
 
 ```
-purlin:invariant sync i_design_colors
+purlin:invariant sync i_api_v3_contract
 ```
 
-The bypass lock is file-scoped — it only unlocks the specific invariant being synced.
+Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file and updates the SHA.
+
+### Figma-sourced (design type)
+
+```
+purlin:invariant sync figma figma.com/design/abc123/Brand-System
+```
+
+Reads the Figma file via MCP, extracts design constraints as rules, writes the invariant file. `> Pinned:` is the Figma `lastModified` timestamp.
+
+### CI staleness check
+
+```
+purlin:invariant sync --check-only
+```
+
+Compares all invariants' `> Pinned:` to their remote sources without pulling. Fails if any are stale. Use in CI before `purlin:verify --audit`.
 
 ## Using Invariants in Feature Specs
 
-Feature specs reference invariants via the `Requires:` metadata line:
+Reference invariants in `> Requires:`:
 
 ```markdown
 # Feature: color_picker
 
-> Requires: i_design_colors
+> Requires: i_design_brand
 > Scope: src/components/ColorPicker.js
-
-## What it does
-...
 ```
 
-When a feature requires an invariant, `sync_status` includes the invariant's rules in the feature's coverage report. Tests for the feature must prove both the feature's own rules and any required invariant rules.
+`sync_status` includes the invariant's rules in the feature's coverage report. Your tests must prove both the feature's own rules and the required invariant's rules.
 
-## Session Cleanup
+## Anchors vs Invariants
 
-The session start hook (`scripts/session-start.sh`) clears any stale bypass locks from `.purlin/runtime/`. This prevents a lock from persisting across sessions if a sync was interrupted.
+Both have rules that other features can require. The difference:
+
+| | Anchor | Invariant |
+|-|--------|-----------|
+| Location | `specs/<category>/<prefix>_name.md` | `specs/_invariants/i_<prefix>_name.md` |
+| Editable? | Yes | No (gate-protected) |
+| Source | Local project | External (git repo, Figma) |
+| Prefixes | `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_` | Same, with `i_` prefix |
+
+Anchors are just regular specs that other features can require. Anyone can create and edit them.
+
+## Build Time vs Test Time (Figma)
+
+During `purlin:build`, the agent reads Figma directly via MCP for full visual context (screenshots, layout, tokens). During `purlin:verify`, the system just runs tests against the extracted rules — never touches Figma. Build time is creative; test time is mechanical.
