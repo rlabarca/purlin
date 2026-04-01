@@ -1,3 +1,5 @@
+> Format-Version: 1
+
 # Proof File Format
 
 Proof files are JSON files emitted by test runners with proof markers. They live next to the spec they cover.

@@ -1,3 +1,5 @@
+> Format-Version: 1
+
 # Anchor Spec Format
 
 Anchors are regular specs with type-prefixed names that define cross-cutting constraints. They live in `specs/<category>/` alongside other specs and use the same 3-section format.

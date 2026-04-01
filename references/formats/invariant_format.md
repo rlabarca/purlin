@@ -1,3 +1,5 @@
+> Format-Version: 1
+
 # Invariant Spec Format
 
 Invariants are read-only constraint specs sourced from external systems (git repos, Figma files). They live in `specs/_invariants/` and are protected by the gate hook.

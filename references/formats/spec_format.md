@@ -1,3 +1,5 @@
+> Format-Version: 1
+
 # Feature Spec Format
 
 The canonical 3-section format for feature specs.
