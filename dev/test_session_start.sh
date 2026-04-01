@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Tests for session-start.sh — runtime state cleanup hook.
+# Covers all 5 rules: hook config, lock removal, missing runtime dir, missing lock, exit 0.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,29 +32,83 @@ trap 'rm -rf "$TMPDIR_ROOT"' EXIT
 
 echo "=== session-start.sh tests ==="
 
-# Test 1: Removes invariant_write_lock if it exists — RULE-1
-test_removes_lock_file() {
-  export PROJECT_ROOT="$TMPDIR_ROOT"
-  mkdir -p "$TMPDIR_ROOT/.purlin/runtime"
-  echo '{"target": "i_colors.md"}' > "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
-  bash "$SESSION_SCRIPT"
-  [[ ! -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock" ]]
+# PROOF-1 (RULE-1): hooks.json has SessionStart matcher "startup|clear|compact" pointing to session-start.sh
+test_hooks_json_config() {
+  local hooks_file="$PROJECT_ROOT/hooks/hooks.json"
+  [[ -f "$hooks_file" ]] || return 1
+  # Verify SessionStart matcher
+  python3 -c "
+import json, sys
+with open('$hooks_file') as f:
+    data = json.load(f)
+ss = data['hooks']['SessionStart']
+assert len(ss) == 1, f'Expected 1 SessionStart entry, got {len(ss)}'
+assert ss[0]['matcher'] == 'startup|clear|compact', f'Wrong matcher: {ss[0][\"matcher\"]}'
+assert 'session-start.sh' in ss[0]['hooks'][0]['command'], f'Wrong command: {ss[0][\"hooks\"][0][\"command\"]}'
+"
 }
-run_test "removes lock file" test_removes_lock_file
-purlin_proof "session-start" "PROOF-1" "RULE-1" "$([ $? -eq 0 ] && echo pass || echo fail)" "removes invariant_write_lock when present"
+run_test "hooks.json SessionStart config" test_hooks_json_config
+purlin_proof "session_start" "PROOF-1" "RULE-1" "$([ $FAIL -eq 0 ] && echo pass || echo fail)" "hooks.json SessionStart config matches spec"
 
-# Test 2: Exits 0 when runtime directory does not exist — RULE-2
-test_exits_0_no_runtime_dir() {
-  local empty_dir
-  empty_dir=$(mktemp -d)
-  export PROJECT_ROOT="$empty_dir"
-  bash "$SESSION_SCRIPT"
-  local result=$?
-  rm -rf "$empty_dir"
+# PROOF-2 (RULE-2): Creates lock file, runs script, verifies deletion
+test_removes_lock_file() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  mkdir -p "$tmpdir/.purlin/runtime"
+  echo '{"target": "i_test.md"}' > "$tmpdir/.purlin/runtime/invariant_write_lock"
+  PROJECT_ROOT="$tmpdir" bash "$SESSION_SCRIPT"
+  local result=0
+  [[ ! -f "$tmpdir/.purlin/runtime/invariant_write_lock" ]] || result=1
+  rm -rf "$tmpdir"
   return $result
 }
-run_test "exits 0 when runtime dir missing" test_exits_0_no_runtime_dir
-purlin_proof "session-start" "PROOF-2" "RULE-2" "$([ $? -eq 0 ] && echo pass || echo fail)" "exits 0 when .purlin/runtime does not exist"
+PREV_FAIL=$FAIL
+run_test "removes lock file" test_removes_lock_file
+purlin_proof "session_start" "PROOF-2" "RULE-2" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "removes invariant_write_lock when present"
+
+# PROOF-3 (RULE-3): Runs with no .purlin/runtime/ directory, exits 0
+test_no_runtime_dir() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  # No .purlin/runtime at all
+  PROJECT_ROOT="$tmpdir" bash "$SESSION_SCRIPT"
+  local result=$?
+  rm -rf "$tmpdir"
+  return $result
+}
+PREV_FAIL=$FAIL
+run_test "exits 0 when runtime dir missing" test_no_runtime_dir
+purlin_proof "session_start" "PROOF-3" "RULE-3" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "no-op when .purlin/runtime does not exist"
+
+# PROOF-4 (RULE-4): Runs with runtime dir but no lock file, exits 0
+test_no_lock_file() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  mkdir -p "$tmpdir/.purlin/runtime"
+  # Runtime dir exists but no lock file
+  PROJECT_ROOT="$tmpdir" bash "$SESSION_SCRIPT"
+  local result=$?
+  rm -rf "$tmpdir"
+  return $result
+}
+PREV_FAIL=$FAIL
+run_test "exits 0 when lock file missing" test_no_lock_file
+purlin_proof "session_start" "PROOF-4" "RULE-4" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "no-op when lock file does not exist"
+
+# PROOF-5 (RULE-5): Verify exit code 0 under normal conditions
+test_always_exits_0() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  mkdir -p "$tmpdir/.purlin/runtime"
+  echo '{"target": "i_test.md"}' > "$tmpdir/.purlin/runtime/invariant_write_lock"
+  PROJECT_ROOT="$tmpdir" bash "$SESSION_SCRIPT"
+  local rc=$?
+  rm -rf "$tmpdir"
+  [[ $rc -eq 0 ]]
+}
+PREV_FAIL=$FAIL
+run_test "always exits 0" test_always_exits_0
+purlin_proof "session_start" "PROOF-5" "RULE-5" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "exit code is always 0"
 
 # --- Emit proof files ---
 export PROJECT_ROOT="$SCRIPT_DIR/.."
