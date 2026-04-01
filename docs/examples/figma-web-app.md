@@ -59,12 +59,12 @@ specs/_invariants/i_design_weather.md
 - RULE-6: All spacing uses 8px grid
 
 ## Proof
-- PROOF-1 (RULE-1): Render temperature; verify font-size is 48px and font-weight is 700
-- PROOF-2 (RULE-2): Render with condition="sunny"; verify gradient starts with #FDB813
-- PROOF-3 (RULE-3): Render weather icon; verify 64x64px and centered in parent
-- PROOF-4 (RULE-4): Render city name; verify 20px, white, top-left
-- PROOF-5 (RULE-5): Render forecast card; verify 8px radius and 16px padding
-- PROOF-6 (RULE-6): Render layout; verify spacing values are multiples of 8px
+- PROOF-1 (RULE-1): Render temperature; verify font-size is 48px and font-weight is 700 @e2e
+- PROOF-2 (RULE-2): Render with condition="sunny"; verify gradient starts with #FDB813 @e2e
+- PROOF-3 (RULE-3): Render weather icon; verify 64x64px and centered in parent @e2e
+- PROOF-4 (RULE-4): Render city name; verify 20px, white, top-left @e2e
+- PROOF-5 (RULE-5): Render forecast card; verify 8px radius and 16px padding @e2e
+- PROOF-6 (RULE-6): Render layout; verify spacing values are multiples of 8px @e2e
 ```
 
 The invariant is read-only — the gate hook prevents edits. Rules come from Figma, not from the developer.
@@ -82,6 +82,7 @@ Claude writes the spec:
 
 > Requires: i_design_weather
 > Scope: src/components/WeatherDisplay.jsx, src/api/weather.js, src/utils/cache.js
+> Stack: react/tailwind, axios, openweathermap-api
 
 ## What it does
 Fetches and displays the current weather for a given city using the

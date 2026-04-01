@@ -26,6 +26,7 @@ An anchor is a regular spec that defines rules other features must follow. Anyon
 # Anchor: api_rest_conventions
 
 > Scope: src/api/
+> Stack: node/express, REST/JSON
 
 ## What it does
 REST API conventions for all endpoints.

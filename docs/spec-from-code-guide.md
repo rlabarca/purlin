@@ -58,6 +58,7 @@ For each approved category (processed in dependency order — fewer anchor depen
 
 > Requires: security_auth_standards
 > Scope: src/auth/login.js, src/auth/middleware.js
+> Stack: node/express, bcrypt, jsonwebtoken
 
 ## What it does
 Authenticates users via email and password, issues JWT tokens.
@@ -68,9 +69,9 @@ Authenticates users via email and password, issues JWT tokens.
 - RULE-3: Passwords are compared using bcrypt, never plaintext
 
 ## Proof
-- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT in response
-- PROOF-2 (RULE-2): POST invalid password; verify 401
-- PROOF-3 (RULE-3): Store password; verify bcrypt hash in database
+- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT in response @slow
+- PROOF-2 (RULE-2): POST invalid password; verify 401 @slow
+- PROOF-3 (RULE-3): Store password; verify bcrypt hash in database @slow
 
 ## Implementation Notes
 <!-- TODO from src/auth/login.js:42 — add OAuth2 support -->

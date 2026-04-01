@@ -24,6 +24,7 @@ That's it. No tracking system, no ledger, no state files. The filesystem is the 
 
 > Requires: i_security_policy
 > Scope: src/auth/login.js, src/auth/session.js
+> Stack: node/express, bcrypt, jsonwebtoken
 
 ## What it does
 User authentication with email and password.
@@ -33,8 +34,8 @@ User authentication with email and password.
 - RULE-2: Failed logins are rate-limited to 5 per minute
 
 ## Proof
-- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database
-- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429
+- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database @slow
+- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429 @slow
 ```
 
 **`## Rules`** — parsed by `sync_status`. Must use `RULE-N:` format.

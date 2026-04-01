@@ -59,13 +59,13 @@ Test code                     Proof plugin              sync_status
 ### pytest
 
 ```python
-@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1")
+@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1", tier="slow")
 def test_valid_login():
     resp = client.post("/login", json={"user": "alice", "pass": "secret"})
     assert resp.status_code == 200
 ```
 
-The marker args: `(feature_name, proof_id, rule_id)`. Optional: `tier="slow"` for tests that shouldn't run on every build.
+The marker args: `(feature_name, proof_id, rule_id)`. Optional: `tier="slow"` for tests that hit APIs, databases, or external services.
 
 ### Jest
 
