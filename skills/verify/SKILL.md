@@ -59,7 +59,7 @@ For each feature with READY status:
 ### Step 4 — Report
 
 ```
-Verification complete.
+Verification complete: N/T features verified.
 
 Receipts issued (N features):
   auth_login: vhash=a1b2c3d4 (3 rules, 3 proofs)
@@ -70,13 +70,38 @@ No receipt (M features):
   notification_system: RULE-1 FAIL
 ```
 
+Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
+
+### Step 4b — Directive Block for Remaining Work
+
+If ANY features are partial or failing (i.e., `N < T`), print a directive block **after** the receipts table:
+
+```
+M features still need tests before full verification:
+
+  webhook_delivery (2/3 rules proved)
+  → Run: test webhook_delivery
+
+  notification_system (0/4 rules proved)
+  → Run: test notification_system
+
+Work through these, then run purlin:verify again.
+```
+
+This block MUST:
+1. List every partial/failing feature with its coverage count (`proved/total rules proved`)
+2. Include a `→ Run:` directive for each one telling the agent which feature to test
+3. End with `Work through these, then run purlin:verify again.`
+
+The directive block ensures the agent does not stop after the first batch of receipts — it reads the remaining work and continues.
+
 ### Step 5 — Commit
 
 ```
-git commit -m "verify: [Complete:all] features=N vhash=<combined-hash>"
+git commit -m "verify: [Complete:all] features=N/T vhash=<combined-hash>"
 ```
 
-The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
+Where `N/T` is the verified/total count (e.g., `features=5/11`). The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
 
 ---
 
