@@ -81,7 +81,7 @@ Each entry must include:
 For each BEHAVIORAL change, check: do the existing spec rules cover this new behavior?
 
 - If the spec has rules that still match → `Spec up to date ✓`
-- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → update the spec for <feature>`
+- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → Run: purlin:spec <feature>`
 - If no spec exists → `No spec exists → Run: purlin:spec <name>`
 
 Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
@@ -140,7 +140,7 @@ After all sections, print a `---` separator and role-aware priorities. These MUS
 ### PM priorities (ordered)
 
 1. **Missing specs** — BEHAVIORAL changes with no spec → `purlin:spec <name>`
-2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → update the spec for `<name>`
+2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `purlin:spec <name>`
 3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `purlin:unit-test`
 
 ### Engineer priorities (ordered)

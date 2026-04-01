@@ -80,7 +80,7 @@ When the user's intent is clear, act directly:
 - "test X" / "build X" / "fix X" → read `specs/**/X.md`, build code if missing, write tests, iterate until `sync_status` shows READY
 - "what's the status?" → call `sync_status`
 - "what changed?" / "changelog" / "what did the team do?" → use `purlin:changelog`
-- "write a spec for X" → use `purlin:spec`
+- "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
 - "verify" / "ship" → run `purlin:verify`
 
 If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
