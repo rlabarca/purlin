@@ -81,6 +81,8 @@ When the user's intent is clear, act directly:
 - "what's the status?" → call `sync_status`
 - "what changed?" / "changelog" / "what did the team do?" → use `purlin:changelog`
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
+- "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:changelog --role eng`, then invoke `purlin:build` or `purlin:unit-test` for each item
+- "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
 - "verify" / "ship" → run `purlin:verify`
 
 If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
