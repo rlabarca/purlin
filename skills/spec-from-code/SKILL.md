@@ -209,23 +209,33 @@ Examples:
 - `> Stack: node/express, axios, redis (cache), JWT auth`
 - `> Stack: shell/bash, jq, curl`
 
-4. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+4. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
+   - Does the proof shell out to git, subprocess, or call an external service? → append `@slow`
+   - Does the proof need a browser or full app stack? → append `@e2e`
+   - Does the proof need human judgment (visual, UX, brand)? → append `@manual`
+   - Pure logic or local grep? → leave as default (no tag)
+
+   Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@slow`.
+
+5. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
+   - **FORBIDDEN proof precision:** If any proof uses grep-based negative assertions, verify the grep pattern targets assignment patterns, not bare keywords. If a pattern would match comments or variable names, refine it per `references/spec_quality_guide.md` ("FORBIDDEN Grep Precision").
+   - **Edge case specificity:** If any proof describes a boundary condition or edge case, verify the description includes the triggering test input, not just the expected outcome. If a proof says "verify X works correctly" without specifying the input, rewrite it per `references/spec_quality_guide.md` ("Edge Case Proof Specificity").
 
    If any section is empty or missing content:
    - Re-read the source files listed in the spec's `> Scope:` line
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-5. Ask the user (via `AskUserQuestion`) to confirm the generated specs for this category look correct before proceeding to the next.
+6. Ask the user (via `AskUserQuestion`) to confirm the generated specs for this category look correct before proceeding to the next.
 
-6. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
+7. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
 
-7. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
+8. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
-8. Update state: add category name to `completed_categories`.
+9. Update state: add category name to `completed_categories`.
 
 ---
 

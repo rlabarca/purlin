@@ -83,6 +83,58 @@ Anchors capture **cross-cutting constraints shared across features**. If 3+ feat
 
 **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor — not be buried in individual feature specs.
 
+## Tier Tags on Proofs
+
+Every proof description must be tagged with the appropriate tier. Don't leave it to the test writer to guess.
+
+| Heuristic | Tag | Examples |
+|-----------|-----|----------|
+| Pure logic, in-memory assertions, grep on local files | (none — default) | Parse a config, validate format, check string output |
+| Shells out to git, calls external APIs, needs database/filesystem setup | `@slow` | git log comparison, API roundtrip, database query |
+| Requires browser, full app rendering, UI interaction | `@e2e` | Playwright flow, screenshot comparison, full page render |
+| Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
+
+**When in doubt, tag `@slow`.** A fast test with a `@slow` tag is harmless. A slow test with no tag blocks the default tier.
+
+## FORBIDDEN Grep Precision
+
+FORBIDDEN proofs use grep to assert absence. The grep pattern must be precise enough to avoid false positives.
+
+**Common false positives:**
+- Comments and docstrings mentioning the keyword (`# never use eval`)
+- Variable names containing the keyword (`password_hash`, `token_expiry`)
+- Test files with intentional mock values
+
+Bad:
+```
+grep -ri "password\|secret" scripts/
+```
+
+Good:
+```
+grep -rn "password\s*=\s*[\"'][^\"']*[\"']" scripts/ --include="*.py" | grep -v test_ | grep -v "# "
+```
+
+Target the **assignment pattern** (`keyword = "literal string"`), not the keyword alone. Exclude test files and comments.
+
+## Edge Case Proof Specificity
+
+Proofs for boundary conditions and edge cases must include the **specific test input that triggers the edge case** — not just the expected output.
+
+Bad:
+```
+- PROOF-4 (RULE-4): Verify IDs are sequential with no gaps
+- PROOF-5 (RULE-5): Check that invalid input is rejected
+```
+
+Good:
+```
+- PROOF-4 (RULE-4): Create a spec with RULE-1 and RULE-3 (skipping RULE-2); verify sync_status reports a warning about non-sequential IDs
+- PROOF-5 (RULE-5): Call update_config() with key="" (empty string); verify it raises ValueError
+```
+
+Always ask: **"What exact input triggers this edge case?"** and include it in the proof description.
+
 ## FORBIDDEN Patterns
 
 FORBIDDEN rules use standard rule/proof syntax — no special format. They are just rules with **negative proofs** (grep-based assertions that verify dangerous patterns don't exist).
