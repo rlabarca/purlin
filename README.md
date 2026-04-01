@@ -1,146 +1,143 @@
-<p align="center">
-  <img src="assets/purlin-logo.svg" alt="Purlin" width="400">
-</p>
-
 # Purlin
 
-## Current Release: v0.8.6 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
+**Spec-driven development for Claude Code.** Write specs with rules, prove them with tests, track coverage automatically.
 
-**Spec-driven development for Claude Code.** One agent, three roles (PM, Engineer, QA). You describe what to build — the agent writes specs, implements code, and verifies the result.
+## How It Works
 
-**[Full Documentation](docs/index.md)** | **[Release Notes](RELEASE_NOTES.md)** | **[What's New in v0.8.6](docs/whats-new-0.8.6.md)**
+1. **Specs** define what your code must do. Each spec has rules (testable constraints) and proofs (observable assertions).
+2. **Proof markers** in your tests link test cases to spec rules. Test runners emit proof files automatically.
+3. **`sync_status`** reads specs and proof files, diffs them, and tells you exactly what to do next via `→` directives.
 
----
+```
+auth_login: 2/3 rules proved
+  RULE-1: PASS (PROOF-1 in tests/test_login.py)
+  RULE-2: PASS (PROOF-2 in tests/test_login.py)
+  RULE-3: NO PROOF
+  → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
+  → Run: purlin:unit-test
+```
 
 ## Install
 
-**Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 1.0.33+
-
-### 1. Add the Purlin marketplace (one-time)
+**Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ```bash
-claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
+# Add as a Claude Code plugin
+claude plugin install purlin
 ```
 
-### 2. Install in your project
-
-```bash
-# Project scope — committed to .claude/settings.json, shared with teammates
-claude plugin install purlin@purlin --scope project
-
-# Or local scope — gitignored, just for you in this repo
-claude plugin install purlin@purlin --scope local
-```
-
-### 3. Initialize (first time only)
+## Initialize a Project
 
 ```
 purlin:init
 ```
 
-This scaffolds `.purlin/` and `features/`. Commit the result and start working.
+This creates `.purlin/`, `specs/`, detects your test framework, and scaffolds the proof plugin.
 
-### First steps
-
-Once Purlin is loaded, tell the agent what you want:
-
-> "spec a login feature, then build and verify it"
-
-The agent switches modes automatically. You can also use `purlin:spec`, `purlin:build`, `purlin:verify` directly. Run `purlin:help` for the full command list.
-
----
-
-## Update Purlin
-
-> **Do NOT run `purlin:init` on existing projects.** Init is only for brand new projects. For upgrades (including from v0.8.5 submodule), use `purlin:update` — it handles submodule removal, config migration, file format transitions, and stale artifact cleanup automatically.
-
-**1. Update the plugin code** (pulls latest skills, hooks, scripts from the repo):
-
-```bash
-claude plugin update purlin@purlin
-```
-
-**2. Run project migration** inside a session:
+## Write a Spec
 
 ```
-purlin:update                    # Migrate project to current version
-purlin:update --dry-run          # Preview the migration plan
+purlin:spec auth_login
 ```
 
-Your specs, features, and toolbox are never touched — only plugin internals and project config are updated.
+Specs use a 3-section format:
 
----
+```markdown
+# Feature: auth_login
 
-## Join an Existing Project
+> Scope: src/auth/login.js
 
-If a teammate already set up Purlin in a repo, add the marketplace, install, and run the project migration:
+## What it does
+Handles user authentication via username/password and SSO.
 
-```bash
-git clone <repo-url> && cd <project-name>
-claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git
-claude plugin install purlin@purlin --scope local
-claude
+## Rules
+- RULE-1: Return 200 with session token on valid credentials
+- RULE-2: Return 401 on invalid credentials
+- RULE-3: SSO redirects to provider URL
+
+## Proof
+- PROOF-1 (RULE-1): POST valid creds returns 200 + token
+- PROOF-2 (RULE-2): POST bad creds returns 401
+- PROOF-3 (RULE-3): GET /sso redirects to provider
 ```
 
-Inside the session:
+## Add Proof Markers to Tests
 
-```
-purlin:update
-```
-
----
-
-## Remove Purlin
-
-Remove the plugin from your project:
-
-```bash
-# Remove from project scope (if installed with --scope project)
-claude plugin uninstall purlin@purlin --scope project
-
-# Remove from local scope (if installed with --scope local)
-claude plugin uninstall purlin@purlin --scope local
+**pytest:**
+```python
+@pytest.mark.proof("auth_login", "PROOF-1", "RULE-1")
+def test_valid_login():
+    resp = client.post("/login", json={"user": "alice", "pass": "secret"})
+    assert resp.status_code == 200
+    assert "token" in resp.json()
 ```
 
-This removes the plugin from Claude Code. Your project files (`.purlin/`, `features/`, specs) are left intact.
-
-To also remove the marketplace registration:
-
-```bash
-claude plugin marketplace remove purlin
+**Jest:**
+```javascript
+it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async () => {
+  const resp = await post("/login", { user: "alice", pass: "secret" });
+  expect(resp.status).toBe(200);
+  expect(resp.body.token).toBeDefined();
+});
 ```
 
----
+## Check Coverage
 
-## How It Works
+```
+purlin:status
+```
 
-**Specs are the source of truth.** Every feature starts as a spec in `features/`. The agent reads specs to know what to build, what to test, and what done looks like. If implementation reveals something the spec missed, the spec gets updated — not just the code.
+The `sync_status` MCP tool scans specs and proof files, then reports coverage with actionable `→` directives.
 
-**Three roles, sync tracking.** PM writes specs. Engineer writes code. QA verifies. Everyone can write freely — Purlin tracks what changed and surfaces drift through `purlin:status`. Invariant files and unclassified files are the only hard blocks.
+## Verify Everything
 
-**You talk, the agent works.** Describe what you want in plain language. The agent picks the right workflow. Or use explicit commands when you want control.
+```
+purlin:verify
+```
 
-For deeper coverage, see the [Documentation](docs/index.md):
+Runs ALL tests, issues verification receipts for every feature with 100% rule coverage.
 
-- [PM Guide](docs/pm-agent-guide.md) — Specs from ideas, Figma designs, or live pages
-- [Engineer Guide](docs/engineer-agent-guide.md) — Build, test, delivery plans
-- [QA Guide](docs/qa-agent-guide.md) — Verify, regress, smoke test
-- [Installation Guide](docs/installation-guide.md) — Configuration, credentials, troubleshooting
-- [Invariants Guide](docs/invariants-guide.md) — Import and enforce external standards
-- [Plugin Permissions](docs/plugin-permissions.md) — How Purlin handles permissions, marketplace vs local
+## 12 Skills
 
----
+| Skill | Purpose |
+|-------|---------|
+| `purlin:spec` | Create/edit specs |
+| `purlin:build` | Implement from spec rules |
+| `purlin:verify` | Run all tests, issue receipts |
+| `purlin:unit-test` | Run tests, emit proof files |
+| `purlin:status` | Show coverage + directives |
+| `purlin:init` | Initialize project |
+| `purlin:invariant` | Sync external constraints |
+| `purlin:find` | Search specs |
+| `purlin:config` | Read/write settings |
+| `purlin:spec-from-code` | Generate specs from code |
+| `purlin:help` | Command reference |
+| `purlin:worktree` | Worktree management |
 
-## Plugin Permission Model
+Skills are **optional** — you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
 
-Purlin uses **hook-based permission management** instead of `bypassPermissions`. This works with both `--plugin-dir` and marketplace installs.
+## Hard Gates (only 2)
 
-**How it works:** A `PreToolUse` hook intercepts every Write/Edit call. The write guard classifies the target file — INVARIANT and UNKNOWN files are blocked, all other classified files (CODE, SPEC, QA) are allowed with `permissionDecision: "allow"` (auto-approved, no prompt). A `FileChanged` hook tracks writes in `sync_state.json` for per-feature sync tracking. There is no role-based restriction — anyone can write any classified file type.
+1. **Invariant protection** — `specs/_invariants/i_*` files are read-only. Use `purlin:invariant sync` to update.
+2. **Proof coverage** — `purlin:verify` won't issue a receipt unless every rule has a passing proof.
 
-**YOLO mode is on by default.** The `PermissionRequest` hook auto-approves most permission dialogs (MCP tools, Read access, etc.) when `bypass_permissions: true` in `.purlin/config.json`. User-facing decisions (plan approval, migration confirmations, remote triggers) always prompt regardless of YOLO. Disable with `purlin:config yolo off`.
+Everything else is optional guidance.
 
-**Marketplace caveats:**
-- MCP tools (`purlin_sync`, `purlin_scan`, etc.) may prompt on first use per session — the PermissionRequest hook auto-approves these when YOLO is on.
-- Enterprise environments with `allowManagedHooksOnly: true` or `allowManagedMcpServersOnly: true` can silently disable plugin hooks/MCP — Purlin must be whitelisted by the admin.
+## Architecture
 
-See [Plugin Permissions](docs/plugin-permissions.md) for the full details.
+```
+.purlin/
+  config.json             # Project settings
+  plugins/                # Proof plugin (scaffolded by init)
+specs/
+  <category>/
+    <feature>.md          # Feature specs (3-section format)
+    <feature>.proofs-*.json  # Proof files (emitted by test runners)
+    <feature>.receipt.json   # Verification receipts
+  _invariants/
+    i_<prefix>_<name>.md  # Read-only external constraints
+```
+
+**MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status` and `purlin_config` tools.
+**Gate Hook:** `scripts/gate.sh` — blocks writes to invariant files.
+**Proof Plugins:** `scripts/proof/` — pytest, Jest, and shell proof collectors.

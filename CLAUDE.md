@@ -1,6 +1,6 @@
 # Developing Purlin
 
-This repo IS the Purlin plugin framework — and it uses Purlin to develop itself. The full Purlin protocol (`agents/purlin.md`) applies here: spec-driven development, sync tracking, skill workflows, commit conventions, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework. It does NOT replace or suppress the Purlin protocol.
+This repo IS the Purlin plugin framework — and it uses Purlin to develop itself. The agent definition (`agents/purlin.md`) applies here: spec-driven development, rule-proof coverage, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework.
 
 ## Hook Authoring Rules
 
@@ -8,19 +8,10 @@ This repo IS the Purlin plugin framework — and it uses Purlin to develop itsel
 
 **Error messages must tell the agent EXACTLY what to do.** Agents cannot infer what action to take — they will try wrong approaches unless the error message spells out the fix. Every `echo ... ; exit 2` pair in a guard script must include the exact resolution:
 - Invariant file → `"Use purlin:invariant sync to update from the external source"`
-- Unknown file → `"Add a rule to CLAUDE.md under '## Purlin File Classifications': \`path/\` → CODE (or SPEC)"`
 
-When adding or modifying error paths in `write-guard.sh`, always include the specific corrective action.
-
-## Purlin File Classifications
-- `docs/` → SPEC
-- `references/` → CODE
-- `RELEASE_NOTES.md` → CODE
-- `PLAN-` → CODE
-- `PURLIN_REVAMP.md` → CODE
+When adding or modifying error paths in `gate.sh`, always include the specific corrective action.
 
 ## Tool Folder Separation
 
 *   **`scripts/`** — Consumer-facing framework tooling. Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
 *   **`dev/`** — Purlin-repository maintenance scripts. Scripts here are specific to developing, building, and releasing the Purlin framework itself. They are NOT designed for consumer use.
-

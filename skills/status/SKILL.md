@@ -1,101 +1,77 @@
 ---
 name: status
-description: Show project status with sync state and actionable work items
+description: Show rule coverage and actionable directives via sync_status
 ---
 
-## Arguments
+Call the `sync_status` MCP tool and display its output. The directives tell you exactly what to do next.
 
-`/status [role]`
-
-- No argument → all roles
-- `pm` → PM work only
-- `engineer` → Engineer work only
-- `qa` → QA work only
-
-## Get Status
+## Usage
 
 ```
-purlin_status(verbosity: "focused", role: <from argument, default "all">)
+purlin:status                   Show all features
+purlin:status --role <role>     Filter by role (pm, dev, qa)
 ```
 
-Server-side classification. Returns pre-bucketed work items — you never see raw feature arrays.
-
-### Response Fields
-
-| Field | Contents |
-|-------|----------|
-| `lifecycle_counts` | Feature counts by lifecycle (TODO, TESTING, COMPLETE, TOMBSTONE) |
-| `total_features` | Total count |
-| `sync_counts` | Counts per sync status (synced, code_ahead, spec_ahead, new, unknown) |
-| `sync_details` | Per-feature drift: `name`, `sync_status`, `last_code_date`, `last_spec_date`, `last_impl_date`. Only actionable entries (not synced/unknown). |
-| `work` | Role-keyed dict. Each: `count` + deduplicated `items[]` (one per feature, highest-priority reason wins) |
-| `delivery_plan_summary` | Current phase info if plan exists |
-| `smoke_candidates` | Features recommended for smoke tier |
-| `git_state` | `branch`, `clean`, `dirty_file_count` |
-
-Each work item: `name`, `file`, `reason`, `priority`, optional `details`.
-
-## Output
-
-### All Roles (`/status`)
+## Step 1 — Call sync_status
 
 ```
-Project: N features (X COMPLETE, Y TESTING, Z TODO)
-Sync: A synced, B code ahead, C spec ahead | Branch: <branch> | Uncommitted: N files
-
-Engineer: X items (N tombstones, N spec-modified, N TODO)
-QA: X items (N testing, N regression stale)
-PM: X items (N spec gaps, N unacknowledged deviations)
-
-Top priority: <role> — <highest priority item>
+sync_status(role: <from argument, optional>)
 ```
 
-When `sync_details` is non-empty, show drift after summary:
+## Step 2 — Display Output
+
+The MCP tool returns a per-feature coverage report with `→` directives. Display it directly.
+
+Example output from `sync_status`:
 
 ```
-Sync drift:
-  auth_middleware: code ahead (code 2h ago, spec unchanged)
-  webhook_delivery: spec ahead (spec 3h ago, code 2d ago)
-  notification_system: new (spec exists, no code yet)
+auth_login: READY
+  3/3 rules proved
+  vhash=a1b2c3d4
+  → No action needed.
+
+user_profile: 1/2 rules proved
+  RULE-1: PASS (PROOF-1 in tests/test_profile.py)
+  RULE-2: NO PROOF
+  → Fix: write a test with @pytest.mark.proof("user_profile", "PROOF-2", "RULE-2")
+  → Run: purlin:unit-test
+
+webhook_delivery: 2/3 rules proved
+  RULE-1: PASS (PROOF-1 in tests/test_webhook.py)
+  RULE-2: PASS (PROOF-2 in tests/test_webhook.py)
+  RULE-3: FAIL (PROOF-3 — test_retry_logic failed)
+  → Fix: test_retry_logic is failing. Check the test or fix the code.
+  → Run: purlin:unit-test
+
+notification_system: no rules defined
+  WARNING: No ## Rules section found.
+  → Run: purlin:spec notification_system
+
+i_design_tokens: 5 rules (global — apply to all features with > Requires: i_design_tokens)
+  RULE-1: Font sizes use rem units
+  RULE-2: Colors reference design token variables
+  ...
 ```
 
-### Single Role (`/status pm`, `/status engineer`, `/status qa`)
+## Step 3 — Summary
+
+After the detailed output, show a one-line summary:
 
 ```
-Project: N features (X COMPLETE, Y TESTING, Z TODO)
-Branch: <branch> | Uncommitted: N files
-
-<Role> Work (X items):
-  <items grouped by reason, sorted by priority>
+Summary: 4 features | 1 READY | 2 partial | 1 no rules
 ```
 
-Group by reason: tombstones, failures, spec-modified, TODO, advisory. Include sync drift when relevant to the role.
+## The Directives
 
-## Classification Rules
+The `→` lines are the key output. They tell the agent (or user) exactly what action to take:
 
-Implemented in `scan_engine.classify_work_items()`. Server applies them — do not re-implement.
-
-**Engineer** (priority order): tombstones > test/regression FAIL > spec_modified_after_completion > TODO (excluding INFEASIBLE) > open BUGs > delivery plan phase > code_ahead (advisory: `"Run purlin:spec-catch-up to update the spec, or purlin:spec-code-audit for a full bidirectional audit."`)
-
-**QA:** regression STALE/FAIL > TESTING with QA scenarios > SPEC_UPDATED discoveries
-
-**PM:** incomplete spec (missing requirements) > unacknowledged deviations > code_ahead (spec needs updating: `"Run purlin:spec-catch-up to reconcile."`) > spec_ahead > SPEC_DISPUTE/INTENT_DRIFT discoveries
-
-## Uncommitted Changes
-
-After status output, run `git status`/`git diff`:
-- **Spec files** — summarize, propose commit message, ask user.
-- **Other files** — note, no action.
-- **Clean** — "No uncommitted changes."
-
-If worktrees exist under `.purlin/worktrees/`, show one-line summary.
-
-## Other Files
-
-When the session has OTHER file edits (from sync_state `unclassified_writes` or `git status` showing files matching `write_exceptions`), show at the bottom of the output:
-
-```
-Other files changed this session: docs/guide.md, README.md
-```
-
-Informational only — no priority, no work items, no action required.
+| Directive | Meaning |
+|-----------|---------|
+| `→ No action needed.` | Feature is fully proved |
+| `→ Run: purlin:spec <name>` | Spec needs rules written |
+| `→ Fix: rewrite as "- RULE-1: ..."` | Rules exist but aren't numbered |
+| `→ Fix: write a test with @pytest.mark.proof(...)` | Rule has no proof |
+| `→ Fix: <test_name> is failing` | Proof exists but test fails |
+| `→ Run: purlin:unit-test` | Tests need to be run |
+| `→ Re-verify and run: purlin:verify --manual ...` | Manual stamp is stale |
+| `→ Verify manually, then run: purlin:verify --manual ...` | Manual proof needs stamping |

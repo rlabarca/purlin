@@ -1,135 +1,62 @@
 ---
 name: config
-description: View or change Purlin behavior settings (yolo, find-work, auto-start)
+description: Read or write Purlin configuration
 ---
+
+View or change Purlin settings via the `purlin_config` MCP tool.
 
 ## Usage
 
 ```
-purlin:config                     Show all settings
-purlin:config yolo [on|off]       Toggle YOLO mode
-purlin:config find-work [on|off]  Toggle work discovery
-purlin:config auto-start [on|off] Toggle automatic execution
+purlin:config                       Show all settings
+purlin:config <key>                 Show a specific setting
+purlin:config <key> <value>         Set a value
 ```
 
----
+## Show All Settings
 
-## No-Argument: Show All Settings
-
-1. Read the resolved config via the `purlin_config` MCP tool (`action: "read"`).
-2. Extract settings from `agents.purlin`:
-   - `bypass_permissions` (default: `true`)
-   - `find_work` (default: `true`)
-   - `auto_start` (default: `false`)
-3. Print the status table:
+Call `purlin_config` with `action: "read"` (no key). Display the full config:
 
 ```
-Purlin Configuration
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purlin Configuration (.purlin/config.json):
 
-  Setting       Value   What it does
-  ──────        ─────   ────────────
-  yolo          ON      Auto-approve all permission prompts
-  find-work     ON      Scan for work on session start
-  auto-start    OFF     Begin executing work immediately on session start
-
-Config file: .purlin/config.local.json
-Change a setting: purlin:config <setting> on|off
-Model & effort: use /model and /effort (native Claude Code settings)
-
-Note: auto-start requires find-work. Turning on auto-start
-automatically enables find-work. Turning off find-work
-automatically disables auto-start.
+  version: 2.0.0
+  test_framework: auto
+  spec_dir: specs
 ```
 
-Map values: `true` -> `ON`, `false` -> `OFF`.
+## Read a Setting
 
----
-
-## Setting: `yolo` (maps to `bypass_permissions`)
-
-**What it controls:** When ON, Purlin auto-approves most permission prompts — bash commands, file writes, MCP tools, network requests all run without confirmation. When OFF, Claude Code's normal permission prompts appear for each action. User-facing decisions are NEVER auto-approved regardless of YOLO: plan approval (`ExitPlanMode`), user questions (`AskUserQuestion`), and remote triggers (`RemoteTrigger`) always prompt.
-
-**When to turn it ON:** You trust Purlin to work autonomously and don't want to babysit every action. Best for focused implementation sessions where you'll review the results at the end.
-
-**When to turn it OFF:** You want to see exactly what Purlin is about to do before it happens. Good for unfamiliar codebases, sensitive operations, or learning how Purlin works.
-
-**How it works:** The `PermissionRequest` hook in `hooks/hooks.json` runs `permission-manager.sh` on every permission prompt. That script reads `agents.purlin.bypass_permissions` from config. If `true`, it tells Claude Code to allow the action. If `false`, it does nothing and Claude Code shows the normal prompt.
-
-### Flow
-
-1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.bypass_permissions"`.
-2. **No argument** (just `purlin:config yolo`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.bypass_permissions"`, `value: true`). Print: `"YOLO mode is now ON. Most permission prompts will be auto-approved (plan approval, user questions, and remote triggers still prompt)."`
-4. **With `off`**: Write `false`. Print: `"YOLO mode is now OFF. Permission prompts will appear for each action."`
-
----
-
-## Setting: `find-work` (maps to `find_work`)
-
-**What it controls:** When ON, session startup triggers a project scan that looks for unfinished features, open discoveries, pending verifications, and other work. Purlin presents what it found and suggests next steps. When OFF, Purlin starts silently and waits for you to tell it what to do.
-
-**When to turn it ON:** You want Purlin to orient itself when starting a session. Useful when you're not sure what needs doing, or when resuming after a break. This is the default.
-
-**When to turn it OFF:** You already know exactly what you want to work on and don't want the scan overhead. Just give Purlin a direct instruction.
-
-**How it works:** `purlin:resume` Step 9 reads `agents.purlin.find_work` from the resolved config. If `true`, it runs `purlin_scan` and `purlin:status` to discover work. If `false`, it skips the scan entirely and prints `"find_work disabled -- awaiting instruction."`.
-
-**Coupling with auto-start:** auto-start requires find-work. You can have find-work without auto-start, but not auto-start without find-work. Turning off find-work automatically turns off auto-start (the MCP handler returns a `coupled` field when this happens). If auto-start was coupled off, append to the confirmation message: `" (auto-start was also turned OFF — it requires find-work.)"`
-
-### Flow
-
-1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.find_work"`.
-2. **No argument** (just `purlin:config find-work`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.find_work"`, `value: true`). Print: `"Find-work is now ON. Session startup will scan for work and suggest next steps."`
-4. **With `off`**: Write `false`. Check the response for a `coupled` field. Print: `"Find-work is now OFF. Session startup will skip scanning — tell Purlin what to do."` If coupled, append: `" (auto-start was also turned OFF — it requires find-work.)"`
-
----
-
-## Setting: `auto-start` (maps to `auto_start`)
-
-**What it controls:** When ON, after discovering work (via find-work scan), Purlin begins executing the top-priority item immediately without asking for approval. When OFF, Purlin presents the work plan and waits for you to review it and say go.
-
-**When to turn it ON:** You want fully autonomous sessions. Combined with YOLO mode and find-work, this is full autopilot — Purlin scans, picks the highest priority work, and starts executing. Best for trusted, well-specced projects where you want to kick off work and check back later.
-
-**When to turn it OFF:** You want to review the work plan before Purlin starts. You can reorder priorities, skip items, or redirect Purlin to something else. This is the default and recommended for most workflows.
-
-**How it works:** `purlin:resume` Step 9.5 reads `agents.purlin.auto_start` from the resolved config. If `true`, Purlin begins executing immediately after presenting the work plan. If `false`, it waits for user approval.
-
-**Coupling with find-work:** auto-start requires find-work. You can have find-work without auto-start, but not auto-start without find-work. Turning on auto-start automatically turns on find-work (the MCP handler returns a `coupled` field when this happens). If find-work was coupled on, append to the confirmation message: `" (find-work was also turned ON — auto-start requires it.)"`
-
-**Interaction with other settings:**
-- **find-work ON + auto-start ON**: Full autopilot. Purlin scans for work and starts executing the top item.
-- **find-work ON + auto-start OFF**: Purlin scans and presents the plan, then waits. This is the default.
-
-### Flow
-
-1. Read current value: `purlin_config` MCP tool with `key: "agents.purlin.auto_start"`.
-2. **No argument** (just `purlin:config auto-start`): Print current state and the description above.
-3. **With `on`**: Write `true` via `purlin_config` MCP tool (`action: "write"`, `key: "agents.purlin.auto_start"`, `value: true`). Check the response for a `coupled` field. Print: `"Auto-start is now ON. Purlin will begin executing work immediately after scanning."` If coupled, append: `" (find-work was also turned ON — auto-start requires it.)"`
-4. **With `off`**: Write `false`. Print: `"Auto-start is now OFF. Purlin will present the work plan and wait for approval."`
-
----
-
-## Preset Combinations
-
-When showing the status table (no-argument mode), also print a brief guide to common combinations:
+Call `purlin_config` with `action: "read"`, `key: "<key>"`.
 
 ```
-Common combinations:
-  Supervised:   yolo OFF  + find-work ON  + auto-start OFF  (review everything)
-  Trusted:      yolo ON   + find-work ON  + auto-start OFF  (auto-approve, pick your work)
-  Autopilot:    yolo ON   + find-work ON  + auto-start ON   (fully autonomous)
-  Direct:       yolo ON   + find-work OFF + auto-start OFF  (no scan, just tell me what to do)
+purlin:config test_framework
+→ test_framework: auto
 ```
 
----
+## Write a Setting
 
-## Error Handling
+Call `purlin_config` with `action: "write"`, `key: "<key>"`, `value: <value>`.
 
-| Condition | Message | Action |
-|---|---|---|
-| Unknown setting name | `"Unknown setting '<name>'. Valid settings: yolo, find-work, auto-start."` | Stop |
-| Invalid value (not on/off) | `"Invalid value '<value>'. Use 'on' or 'off'."` | Stop |
-| Config read failure | `"Could not read Purlin config. Is .purlin/ initialized?"` | Stop |
-| Config write failure | `"Could not write to config. Check file permissions on .purlin/config.local.json."` | Stop |
+```
+purlin:config test_framework pytest
+→ Set test_framework = "pytest"
+```
+
+## Config File
+
+The config file is `.purlin/config.json`. Default contents (from `templates/config.json`):
+
+```json
+{
+  "version": "2.0.0",
+  "test_framework": "auto",
+  "spec_dir": "specs"
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `version` | string | `"2.0.0"` | Purlin config version |
+| `test_framework` | string | `"auto"` | Test framework: `"auto"`, `"pytest"`, `"jest"`, `"shell"` |
+| `spec_dir` | string | `"specs"` | Directory containing spec files |

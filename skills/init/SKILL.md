@@ -1,81 +1,96 @@
 ---
 name: init
-description: Initialize a project for Purlin — creates .purlin/ directory structure and config
+description: Initialize a project for Purlin
 ---
+
+Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, detects the test framework, and scaffolds the proof plugin.
 
 ## Usage
 
 ```
-purlin:init [OPTIONS]
-
-Options:
-  --force    Re-initialize even if .purlin/ exists (preserves existing config)
+purlin:init                     Initialize a new project
+purlin:init --force             Re-initialize (preserves existing config)
 ```
 
----
+## Step 1 — Pre-flight
 
-## Execution Flow
+- If `.purlin/` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
+- If `.purlin/` exists and `--force` is set: proceed, preserve existing `config.json`.
 
-### Step 1 -- Pre-flight Check
-
-1. If `.purlin/` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
-2. If `.purlin/` exists and `--force` is set: proceed but preserve existing `config.json` and `config.local.json`.
-
-### Step 2 -- Create Directory Structure
-
-Create the following directories:
+## Step 2 — Create Directory Structure
 
 ```
 .purlin/
-├── cache/          # Scan cache, dependency graph, checkpoints
-├── runtime/        # PID files, session state
-└── toolbox/        # Project-local and community tools
+  config.json         # from templates/config.json
+  plugins/            # proof plugin installed here
+specs/
+  _invariants/        # invariant specs go here
 ```
 
-### Step 3 -- Create Configuration Files
+## Step 3 — Detect Test Framework
 
-1. **`.purlin/config.json`** -- Copy from `${CLAUDE_PLUGIN_ROOT}/templates/config.json`. Skip if exists (preserves user config).
-2. **`.purlin/sync_ledger.json`** -- Create empty `{}`. This is the persistent sync tracking ledger (committed to git). Skip if exists.
+Check project files:
+- `conftest.py` or `pyproject.toml` with `[tool.pytest]` → `"pytest"`
+- `package.json` with `jest` → `"jest"`
+- Neither → `"auto"` (detect at runtime)
 
-### Step 4 -- Update .gitignore
+Write the detected framework to `.purlin/config.json` under `test_framework`.
 
-Ensure `.gitignore` contains Purlin-specific entries:
+## Step 4 — Scaffold Proof Plugin
+
+Copy the appropriate proof plugin from `scripts/proof/` to `.purlin/plugins/`:
+
+| Framework | Source | Destination |
+|-----------|--------|-------------|
+| pytest | `scripts/proof/pytest_purlin.py` | `.purlin/plugins/pytest_purlin.py` |
+| jest | `scripts/proof/jest_purlin.js` | `.purlin/plugins/jest_purlin.js` |
+| shell | `scripts/proof/shell_purlin.sh` | `.purlin/plugins/purlin-proof.sh` |
+
+For pytest, also create or update `conftest.py` at the project root:
+
+```python
+pytest_plugins = [".purlin.plugins.pytest_purlin"]
+```
+
+For jest, add reporter config to `jest.config.js` or `package.json`:
+
+```json
+{
+  "reporters": ["default", ".purlin/plugins/jest_purlin.js"]
+}
+```
+
+## Step 5 — Update .gitignore
+
+Ensure `.gitignore` contains:
 
 ```
-# Purlin
-.purlin/cache/
+# Purlin runtime (not committed)
 .purlin/runtime/
-.purlin/runtime/sync_state.json
-.purlin_session.lock
-.purlin_worktree_label
+.purlin/plugins/__pycache__/
 ```
 
-### Step 5 -- Create features/ Directory
+## Step 6 — Confirmation
 
-If `features/` does not exist, create it with a placeholder README:
-
-```
-features/
-└── README.md    # "Feature specifications live here. See purlin:spec to create one."
-```
-
-### Step 6 -- Confirmation
-
-Print:
 ```
 Project initialized for Purlin.
 
 Created:
   .purlin/config.json
-  .purlin/sync_ledger.json
-  .gitignore (updated)
-  features/
+  .purlin/plugins/<proof_plugin>
+  specs/
+  specs/_invariants/
 
-Next: Start working by invoking any skill directly:
-  purlin:spec <topic>    — create your first feature spec
-  purlin:status          — see what needs doing
+Test framework: <detected>
+Proof plugin: .purlin/plugins/<name>
+
+Next steps:
+  purlin:spec <topic>    — create your first spec
+  purlin:status          — see rule coverage
 ```
 
-### Step 7 -- Commit
+## Step 7 — Commit
 
-Commit the initialized project structure: `git commit -m "chore: initialize purlin project"`.
+```
+git commit -m "chore: initialize purlin project"
+```

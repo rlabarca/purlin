@@ -1,68 +1,67 @@
 ---
 name: find
-description: Search specs and surface sync-aware work discovery
+description: Search specs by name and show coverage
 ---
 
-Given the topic or concern provided as an argument, search the spec system and report findings. When invoked with no argument, show sync-aware work discovery.
+Find a spec by name and display its rule coverage from `sync_status`.
 
-## Work Discovery (no argument)
-
-When invoked as `/find` with no topic argument, surface features needing attention based on sync state and QA status.
-
-1. Read `.purlin/sync_ledger.json` for per-feature sync status.
-2. Read scan results (via `purlin_scan`) for lifecycle, test status, regression status, and open discoveries.
-3. Classify features into groups:
+## Usage
 
 ```
-Features needing attention:
-
-  NEW (spec exists, no code):
-    - notification_system: spec written 2d ago
-    - user_preferences: spec written 1d ago
-
-  SPEC AHEAD (spec updated after code):
-    - webhook_delivery: spec updated 3h ago, code 2d ago
-
-  CODE AHEAD (code updated after spec):
-    - auth_middleware: code 1d ago, no impl, spec 8d ago
-
-  QA ATTENTION:
-    - webhook_delivery: 1 OPEN discovery, regression PASS
-    - auth_middleware: regression STALE (code changed since last run)
-    - notification_system: no regression scenarios yet
-
-  SYNCED (no action needed):
-    - rate_limiting: all in sync, regression PASS, 0 discoveries
+purlin:find <name>              Find a spec by name
+purlin:find                     List all specs
 ```
 
-**Classification rules:**
-- **NEW**: Feature has spec (lifecycle TODO), no `last_code_commit` in sync ledger
-- **SPEC_AHEAD**: `sync_status: spec_ahead` in ledger, or `spec_modified_after_completion: true`
-- **CODE_AHEAD**: `sync_status: code_ahead` in ledger
-- **QA_ATTENTION**: Open discoveries, STALE/FAIL regression, or no regression scenarios for a feature with code
-- **SYNCED**: `sync_status: synced` or `unknown` with no QA issues
+## With Argument — Find by Name
 
-## Topic Search (with argument)
+1. Search `specs/**/<name>.md` for an exact filename match.
+2. If not found, try a substring match against all spec filenames.
+3. If still not found:
 
-When a topic or concern is provided, search the spec system and report findings.
+```
+No spec found matching "<name>".
 
-### Search Protocol
+Available specs:
+  specs/auth/login.md
+  specs/auth/user_profile.md
+  specs/webhooks/webhook_delivery.md
+  specs/_invariants/i_design_tokens.md
+```
 
-1. **Feature specs:** Grep `features/**/*.md` (exclude `features/_tombstones/`, `features/_digests/`, `features/_design/`, `*.impl.md`, `*.discoveries.md`) for topic keywords. If found, read the matching file and identify the specific section and scenario.
-2. **Anchor nodes:** Grep `features/**/arch_*.md`, `features/**/design_*.md`, `features/**/policy_*.md` for the topic. Anchor hits indicate governance-level coverage.
-3. **Instruction files:** Grep `instructions/` and `CLAUDE.md` for the topic. Instruction-only hits mean the topic is a process/workflow rule without a feature spec.
-4. **Companion files:** Grep `features/**/*.impl.md` for the topic. Companion hits may reveal implementation decisions or deviations related to the topic.
+4. If found, read the spec and call `sync_status`. Display the spec's coverage:
 
-### Report Format
+```
+Found: specs/auth/login.md
 
-For each search result, report:
-- **File** and **section** where the topic appears
-- **Coverage type:** feature spec, anchor node, instruction, or companion
+# Feature: login
 
-### Recommendation
+> Requires: i_security_auth
+> Scope: src/auth/login.js, src/auth/login.test.js
 
-Based on results, recommend one of:
-- **Already covered** — feature spec + scenarios exist; no action needed
-- **Spec refinement needed** — coverage exists but is incomplete or vague
-- **Anchor node update** — the concern crosses features and belongs in an anchor
-- **New spec needed** — no coverage found; suggest creating a feature spec via `purlin:spec`
+Rules: 3 | Proved: 3/3 | Status: READY | vhash=a1b2c3d4
+
+  RULE-1: PASS (PROOF-1 in tests/test_login.py)
+  RULE-2: PASS (PROOF-2 in tests/test_login.py)
+  RULE-3: PASS (PROOF-3, manual, verified 2026-03-30)
+```
+
+## Without Argument — List All
+
+List all specs grouped by category:
+
+```
+Specs (12 total):
+
+  auth/ (3 specs)
+    login.md — 3/3 rules proved
+    user_profile.md — 1/2 rules proved
+    permissions.md — no rules
+
+  webhooks/ (2 specs)
+    webhook_delivery.md — 2/3 rules proved
+    webhook_config.md — READY
+
+  _invariants/ (2 invariants)
+    i_design_tokens.md — 5 rules
+    i_api_contracts.md — 3 rules
+```

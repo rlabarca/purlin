@@ -1,63 +1,48 @@
 # Commit Conventions
 
-> Referenced by PURLIN_BASE.md commit discipline and by skills that create commits.
+## Prefixes
 
-## Mode Attribution Prefixes
+| Prefix | When |
+|--------|------|
+| `spec(<name>):` | Creating or editing a spec |
+| `feat(<name>):` | Implementing a feature |
+| `fix(<name>):` | Fixing a bug |
+| `test(<name>):` | Writing or updating tests |
+| `verify:` | Issuing verification receipts |
+| `invariant(<name>):` | Syncing an invariant from upstream |
+| `chore:` | Project setup, config changes, cleanup |
+| `docs:` | Documentation updates |
 
-| Mode | Prefixes | Example |
-|------|----------|---------|
-| Engineer | `feat(scope):`, `fix(scope):`, `test(scope):` | `feat(auth): implement login flow` |
-| PM | `spec(scope):`, `design(scope):` | `spec(notifications): add edge scenarios` |
-| QA | `qa(scope):`, `status(scope):` | `qa(auth): record [BUG] timeout` |
-| Shared | `chore(scope):`, `docs(scope):` | `chore: update dependency graph` |
-
-## Mode Trailer
-
-All commits MUST include a `Purlin-Mode:` trailer identifying the active mode:
-
-```
-feat(auth): implement login flow
-
-Purlin-Mode: Engineer
-```
-
-## Status Tag Commits
-
-Status tag commits use a separate format and MUST be standalone (not combined with code changes):
+## Examples
 
 ```
-status(scope): [Complete features/FILENAME.md] [Scope: full]
-status(scope): [Ready for Verification features/FILENAME.md] [Scope: targeted:A,B]
+spec(auth_login): add rules for SSO and MFA flows
+feat(auth_login): implement SSO redirect and callback
+test(auth_login): 3/3 rules proved
+fix(auth_login): handle expired tokens in callback
+verify: [Complete:all] features=5 vhash=a1b2c3d4
+invariant(i_design_tokens): sync from upstream (abc1234)
+chore: initialize purlin project
 ```
 
-QA completions add `[Verified]`:
+## Verification Receipt Commit
+
+The verify skill uses a specific format:
+
 ```
-status(scope): [Complete features/FILENAME.md] [Verified]
+verify: [Complete:all] features=N vhash=<combined-hash>
 ```
 
-### Scope Types
+Where `combined-hash` = `sha256(sorted individual vhashes joined by comma)[:8]`.
 
-| Scope | When |
-|-------|------|
-| `full` | Behavioral change, new scenarios. Default. |
-| `targeted:A,B` | Only specific scenarios affected. |
-| `cosmetic` | Non-functional change (formatting, logging). |
-| `dependency-only` | Prerequisite update, no direct code changes. |
+## Manual Stamp Commit
 
-## Lifecycle Reset Exemption Tags
+```
+verify(<feature>): manual stamp PROOF-N
+```
 
-Include these trailer tags in commit messages to prevent lifecycle resets when modifying feature spec files:
+## General Rules
 
-| Tag | Meaning | When to Use |
-|-----|---------|-------------|
-| `[QA-Tags]` | Only modifies `@auto`/`@manual` tag suffixes | QA classifying scenarios |
-| `[Spec-FMT]` | Only formatting changes, no behavioral content change | PM fixing formatting |
-| `[Migration]` | Batch role/terminology renames during framework migration | pl-update-purlin migration |
-
-If ALL commits to a feature spec since the last status commit contain exempt tags, the lifecycle is preserved. If ANY commit lacks an exempt tag, the normal reset applies.
-
-## Commit Discipline
-
-- Commit at logical milestones — never defer all commits until session end.
-- Status tag commits MUST be separate, standalone commits.
-- Implementation work on a single feature MAY be batched into one or a small number of logical commits.
+- Commit at logical milestones, not at session end.
+- Keep scope in the parentheses matching the feature/spec name.
+- One feature per commit when possible.

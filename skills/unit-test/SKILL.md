@@ -1,171 +1,111 @@
 ---
 name: unit-test
-description: Author and run unit tests for a feature, with quality rubric enforcement
+description: Run tests and emit proof files with coverage report
 ---
 
-**Writes:** test files, tests/*/tests.json, .impl.md
+Run tests (default tier unless `--all`), emit proof files via feature-scoped overwrite, and report coverage per feature.
 
-> **Test infrastructure:** See `${CLAUDE_PLUGIN_ROOT}/references/test_infrastructure.md` for result schemas, harness types, status interpretation, and smoke tier rules.
+## Usage
 
-## Active Skill Marker
+```
+purlin:unit-test [feature]      Run tests for a specific feature (default tier)
+purlin:unit-test                Run all default-tier tests
+purlin:unit-test --all          Run all tests across all tiers
+```
 
-Before any file writes, set the active skill marker:
+## Step 1 — Detect Test Framework
+
+Read `.purlin/config.json` for `test_framework`. If `"auto"`, detect from project files:
+- `conftest.py` or `pyproject.toml` with `[tool.pytest]` → pytest
+- `package.json` with `jest` in devDependencies → jest
+- `*.test.sh` files → shell
+
+## Step 2 — Run Tests
 
 ```bash
-mkdir -p .purlin/runtime && echo "unit-test" > .purlin/runtime/active_skill
+# pytest (default tier)
+pytest -m "not slow"
+
+# pytest (all tiers with --all)
+pytest
+
+# jest (default tier)
+npx jest --testPathPattern="default"
+
+# jest (all tiers with --all)
+npx jest
 ```
 
-After all writes are complete (final commit), clear it:
+The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file. This is a **feature-scoped overwrite**: each run replaces all proof entries for the tested feature in that tier file, preserving entries from other features.
 
+## Step 3 — Report Coverage
+
+Call `sync_status` after tests complete. Display per-feature coverage:
+
+```
+Test results:
+  auth_login: 3/3 rules proved
+  user_profile: 1/2 rules proved
+    RULE-2: NO PROOF → write a test with @pytest.mark.proof("user_profile", "PROOF-2", "RULE-2")
+  webhook_delivery: RULE-1 FAIL
+    → Fix: test_webhook_basic is failing
+```
+
+## Step 4 — Commit Proof Files
+
+Proof files are always committed to git.
+
+```
+git commit -m "test(<feature>): <passed>/<total> rules proved"
+```
+
+If no feature argument was given (ran all tests):
+```
+git commit -m "test: run default tier (<passed>/<total> features fully proved)"
+```
+
+## Writing Tests with Proof Markers
+
+When tests are missing, write them with proof markers. See `references/formats/proofs_format.md` for the full proof format specification.
+
+**pytest:**
+```python
+@pytest.mark.proof("feature_name", "PROOF-1", "RULE-1")
+def test_validates_input():
+    result = validate(bad_input)
+    assert result.status == "error"
+    assert result.code == 400
+```
+
+**Jest:**
+```javascript
+it("validates input [proof:feature_name:PROOF-1:RULE-1:default]", () => {
+  const result = validate(badInput);
+  expect(result.status).toBe("error");
+  expect(result.code).toBe(400);
+});
+```
+
+**Shell:**
 ```bash
-rm -f .purlin/runtime/active_skill
+source scripts/proof/shell_purlin.sh
+result=$(validate_input "bad")
+if [[ "$result" == *"error"* ]]; then
+  purlin_proof "feature_name" "PROOF-1" "RULE-1" pass "validates input"
+else
+  purlin_proof "feature_name" "PROOF-1" "RULE-1" fail "validates input"
+fi
+purlin_proof_finish
 ```
 
----
+### Test Quality Rules
 
-## Scope
+- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
+- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
+- **Never assert True.** Every assertion must check a specific expected value.
+- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
+- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
 
-If an argument was provided, resolve the feature file via `features/**/<arg>.md` and run the testing protocol.
-If no argument was provided, run the testing protocol for the feature currently being implemented (from the active `purlin:build` session context).
+## Note
 
-Read the feature spec to determine the feature type (Python tool, shell script, Claude skill, web UI). Load the companion file (`.impl.md` in the same folder as the spec) if it exists.
-
----
-
-## Section 1 -- The Cardinal Rule
-
-**Grepping or reading source code to verify its presence is NOT testing.**
-
-You MUST NEVER verify a feature by opening source files and checking whether code exists, patterns match, or strings are present. That validates structure, not behavior. A test MUST import, call, or execute the implementation and assert on its outputs.
-
-If your test file contains `open('features/...')` or `open('instructions/...')` and reads file contents as part of the assertion, STOP. You are writing an AP-1 test (see Section 3).
-
----
-
-## Section 2 -- Test Requirements by Feature Type
-
-What constitutes behavioral testing depends on the feature category:
-
-| Feature Type | Behavioral Test Approach |
-|---|---|
-| Python tool features | Import and call the implementation functions. Assert return values, side effects, and error conditions against expected outcomes. |
-| Claude skill/command features | Test the infrastructure the skill depends on (parsers, validators, state management), not string presence in the command markdown file. |
-| Shell script features | Execute the script with controlled arguments. Assert exit codes, stdout content, and filesystem side effects. |
-| Web UI features | Interact with rendered DOM or API endpoints. Assert response content, status codes, and state changes. Unit tests + `purlin:web-test` for visual features. |
-
-### Test Tier Decision Matrix
-
-Defines what runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
-
-| Feature Type | Step 3 Testing | Regression Tier |
-|---|---|---|
-| Python tool | Unit tests (pytest): import and call functions, assert values | Regression harness if applicable |
-| Shell script | Execute with args, assert exit codes and output | Regression harness if applicable |
-| Web UI with `> Web Test:` | Unit tests + web test spot check (visual verification) | Full web test regression |
-| Web UI without `> Web Test:` | Unit tests only | N/A |
-| Claude skill/command | Test infrastructure (parsers, validators, state) | Regression harness for interaction flow |
-
-Run `purlin:web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
-
-### Fixture Exclusion
-
-Fixture-based testing (checkout fixture state, run harness against snapshot) is regression-tier work owned by QA. Do not set up fixtures during `purlin:unit-test`. If a scenario requires fixture state, log `[DISCOVERY: scenario requires fixture -- defer to regression tier]` in the companion file.
-
----
-
-## Section 3 -- Anti-Pattern Checklist
-
-Five named anti-patterns you MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
-
-**AP-1: Prose Inspection**
-Test reads a documentation, markdown, or instruction file and asserts string presence instead of importing and calling the implementation code.
-
-- BAD: `content = open('features/my_feature.md').read(); assert 'retry logic' in content`
-- GOOD: `result = retry_operation(failing_func, max_retries=3); assertEqual(result.attempts, 3)`
-
-**AP-2: Structural Presence**
-Test checks that a key, section, or element exists without verifying its value or correctness.
-
-- BAD: `assertIn('status', result)`
-- GOOD: `assertEqual(result['status'], 'PASS')`
-
-**AP-3: Mock-Dominated**
-Test mocks the implementation under test then asserts the mock was called, verifying wiring rather than behavior. Mocks of external dependencies (network, filesystem, clock) are acceptable; mocks of the code path being tested are not.
-
-- BAD: `mock_process = Mock(return_value={'ok': True}); result = run(mock_process); mock_process.assert_called_once()`
-- GOOD: `result = process_real_input(sample_data); assertEqual(result['status'], 'ok')`
-
-**AP-4: Tautological Assertion**
-Asserts something that is always true regardless of whether the implementation is correct. Type checks on functions with typed signatures, None checks on required return values, and isinstance checks when the constructor guarantees the type.
-
-- BAD: `assertIsInstance(result, dict)` (when the function signature guarantees dict)
-- GOOD: `assertEqual(result['computed_value'], expected_value)`
-
-**AP-5: Representative Input Neglect**
-Tests use toy data (empty strings, single-element lists, trivially small inputs) that do not resemble real inputs, missing failure modes that occur with actual data shapes. A test that exercises the mechanism with synthetic data while the real input (CLI output, API response, complex config) goes untested is verifying plumbing, not behavior.
-
-- BAD: `result = parse_config('{}'); assertIsNotNone(result)`
-- GOOD: `result = parse_config(SAMPLE_REAL_CONFIG); assertEqual(result['database']['host'], 'localhost'); assertEqual(len(result['features']), 5)`
-
-### Assertion Quality Cross-Reference
-
-The assertion quality invariants (positive/negative test pairing, assertion tightening tiers) are defined in `arch_testing.md` Section "Assertion Quality Invariant." The anti-patterns above complement those invariants: the anti-patterns describe what bad tests look like (pattern recognition), while the assertion quality invariant describes how to verify that tests are meaningful (structural guarantee). Both MUST be satisfied.
-
----
-
-## Section 4 -- Quality Rubric Gate
-
-Hard gate -- all 6 checks MUST pass before `tests.json` is written. If any item fails: fix tests, re-run, re-audit. No `tests.json` until clean.
-
-1. **DELETION TEST**: If the implementation under test were deleted, would at least one test fail? A test that passes without the implementation is not a test -- it is a checkbox.
-2. **BEHAVIORAL VERIFICATION**: Does every test import, call, or execute the implementation and assert on output? No tests that only read source files.
-3. **VALUE ASSERTIONS**: Does every test contain at least one value-verifying assertion (`assertEqual`, `assert x == expected`)? Presence-only assertions alone do not count. (See Minimum Assertion Depth below.)
-4. **ANTI-PATTERN FREE**: Every test passes all 5 AP checks from Section 3.
-5. **REPRESENTATIVE INPUTS**: Tests use realistic data shapes, not empty/trivial inputs.
-6. **NO SELF-MOCKING**: Mocks limited to external deps (network, filesystem, clock). Code under test called for real.
-
-### Minimum Assertion Depth
-
-Each test function MUST include at least one value-verifying assertion -- an assertion that checks a specific expected value, not merely presence or type.
-
-Value-verifying assertions (count toward minimum):
-- `assertEqual(result, expected)`
-- `assert result['key'] == 'specific_value'`
-- `assertEqual(exit_code, 0)`
-
-Presence-only assertions (do NOT count alone):
-- `assertIn('key', result)` without verifying `result['key']`
-- `assertTrue(os.path.exists(path))` without verifying file contents
-- `assertIsNotNone(result)` without verifying result value
-
-A test MAY use presence-only assertions alongside value-verifying assertions. The mandate is that presence-only assertions alone are insufficient.
-
----
-
-## Section 5 -- Result Reporting
-
-*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written.
-*   **Required fields:** `status`, `passed`, `failed`, `total`. `total` MUST be > 0.
-*   **Output location:** `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
-*   **Inline harness pattern:** Test files that use the inline harness pattern (`record()` / `write_results()`) MUST be executed directly (`python3 <path>/test_file.py`), not via pytest -- only direct execution triggers `write_results()`.
-*   **Self-validation:** After writing `tests.json`, verify: required fields present, `total > 0`, `passed + failed == total`, `status` matches (`PASS` if `failed == 0`, `FAIL` otherwise).
-
----
-
-## Section 6 -- Companion File Audit Record
-
-After the rubric passes, record in the feature's `.impl.md` companion (in the same folder as the spec) under `### Test Quality Audit`:
-
-```
-### Test Quality Audit
-- Rubric: 6/6 PASS
-- Tests: N total, N passed
-- AP scan: clean
-- Date: YYYY-MM-DD
-```
-
----
-
-## Section 7 -- Commit
-
-Commit test files, `tests.json`, and companion file updates: `git commit -m "test(<feature>): unit tests (<passed>/<total> pass)"`. When invoked standalone (not as a sub-step of `purlin:build`), run `purlin_scan` after commit.
+This skill does NOT issue verification receipts. That is `purlin:verify`'s job. This skill runs tests, emits proof files, and reports coverage.
