@@ -77,6 +77,44 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 | Stamp a manual proof | `/purlin:verify --manual login PROOF-3` |
 | Find a spec | `/purlin:find login` |
 
+### Turning ideas into specs
+
+You don't need to know Purlin's format. Just give Claude your raw input — a PRD, customer feedback, a Slack thread, or a plain English description — and it extracts the spec for you.
+
+**From a plain description:**
+```
+I need password reset. Users click "forgot password", get an email with a link,
+click it, set a new password. The link should expire after 24 hours.
+```
+
+Claude drafts a complete spec with rules (`RULE-1: POST /reset sends email with link`, `RULE-2: Link expires after 24 hours`, ...) and proof descriptions. Review the draft, adjust, done.
+
+**From a PRD or requirements doc:**
+```
+Here's our PRD for the checkout flow: [paste or reference the doc]
+```
+
+Claude reads the entire document, extracts every testable constraint as a rule, generates proof descriptions, suggests anchors if it detects cross-cutting concerns (API conventions, security requirements), and presents the complete spec. It only asks follow-up questions about genuine gaps — not things already answered in the PRD.
+
+**From customer feedback:**
+```
+Customers are complaining that search is slow and doesn't handle typos.
+```
+
+Claude translates complaints into rules: `RULE-1: Search returns results in under 500ms`, `RULE-2: Search handles common typos via fuzzy matching`. The PM refines the thresholds and priorities.
+
+**What the PM DOESN'T do:**
+- Write `RULE-N:` format — Claude does that
+- Know what `> Requires:`, `> Scope:`, or `> Stack:` mean — Claude fills metadata automatically
+- Decide on proof tiers (`@slow`, `@e2e`, `@manual`) — Claude applies the heuristics
+- Write proof descriptions — Claude generates observable assertions from the rules
+
+**What the PM DOES do:**
+- Describe what the feature should do in their own words
+- Review the drafted rules — are they right? Are any missing?
+- Answer gap questions — "You mentioned 'fast.' Under 200ms? Under 1 second?"
+- Stamp manual proofs for things automation can't check (brand voice, UX feel)
+
 ### What PMs own
 
 - **Rules** in the `## Rules` section — what the code must do
