@@ -1,1 +1,0 @@
-purlin/tools/cdd/start.sh

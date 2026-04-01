@@ -122,7 +122,7 @@ Regression tests catch things that used to work but broke after a change. QA mod
 
 ### How It Works
 
-**1. Author scenarios** — QA mode reads the feature spec and writes regression test files (`tests/qa/scenarios/<feature>.json`). Each test has assertions ranked by confidence:
+**1. Author scenarios** — QA mode reads the feature spec and writes regression test files (`tests/qa/scenarios/<feature>.json`) via `purlin:regression author`. These files are write-guard protected — they can only be created through the `purlin:regression` or `purlin:verify` skills, not by manually writing JSON. This ensures proper harness type selection, assertion tier assignment, and registration in the feature spec. Each test has assertions ranked by confidence:
 
 | Tier | What It Checks |
 |------|----------------|

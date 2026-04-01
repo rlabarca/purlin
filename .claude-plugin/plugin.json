@@ -1,49 +1,12 @@
 {
   "name": "purlin",
-  "version": "0.8.6",
-  "description": "Purlin — a unified workflow agent for spec-driven development with sync tracking. Enforces continuous design-driven development: specs before code, file classification guards, deviation tracking, structured QA, and phased delivery.",
+  "version": "2.0.0",
+  "description": "Rule-proof spec-driven development — specs define rules, tests prove them, sync_status shows coverage",
   "author": {
-    "name": "rlabarca"
+    "name": "Rich LaBarca",
+    "url": "https://github.com/rlabarca"
   },
-  "userConfig": {
-    "figma_access_token": {
-      "title": "Figma Access Token",
-      "description": "Figma personal access token for design system integration",
-      "type": "string",
-      "sensitive": true,
-      "required": false
-    },
-    "deploy_token": {
-      "title": "Deploy Token",
-      "description": "Deployment authentication token",
-      "type": "string",
-      "sensitive": true,
-      "required": false
-    },
-    "confluence_token": {
-      "title": "Confluence API Token",
-      "description": "Atlassian Confluence API token",
-      "type": "string",
-      "sensitive": true,
-      "required": false
-    },
-    "confluence_email": {
-      "title": "Confluence Email",
-      "description": "Atlassian account email for Confluence",
-      "type": "string",
-      "required": false
-    },
-    "confluence_base_url": {
-      "title": "Confluence Base URL",
-      "description": "Confluence instance URL (e.g., https://team.atlassian.net)",
-      "type": "string",
-      "required": false
-    },
-    "default_model": {
-      "title": "Default Model",
-      "description": "Default Claude model for Purlin sessions (e.g., claude-opus-4-6[1m])",
-      "type": "string",
-      "required": false
-    }
-  }
+  "repository": "https://github.com/rlabarca/purlin",
+  "license": "MIT",
+  "keywords": ["specs", "testing", "verification", "sync", "rules", "proofs"]
 }

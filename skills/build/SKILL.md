@@ -200,6 +200,7 @@ When using Execution Group Dispatch, set the marker before spawning workers and 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
 *   **C2. Sync Ledger:** `bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sync-ledger-update.sh" --sha "$(git rev-parse HEAD)"`
 *   **D. Verify:** Run `purlin_scan` with `only: "features,plan"` and confirm expected state.
+*   **D2. Regression advisory (non-blocking):** If the feature spec contains `### QA Scenarios` or `## Regression Guidance`, print: `"Feature has QA scenarios — next QA session should run purlin:regression author <feature> to create regression test scenarios before verification."` This surfaces the regression authoring need at the build→verify handoff.
 *   **E. Group check:** If a delivery plan exists, check phase completion status:
     *   **Phase fully complete** (all features done): Mark phase COMPLETE, record commit hash, commit plan update.
     *   **Phase complete with deferrals** (all non-blocked features done, only role-blocked features remain): Apply the Phase Deferral Protocol -- mark phase COMPLETE with `**Deferred:**` annotation, re-queue blocked features to a later phase, announce the deferral. See `${CLAUDE_PLUGIN_ROOT}/references/phased_delivery.md` Section 10.14.

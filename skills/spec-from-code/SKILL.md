@@ -75,7 +75,7 @@ Before starting, check for an existing state file at `.purlin/cache/sfc_state.js
 ## Phase 2 — Taxonomy Review
 
 1. Read `.purlin/cache/sfc_inventory.md`.
-2. **Check for existing features:** If feature files already exist (glob `features/**/*.md`, excluding `_`-prefixed system folders), read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns. The proposed taxonomy MUST reuse existing category names where applicable and follow established label naming conventions (see `${CLAUDE_PLUGIN_ROOT}/references/feature_format.md` "Category and Label Consistency"). Only propose new categories when no existing one fits.
+2. **Check for existing features:** If feature files already exist (glob `features/**/*.md`, excluding `_`-prefixed system folders), read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns. The proposed taxonomy MUST reuse existing category names where applicable and follow established label naming conventions (see `${CLAUDE_PLUGIN_ROOT}/references/formats/feature_format.md` "Category and Label Consistency"). Only propose new categories when no existing one fits.
 3. Propose a category taxonomy grouping feature candidates into logical categories. For each category, present: name, feature count, and per-feature name + one-line description.
 4. Ask the user (via `AskUserQuestion`, in batches of 2-3 categories) to validate each category: confirm the name, confirm feature membership, and identify missed features. Adjust based on feedback.
 5. Propose anchor nodes derived from detected cross-cutting concerns, classified by type:
@@ -99,7 +99,7 @@ Before starting, check for an existing state file at `.purlin/cache/sfc_state.js
 ### Step 1: Generate Anchor Nodes
 
 For each approved anchor node from the taxonomy:
-1. Read the canonical template at `${CLAUDE_PLUGIN_ROOT}/scripts/feature_templates/_anchor.md`.
+1. Read the canonical template from `${CLAUDE_PLUGIN_ROOT}/references/formats/anchor_format.md` (see "Canonical Template" sections).
 2. Create the anchor node file in `features/` using the correct prefix (`arch_`, `design_`, or `policy_`).
 3. Include:
    - Proper heading (`# Architecture:`, `# Policy:`, or `# Design:` matching prefix type)
@@ -114,15 +114,21 @@ Process categories in dependency order (categories with fewer anchor node depend
 
 For each category:
 1. If the category spans more than 5 source files, use an Explore sub-agent (Task tool, subagent_type: `Explore`) to read the relevant source. Otherwise read directly.
-2. Read the canonical template at `${CLAUDE_PLUGIN_ROOT}/scripts/feature_templates/_feature.md`.
+2. Read the canonical format reference at `${CLAUDE_PLUGIN_ROOT}/references/formats/feature_format.md`.
 3. For each feature in the category:
    - Create the feature file in `features/` from the template.
    - Include: `> Label:`, `> Category:`, and `> Prerequisite:` metadata linking to relevant anchor nodes.
-   - Include: Overview paragraph, Requirements organized into numbered subsections, Gherkin scenarios describing current code behavior.
-   - Add the draft notice to the Scenarios section:
-     ```
-     > **[Draft]** These scenarios were auto-generated from existing code by purlin:spec-from-code. Review and refine before marking as final.
-     ```
+   - Include: Overview paragraph, Requirements organized into numbered subsections.
+   - Include a `## 3. Scenarios` section with two subsections per `feature_format.md`:
+     - `### Unit Tests` — structural/unit-level checks (exit codes, return values, file existence). Add the draft notice:
+       ```
+       > **[Draft]** These tests were auto-generated from existing code by purlin:spec-from-code. Review and refine before marking as final.
+       ```
+     - `### QA Scenarios` — behavioral Given/When/Then scenarios describing current code behavior (untagged — QA classifies as `@auto` or `@manual` later). Add the draft notice:
+       ```
+       > **[Draft]** These scenarios were auto-generated from existing code by purlin:spec-from-code. Review and refine before marking as final.
+       ```
+   - For features with 3+ QA scenarios or complex code paths (error handling, state machines, config-dependent branches), add a `## Regression Guidance` section with bullets describing fragile behaviors detected from code analysis. For features with route definitions suggesting web endpoints, also add `> Web Test:` metadata.
    - Set status marker: `[TODO]`
    - If significant code comments were found for this feature's source files (TODOs, architectural decisions, known issues), create a companion file (`.impl.md` in the same category folder as the spec) with:
      - A `### Source Mapping` section listing which source files implement the feature
@@ -151,3 +157,4 @@ For each category:
    - "Run `purlin:spec-code-audit` to validate the generated specs against the actual code and identify any gaps the import missed."
    - "Review generated features in dependency order (anchor nodes first) and refine the draft scenarios."
    - "Once specs are refined, run `purlin:build` to begin implementation verification."
+   - "Run `purlin:regression author` on features with QA Scenarios to create regression test scenario JSON files. Do not write scenario JSON manually — the regression skill handles registration, harness type selection, and assertion tier assignment."

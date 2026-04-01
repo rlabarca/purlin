@@ -27,7 +27,7 @@ features/
   _tombstones/           Features queued for deletion
 ```
 
-Consumer projects use their own categories (e.g., `core/`, `ui/`, `analytics/`). The canonical mapping from category string to folder slug is defined in `references/feature_format.md`.
+Consumer projects use their own categories (e.g., `core/`, `ui/`, `analytics/`). The canonical mapping from category string to folder slug is defined in `references/formats/feature_format.md`.
 
 ## File Types
 
@@ -74,12 +74,23 @@ The scanner resolves the filename across all category subfolders automatically.
 
 - One category per feature. The folder is the category.
 - `> Category:` metadata in the file must match the containing folder.
-- New categories require adding a slug to the mapping table in `references/feature_format.md`.
+- New categories require adding a slug to the mapping table in `references/formats/feature_format.md`.
 - `purlin:update` automatically organizes misplaced files into their correct category folder.
 
 ## Anchor Nodes
 
 Anchor nodes (`arch_*`, `design_*`, `policy_*`) live in whatever category folder matches their `> Category:` metadata, just like regular features. They are distinguished by filename prefix, not by folder.
+
+## Format References
+
+All file format specs live in `references/formats/`:
+
+| File Type | Format Spec |
+|-----------|-------------|
+| Regular features | [`feature_format.md`](../references/formats/feature_format.md) |
+| Anchor nodes (arch_*, design_*, policy_*, ops_*, prodbrief_*) | [`anchor_format.md`](../references/formats/anchor_format.md) |
+| Companion files (.impl.md) | [`companion_format.md`](../references/formats/companion_format.md) |
+| Invariant files (i_*) | [`invariant_format.md`](../references/formats/invariant_format.md) |
 
 ## Adding a New Feature
 

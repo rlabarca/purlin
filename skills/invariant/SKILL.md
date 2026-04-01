@@ -3,7 +3,7 @@ name: invariant
 description: Manage externally-sourced invariant constraint files. Write ops use bypass lock protocol
 ---
 
-> **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` for the canonical format.
+> **Invariant format:** See `${CLAUDE_PLUGIN_ROOT}/references/formats/invariant_format.md` for the canonical format.
 > **Invariant model:** See `${CLAUDE_PLUGIN_ROOT}/references/invariant_model.md` for identification, scope, and cascade rules.
 
 ## Active Skill Marker
@@ -300,7 +300,7 @@ For each `i_*` file in `features/_invariants/`:
 
 Comprehensive invariant audit — combines format validation, sync status, feature compliance, and cross-invariant conflict detection into a single structured report.
 
-Canonical type specs: `${CLAUDE_PLUGIN_ROOT}/references/invariant_type_{arch,design,policy,ops,prodbrief}.md`.
+Canonical type specs: `${CLAUDE_PLUGIN_ROOT}/references/formats/invariant_type_{arch,design,policy,ops,prodbrief}.md`.
 
 ### Step 1: Gather Data
 
@@ -313,7 +313,7 @@ Canonical type specs: `${CLAUDE_PLUGIN_ROOT}/references/invariant_type_{arch,des
 
 ### Step 2: Format Validation
 
-For each invariant file, validate per `${CLAUDE_PLUGIN_ROOT}/references/invariant_format.md` and the canonical type spec:
+For each invariant file, validate per `${CLAUDE_PLUGIN_ROOT}/references/formats/invariant_format.md` and the canonical type spec:
 
 1. **Required metadata:** `Format-Version`, `Invariant: true`, `Version`, `Source`, `Scope` (global or scoped). Git-sourced also need `Source-Path`, `Source-SHA`, `Synced-At`. Figma-sourced need `Figma-URL`, `Synced-At`.
 2. **Required sections by type:**
@@ -394,7 +394,7 @@ V1. [<SEVERITY>] <feature> -- <violation type>
     Evidence: <file:line>
     Fix: <remediation>
     Owner: <Engineer | PM>
-    Type spec: references/invariant_type_<type>.md
+    Type spec: references/formats/invariant_type_<type>.md
 ```
 
 **Severity:** CRITICAL (format failure), HIGH (FORBIDDEN violation, cross-invariant conflict), MEDIUM (zero coverage, Token Map mismatch, brief staleness, uncovered user story), LOW (sync stale, unused scoped invariant).

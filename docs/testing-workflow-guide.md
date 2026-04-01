@@ -116,7 +116,7 @@ Regression tests ensure that features keep working after future changes.
 
 ### The Regression Cycle
 
-1. **QA mode authors regression files** from the spec's QA scenarios (`purlin:regression author`).
+1. **QA mode authors regression files** from the spec's QA scenarios (`purlin:regression author`). Regression scenario files (`tests/qa/scenarios/*.json`) are write-guard protected — they can only be written through `purlin:regression` or `purlin:verify`, not manually.
 2. **You run the suite** in a separate terminal (`./tests/qa/run_all.sh`).
 3. **QA mode evaluates results** (`purlin:regression evaluate`) — creates bug reports for failures, reports test quality.
 

@@ -1,18 +1,13 @@
 {
-    "version": 1,
-    "servers": [
-        {
-            "name": "playwright",
-            "transport": "stdio",
-            "command": "npx",
-            "args": ["@playwright/mcp", "--headless"],
-            "post_install_notes": null
-        },
-        {
-            "name": "figma",
-            "transport": "http",
-            "url": "https://mcp.figma.com/mcp",
-            "post_install_notes": "OAuth. After restarting Claude Code, run /mcp, select figma, and complete browser authentication."
-        }
-    ]
+  "version": 1,
+  "tools": [
+    {
+      "name": "sync_status",
+      "description": "Show rule coverage per feature — greps specs for RULE-N, reads *.proofs-*.json, diffs them. Returns coverage report with actionable → directives."
+    },
+    {
+      "name": "purlin_config",
+      "description": "Read or update Purlin configuration from .purlin/config.json."
+    }
+  ]
 }

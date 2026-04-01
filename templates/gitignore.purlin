@@ -1,23 +1,5 @@
-# Purlin Runtime & Cache (generated, per-machine)
-.purlin/cache/
+# Purlin runtime (generated, not committed)
 .purlin/runtime/
-.purlin/config.local.json
 
-# Generated feature digests
-features/_digests/
-features/digests/
-
-# Logs & process files
-*.log
-*.pid
-
-# Claude Code worktrees (agent isolation)
-.claude/worktrees/
-
-# Credential files (must never be committed)
-credentials.json
-*.credentials
-*.secret
-
-# Web verification artifacts
-.playwright-mcp/
+# Purlin plugin cache
+.purlin/plugins/__pycache__/

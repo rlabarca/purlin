@@ -17,6 +17,7 @@ When adding or modifying error paths in `write-guard.sh`, always include the spe
 - `references/` → CODE
 - `RELEASE_NOTES.md` → CODE
 - `PLAN-` → CODE
+- `PURLIN_REVAMP.md` → CODE
 
 ## Tool Folder Separation
 

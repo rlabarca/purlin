@@ -136,7 +136,7 @@ See the [Parallel Execution Guide](parallel-execution-guide.md) for details on c
 
 The agent creates `features/<name>.impl.md` alongside the spec to document implementation decisions. This is the durable communication channel between Engineer and PM.
 
-**What goes in:** Decision tags with rationale and severity, test quality results, visual verification results, invariant references.
+**What goes in:** Decision tags with rationale and severity, test quality results, visual verification results, invariant references. See [`companion_format.md`](../references/formats/companion_format.md) for the canonical format.
 
 **What doesn't:** The implementation itself (that's in the code), spec content (that's in the feature file), or temporary debugging notes.
 
@@ -166,8 +166,8 @@ The engineer has three ways to flag issues for PM:
 | `purlin:delivery-plan` | Create or review a pipeline work plan. |
 | `purlin:infeasible <name>` | Escalate a feature that can't be built as specified. |
 | `purlin:propose <topic>` | Suggest a spec change to PM. |
-| `purlin:spec-code-audit [--deep]` | Audit alignment between specs and code. `--deep` runs parallel bidirectional analysis. |
-| `purlin:spec-from-code` | Reverse-engineer feature specs from existing code. |
+| `purlin:spec-code-audit [--deep]` | Audit alignment between specs and code (15 dimensions including test registration). `--deep` runs parallel bidirectional analysis. |
+| `purlin:spec-from-code` | Reverse-engineer feature specs from existing code. Generates `### Unit Tests` / `### QA Scenarios` subsections and `## Regression Guidance`. |
 | `purlin:tombstone <feature>` | Retire a feature with a tombstone record. |
 | `purlin:server` | Start, stop, or restart the dev server for web testing. |
 | `purlin:status engineer` | Check what needs building (tombstones, failures, spec-modified, TODO). |

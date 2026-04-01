@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Purlin MCP Server — persistent process wrapping the CDD scan engine.
+"""Purlin MCP Server v2 — sync_status + purlin_config.
 
 Implements the MCP (Model Context Protocol) stdio transport using JSON-RPC 2.0.
 All tools use Python stdlib only (no external dependencies).
@@ -11,569 +11,489 @@ The server reads JSON-RPC requests from stdin and writes responses to stdout.
 It is started automatically by Claude Code when the plugin is enabled.
 """
 
+import glob
+import hashlib
 import json
 import os
-import signal
+import re
+import subprocess
 import sys
-import time
 
-# Ensure this directory is on the path for local imports
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
-sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
 
-# Set PURLIN_PROJECT_ROOT if not already set (the MCP server runs from the
-# plugin directory, but needs to operate on the project where it's activated)
-if not os.environ.get('PURLIN_PROJECT_ROOT'):
-    # Walk up from cwd to find project root
-    cwd = os.getcwd()
-    current = os.path.abspath(cwd)
-    while True:
-        if os.path.isdir(os.path.join(current, '.purlin')):
-            os.environ['PURLIN_PROJECT_ROOT'] = current
-            break
-        parent = os.path.dirname(current)
-        if parent == current:
-            os.environ['PURLIN_PROJECT_ROOT'] = cwd
-            break
-        current = parent
+from config_engine import find_project_root, resolve_config, update_config
 
-from bootstrap import detect_project_root, load_config
-from config_engine import (
-    resolve_config, classify_file,
-    read_sync_state, read_sync_ledger, get_sync_summary,
+# ---------------------------------------------------------------------------
+# sync_status — the core coverage tool
+# ---------------------------------------------------------------------------
+
+_RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
+_REQUIRES_RE = re.compile(r'^>\s*Requires:\s*(.+)', re.MULTILINE)
+_SCOPE_RE = re.compile(r'^>\s*Scope:\s*(.+)', re.MULTILINE)
+_MANUAL_STAMPED_RE = re.compile(
+    r'@manual\(([^,]+),\s*(\d{4}-\d{2}-\d{2}),\s*([a-f0-9]+)\)'
 )
-from credentials import get_credential, require_credential, credential_status
-
-# Lazy imports for heavy modules (only loaded when their tools are called)
-_scan_engine = None
-_graph_engine = None
-
-
-def _get_scan_engine():
-    global _scan_engine
-    if _scan_engine is None:
-        import scan_engine
-        _scan_engine = scan_engine
-    return _scan_engine
+_MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
+_PROOF_LINE_RE = re.compile(
+    r'^-\s+(PROOF-\d+)\s*\((RULE-\d+)\):\s*(.+)', re.MULTILINE
+)
 
 
-def _get_graph_engine():
-    global _graph_engine
-    if _graph_engine is None:
-        import graph_engine
-        _graph_engine = graph_engine
-    return _graph_engine
+def _scan_specs(project_root):
+    """Scan all specs and return a dict of feature -> spec info."""
+    spec_dir = os.path.join(project_root, 'specs')
+    if not os.path.isdir(spec_dir):
+        return {}
+
+    features = {}
+    for spec_path in glob.glob(os.path.join(spec_dir, '**', '*.md'), recursive=True):
+        # Skip proof files and non-spec files
+        basename = os.path.basename(spec_path)
+        if basename.startswith('.'):
+            continue
+
+        feature_name = os.path.splitext(basename)[0]
+        rel_path = os.path.relpath(spec_path, project_root)
+
+        with open(spec_path, 'r') as f:
+            content = f.read()
+
+        # Determine if this is an invariant
+        is_invariant = '/_invariants/' in rel_path
+
+        # Extract rules from ## Rules section
+        rules = {}
+        rules_section = _extract_section(content, '## Rules')
+        if rules_section is not None:
+            for m in _RULE_RE.finditer(rules_section):
+                rules[m.group(1)] = m.group(2).strip()
+            # Check for unnumbered rule lines
+            unnumbered = []
+            for line in rules_section.strip().splitlines():
+                line = line.strip()
+                if line.startswith('- ') and not _RULE_RE.match(line):
+                    unnumbered.append(line)
+        else:
+            unnumbered = []
+
+        # Extract requires
+        requires = []
+        req_match = _REQUIRES_RE.search(content)
+        if req_match:
+            requires = [r.strip() for r in req_match.group(1).split(',') if r.strip()]
+
+        # Extract scope
+        scope = []
+        scope_match = _SCOPE_RE.search(content)
+        if scope_match:
+            scope = [s.strip() for s in scope_match.group(1).split(',') if s.strip()]
+
+        # Parse manual proof stamps from ## Proof section
+        manual_proofs = {}
+        proof_section = _extract_section(content, '## Proof')
+        if proof_section:
+            for line in proof_section.strip().splitlines():
+                line = line.strip()
+                proof_match = _PROOF_LINE_RE.match(line)
+                if not proof_match:
+                    continue
+                proof_id = proof_match.group(1)
+                rule_id = proof_match.group(2)
+                stamp = _MANUAL_STAMPED_RE.search(line)
+                if stamp:
+                    manual_proofs[proof_id] = {
+                        'rule': rule_id,
+                        'email': stamp.group(1),
+                        'date': stamp.group(2),
+                        'commit_sha': stamp.group(3),
+                        'stamped': True,
+                    }
+                elif _MANUAL_UNSTAMPED_RE.search(line):
+                    manual_proofs[proof_id] = {
+                        'rule': rule_id,
+                        'stamped': False,
+                    }
+
+        features[feature_name] = {
+            'path': rel_path,
+            'rules': rules,
+            'requires': requires,
+            'scope': scope,
+            'is_invariant': is_invariant,
+            'unnumbered_lines': unnumbered,
+            'has_rules_section': rules_section is not None,
+            'manual_proofs': manual_proofs,
+        }
+
+    return features
+
+
+def _extract_section(content, heading):
+    """Extract content under a markdown heading until the next heading."""
+    pattern = re.compile(
+        r'^' + re.escape(heading) + r'\s*\n(.*?)(?=^## |\Z)',
+        re.MULTILINE | re.DOTALL
+    )
+    m = pattern.search(content)
+    return m.group(1) if m else None
+
+
+def _read_proofs(project_root):
+    """Read all proof JSON files and return dict of feature -> list of proofs."""
+    spec_dir = os.path.join(project_root, 'specs')
+    if not os.path.isdir(spec_dir):
+        return {}
+
+    all_proofs = {}
+    for proof_path in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
+        try:
+            with open(proof_path, 'r') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            continue
+
+        for entry in data.get('proofs', []):
+            feature = entry.get('feature', '')
+            all_proofs.setdefault(feature, []).append(entry)
+
+    return all_proofs
+
+
+def _check_manual_staleness(project_root, scope_files, commit_sha):
+    """Check if any scope files have commits newer than the manual stamp's SHA."""
+    if not scope_files or not commit_sha:
+        return False
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--oneline', f'{commit_sha}..HEAD', '--'] + scope_files,
+            capture_output=True, text=True, cwd=project_root, timeout=5
+        )
+        return bool(result.stdout.strip())
+    except (subprocess.SubprocessError, OSError):
+        return False
+
+
+def _compute_vhash(rules, proofs):
+    """Compute verification hash from sorted rule IDs + sorted proof IDs/statuses."""
+    rule_ids = sorted(rules.keys())
+    proof_parts = sorted(f"{p['id']}:{p['status']}" for p in proofs)
+    payload = ','.join(rule_ids) + '|' + ','.join(proof_parts)
+    return hashlib.sha256(payload.encode()).hexdigest()[:8]
+
+
+def sync_status(project_root, role=None):
+    """Generate the full sync_status report with directives."""
+    features = _scan_specs(project_root)
+    all_proofs = _read_proofs(project_root)
+
+    if not features:
+        return "No specs found in specs/. Run purlin:init to set up, or create specs manually."
+
+    lines = []
+
+    # Separate invariants from regular features
+    invariants = {k: v for k, v in features.items() if v['is_invariant']}
+    regular = {k: v for k, v in features.items() if not v['is_invariant']}
+
+    # Process regular features
+    for name in sorted(regular.keys()):
+        info = regular[name]
+        feature_lines = _report_feature(name, info, features, all_proofs, project_root, role)
+        lines.extend(feature_lines)
+        lines.append('')
+
+    # Process invariants
+    for name in sorted(invariants.keys()):
+        info = invariants[name]
+        rule_count = len(info['rules'])
+        lines.append(f"{name}: {rule_count} rules (global — apply to all features with > Requires: {name})")
+        for rule_id, desc in sorted(info['rules'].items()):
+            lines.append(f"  {rule_id}: {desc}")
+        lines.append('')
+
+    return '\n'.join(lines).strip()
+
+
+def _report_feature(name, info, all_features, all_proofs, project_root, role):
+    """Generate report lines for a single feature."""
+    lines = []
+
+    # Collect own rules
+    own_rules = dict(info['rules'])
+
+    # Collect required rules
+    required_rules = {}
+    for req_name in info.get('requires', []):
+        req_info = all_features.get(req_name)
+        if req_info:
+            for rule_id, desc in req_info['rules'].items():
+                required_rules[f"{req_name}/{rule_id}"] = desc
+
+    all_rules = dict(own_rules)  # Only own rules count for coverage
+
+    # Format warnings
+    warnings = []
+    if not info['has_rules_section']:
+        warnings.append("  WARNING: No ## Rules section found.")
+        warnings.append(f"  → Run: purlin:spec {name}")
+    elif info['unnumbered_lines']:
+        warnings.append(f"  WARNING: {len(info['unnumbered_lines'])} lines under ## Rules are not numbered.")
+        warnings.append(f"  → Fix: rewrite as \"- RULE-1: ...\", \"- RULE-2: ...\", etc.")
+        warnings.append(f"  → Run: purlin:spec {name}")
+
+    # Get proofs for this feature
+    feature_proofs = all_proofs.get(name, [])
+    proof_by_rule = {}
+    for p in feature_proofs:
+        rule = p.get('rule', '')
+        if rule not in proof_by_rule:
+            proof_by_rule[rule] = p
+        elif p.get('status') == 'fail':
+            proof_by_rule[rule] = p  # Failing proof takes precedence
+
+    # Count coverage
+    proved = sum(1 for r in all_rules if proof_by_rule.get(r, {}).get('status') == 'pass')
+    total = len(all_rules)
+
+    # Check manual proofs
+    manual_proofs = info.get('manual_proofs', {})
+
+    # Header
+    if total == 0:
+        lines.append(f"{name}: no rules defined")
+        lines.extend(warnings)
+        lines.append(f"  → Run: purlin:spec {name}")
+        return lines
+
+    if proved == total and not warnings:
+        lines.append(f"{name}: READY")
+        lines.append(f"  {proved}/{total} rules proved ✓")
+        # Compute vhash
+        vhash = _compute_vhash(all_rules, feature_proofs)
+        lines.append(f"  vhash={vhash}")
+        lines.append("  → No action needed.")
+        return lines
+
+    lines.append(f"{name}: {proved}/{total} rules proved")
+    lines.extend(warnings)
+
+    # Detail each rule
+    for rule_id in sorted(all_rules.keys()):
+        proof = proof_by_rule.get(rule_id)
+        manual = None
+        # Check if any manual proof covers this rule
+        for mp_id, mp_info in manual_proofs.items():
+            if mp_info.get('rule') == rule_id:
+                manual = (mp_id, mp_info)
+                break
+
+        if proof and proof.get('status') == 'pass':
+            test_file = proof.get('test_file', '?')
+            proof_id = proof.get('id', '?')
+            lines.append(f"  {rule_id}: PASS ({proof_id} in {test_file})")
+        elif proof and proof.get('status') == 'fail':
+            test_name = proof.get('test_name', '?')
+            lines.append(f"  {rule_id}: FAIL ({proof.get('id', '?')} — {test_name} failed)")
+            lines.append(f"  → Fix: {test_name} is failing. Check the test or fix the code.")
+            lines.append(f"  → Run: purlin:unit-test")
+        elif manual:
+            mp_id, mp_info = manual
+            if mp_info.get('stamped'):
+                # Check staleness
+                stale = _check_manual_staleness(
+                    project_root, info.get('scope', []), mp_info.get('commit_sha', '')
+                )
+                if stale:
+                    lines.append(f"  {rule_id}: MANUAL PROOF STALE ({mp_id}, verified {mp_info['date']})")
+                    lines.append(f"  → Re-verify and run: purlin:verify --manual {name} {mp_id}")
+                else:
+                    lines.append(f"  {rule_id}: PASS ({mp_id}, manual, verified {mp_info['date']})")
+            else:
+                lines.append(f"  {rule_id}: MANUAL PROOF NEEDED")
+                lines.append(f"  → Verify manually, then run: purlin:verify --manual {name} {mp_id}")
+        else:
+            is_from_invariant = any(
+                rule_id in all_features.get(req, {}).get('rules', {})
+                for req in info.get('requires', [])
+                if all_features.get(req, {}).get('is_invariant')
+            )
+            lines.append(f"  {rule_id}: NO PROOF")
+            lines.append(f'  → Fix: write a test with @pytest.mark.proof("{name}", "PROOF-N", "{rule_id}")')
+            if is_from_invariant:
+                # Find which invariant
+                for req in info.get('requires', []):
+                    req_info = all_features.get(req, {})
+                    if req_info.get('is_invariant') and rule_id in req_info.get('rules', {}):
+                        lines.append(f"  Note: read specs/_invariants/{req}.md for exact assertion values before writing tests")
+                        break
+            lines.append(f"  → Run: purlin:unit-test")
+
+    # If no proof files at all
+    if not feature_proofs and not manual_proofs:
+        lines.append(f"  → Run: purlin:unit-test")
+
+    return lines
 
 
 # ---------------------------------------------------------------------------
-# In-memory scan cache
+# purlin_config tool
 # ---------------------------------------------------------------------------
 
-_scan_cache = None
-_scan_cache_time = 0
-CACHE_MAX_AGE = 60  # seconds
+def handle_purlin_config(project_root, arguments):
+    """Handle purlin_config MCP tool calls."""
+    action = arguments.get('action', 'read')
+    key = arguments.get('key')
+    value = arguments.get('value')
 
+    config = resolve_config(project_root)
 
-def _get_cached_scan():
-    """Return cached scan result if fresh, else None."""
-    global _scan_cache, _scan_cache_time
-    if _scan_cache and (time.time() - _scan_cache_time) < CACHE_MAX_AGE:
-        return _scan_cache
-    return None
-
-
-def _set_scan_cache(result):
-    """Cache a scan result."""
-    global _scan_cache, _scan_cache_time
-    _scan_cache = result
-    _scan_cache_time = time.time()
+    if action == 'read':
+        if key:
+            val = config.get(key)
+            if val is None:
+                return f"Key '{key}' not found in config."
+            return json.dumps({key: val}, indent=2)
+        return json.dumps(config, indent=2)
+    elif action == 'write':
+        if not key:
+            return "Error: 'key' is required for write action."
+        update_config(project_root, key, value)
+        return f"Set '{key}' = {json.dumps(value)}"
+    else:
+        return f"Unknown action: {action}. Use 'read' or 'write'."
 
 
 # ---------------------------------------------------------------------------
-# MCP Tool Definitions
+# MCP JSON-RPC transport
 # ---------------------------------------------------------------------------
+
+SERVER_INFO = {
+    "name": "purlin",
+    "version": "2.0.0",
+}
 
 TOOLS = [
     {
-        "name": "purlin_scan",
-        "description": "Run a full project scan. Returns structured JSON with features, discoveries, deviations, delivery plan, dependency graph, and git state.",
+        "name": "sync_status",
+        "description": "Show rule coverage per feature. Greps specs for RULE-N, reads *.proofs-*.json, diffs them. Returns coverage report with actionable → directives.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "cached": {
-                    "type": "boolean",
-                    "description": "Return cached result if less than 60s old",
-                    "default": False,
-                },
-                "only": {
-                    "type": "string",
-                    "description": "Comma-separated sections to include (features,discoveries,deviations,plan,deps,git,smoke,invariants)",
-                },
-                "tombstones": {
-                    "type": "boolean",
-                    "description": "Include tombstone entries in features",
-                    "default": False,
-                },
-                "skip_fields": {
-                    "type": "string",
-                    "description": "Comma-separated per-feature fields to skip (spec_modified,test_status,regression_status)",
-                },
-                "compact": {
-                    "type": "boolean",
-                    "description": "Return compact feature entries (name, lifecycle, file only)",
-                    "default": False,
-                },
-            },
-        },
-    },
-    {
-        "name": "purlin_status",
-        "description": "Get classified project status with role-based work items. Server-side summarization returns pre-bucketed work items instead of raw feature arrays.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "verbosity": {
-                    "type": "string",
-                    "enum": ["minimal", "focused", "full"],
-                    "description": "minimal: counts + top 3 items per role. focused: all actionable items (default). full: adds complete feature names.",
-                    "default": "focused",
-                },
                 "role": {
                     "type": "string",
-                    "enum": ["engineer", "qa", "pm", "all"],
-                    "description": "Filter work items to a specific role. Default: all.",
-                    "default": "all",
-                },
+                    "description": "Optional role filter (pm, dev, qa) to prioritize relevant items.",
+                    "enum": ["pm", "dev", "qa"]
+                }
             },
-        },
-    },
-    {
-        "name": "purlin_graph",
-        "description": "Generate or read the dependency graph. Returns cycles, orphans, and blocked features.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "regenerate": {
-                    "type": "boolean",
-                    "description": "Force regeneration of the graph",
-                    "default": False,
-                },
-            },
-        },
-    },
-    {
-        "name": "purlin_constraints",
-        "description": "Get all constraint files (anchors, scoped invariants, global invariants) governing a feature via transitive prerequisite walk. Use during purlin:build Step 0 pre-flight.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "feature": {
-                    "type": "string",
-                    "description": "Feature stem (e.g., 'purlin_build') or filename ('purlin_build.md')",
-                },
-            },
-            "required": ["feature"],
-        },
-    },
-    {
-        "name": "purlin_classify",
-        "description": "Classify a file path as CODE, SPEC, QA, or INVARIANT for write guard enforcement.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "filepath": {
-                    "type": "string",
-                    "description": "File path to classify (relative to project root)",
-                },
-            },
-            "required": ["filepath"],
-        },
-    },
-    {
-        "name": "purlin_sync",
-        "description": "Get per-feature sync status. Shows which features have spec-code drift, which are synced, and which have uncommitted session changes.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "feature": {
-                    "type": "string",
-                    "description": "Optional feature stem to filter results to a single feature.",
-                },
-            },
-        },
+            "required": []
+        }
     },
     {
         "name": "purlin_config",
-        "description": "Read or write .purlin/config.json values.",
+        "description": "Read or update Purlin configuration from .purlin/config.json.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["read", "write"],
-                    "description": "Read the full config or write a key",
-                    "default": "read",
+                    "description": "Action to perform: 'read' or 'write'.",
+                    "enum": ["read", "write"]
                 },
                 "key": {
                     "type": "string",
-                    "description": "Dot-separated key path for write (e.g., agents.purlin.model)",
+                    "description": "Config key to read or write."
                 },
                 "value": {
-                    "description": "Value to write",
-                },
+                    "description": "Value to set (for write action)."
+                }
             },
-        },
-    },
-    {
-        "name": "purlin_credentials",
-        "description": "Check which credentials are configured for this Purlin project. Never returns credential values.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "type": "string",
-                    "enum": ["status", "check"],
-                    "description": "status: all credentials; check: one specific key",
-                    "default": "status",
-                },
-                "key": {
-                    "type": "string",
-                    "description": "Credential key to check (for 'check' action)",
-                },
-            },
-        },
-    },
+            "required": []
+        }
+    }
 ]
 
 
-# ---------------------------------------------------------------------------
-# Tool Handlers
-# ---------------------------------------------------------------------------
+def handle_request(request, project_root):
+    """Handle a single JSON-RPC request and return a response dict."""
+    method = request.get('method', '')
+    req_id = request.get('id')
+    params = request.get('params', {})
 
-def handle_purlin_scan(params):
-    """Handle purlin_scan tool call."""
-    cached = params.get("cached", False)
-    only = params.get("only")
-    tombstones = params.get("tombstones", False)
-    skip_fields = params.get("skip_fields")
-
-    only_set = set(s.strip() for s in only.split(",")) if only else None
-    skip_set = set(s.strip() for s in skip_fields.split(",")) if skip_fields else None
-
-    if cached:
-        result = _get_cached_scan()
-        if result:
-            return result
-
-    engine = _get_scan_engine()
-    result = engine.run_scan(only=only_set)
-
-    # Cache full scans
-    if only_set is None and skip_set is None:
-        _set_scan_cache(result)
-
-    # Filter tombstones from output unless requested
-    if not tombstones and "features" in result:
-        result["features"] = [f for f in result["features"] if not f.get("tombstone")]
-
-    # Strip per-feature fields if requested
-    if skip_set and "features" in result:
-        for feat in result["features"]:
-            for field in skip_set:
-                feat.pop(field, None)
-
-    # Compact mode: reduce features to name, file, lifecycle only
-    if params.get("compact") and "features" in result:
-        result["features"] = [
-            {"name": f["name"], "file": f["file"],
-             "lifecycle": f.get("lifecycle", "UNKNOWN")}
-            for f in result["features"]
-        ]
-
-    return result
-
-
-def handle_purlin_status(params):
-    """Handle purlin_status tool call.
-
-    Returns pre-classified work items grouped by role, with verbosity
-    and role filtering applied server-side.  The raw feature array never
-    leaves the server — only the summary is returned.
-    """
-    verbosity = params.get("verbosity", "focused")
-    role_filter = params.get("role", "all")
-
-    project_root = detect_project_root()
-    engine = _get_scan_engine()
-
-    # Full scan internally (needed for classification), then cache.
-    result = engine.run_scan()
-    _set_scan_cache(result)
-
-    # Get sync summary for overlay.
-    sync_summary = get_sync_summary(project_root)
-
-    # Classify work items server-side.
-    classified = engine.classify_work_items(result, sync_summary)
-
-    # Apply role filter.
-    if role_filter != "all":
-        classified["work"] = {
-            role_filter: classified["work"].get(
-                role_filter, {"count": 0, "items": []}
-            )
+    if method == 'initialize':
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}},
+                "serverInfo": SERVER_INFO,
+            }
         }
 
-    # Apply verbosity.
-    if verbosity == "minimal":
-        # Counts + top 3 items per role.
-        for role_data in classified["work"].values():
-            role_data["items"] = role_data["items"][:3]
-    elif verbosity == "full":
-        # Add list of COMPLETE feature names for reference.
-        classified["complete_features"] = [
-            f["name"] for f in result.get("features", [])
-            if f.get("lifecycle") == "COMPLETE" and not f.get("tombstone")
-        ]
-
-    return classified
-
-
-def handle_purlin_graph(params):
-    """Handle purlin_graph tool call."""
-    regenerate = params.get("regenerate", False)
-    project_root = detect_project_root()
-
-    if regenerate:
-        engine = _get_graph_engine()
-        features_dir = os.path.join(project_root, "features")
-        graph_path = os.path.join(project_root, ".purlin", "cache", "dependency_graph.json")
-        result = engine.generate_dependency_graph(
-            engine.parse_features(features_dir),
-            features_dir=features_dir,
-            output_file=graph_path,
-        )
-        return result
-
-    # Read cached graph
-    graph_path = os.path.join(project_root, ".purlin", "cache", "dependency_graph.json")
-    if os.path.isfile(graph_path):
-        try:
-            with open(graph_path, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-
-    return {"total": 0, "cycles": [], "orphans": [], "features": []}
-
-
-def handle_purlin_constraints(params):
-    """Handle purlin_constraints tool call."""
-    feature = params.get("feature", "")
-    if not feature:
-        return {"error": "feature parameter is required"}
-    engine = _get_graph_engine()
-    return engine.get_feature_constraints(feature)
-
-
-def handle_purlin_classify(params):
-    """Handle purlin_classify tool call."""
-    filepath = params.get("filepath", "")
-    classification = classify_file(filepath)
-    return {"filepath": filepath, "classification": classification}
-
-
-def handle_purlin_sync(params):
-    """Handle purlin_sync tool call — returns per-feature sync status."""
-    project_root = detect_project_root()
-    feature = params.get("feature")
-
-    summary = get_sync_summary(project_root)
-
-    if feature:
-        entry = summary.get(feature)
-        if entry:
-            return {"feature": feature, **entry}
-        return {"feature": feature, "sync_status": "not_found",
-                "message": f"No sync data for feature '{feature}'"}
-
-    return {"features": summary}
-
-
-def handle_purlin_config(params):
-    """Handle purlin_config tool call."""
-    action = params.get("action", "read")
-    project_root = detect_project_root()
-
-    if action == "read":
-        config = resolve_config(project_root)
-        return config
-
-    # Write action
-    key = params.get("key")
-    value = params.get("value")
-    if not key:
-        return {"error": "key is required for write action"}
-
-    config_path = os.path.join(project_root, ".purlin", "config.local.json")
-    try:
-        if os.path.isfile(config_path):
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-        else:
-            config = {}
-    except (json.JSONDecodeError, IOError):
-        config = {}
-
-    # Set nested key
-    parts = key.split(".")
-    current = config
-    for part in parts[:-1]:
-        if part not in current or not isinstance(current[part], dict):
-            current[part] = {}
-        current = current[part]
-    current[parts[-1]] = value
-
-    # Enforce coupling: auto_start requires find_work
-    # - Turning on auto_start automatically turns on find_work
-    # - Turning off find_work automatically turns off auto_start
-    coupled = None
-    if key == "agents.purlin.auto_start" and value is True:
-        agents = config.get("agents", {})
-        purlin = agents.get("purlin", {})
-        if not purlin.get("find_work", True):
-            purlin["find_work"] = True
-            coupled = {"key": "agents.purlin.find_work", "value": True,
-                       "reason": "auto-start requires find-work"}
-    elif key == "agents.purlin.find_work" and value is False:
-        agents = config.get("agents", {})
-        purlin = agents.get("purlin", {})
-        if purlin.get("auto_start", False):
-            purlin["auto_start"] = False
-            coupled = {"key": "agents.purlin.auto_start", "value": False,
-                       "reason": "auto-start requires find-work"}
-
-    with open(config_path, 'w') as f:
-        json.dump(config, f, indent=4)
-        f.write('\n')
-
-    result = {"action": "write", "key": key, "value": value}
-    if coupled:
-        result["coupled"] = coupled
-    return result
-
-
-def handle_purlin_credentials(params):
-    """Handle purlin_credentials tool call."""
-    action = params.get("action", "status")
-
-    if action == "status":
-        return credential_status()
-
-    # check action
-    key = params.get("key")
-    if not key:
-        return {"error": "key is required for check action"}
-
-    status = credential_status()
-    entry = status.get(key)
-    if entry is None:
-        return {"error": f"Unknown credential key: {key}"}
-
-    result = {"key": key, **entry}
-    if not entry["configured"]:
-        result["hint"] = (
-            f"To configure, set it in your Claude Code plugin settings: "
-            f"Claude Code → Settings → Plugins → Purlin → {entry['title']}. "
-            f"Or: export CLAUDE_PLUGIN_OPTION_{key}=\"<value>\""
-        )
-    return result
-
-
-# Tool handler dispatch
-TOOL_HANDLERS = {
-    "purlin_scan": handle_purlin_scan,
-    "purlin_status": handle_purlin_status,
-    "purlin_graph": handle_purlin_graph,
-    "purlin_constraints": handle_purlin_constraints,
-    "purlin_classify": handle_purlin_classify,
-    "purlin_sync": handle_purlin_sync,
-    "purlin_config": handle_purlin_config,
-    "purlin_credentials": handle_purlin_credentials,
-}
-
-
-# ---------------------------------------------------------------------------
-# JSON-RPC 2.0 Protocol
-# ---------------------------------------------------------------------------
-
-def make_response(id_, result=None, error=None):
-    """Build a JSON-RPC 2.0 response."""
-    resp = {"jsonrpc": "2.0", "id": id_}
-    if error is not None:
-        resp["error"] = error
-    else:
-        resp["result"] = result
-    return resp
-
-
-def handle_request(request):
-    """Process a single JSON-RPC request and return a response dict."""
-    method = request.get("method", "")
-    params = request.get("params", {})
-    req_id = request.get("id")
-
-    if method == "initialize":
-        return make_response(req_id, {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "purlin", "version": "0.9.0"},
-        })
-
-    if method == "notifications/initialized":
+    if method == 'notifications/initialized':
         return None  # No response for notifications
 
-    if method == "tools/list":
-        return make_response(req_id, {"tools": TOOLS})
+    if method == 'tools/list':
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {"tools": TOOLS}
+        }
 
-    if method == "tools/call":
-        tool_name = params.get("name", "")
-        tool_args = params.get("arguments", {})
-        handler = TOOL_HANDLERS.get(tool_name)
-        if not handler:
-            return make_response(req_id, error={
-                "code": -32601,
-                "message": f"Unknown tool: {tool_name}",
-            })
-        try:
-            result = handler(tool_args)
-            return make_response(req_id, {
-                "content": [{"type": "text", "text": json.dumps(result, indent=2)}],
-            })
-        except Exception as e:
-            return make_response(req_id, {
-                "content": [{"type": "text", "text": f"Error: {e}"}],
-                "isError": True,
-            })
+    if method == 'tools/call':
+        tool_name = params.get('name', '')
+        arguments = params.get('arguments', {})
+
+        if tool_name == 'sync_status':
+            try:
+                result_text = sync_status(project_root, role=arguments.get('role'))
+            except Exception as e:
+                result_text = f"Error running sync_status: {e}"
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": result_text}]
+                }
+            }
+
+        if tool_name == 'purlin_config':
+            try:
+                result_text = handle_purlin_config(project_root, arguments)
+            except Exception as e:
+                result_text = f"Error: {e}"
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": result_text}]
+                }
+            }
+
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"}
+        }
 
     # Unknown method
-    return make_response(req_id, error={
-        "code": -32601,
-        "message": f"Method not found: {method}",
-    })
+    if req_id is not None:
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32601, "message": f"Unknown method: {method}"}
+        }
+    return None
 
 
-def run_server():
-    """Run the MCP stdio server loop."""
-    # Handle graceful shutdown
-    def shutdown(signum, frame):
-        sys.exit(0)
+def main():
+    """Run the MCP server on stdio."""
+    project_root = find_project_root()
 
-    signal.signal(signal.SIGTERM, shutdown)
-    signal.signal(signal.SIGINT, shutdown)
+    # Log startup to stderr (stdout is reserved for JSON-RPC)
+    print(f"Purlin MCP server v2.0.0 started (root: {project_root})", file=sys.stderr)
 
-    # Read JSON-RPC messages from stdin, write responses to stdout
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -582,19 +502,20 @@ def run_server():
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            response = make_response(None, error={
-                "code": -32700,
-                "message": "Parse error",
-            })
-            sys.stdout.write(json.dumps(response) + "\n")
+            response = {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32700, "message": "Parse error"}
+            }
+            sys.stdout.write(json.dumps(response) + '\n')
             sys.stdout.flush()
             continue
 
-        response = handle_request(request)
+        response = handle_request(request, project_root)
         if response is not None:
-            sys.stdout.write(json.dumps(response) + "\n")
+            sys.stdout.write(json.dumps(response) + '\n')
             sys.stdout.flush()
 
 
-if __name__ == "__main__":
-    run_server()
+if __name__ == '__main__':
+    main()

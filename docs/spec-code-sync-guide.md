@@ -178,6 +178,15 @@ Before committing a status tag, `purlin:build` checks the sync ledger for the ta
 
 ---
 
+## Format References
+
+| File Type | Format Spec |
+|-----------|-------------|
+| Companion files (.impl.md) | [`companion_format.md`](../references/formats/companion_format.md) |
+| Feature specs | [`feature_format.md`](../references/formats/feature_format.md) |
+
+---
+
 ## Quick Reference
 
 | You want to... | What to do |

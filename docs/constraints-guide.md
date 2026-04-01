@@ -103,7 +103,7 @@ Constraints aren't just a build concern. Multiple skills interact with them:
 |-------|------|------|
 | `purlin:build` | Step 0 pre-flight | FORBIDDEN blocks build; other constraints are binding guidance |
 | `purlin:spec` | Pre-commit advisory | Surfaces global invariants; suggests scoped prerequisites |
-| `purlin:spec-code-audit` | Post-hoc audit | Dimension 10 (anchor drift) + Dimension 14 (invariant compliance) |
+| `purlin:spec-code-audit` | Post-hoc audit | Dimension 10 (anchor drift) + Dimension 14 (invariant compliance) + Dimension 15 (test registration) |
 | `purlin:invariant audit` | On-demand | Full compliance report with violations, staleness, conflicts |
 | `purlin:design-audit` | On-demand | Design constraint compliance, Token Map validation, brief staleness |
 | `purlin:verify` | Verification | Delegates to sub-skills that check constraints in their domains |

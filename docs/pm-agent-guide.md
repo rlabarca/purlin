@@ -58,6 +58,8 @@ If the spec already exists, PM mode opens it and proposes targeted updates.
 | QA Scenarios | Verification steps for QA mode (written untagged — QA classifies later). |
 | Visual Specification | Design checklists and token mappings (when designs exist). |
 
+For canonical formats, see [`references/formats/`](../references/formats/): [`feature_format.md`](../references/formats/feature_format.md) for regular features, [`anchor_format.md`](../references/formats/anchor_format.md) for anchor nodes.
+
 ---
 
 ## Working with Designs

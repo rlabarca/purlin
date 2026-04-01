@@ -217,19 +217,24 @@ Each invariant type has a canonical spec defining its purpose, required sections
 
 | Type | Spec |
 |------|------|
-| `i_arch_*` | [Architecture Invariant Spec](../references/invariant_type_arch.md) |
-| `i_design_*` | [Design Invariant Spec](../references/invariant_type_design.md) |
-| `i_policy_*` | [Policy Invariant Spec](../references/invariant_type_policy.md) |
-| `i_ops_*` | [Operational Invariant Spec](../references/invariant_type_ops.md) |
-| `i_prodbrief_*` | [Product Brief Invariant Spec](../references/invariant_type_prodbrief.md) |
+| `i_arch_*` | [Architecture Invariant Spec](../references/formats/invariant_type_arch.md) |
+| `i_design_*` | [Design Invariant Spec](../references/formats/invariant_type_design.md) |
+| `i_policy_*` | [Policy Invariant Spec](../references/formats/invariant_type_policy.md) |
+| `i_ops_*` | [Operational Invariant Spec](../references/formats/invariant_type_ops.md) |
+| `i_prodbrief_*` | [Product Brief Invariant Spec](../references/formats/invariant_type_prodbrief.md) |
 
 ### System References
 
 | Document | What it defines |
 |----------|----------------|
 | [Invariant Model](../references/invariant_model.md) | Conceptual model — tiers, scope, cascade behavior, enforcement points |
-| [Invariant Format](../references/invariant_format.md) | Shared file format — metadata fields, templates, versioning rules |
-| [Invariant Template](../scripts/feature_templates/_invariant.md) | Starter template for new invariant files |
+| [Invariant Format](../references/formats/invariant_format.md) | Shared file format — metadata fields, templates, versioning rules |
+| [Architecture Type](../references/formats/invariant_type_arch.md) | `i_arch_*` — technical standards, API conventions, coding mandates |
+| [Design Type](../references/formats/invariant_type_design.md) | `i_design_*` — visual language, typography, spacing, interaction patterns |
+| [Operations Type](../references/formats/invariant_type_ops.md) | `i_ops_*` — CI/CD, deployment, monitoring, infrastructure mandates |
+| [Policy Type](../references/formats/invariant_type_policy.md) | `i_policy_*` — security baselines, compliance, governance rules |
+| [Product Brief Type](../references/formats/invariant_type_prodbrief.md) | `i_prodbrief_*` — product goals, user stories, KPIs |
+| [Invariant Format](../references/formats/invariant_format.md) | Canonical format and templates for invariant files |
 
 ---
 
