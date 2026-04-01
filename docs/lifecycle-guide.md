@@ -4,22 +4,7 @@ How PM, Engineer, and QA collaborate through specs, code, and proofs.
 
 ## The Big Picture
 
-```mermaid
-graph LR
-    PM[PM writes spec] --> ENG[Engineer builds code + tests]
-    ENG --> STATUS{sync_status}
-    STATUS -->|all rules proved| QA[QA verifies]
-    STATUS -->|gaps exist| ENG
-    QA -->|manual proofs needed| QA
-    QA -->|all proofs pass| VERIFY[purlin:verify]
-    VERIFY --> RECEIPT[Verification Receipt]
-    RECEIPT --> DEPLOY[Deploy]
-
-    PM -.->|reviews changelog| STATUS
-    PM -.->|updates rules| PM
-    ENG -.->|writes specs too| PM
-    QA -.->|writes tests too| ENG
-```
+![Purlin Lifecycle](../assets/lifecycle-big-picture.svg)
 
 Every role can do every job. The arrows show the typical flow, not restrictions.
 
@@ -36,21 +21,7 @@ That's it. No tracking system, no ledger, no state files. The filesystem is the 
 
 ## PM Workflow
 
-```mermaid
-graph TD
-    START[Start session] --> CL[purlin:changelog --role pm]
-    CL --> REVIEW{What needs attention?}
-    REVIEW -->|new code without specs| SPEC[Write specs with rules]
-    REVIEW -->|spec drift| UPDATE[Update rules to match intent]
-    REVIEW -->|manual proofs stale| MANUAL[Re-verify manual proofs]
-    REVIEW -->|everything clean| DONE[Done]
-    SPEC --> COMMIT[Commit spec]
-    UPDATE --> COMMIT
-    MANUAL --> STAMP["purlin:verify --manual feature PROOF-N"]
-    STAMP --> COMMIT
-    COMMIT --> STATUS[purlin:status to confirm]
-    STATUS --> DONE
-```
+![PM Workflow](../assets/lifecycle-pm-workflow.svg)
 
 ### Quick commands
 
@@ -80,22 +51,7 @@ graph TD
 
 ## Engineer Workflow
 
-```mermaid
-graph TD
-    START[Start session] --> CL[purlin:changelog --role eng]
-    CL --> PICK{Pick a priority}
-    PICK -->|failing tests| FIX[Fix code or tests]
-    PICK -->|unproved rules| BUILD[Write code + tests]
-    PICK -->|new unspecced code| SPEC[Write spec first]
-    FIX --> TEST[purlin:unit-test]
-    BUILD --> TEST
-    SPEC --> BUILD
-    TEST -->|failures| FIX
-    TEST -->|all pass| STATUS[purlin:status]
-    STATUS -->|gaps remain| PICK
-    STATUS -->|all READY| VERIFY[purlin:verify]
-    VERIFY --> DONE[Done]
-```
+![Engineer Workflow](../assets/lifecycle-eng-workflow.svg)
 
 ### Quick commands
 
@@ -133,23 +89,7 @@ You can also say `build login` to just write code (Claude injects the spec rules
 
 ## QA Workflow
 
-```mermaid
-graph TD
-    START[Start session] --> CL[purlin:changelog --role qa]
-    CL --> PICK{Pick a priority}
-    PICK -->|stale manual proofs| MANUAL[Re-verify manually]
-    PICK -->|features READY| VERIFY[purlin:verify]
-    PICK -->|coverage gaps| TEST[Write more tests]
-    MANUAL --> STAMP["purlin:verify --manual feature PROOF-N"]
-    TEST --> RUN[purlin:unit-test]
-    RUN -->|failures| FIX[Fix tests]
-    FIX --> RUN
-    RUN -->|pass| STATUS[purlin:status]
-    STAMP --> STATUS
-    STATUS -->|gaps remain| PICK
-    STATUS -->|all READY| VERIFY
-    VERIFY --> DONE[Done]
-```
+![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 
 ### Quick commands
 
@@ -185,25 +125,7 @@ Some rules can't be automated ("brand voice must be playful", "checkout flow is 
 
 ### The handoff pattern
 
-```mermaid
-sequenceDiagram
-    participant PM
-    participant Engineer
-    participant QA
-
-    PM->>PM: write spec with rules
-    PM->>PM: commit and push
-    Engineer->>Engineer: purlin:changelog --role eng
-    Engineer->>Engineer: build code + tests
-    Engineer->>Engineer: iterate until READY
-    Engineer->>Engineer: commit and push
-    QA->>QA: purlin:changelog --role qa
-    QA->>QA: verify manual proofs
-    QA->>QA: purlin:verify
-    QA->>QA: commit receipt and push
-    PM->>PM: purlin:changelog --role pm
-    PM->>PM: sees all features verified
-```
+![Cross-Role Handoff](../assets/lifecycle-handoff.svg)
 
 ### No handoff needed
 
