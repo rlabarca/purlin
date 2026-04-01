@@ -10,7 +10,7 @@
     {
       "name": "purlin",
       "source": "./",
-      "description": "Unified workflow agent with three modes (PM, Engineer, QA) for spec-driven development."
+      "description": "Rule-proof spec-driven development — specs define rules, tests prove them, sync_status shows coverage."
     }
   ]
 }
