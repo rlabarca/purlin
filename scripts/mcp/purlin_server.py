@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Purlin MCP Server v2 — sync_status + purlin_config.
+"""Purlin MCP Server — sync_status + purlin_config.
 
 Implements the MCP (Model Context Protocol) stdio transport using JSON-RPC 2.0.
 All tools use Python stdlib only (no external dependencies).
@@ -370,7 +370,7 @@ def handle_purlin_config(project_root, arguments):
 
 SERVER_INFO = {
     "name": "purlin",
-    "version": "2.0.0",
+    "version": "0.9.0",
 }
 
 TOOLS = [
@@ -492,7 +492,7 @@ def main():
     project_root = find_project_root()
 
     # Log startup to stderr (stdout is reserved for JSON-RPC)
-    print(f"Purlin MCP server v2.0.0 started (root: {project_root})", file=sys.stderr)
+    print(f"Purlin MCP server v0.9.0 started (root: {project_root})", file=sys.stderr)
 
     for line in sys.stdin:
         line = line.strip()

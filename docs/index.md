@@ -1,4 +1,4 @@
-# Purlin v2 Documentation
+# Purlin Documentation
 
 Purlin is a spec-driven development plugin for Claude Code. Specs define rules, tests prove them, `sync_status` shows coverage.
 

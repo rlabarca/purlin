@@ -13,7 +13,7 @@ Anchors are regular specs with type-prefixed names that define cross-cutting con
 | `platform_` | Platform constraints | `platform_browser_support.md` |
 | `schema_` | Data schemas | `schema_user_model.md` |
 | `legal_` | Legal/compliance | `legal_gdpr.md` |
-| `prodbrief_` | Product brief requirements | `prodbrief_launch_v2.md` |
+| `prodbrief_` | Product brief requirements | `prodbrief_launch.md` |
 
 ## Template
 

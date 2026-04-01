@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Config resolver for Purlin v2 projects.
+"""Config resolver for Purlin projects.
 
 Centralizes all config access through a two-file resolution system:
   - .purlin/config.local.json (gitignored, per-user preferences)

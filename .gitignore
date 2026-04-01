@@ -12,15 +12,9 @@ env/
 venv/
 
 # Purlin Runtime & Cache
-.purlin/cache/
 .purlin/runtime/
 .purlin/config.local.json
-tests/.purlin/
-
-# Project-local toolbox
-.purlin/toolbox/project_tools.json
-.purlin/toolbox/community_tools.json
-.purlin/toolbox/community/
+.purlin/plugins/__pycache__/
 
 # Plugin data (persists across updates)
 .claude-plugin-data/
@@ -28,20 +22,11 @@ tests/.purlin/
 # MCP server config (machine-specific)
 .mcp.json
 
-# Dev scratch space
-dev/
-
-# Generated digests (per-machine, not committed)
-features/_digests/
-features/digests/
-
 # Purlin Tool Logs & Artifacts
 *.log
 *.pid
 *.mmd
-# Web-verify screenshots
 *.png
-!assets/*.png
 !docs/images/*.png
 *.jpeg
 
