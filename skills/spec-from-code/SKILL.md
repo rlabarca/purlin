@@ -74,7 +74,12 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Add missed features
    - Remove false positives
 
-5. **Detect anchor/invariant candidates** from cross-cutting concerns. Classify by type prefix:
+5. **Near-duplicate detection:** After the taxonomy is drafted but before presenting anchors, compare proposed features *within each category* for rule similarity. Two features are near-duplicates when they would have substantially the same behavioral constraints (same rules, different implementations — e.g., three proof plugins that all do "parse markers, emit JSON, feature-scoped overwrite"). For each cluster of 2+ near-duplicates:
+   - Ask the user via `AskUserQuestion`: "These N features share similar behavior: `<names>`. Consolidate into one spec with per-implementation rules, or keep separate?"
+   - If consolidated: merge into a single spec whose rules cover the shared behavior and add per-implementation rules only where behavior diverges (e.g., marker syntax differences).
+   - If kept separate: proceed, but note the overlap so the user is aware.
+
+6. **Detect anchor/invariant candidates** from cross-cutting concerns. Classify by type prefix:
 
    | Prefix | Domain |
    |--------|--------|
@@ -87,16 +92,29 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    | `legal_` | Privacy, data handling, compliance |
    | `prodbrief_` | User stories, UX requirements |
 
+   **Security anchor detection (mandatory):** In addition to the general cross-cutting scan above, specifically grep the scanned directories for dangerous patterns:
+   - `eval(`, `exec(` — arbitrary code execution
+   - `os.system(` — unquoted shell execution
+   - `subprocess` calls with `shell=True` — shell injection vector
+   - Hardcoded strings resembling credentials (`password`, `secret`, `api_key`, `token = "..."`)
+   - Direct file path manipulation from user input without sanitization
+
+   Then:
+   - If **any dangerous patterns are found**: propose a `security_` anchor with FORBIDDEN rules as negative assertions verifying these patterns don't exist in unsafe contexts.
+   - If **no dangerous patterns are found**: propose a `security_` anchor anyway (e.g., `security_no_dangerous_patterns`) with rules confirming the codebase is clean — "No eval/exec calls", "No subprocess with shell=True", etc. Proving the absence of dangerous patterns is itself a valuable assertion.
+
+   The security anchor MUST always be proposed. Proofs should be grep-based negative assertions (e.g., `grep -r "eval(" scripts/` returns zero matches).
+
    Ask the user (via `AskUserQuestion`) to confirm, rename, or remove proposed anchors.
 
-6. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
+7. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
    - Ordered anchor list (with type prefix and description)
    - Ordered category list with features
    - Per-feature: proposed file name, description, and anchor references
 
-7. Update state: `phase: 2, status: "complete"`.
+8. Update state: `phase: 2, status: "complete"`.
 
-8. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
+9. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
 
 ---
 
@@ -172,11 +190,21 @@ Extracted from source:
 - Known issue: <description> (file:line)
 ```
 
-3. Ask the user (via `AskUserQuestion`) to confirm the generated specs for this category look correct before proceeding to the next.
+3. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+   - `## What it does` contains at least one full sentence (not empty, not just whitespace)
+   - `## Rules` contains at least one `RULE-N:` line
+   - `## Proof` contains at least one `PROOF-N (RULE-N):` line
 
-4. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
+   If any section is empty or missing content:
+   - Re-read the source files listed in the spec's `> Scope:` line
+   - Fill the empty section immediately based on the source code
+   - Do NOT present specs with empty sections to the user for confirmation
 
-5. Update state: add category name to `completed_categories`.
+4. Ask the user (via `AskUserQuestion`) to confirm the generated specs for this category look correct before proceeding to the next.
+
+5. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
+
+6. Update state: add category name to `completed_categories`.
 
 ---
 
