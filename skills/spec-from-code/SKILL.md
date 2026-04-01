@@ -23,9 +23,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ## Phase 1 — Parallel Exploration
 
-1. Ask the user (via `AskUserQuestion`) which directories to scan:
-   - Offer common defaults: `src/`, `lib/`, `app/`
-   - Offer common exclusions: `node_modules/`, `vendor/`, `.purlin/`, `dist/`, `build/`
+1. Ask the user (via `AskUserQuestion`) which directories to scan. Offer common defaults: `src/`, `lib/`, `app/`, `scripts/`. Everything not listed is automatically excluded. The following directories are always skipped (do not ask): `node_modules/`, `.venv/`, `vendor/`, `dist/`, `build/`, `.purlin/`, `.git/`.
 
 2. Create `.purlin/cache/sfc_state.json`:
 
@@ -34,7 +32,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
   "phase": 1,
   "status": "in_progress",
   "started_at": "<ISO 8601>",
-  "directories": { "include": [], "exclude": [] },
+  "directories": { "include": [] },
   "completed_categories": []
 }
 ```
