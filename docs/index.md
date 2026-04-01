@@ -17,7 +17,7 @@
 | [The Purlin Lifecycle](lifecycle-guide.md) | Spec format, sync model, PM/Engineer/QA workflows, CI integration |
 | [Installation](installation-guide.md) | Installing Purlin, initializing a project, proof plugin setup |
 | [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
-| [Invariants](invariants-guide.md) | Read-only external constraints in `specs/_invariants/` |
+| [Anchors & Invariants](invariants-guide.md) | Anchors, invariants, FORBIDDEN patterns, external constraints |
 | [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 — what Purlin is and isn't |
 
 ## Example Workflows

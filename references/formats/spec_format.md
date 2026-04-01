@@ -90,6 +90,30 @@ After manual verification, the stamp is added by `purlin:verify --manual`:
 - PROOF-3 (RULE-3): Visual layout matches design spec @manual(dev@example.com, 2026-03-31, a1b2c3d)
 ```
 
+## FORBIDDEN Patterns (negative rules)
+
+Some rules define what code must **never** do. These are just regular rules with negative proofs — no special syntax needed:
+
+```markdown
+## Rules
+- RULE-3: No eval() in user-facing code
+- RULE-4: All SQL queries use parameterized statements
+
+## Proof
+- PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches
+- PROOF-4 (RULE-4): Grep src/ for string concatenation in SQL queries; verify zero matches
+```
+
+The test asserts absence:
+```python
+@pytest.mark.proof("security_input", "PROOF-3", "RULE-3")
+def test_no_eval():
+    result = subprocess.run(["grep", "-rn", "eval(", "src/"], capture_output=True, text=True)
+    assert result.stdout == "", f"Found eval() in:\n{result.stdout}"
+```
+
+See the [Anchors & Invariants Guide](../../docs/invariants-guide.md) for more examples of FORBIDDEN patterns in security anchors.
+
 ## Requires Behavior
 
 When a spec declares `> Requires: i_design_tokens, api_contracts`, the `sync_status` tool merges rules from those specs into the coverage report. The feature's tests must prove both its own rules and the required rules (or the required specs must have their own proofs).
