@@ -73,7 +73,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 | What you want | What you type |
 |---------------|---------------|
-| See what changed | `/purlin:changelog --role pm` |
+| See what changed | `/purlin:changelog pm` |
 | Handle all PM work | `handle PM items` |
 | See rule coverage | `/purlin:status` |
 | Write a new spec | `write a spec for notifications` |
@@ -126,7 +126,7 @@ Engineers change code. The PM needs to know: do the specs still match? Here's th
 
 **Step 1: See what changed**
 ```
-/purlin:changelog --role pm
+/purlin:changelog pm
 ```
 
 The changelog shows NEEDS ATTENTION items and ends with ACTION ITEMS — a complete list of everything the PM needs to do:
@@ -220,7 +220,7 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 
 | What you want | What you type |
 |---------------|---------------|
-| See what needs work | `/purlin:changelog --role eng` |
+| See what needs work | `/purlin:changelog eng` |
 | Build a feature | `build login` |
 | Test a feature | `test login` |
 | Handle all engineer work | `handle engineer items` |
@@ -246,7 +246,7 @@ You can also say `build login` to just write code (Claude injects the spec rules
 - Write and edit specs (`write a spec for notifications`)
 - Stamp manual proofs (`/purlin:verify --manual login PROOF-3`)
 - Create invariants (`/purlin:invariant sync`)
-- Review changelogs for any role (`/purlin:changelog --role pm`)
+- Review changelogs for any role (`/purlin:changelog pm`)
 
 ---
 
@@ -260,7 +260,7 @@ You can also say `build login` to just write code (Claude injects the spec rules
 
 | What you want | What you type |
 |---------------|---------------|
-| See what needs testing | `/purlin:changelog --role qa` |
+| See what needs testing | `/purlin:changelog qa` |
 | Handle all QA work | `handle QA items` |
 | See coverage gaps | `/purlin:status` |
 | Run all tests | `/purlin:unit-test` |
