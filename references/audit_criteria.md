@@ -1,4 +1,4 @@
-> Criteria-Version: 3
+> Criteria-Version: 4
 
 # Proof Audit Criteria
 
@@ -23,6 +23,7 @@ A proof is HOLLOW when ANY of these are true:
 - Test has no assertions (runs code but checks nothing)
 - Test asserts a mock's return value (mock returns 200, test asserts 200)
 - For FORBIDDEN proofs: test greps a mock filesystem instead of the real codebase
+- **Logic mirroring** — the expected value is calculated at runtime using the same function or logic as the system under test. Example: `expected = hash_func(input); assert result == expected` where `hash_func` is the same code being tested. If the function has a bug, the test confirms the bug. Expected values must be literal constants or derived from an independent source
 
 ## WEAK Detection (test partially proves)
 
@@ -34,6 +35,9 @@ A proof is WEAK when ANY of these are true:
 - Assertion is looser than the proof description ("greater than 0" when proof says "exactly 3")
 - Test uses hardcoded expected values that coincidentally match the mock, not real behavior
 - For API tests: checks status code but not the response shape or content
+- **Deep mocking** — for critical paths (auth, payments, data integrity), the test mocks the data-persistence layer entirely (database connector, file system, external API) rather than using an ephemeral real version (in-memory database, temp directory, test server). The test exercises application logic but the state is artificial — a real database constraint violation or network timeout would not be caught
+- **Assertion farming** — multiple assertions on the same object that test individual properties redundantly (`assert user.email is not None`, `assert "@" in user.email`, `assert len(user.email) > 5`) instead of one meaningful check (`assert user.email == "alice@example.com"` or schema validation). Redundant property-level assertions create brittle tests that break on irrelevant formatting changes
+- **Missing negative test for constraint rules** — when the rule describes rejection or constraint behavior ("reject passwords under 8 characters", "block after 5 failed attempts"), the test only checks the happy path (valid password accepted). STRONG requires at least one negative test proving the constraint rejects what it should
 
 ## STRONG Detection (test meaningfully proves)
 
