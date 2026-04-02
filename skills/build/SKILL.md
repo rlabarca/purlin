@@ -15,17 +15,21 @@ purlin:build                    Resume building the current feature
 ## Step 1 — Load the Spec
 
 1. Find the spec: `specs/**/<name>.md`.
-2. Read the spec. Extract all `RULE-N` entries from `## Rules`.
-3. Read all `> Requires:` specs (including invariants in `specs/_invariants/`). Collect their rules too.
+2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
+3. Read all `> Requires:` specs (including invariants in `specs/_invariants/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
 4. For design invariants with `> Source: <figma-url>`, read the Figma file via MCP (`get_design_context`) to get visual context for implementation.
 
-Display the combined rule set:
+Display the combined rule set with proof descriptions:
 
 ```
 Building: <name>
-Rules (own): RULE-1, RULE-2, RULE-3
-Rules (from i_design_tokens): RULE-1, RULE-2
-Rules (from api_contracts): RULE-1
+Own rules: RULE-1, RULE-2, RULE-3
+Required from api_rest_conventions:
+  RULE-1: All endpoints return JSON with {data, error, meta} envelope
+  PROOF-1: GET /endpoint returns {data: ..., error: null, meta: {}}
+Required from i_security_session:
+  RULE-1: Sessions expire after 30 minutes
+  PROOF-1: Login → wait 31 minutes → request → verify 401 @e2e
 Scope: src/auth.js, src/auth.test.js
 ```
 
@@ -62,7 +66,17 @@ purlin_proof "feature_name" "PROOF-1" "RULE-1" pass "description"
 purlin_proof_finish
 ```
 
-Each RULE must have at least one PROOF. The proof plugin emits `<feature>.proofs-<tier>.json` next to the spec file.
+Each RULE must have at least one PROOF — both own rules AND required rules. For required rules, use the **required spec's feature name** in the proof marker, not your own feature name:
+
+```python
+# Own rule — uses YOUR feature name
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+
+# Required rule from api_rest_conventions — uses THE ANCHOR's name
+@pytest.mark.proof("api_rest_conventions", "PROOF-1", "RULE-1")
+```
+
+The proof plugin emits `<feature>.proofs-<tier>.json` next to the spec file.
 
 **Tier review (mandatory before running tests):**
 Review every proof marker just written. Apply tier heuristics from `references/spec_quality_guide.md`:

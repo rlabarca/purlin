@@ -111,7 +111,17 @@ For each extracted rule, generate an observable proof description with concrete 
 
 After the core spec (What it does, Rules, Proof) is solid, add metadata:
 
-1. Check for matching anchors in `specs/` and suggest `> Requires:` if relevant
+1. **Scan for matching anchors** in `specs/` and suggest `> Requires:` based on scope overlap:
+   - For each anchor (specs with `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, or `prodbrief_` prefix), read its `> Scope:` patterns
+   - If the feature's `> Scope:` files overlap with the anchor's scope, suggest requiring it
+   - Also note any global invariants (these are auto-applied and don't need `> Requires:`)
+   - Present suggestions:
+     ```
+     Suggested > Requires: based on file overlap:
+       api_rest_conventions — your Scope overlaps with src/api/
+       i_security_no_eval — global invariant (auto-applied, no action needed)
+     Add api_rest_conventions to > Requires:? [y/n]
+     ```
 2. If the user mentioned code files, populate `> Scope:` (verify paths exist)
 3. If the user mentioned technologies, populate `> Stack:`
 4. Apply tier tags to proofs per `references/spec_quality_guide.md`

@@ -178,6 +178,14 @@ For each category:
 
    **Requires validation (blocking):** Before writing `> Requires:`, glob `specs/**/<name>.md` for EACH reference. A reference is valid only if it (a) already exists on disk from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), DO NOT write the spec with the broken reference — remove it from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
+   **Scope overlap suggestions:** After validating references, scan all existing anchors (specs with `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, or `prodbrief_` prefix). If an anchor's `> Scope:` patterns overlap with this feature's scope but the anchor is not in `> Requires:`, suggest it:
+   ```
+   Suggested > Requires: based on file overlap:
+     api_rest_conventions — Scope overlaps with src/api/
+   Add to > Requires:? [y/n]
+   ```
+   Global invariants (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
+
 3. For each feature in the category, write `specs/<category>/<name>.md`:
 
 ```markdown

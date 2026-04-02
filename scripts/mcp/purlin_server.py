@@ -49,6 +49,11 @@ _BEHAVIORAL_PROOF_RE = re.compile(
     r'|verify\s.*output|\bexecute\b',
     re.IGNORECASE,
 )
+_GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
+_ANCHOR_PREFIXES = (
+    'design_', 'api_', 'security_', 'brand_',
+    'platform_', 'schema_', 'legal_', 'prodbrief_',
+)
 
 
 def _scan_specs(project_root):
@@ -72,6 +77,9 @@ def _scan_specs(project_root):
 
         # Determine if this is an invariant
         is_invariant = '/_invariants/' in rel_path
+
+        # Detect global invariants (> Global: true)
+        is_global = is_invariant and bool(_GLOBAL_RE.search(content))
 
         # Extract rules from ## Rules section
         rules = {}
@@ -135,6 +143,7 @@ def _scan_specs(project_root):
             'requires': requires,
             'scope': scope,
             'is_invariant': is_invariant,
+            'is_global': is_global,
             'unnumbered_lines': unnumbered,
             'has_rules_section': rules_section is not None,
             'manual_proofs': manual_proofs,
@@ -223,10 +232,15 @@ def sync_status(project_root, role=None):
     invariants = {k: v for k, v in features.items() if v['is_invariant']}
     regular = {k: v for k, v in features.items() if not v['is_invariant']}
 
+    # Identify global invariants (auto-applied to all features)
+    global_invariants = {k: v for k, v in invariants.items() if v.get('is_global')}
+
     # Process regular features
     for name in sorted(regular.keys()):
         info = regular[name]
-        feature_lines = _report_feature(name, info, features, all_proofs, project_root, role)
+        feature_lines = _report_feature(
+            name, info, features, all_proofs, project_root, role, global_invariants
+        )
         lines.extend(feature_lines)
         lines.append('')
 
@@ -234,7 +248,10 @@ def sync_status(project_root, role=None):
     for name in sorted(invariants.keys()):
         info = invariants[name]
         rule_count = len(info['rules'])
-        lines.append(f"{name}: {rule_count} rules (global — apply to all features with > Requires: {name})")
+        if info.get('is_global'):
+            lines.append(f"{name}: {rule_count} rules (global — auto-applied to all features)")
+        else:
+            lines.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name})")
         for rule_id, desc in sorted(info['rules'].items()):
             lines.append(f"  {rule_id}: {desc}")
         lines.append('')
@@ -242,22 +259,99 @@ def sync_status(project_root, role=None):
     return '\n'.join(lines).strip()
 
 
-def _report_feature(name, info, all_features, all_proofs, project_root, role):
-    """Generate report lines for a single feature."""
-    lines = []
+def _scopes_overlap(scope_a, scope_b):
+    """Check if two scope lists have overlapping file patterns."""
+    for a in scope_a:
+        for b in scope_b:
+            if a.startswith(b) or b.startswith(a):
+                return True
+    return False
 
-    # Collect own rules
-    own_rules = dict(info['rules'])
 
-    # Collect required rules
-    required_rules = {}
+def _build_coverage_rules(name, info, all_features, global_invariants=None):
+    """Build combined rule entries for a feature (own + required + global).
+
+    Returns list of (key, label, source_feature) tuples.
+    """
+    if global_invariants is None:
+        global_invariants = {}
+
+    entries = []
+    for rule_id in sorted(info['rules'].keys()):
+        entries.append((rule_id, 'own', name))
+
     for req_name in info.get('requires', []):
         req_info = all_features.get(req_name)
         if req_info:
-            for rule_id, desc in req_info['rules'].items():
-                required_rules[f"{req_name}/{rule_id}"] = desc
+            for rule_id in sorted(req_info['rules'].keys()):
+                entries.append((f"{req_name}/{rule_id}", 'required', req_name))
 
-    all_rules = dict(own_rules)  # Only own rules count for coverage
+    for inv_name in sorted(global_invariants.keys()):
+        if inv_name in info.get('requires', []):
+            continue
+        inv_info = global_invariants[inv_name]
+        for rule_id in sorted(inv_info['rules'].keys()):
+            entries.append((f"{inv_name}/{rule_id}", 'global', inv_name))
+
+    return entries
+
+
+def _build_proof_lookup(name, rule_entries, all_proofs):
+    """Build proof-by-rule lookup for a combined rule set.
+
+    Returns dict of rule_key -> best proof entry.
+    """
+    all_rule_keys = {key for key, _, _ in rule_entries}
+
+    proof_by_rule = {}
+    # Own proofs
+    for p in all_proofs.get(name, []):
+        rule = p.get('rule', '')
+        if rule not in proof_by_rule or p.get('status') == 'fail':
+            proof_by_rule[rule] = p
+
+    # Required/global proofs — filed under the source feature's name
+    source_features = {src for _, label, src in rule_entries if label != 'own'}
+    for src_name in source_features:
+        for p in all_proofs.get(src_name, []):
+            rule = p.get('rule', '')
+            key = f"{src_name}/{rule}"
+            if key in all_rule_keys:
+                if key not in proof_by_rule or p.get('status') == 'fail':
+                    proof_by_rule[key] = p
+
+    return proof_by_rule
+
+
+def _collect_relevant_proofs(name, rule_entries, all_proofs):
+    """Collect all proof entries relevant to the combined rule set (for vhash)."""
+    all_rule_keys = {key for key, _, _ in rule_entries}
+
+    proofs = list(all_proofs.get(name, []))
+    source_features = {src for _, label, src in rule_entries if label != 'own'}
+    for src_name in source_features:
+        for p in all_proofs.get(src_name, []):
+            key = f"{src_name}/{p.get('rule', '')}"
+            if key in all_rule_keys:
+                proofs.append(p)
+    return proofs
+
+
+def _report_feature(name, info, all_features, all_proofs, project_root, role,
+                    global_invariants=None):
+    """Generate report lines for a single feature."""
+    lines = []
+    if global_invariants is None:
+        global_invariants = {}
+
+    # Build combined rule set (own + required + global)
+    rule_entries = _build_coverage_rules(name, info, all_features, global_invariants)
+    proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+    all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
+
+    total = len(rule_entries)
+    proved = sum(1 for key, _, _ in rule_entries
+                 if proof_by_rule.get(key, {}).get('status') == 'pass')
 
     # Format warnings
     warnings = []
@@ -266,33 +360,20 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role):
         warnings.append(f"  → Run: purlin:spec {name}")
     elif info['unnumbered_lines']:
         warnings.append(f"  WARNING: {len(info['unnumbered_lines'])} lines under ## Rules are not numbered.")
-        warnings.append(f"  → Fix: rewrite as \"- RULE-1: ...\", \"- RULE-2: ...\", etc.")
+        warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
-
-    # Get proofs for this feature
-    feature_proofs = all_proofs.get(name, [])
-    proof_by_rule = {}
-    for p in feature_proofs:
-        rule = p.get('rule', '')
-        if rule not in proof_by_rule:
-            proof_by_rule[rule] = p
-        elif p.get('status') == 'fail':
-            proof_by_rule[rule] = p  # Failing proof takes precedence
-
-    # Count coverage
-    proved = sum(1 for r in all_rules if proof_by_rule.get(r, {}).get('status') == 'pass')
-    total = len(all_rules)
 
     # Check manual proofs
     manual_proofs = info.get('manual_proofs', {})
 
-    # Header
+    # Header — no rules
     if total == 0:
         lines.append(f"{name}: no rules defined")
         lines.extend(warnings)
         lines.append(f"  → Run: purlin:spec {name}")
         return lines
 
+    # Header — all proved
     if proved == total and not warnings:
         structural_only = _is_structural_only(info.get('proof_descriptions', []))
         if structural_only:
@@ -300,75 +381,105 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role):
         else:
             lines.append(f"{name}: READY")
         lines.append(f"  {proved}/{total} rules proved ✓")
-        # Compute vhash
-        vhash = _compute_vhash(all_rules, feature_proofs)
+        all_rules_dict = {key: True for key, _, _ in rule_entries}
+        vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         lines.append(f"  vhash={vhash}")
         if structural_only:
             lines.append(f"  → Note: all {total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
             lines.append("  → Consider: create E2E proofs in specs/integration/ that test actual behavior")
         else:
             lines.append("  → No action needed.")
+        _append_scope_suggestions(lines, name, info, all_features, global_invariants)
         return lines
 
     lines.append(f"{name}: {proved}/{total} rules proved")
     lines.extend(warnings)
 
-    # Detail each rule
-    for rule_id in sorted(all_rules.keys()):
-        proof = proof_by_rule.get(rule_id)
+    # Detail each rule with label
+    for key, label, src_feature in rule_entries:
+        proof = proof_by_rule.get(key)
         manual = None
-        # Check if any manual proof covers this rule
-        for mp_id, mp_info in manual_proofs.items():
-            if mp_info.get('rule') == rule_id:
-                manual = (mp_id, mp_info)
-                break
+
+        # Check manual proofs (only for own rules)
+        if label == 'own':
+            for mp_id, mp_info in manual_proofs.items():
+                if mp_info.get('rule') == key:
+                    manual = (mp_id, mp_info)
+                    break
 
         if proof and proof.get('status') == 'pass':
-            test_file = proof.get('test_file', '?')
-            proof_id = proof.get('id', '?')
-            lines.append(f"  {rule_id}: PASS ({proof_id} in {test_file})")
+            lines.append(f"  {key}: PASS ({label})")
         elif proof and proof.get('status') == 'fail':
             test_name = proof.get('test_name', '?')
-            lines.append(f"  {rule_id}: FAIL ({proof.get('id', '?')} — {test_name} failed)")
+            lines.append(f"  {key}: FAIL ({label})")
             lines.append(f"  → Fix: {test_name} is failing. Check the test or fix the code.")
             lines.append(f"  → Run: purlin:unit-test")
         elif manual:
             mp_id, mp_info = manual
             if mp_info.get('stamped'):
-                # Check staleness
                 stale = _check_manual_staleness(
                     project_root, info.get('scope', []), mp_info.get('commit_sha', '')
                 )
                 if stale:
-                    lines.append(f"  {rule_id}: MANUAL PROOF STALE ({mp_id}, verified {mp_info['date']})")
+                    lines.append(f"  {key}: MANUAL PROOF STALE ({mp_id}, verified {mp_info['date']}) ({label})")
                     lines.append(f"  → Re-verify and run: purlin:verify --manual {name} {mp_id}")
                 else:
-                    lines.append(f"  {rule_id}: PASS ({mp_id}, manual, verified {mp_info['date']})")
+                    lines.append(f"  {key}: PASS ({mp_id}, manual, verified {mp_info['date']}) ({label})")
             else:
-                lines.append(f"  {rule_id}: MANUAL PROOF NEEDED")
+                lines.append(f"  {key}: MANUAL PROOF NEEDED ({label})")
                 lines.append(f"  → Verify manually, then run: purlin:verify --manual {name} {mp_id}")
         else:
-            is_from_invariant = any(
-                rule_id in all_features.get(req, {}).get('rules', {})
-                for req in info.get('requires', [])
-                if all_features.get(req, {}).get('is_invariant')
-            )
-            lines.append(f"  {rule_id}: NO PROOF")
-            lines.append(f'  → Fix: write a test with @pytest.mark.proof("{name}", "PROOF-N", "{rule_id}")')
-            if is_from_invariant:
-                # Find which invariant
-                for req in info.get('requires', []):
-                    req_info = all_features.get(req, {})
-                    if req_info.get('is_invariant') and rule_id in req_info.get('rules', {}):
-                        lines.append(f"  Note: read specs/_invariants/{req}.md for exact assertion values before writing tests")
-                        break
+            lines.append(f"  {key}: NO PROOF ({label})")
+            # Determine proof marker feature name and rule id
+            if '/' in key:
+                marker_feature = src_feature
+                rule_id = key.split('/', 1)[1]
+            else:
+                marker_feature = name
+                rule_id = key
+            lines.append(f'  → Fix: write a test with @pytest.mark.proof("{marker_feature}", "PROOF-N", "{rule_id}")')
+            src_info = all_features.get(src_feature, {})
+            if src_info.get('is_invariant'):
+                lines.append(f"  Note: read specs/_invariants/{src_feature}.md for exact assertion values before writing tests")
             lines.append(f"  → Run: purlin:unit-test")
 
     # If no proof files at all
-    if not feature_proofs and not manual_proofs:
+    feature_proofs = all_proofs.get(name, [])
+    if not feature_proofs and not manual_proofs and not any(
+        proof_by_rule.get(key) for key, _, _ in rule_entries
+    ):
         lines.append(f"  → Run: purlin:unit-test")
 
+    _append_scope_suggestions(lines, name, info, all_features, global_invariants)
     return lines
+
+
+def _append_scope_suggestions(lines, name, info, all_features, global_invariants):
+    """Append scope-overlap anchor suggestions to report lines."""
+    feature_scope = info.get('scope', [])
+    if not feature_scope:
+        return
+
+    required_names = set(info.get('requires', []))
+    required_names.update(global_invariants.keys())
+
+    for anchor_name in sorted(all_features.keys()):
+        if anchor_name == name or anchor_name in required_names:
+            continue
+        anchor_info = all_features[anchor_name]
+        if anchor_info['is_invariant']:
+            continue
+        if not any(anchor_name.startswith(p) for p in _ANCHOR_PREFIXES):
+            continue
+        anchor_scope = anchor_info.get('scope', [])
+        if not anchor_scope:
+            continue
+        if _scopes_overlap(feature_scope, anchor_scope):
+            overlap_parts = [s for s in anchor_scope
+                             if any(f.startswith(s) or s.startswith(f) for f in feature_scope)]
+            overlap_str = ', '.join(overlap_parts) if overlap_parts else ', '.join(anchor_scope)
+            lines.append(f"  \u26a0 Anchor {anchor_name} has overlapping scope ({overlap_str}) but is not required")
+            lines.append(f"  \u2192 Consider: add > Requires: {anchor_name}")
 
 
 # ---------------------------------------------------------------------------
@@ -583,27 +694,25 @@ def changelog(project_root, since=None, role=None):
     # Detect spec rule changes
     spec_changes = _detect_spec_changes(project_root, since_ref, spec_files_in_diff)
 
-    # Collect proof status per feature
+    # Collect proof status per feature (including required + global rules)
     all_proofs = _read_proofs(project_root)
+    global_invariants = {
+        k: v for k, v in features.items()
+        if v.get('is_invariant') and v.get('is_global')
+    }
     proof_status = {}
     for name, info in features.items():
         if info['is_invariant']:
             continue
-        total = len(info['rules'])
+        rule_entries = _build_coverage_rules(name, info, features, global_invariants)
+        total = len(rule_entries)
         if total == 0:
             continue
-        feature_proofs = all_proofs.get(name, [])
-        proof_by_rule = {}
-        for p in feature_proofs:
-            rule = p.get('rule', '')
-            if rule not in proof_by_rule:
-                proof_by_rule[rule] = p
-            elif p.get('status') == 'fail':
-                proof_by_rule[rule] = p
-        proved = sum(1 for r in info['rules']
-                     if proof_by_rule.get(r, {}).get('status') == 'pass')
-        failing = [r for r in info['rules']
-                   if proof_by_rule.get(r, {}).get('status') == 'fail']
+        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+        proved = sum(1 for key, _, _ in rule_entries
+                     if proof_by_rule.get(key, {}).get('status') == 'pass')
+        failing = [key for key, _, _ in rule_entries
+                   if proof_by_rule.get(key, {}).get('status') == 'fail']
         status = 'READY' if proved == total else 'FAILING' if failing else 'partial'
         structural_only = (
             status == 'READY'
