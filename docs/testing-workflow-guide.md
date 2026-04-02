@@ -78,6 +78,28 @@ PROOF: Insert "café" record → search for "cafe" → verify the record appears
 
 The pattern: **when the rule describes a real-world outcome, the proof must exercise the real system.** The rule controls the proof level.
 
+### Required rules count for coverage
+
+When a feature requires an anchor or invariant (via `> Requires:`) or is subject to a global invariant (with `> Global: true`), those rules are included in coverage. You must write proofs for **all** required rules — not just your own. Use the required spec's feature name in the proof marker:
+
+```python
+# Own rule
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+
+# Required rule from api_rest_conventions anchor
+@pytest.mark.proof("api_rest_conventions", "PROOF-1", "RULE-1")
+```
+
+`sync_status` displays required and global rules with labels so you can see what's needed:
+```
+login: 3/5 rules proved
+  RULE-1: PASS (own)
+  RULE-2: NO PROOF (own)
+  api_rest_conventions/RULE-1: PASS (required)
+  i_security_no_eval/RULE-1: PASS (global)
+  i_security_no_eval/RULE-2: NO PROOF (global)
+```
+
 ### Level 3 through invariants
 
 Invariants are the strongest enforcement mechanism for Level 3. When a PM, security engineer, or architect writes an invariant, every feature that requires it must prove those rules. No shortcuts.

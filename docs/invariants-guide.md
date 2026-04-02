@@ -213,6 +213,65 @@ During `purlin:build`, the agent reads Figma directly via MCP for full visual co
 
 ---
 
+## Global Invariants
+
+A global invariant is an invariant with `> Global: true` metadata. Its rules automatically apply to **every** non-anchor, non-invariant feature spec — without needing `> Requires:`.
+
+### When to use global invariants
+
+Global invariants are for project-wide constraints that should apply everywhere — security baselines, coding standards, or compliance requirements that no feature should be able to opt out of.
+
+### Example
+
+```markdown
+# Invariant: i_security_no_eval
+
+> Type: security
+> Source: git@github.com:acme/security-policies.git
+> Path: standards/no-eval.md
+> Pinned: a1b2c3d4
+> Global: true
+
+## What it does
+Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
+
+## Rules
+- RULE-1: No eval() calls in source code
+- RULE-2: No new Function() constructor with string arguments
+
+## Proof
+- PROOF-1 (RULE-1): Grep src/ for eval(); verify zero matches
+- PROOF-2 (RULE-2): Grep src/ for new Function(; verify zero matches outside test files
+```
+
+### How global invariants appear in sync_status
+
+Global invariant rules are included in every feature's coverage with a `(global)` label:
+
+```
+login: 5/7 rules proved
+  RULE-1: PASS (own)
+  RULE-2: PASS (own)
+  RULE-3: NO PROOF (own)
+  i_security_no_eval/RULE-1: PASS (global)
+  i_security_no_eval/RULE-2: PASS (global)
+```
+
+Features do NOT need `> Requires:` for global invariants — they apply automatically. If a feature explicitly lists a global invariant in `> Requires:`, its rules appear as `(required)` instead of `(global)` — the coverage is the same either way.
+
+### Writing proofs for global invariant rules
+
+Use the **invariant's feature name** in the proof marker, not your own feature name:
+
+```python
+@pytest.mark.proof("i_security_no_eval", "PROOF-1", "RULE-1")
+def test_no_eval_in_source():
+    result = subprocess.run(["grep", "-rn", "eval(", "src/"], capture_output=True, text=True)
+    assert result.stdout == "", f"Found eval() in:\n{result.stdout}"
+```
+
+---
+
 ## Using Anchors and Invariants in Features
 
 Both are referenced the same way in `> Requires:`:

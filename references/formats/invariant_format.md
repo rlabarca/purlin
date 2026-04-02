@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Invariant Spec Format
 
@@ -82,6 +82,7 @@ Navigation layout and spacing constraints from the Figma design source.
 | `> Source:` | Yes | Git repo URL, or Figma URL |
 | `> Path:` | Git only | Path within the repo to the source file |
 | `> Pinned:` | Yes | Git commit SHA (git-sourced) or ISO 8601 timestamp (Figma-sourced) |
+| `> Global:` | No | When `true`, this invariant's rules auto-apply to ALL non-anchor, non-invariant feature specs without needing `> Requires:`. Use for project-wide constraints like `i_security_no_eval`. |
 
 ## Sync Behavior
 
