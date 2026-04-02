@@ -1,4 +1,4 @@
-> Criteria-Version: 2
+> Criteria-Version: 3
 
 # Proof Audit Criteria
 
@@ -45,6 +45,32 @@ A proof is STRONG when ALL of these are true:
 - Expected outputs match the proof description's expected outcomes
 - For negative tests: actually attempts the bad input and verifies rejection
 - For FORBIDDEN proofs: greps the real codebase, not a test fixture
+
+## Test Code Quality (independent of proof description)
+
+Beyond matching the proof description, the audit checks the test code itself for patterns that produce unreliable results:
+
+### Automatic HOLLOW (regardless of proof match)
+
+- **Bare `except: pass`** or `except Exception: pass` around the code being tested — failures are silently swallowed
+- **No setup for the asserted value** — the variable being asserted was never assigned in the test (relies on leaked state from another test)
+- **Assert on a literal** — `assert "login" == "login"` or `assert 200 == 200` without any code execution producing the value
+
+### Automatic WEAK (regardless of proof match)
+
+- **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
+- **String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
+- **No negative assertion** — test only checks the happy path when the rule describes a constraint that should reject bad input
+- **Setup and assertion in different scopes** — value assigned in a try block, asserted outside it without verifying the try succeeded
+- **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
+
+### Quality factors that strengthen STRONG
+
+- Test uses `pytest.raises` or equivalent for expected exceptions
+- Test has explicit setup and teardown (fixtures, context managers)
+- Test asserts specific values, not just types or truthiness
+- Test exercises exactly one code path per assertion
+- Test name describes the scenario, not the implementation
 
 ## Scoring
 
