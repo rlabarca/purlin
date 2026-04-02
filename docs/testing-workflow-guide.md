@@ -1,44 +1,163 @@
 # Testing Workflow Guide
 
-## Why Proofs, Not Just Tests
+## What Makes Purlin Tests Different
 
-A test tells you code works. A proof tells you code satisfies a specific rule in a spec.
+A regular test tells you code works. A Purlin **proof** tells you code satisfies a specific rule in a spec.
 
-The difference matters because:
+The difference matters:
 
-- **Tests can be tautological.** `assert True` passes. A proof must reference a real rule — if the rule says "passwords are hashed with bcrypt," the proof must actually check for bcrypt, not just assert something passed.
-- **Tests can drift from intent.** A test might check the wrong thing and still pass. A proof is linked to a rule, so `sync_status` shows you exactly which constraints are verified and which aren't.
-- **Tests can be orphaned.** A test for deleted functionality keeps passing. Proofs linked to deleted rules show up as orphaned — `sync_status` tells you to clean them up.
+- **Tests can be hollow.** `assert True` passes. A proof must reference a real rule — if the rule says "passwords are hashed with bcrypt," the proof must actually check for bcrypt.
+- **Tests can drift from intent.** A test might check the wrong thing and still pass. A proof is linked to a rule, so `sync_status` shows exactly which constraints are verified and which aren't.
+- **Tests can be orphaned.** A test for deleted functionality keeps passing silently. Proofs linked to deleted rules are flagged by `sync_status`.
 
-### What makes a good proof?
+---
 
-A good proof tests the **behavior described in the rule**, not the implementation:
-
-| Rule | Bad proof | Good proof |
-|------|-----------|------------|
-| Passwords hashed with bcrypt | `assert hasher is not None` | `assert bcrypt.checkpw(password, stored_hash)` |
-| Rate limit at 5 per minute | `assert rate_limiter.count == 5` | Submit 6 requests; assert the 6th returns 429 |
-| Input sanitized against XSS | `assert sanitize in source_code` | Inject `<script>alert(1)</script>`; assert it's escaped in output |
-
-The pattern: **test the attack, not the defense.** Prove bad input is rejected, not just that good input works. Assert observable output, not internal state.
-
-### Why should you be confident proofs pass?
-
-Because `purlin:verify` runs all tests from scratch in a clean state. The verification receipt (`vhash`) proves the rules had these exact test outcomes. CI `--audit` mode re-runs everything independently — if a developer's local environment was rigged, CI catches it.
-
-For comprehensive guidance on writing rules, proofs, tiers, and anchors, see the [Spec Quality Guide](../references/spec_quality_guide.md).
-
-## The Simplest Workflow
-
-Ask Claude:
+## The Quickest Path
 
 ```
-test auth_login
+test login
 ```
 
-Claude reads the spec, writes tests with proof markers, runs them, iterates until all rules pass. You don't need to understand proof markers to use Purlin — the agent handles it.
+That's it. Claude reads the spec, writes tests with proof markers, runs them, diagnoses failures, fixes the code, and iterates until `sync_status` shows READY. You don't need to understand anything below this line to use Purlin testing.
 
-When you want more control, read on.
+When you want more control — or want to understand what's happening under the hood — read on.
+
+---
+
+## Proof Levels
+
+Not all proofs are equal. Understanding the three levels helps you write rules that get the coverage you actually need.
+
+| Level | What it proves | Example |
+|-------|---------------|---------|
+| **Level 1** | A value exists or has the right type | `assert config.timeout is not None` |
+| **Level 2** | Code behavior with controlled inputs | `POST invalid password → 401` (mocked DB) |
+| **Level 3** | End-to-end behavior through the real system | `Open browser, enter wrong password, see error on screen` |
+
+### Level 1 is hollow — reject it
+
+If a proof says "verify X exists" or "check Y is not null," it proves nothing. Always rewrite:
+
+- Level 1: "Verify the login endpoint exists"
+- Level 2: "POST to /login with valid credentials; verify 200 and JWT in response"
+- Level 3: "Open browser, enter credentials, click login, verify dashboard loads"
+
+### Level 2 is the AI default — and it's usually fine
+
+AI writes Level 2 proofs because they're fast, deterministic, and mockable. For internal logic — data transformations, error handling, input validation, algorithms — Level 2 is the right level. Don't force Level 3 where Level 2 is sufficient.
+
+But Level 2 can be green while the feature is broken. The mock says the API returns 200, but the real API is misconfigured. The test proves the code logic, not the real outcome.
+
+### Level 3 is for when you need certainty
+
+Write Level 3 rules when you need to prove the real system works, not just the code logic. **Anyone** can write Level 3 rules — not just PMs. The key is writing rules that describe real-world outcomes rather than function-level behavior:
+
+**A PM** enforcing product requirements:
+```
+RULE: User adds item to cart, proceeds to checkout, enters payment, sees confirmation page
+PROOF: Open browser → add item → checkout → enter test card → verify confirmation page @e2e
+```
+
+**A security engineer** enforcing compliance:
+```
+RULE: Authentication tokens expire and cannot be reused after 30 minutes
+PROOF: Obtain a token → wait 31 minutes → use the token → verify 401 Unauthorized @e2e
+```
+
+**An architect** enforcing system behavior:
+```
+RULE: Service recovers from database connection failure within 5 seconds
+PROOF: Kill DB connection → send request → verify 503 → restart DB → send request within 5s → verify 200 @e2e
+```
+
+**A QA engineer** codifying a regression:
+```
+RULE: Search results for "café" match results for "cafe" (accent-insensitive)
+PROOF: Insert "café" record → search for "cafe" → verify the record appears @slow
+```
+
+The pattern: **when the rule describes a real-world outcome, the proof must exercise the real system.** The rule controls the proof level.
+
+### Level 3 through invariants
+
+Invariants are the strongest enforcement mechanism for Level 3. When a PM, security engineer, or architect writes an invariant, every feature that requires it must prove those rules. No shortcuts.
+
+**PM — product brief:**
+```markdown
+# Invariant: i_prodbrief_checkout
+
+> Type: prodbrief
+> Source: git@bitbucket.org:acme/product-briefs.git
+> Pinned: a1b2c3d4
+
+## Rules
+- RULE-1: User can complete checkout in under 3 clicks from cart
+- RULE-2: Payment failure shows a retry option without clearing the cart
+- RULE-3: Confirmation email arrives within 60 seconds
+
+## Proof
+- PROOF-1 (RULE-1): Open browser → add item → count clicks to confirmation page → verify ≤ 3 @e2e
+- PROOF-2 (RULE-2): Checkout with declined card → verify retry button → verify cart intact @e2e
+- PROOF-3 (RULE-3): Complete checkout → poll inbox 60s → verify email with order number @e2e
+```
+
+**Security — compliance requirements:**
+```markdown
+# Invariant: i_security_session_policy
+
+> Type: security
+> Source: git@bitbucket.org:acme/security-policies.git
+> Pinned: b2c3d4e5
+
+## Rules
+- RULE-1: Sessions expire after 30 minutes of inactivity
+- RULE-2: Concurrent sessions from different IPs are rejected
+- RULE-3: Session tokens are invalidated on password change
+
+## Proof
+- PROOF-1 (RULE-1): Login → wait 31 minutes → request with session token → verify 401 @e2e
+- PROOF-2 (RULE-2): Login from IP-A → login same user from IP-B → verify IP-A session rejected @e2e
+- PROOF-3 (RULE-3): Login → change password → request with old session → verify 401 @e2e
+```
+
+Every feature that `> Requires:` these invariants must prove every rule. The engineer can't mock their way out — the rules describe observable system behavior.
+
+### When to use each level
+
+| Level | When | Examples |
+|-------|------|---------|
+| **Level 2** | Internal logic, data transforms, error codes, validation | Most rules — this is the default |
+| **Level 3** | User-facing flows, multi-system integration, compliance, regressions from production bugs | Checkout flows, security policies, architecture guarantees, anything that's broken before |
+| **@manual** | Human judgment required — visual quality, brand voice, UX feel | Design review, copy review, accessibility audit |
+
+For detailed guidance on writing rules and proofs at each level, see the [Spec Quality Guide](../references/spec_quality_guide.md).
+
+---
+
+## Test Tiers
+
+Tiers control which proofs run when. They map directly to proof levels:
+
+| Tier | When it runs | Typical proof level |
+|------|-------------|-------------------|
+| default (no tag) | Every build | Level 2 — unit tests |
+| `@slow` | On check-in / PR | Level 2 — tests needing I/O, DB, network |
+| `@e2e` | On release / nightly | Level 3 — full system tests |
+| `@manual` | Human-initiated | Manual verification |
+
+```python
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")                    # default — always
+@pytest.mark.proof("login", "PROOF-5", "RULE-5", tier="slow")       # on PR
+@pytest.mark.proof("login", "PROOF-8", "RULE-8", tier="e2e")        # nightly
+```
+
+Each tier writes to a separate file: `login.proofs-default.json`, `login.proofs-slow.json`. `sync_status` merges all tiers.
+
+| Command | What runs |
+|---------|-----------|
+| `purlin:unit-test` | Default tier only |
+| `purlin:unit-test --all` | All tiers |
+| `purlin:verify` | All tiers |
 
 ---
 
@@ -46,15 +165,13 @@ When you want more control, read on.
 
 A proof marker is metadata on a test that says: "this test proves RULE-N for feature X."
 
-The marker is framework-specific — it uses whatever metadata mechanism the test framework already has. The proof plugin reads the metadata during test execution and writes a structured JSON file (`<feature>.proofs-<tier>.json`) next to the spec. `sync_status` reads these files to compute coverage.
-
 ```
 Test code                     Proof plugin              sync_status
-@pytest.mark.proof(...)  -->  collects markers     -->  reads JSON
+@pytest.mark.proof(...)  →  collects markers      →  reads JSON
                               writes proofs JSON        diffs against rules
 ```
 
-**The chain:** test framework marker → proof plugin → JSON file → `sync_status`. No regex parsing. No source code scanning. The plugin reads framework metadata at runtime.
+The marker is framework-specific. The proof plugin reads it at runtime and writes a JSON file. `sync_status` reads the JSON. No source code scanning.
 
 ### pytest (Python)
 
@@ -65,7 +182,7 @@ def test_valid_login():
     assert resp.status_code == 200
 ```
 
-The marker args: `(feature_name, proof_id, rule_id)`. Optional: `tier="slow"` for tests that hit APIs, databases, or external services.
+Args: `(feature_name, proof_id, rule_id)`. Optional: `tier="slow"`.
 
 ### Jest (JavaScript / TypeScript)
 
@@ -76,7 +193,7 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:slow]", async ()
 });
 ```
 
-The marker is embedded in the test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
+Marker embedded in test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
 
 ### Shell (Bash)
 
@@ -86,32 +203,15 @@ purlin_proof "auth_login" "PROOF-1" "RULE-1" pass "valid login returns 200"
 purlin_proof_finish
 ```
 
-Call `purlin_proof` after each assertion. `purlin_proof_finish` writes the JSON file.
+Call `purlin_proof` after each assertion. `purlin_proof_finish` writes the JSON.
 
 ---
 
-## Running Tests
-
-```
-purlin:unit-test
-```
-
-Runs your test suite with the proof plugin active. The plugin:
-
-1. Collects proof markers from tests that ran
-2. For each feature tested: purges that feature's old entries from the proof file (kills ghosts from deleted tests)
-3. Appends fresh entries for that feature
-4. Leaves other features' entries untouched
-
-This is **feature-scoped overwrite** — running `pytest tests/login/` only updates login's proofs without wiping checkout or payments.
-
 ## Proof Plugins
 
-A proof plugin is the bridge between your test framework and Purlin. It reads proof markers from your tests, collects pass/fail results, and writes `.proofs-*.json` files that `sync_status` reads.
+A proof plugin is the bridge between your test framework and Purlin. It reads proof markers, collects pass/fail results, and writes `.proofs-*.json` files.
 
 ### Built-in plugins
-
-Purlin ships with plugins for three frameworks:
 
 | Framework | Language | Plugin file | Marker syntax |
 |-----------|----------|------------|---------------|
@@ -123,156 +223,70 @@ Purlin ships with plugins for three frameworks:
 
 ### Which plugin is active?
 
-Check `.purlin/plugins/` — that's where your project's proof plugin lives. It was scaffolded by `purlin:init` based on your test framework.
+Check `.purlin/plugins/` — that's your project's proof plugin, scaffolded by `purlin:init`.
 
 ### Adding support for another framework
-
-Install a community proof plugin or your own:
 
 ```
 purlin:init --add-plugin ./my-plugin.py
 purlin:init --add-plugin git@github.com:someone/purlin-go-proof.git
 ```
 
-This copies the plugin to `.purlin/plugins/`. No registration needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
+Copies the plugin to `.purlin/plugins/`. No registration needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`.
 
-To see what's installed:
-
-```
-purlin:init --list-plugins
-```
+To see what's installed: `purlin:init --list-plugins`
 
 To write your own plugin, see [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below.
 
-## Checking Coverage
+---
+
+## The Workflow: Check, Test, Fix, Verify
+
+### Check coverage
 
 ```
 purlin:status
 ```
 
-Shows which rules are proved, failing, or missing. Every problem has a `→` directive:
-
 ```
-auth_login: 2/3 rules proved
+login: 2/3 rules proved
   RULE-1: PASS (PROOF-1 in test_login.py)
   RULE-2: PASS (PROOF-2 in test_login.py)
   RULE-3: NO PROOF
-  → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
-  → Run: purlin:unit-test
+  → Fix: write a test with @pytest.mark.proof("login", "PROOF-3", "RULE-3")
 ```
 
-## Verifying and Shipping
+### Run tests
+
+```
+purlin:unit-test
+```
+
+The proof plugin collects markers and writes proof files using **feature-scoped overwrite** — only the tested feature's entries are replaced. Other features' proofs are untouched.
+
+### Fix failures
+
+When a test fails, **diagnose before fixing**. Is the code wrong, or is the test wrong?
+
+- Test expects 401, code returns 200 → **fix the code** (the spec says 401)
+- Test mocks the wrong endpoint → **fix the test** (test bug)
+- The spec rule no longer matches intended behavior → **update the spec first**
+
+Never weaken an assertion to make it pass. See the [Spec Quality Guide](../references/spec_quality_guide.md) for the full diagnostic framework.
+
+### Verify and ship
 
 ```
 purlin:verify
 ```
 
-Runs ALL tests (every feature, every tier), issues verification receipts for every feature with 100% coverage. This is the only time a global sweep happens — all proof files are deleted and regenerated from scratch.
+Runs ALL tests (every tier), issues verification receipts for features with 100% coverage. The receipt includes a `vhash` — a tamper-evident hash of rules + proof results.
 
----
+### Manual proofs
 
-## Test Tiers
-
-Not all tests are fast. Tiers separate them:
-
-```python
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")                    # default — always
-@pytest.mark.proof("login", "PROOF-5", "RULE-5", tier="slow")       # CI only
-@pytest.mark.proof("login", "PROOF-8", "RULE-8", tier="nightly")    # scheduled
-```
-
-Each tier writes to a separate file: `login.proofs-default.json`, `login.proofs-slow.json`. `sync_status` merges all tiers.
-
-| Command | What runs |
-|---------|-----------|
-| `purlin:unit-test` | Default tier only |
-| `purlin:unit-test --all` | All tiers |
-| `purlin:verify` | All tiers |
-
-## Proof Levels
-
-AI tends to write Level 2 proofs — isolated unit tests with mocked dependencies. These prove code logic is correct but don't prove the feature actually works. Understanding proof levels helps you get the coverage that matters.
-
-### The three levels
-
-| Level | What it proves | Example | Who writes the rule |
-|-------|---------------|---------|-------------------|
-| **Level 1** | A value exists or has the right type | `assert config.timeout is not None` | Nobody should — these are hollow |
-| **Level 2** | Code behavior with controlled inputs | `POST invalid password → 401` (mocked DB) | Engineer or AI |
-| **Level 3** | End-to-end behavior through the real system | `Open browser, enter wrong password, see "Invalid credentials" on screen` | PM (in prodbrief or spec) |
-
-### Why AI defaults to Level 2
-
-Level 2 proofs are fast, deterministic, and easy to write. The AI can mock everything, assert a return value, and get a green proof. But Level 2 can be green while the feature is broken — the mock says the API returns 200, but the real API is misconfigured. The test proves the code logic, not the user experience.
-
-### How PMs drive Level 3 proofs
-
-**The PM controls the proof level by how they write rules.** This is the key insight — you don't need to know about proof levels. Just describe what you want to see happen:
-
-- "Passwords are hashed with bcrypt" → Level 2 (engineer writes a unit test)
-- "User enters wrong password and sees 'Invalid credentials' on screen" → Level 3 (engineer must write an E2E test — there's no way to mock this)
-
-When a rule describes a **user-visible outcome**, the only way to prove it is to run the real system and check the real output. The rule forces Level 3.
-
-### Prodbrief invariants: the PM's enforcement tool
-
-A PM who wants to guarantee user-facing behavior writes a `prodbrief_` invariant with rules that describe user journeys:
+Some rules need human verification. Mark them `@manual` in the spec:
 
 ```markdown
-# Invariant: i_prodbrief_checkout
-
-> Type: prodbrief
-> Source: git@bitbucket.org:acme/product-briefs.git
-> Path: briefs/checkout-v2.md
-> Pinned: a1b2c3d4
-
-## What it does
-Core checkout flow requirements from the product brief.
-
-## Rules
-- RULE-1: User adds item to cart, proceeds to checkout, enters payment, sees confirmation page
-- RULE-2: If payment fails, user sees an error and can retry without losing cart contents
-- RULE-3: Order confirmation email arrives within 60 seconds of successful payment
-
-## Proof
-- PROOF-1 (RULE-1): Open browser → add item → click checkout → enter test card → verify confirmation page shows order number @e2e
-- PROOF-2 (RULE-2): Open browser → add item → checkout with declined card → verify error message → verify cart still has item → retry with valid card → verify confirmation @e2e
-- PROOF-3 (RULE-3): Complete checkout → poll inbox for 60 seconds → verify email contains order number @e2e
-```
-
-Every feature that `> Requires: i_prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests — RULE-1 says "sees confirmation page," which means rendering real HTML in a real browser.
-
-### When to write Level 3 rules
-
-Write Level 3 rules when:
-- **The user experience matters, not just the code logic.** "User sees error message" vs "API returns 400."
-- **Multiple systems must work together.** "Confirmation email arrives" requires API + email service + template rendering.
-- **You've been burned by mocks.** A Level 2 test passed but the feature was broken in production. Write a Level 3 rule for that exact scenario.
-- **Regulatory or contractual requirements.** "User can export their data within 30 days" — prove it end-to-end.
-
-### When Level 2 is fine
-
-Level 2 is the right level for most rules. Internal logic, data transformations, error handling, input validation — these don't need a browser or a running server. Don't force Level 3 where Level 2 is sufficient. The cost of E2E tests (slow, flaky, infrastructure-dependent) means you should use them selectively for high-value user flows.
-
-### Level 3 and tiers
-
-Level 3 proofs are tagged `@e2e` and don't run on every build:
-
-| When | What runs |
-|------|-----------|
-| Every build | Default tier (Level 2 proofs) |
-| On check-in / PR | Default + `@slow` tiers |
-| On release / nightly | All tiers including `@e2e` (Level 3) |
-| `purlin:verify` | All tiers |
-
-See the [Spec Quality Guide](../references/spec_quality_guide.md) for detailed guidance on writing rules and proofs at each level.
-
-## Manual Proofs
-
-Some rules can't be automated ("error message is clear to non-technical users", "login page matches the design"). Mark them `@manual` in the spec:
-
-```markdown
-## Proof
 - PROOF-5 (RULE-5): Verify login error messages are clear and non-technical @manual
 ```
 
@@ -282,19 +296,17 @@ After verifying by hand:
 verify login PROOF-5 manually
 ```
 
-Auto-stamps: `@manual(alice@company.com, 2026-04-01, f8e9d0c)` — who, when, at what commit. If code changes after the stamp, `sync_status` flags it stale.
+Auto-stamps with your email, date, and commit SHA. If code changes later, `sync_status` flags it stale.
 
 ---
 
-## Real-World Loop: Test, Fix, Validate
+## Real-World Loop
 
-Here's what a typical session looks like. One prompt does the whole loop:
+One prompt does the whole cycle:
 
 ```
 test login — iterate until all rules pass and verify
 ```
-
-Claude runs through the full cycle:
 
 ```
 Reading specs/auth/login.md... 5 rules found.
@@ -318,7 +330,6 @@ Running pytest...
 
 Calling sync_status...
   login: 4/5 rules proved (PROOF-5 is @manual)
-  → READY for verification (manual proof pending)
 
 Running purlin:verify...
   Receipt issued: login vhash=a3f7c912
@@ -326,13 +337,9 @@ Running purlin:verify...
 Done. 4/4 auto proofs pass. 1 manual proof pending (PROOF-5).
 ```
 
-The agent reads the spec, writes tests, runs them, diagnoses the failure (code bug, not test bug), fixes the code, re-runs, confirms coverage, and issues the receipt. One prompt.
-
 ---
 
 ## Writing a Custom Proof Plugin
-
-The built-in plugins cover pytest, Jest, and shell. If your test framework isn't supported, writing a plugin is straightforward.
 
 ### What a proof plugin does
 
@@ -360,25 +367,22 @@ One job: read test metadata during execution, write a JSON file after the run.
 ### Requirements
 
 1. **Read proof metadata from tests.** Use whatever mechanism your framework provides — annotations, decorators, naming conventions, tags.
-2. **Feature-scoped overwrite.** On write, load the existing file, purge entries for features tested in this run, append fresh entries. This prevents ghost proofs from deleted tests while preserving other features' data.
-3. **Write the file next to the spec.** Find the spec file `specs/**/<feature>.md` and write `<feature>.proofs-<tier>.json` in the same directory.
-4. **Handle parameterized tests.** If a proof marker is on a parameterized test, aggregate: one entry per proof, status = "pass" only if ALL variants pass.
+2. **Feature-scoped overwrite.** Load existing file, purge entries for features tested in this run, append fresh entries. Preserves other features' data.
+3. **Write the file next to the spec.** Find `specs/**/<feature>.md` and write `<feature>.proofs-<tier>.json` in the same directory.
+4. **Handle parameterized tests.** Aggregate: one entry per proof, status = "pass" only if ALL variants pass.
 
 ### Example: minimal custom plugin
 
 ```python
-# For any Python test runner — adapt the collection mechanism
 def write_proofs(results, tier="default"):
     """results: list of (feature, proof_id, rule_id, test_file, test_name, passed)"""
     import json, os, glob
 
-    # Find spec directories
     spec_dirs = {}
     for spec in glob.glob("specs/**/*.md", recursive=True):
         stem = os.path.splitext(os.path.basename(spec))[0]
         spec_dirs[stem] = os.path.dirname(spec)
 
-    # Group by feature
     by_feature = {}
     for feature, proof_id, rule_id, test_file, test_name, passed in results:
         by_feature.setdefault(feature, []).append({
@@ -387,7 +391,6 @@ def write_proofs(results, tier="default"):
             "status": "pass" if passed else "fail", "tier": tier
         })
 
-    # Feature-scoped overwrite
     for feature, new_entries in by_feature.items():
         spec_dir = spec_dirs.get(feature, "specs")
         path = os.path.join(spec_dir, f"{feature}.proofs-{tier}.json")
@@ -403,7 +406,5 @@ def write_proofs(results, tier="default"):
 ### Registering with Purlin
 
 No registration needed. `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
-
-To scaffold your plugin during `purlin:init`, place it in `scripts/proof/` alongside the built-in plugins. `purlin:init` copies the appropriate one to `.purlin/plugins/` based on the `test_framework` setting in `.purlin/config.json`. Add your framework to the detection logic in `skills/init/SKILL.md`.
 
 Full format reference: [references/formats/proofs_format.md](../references/formats/proofs_format.md)

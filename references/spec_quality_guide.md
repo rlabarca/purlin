@@ -52,18 +52,20 @@ Rules and proofs operate at three levels of confidence. Understanding these leve
 
 AI agents default to Level 2 because it's fast, deterministic, and easy to mock. Level 2 proofs are correct for most internal logic — but they can pass while the real feature is broken. The mock says the API returns 200, but the real API is misconfigured.
 
-### How PMs drive Level 3
+### How to drive Level 3
 
-**The PM controls the proof level by how they write rules.** This is the most important principle in this guide.
+**Anyone controls the proof level by how they write rules.** Write a rule that describes a real-world outcome and the proof must exercise the real system — there's no way to mock it.
 
-- "Passwords are hashed with bcrypt" → AI writes a unit test (Level 2)
-- "User enters wrong password and sees 'Invalid credentials' on screen" → AI must write an E2E test (Level 3) — there's no way to mock "sees on screen"
+- "Passwords are hashed with bcrypt" → Level 2 (unit test)
+- "User enters wrong password and sees 'Invalid credentials' on screen" → Level 3 (must render real UI)
+- "Authentication tokens expire and cannot be reused after 30 minutes" → Level 3 (must test real session lifecycle)
+- "Service recovers from database failure within 5 seconds" → Level 3 (must kill and restart real DB)
 
-When a rule describes a **user-visible outcome**, the only way to prove it is Level 3. The PM doesn't need to know about proof levels — they just describe what they want to see happen. The rule forces the right level.
+PMs write Level 3 rules for user flows. Security engineers write them for compliance. Architects write them for system guarantees. QA engineers write them for regressions. The pattern is the same: **describe the outcome you need to see, not the function you need to call.**
 
-### Prodbrief invariants for Level 3 enforcement
+### Invariants for Level 3 enforcement
 
-PMs who want to guarantee user-facing behavior write `prodbrief_` invariants with rules that describe user journeys:
+Invariants are the strongest mechanism for Level 3 enforcement. When anyone writes an invariant with outcome-based rules, every feature that requires it must prove those rules end-to-end:
 
 ```markdown
 # Invariant: i_prodbrief_checkout

@@ -61,27 +61,6 @@ reporters: ["default", ".purlin/plugins/jest_purlin.js"]
 source .purlin/plugins/purlin-proof.sh
 ```
 
-### Adding More Proof Plugins
-
-Purlin ships with proof plugins for Python (pytest), JavaScript (Jest), and Bash (shell). To add support for another language or framework:
-
-```
-purlin:init --add-plugin <source>
-```
-
-Examples:
-
-```
-purlin:init --add-plugin ./my-go-plugin.py
-purlin:init --add-plugin git@github.com:someone/purlin-rust-proof.git
-```
-
-Community plugins and custom plugins are installed to `.purlin/plugins/` and work immediately. To see what's installed:
-
-```
-purlin:init --list-plugins
-```
-
 ## Config System
 
 Purlin uses a two-file config system:
@@ -145,3 +124,20 @@ purlin:spec-from-code
 ```
 
 `purlin:spec-from-code` scans your codebase and generates specs in the new 3-section format (What it does, Rules, Proof). Review and refine the generated specs — automation is a starting point.
+
+## Adding More Proof Plugins
+
+Purlin ships with proof plugins for Python (pytest), JavaScript (Jest), and Bash (shell). If your project uses another language or framework, you can add a community or custom proof plugin.
+
+Proof plugins read proof markers from your tests and write the JSON files that `sync_status` reads. See the [Testing Workflow Guide](testing-workflow-guide.md#proof-plugins) for details on what they are and how they work.
+
+```
+purlin:init --add-plugin ./my-go-plugin.py
+purlin:init --add-plugin git@github.com:someone/purlin-rust-proof.git
+```
+
+Plugins are installed to `.purlin/plugins/` and work immediately. To see what's installed:
+
+```
+purlin:init --list-plugins
+```
