@@ -1,8 +1,8 @@
 {
   "feature": "purlin_skills",
   "vhash": "5bd9ab85",
-  "commit": "358bbdfb67015b2dbffebdf314466c3bcb193afd",
-  "timestamp": "2026-04-02T12:27:09.037666+00:00",
+  "commit": "c5f0972c46b64bf0f894f7df1470b15247715fd5",
+  "timestamp": "2026-04-02T15:54:05.443832+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",

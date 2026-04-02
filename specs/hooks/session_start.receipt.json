@@ -1,8 +1,8 @@
 {
   "feature": "session_start",
   "vhash": "3526ce42",
-  "commit": "cfb9dabe1f543ef08d6bc9b6950d91ec3bb8e5e8",
-  "timestamp": "2026-04-02T15:02:46.492452+00:00",
+  "commit": "c5f0972c46b64bf0f894f7df1470b15247715fd5",
+  "timestamp": "2026-04-02T15:54:05.443832+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -43,27 +43,27 @@
     },
     {
       "id": "PROOF-1",
-      "rule": "RULE-1",
+      "rule": "security_no_dangerous_patterns/RULE-1",
       "status": "pass"
     },
     {
       "id": "PROOF-2",
-      "rule": "RULE-2",
+      "rule": "security_no_dangerous_patterns/RULE-2",
       "status": "pass"
     },
     {
       "id": "PROOF-3",
-      "rule": "RULE-3",
+      "rule": "security_no_dangerous_patterns/RULE-3",
       "status": "pass"
     },
     {
       "id": "PROOF-4",
-      "rule": "RULE-4",
+      "rule": "security_no_dangerous_patterns/RULE-4",
       "status": "pass"
     },
     {
       "id": "PROOF-5",
-      "rule": "RULE-5",
+      "rule": "security_no_dangerous_patterns/RULE-5",
       "status": "pass"
     }
   ]

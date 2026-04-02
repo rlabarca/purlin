@@ -1,13 +1,16 @@
 {
-  "feature": "e2e_required_rules",
-  "vhash": "b3ef613b",
+  "feature": "e2e_teammate_audit_loop",
+  "vhash": "e492d09a",
   "commit": "c5f0972c46b64bf0f894f7df1470b15247715fd5",
   "timestamp": "2026-04-02T15:54:05.443832+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
-    "RULE-4"
+    "RULE-4",
+    "RULE-5",
+    "RULE-6",
+    "RULE-7"
   ],
   "proofs": [
     {
@@ -28,6 +31,21 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
       "status": "pass"
     }
   ]
