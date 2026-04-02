@@ -1,14 +1,13 @@
 {
-  "feature": "security_no_dangerous_patterns",
-  "vhash": "175608df",
+  "feature": "e2e_required_rules",
+  "vhash": "b3ef613b",
   "commit": "cfb9dabe1f543ef08d6bc9b6950d91ec3bb8e5e8",
   "timestamp": "2026-04-02T15:02:46.492452+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
-    "RULE-4",
-    "RULE-5"
+    "RULE-4"
   ],
   "proofs": [
     {
@@ -29,11 +28,6 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
       "status": "pass"
     }
   ]

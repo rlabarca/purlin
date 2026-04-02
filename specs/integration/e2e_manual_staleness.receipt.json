@@ -1,14 +1,12 @@
 {
-  "feature": "security_no_dangerous_patterns",
-  "vhash": "175608df",
+  "feature": "e2e_manual_staleness",
+  "vhash": "7748e8cb",
   "commit": "cfb9dabe1f543ef08d6bc9b6950d91ec3bb8e5e8",
   "timestamp": "2026-04-02T15:02:46.492452+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
-    "RULE-3",
-    "RULE-4",
-    "RULE-5"
+    "RULE-3"
   ],
   "proofs": [
     {
@@ -24,16 +22,6 @@
     {
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
       "status": "pass"
     }
   ]
