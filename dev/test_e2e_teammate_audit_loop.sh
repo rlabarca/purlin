@@ -28,12 +28,14 @@ if ! echo "$audit_content" | grep -q "## Teammate Mode"; then
   echo "    FAIL: Missing '## Teammate Mode' section in audit skill"
   proof1_ok=false
 fi
-if ! echo "$audit_content" | grep -q "audit_criteria.md"; then
-  echo "    FAIL: Missing audit_criteria.md reference in teammate mode"
+# Scope criteria and assessment checks to the Teammate Mode section
+teammate_section=$(awk '/^## Teammate Mode/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$AUDIT_SKILL")
+if ! echo "$teammate_section" | grep -q "audit_criteria.md"; then
+  echo "    FAIL: Missing audit_criteria.md reference in teammate mode section"
   proof1_ok=false
 fi
-if ! echo "$audit_content" | grep -q "STRONG/WEAK/HOLLOW"; then
-  echo "    FAIL: Missing STRONG/WEAK/HOLLOW in teammate mode"
+if ! (echo "$teammate_section" | grep -q "STRONG" && echo "$teammate_section" | grep -q "WEAK" && echo "$teammate_section" | grep -q "HOLLOW"); then
+  echo "    FAIL: Missing STRONG/WEAK/HOLLOW assessment levels in teammate mode section"
   proof1_ok=false
 fi
 
@@ -81,20 +83,19 @@ if ! echo "$build_content" | grep -q "## Teammate Mode"; then
   echo "    FAIL: Missing '## Teammate Mode' section in build skill"
   proof3_ok=false
 fi
-if ! echo "$build_content" | grep -q "purlin-auditor"; then
-  echo "    FAIL: Missing purlin-auditor reference in build teammate mode"
+# Extract the build skill's Teammate Mode section
+build_teammate=$(awk '/^## Teammate Mode/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$BUILD_SKILL")
+if ! echo "$build_teammate" | grep -q "purlin-auditor"; then
+  echo "    FAIL: Missing purlin-auditor reference in build teammate mode section"
   proof3_ok=false
 fi
-# Check for fix + message back protocol
-if ! echo "$build_content" | grep -q "Fix the test"; then
-  # Also accept "Fix the test" or "fix" in the teammate section
-  if ! echo "$build_content" | grep -qi "fix.*proof\|proof.*fix"; then
-    echo "    FAIL: Missing fix instruction in build teammate mode"
-    proof3_ok=false
-  fi
+# Check for fix + message back protocol within teammate section
+if ! echo "$build_teammate" | grep -qi "fix.*proof\|proof.*fix\|Fix the test"; then
+  echo "    FAIL: Missing fix instruction in build teammate mode section"
+  proof3_ok=false
 fi
-if ! echo "$build_content" | grep -qi "message.*auditor\|auditor.*message\|Re-audit"; then
-  echo "    FAIL: Missing message-back-to-auditor instruction"
+if ! echo "$build_teammate" | grep -qi "message.*auditor\|auditor.*message\|Re-audit"; then
+  echo "    FAIL: Missing message-back-to-auditor in build teammate mode section"
   proof3_ok=false
 fi
 
@@ -151,12 +152,18 @@ echo "  --- PROOF-6: Verify Step 4e has teammate mode ---"
 verify_content=$(cat "$VERIFY_SKILL")
 proof6_ok=true
 
-if ! echo "$verify_content" | grep -q "purlin-auditor"; then
-  echo "    FAIL: Missing purlin-auditor reference in verify skill"
+# Extract the verify skill's Teammate Mode section (or Step 4e block)
+verify_teammate=$(awk '/^## Teammate Mode/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$VERIFY_SKILL")
+# If no dedicated section, fall back to Step 4e content
+if [[ -z "$verify_teammate" ]]; then
+  verify_teammate=$(awk '/Step 4e|4e\./,/^(## |Step [0-9])/' "$VERIFY_SKILL")
+fi
+if ! echo "$verify_teammate" | grep -q "purlin-auditor"; then
+  echo "    FAIL: Missing purlin-auditor reference in verify teammate/Step 4e section"
   proof6_ok=false
 fi
-if ! echo "$verify_content" | grep -qi "integrity score"; then
-  echo "    FAIL: Missing integrity score reference in verify teammate mode"
+if ! echo "$verify_teammate" | grep -qi "integrity score"; then
+  echo "    FAIL: Missing integrity score reference in verify teammate/Step 4e section"
   proof6_ok=false
 fi
 

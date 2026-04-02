@@ -24,9 +24,14 @@ class TestPurlinReferences:
     @pytest.mark.proof("purlin_references", "PROOF-1", "RULE-1")
     def test_spec_format_required_sections(self):
         content = _read(os.path.join(FORMATS, 'spec_format.md'))
-        assert '## What it does' in content
-        assert '## Rules' in content
-        assert '## Proof' in content
+        # Scope to the Required Sections block
+        m = re.search(r'## Required Sections(.*?)(?=^## |\Z)', content,
+                       re.MULTILINE | re.DOTALL)
+        assert m, "Missing '## Required Sections' heading in spec_format.md"
+        section = m.group(1)
+        assert '## What it does' in section
+        assert '## Rules' in section
+        assert '## Proof' in section
         assert re.search(r'RULE-\d+', content)
 
     @pytest.mark.proof("purlin_references", "PROOF-2", "RULE-2")
@@ -49,6 +54,8 @@ class TestPurlinReferences:
         assert '_invariants/' in content
         assert '> Source:' in content
         assert '> Pinned:' in content
+        assert re.search(r'[Ss]ync|purlin:invariant', content), \
+            "Missing sync protocol documentation"
 
     @pytest.mark.proof("purlin_references", "PROOF-5", "RULE-5")
     def test_anchor_format_eight_prefixes(self):
@@ -61,34 +68,52 @@ class TestPurlinReferences:
     @pytest.mark.proof("purlin_references", "PROOF-6", "RULE-6")
     def test_hard_gates_exactly_two(self):
         content = _read(os.path.join(REFS, 'hard_gates.md'))
-        assert 'Invariant Protection' in content or \
-               ('Invariant' in content and 'Protection' in content)
-        assert 'Proof Coverage' in content or \
-               ('Proof' in content and 'Coverage' in content)
+        assert 'Invariant Protection' in content, \
+            "Missing 'Invariant Protection' gate name"
+        assert 'Proof Coverage' in content, \
+            "Missing 'Proof Coverage' gate name"
         gate_headers = re.findall(r'^## Gate \d+', content, re.MULTILINE)
         assert len(gate_headers) == 2
 
     @pytest.mark.proof("purlin_references", "PROOF-7", "RULE-7")
     def test_commit_conventions_eight_prefixes(self):
         content = _read(os.path.join(REFS, 'commit_conventions.md'))
+        # Extract table/list rows to avoid matching prefixes in prose
+        rows = [l for l in content.splitlines()
+                if l.strip().startswith('|') or l.strip().startswith('- `')]
+        row_text = '\n'.join(rows)
         for prefix in ('spec', 'feat', 'fix', 'test',
                         'verify', 'invariant', 'chore', 'docs'):
-            assert prefix in content, f"Missing commit prefix: {prefix}"
+            assert prefix in row_text, \
+                f"Missing commit prefix '{prefix}' in table/list rows"
 
     @pytest.mark.proof("purlin_references", "PROOF-8", "RULE-8")
     def test_purlin_commands_categories_and_skills(self):
         content = _read(os.path.join(REFS, 'purlin_commands.md'))
-        for category in ('Authoring', 'Building', 'Reporting', 'Project'):
+        for category in ('Authoring', 'Building', 'Quality', 'Reporting', 'Project'):
             assert category in content, f"Missing category: {category}"
-        skills = set(re.findall(r'`(purlin:[\w-]+)`', content))
-        assert len(skills) >= 12, f"Expected >= 12 skills, found {len(skills)}: {skills}"
+        expected_skills = {
+            'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
+            'purlin:unit-test', 'purlin:verify', 'purlin:audit',
+            'purlin:status', 'purlin:find', 'purlin:changelog',
+            'purlin:config', 'purlin:init', 'purlin:invariant',
+            'purlin:help',
+        }
+        skills = re.findall(r'`(purlin:[\w-]+)`', content)
+        found = set(skills)
+        assert found == expected_skills, \
+            f"Skill mismatch: missing={expected_skills - found}, extra={found - expected_skills}"
 
     @pytest.mark.proof("purlin_references", "PROOF-9", "RULE-9")
     def test_spec_quality_guide_coverage(self):
         content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
         assert re.search(r'5.{1,5}10', content), "Missing 5-10 rules guidance"
         assert 'FORBIDDEN' in content
-        assert re.search(r'[Tt]ier', content)
+        # Verify tier assignment is documented as a dedicated section/topic
+        assert re.search(r'(?i)##.*tier|tier\s+assign', content), \
+            "Missing tier assignment section heading or guidance"
+        assert '@slow' in content, "Missing @slow tier tag documentation"
+        assert '@e2e' in content, "Missing @e2e tier tag documentation"
 
     @pytest.mark.proof("purlin_references", "PROOF-10", "RULE-10")
     def test_quality_guide_test_failure_diagnosis(self):
@@ -103,3 +128,15 @@ class TestPurlinReferences:
         content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
         assert 'Audience-Appropriate Language' in content, \
             "Missing Audience-Appropriate Language section"
+        # Verify section contains at least one artifact-to-audience mapping
+        m = re.search(
+            r'Audience-Appropriate Language(.*?)(?=^## |\Z)', content,
+            re.MULTILINE | re.DOTALL
+        )
+        assert m, "Could not extract Audience-Appropriate Language section"
+        section_body = m.group(1)
+        # Must map at least one artifact type to its reader
+        assert re.search(r'(?i)(rules|specs|proofs|proof desc)', section_body), \
+            "Section must mention at least one artifact type (Rules, Specs, Proofs)"
+        assert re.search(r'(?i)(agent|human|developer|reader)', section_body), \
+            "Section must mention at least one audience (agent, human, developer)"

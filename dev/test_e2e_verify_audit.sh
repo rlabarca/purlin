@@ -211,12 +211,14 @@ fi
 echo "  --- Phase B: Audit (match) ---"
 
 VHASH_B=$(compute_vhash "$TMPDIR")
+# Read receipt from disk and compare (not just in-memory vhash)
+receipt_stored_vhash=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH'))['vhash'])")
 phase_b_ok=false
-if [[ "$VHASH_B" == "$VHASH_A" ]]; then
-  echo "    Phase B PASS: vhash matches receipt ($VHASH_B == $VHASH_A)"
+if [[ "$VHASH_B" == "$receipt_stored_vhash" ]]; then
+  echo "    Phase B PASS: vhash matches receipt on disk ($VHASH_B == $receipt_stored_vhash)"
   phase_b_ok=true
 else
-  echo "    Phase B FAIL: vhash mismatch ($VHASH_B != $VHASH_A)"
+  echo "    Phase B FAIL: vhash mismatch with receipt ($VHASH_B != $receipt_stored_vhash)"
 fi
 
 if $phase_b_ok; then
@@ -246,12 +248,14 @@ open('$TMPDIR/specs/auth/test_feature.md', 'w').write(content)
 (cd "$TMPDIR" && git add -A && git commit -q -m "add RULE-4")
 
 VHASH_C=$(compute_vhash "$TMPDIR")
+# Read receipt from disk — stale receipt should have different vhash
+receipt_stale_vhash=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH'))['vhash'])")
 phase_c_ok=false
-if [[ "$VHASH_C" != "$VHASH_A" ]]; then
-  echo "    Phase C PASS: vhash mismatch detected ($VHASH_C != $VHASH_A)"
+if [[ "$VHASH_C" != "$receipt_stale_vhash" ]]; then
+  echo "    Phase C PASS: vhash mismatch detected with stale receipt ($VHASH_C != $receipt_stale_vhash)"
   phase_c_ok=true
 else
-  echo "    Phase C FAIL: vhash should differ after adding RULE-4 ($VHASH_C == $VHASH_A)"
+  echo "    Phase C FAIL: vhash should differ from stale receipt ($VHASH_C == $receipt_stale_vhash)"
 fi
 
 if $phase_c_ok; then
@@ -282,10 +286,10 @@ if [[ "$VHASH_D" != "$VHASH_A" ]]; then
   phase_d_vhash_differs=true
 fi
 
-# Audit: recompute and compare to new receipt
-VHASH_D2=$(compute_vhash "$TMPDIR")
+# Audit: read the new receipt from disk and compare
+receipt_d_vhash=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH_D'))['vhash'])")
 phase_d_audit_matches=false
-if [[ "$VHASH_D2" == "$VHASH_D" ]]; then
+if [[ "$receipt_d_vhash" == "$VHASH_D" ]]; then
   phase_d_audit_matches=true
 fi
 
@@ -295,7 +299,7 @@ if $phase_d_vhash_differs && $phase_d_audit_matches; then
   phase_d_ok=true
 else
   echo "    Phase D FAIL: vhash_differs=$phase_d_vhash_differs audit_matches=$phase_d_audit_matches"
-  echo "      VHASH_A=$VHASH_A VHASH_D=$VHASH_D VHASH_D2=$VHASH_D2"
+  echo "      VHASH_A=$VHASH_A VHASH_D=$VHASH_D receipt_d_vhash=$receipt_d_vhash"
 fi
 
 if $phase_d_ok; then

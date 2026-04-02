@@ -44,20 +44,25 @@ class TestPurlinAgent:
         assert 'Do the work' in loop
         assert 'sync_status' in loop
         assert 'Follow' in loop
-        assert 'Ship' in loop or 'verify' in loop
+        assert 'Ship' in loop
 
     @pytest.mark.proof("purlin_agent", "PROOF-3", "RULE-3")
     def test_specs_section_template(self):
         content = _read()
         assert '## Specs' in content
         # Extract between ## Specs and ## Proof Markers (next real section)
-        # Simple index-based extraction avoids regex matching headings inside code blocks
         start = content.index('## Specs')
         end = content.index('## Proof Markers')
         section = content[start:end]
-        assert '## What it does' in section
-        assert '## Rules' in section
-        assert '## Proof' in section
+        # Find template inside a fenced code block (``` block)
+        code_blocks = re.findall(r'```[^\n]*\n(.*?)```', section, re.DOTALL)
+        template_text = '\n'.join(code_blocks)
+        assert '## What it does' in template_text, \
+            "'## What it does' not found inside a code block template"
+        assert '## Rules' in template_text, \
+            "'## Rules' not found inside a code block template"
+        assert '## Proof' in template_text, \
+            "'## Proof' not found inside a code block template"
 
     @pytest.mark.proof("purlin_agent", "PROOF-4", "RULE-4")
     def test_proof_markers_three_frameworks(self):
@@ -67,9 +72,9 @@ class TestPurlinAgent:
                                   re.MULTILINE | re.DOTALL)
         assert markers_match
         section = markers_match.group(1)
-        assert 'pytest' in section.lower() or 'pytest:' in section
-        assert 'Jest' in section or 'jest:' in section
-        assert 'Shell' in section or 'shell:' in section
+        for fw in ('pytest', 'Jest', 'Shell'):
+            assert re.search(rf'\*\*{fw}:', section, re.IGNORECASE), \
+                f"Missing framework subsection for {fw} in ## Proof Markers"
 
     @pytest.mark.proof("purlin_agent", "PROOF-5", "RULE-5")
     def test_hard_gates_exactly_two(self):
@@ -79,9 +84,13 @@ class TestPurlinAgent:
                                 re.MULTILINE | re.DOTALL)
         assert gates_match
         section = gates_match.group(1)
-        assert 'only 2' in content or 'only 2' in section
-        assert re.search(r'[Ii]nvariant\s+[Pp]rotection', section)
-        assert re.search(r'[Pp]roof\s+[Cc]overage', section)
+        assert re.search(r'[Ii]nvariant\s+[Pp]rotection', section), \
+            "Hard Gates section missing 'Invariant protection'"
+        assert re.search(r'[Pp]roof\s+[Cc]overage', section), \
+            "Hard Gates section missing 'Proof coverage'"
+        gates = re.findall(r'^\d+\.', section, re.MULTILINE)
+        assert len(gates) == 2, \
+            f"Expected exactly 2 gates, found {len(gates)}"
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
     def test_implicit_routing(self):
@@ -91,10 +100,18 @@ class TestPurlinAgent:
                                   re.MULTILINE | re.DOTALL)
         assert routing_match
         section = routing_match.group(1)
+        # Extract routing entry lines (bullets with → or ->)
+        routing_lines = [l for l in section.splitlines()
+                         if '\u2192' in l or '->' in l]
+        assert len(routing_lines) >= 5, \
+            f"Expected at least 5 routing entries, found {len(routing_lines)}"
+        # Each keyword must appear as a source term (before the arrow) in a routing line
         for keyword in ('test', 'status', 'changelog', 'spec', 'verify',
                         'engineer', 'qa', 'team'):
-            assert keyword.lower() in section.lower(), \
-                f"Missing routing for: {keyword}"
+            found = any(keyword.lower() in l.lower().split('\u2192')[0].split('->')[0]
+                        for l in routing_lines)
+            assert found, \
+                f"Missing routing source for: {keyword} (must appear before → arrow)"
 
     @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
     def test_skills_table_twelve_entries(self):
@@ -104,9 +121,22 @@ class TestPurlinAgent:
                                  re.MULTILINE | re.DOTALL)
         assert skills_match
         section = skills_match.group(1)
-        # Count table rows with purlin: skills (excluding header/separator)
-        rows = re.findall(r'^\|.*`purlin:\w[\w-]*`.*\|', section, re.MULTILINE)
-        assert len(rows) == 13, f"Expected 13 skill rows, found {len(rows)}"
+        # Extract skill names from table rows
+        rows = re.findall(r'^\|.*`(purlin:[\w-]+)`.*\|', section, re.MULTILINE)
+        assert len(rows) == 13, f"Expected 13 skill rows, found {len(rows)}: {rows}"
+        expected_skills = {
+            'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
+            'purlin:unit-test', 'purlin:verify', 'purlin:audit',
+            'purlin:status', 'purlin:find', 'purlin:changelog',
+            'purlin:config', 'purlin:init', 'purlin:invariant',
+            'purlin:help',
+        }
+        assert set(rows) == expected_skills, \
+            f"Skill mismatch: missing={expected_skills - set(rows)}, extra={set(rows) - expected_skills}"
+        # Verify each row has a non-empty purpose column (at least 2 pipe-delimited cells)
+        full_rows = re.findall(r'^\|.*`purlin:[\w-]+`.*\|(.+)\|', section, re.MULTILINE)
+        for i, purpose in enumerate(full_rows):
+            assert purpose.strip(), f"Row {i+1} has empty purpose column"
 
     @pytest.mark.proof("purlin_agent", "PROOF-8", "RULE-8")
     def test_references_table_eight_entries(self):
@@ -120,3 +150,8 @@ class TestPurlinAgent:
         rows = [l for l in section.strip().splitlines()
                 if l.startswith('|') and '---' not in l and 'Document' not in l]
         assert len(rows) == 11, f"Expected 11 reference rows, found {len(rows)}"
+        # Verify each row has a non-empty topic column
+        for row in rows:
+            cells = [c.strip() for c in row.split('|') if c.strip()]
+            assert len(cells) >= 2, f"Row missing topic column: {row}"
+            assert cells[1], f"Empty topic in row: {row}"

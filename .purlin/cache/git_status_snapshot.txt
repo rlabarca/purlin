@@ -1,6 +1,11 @@
 M .purlin/cache/feature_status.json
  M .purlin/cache/status.json
  M .purlin/cache/status_commit_cache.json
- M specs/hooks/session_start.proofs-default.json
- M specs/instructions/purlin_references.proofs-default.json
- M specs/instructions/purlin_skills.proofs-default.json
+ M agents/purlin.md
+ M docs/lifecycle-guide.md
+ M docs/testing-workflow-guide.md
+ M references/purlin_commands.md
+ M skills/init/SKILL.md
+ M skills/verify/SKILL.md
+?? references/audit_criteria.md
+?? skills/audit/

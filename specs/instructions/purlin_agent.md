@@ -23,10 +23,10 @@ Defines the Purlin Agent persona and behavior for Claude Code. Specifies the cor
 ## Proof
 
 - PROOF-1 (RULE-1): Grep `agents/purlin.md` for YAML frontmatter delimiters (`---`); verify `name:`, `description:`, and `model:` fields exist between them
-- PROOF-2 (RULE-2): Grep `agents/purlin.md` for `## Core Loop`; verify it contains 4 numbered items starting with "Do the work", "Call `sync_status`", "Follow", "Ship"
+- PROOF-2 (RULE-2): Grep `agents/purlin.md` for `## Core Loop`; verify it contains exactly 4 numbered items and the keywords "Do the work", "sync_status", "Follow", and "Ship"
 - PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `## What it does`, `## Rules`, `## Proof` within the template
-- PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `pytest:`, `Jest:`, and `Shell:` subsections
-- PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it contains exactly "only 2" and lists "Invariant protection" and "Proof coverage"
+- PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `**pytest:`, `**Jest:`, and `**Shell:` framework subsections
+- PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it lists "Invariant protection" and "Proof coverage" and contains exactly 2 numbered gates
 - PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "changelog", "spec", "verify", "engineer", "QA", and "team"
 - PROOF-7 (RULE-7): Grep `agents/purlin.md` for `## Skills`; count table rows; verify there are 13 skill entries
 - PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 11 reference entries

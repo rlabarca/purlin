@@ -43,8 +43,8 @@ class TestPurlinSkills:
     def test_each_skill_has_usage_section(self):
         for path in _skill_files():
             content = _read(path)
-            assert '## Usage' in content or '## Step' in content, \
-                f"No ## Usage or ## Steps section in {path}"
+            assert '## Usage' in content, \
+                f"No ## Usage section in {path}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-4", "RULE-4")
     def test_skill_name_matches_directory(self):
@@ -58,11 +58,13 @@ class TestPurlinSkills:
 
     @pytest.mark.proof("purlin_skills", "PROOF-5", "RULE-5")
     def test_modify_skills_have_commit_instructions(self):
-        for skill in ('build', 'verify', 'init'):
+        # Skills listed in PROOF-5 description (config excluded — modifies local-only file)
+        for skill in ('build', 'spec', 'unit-test', 'verify', 'init', 'invariant'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
-            assert re.search(r'(?i)commit', content), \
-                f"{skill} skill missing commit instructions"
+            # Assert a positive commit instruction, not just the word "commit"
+            assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
+                f"{skill} skill missing positive commit instruction"
 
     @pytest.mark.proof("purlin_skills", "PROOF-6", "RULE-6")
     def test_mcp_skills_reference_tools(self):
@@ -70,6 +72,7 @@ class TestPurlinSkills:
             'status': 'sync_status',
             'changelog': 'changelog',
             'config': 'purlin_config',
+            'find': 'sync_status',
         }
         for skill, tool_name in checks.items():
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
@@ -84,9 +87,10 @@ class TestPurlinSkills:
             content = _read(path)
             assert 'sync_status' in content, \
                 f"{skill} skill doesn't reference sync_status"
-        build = _read(os.path.join(SKILLS_DIR, 'build', 'SKILL.md'))
-        assert 'not optional' in build, \
-            "build skill doesn't state sync_status is not optional"
+        for skill_name in ('build', 'unit-test'):
+            content = _read(os.path.join(SKILLS_DIR, skill_name, 'SKILL.md'))
+            assert 'not optional' in content, \
+                f"{skill_name} skill doesn't state sync_status is not optional"
 
     @pytest.mark.proof("purlin_skills", "PROOF-8", "RULE-8")
     def test_verify_prohibits_modifying_files(self):
@@ -111,17 +115,21 @@ class TestPurlinSkills:
     @pytest.mark.proof("purlin_skills", "PROOF-11", "RULE-11")
     def test_spec_has_delta_report_structure(self):
         content = _read(os.path.join(SKILLS_DIR, 'spec', 'SKILL.md'))
-        for keyword in ('KEEPING', 'ADDING', 'REMOVING'):
+        for keyword in ('KEEPING', 'ADDING', 'UPDATING', 'REMOVING'):
             assert keyword in content, \
                 f"spec skill missing '{keyword}' in delta report structure"
 
     @pytest.mark.proof("purlin_skills", "PROOF-12", "RULE-12")
     def test_proof_writing_skills_have_tier_review(self):
-        for skill in ('build', 'spec'):
+        for skill in ('build', 'spec', 'spec-from-code'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
-            assert re.search(r'(?i)tier', content), \
-                f"{skill} skill missing tier review requirement"
+            # Must contain a tier-related instruction as a step or heading
+            assert re.search(r'(?i)(tier\s+(assign|review|tag)|review.*tier|assign.*tier)', content), \
+                f"{skill} skill missing tier review step/instruction"
+            # Must also reference the actual tier tags
+            assert re.search(r'@slow|@e2e|default.*tier|tier.*default', content), \
+                f"{skill} skill missing tier tag references (@slow/@e2e/default)"
 
     @pytest.mark.proof("purlin_skills", "PROOF-13", "RULE-13")
     def test_init_add_plugin_validates_by_language(self):
@@ -139,13 +147,21 @@ class TestPurlinSkills:
             "init skill missing local file path source docs"
         assert 'git URL' in content, \
             "init skill missing git URL source docs"
+        # Verify distinct handling: each source type has its own conditional step
+        assert re.search(r'(?i)if source is a local file path', content), \
+            "init skill missing conditional step for local file path handling"
+        assert re.search(r'(?i)if source is a git URL', content), \
+            "init skill missing conditional step for git URL handling"
 
     @pytest.mark.proof("purlin_skills", "PROOF-15", "RULE-15")
     def test_init_list_plugins_labels_builtin_and_custom(self):
         content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
-        assert 'pytest_purlin.py' in content and 'Python/pytest' in content, \
-            "init skill missing pytest_purlin.py → Python/pytest label"
-        assert 'jest_purlin.js' in content and 'JavaScript/Jest' in content, \
-            "init skill missing jest_purlin.js → JavaScript/Jest label"
+        # Verify pytest pair appears on the same line or table row
+        assert re.search(r'pytest_purlin\.py.*Python/pytest|Python/pytest.*pytest_purlin\.py',
+                         content), \
+            "init skill missing pytest_purlin.py → Python/pytest association on same line"
+        assert re.search(r'jest_purlin\.js.*JavaScript/Jest|JavaScript/Jest.*jest_purlin\.js',
+                         content), \
+            "init skill missing jest_purlin.js → JavaScript/Jest association on same line"
         assert 'custom' in content, \
             "init skill missing 'custom' label for non-built-in plugins"

@@ -18,7 +18,7 @@ Eight reference documents that define Purlin's formats, conventions, and quality
 - RULE-5: `anchor_format.md` documents all 8 type prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`
 - RULE-6: `hard_gates.md` documents exactly 2 gates: invariant protection and proof coverage
 - RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, invariant, chore, docs
-- RULE-8: `purlin_commands.md` lists all 12 skills grouped by category (Authoring, Building, Reporting, Project)
+- RULE-8: `purlin_commands.md` lists all 13 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
 - RULE-9: `spec_quality_guide.md` includes guidance on writing rules (5-10 per feature), proof descriptions, tier assignment, and FORBIDDEN patterns
 - RULE-10: `spec_quality_guide.md` includes test failure diagnosis guidance with the three categories (code bug, test bug, spec drift) and assertion integrity rules
 - RULE-11: `spec_quality_guide.md` includes audience-appropriate language guidance mapping artifacts to their intended readers
@@ -32,7 +32,7 @@ Eight reference documents that define Purlin's formats, conventions, and quality
 - PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`; verify all appear in the type prefix table
 - PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Invariant protection" and "Proof coverage"; verify both appear and no third gate is defined
 - PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes: `spec`, `feat`, `fix`, `test`, `verify`, `invariant`, `chore`, `docs`; verify all 8 appear
-- PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Reporting`, `Project`; verify all 4 category headers exist. Count skill entries; verify 12
+- PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Quality`, `Reporting`, `Project`; verify all 5 category headers exist. Count skill entries; verify 13
 - PROOF-9 (RULE-9): Grep `references/spec_quality_guide.md` for "5–10 rules", "FORBIDDEN", "Tier"; verify the guide covers rule count guidance, forbidden patterns, and tier assignment
 - PROOF-10 (RULE-10): Grep `references/spec_quality_guide.md` for `Code bug`, `Test bug`, `Spec drift`, and `Assertion Integrity`; verify all appear
 - PROOF-11 (RULE-11): Grep `references/spec_quality_guide.md` for `Audience-Appropriate Language`; verify the section exists

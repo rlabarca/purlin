@@ -89,7 +89,7 @@ fi
 export TOOL_INPUT_FILE_PATH="specs/_invariants/i_test.md"
 rm -f "$TMPDIR_ROOT/.purlin/runtime/invariant_write_lock"
 stderr_out=$(bash "$GATE_SCRIPT" 2>&1 1>/dev/null) || true
-if [[ "$stderr_out" == *"purlin:invariant sync"* ]]; then
+if [[ "$stderr_out" == *"Use purlin:invariant sync to update from the external source"* ]]; then
     echo "  PASS: stderr corrective action"
     purlin_proof "gate_hook" "PROOF-6" "RULE-6" pass "block message includes purlin:invariant sync on stderr"
 else

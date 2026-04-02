@@ -54,6 +54,10 @@ class TestFindProjectRoot:
         os.makedirs(bare)
         result = find_project_root(start_dir=bare)
         assert result == os.path.abspath(os.getcwd())
+        # Verify fallback was used: bare is not under result (proves climbing
+        # didn't find a .purlin/ ancestor of bare)
+        assert not bare.startswith(result), \
+            "Result is an ancestor of bare — climbing found .purlin/, not fallback"
 
 
 class TestResolveConfig:
@@ -121,7 +125,13 @@ class TestUpdateConfig:
         assert os.path.exists(local_path)
         with open(local_path) as f:
             assert json.load(f)["newkey"] == "newval"
+        # Verify no temp file remains (postcondition of atomic write)
         assert not os.path.exists(local_path + '.tmp')
+        # Verify os.replace is used in the source (structural check for atomicity)
+        import inspect
+        source = inspect.getsource(update_config)
+        assert 'os.replace' in source, \
+            "update_config must use os.replace for atomic replacement"
 
     @pytest.mark.proof("config_engine", "PROOF-9", "RULE-9")
     def test_preserves_existing_keys(self):

@@ -25,11 +25,19 @@ class TestSpecFormatReference:
     def test_format_documents_three_sections(self):
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats', 'spec_format.md')) as f:
             content = f.read()
-        assert '## What it does' in content
-        assert '## Rules' in content
-        assert '## Proof' in content
-        # Verify they're documented as required/mandatory
-        assert re.search(r'(?i)(required|must|mandatory)', content)
+        # Find the Required Sections area specifically
+        req_match = re.search(
+            r'## Required Sections\s*\n(.*?)(?=^## |\Z)', content,
+            re.MULTILINE | re.DOTALL
+        )
+        assert req_match, "No '## Required Sections' heading in spec_format.md"
+        req_section = req_match.group(1)
+        assert '## What it does' in req_section, \
+            "'## What it does' not listed in Required Sections"
+        assert '## Rules' in req_section, \
+            "'## Rules' not listed in Required Sections"
+        assert '## Proof' in req_section, \
+            "'## Proof' not listed in Required Sections"
 
 
 class TestSpecFormatEnforcement:
@@ -59,6 +67,8 @@ class TestSpecFormatEnforcement:
         ))
         result = purlin_server.sync_status(self.project_root)
         assert 'WARNING' in result
+        assert 'not numbered' in result, \
+            f"WARNING doesn't mention unnumbered rules: {result}"
 
     @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
     def test_rule_without_proof_shows_uncovered(self):
@@ -91,20 +101,38 @@ class TestSpecFormatEnforcement:
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert 'i_base' in result
+        assert 'i_base/RULE-1' in result, \
+            f"Required spec's rules not included in coverage: {result}"
 
     @pytest.mark.proof("schema_spec_format", "PROOF-6", "RULE-6")
     def test_scope_metadata_parsed(self):
+        # Create a feature with Scope and an anchor with overlapping scope
+        # so sync_status exercises the scope in its overlap suggestion
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
-            '> Scope: scripts/gate.sh\n\n'
+            '> Scope: scripts/gate.sh, src/app.py\n\n'
             '## What it does\nTesting.\n\n'
             '## Rules\n- RULE-1: Must work\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
+        self._write_spec('api_conv', (
+            '# Anchor: api_conv\n\n'
+            '> Scope: scripts/\n\n'
+            '## What it does\nConventions.\n\n'
+            '## Rules\n- RULE-1: Conv\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Check\n'
+        ), )
+        # Verify the scope was correctly parsed as a comma-separated list
         features = purlin_server._scan_specs(self.project_root)
         assert 'test_feat' in features
-        assert 'scripts/gate.sh' in features['test_feat']['scope']
+        scope = features['test_feat']['scope']
+        assert scope == ['scripts/gate.sh', 'src/app.py'], \
+            f"Scope should be parsed as comma-separated list, got: {scope}"
+        # Verify sync_status uses the parsed scope in its output (overlap suggestion)
+        result = purlin_server.sync_status(self.project_root)
+        assert 'test_feat' in result, "Feature should appear in sync_status output"
+        assert 'api_conv' in result and 'scope' in result.lower(), \
+            f"sync_status should use scope for overlap suggestion. Got: {result}"
 
 
 class TestSpecFormatConventions:

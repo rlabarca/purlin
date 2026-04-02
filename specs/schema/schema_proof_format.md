@@ -22,7 +22,7 @@ Defines the JSON schema for proof files emitted by test runners and the merge be
 - PROOF-1 (RULE-1): Create a proof file at `specs/test/foo.proofs-default.json`; run sync_status; verify it reads the file and associates it with the `foo` spec @slow
 - PROOF-2 (RULE-2): Validate a proof JSON file against the required fields; verify all 7 fields (`feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`) are present in each proof entry
 - PROOF-3 (RULE-3): Create a proof entry with `status: "error"`; run sync_status; verify it is not counted as a passing proof @slow
-- PROOF-4 (RULE-4): Grep `scripts/proof/` for tier validation; verify only `default`, `slow`, and `e2e` are recognized as valid automated tiers
-- PROOF-5 (RULE-5): Run a proof plugin for feature "A" when the file already contains entries for feature "B"; verify feature "B" entries are preserved and feature "A" entries are replaced @slow
+- PROOF-4 (RULE-4): Scan all real `*.proofs-*.json` files; verify every tier value (top-level and per-entry) is in the valid set {default, slow, e2e}. Verify `spec_format.md` documents @slow and @e2e
+- PROOF-5 (RULE-5): Pre-seed a proof file with feature B entries; run the real pytest proof plugin for feature A via subprocess; verify feature B entries are preserved and feature A entries are added @slow
 - PROOF-6 (RULE-6): Grep `.gitignore` for `*.proofs-*.json`; verify no gitignore rule excludes proof files
 - PROOF-7 (RULE-7): Grep `references/formats/proofs_format.md` for `@manual`; verify manual stamp format is `@manual(<email>, <date>, <commit_sha>)`

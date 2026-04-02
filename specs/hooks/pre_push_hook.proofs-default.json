@@ -5,7 +5,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "FAIL proof blocks push with exit 1 and PUSH BLOCKED message",
       "status": "pass",
       "tier": "default"
@@ -14,7 +14,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "NO PROOF allows push with exit 0 and partial coverage warning",
       "status": "pass",
       "tier": "default"
@@ -23,7 +23,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "no specs directory allows push silently with exit 0",
       "status": "pass",
       "tier": "default"
@@ -32,7 +32,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "all proofs pass allows push with exit 0",
       "status": "pass",
       "tier": "default"
@@ -41,7 +41,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "detects test framework from config (pytest and jest)",
       "status": "pass",
       "tier": "default"
@@ -50,7 +50,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "hook runs only default-tier tests (pytest -m not slow)",
       "status": "pass",
       "tier": "default"
@@ -59,7 +59,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "output shows partial coverage and PUSH BLOCKED sections",
       "status": "pass",
       "tier": "default"
@@ -68,7 +68,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-9",
       "rule": "RULE-8",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "strict mode blocks push when features are not READY",
       "status": "pass",
       "tier": "default"
@@ -77,7 +77,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-10",
       "rule": "RULE-8",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "strict mode allows push when all features READY",
       "status": "pass",
       "tier": "default"
@@ -86,7 +86,7 @@
       "feature": "pre_push_hook",
       "id": "PROOF-8",
       "rule": "RULE-1",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "full lifecycle: FAIL\u2192blocks, fix\u2192warns, complete\u2192allows",
       "status": "pass",
       "tier": "default"

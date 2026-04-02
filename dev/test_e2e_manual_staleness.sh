@@ -107,13 +107,22 @@ echo "  --- Phase A: Fresh manual stamp → PASS ---"
 
 STATUS_A=$(run_sync_status "$TMPDIR")
 
+STAMP_DATE_A="2026-04-01"
 phase_a_ok=false
 # The manual proof line should show PASS with the verified date
-if echo "$STATUS_A" | grep -q "PASS.*manual.*verified.*2026-04-01"; then
-  echo "    Phase A PASS: manual proof shows PASS with verified date"
-  phase_a_ok=true
+# PASS (not STALE) proves the SHA freshness check passed internally
+if echo "$STATUS_A" | grep -q "PASS.*manual.*verified.*${STAMP_DATE_A}"; then
+  # Also verify NOT stale — proves the SHA comparison evaluated correctly
+  if ! echo "$STATUS_A" | grep -q "MANUAL PROOF STALE"; then
+    echo "    Phase A PASS: manual proof shows PASS (not STALE) with verified date ${STAMP_DATE_A}"
+    phase_a_ok=true
+  else
+    echo "    Phase A FAIL: manual proof shows STALE despite matching SHA"
+    echo "    Status output:"
+    echo "$STATUS_A"
+  fi
 else
-  echo "    Phase A FAIL: expected manual proof PASS with verified date"
+  echo "    Phase A FAIL: expected manual proof PASS with verified date ${STAMP_DATE_A}"
   echo "    Status output:"
   echo "$STATUS_A"
 fi
@@ -163,6 +172,7 @@ fi
 echo "  --- Phase C: Re-stamp → PASS ---"
 
 NEW_SHA=$(cd "$TMPDIR" && git rev-parse --short=7 HEAD)
+STAMP_DATE_C=$(date +%Y-%m-%d)
 
 # Update the manual stamp with the new commit SHA
 cat > "$TMPDIR/specs/auth/login.md" << SPEC
@@ -182,7 +192,7 @@ User login feature.
 ## Proof
 
 - PROOF-1 (RULE-1): POST /login with valid creds; verify token returned @e2e
-- PROOF-2 (RULE-2): Visual layout matches design @manual(dev@test.com, 2026-04-02, ${NEW_SHA})
+- PROOF-2 (RULE-2): Visual layout matches design @manual(dev@test.com, ${STAMP_DATE_C}, ${NEW_SHA})
 SPEC
 
 (cd "$TMPDIR" && git add -A && git commit -q -m "re-stamp manual proof")
@@ -190,7 +200,7 @@ SPEC
 STATUS_C=$(run_sync_status "$TMPDIR")
 
 phase_c_ok=false
-if echo "$STATUS_C" | grep -q "PASS.*manual.*verified.*2026-04-02"; then
+if echo "$STATUS_C" | grep -q "PASS.*manual.*verified.*${STAMP_DATE_C}"; then
   # Also verify NOT stale
   if ! echo "$STATUS_C" | grep -q "MANUAL PROOF STALE"; then
     echo "    Phase C PASS: re-stamped manual proof shows PASS again"

@@ -187,16 +187,17 @@ has_own=false
 has_required=false
 has_global=false
 
-echo "$STATUS_A" | grep -q "(own)" && has_own=true
-echo "$STATUS_A" | grep -q "(required)" && has_required=true
-echo "$STATUS_A" | grep -q "(global)" && has_global=true
+# Verify labels appear on the correct rule lines (not just anywhere in output)
+echo "$STATUS_A" | grep -q "RULE-1.*\(own\)\|RULE-2.*\(own\)" && has_own=true
+echo "$STATUS_A" | grep -q "api_conventions/RULE.*\(required\)" && has_required=true
+echo "$STATUS_A" | grep -q "i_security_no_eval/RULE.*\(global\)" && has_global=true
 
 phase_a2_ok=false
 if $has_own && $has_required && $has_global; then
-  echo "    Phase A2 PASS: labels found (own=$has_own, required=$has_required, global=$has_global)"
+  echo "    Phase A2 PASS: labels on correct rule lines (own=$has_own, required=$has_required, global=$has_global)"
   phase_a2_ok=true
 else
-  echo "    Phase A2 FAIL: missing labels (own=$has_own, required=$has_required, global=$has_global)"
+  echo "    Phase A2 FAIL: missing labels on correct lines (own=$has_own, required=$has_required, global=$has_global)"
   echo "    Status output:"
   echo "$STATUS_A"
 fi

@@ -47,8 +47,9 @@ assert ss[0]['matcher'] == 'startup|clear|compact', f'Wrong matcher: {ss[0][\"ma
 assert 'session-start.sh' in ss[0]['hooks'][0]['command'], f'Wrong command: {ss[0][\"hooks\"][0][\"command\"]}'
 "
 }
+PREV_FAIL=$FAIL
 run_test "hooks.json SessionStart config" test_hooks_json_config
-purlin_proof "session_start" "PROOF-1" "RULE-1" "$([ $FAIL -eq 0 ] && echo pass || echo fail)" "hooks.json SessionStart config matches spec"
+purlin_proof "session_start" "PROOF-1" "RULE-1" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "hooks.json SessionStart config matches spec"
 
 # PROOF-2 (RULE-2): Creates lock file, runs script, verifies deletion
 test_removes_lock_file() {
@@ -95,16 +96,29 @@ PREV_FAIL=$FAIL
 run_test "exits 0 when lock file missing" test_no_lock_file
 purlin_proof "session_start" "PROOF-4" "RULE-4" "$([ $FAIL -eq $PREV_FAIL ] && echo pass || echo fail)" "no-op when lock file does not exist"
 
-# PROOF-5 (RULE-5): Verify exit code 0 under normal conditions
+# PROOF-5 (RULE-5): Verify exit code 0 under normal and adverse conditions
 test_always_exits_0() {
+  # Case 1: lock file present (normal removal)
   local tmpdir
   tmpdir=$(mktemp -d)
   mkdir -p "$tmpdir/.purlin/runtime"
   echo '{"target": "i_test.md"}' > "$tmpdir/.purlin/runtime/invariant_write_lock"
   PROJECT_ROOT="$tmpdir" bash "$SESSION_SCRIPT"
-  local rc=$?
+  local rc1=$?
   rm -rf "$tmpdir"
-  [[ $rc -eq 0 ]]
+  [[ $rc1 -eq 0 ]] || return 1
+
+  # Case 2: read-only runtime directory (adverse condition)
+  local tmpdir2
+  tmpdir2=$(mktemp -d)
+  mkdir -p "$tmpdir2/.purlin/runtime"
+  echo '{"target": "i_test.md"}' > "$tmpdir2/.purlin/runtime/invariant_write_lock"
+  chmod a-w "$tmpdir2/.purlin/runtime"
+  PROJECT_ROOT="$tmpdir2" bash "$SESSION_SCRIPT"
+  local rc2=$?
+  chmod u+w "$tmpdir2/.purlin/runtime"
+  rm -rf "$tmpdir2"
+  [[ $rc2 -eq 0 ]]
 }
 PREV_FAIL=$FAIL
 run_test "always exits 0" test_always_exits_0

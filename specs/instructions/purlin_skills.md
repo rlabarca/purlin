@@ -32,14 +32,14 @@ Thirteen skill definition files that define user-facing Purlin commands. Each sk
 - PROOF-2 (RULE-2): Glob `skills/*/SKILL.md`; verify exactly 13 files are returned
 - PROOF-3 (RULE-3): For each `skills/*/SKILL.md`, grep for `## Usage`; verify the section exists
 - PROOF-4 (RULE-4): For each `skills/*/SKILL.md`, extract the `name:` from frontmatter and the directory name; verify they match
-- PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md` for `git commit` or `commit`; verify each contains commit-related instructions
-- PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/changelog/SKILL.md` for `changelog`; grep `skills/config/SKILL.md` for `purlin_config`; verify each references its MCP tool
+- PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/spec/SKILL.md`, `skills/unit-test/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md`, `skills/invariant/SKILL.md` for `commit`; verify each contains commit-related instructions
+- PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/changelog/SKILL.md` for `changelog`; grep `skills/config/SKILL.md` for `purlin_config`; grep `skills/find/SKILL.md` for `sync_status`; verify each references its MCP tool
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` and `skills/unit-test/SKILL.md` for `sync_status`; verify both contain the reference. Grep build for "not optional"; verify present.
 - PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
 - PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both are present
 - PROOF-10 (RULE-10): Grep `skills/changelog/SKILL.md` for `git diff`; verify the diff-reading requirement is present
-- PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING` and `ADDING` and `REMOVING`; verify the delta report structure is present
-- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for `tier`; grep `skills/spec/SKILL.md` for `tier`; verify both contain tier review requirements
+- PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
+- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md`, `skills/spec/SKILL.md`, and `skills/spec-from-code/SKILL.md` for `tier`; verify all three contain tier review requirements
 - PROOF-13 (RULE-13): Grep `skills/init/SKILL.md` for the validation table language entries (`Python`, `JavaScript`, `Shell`, `Java`) and the warning text `doesn't look like a standard proof plugin`; verify all present
 - PROOF-14 (RULE-14): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
 - PROOF-15 (RULE-15): Grep `skills/init/SKILL.md` for `pytest_purlin.py` with `Python/pytest`, `jest_purlin.js` with `JavaScript/Jest`, and the label `custom`; verify the labeling table exists

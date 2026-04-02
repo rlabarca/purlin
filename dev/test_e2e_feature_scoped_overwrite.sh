@@ -130,13 +130,21 @@ SPEC
 # ==========================================================================
 echo "  --- Phase A: Write proofs for both features ---"
 
-# Write login proofs
+# Write login proofs first
 write_proof_file "$TMPDIR/specs/auth/login.proofs-default.json" "login" \
   "PROOF-1|RULE-1|pass" \
   "PROOF-2|RULE-2|pass"
 
-# Write signup proofs (separate file)
-write_proof_file "$TMPDIR/specs/auth/signup.proofs-default.json" "signup" \
+# Verify signup proof file does not exist yet (non-interference)
+signup_file="$TMPDIR/specs/auth/signup.proofs-default.json"
+signup_untouched=true
+if [[ -f "$signup_file" ]]; then
+  echo "    WARNING: signup proof file exists before writing signup proofs"
+  signup_untouched=false
+fi
+
+# Now write signup proofs (separate file)
+write_proof_file "$signup_file" "signup" \
   "PROOF-1|RULE-1|pass" \
   "PROOF-2|RULE-2|pass"
 
@@ -150,11 +158,11 @@ echo "$STATUS_A" | grep -q "login: READY" && login_ready=true
 echo "$STATUS_A" | grep -q "signup: READY" && signup_ready=true
 
 phase_a_ok=false
-if $login_ready && $signup_ready; then
-  echo "    Phase A PASS: both login and signup are READY"
+if $login_ready && $signup_ready && $signup_untouched; then
+  echo "    Phase A PASS: both READY, signup untouched before its own write"
   phase_a_ok=true
 else
-  echo "    Phase A FAIL: login_ready=$login_ready signup_ready=$signup_ready"
+  echo "    Phase A FAIL: login_ready=$login_ready signup_ready=$signup_ready signup_untouched=$signup_untouched"
   echo "    Status output:"
   echo "$STATUS_A"
 fi

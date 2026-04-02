@@ -32,15 +32,17 @@ def _read(path):
 
 def _strip_comments(content, ext):
     """Remove comments to avoid false positives."""
-    if ext == '.py':
-        # Remove # comments (not in strings)
-        lines = []
-        for line in content.splitlines():
-            stripped = line.lstrip()
-            if not stripped.startswith('#'):
-                lines.append(line)
-        return '\n'.join(lines)
-    return content
+    lines = []
+    for line in content.splitlines():
+        stripped = line.lstrip()
+        if ext == '.py' and stripped.startswith('#'):
+            continue
+        if ext == '.sh' and stripped.startswith('#'):
+            continue
+        if ext == '.js' and stripped.startswith('//'):
+            continue
+        lines.append(line)
+    return '\n'.join(lines)
 
 
 class TestSecurityPatterns:
@@ -87,11 +89,21 @@ class TestSecurityPatterns:
     @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-5", "RULE-5")
     def test_subprocess_uses_list_args(self):
         call_pattern = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(')
-        string_arg = re.compile(r'subprocess\.\w+\(\s*["\']')
+        # Match subprocess calls where first arg is a string literal
+        string_arg = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(\s*["\']')
+        # Also match subprocess calls where first arg starts with [ (list — expected)
+        list_arg = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(\s*\[')
         for path in _py_files():
-            content = _read(path)
+            content = _strip_comments(_read(path), '.py')
             if not call_pattern.search(content):
                 continue
+            # Check no string literal args
             matches = string_arg.findall(content)
             assert not matches, \
                 f"Found subprocess with string arg in {path}"
+            # Verify all calls use list args (first non-ws char after ( is [)
+            for m in call_pattern.finditer(content):
+                after_paren = content[m.end():m.end()+50].lstrip()
+                assert after_paren.startswith('[') or after_paren.startswith('*'), \
+                    f"subprocess call at {path}:{content[:m.start()].count(chr(10))+1} " \
+                    f"first arg is not a list literal: ...{after_paren[:30]}"

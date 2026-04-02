@@ -62,7 +62,9 @@ import pytest
 def test_it(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  local fname=$(basename "$d/specs/hooks/gate_hook.proofs-default.json")
+  local fpath="$d/specs/hooks/gate_hook.proofs-default.json"
+  [[ -f "$fpath" ]] || { rm -rf "$d"; return 1; }
+  local fname=$(basename "$fpath")
   [[ "$fname" == "gate_hook.proofs-default.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
@@ -161,7 +163,7 @@ test_no_markers() {
 def test_no_marker(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  ! ls "$d/specs/"*.proofs-*.json "$d/specs/a/"*.proofs-*.json 2>/dev/null | grep -q .
+  ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-7" "RULE-7" "no markers no files" test_no_markers
@@ -183,6 +185,8 @@ PY
 import json, sys
 e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
 assert e['feature'] == 'feat'
+assert e['id'] == 'PROOF-1', f'Expected id PROOF-1, got {e[\"id\"]}'
+assert e['rule'] == 'RULE-1', f'Expected rule RULE-1, got {e[\"rule\"]}'
 assert e['tier'] == 'default'
 "
   local rc=$?; rm -rf "$d"; return $rc
@@ -199,15 +203,18 @@ import pytest
 def test_two_args(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
+  # Either no file created, or file created with 0 entries — both valid
   if [[ -f "$d/specs/feat.proofs-default.json" ]]; then
     python3 -c "
 import json, sys
 d = json.load(open('$d/specs/feat.proofs-default.json'))
-assert len(d['proofs']) == 0
+assert len(d['proofs']) == 0, f'Expected 0 proofs, got {len(d[\"proofs\"])}'
 "
-    return $?
+    local rc=$?; rm -rf "$d"; return $rc
   fi
-  return 0  # no file = correctly skipped
+  # No file created — verify no proof files exist anywhere under specs
+  ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
+  local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-9" "RULE-9" "pytest fewer args skipped" test_pytest_skip_short
 
@@ -233,6 +240,7 @@ run "PROOF-10" "RULE-10" "pytest test_file relative" test_pytest_relpath
 
 # PROOF-11 (RULE-11): pytest_configure registers marker and plugin
 test_pytest_configure() {
+  # Unit test: verify function registers marker and plugin via fake objects
   python3 -c "
 import sys, os
 sys.path.insert(0, os.path.join('$PROJECT_ROOT', 'scripts', 'proof'))
@@ -254,8 +262,19 @@ pytest_configure(config)
 assert any('proof' in m[1] for m in config.markers), 'proof marker not registered'
 assert 'purlin_proof' in config.pluginmanager.registered, 'plugin not registered'
 assert isinstance(config.pluginmanager.registered['purlin_proof'], ProofCollector)
-"
-  return $?
+" || return 1
+
+  # Integration check: verify proof marker is recognized in a real pytest session
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs"
+  cat > "$d/test_marker_check.py" << 'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_marker_recognized(): assert True
+PY
+  # Run with -W error::pytest.PytestUnknownMarkWarning to catch unregistered markers
+  (cd "$d" && python3 -m pytest test_marker_check.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -W "error::pytest.PytestUnknownMarkWarning" -q --no-header 2>/dev/null)
+  local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-11" "RULE-11" "pytest_configure registers marker + plugin" test_pytest_configure
 

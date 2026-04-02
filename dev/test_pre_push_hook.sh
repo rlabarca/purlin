@@ -198,11 +198,11 @@ output4=""
 ec4=0
 output4=$(run_hook "$TMPDIR4") || ec4=$?
 
-if [[ $ec4 -eq 0 ]]; then
-  echo "  PASS: all pass → exit 0"
+if [[ $ec4 -eq 0 ]] && ! echo "$output4" | grep -q "partial coverage" && ! echo "$output4" | grep -q "PUSH BLOCKED"; then
+  echo "  PASS: all pass → exit 0 (no warnings, no block)"
   purlin_proof "pre_push_hook" "PROOF-4" "RULE-4" pass "all proofs pass allows push with exit 0"
 else
-  echo "  FAIL: expected exit 0, got exit=$ec4"
+  echo "  FAIL: expected exit 0 without warnings/block, got exit=$ec4"
   echo "  Output: $output4"
   purlin_proof "pre_push_hook" "PROOF-4" "RULE-4" fail "all proofs pass allows push with exit 0"
 fi
@@ -241,14 +241,31 @@ output5b=$(run_hook "$TMPDIR5") || ec5b=$?
 
 if echo "$output5b" | grep -q "(jest)"; then
   echo "  PASS: detects jest from config"
+else
+  echo "  FAIL: expected (jest) in output"
+  echo "  Output: $output5b"
+  result5="fail"
+fi
+
+# Test auto-detection via conftest.py (no explicit config)
+TMPDIR5C=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR5C"
+create_test_project "$TMPDIR5C" 1
+create_proof_file "$TMPDIR5C" "test_feature" "PROOF-1|RULE-1|pass"
+rm -f "$TMPDIR5C/.purlin/config.json"
+touch "$TMPDIR5C/conftest.py"
+output5c=""
+output5c=$(run_hook "$TMPDIR5C") || true
+if echo "$output5c" | grep -q "(pytest)"; then
+  echo "  PASS: auto-detects pytest from conftest.py"
   if [[ "$result5" == "pass" ]]; then
     purlin_proof "pre_push_hook" "PROOF-5" "RULE-5" pass "detects test framework from config (pytest and jest)"
   else
     purlin_proof "pre_push_hook" "PROOF-5" "RULE-5" fail "detects test framework from config (pytest and jest)"
   fi
 else
-  echo "  FAIL: expected (jest) in output"
-  echo "  Output: $output5b"
+  echo "  FAIL: expected (pytest) via auto-detect from conftest.py"
+  echo "  Output: $output5c"
   purlin_proof "pre_push_hook" "PROOF-5" "RULE-5" fail "detects test framework from config (pytest and jest)"
 fi
 
@@ -266,13 +283,34 @@ touch "$TMPDIR6/conftest.py"
 # Remove config so auto-detection kicks in
 rm -f "$TMPDIR6/.purlin/config.json"
 
-# We can't easily capture the exact pytest invocation, but we can verify
-# the hook's source code uses the right flags. Read the script and check.
-if grep -q 'pytest -m "not slow"' "$HOOK_SCRIPT"; then
-  echo "  PASS: hook uses pytest -m 'not slow' (default tier only)"
+# Create two test files: one default (runs), one slow (should be skipped)
+SENTINEL_DEFAULT="$TMPDIR6/.sentinel_default"
+SENTINEL_SLOW="$TMPDIR6/.sentinel_slow"
+
+cat > "$TMPDIR6/test_default_tier.py" << PYEOF
+def test_default_runs():
+    open("${SENTINEL_DEFAULT}", "w").close()
+PYEOF
+
+cat > "$TMPDIR6/test_slow_tier.py" << PYEOF
+import pytest
+@pytest.mark.slow
+def test_slow_skipped():
+    open("${SENTINEL_SLOW}", "w").close()
+PYEOF
+
+rm -f "$SENTINEL_DEFAULT" "$SENTINEL_SLOW"
+
+# Run the hook — it should invoke pytest -m "not slow", running default but not slow
+output6=$(run_hook "$TMPDIR6") || true
+
+if [[ -f "$SENTINEL_DEFAULT" ]] && [[ ! -f "$SENTINEL_SLOW" ]]; then
+  echo "  PASS: default test ran, slow test was skipped (pytest -m 'not slow' effective)"
   purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" pass "hook runs only default-tier tests (pytest -m not slow)"
 else
-  echo "  FAIL: hook does not use pytest -m 'not slow'"
+  echo "  FAIL: expected default sentinel present and slow sentinel absent"
+  [[ -f "$SENTINEL_DEFAULT" ]] && echo "    default: ran" || echo "    default: DID NOT RUN"
+  [[ -f "$SENTINEL_SLOW" ]] && echo "    slow: ran (should not have)" || echo "    slow: skipped (correct)"
   purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" fail "hook runs only default-tier tests (pytest -m not slow)"
 fi
 
@@ -291,20 +329,19 @@ output7=""
 ec7=0
 output7=$(run_hook "$TMPDIR7") || ec7=$?
 
-has_passing=false
 has_partial=false
 has_blocked=false
+has_fail_detail=false
 
 echo "$output7" | grep -q "partial coverage" && has_partial=true
 echo "$output7" | grep -q "PUSH BLOCKED" && has_blocked=true
-# Note: when there's a FAIL, passing features may not be shown (since the
-# feature is not READY). Check for the FAIL detail line instead.
+echo "$output7" | grep -q "FAIL" && has_fail_detail=true
 
-if $has_partial && $has_blocked; then
-  echo "  PASS: output contains partial coverage + PUSH BLOCKED sections"
+if $has_partial && $has_blocked && $has_fail_detail; then
+  echo "  PASS: output contains FAIL detail + partial coverage + PUSH BLOCKED sections"
   purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" pass "output shows partial coverage and PUSH BLOCKED sections"
 else
-  echo "  FAIL: expected partial+blocked sections, got partial=$has_partial blocked=$has_blocked"
+  echo "  FAIL: expected fail+partial+blocked sections, got fail=$has_fail_detail partial=$has_partial blocked=$has_blocked"
   echo "  Output: $output7"
   purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" fail "output shows partial coverage and PUSH BLOCKED sections"
 fi
@@ -350,11 +387,11 @@ json.dump(cfg, open('$TMPDIR10/.purlin/config.json', 'w'))
 create_proof_file "$TMPDIR10" "test_feature" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
 OUTPUT10=$(run_hook "$TMPDIR10" 2>&1) || EXIT10=$?
 EXIT10=${EXIT10:-0}
-if [[ "$EXIT10" -eq 0 ]]; then
-  echo "  PASS: strict mode allows when all READY"
+if [[ "$EXIT10" -eq 0 ]] && ! echo "$OUTPUT10" | grep -q "strict mode" && ! echo "$OUTPUT10" | grep -q "PUSH BLOCKED"; then
+  echo "  PASS: strict mode allows when all READY (no block, no strict mode message)"
   purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" pass "strict mode allows push when all features READY"
 else
-  echo "  FAIL: expected exit 0, got exit=$EXIT10"
+  echo "  FAIL: expected exit 0 without strict mode/block, got exit=$EXIT10"
   echo "  Output: $OUTPUT10"
   purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" fail "strict mode allows push when all features READY"
 fi

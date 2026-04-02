@@ -163,6 +163,8 @@ class TestSyncStatus:
         ))
         result = purlin_server.sync_status(self.project_root)
         assert 'WARNING' in result
+        assert 'not numbered' in result.lower(), \
+            f"WARNING doesn't mention unnumbered rules: {result}"
 
     @pytest.mark.proof("mcp_server", "PROOF-10", "RULE-10")
     def test_requires_counts_for_coverage(self):
@@ -185,8 +187,7 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         # 1 own + 1 required = 2 total
         assert 'login: 0/2 rules proved' in result
-        assert 'i_security/RULE-1' in result
-        assert '(required)' in result
+        assert 'i_security/RULE-1: NO PROOF (required)' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-11", "RULE-11")
     def test_manual_proof_staleness(self):
@@ -268,8 +269,7 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         # 1 own + 1 global = 2 total
         assert 'login: 0/2 rules proved' in result
-        assert 'i_security_no_eval/RULE-1' in result
-        assert '(global)' in result
+        assert 'i_security_no_eval/RULE-1: NO PROOF (global)' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-22", "RULE-22")
     def test_rule_labels(self):
@@ -340,21 +340,28 @@ class TestPurlinConfig:
 
     @pytest.mark.proof("mcp_server", "PROOF-12", "RULE-12")
     def test_read_write(self):
+        # Write a key — returns confirmation string
         result = purlin_server.handle_purlin_config(
             self.project_root,
             {"action": "write", "key": "test_key", "value": "test_val"}
         )
-        assert "test_key" in result
+        assert "test_key" in result and "test_val" in result, \
+            f"Write should confirm key and value, got: {result}"
 
+        # Read a single key — returns JSON with just that key
         result = purlin_server.handle_purlin_config(
             self.project_root, {"action": "read", "key": "test_key"}
         )
-        assert json.loads(result)["test_key"] == "test_val"
+        assert json.loads(result) == {"test_key": "test_val"}, \
+            f"Single-key read should return exact key-value, got: {result}"
 
+        # Full config read — assert exact contents
         result = purlin_server.handle_purlin_config(
             self.project_root, {"action": "read"}
         )
-        assert json.loads(result)["test_key"] == "test_val"
+        full_config = json.loads(result)
+        assert full_config == {"test_key": "test_val"}, \
+            f"Full config should be exactly {{test_key: test_val}}, got {full_config}"
 
 
 class TestChangelog:
@@ -409,6 +416,12 @@ class TestChangelog:
 
         ref, desc = purlin_server._resolve_since_anchor(self.project_root, since_arg=None)
         assert "verification" in desc
+        # Verify ref is the actual SHA of the verify: commit
+        verify_sha = subprocess.run(
+            ['git', 'log', '--grep=^verify:', '--format=%H', '-1'],
+            cwd=self.project_root, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        assert ref == verify_sha, f"Expected ref={verify_sha}, got ref={ref}"
 
     @pytest.mark.proof("mcp_server", "PROOF-14", "RULE-14")
     def test_file_classification(self):
@@ -526,3 +539,11 @@ class TestServerOutput:
         # Verify format: 8 hex chars
         assert len(hash_combined) == 8
         assert all(c in '0123456789abcdef' for c in hash_combined)
+
+        # Pin the exact algorithm: sha256(comma-joined sorted rule IDs | comma-joined sorted proof pairs)[:8]
+        rule_ids = sorted(rules_with_required.keys())
+        proof_pairs = sorted(f"{p['id']}:{p['status']}" for p in proofs)
+        expected_input = ','.join(rule_ids) + '|' + ','.join(proof_pairs)
+        expected_hash = hashlib.sha256(expected_input.encode()).hexdigest()[:8]
+        assert hash_combined == expected_hash, \
+            f"vhash algorithm mismatch: expected {expected_hash}, got {hash_combined}"
