@@ -19,20 +19,23 @@ git init
 cd my-project
 ```
 
-Add Purlin as a project-level plugin. This installs it for this project only — other projects are unaffected:
+Add the Purlin marketplace from your terminal (this is a CLI command, not inside Claude Code):
 
 ```bash
-/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
-/plugin install purlin
+claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
 ```
 
-The first command registers the Purlin repository as a plugin marketplace. The second installs the plugin. Run these commands inside Claude Code (they're `/` commands, not shell commands).
-
-Then start Claude Code and initialize the Purlin workspace:
+Then start Claude Code and install the plugin:
 
 ```bash
 claude
 ```
+
+```
+/plugin install purlin@purlin
+```
+
+Then initialize the Purlin workspace:
 
 ```
 purlin:init
@@ -98,11 +101,19 @@ your-project/
 
 ## Updating Purlin
 
+From the terminal:
+
 ```bash
-/plugin update purlin
+claude plugin marketplace update
 ```
 
-This pulls the latest version. Existing specs, proofs, and config are preserved.
+Or inside Claude Code:
+
+```
+/plugin marketplace update
+```
+
+Both pull the latest version. Existing specs, proofs, and config are preserved.
 
 ## Upgrading from an Older Version of Purlin
 

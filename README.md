@@ -31,16 +31,21 @@ auth_login: 2/3 rules proved
 
 **Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
+From your terminal:
+
 ```bash
-cd my-project          # must be a git repo
-claude                 # start Claude Code
+cd my-project
+claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
 ```
 
-Then inside Claude Code:
+Then start Claude Code and install:
+
+```bash
+claude
+```
 
 ```
-/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
-/plugin install purlin
+/plugin install purlin@purlin
 ```
 
 ## Initialize a Project

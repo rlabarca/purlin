@@ -12,26 +12,21 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 ```bash
 mkdir weather-app && cd weather-app
 git init
+claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
 ```
 
-Add Purlin as a project-level plugin (this installs it for this project only, not globally):
-
-```bash
-/plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
-/plugin install purlin
-```
-
-Then start Claude Code and set up the project:
+Then start Claude Code, install Purlin, and set up the project:
 
 ```bash
 claude
 ```
 
 ```
+/plugin install purlin@purlin
 create a new React weather app project
 ```
 
-Claude scaffolds the project with `package.json` and dependencies. Then initialize Purlin:
+Claude installs Purlin and scaffolds the project. Then initialize:
 
 ```
 purlin:init
