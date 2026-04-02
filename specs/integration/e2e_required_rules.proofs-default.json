@@ -1,0 +1,41 @@
+{
+  "tier": "default",
+  "proofs": [
+    {
+      "feature": "e2e_required_rules",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status counts required+global rules in total",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "e2e_required_rules",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status labels rules as own/required/global",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "e2e_required_rules",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "partial proofs show 2/5 and not READY",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "e2e_required_rules",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "full proofs show 5/5 and READY",
+      "status": "pass",
+      "tier": "default"
+    }
+  ]
+}
