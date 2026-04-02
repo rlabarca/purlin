@@ -189,6 +189,84 @@ Each tier writes to a separate file: `login.proofs-default.json`, `login.proofs-
 | `purlin:unit-test --all` | All tiers |
 | `purlin:verify` | All tiers |
 
+## Proof Levels
+
+AI tends to write Level 2 proofs — isolated unit tests with mocked dependencies. These prove code logic is correct but don't prove the feature actually works. Understanding proof levels helps you get the coverage that matters.
+
+### The three levels
+
+| Level | What it proves | Example | Who writes the rule |
+|-------|---------------|---------|-------------------|
+| **Level 1** | A value exists or has the right type | `assert config.timeout is not None` | Nobody should — these are hollow |
+| **Level 2** | Code behavior with controlled inputs | `POST invalid password → 401` (mocked DB) | Engineer or AI |
+| **Level 3** | End-to-end behavior through the real system | `Open browser, enter wrong password, see "Invalid credentials" on screen` | PM (in prodbrief or spec) |
+
+### Why AI defaults to Level 2
+
+Level 2 proofs are fast, deterministic, and easy to write. The AI can mock everything, assert a return value, and get a green proof. But Level 2 can be green while the feature is broken — the mock says the API returns 200, but the real API is misconfigured. The test proves the code logic, not the user experience.
+
+### How PMs drive Level 3 proofs
+
+**The PM controls the proof level by how they write rules.** This is the key insight — you don't need to know about proof levels. Just describe what you want to see happen:
+
+- "Passwords are hashed with bcrypt" → Level 2 (engineer writes a unit test)
+- "User enters wrong password and sees 'Invalid credentials' on screen" → Level 3 (engineer must write an E2E test — there's no way to mock this)
+
+When a rule describes a **user-visible outcome**, the only way to prove it is to run the real system and check the real output. The rule forces Level 3.
+
+### Prodbrief invariants: the PM's enforcement tool
+
+A PM who wants to guarantee user-facing behavior writes a `prodbrief_` invariant with rules that describe user journeys:
+
+```markdown
+# Invariant: i_prodbrief_checkout
+
+> Type: prodbrief
+> Source: git@bitbucket.org:acme/product-briefs.git
+> Path: briefs/checkout-v2.md
+> Pinned: a1b2c3d4
+
+## What it does
+Core checkout flow requirements from the product brief.
+
+## Rules
+- RULE-1: User adds item to cart, proceeds to checkout, enters payment, sees confirmation page
+- RULE-2: If payment fails, user sees an error and can retry without losing cart contents
+- RULE-3: Order confirmation email arrives within 60 seconds of successful payment
+
+## Proof
+- PROOF-1 (RULE-1): Open browser → add item → click checkout → enter test card → verify confirmation page shows order number @e2e
+- PROOF-2 (RULE-2): Open browser → add item → checkout with declined card → verify error message → verify cart still has item → retry with valid card → verify confirmation @e2e
+- PROOF-3 (RULE-3): Complete checkout → poll inbox for 60 seconds → verify email contains order number @e2e
+```
+
+Every feature that `> Requires: i_prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests — RULE-1 says "sees confirmation page," which means rendering real HTML in a real browser.
+
+### When to write Level 3 rules
+
+Write Level 3 rules when:
+- **The user experience matters, not just the code logic.** "User sees error message" vs "API returns 400."
+- **Multiple systems must work together.** "Confirmation email arrives" requires API + email service + template rendering.
+- **You've been burned by mocks.** A Level 2 test passed but the feature was broken in production. Write a Level 3 rule for that exact scenario.
+- **Regulatory or contractual requirements.** "User can export their data within 30 days" — prove it end-to-end.
+
+### When Level 2 is fine
+
+Level 2 is the right level for most rules. Internal logic, data transformations, error handling, input validation — these don't need a browser or a running server. Don't force Level 3 where Level 2 is sufficient. The cost of E2E tests (slow, flaky, infrastructure-dependent) means you should use them selectively for high-value user flows.
+
+### Level 3 and tiers
+
+Level 3 proofs are tagged `@e2e` and don't run on every build:
+
+| When | What runs |
+|------|-----------|
+| Every build | Default tier (Level 2 proofs) |
+| On check-in / PR | Default + `@slow` tiers |
+| On release / nightly | All tiers including `@e2e` (Level 3) |
+| `purlin:verify` | All tiers |
+
+See the [Spec Quality Guide](../references/spec_quality_guide.md) for detailed guidance on writing rules and proofs at each level.
+
 ## Manual Proofs
 
 Some rules can't be automated ("error message is clear to non-technical users", "login page matches the design"). Mark them `@manual` in the spec:

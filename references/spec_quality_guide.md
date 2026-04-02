@@ -1,6 +1,6 @@
 # Spec Quality Guide
 
-How to write good specs. For spec **syntax** (section names, ID format, metadata fields), see `references/formats/spec_format.md`. This guide covers **judgment** — what makes a spec useful for rebuilding, testing, and verifying code.
+How to write good specs. For spec **syntax** (section names, ID format, metadata fields), see [references/formats/spec_format.md](formats/spec_format.md). This guide covers **judgment** — what makes a spec useful for rebuilding, testing, and verifying code.
 
 ## Writing Rules
 
@@ -37,6 +37,70 @@ Include test setup context when architecture matters:
 ```
 - PROOF-4 (RULE-4): With PURLIN_PROJECT_ROOT set to /tmp/test, call find_project_root(); verify it returns /tmp/test without climbing directories
 ```
+
+## Proof Levels
+
+Rules and proofs operate at three levels of confidence. Understanding these levels helps PMs write rules that get the coverage they actually need.
+
+| Level | What it proves | Example rule | Example proof |
+|-------|---------------|-------------|--------------|
+| **Level 1** | A value exists or has the right type | "Config has a timeout field" | `assert config.timeout is not None` |
+| **Level 2** | Code behavior with controlled inputs | "Return 401 on invalid credentials" | `POST wrong password to mock endpoint; verify 401` |
+| **Level 3** | End-to-end behavior through the real system | "User sees 'Invalid credentials' on screen" | `Open browser → enter wrong password → verify error message visible @e2e` |
+
+### Why AI writes Level 2 by default
+
+AI agents default to Level 2 because it's fast, deterministic, and easy to mock. Level 2 proofs are correct for most internal logic — but they can pass while the real feature is broken. The mock says the API returns 200, but the real API is misconfigured.
+
+### How PMs drive Level 3
+
+**The PM controls the proof level by how they write rules.** This is the most important principle in this guide.
+
+- "Passwords are hashed with bcrypt" → AI writes a unit test (Level 2)
+- "User enters wrong password and sees 'Invalid credentials' on screen" → AI must write an E2E test (Level 3) — there's no way to mock "sees on screen"
+
+When a rule describes a **user-visible outcome**, the only way to prove it is Level 3. The PM doesn't need to know about proof levels — they just describe what they want to see happen. The rule forces the right level.
+
+### Prodbrief invariants for Level 3 enforcement
+
+PMs who want to guarantee user-facing behavior write `prodbrief_` invariants with rules that describe user journeys:
+
+```markdown
+# Invariant: i_prodbrief_checkout
+
+> Type: prodbrief
+> Source: git@bitbucket.org:acme/product-briefs.git
+> Path: briefs/checkout-v2.md
+> Pinned: a1b2c3d4
+
+## Rules
+- RULE-1: User adds item to cart, proceeds to checkout, enters payment, sees confirmation page
+- RULE-2: If payment fails, user sees error and can retry without losing cart contents
+- RULE-3: Order confirmation email arrives within 60 seconds
+
+## Proof
+- PROOF-1 (RULE-1): Open browser → add item → checkout → enter test card → verify confirmation page shows order number @e2e
+- PROOF-2 (RULE-2): Open browser → checkout with declined card → verify error → verify cart intact → retry with valid card → verify confirmation @e2e
+- PROOF-3 (RULE-3): Complete checkout → poll inbox for 60s → verify email contains order number @e2e
+```
+
+Every feature that `> Requires: i_prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests — the rules describe what users see, not what functions return.
+
+### When to write rules at each level
+
+| Level | When to use | Who typically writes |
+|-------|------------|---------------------|
+| **Level 1** | Never. These are hollow. `assert X is not None` proves nothing. | Nobody |
+| **Level 2** | Internal logic, data transformations, error codes, validation, algorithms | Engineer or AI |
+| **Level 3** | User-facing flows, multi-system integration, regulatory requirements, things that have broken in production | PM (via prodbrief/spec rules) |
+
+### Recognizing Level 1 proofs (and rejecting them)
+
+If a proof description says "verify X exists", "check that Y is not null", or "assert Z is present" — it's Level 1. Rewrite it to test behavior:
+
+- Level 1: "Verify the login endpoint exists"
+- Level 2: "POST to /login with valid credentials; verify 200 and JWT token in response"
+- Level 3: "Open browser, enter credentials, click login, verify dashboard loads"
 
 ## Tier Assignment
 
