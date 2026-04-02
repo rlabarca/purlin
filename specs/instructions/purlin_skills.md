@@ -22,6 +22,9 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - RULE-10: Changelog skill requires reading git diffs for behavioral changes, not just interpreting MCP categories
 - RULE-11: Spec skill update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
 - RULE-12: Skills that write proof descriptions (build, spec, spec-from-code) include mandatory tier tag review
+- RULE-13: Init skill `--add-plugin` validates plugin files against language-specific patterns (Python: `proofs`+`json`, JS: `proofs`+`JSON`, Shell: `purlin_proof`, Java: `proofs`+`Proof`) and warns if validation fails
+- RULE-14: Init skill `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
+- RULE-15: Init skill `--list-plugins` identifies built-in plugins (`pytest_purlin`, `jest_purlin`, `purlin-proof`) by framework name and labels all others as `custom`
 
 ## Proof
 
@@ -37,3 +40,6 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - PROOF-10 (RULE-10): Grep `skills/changelog/SKILL.md` for `git diff`; verify the diff-reading requirement is present
 - PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING` and `ADDING` and `REMOVING`; verify the delta report structure is present
 - PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for `tier`; grep `skills/spec/SKILL.md` for `tier`; verify both contain tier review requirements
+- PROOF-13 (RULE-13): Grep `skills/init/SKILL.md` for the validation table language entries (`Python`, `JavaScript`, `Shell`, `Java`) and the warning text `doesn't look like a standard proof plugin`; verify all present
+- PROOF-14 (RULE-14): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
+- PROOF-15 (RULE-15): Grep `skills/init/SKILL.md` for `pytest_purlin.py` with `Python/pytest`, `jest_purlin.js` with `JavaScript/Jest`, and the label `custom`; verify the labeling table exists
