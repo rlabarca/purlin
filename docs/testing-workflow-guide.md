@@ -127,9 +127,22 @@ Check `.purlin/plugins/` — that's where your project's proof plugin lives. It 
 
 ### Adding support for another framework
 
-If your project uses Go, Rust, C, or any framework without a built-in plugin, you can write one. A proof plugin does one thing: read test metadata, write a JSON file. See [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below for the schema, requirements, and a minimal example.
+Install a community proof plugin or your own:
 
-No registration is needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
+```
+purlin:init --add-plugin ./my-plugin.py
+purlin:init --add-plugin git@github.com:someone/purlin-go-proof.git
+```
+
+This copies the plugin to `.purlin/plugins/`. No registration needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
+
+To see what's installed:
+
+```
+purlin:init --list-plugins
+```
+
+To write your own plugin, see [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below.
 
 ## Checking Coverage
 

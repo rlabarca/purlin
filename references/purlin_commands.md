@@ -29,6 +29,8 @@ Purlin — Spec-Driven Development
   Project
   ──────
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
+  purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
+  purlin:init --list-plugins    List installed proof plugins
   purlin:config [key] [value]   View or change .purlin/config.json settings
   purlin:invariant <cmd>        Sync read-only constraints from external sources
   purlin:help                   This command reference

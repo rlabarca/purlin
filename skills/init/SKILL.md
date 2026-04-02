@@ -8,8 +8,10 @@ Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, dete
 ## Usage
 
 ```
-purlin:init                     Initialize a new project
-purlin:init --force             Re-initialize (preserves existing config)
+purlin:init                             Initialize a new project
+purlin:init --force                     Re-initialize (preserves existing config)
+purlin:init --add-plugin <source>       Install a proof plugin from file or git URL
+purlin:init --list-plugins              List installed proof plugins
 ```
 
 ## Step 1 — Pre-flight
@@ -107,3 +109,85 @@ Next steps:
 ```
 git commit -m "chore: initialize purlin project"
 ```
+
+---
+
+## Subcommand: --add-plugin
+
+```
+purlin:init --add-plugin <source>
+```
+
+Source can be:
+- A local file path: `./my_proof_plugin.py` or `/path/to/plugin.sh`
+- A git URL: `git@github.com:someone/purlin-go-proof.git` or `https://...`
+
+### Steps
+
+1. **Verify `.purlin/plugins/` exists.** If not, tell the user to run `purlin:init` first and stop.
+
+2. **If source is a local file path:**
+   - Verify the file exists
+   - Copy it to `.purlin/plugins/`
+   - Print: `Added proof plugin: .purlin/plugins/<filename>`
+
+3. **If source is a git URL:**
+   - Clone to a temp directory: `git clone <url> /tmp/purlin-plugin-install`
+   - Look for proof plugin files (`*.py`, `*.js`, `*.sh`, `*.java` in the repo root or a `plugin/` directory)
+   - If one file found: copy to `.purlin/plugins/`
+   - If multiple found: list them and ask the user which to install
+   - Clean up the temp directory: `rm -rf /tmp/purlin-plugin-install`
+   - Print: `Added proof plugin: .purlin/plugins/<filename>`
+
+4. **Validate the plugin** after copying:
+
+   | Language | Must contain |
+   |----------|-------------|
+   | Python (`.py`) | `proofs` and `json` |
+   | JavaScript (`.js`) | `proofs` and `JSON` |
+   | Shell (`.sh`) | `purlin_proof` function |
+   | Java (`.java`) | `proofs` and `Proof` |
+
+   If validation fails, warn but still install:
+   ```
+   ⚠ This file doesn't look like a standard proof plugin.
+   It should read test markers and write .proofs-*.json files.
+   See references/formats/proofs_format.md for the schema.
+   ```
+
+5. **Print next steps:**
+   ```
+   Plugin installed. To use it:
+   1. Add proof markers to your tests using the plugin's marker syntax
+   2. Run your tests — the plugin emits .proofs-*.json files
+   3. purlin:status shows coverage
+   ```
+
+---
+
+## Subcommand: --list-plugins
+
+```
+purlin:init --list-plugins
+```
+
+List all files in `.purlin/plugins/`:
+
+```
+Installed proof plugins:
+  .purlin/plugins/pytest_purlin.py (Python/pytest)
+  .purlin/plugins/jest_purlin.js (JavaScript/Jest)
+  .purlin/plugins/purlin-proof.sh (Bash/shell)
+  .purlin/plugins/my_go_plugin.py (custom)
+```
+
+For built-in plugins, show the framework name:
+
+| Filename | Label |
+|----------|-------|
+| `pytest_purlin.py` | Python/pytest |
+| `jest_purlin.js` | JavaScript/Jest |
+| `purlin-proof.sh` | Bash/shell |
+| Anything else | custom |
+
+If `.purlin/plugins/` doesn't exist or is empty: `No proof plugins installed. Run purlin:init to set up.`
