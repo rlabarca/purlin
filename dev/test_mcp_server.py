@@ -1,9 +1,10 @@
-"""Tests for mcp_server — 19 rules.
+"""Tests for mcp_server — 24 rules.
 
 Covers JSON-RPC transport (initialize, tools/list, notifications, errors),
 sync_status (coverage, READY/vhash, warnings, Requires, manual staleness,
-structural-only detection), purlin_config (read/write), changelog (since anchor,
-classification, structure, structural_only flag), server output (stderr logging),
+structural-only detection, global invariants, rule labels, scope overlap),
+purlin_config (read/write), changelog (since anchor, classification, structure,
+structural_only flag, required rules in totals), server output (stderr logging),
 and vhash computation.
 """
 
@@ -108,9 +109,16 @@ class TestSyncStatus:
             json.dump({"tier": tier, "proofs": proofs}, f)
 
     @pytest.mark.proof("mcp_server", "PROOF-7", "RULE-7")
-    def test_rules_no_proofs(self):
+    def test_rules_with_required_no_proofs(self):
+        self._write_spec('api_conv', (
+            '# Anchor: api_conv\n\n'
+            '## What it does\nAPI conventions.\n\n'
+            '## Rules\n- RULE-1: JSON envelope\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Check JSON\n'
+        ), subdir='schema')
         self._write_spec('login', (
             '# Feature: login\n\n'
+            '> Requires: api_conv\n\n'
             '## What it does\nHandles login.\n\n'
             '## Rules\n'
             '- RULE-1: Return 200 on valid creds\n'
@@ -120,9 +128,11 @@ class TestSyncStatus:
             '- PROOF-2 (RULE-2): POST invalid creds\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert 'login: 0/2 rules proved' in result
-        assert 'RULE-1: NO PROOF' in result
-        assert 'RULE-2: NO PROOF' in result
+        # 2 own + 1 required = 3 total
+        assert 'login: 0/3 rules proved' in result
+        assert 'RULE-1: NO PROOF (own)' in result
+        assert 'RULE-2: NO PROOF (own)' in result
+        assert 'api_conv/RULE-1: NO PROOF (required)' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-8", "RULE-8")
     def test_ready_with_vhash(self):
@@ -155,7 +165,7 @@ class TestSyncStatus:
         assert 'WARNING' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-10", "RULE-10")
-    def test_requires_includes_rules(self):
+    def test_requires_counts_for_coverage(self):
         inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
         os.makedirs(inv_dir)
         with open(os.path.join(inv_dir, 'i_security.md'), 'w') as f:
@@ -173,7 +183,10 @@ class TestSyncStatus:
             '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert 'i_security' in result
+        # 1 own + 1 required = 2 total
+        assert 'login: 0/2 rules proved' in result
+        assert 'i_security/RULE-1' in result
+        assert '(required)' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-11", "RULE-11")
     def test_manual_proof_staleness(self):
@@ -216,6 +229,86 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         assert 'MANUAL PROOF STALE' in result
 
+
+    @pytest.mark.proof("mcp_server", "PROOF-20", "RULE-20")
+    def test_scan_specs_detects_global(self):
+        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
+        os.makedirs(inv_dir, exist_ok=True)
+        with open(os.path.join(inv_dir, 'i_security_no_eval.md'), 'w') as f:
+            f.write(
+                '# Invariant: i_security_no_eval\n\n'
+                '> Global: true\n\n'
+                '## What it does\nNo eval.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        features = purlin_server._scan_specs(self.project_root)
+        assert 'i_security_no_eval' in features
+        assert features['i_security_no_eval']['is_global'] is True
+        assert features['i_security_no_eval']['is_invariant'] is True
+
+    @pytest.mark.proof("mcp_server", "PROOF-21", "RULE-21")
+    def test_global_invariant_auto_applies(self):
+        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
+        os.makedirs(inv_dir, exist_ok=True)
+        with open(os.path.join(inv_dir, 'i_security_no_eval.md'), 'w') as f:
+            f.write(
+                '# Invariant: i_security_no_eval\n\n'
+                '> Global: true\n\n'
+                '## What it does\nNo eval.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        # 1 own + 1 global = 2 total
+        assert 'login: 0/2 rules proved' in result
+        assert 'i_security_no_eval/RULE-1' in result
+        assert '(global)' in result
+
+    @pytest.mark.proof("mcp_server", "PROOF-22", "RULE-22")
+    def test_rule_labels(self):
+        self._write_spec('api_conv', (
+            '# Anchor: api_conv\n\n'
+            '## What it does\nAPI rules.\n\n'
+            '## Rules\n- RULE-1: JSON envelope\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Check JSON\n'
+        ), subdir='schema')
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Requires: api_conv\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert 'RULE-1: NO PROOF (own)' in result
+        assert 'api_conv/RULE-1: NO PROOF (required)' in result
+
+    @pytest.mark.proof("mcp_server", "PROOF-23", "RULE-23")
+    def test_scope_overlap_suggestion(self):
+        self._write_spec('api_rest_conventions', (
+            '# Anchor: api_rest_conventions\n\n'
+            '> Scope: src/api/\n\n'
+            '## What it does\nREST conventions.\n\n'
+            '## Rules\n- RULE-1: JSON envelope\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Check JSON\n'
+        ), subdir='schema')
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Scope: src/api/login.js\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert '\u26a0 Anchor api_rest_conventions' in result
+        assert '\u2192 Consider: add > Requires: api_rest_conventions' in result
 
     @pytest.mark.proof("mcp_server", "PROOF-18", "RULE-18")
     def test_structural_only_detection(self):
@@ -365,6 +458,39 @@ class TestChangelog:
         assert data['proof_status']['refs']['structural_only'] is True
 
 
+    @pytest.mark.proof("mcp_server", "PROOF-24", "RULE-24")
+    def test_changelog_includes_required_in_total(self):
+        # Add an anchor with 2 rules
+        anchor_dir = os.path.join(self.project_root, 'specs', 'schema')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'api_conv.md'), 'w') as f:
+            f.write(
+                '# Anchor: api_conv\n\n'
+                '## What it does\nAPI conventions.\n\n'
+                '## Rules\n- RULE-1: JSON envelope\n- RULE-2: Error codes\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Check JSON\n- PROOF-2 (RULE-2): Check errors\n'
+            )
+        # Update the login spec to require the anchor
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write(
+                '# Feature: login\n\n'
+                '> Requires: api_conv\n\n'
+                '## What it does\nLogin.\n\n'
+                '## Rules\n- RULE-1: Auth\n- RULE-2: Lockout\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n'
+            )
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add anchor'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        # login has 2 own rules + 2 required from api_conv = 4 total
+        assert 'login' in data['proof_status']
+        assert data['proof_status']['login']['total'] == 4
+
+
 class TestServerOutput:
     """RULE-16 and RULE-17."""
 
@@ -387,9 +513,16 @@ class TestServerOutput:
             shutil.rmtree(project_root)
 
     @pytest.mark.proof("mcp_server", "PROOF-17", "RULE-17")
-    def test_vhash_computation(self):
-        rules = {"RULE-1": "desc"}
+    def test_vhash_with_prefixed_keys(self):
+        rules_own = {"RULE-1": "x"}
         proofs = [{"id": "PROOF-1", "status": "pass"}]
-        result = purlin_server._compute_vhash(rules, proofs)
-        expected = hashlib.sha256("RULE-1|PROOF-1:pass".encode()).hexdigest()[:8]
-        assert result == expected
+        hash_own = purlin_server._compute_vhash(rules_own, proofs)
+
+        rules_with_required = {"RULE-1": "x", "anchor/RULE-1": "y"}
+        hash_combined = purlin_server._compute_vhash(rules_with_required, proofs)
+
+        # Hashes must differ when rule set changes
+        assert hash_own != hash_combined
+        # Verify format: 8 hex chars
+        assert len(hash_combined) == 8
+        assert all(c in '0123456789abcdef' for c in hash_combined)
