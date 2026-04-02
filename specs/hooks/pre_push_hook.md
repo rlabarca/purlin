@@ -6,7 +6,7 @@
 
 ## What it does
 
-Layer 1 enforcement hook that runs before `git push`. Executes default-tier tests and checks sync_status for proof coverage. Blocks the push if any feature has FAILING proofs. Warns (but allows) if features have partial coverage (NO PROOF rules). Allows silently if all proofs pass or no specs exist.
+Layer 1 enforcement hook that runs before `git push`. Executes default-tier tests and checks sync_status for proof coverage. Two modes: warn (default) blocks on FAIL only; strict blocks on anything non-READY. Allows silently if all proofs pass or no specs exist.
 
 ## Rules
 
@@ -17,6 +17,7 @@ Layer 1 enforcement hook that runs before `git push`. Executes default-tier test
 - RULE-5: Detects test framework from `.purlin/config.json` `test_framework` field, falling back to auto-detection (pytest if conftest.py or pyproject.toml [tool.pytest] exists, jest if package.json contains jest, shell otherwise)
 - RULE-6: Runs only default-tier tests (pytest excludes `not slow`, jest uses `--testPathPattern=default`, shell runs `*.test.sh`)
 - RULE-7: Produces output showing which features passed, which have partial coverage, and which are blocked with FAIL proofs
+- RULE-8: In strict mode (`"pre_push": "strict"` in config), blocks push with exit 1 when any feature is not READY (partial coverage or failing); allows push when all features are READY
 
 ## Proof
 
@@ -28,3 +29,5 @@ Layer 1 enforcement hook that runs before `git push`. Executes default-tier test
 - PROOF-6 (RULE-6): Set up temp project with conftest.py; verify pre-push.sh invokes pytest with `-m "not slow"` argument (not running slow or e2e tests) @slow
 - PROOF-7 (RULE-7): Set up temp project with specs containing PASS, FAIL, and NO PROOF entries; run pre-push.sh; verify stdout contains "passing features", "partial coverage", and "PUSH BLOCKED" sections @slow
 - PROOF-8 (RULE-1, RULE-2, RULE-4): Full lifecycle test: create temp git repo with .purlin/ and specs/; create spec with 3 rules; create proof file with 1 PASS, 1 FAIL, 1 NO PROOF; run hook and verify exit 1 (blocked by FAIL); fix FAIL to PASS; run hook and verify exit 0 with warning (NO PROOF remains); add missing proof as PASS; run hook and verify exit 0 silently (all READY) @e2e
+- PROOF-9 (RULE-8): Set strict mode in config; create proofs for 2 of 3 rules (no FAIL, but not READY); run hook; verify exit 1 and output contains "strict mode" @slow
+- PROOF-10 (RULE-8): Set strict mode in config; create proofs for all rules (READY); run hook; verify exit 0 @slow

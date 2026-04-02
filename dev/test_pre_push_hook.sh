@@ -25,6 +25,9 @@ create_test_project() {
   mkdir -p "$tmpdir/specs/hooks"
   mkdir -p "$tmpdir/scripts/mcp"
 
+  # Create default config
+  echo '{"version":"0.9.0","test_framework":"auto","spec_dir":"specs","pre_push":"warn"}' > "$tmpdir/.purlin/config.json"
+
   # Copy the real MCP server files so sync_status works
   cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/purlin_server.py"
   cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/config_engine.py"
@@ -109,8 +112,12 @@ run_hook() {
 # ==========================================================================
 # PROOF-1 (RULE-1): Blocks push when any proof is FAIL — exit 1
 # ==========================================================================
+ALL_TMPDIRS=""
+cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
+trap cleanup_all EXIT
+
 TMPDIR1=$(mktemp -d)
-trap 'rm -rf "$TMPDIR1"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR1"
 create_test_project "$TMPDIR1" 3
 create_proof_file "$TMPDIR1" "test_feature" \
   "PROOF-1|RULE-1|pass" \
@@ -129,13 +136,13 @@ else
   echo "  Output: $output1"
   purlin_proof "pre_push_hook" "PROOF-1" "RULE-1" fail "FAIL proof blocks push with exit 1 and PUSH BLOCKED message"
 fi
-rm -rf "$TMPDIR1"
+# cleanup via trap
 
 # ==========================================================================
 # PROOF-2 (RULE-2): Allows push with warning when NO PROOF exists (no FAIL)
 # ==========================================================================
 TMPDIR2=$(mktemp -d)
-trap 'rm -rf "$TMPDIR2"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR2"
 create_test_project "$TMPDIR2" 3
 # 2 pass, 1 has no proof at all (only 2 entries in proof file)
 create_proof_file "$TMPDIR2" "test_feature" \
@@ -154,13 +161,12 @@ else
   echo "  Output: $output2"
   purlin_proof "pre_push_hook" "PROOF-2" "RULE-2" fail "NO PROOF allows push with exit 0 and partial coverage warning"
 fi
-rm -rf "$TMPDIR2"
 
 # ==========================================================================
 # PROOF-3 (RULE-3): Allows push silently when no specs exist
 # ==========================================================================
 TMPDIR3=$(mktemp -d)
-trap 'rm -rf "$TMPDIR3"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR3"
 mkdir -p "$TMPDIR3/.purlin"
 (cd "$TMPDIR3" && git init -q && git commit -q -m "init" --allow-empty)
 # No specs/ directory at all
@@ -176,13 +182,12 @@ else
   echo "  FAIL: expected silent exit 0, got exit=$ec3 output='$output3'"
   purlin_proof "pre_push_hook" "PROOF-3" "RULE-3" fail "no specs directory allows push silently with exit 0"
 fi
-rm -rf "$TMPDIR3"
 
 # ==========================================================================
 # PROOF-4 (RULE-4): Allows push when all proofs pass (READY)
 # ==========================================================================
 TMPDIR4=$(mktemp -d)
-trap 'rm -rf "$TMPDIR4"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR4"
 create_test_project "$TMPDIR4" 3
 create_proof_file "$TMPDIR4" "test_feature" \
   "PROOF-1|RULE-1|pass" \
@@ -201,13 +206,12 @@ else
   echo "  Output: $output4"
   purlin_proof "pre_push_hook" "PROOF-4" "RULE-4" fail "all proofs pass allows push with exit 0"
 fi
-rm -rf "$TMPDIR4"
 
 # ==========================================================================
 # PROOF-5 (RULE-5): Detects test framework from config
 # ==========================================================================
 TMPDIR5=$(mktemp -d)
-trap 'rm -rf "$TMPDIR5"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR5"
 create_test_project "$TMPDIR5" 1
 create_proof_file "$TMPDIR5" "test_feature" \
   "PROOF-1|RULE-1|pass"
@@ -247,13 +251,12 @@ else
   echo "  Output: $output5b"
   purlin_proof "pre_push_hook" "PROOF-5" "RULE-5" fail "detects test framework from config (pytest and jest)"
 fi
-rm -rf "$TMPDIR5"
 
 # ==========================================================================
 # PROOF-6 (RULE-6): Runs only default tier (pytest -m "not slow")
 # ==========================================================================
 TMPDIR6=$(mktemp -d)
-trap 'rm -rf "$TMPDIR6"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR6"
 create_test_project "$TMPDIR6" 1
 create_proof_file "$TMPDIR6" "test_feature" \
   "PROOF-1|RULE-1|pass"
@@ -272,13 +275,12 @@ else
   echo "  FAIL: hook does not use pytest -m 'not slow'"
   purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" fail "hook runs only default-tier tests (pytest -m not slow)"
 fi
-rm -rf "$TMPDIR6"
 
 # ==========================================================================
 # PROOF-7 (RULE-7): Produces clear output with pass/warn/block sections
 # ==========================================================================
 TMPDIR7=$(mktemp -d)
-trap 'rm -rf "$TMPDIR7"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR7"
 create_test_project "$TMPDIR7" 3
 create_proof_file "$TMPDIR7" "test_feature" \
   "PROOF-1|RULE-1|pass" \
@@ -306,7 +308,56 @@ else
   echo "  Output: $output7"
   purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" fail "output shows partial coverage and PUSH BLOCKED sections"
 fi
-rm -rf "$TMPDIR7"
+
+# ==========================================================================
+# PROOF-9 (RULE-8): Strict mode blocks on partial coverage (NO PROOF)
+# ==========================================================================
+TMPDIR9=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR9"
+create_test_project "$TMPDIR9" 3
+# Set strict mode
+python3 -c "
+import json
+cfg = json.load(open('$TMPDIR9/.purlin/config.json'))
+cfg['pre_push'] = 'strict'
+json.dump(cfg, open('$TMPDIR9/.purlin/config.json', 'w'))
+"
+# Create proofs for only 2 of 3 rules (partial — no FAIL, but not READY)
+create_proof_file "$TMPDIR9" "test_feature" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
+OUTPUT9=$(run_hook "$TMPDIR9" 2>&1) || EXIT9=$?
+EXIT9=${EXIT9:-0}
+if [[ "$EXIT9" -eq 1 ]] && echo "$OUTPUT9" | grep -q "strict mode"; then
+  echo "  PASS: strict mode blocks on partial coverage"
+  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" pass "strict mode blocks push when features are not READY"
+else
+  echo "  FAIL: expected exit 1 + strict mode block, got exit=$EXIT9"
+  echo "  Output: $OUTPUT9"
+  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" fail "strict mode blocks push when features are not READY"
+fi
+
+# ==========================================================================
+# PROOF-10 (RULE-8): Strict mode allows when all READY
+# ==========================================================================
+TMPDIR10=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR10"
+create_test_project "$TMPDIR10" 2
+python3 -c "
+import json
+cfg = json.load(open('$TMPDIR10/.purlin/config.json'))
+cfg['pre_push'] = 'strict'
+json.dump(cfg, open('$TMPDIR10/.purlin/config.json', 'w'))
+"
+create_proof_file "$TMPDIR10" "test_feature" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
+OUTPUT10=$(run_hook "$TMPDIR10" 2>&1) || EXIT10=$?
+EXIT10=${EXIT10:-0}
+if [[ "$EXIT10" -eq 0 ]]; then
+  echo "  PASS: strict mode allows when all READY"
+  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" pass "strict mode allows push when all features READY"
+else
+  echo "  FAIL: expected exit 0, got exit=$EXIT10"
+  echo "  Output: $OUTPUT10"
+  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" fail "strict mode allows push when all features READY"
+fi
 
 # ==========================================================================
 # PROOF-8 (RULE-1, RULE-2, RULE-4): Full lifecycle — @e2e (Level 3)
@@ -315,7 +366,7 @@ rm -rf "$TMPDIR7"
 #   Phase C: Add missing proof as PASS → exit 0 silently (all READY)
 # ==========================================================================
 TMPDIR8=$(mktemp -d)
-trap 'rm -rf "$TMPDIR8"' EXIT
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR8"
 create_test_project "$TMPDIR8" 3
 
 echo "  --- Phase A: 1 PASS, 1 FAIL, 1 NO PROOF ---"
@@ -389,7 +440,6 @@ else
   echo "  FAIL: full lifecycle test (a=$phase_a_ok b=$phase_b_ok c=$phase_c_ok)"
   purlin_proof "pre_push_hook" "PROOF-8" "RULE-1" fail "full lifecycle: FAIL→blocks, fix→warns, complete→allows"
 fi
-rm -rf "$TMPDIR8"
 
 # --- Emit proof files ---
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"

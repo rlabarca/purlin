@@ -66,6 +66,24 @@
     },
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-9",
+      "rule": "RULE-8",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_name": "strict mode blocks push when features are not READY",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-10",
+      "rule": "RULE-8",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",
+      "test_name": "strict mode allows push when all features READY",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-8",
       "rule": "RULE-1",
       "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_pre_push_hook.sh",

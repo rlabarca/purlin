@@ -67,6 +67,11 @@ purlin_proof_finish
 
 Full format: `references/formats/proofs_format.md`
 
+## Absolute Prohibitions
+
+- **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
+- **NEVER use `git push --force` to main or production branches.**
+
 ## Hard Gates (only 2)
 
 1. **Invariant protection** — `specs/_invariants/i_*` files are read-only. Use `purlin:invariant sync` to update from the external source.

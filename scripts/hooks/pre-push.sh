@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
-# Purlin pre-push hook — Layer 1 enforcement for good-actor developers.
-# Blocks push if any feature has FAILING proofs.
-# Warns (but allows) if features have partial coverage (NO PROOF rules).
-# Allows silently if all proofs pass or no specs exist.
+# Purlin pre-push hook — Layer 1 enforcement.
+#
+# Modes (set in .purlin/config.json → "pre_push"):
+#   "warn"   — block on FAIL, warn on partial (default)
+#   "strict" — block on anything non-READY
+#   "off"    — disable hook
 set -euo pipefail
 
-# --- Locate project root (walk up from repo root looking for .purlin/) ---
+# --- Locate project root ---
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 if [[ ! -d "$ROOT/.purlin" ]]; then
-  exit 0  # Not a Purlin project — allow push
+  exit 0  # Not a Purlin project
+fi
+
+# --- Read mode from config ---
+MODE="warn"
+if [[ -f "$ROOT/.purlin/config.json" ]]; then
+  MODE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('pre_push','warn'))" "$ROOT/.purlin/config.json" 2>/dev/null || echo "warn")
+fi
+if [[ "$MODE" == "off" ]]; then
+  exit 0
 fi
 
 SPEC_DIR="$ROOT/specs"
 if [[ ! -d "$SPEC_DIR" ]] || [[ -z "$(find "$SPEC_DIR" -maxdepth 2 -name '*.md' 2>/dev/null | head -1)" ]]; then
-  exit 0  # No specs yet — allow push
+  exit 0  # No specs yet
 fi
 
 # --- Run default-tier tests ---
@@ -38,11 +49,9 @@ case "$FRAMEWORK" in
   shell)  for t in "$ROOT"/*.test.sh; do [[ -f "$t" ]] && bash "$t" 2>&1; done || true ;;
 esac
 
-# --- Check sync_status for FAIL entries ---
+# --- Check sync_status ---
 SERVER="$ROOT/scripts/mcp/purlin_server.py"
 if [[ ! -f "$SERVER" ]]; then
-  # Purlin scripts not available (consumer project without bundled scripts)
-  # Try CLAUDE_PLUGIN_ROOT
   if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "$CLAUDE_PLUGIN_ROOT/scripts/mcp/purlin_server.py" ]]; then
     SERVER="$CLAUDE_PLUGIN_ROOT/scripts/mcp/purlin_server.py"
   else
@@ -62,6 +71,7 @@ print(sync_status('$ROOT'))
 FAILS=""
 WARNINGS=""
 PASSES=""
+NON_READY=""
 while IFS= read -r line; do
   if [[ "$line" =~ ^[a-zA-Z_] ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
     CURRENT_FEATURE="$line"
@@ -70,12 +80,15 @@ while IFS= read -r line; do
     RULE=$(echo "$line" | sed 's/^[[:space:]]*//')
     FAILS="${FAILS}  ${CURRENT_FEATURE%%:*} → ${RULE}\n"
   fi
-  if [[ "$line" == *": NO PROOF "* ]]; then
+  if [[ "$line" == *": NO PROOF "* ]] || [[ "$line" == *"MANUAL PROOF NEEDED"* ]] || [[ "$line" == *"MANUAL PROOF STALE"* ]]; then
     RULE=$(echo "$line" | sed 's/^[[:space:]]*//')
     WARNINGS="${WARNINGS}  ${CURRENT_FEATURE%%:*} → ${RULE}\n"
   fi
   if [[ "$line" =~ READY ]]; then
     PASSES="${PASSES}  ${line%%:*}\n"
+  fi
+  if [[ "$line" =~ "rules proved" ]] && [[ ! "$line" =~ READY ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
+    NON_READY="${NON_READY}  ${line}\n"
   fi
 done <<< "$STATUS"
 
@@ -86,18 +99,38 @@ if [[ -n "$PASSES" ]]; then
 fi
 
 if [[ -n "$WARNINGS" ]]; then
-  echo "purlin: partial coverage (allowed, but consider adding proofs):"
+  echo "purlin: partial coverage:"
   echo -e "$WARNINGS"
 fi
 
+# Always block on FAIL (both modes)
 if [[ -n "$FAILS" ]]; then
   echo ""
-  echo "purlin: PUSH BLOCKED — failing proofs detected:"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "⚠ PUSH BLOCKED — failing proofs detected"
+  echo ""
   echo -e "$FAILS"
-  echo "Directives:"
-  echo "  1. Run 'purlin:unit-test' to see full failure details"
-  echo "  2. Fix the failing tests or update the spec rules"
-  echo "  3. Run 'purlin:status' to confirm all proofs pass"
+  echo "Fix failing proofs, then push again:"
+  echo "  → Run: test <feature>"
+  echo "  → Run: purlin:status"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  exit 1
+fi
+
+# In strict mode, also block on non-READY
+if [[ "$MODE" == "strict" ]] && [[ -n "$NON_READY" ]]; then
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "⚠ PUSH BLOCKED (strict mode) — features not fully proved"
+  echo ""
+  echo -e "$NON_READY"
+  echo ""
+  echo "All features must be READY before push in strict mode."
+  echo "  → Run: test <feature> for each partial feature"
+  echo "  → Run: purlin:verify"
+  echo ""
+  echo "To switch to warn mode: set \"pre_push\": \"warn\" in .purlin/config.json"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   exit 1
 fi
 

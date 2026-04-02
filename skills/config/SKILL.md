@@ -60,3 +60,4 @@ The config file is `.purlin/config.json`. Default contents (from `templates/conf
 | `version` | string | `"0.9.0"` | Purlin config version |
 | `test_framework` | string | `"auto"` | Test framework: `"auto"`, `"pytest"`, `"jest"`, `"shell"` |
 | `spec_dir` | string | `"specs"` | Directory containing spec files |
+| `pre_push` | string | `"warn"` | Pre-push hook mode: `"warn"`, `"strict"`, `"off"` |

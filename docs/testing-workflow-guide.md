@@ -440,25 +440,44 @@ Proofs are only valuable if they're actually run. Purlin offers three layers of 
 
 ### Layer 1: Pre-push hook (built into Purlin)
 
-`purlin:init` installs a git pre-push hook that runs your default-tier tests before code reaches the remote. If any proof is FAILING, the push is blocked:
+`purlin:init` installs a git pre-push hook that runs default-tier tests before code reaches the remote.
 
+**Two modes** (set in `.purlin/config.json` → `"pre_push"`):
+
+| Mode | Blocks on | Allows |
+|------|----------|--------|
+| `"warn"` (default) | FAILING proofs | Partial coverage (NO PROOF) with a warning |
+| `"strict"` | Anything non-READY | Only fully proved features |
+
+**Warn mode** — for incremental development:
 ```
-Pre-push: running default-tier tests...
+purlin: partial coverage:
+  checkout → RULE-3: NO PROOF (own)
 
-  login: 3/3 PASS
-  checkout: 2/3 — RULE-3 FAILING
-    → Fix: test checkout (RULE-3 failing)
+purlin: passing features:
+  login
+```
+Push goes through. You're still writing tests.
 
-BLOCKED: 1 feature has failing proofs. Fix before pushing.
+**Strict mode** — for teams that want hard enforcement:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ PUSH BLOCKED (strict mode) — features not fully proved
+
+  checkout: 2/3 rules proved
+
+All features must be READY before push in strict mode.
+  → Run: test checkout
+  → Run: purlin:verify
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-The hook is designed for good-actor developers working incrementally:
-- **FAILING proofs → block.** Broken proofs should not reach the remote.
-- **NO PROOF (partial coverage) → warn, allow.** You're still writing tests — that's fine.
-- **No specs → allow silently.** New projects start with no specs.
-- **Fast.** Only runs default tier — no `@slow` or `@e2e` tests.
+Set the mode during `purlin:init` or change it in `.purlin/config.json`:
+```json
+{ "pre_push": "strict" }
+```
 
-To bypass in emergencies: `git push --no-verify` (standard git escape hatch).
+**`--no-verify` is prohibited.** The Purlin agent definition explicitly forbids bypassing the hook. The hook exists to catch problems before they reach the remote — skipping it defeats the purpose.
 
 ### Layer 2: CI pipeline
 

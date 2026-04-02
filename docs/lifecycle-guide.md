@@ -386,9 +386,12 @@ Proofs keep specs and code in sync — but only if they're actually run. Purlin 
 
 ### Layer 1: Pre-push hook (automatic)
 
-`purlin:init` installs a git pre-push hook. Every time you push, default-tier tests run automatically. Failing proofs block the push. Partial coverage (rules without proofs yet) warns but allows — developers work incrementally.
+`purlin:init` installs a git pre-push hook. Every time you push, default-tier tests run automatically. Two modes:
 
-This is part of the Purlin lifecycle. You don't configure it — it's installed when you initialize the project.
+- **Warn mode** (default) — blocks on FAILING proofs, warns on partial coverage. For incremental development.
+- **Strict mode** — blocks unless ALL features are READY. For teams that want hard enforcement.
+
+Set during `purlin:init` or via `"pre_push": "strict"` in `.purlin/config.json`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.
 
 ### Layer 2: CI pipeline (you configure)
 

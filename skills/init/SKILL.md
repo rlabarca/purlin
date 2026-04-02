@@ -109,6 +109,19 @@ Next steps:
 
 Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
 
+The hook has two modes, set in `.purlin/config.json` under `"pre_push"`:
+- **`"warn"`** (default) — blocks on FAILING proofs, warns on partial coverage
+- **`"strict"`** — blocks on anything non-READY (all features must be fully proved)
+
+Ask the user which mode they want:
+```
+Pre-push hook mode:
+  [warn]   Block on failing proofs, warn on partial coverage (default)
+  [strict] Block unless all features are READY (fully proved)
+```
+
+Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"` or `"pre_push": "strict"`.
+
 1. Locate the Purlin plugin root (`$CLAUDE_PLUGIN_ROOT` or the framework scripts directory).
 2. Check if `.git/hooks/pre-push` already exists:
    - If it exists and is already the Purlin hook (contains `purlin`): skip, print `Pre-push hook already installed.`

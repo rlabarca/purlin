@@ -1,5 +1,6 @@
 {
   "version": "0.9.0",
   "test_framework": "auto",
-  "spec_dir": "specs"
+  "spec_dir": "specs",
+  "pre_push": "warn"
 }
