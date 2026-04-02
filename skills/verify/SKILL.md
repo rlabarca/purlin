@@ -93,7 +93,8 @@ This is informational — not a gate. The receipts are still valid. The note mak
 If ANY features are partial or failing (i.e., `N < T`), print a directive block **after** the receipts table:
 
 ```
-M features still need tests before full verification:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ M features still need tests before full verification:
 
   webhook_delivery (2/3 rules proved)
   → Run: test webhook_delivery
@@ -102,6 +103,7 @@ M features still need tests before full verification:
   → Run: test notification_system
 
 Work through these, then run purlin:verify again.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 This block MUST:
@@ -124,16 +126,19 @@ When tests fail during verify:
    - Diagnosis: is this likely a code bug, test bug, or spec drift?
    - Directive: `→ Run: test <feature>` to fix in the build loop
 
-3. After reporting all failures:
+3. After reporting all failures, display the action block:
+
    ```
-   Verification incomplete. N proofs failing across M features.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚠ VERIFICATION INCOMPLETE — N proofs failing across M features.
 
    Fix these in the build loop, then run purlin:verify again:
      → Run: test <feature_1>
      → Run: test <feature_2>
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-The verify skill should never silently fix a test to make verification pass. That defeats the purpose of verification as an independent check.
+The verify skill MUST NOT fix code or tests. If you find yourself about to edit a file, STOP — exit verify and use `purlin:build` instead.
 
 ### Step 5 — Commit
 

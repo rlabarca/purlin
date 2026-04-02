@@ -73,11 +73,24 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    Explain this categorization to the user when presenting the taxonomy. For each category, list: name, feature count, and per-feature name + one-line description.
 
-4. Present categories in batches of 2–3 via `AskUserQuestion`. Let the user:
-   - Rename categories
-   - Merge or split categories
-   - Add missed features
-   - Remove false positives
+4. Present categories in batches of 2–3 via `AskUserQuestion`. For each batch, show the proposed categories and end with the approval block:
+
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚡ REVIEW CATEGORIES — Does this grouping look right?
+
+     [y] Approve these categories
+     [rename] Rename a category
+     [merge] Merge two categories
+     [split] Split a category
+     [add] Add a missed feature
+     [remove] Remove a false positive
+
+   Waiting for your response...
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   Do NOT proceed to the next batch without an explicit response.
 
 5. **Near-duplicate detection:** After the taxonomy is drafted but before presenting anchors, compare proposed features *within each category* for rule similarity. Two features are near-duplicates when they would have substantially the same behavioral constraints (same rules, different implementations — e.g., three proof plugins that all do "parse markers, emit JSON, feature-scoped overwrite"). For each cluster of 2+ near-duplicates:
    - Ask the user via `AskUserQuestion`: "These N features share similar behavior: `<names>`. Consolidate into one spec with per-implementation rules, or keep separate?"
@@ -112,7 +125,22 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    The security anchor MUST always be proposed. Proofs should be grep-based negative assertions (e.g., `grep -r "eval(" scripts/` returns zero matches).
 
-   Ask the user (via `AskUserQuestion`) to confirm, rename, or remove proposed anchors.
+   Present proposed anchors and ask for approval:
+
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚡ REVIEW ANCHORS — <N> cross-cutting constraints detected
+
+     [y] Approve all anchors
+     [rename] Rename an anchor
+     [remove] Remove an anchor
+     [add] Add a missing anchor
+
+   Waiting for your response...
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   Use `AskUserQuestion` to pause. Do NOT proceed without an explicit response.
 
 7. **Security anchor gate (mandatory, not skippable):** Before proceeding to Phase 3, verify that at least one `security_` prefixed anchor exists in the confirmed taxonomy. If none was confirmed:
    - Run the FORBIDDEN pattern grep anyway (`eval(`, `exec(`, `os.system(`, `shell=True`, hardcoded credentials)
@@ -248,7 +276,21 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-6. Ask the user (via `AskUserQuestion`) to confirm the generated specs for this category look correct before proceeding to the next.
+6. Present the generated specs for this category and ask for approval:
+
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚡ REVIEW SPECS — <category_name> (<N> specs generated)
+
+     [y] Approve and commit this category
+     [n] Discard and regenerate
+     [edit] I want to change specific specs
+
+   Waiting for your response...
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
 7. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
 
