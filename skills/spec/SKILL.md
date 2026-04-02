@@ -51,7 +51,21 @@ If the input is substantial (more than a sentence or two), extract as much as po
 - **Scope** — if code files are mentioned or inferable
 - **Stack** — if technologies are mentioned
 
-Present the **complete draft spec** to the user. Then go to Step 3 for gap questions.
+Present the **complete draft spec** to the user, followed by the approval block:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ REVIEW DRAFT — Does this look right?
+
+  [y] Looks good — continue to metadata
+  [n] Start over
+  [edit] I want to change specific rules or proofs
+
+Waiting for your response...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Use `AskUserQuestion` to pause and wait. Do NOT skip this step. Then go to Step 3 for gap questions.
 
 ## Step 3 — Gap Questions (only what's missing)
 
@@ -217,8 +231,18 @@ METADATA:
   ▎ Scope: unchanged
   ▎ Requires: unchanged
 
-Approve these changes? [y/n/edit]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ APPROVAL REQUIRED — Review the changes above.
+
+  [y] Approve and apply all changes
+  [n] Cancel — make no changes
+  [edit] I want to adjust specific items
+
+Waiting for your response...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**This approval block is MANDATORY.** The agent MUST use `AskUserQuestion` to pause and wait for the user's response. Do NOT auto-approve. Do NOT proceed without an explicit answer. The bordered block above is the exact format to use — it must be visually distinct from the rest of the output so the user doesn't scroll past it.
 
 ### 7d — Apply approved changes
 
