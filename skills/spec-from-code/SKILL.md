@@ -331,6 +331,8 @@ Next:
 
 For quality guidelines on writing rules, proof descriptions, tier assignment, anchor detection, FORBIDDEN patterns, `> Stack:` metadata, `> Requires:` and `> Scope:` guidance, see **`references/spec_quality_guide.md`**.
 
+For audit criteria (what makes a proof STRONG vs WEAK vs HOLLOW), see **`references/audit_criteria.md`**. Write proof descriptions that will pass audit the first time — avoid patterns listed as HOLLOW (mocking the thing being tested, asserting existence instead of behavior, no assertions).
+
 Additional spec-from-code-specific guidelines:
 
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
