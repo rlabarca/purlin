@@ -56,7 +56,7 @@ Test code                     Proof plugin              sync_status
 
 **The chain:** test framework marker → proof plugin → JSON file → `sync_status`. No regex parsing. No source code scanning. The plugin reads framework metadata at runtime.
 
-### pytest
+### pytest (Python)
 
 ```python
 @pytest.mark.proof("auth_login", "PROOF-1", "RULE-1", tier="slow")
@@ -67,10 +67,10 @@ def test_valid_login():
 
 The marker args: `(feature_name, proof_id, rule_id)`. Optional: `tier="slow"` for tests that hit APIs, databases, or external services.
 
-### Jest
+### Jest (JavaScript / TypeScript)
 
 ```javascript
-it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async () => {
+it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:slow]", async () => {
   const resp = await post("/login", { user: "alice", pass: "secret" });
   expect(resp.status).toBe(200);
 });
@@ -78,7 +78,7 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:default]", async
 
 The marker is embedded in the test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
 
-### Shell
+### Shell (Bash)
 
 ```bash
 source .purlin/plugins/purlin-proof.sh
@@ -113,11 +113,11 @@ A proof plugin is the bridge between your test framework and Purlin. It reads pr
 
 Purlin ships with plugins for three frameworks:
 
-| Framework | Plugin file | Marker syntax |
-|-----------|------------|---------------|
-| **pytest** | `scripts/proof/pytest_purlin.py` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
-| **Jest** | `scripts/proof/jest_purlin.js` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
-| **Shell** | `scripts/proof/shell_purlin.sh` | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
+| Framework | Language | Plugin file | Marker syntax |
+|-----------|----------|------------|---------------|
+| **pytest** | Python | `scripts/proof/pytest_purlin.py` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
+| **Jest** | JavaScript / TypeScript | `scripts/proof/jest_purlin.js` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
+| **Shell** | Bash | `scripts/proof/shell_purlin.sh` | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
 
 `purlin:init` detects your framework and copies the right plugin to `.purlin/plugins/`.
 
