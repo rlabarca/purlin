@@ -1,8 +1,8 @@
 {
   "feature": "mcp_server",
   "vhash": "5ee298d5",
-  "commit": "ffec1b78215900315d3eee59ee005fbe6c7b0c1a",
-  "timestamp": "2026-04-01T18:43:29Z",
+  "commit": "955559073c50a9a30d3b965ce665671d711c08ba",
+  "timestamp": "2026-04-02T11:44:03Z",
   "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8", "RULE-9", "RULE-10", "RULE-11", "RULE-12", "RULE-13", "RULE-14", "RULE-15", "RULE-16", "RULE-17", "RULE-18", "RULE-19"],
   "proofs": [
     {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
