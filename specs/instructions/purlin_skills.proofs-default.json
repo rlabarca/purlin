@@ -108,6 +108,33 @@
       "test_name": "test_proof_writing_skills_have_tier_review",
       "status": "pass",
       "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_init_add_plugin_validates_by_language",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_init_add_plugin_supports_file_and_git",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_init_list_plugins_labels_builtin_and_custom",
+      "status": "pass",
+      "tier": "default"
     }
   ]
 }

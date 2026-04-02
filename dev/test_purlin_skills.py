@@ -1,4 +1,4 @@
-"""Tests for purlin_skills — 12 rules.
+"""Tests for purlin_skills — 15 rules.
 
 Structural verification of the 12 skill definition files under skills/.
 """
@@ -122,3 +122,30 @@ class TestPurlinSkills:
             content = _read(path)
             assert re.search(r'(?i)tier', content), \
                 f"{skill} skill missing tier review requirement"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-13", "RULE-13")
+    def test_init_add_plugin_validates_by_language(self):
+        content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
+        for lang in ('Python', 'JavaScript', 'Shell', 'Java'):
+            assert lang in content, \
+                f"init skill missing validation entry for {lang}"
+        assert "doesn't look like a standard proof plugin" in content, \
+            "init skill missing validation warning text"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-14", "RULE-14")
+    def test_init_add_plugin_supports_file_and_git(self):
+        content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
+        assert 'local file path' in content, \
+            "init skill missing local file path source docs"
+        assert 'git URL' in content, \
+            "init skill missing git URL source docs"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-15", "RULE-15")
+    def test_init_list_plugins_labels_builtin_and_custom(self):
+        content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
+        assert 'pytest_purlin.py' in content and 'Python/pytest' in content, \
+            "init skill missing pytest_purlin.py → Python/pytest label"
+        assert 'jest_purlin.js' in content and 'JavaScript/Jest' in content, \
+            "init skill missing jest_purlin.js → JavaScript/Jest label"
+        assert 'custom' in content, \
+            "init skill missing 'custom' label for non-built-in plugins"
