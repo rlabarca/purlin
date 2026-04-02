@@ -2,12 +2,12 @@
 # Feature: proof_plugins
 
 > Requires: schema_proof_format, security_no_dangerous_patterns
-> Scope: scripts/proof/pytest_purlin.py, scripts/proof/jest_purlin.js, scripts/proof/shell_purlin.sh
+> Scope: scripts/proof/pytest_purlin.py, scripts/proof/jest_purlin.js, scripts/proof/shell_purlin.sh, skills/init/SKILL.md
 > Stack: python/stdlib (pytest plugin), node/jest (reporter), shell/bash (harness with inline python3)
 
 ## What it does
 
-Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files next to spec files. All three implement the same core behavior (marker parsing, spec directory resolution, feature-scoped overwrite) with framework-specific syntax. These plugins are scaffolded into consumer projects by `purlin:init`.
+Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files next to spec files. All three implement the same core behavior (marker parsing, spec directory resolution, feature-scoped overwrite) with framework-specific syntax. These plugins are scaffolded into consumer projects by `purlin:init`. Custom or community plugins can be installed via `purlin:init --add-plugin` and work automatically — no registration needed.
 
 ## Rules
 
@@ -42,6 +42,10 @@ Three proof collection plugins — pytest, Jest, and shell — that parse framew
 - RULE-18: `purlin_proof_finish` must be called to write proof files — entries are accumulated in memory until then
 - RULE-19: After `purlin_proof_finish`, the accumulated entries are cleared (reset for next batch)
 
+### Installation and discovery
+
+- RULE-20: Custom/community proof plugins installed to `.purlin/plugins/` require no registration — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`, so any plugin that writes files in that pattern works automatically
+
 ## Proof
 
 ### Shared behavior
@@ -74,6 +78,10 @@ Three proof collection plugins — pytest, Jest, and shell — that parse framew
 - PROOF-17 (RULE-17): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @slow
 - PROOF-18 (RULE-18): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @slow
 - PROOF-19 (RULE-19): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @slow
+
+### Installation and discovery
+
+- PROOF-20 (RULE-20): Place a `.proofs-default.json` file in a spec directory written by a non-built-in source; run `sync_status`; verify it reads the proofs @slow
 
 ## Implementation Notes
 
