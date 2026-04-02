@@ -361,6 +361,139 @@ Done. 4/4 auto proofs pass. 1 manual proof pending (PROOF-5).
 
 ---
 
+## Enforcement
+
+Proofs are only valuable if they're actually run. Purlin offers three layers of enforcement, from local to remote:
+
+| Layer | What it does | Blocks on | Installed by |
+|-------|-------------|-----------|-------------|
+| **Layer 1: Git pre-push hook** | Runs default-tier tests before push | FAILING proofs | `purlin:init` (automatic) |
+| **Layer 2: CI pipeline** | Runs tiered tests per trigger | FAILING proofs + coverage gates | You (pipeline config) |
+| **Layer 3: Deploy gate** | Clean-room verification | vhash mismatch | You (pipeline config) |
+
+### Layer 1: Pre-push hook (built into Purlin)
+
+`purlin:init` installs a git pre-push hook that runs your default-tier tests before code reaches the remote. If any proof is FAILING, the push is blocked:
+
+```
+Pre-push: running default-tier tests...
+
+  login: 3/3 PASS
+  checkout: 2/3 — RULE-3 FAILING
+    → Fix: test checkout (RULE-3 failing)
+
+BLOCKED: 1 feature has failing proofs. Fix before pushing.
+```
+
+The hook is designed for good-actor developers working incrementally:
+- **FAILING proofs → block.** Broken proofs should not reach the remote.
+- **NO PROOF (partial coverage) → warn, allow.** You're still writing tests — that's fine.
+- **No specs → allow silently.** New projects start with no specs.
+- **Fast.** Only runs default tier — no `@slow` or `@e2e` tests.
+
+To bypass in emergencies: `git push --no-verify` (standard git escape hatch).
+
+### Layer 2: CI pipeline
+
+Configure your CI to run tiered tests based on the trigger. Purlin doesn't ship pipeline configs — you write them for your CI system.
+
+**GitHub Actions:**
+
+```yaml
+name: Purlin Proof Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  proof-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run default + slow tier tests
+        run: |
+          pytest  # runs default + slow tiers via conftest
+          python3 scripts/mcp/purlin_server.py --check sync_status
+
+      - name: Check for failing proofs
+        run: |
+          python3 -c "
+          import subprocess, sys
+          result = subprocess.run(['python3', 'scripts/mcp/purlin_server.py', '--check', 'sync_status'],
+                                  capture_output=True, text=True)
+          if 'FAIL' in result.stdout:
+              print(result.stdout)
+              sys.exit(1)
+          print('All proofs passing.')
+          "
+```
+
+**Bitbucket Pipelines:**
+
+```yaml
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Proof Gate
+          script:
+            - pip install -r requirements.txt
+            - pytest
+            - python3 scripts/mcp/purlin_server.py --check sync_status
+
+  branches:
+    main:
+      - step:
+          name: Full Verification
+          script:
+            - pip install -r requirements.txt
+            - pytest --run-all-tiers
+            - python3 scripts/mcp/purlin_server.py --check sync_status --require-ready
+```
+
+**What to enforce per trigger:**
+
+| Trigger | Tiers to run | Block on |
+|---------|-------------|----------|
+| PR / branch push | default + `@slow` | Any FAIL |
+| Merge to main | All tiers (default + `@slow` + `@e2e`) | Any FAIL or partial coverage |
+| Nightly | `purlin:verify --audit` | vhash mismatch |
+
+### Layer 3: Deploy gate
+
+The strongest enforcement. `purlin:verify --audit` is a clean-room re-execution:
+
+1. Deletes all proof files
+2. Re-runs every test (all tiers)
+3. Recomputes vhash for every feature
+4. Compares against committed receipts
+
+If the locally-computed vhash matches the committed receipt, CI independently confirmed the verification. If not — something changed between verification and deploy.
+
+```yaml
+# Add to your deploy pipeline
+- name: Deploy Gate
+  run: |
+    python3 scripts/mcp/purlin_server.py --audit
+    # Exit code 0 = all receipts match
+    # Exit code 1 = mismatch or missing receipt
+```
+
+This catches:
+- Tests that were weakened after verification
+- Code changes committed after `purlin:verify` without re-verification
+- Proof files manually edited to show false passes
+
+---
+
 ## Writing a Custom Proof Plugin
 
 ### What a proof plugin does

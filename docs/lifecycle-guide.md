@@ -380,21 +380,20 @@ The structural specs are the smoke detector. The E2E is the fire drill.
 
 ---
 
-## CI Integration
+## Enforcement
 
-```yaml
-# Fast gate — every push
-on: push
-  - run: purlin:unit-test
+Proofs keep specs and code in sync — but only if they're actually run. Purlin enforces proofs at three layers:
 
-# Full proof — nightly
-on: schedule (nightly)
-  - run: purlin:verify
+### Layer 1: Pre-push hook (automatic)
 
-# Deploy gate
-on: deploy
-  - run: purlin:invariant sync --check-only
-  - run: purlin:verify --audit
-```
+`purlin:init` installs a git pre-push hook. Every time you push, default-tier tests run automatically. Failing proofs block the push. Partial coverage (rules without proofs yet) warns but allows — developers work incrementally.
 
-`--audit` is a clean-room re-execution: deletes all proof files, re-runs every test, recomputes the verification hash, and compares to the committed receipt. If they match, CI independently confirmed the developer's local verification.
+This is part of the Purlin lifecycle. You don't configure it — it's installed when you initialize the project.
+
+### Layer 2: CI pipeline (you configure)
+
+Your CI runs tiered tests per trigger — PRs get default + `@slow`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for GitHub Actions and Bitbucket Pipelines examples.
+
+### Layer 3: Deploy gate (you configure)
+
+`purlin:verify --audit` is a clean-room re-execution before deploy. Deletes all proof files, re-runs every test, recomputes the vhash, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-3-deploy-gate) for setup.

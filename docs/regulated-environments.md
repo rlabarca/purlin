@@ -30,6 +30,18 @@ Purlin generates structured artifacts that a real compliance system can consume:
 
 These artifacts are **inputs to your compliance pipeline**, not the pipeline itself.
 
+### Purlin's enforcement layers
+
+Purlin enforces proofs at three layers, each with different trust properties:
+
+| Layer | Trust level | What it catches |
+|-------|------------|----------------|
+| **Layer 1: Git pre-push hook** | Low — local, bypassable with `--no-verify` | Developer mistakes (broken proofs before they reach remote) |
+| **Layer 2: CI pipeline** | Medium — remote, configured by team | Code that doesn't pass tiered proof checks |
+| **Layer 3: Deploy gate (`--audit`)** | Higher — clean-room re-execution | Tampered proof files, weakened tests, stale receipts |
+
+**For regulated environments, Layer 3 is required but not sufficient.** The `--audit` re-execution proves the tests pass in CI, but it doesn't prove the tests are meaningful (see "Not a test quality gate" above). Your QMS must independently verify test quality.
+
 ---
 
 ## How a Regulated Pipeline Would Use Purlin
