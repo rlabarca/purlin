@@ -95,6 +95,7 @@ Created:
   .purlin/plugins/<proof_plugin>
   specs/
   specs/_invariants/
+  .git/hooks/pre-push (if installed)
 
 Test framework: <detected>
 Proof plugin: .purlin/plugins/<name>
@@ -104,7 +105,29 @@ Next steps:
   purlin:status          — see rule coverage
 ```
 
-## Step 7 — Commit
+## Step 7 — Install Git Pre-push Hook
+
+Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
+
+1. Locate the Purlin plugin root (`$CLAUDE_PLUGIN_ROOT` or the framework scripts directory).
+2. Check if `.git/hooks/pre-push` already exists:
+   - If it exists and is already the Purlin hook (contains `purlin`): skip, print `Pre-push hook already installed.`
+   - If it exists and is a different hook: warn and skip — do NOT overwrite. Print: `Existing pre-push hook found — skipping Purlin hook install. To add manually, see scripts/hooks/pre-push.sh`
+   - If it does not exist: proceed.
+3. Create a symlink or copy:
+   ```bash
+   # Preferred: symlink (stays in sync with framework updates)
+   ln -s "$PURLIN_SCRIPTS/scripts/hooks/pre-push.sh" .git/hooks/pre-push
+   chmod +x .git/hooks/pre-push
+   ```
+   If the symlink target is not resolvable (e.g., consumer project without local framework checkout), copy the file instead:
+   ```bash
+   cp "$PURLIN_SCRIPTS/scripts/hooks/pre-push.sh" .git/hooks/pre-push
+   chmod +x .git/hooks/pre-push
+   ```
+4. Print: `Installed git pre-push hook (proof coverage check).`
+
+## Step 8 — Commit
 
 ```
 git commit -m "chore: initialize purlin project"
