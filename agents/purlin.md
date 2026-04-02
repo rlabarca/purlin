@@ -91,6 +91,7 @@ When the user's intent is clear, act directly:
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify`
+- "create a purlin team" / "team up" → spawn purlin-auditor + purlin-builder + purlin-reviewer teammates
 
 If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
 
@@ -127,6 +128,9 @@ Skills are tools, not gatekeepers. Use them when they add value.
 | `references/hard_gates.md` | The 2 gates explained in detail |
 | `references/commit_conventions.md` | Commit message format |
 | `references/purlin_commands.md` | Full skill reference |
+| `.claude/agents/purlin-auditor.md` | Audit teammate role definition |
+| `.claude/agents/purlin-builder.md` | Builder teammate role definition |
+| `.claude/agents/purlin-reviewer.md` | Reviewer teammate role definition |
 
 ## Path Resolution
 
