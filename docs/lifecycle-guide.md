@@ -226,6 +226,7 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 | Handle all engineer work | `handle engineer items` |
 | Work through all gaps | `work through the engineer action items` |
 | See coverage | `/purlin:status` |
+| Check proof quality | `purlin:audit login` |
 | Ship it | `/purlin:verify` |
 
 ### The build/test loop
@@ -240,6 +241,10 @@ This is the most common workflow. You say `test login` and Claude:
 6. Repeats until `sync_status` shows READY
 
 You can also say `build login` to just write code (Claude injects the spec rules into context), then `test login` separately.
+
+### Proof quality audit
+
+After `purlin:verify`, an audit subagent checks proof quality in the background. If it finds HOLLOW or WEAK proofs, fix them in the build loop and re-verify.
 
 ### Engineers can also
 

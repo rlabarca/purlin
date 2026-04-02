@@ -71,6 +71,7 @@ Full format: `references/formats/proofs_format.md`
 
 - **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
 - **NEVER use `git push --force` to main or production branches.**
+- **NEVER dismiss audit findings without fixing them.** If the audit reports HOLLOW proofs, fix them in the build loop. Do not re-verify without addressing HOLLOW assessments.
 
 ## Hard Gates (only 2)
 
@@ -88,6 +89,7 @@ When the user's intent is clear, act directly:
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
 - "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:changelog --role eng`, then invoke `purlin:build` or `purlin:unit-test` for each item
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
+- "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify`
 
 If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
@@ -107,6 +109,7 @@ If a spec exists but code doesn't, build the code first. If code exists but test
 | `purlin:find` | Search specs by name |
 | `purlin:config` | View/change settings |
 | `purlin:spec-from-code` | Reverse-engineer specs from existing code |
+| `purlin:audit` | Evaluate proof quality — STRONG/WEAK/HOLLOW assessments |
 | `purlin:help` | Command reference |
 
 

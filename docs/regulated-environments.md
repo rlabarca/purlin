@@ -97,6 +97,23 @@ When `@manual` stamps are required, the compliant flow is:
 4. The QMS (or CI pipeline) injects the cryptographically signed approval token into the spec file or a locked artifact, which Purlin reads to satisfy the local `sync_status` check — stopping the `→ MANUAL PROOF NEEDED` directives
 5. CI verifies the QMS approval token before accepting the manual proof
 
+### Proof Quality Auditing
+
+Purlin's audit skill evaluates whether tests actually prove what they claim. For regulated teams, the audit criteria can be externalized to a compliance-controlled repository:
+
+```json
+{
+  "audit_criteria": "git@bitbucket.org:acme/compliance-qa-standards.git#audit_criteria.md",
+  "audit_criteria_pinned": "a1b2c3d4"
+}
+```
+
+The compliance team owns and versions the criteria file. Developers cannot change the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
+
+This addresses the "test quality gate" concern: while Purlin can't structurally prevent tautological tests, the audit criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
+
+Note: the audit is LLM-based judgment, not deterministic analysis. It can miss subtle test weaknesses. For regulated environments, the audit report should be reviewed by a human as part of the QA process, not treated as a final authority.
+
 ### External Invariant Validation
 
 Invariant `> Pinned:` SHAs track which version of an external standard is in use. Your CI pipeline can compare the pinned SHA against the authoritative source and fail the build if the invariant is stale — enforced by CI policy, not by Purlin config.

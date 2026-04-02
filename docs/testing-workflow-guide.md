@@ -580,6 +580,31 @@ This catches:
 
 ---
 
+## Proof Quality Auditing
+
+After `purlin:verify` issues receipts, an audit subagent evaluates whether your tests actually prove what the proof descriptions claim. The audit is independent — it runs in a separate context with no memory of writing the tests.
+
+Each proof is assessed as STRONG (**✓**), WEAK (**~**), HOLLOW (**✗**), or MANUAL (**●**). The criteria are documented in [references/audit_criteria.md](../references/audit_criteria.md) and can be overridden with an external criteria file for teams with custom quality standards.
+
+If the audit finds HOLLOW or WEAK proofs, it directs you back to the build loop:
+
+```
+test login — fix PROOF-3 (use real bcrypt instead of mock)
+purlin:verify
+```
+
+The loop continues until the audit reports no HOLLOW proofs.
+
+**Custom criteria:** Teams with specific quality requirements (security, compliance, domain-specific) can point to an external criteria file:
+
+```json
+{ "audit_criteria": "git@github.com:acme/quality-standards.git#audit_criteria.md" }
+```
+
+This is configured during `purlin:init` or updated with `purlin:init --sync-audit-criteria`.
+
+---
+
 ## Writing a Custom Proof Plugin
 
 ### What a proof plugin does

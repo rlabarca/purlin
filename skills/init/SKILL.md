@@ -12,6 +12,7 @@ purlin:init                             Initialize a new project
 purlin:init --force                     Re-initialize (preserves existing config)
 purlin:init --add-plugin <source>       Install a proof plugin from file or git URL
 purlin:init --list-plugins              List installed proof plugins
+purlin:init --sync-audit-criteria       Sync external audit criteria to latest version
 ```
 
 ## Step 1 — Pre-flight
@@ -140,6 +141,29 @@ Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"` or `"pre_
    ```
 4. Print: `Installed git pre-push hook (proof coverage check).`
 
+## Step 7b — Audit Criteria
+
+Ask the user which audit criteria to use:
+
+```
+Audit criteria:
+  [default] Use Purlin's built-in audit criteria
+  [custom]  Point to an external criteria file (git URL)
+```
+
+If **default**: no config change needed — `purlin:audit` reads `references/audit_criteria.md` automatically.
+
+If **custom**: ask for the git URL and file path (e.g., `git@github.com:acme/quality-standards.git#audit_criteria.md`). Set `audit_criteria` and `audit_criteria_pinned` in `.purlin/config.json`:
+
+```json
+{
+  "audit_criteria": "git@github.com:acme/quality-standards.git#audit_criteria.md",
+  "audit_criteria_pinned": "<current remote HEAD sha>"
+}
+```
+
+Clone the repo to a temp directory, read the file at HEAD, record the commit SHA as `audit_criteria_pinned`, then clean up.
+
 ## Step 8 — Commit
 
 ```
@@ -227,3 +251,29 @@ For built-in plugins, show the framework name:
 | Anything else | custom |
 
 If `.purlin/plugins/` doesn't exist or is empty: `No proof plugins installed. Run purlin:init to set up.`
+
+---
+
+## Subcommand: --sync-audit-criteria
+
+```
+purlin:init --sync-audit-criteria
+```
+
+Syncs the external audit criteria file to the latest version.
+
+### Steps
+
+1. Read `.purlin/config.json`. If `audit_criteria` is not set: `"No external audit criteria configured. Using built-in defaults."` Stop.
+
+2. Parse the git URL and file path from `audit_criteria` (format: `git@host:org/repo.git#path/to/file.md`).
+
+3. Clone the repo to a temp directory: `git clone <url> /tmp/purlin-audit-criteria-sync`
+
+4. Get the current remote HEAD SHA: `git rev-parse HEAD`
+
+5. Compare to `audit_criteria_pinned` in config:
+   - If same: `"Audit criteria up to date."` Clean up and stop.
+   - If different: read the file at HEAD, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
+
+6. Clean up: `rm -rf /tmp/purlin-audit-criteria-sync`

@@ -1,6 +1,6 @@
 # Purlin Commands
 
-> Read and printed by `purlin:help`. 13 skills, no modes, no permission system.
+> Read and printed by `purlin:help`. 14 skills, no modes, no permission system.
 
 ```
 Purlin — Spec-Driven Development
@@ -20,6 +20,11 @@ Purlin — Spec-Driven Development
   purlin:verify --audit         Clean-room re-execution, compare vhash to receipts
   purlin:verify --manual <f> <P>  Stamp a manual proof
 
+  Quality
+  ──────
+  purlin:audit [feature]        Evaluate proof quality (STRONG/WEAK/HOLLOW)
+  purlin:audit --criteria <f>   Use a specific criteria file
+
   Reporting
   ──────
   purlin:status                 Show rule coverage via sync_status (with → directives)
@@ -33,6 +38,8 @@ Purlin — Spec-Driven Development
   purlin:init --list-plugins    List installed proof plugins
   purlin:config [key] [value]   View or change .purlin/config.json settings
   purlin:invariant <cmd>        Sync read-only constraints from external sources
+  purlin:init --sync-audit-criteria
+                                Sync external audit criteria to latest version
   purlin:help                   This command reference
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -46,6 +53,7 @@ Purlin — Spec-Driven Development
 | `purlin:build` | Implement from spec rules | Code files + test files |
 | `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
 | `purlin:unit-test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
+| `purlin:audit` | Evaluate proof quality | Nothing (read-only) |
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
 | `purlin:changelog` | Changes since last verify | Nothing (read-only) |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |

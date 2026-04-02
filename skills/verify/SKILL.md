@@ -138,6 +138,36 @@ When tests fail during verify:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
+### Step 4e — Spawn Audit
+
+After issuing receipts, spawn a background audit subagent:
+
+```
+Agent(subagent_type="general-purpose", run_in_background=true, prompt=
+  "Run purlin:audit for all features that just received receipts: <feature list>.
+   Report the integrity score and any HOLLOW or WEAK proofs.")
+```
+
+The audit runs while the engineer reviews receipts. When it completes, display the report.
+
+If the audit finds HOLLOW or WEAK proofs:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ AUDIT FOUND QUALITY ISSUES
+
+  PROOF-3 (login): HOLLOW ✗ — mocks bcrypt, proves nothing
+  PROOF-2 (checkout): WEAK ~ — missing body assertion
+
+Fix in the build loop, then re-verify:
+  → Run: test login (fix PROOF-3: use real bcrypt)
+  → Run: test checkout (fix PROOF-2: add body assertion)
+  → Run: purlin:verify
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+The loop: verify → audit → if issues → build fixes → verify again. Verify does NOT fix tests. Build fixes. Audit judges.
+
 ### Step 5 — Commit
 
 ```
