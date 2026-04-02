@@ -52,8 +52,9 @@ Criteria: <source> (Criteria-Version: N)
   PROOF-2 (RULE-2): <proof description>
     Test: <test_name> in <test_file>:<line>
     Assessment: HOLLOW ✗
-    Reason: <specific hollow reason from criteria>
-    → Fix: <what to change>
+    Criterion: <which criterion from audit_criteria.md was violated>
+    Why: <what would slip through — why this matters>
+    Fix: <specific, actionable change the builder should make>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTEGRITY SCORE: <N>%
@@ -93,10 +94,13 @@ When running as a purlin-auditor teammate in an agent team:
 
 - Read references/audit_criteria.md at startup
 - After completing the initial audit, message findings directly to the purlin-builder teammate (not the lead)
-- Format each finding as a specific, actionable message:
+- Format each finding with the three-part structure:
   ```
-  HOLLOW: login PROOF-3 (RULE-3) — test mocks bcrypt.checkpw and asserts the mock's return value.
-  Fix: store a real password via the auth module, retrieve the hash, verify bcrypt.checkpw(original, hash) returns True.
+  HOLLOW: login PROOF-3 (RULE-3)
+  Criterion: mocks the exact function the rule is about
+  Why: test passes even if bcrypt is misconfigured — a real auth bypass would not be caught
+  Fix: remove bcrypt.checkpw mock. Store a password via create_user('alice', 'secret'),
+       retrieve the hash, assert bcrypt.checkpw(b'secret', stored_hash) returns True.
   ```
 - Wait for the builder's response confirming the fix
 - Re-read the fixed test code and re-assess
@@ -116,3 +120,10 @@ When a HOLLOW or WEAK proof is for an invariant rule:
 - **Independent.** When spawned as a subagent, has fresh context — no memory of writing the tests.
 - **Criteria-driven.** All judgments reference the criteria document, not ad hoc opinions.
 - **Transparent.** The report shows the criteria version and source so anyone can verify the assessment was made against known standards.
+- **Actionable recommendations.** Every HOLLOW or WEAK finding includes three parts:
+  - **Criterion** — which specific criterion was violated (name it from audit_criteria.md)
+  - **Why** — what real problem this creates (what bug or failure would slip through)
+  - **Fix** — a specific, concrete change the builder should make (not "improve the test" but "replace `expected = hash_func(input)` with `expected = '5e884898da28...'`")
+
+  Bad fix recommendation: "Make the test stronger"
+  Good fix recommendation: "Remove the bcrypt.checkpw mock. Store a password via `create_user('alice', 'secret')`, retrieve the stored hash, assert `bcrypt.checkpw(b'secret', stored_hash)` returns True"
