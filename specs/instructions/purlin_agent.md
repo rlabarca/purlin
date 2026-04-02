@@ -16,9 +16,9 @@ Defines the Purlin Agent persona and behavior for Claude Code. Specifies the cor
 - RULE-3: The `## Specs` section includes the 3-section format template with `## What it does`, `## Rules`, `## Proof`
 - RULE-4: The `## Proof Markers` section documents marker syntax for all 3 frameworks: pytest, Jest, and shell
 - RULE-5: The `## Hard Gates` section defines exactly 2 gates: invariant protection and proof coverage
-- RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, changelog → purlin:changelog, spec → purlin:spec, verify → purlin:verify, engineer items → changelog + build/unit-test, QA items → changelog + verify)
-- RULE-7: The `## Skills` table lists all 12 skills with their purpose
-- RULE-8: The `## References` table lists all 8 reference documents with their topic
+- RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling and team spawning (test/build/fix → read spec + build, status → sync_status, changelog → purlin:changelog, spec → purlin:spec, verify → purlin:verify, engineer items → changelog + build/unit-test, QA items → changelog + verify, team up → spawn teammates)
+- RULE-7: The `## Skills` table lists all 13 skills with their purpose
+- RULE-8: The `## References` table lists all 11 reference entries with their topic
 
 ## Proof
 
@@ -27,6 +27,6 @@ Defines the Purlin Agent persona and behavior for Claude Code. Specifies the cor
 - PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `## What it does`, `## Rules`, `## Proof` within the template
 - PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `pytest:`, `Jest:`, and `Shell:` subsections
 - PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it contains exactly "only 2" and lists "Invariant protection" and "Proof coverage"
-- PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "changelog", "spec", "verify", "engineer", and "QA"
-- PROOF-7 (RULE-7): Grep `agents/purlin.md` for `## Skills`; count table rows; verify there are 12 skill entries
-- PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 8 reference entries
+- PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "changelog", "spec", "verify", "engineer", "QA", and "team"
+- PROOF-7 (RULE-7): Grep `agents/purlin.md` for `## Skills`; count table rows; verify there are 13 skill entries
+- PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 11 reference entries

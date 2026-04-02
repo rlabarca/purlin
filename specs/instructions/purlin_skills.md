@@ -6,12 +6,12 @@
 
 ## What it does
 
-Twelve skill definition files that define user-facing Purlin commands. Each skill is a SKILL.md with YAML frontmatter and structured instructions that Claude Code executes when invoked. These are the primary user interface to Purlin — they define what each command does, its usage syntax, and step-by-step workflow.
+Thirteen skill definition files that define user-facing Purlin commands. Each skill is a SKILL.md with YAML frontmatter and structured instructions that Claude Code executes when invoked. These are the primary user interface to Purlin — they define what each command does, its usage syntax, and step-by-step workflow.
 
 ## Rules
 
 - RULE-1: Each skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Exactly 12 skill files exist, one per directory under `skills/`
+- RULE-2: Exactly 13 skill files exist, one per directory under `skills/`
 - RULE-3: Each skill file contains a `## Usage` section documenting the command syntax
 - RULE-4: Skill names in frontmatter match their directory names (e.g., `skills/build/SKILL.md` has `name: build`)
 - RULE-5: Skills that modify files (build, spec, unit-test, verify, init, invariant, config) include commit instructions or git operations
@@ -29,7 +29,7 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 ## Proof
 
 - PROOF-1 (RULE-1): For each `skills/*/SKILL.md`, grep for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Glob `skills/*/SKILL.md`; verify exactly 12 files are returned
+- PROOF-2 (RULE-2): Glob `skills/*/SKILL.md`; verify exactly 13 files are returned
 - PROOF-3 (RULE-3): For each `skills/*/SKILL.md`, grep for `## Usage`; verify the section exists
 - PROOF-4 (RULE-4): For each `skills/*/SKILL.md`, extract the `name:` from frontmatter and the directory name; verify they match
 - PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md` for `git commit` or `commit`; verify each contains commit-related instructions
