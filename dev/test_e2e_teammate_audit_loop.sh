@@ -174,16 +174,13 @@ echo "  --- PROOF-7: Audit teammate invariant rule handling ---"
 
 proof7_ok=true
 
-# Check for invariant handling subsection
-if ! echo "$audit_content" | grep -qi "invariant.*teammate\|teammate.*invariant"; then
-  # Try checking for the subsection header
-  if ! echo "$audit_content" | grep -qi "Invariant Rule Handling.*teammate\|Invariant.*teammate mode"; then
-    echo "    FAIL: Missing invariant rule handling in teammate mode"
-    proof7_ok=false
-  fi
+# Check for invariant handling within the teammate mode section (scoped, not whole file)
+if ! echo "$teammate_section" | grep -qi "invariant"; then
+  echo "    FAIL: Missing invariant rule handling in teammate mode section"
+  proof7_ok=false
 fi
-if ! echo "$audit_content" | grep -qi "message.*lead\|lead.*message"; then
-  echo "    FAIL: Missing instruction to message the lead for ambiguous invariant rules"
+if ! echo "$teammate_section" | grep -qi "message.*lead\|lead.*message"; then
+  echo "    FAIL: Missing instruction to message the lead for ambiguous invariant rules in teammate mode section"
   proof7_ok=false
 fi
 
