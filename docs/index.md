@@ -53,11 +53,12 @@ specs/
 
 ## Skills Reference
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full 12-skill reference.
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference.
 
 | Resource | What it covers |
 |----------|---------------|
 | [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
+| [Audit Criteria](../references/audit_criteria.md) | How proofs are judged — STRONG/WEAK/HOLLOW definitions |
 | [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
 Key skills:
@@ -65,6 +66,7 @@ Key skills:
 - `purlin:spec` — create/edit specs
 - `purlin:build` — implement from spec rules
 - `purlin:verify` — run all tests, issue verification receipts
+- `purlin:audit` — evaluate proof quality (STRONG/WEAK/HOLLOW)
 - `purlin:status` — show rule coverage via `sync_status`
 - `purlin:changelog` — PM-readable summary of what changed
 - `purlin:spec-from-code` — reverse-engineer specs from existing code
