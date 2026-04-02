@@ -17,19 +17,24 @@ MCP stdio server implementing JSON-RPC 2.0 transport for Purlin's three tools: `
 - RULE-4: Invalid JSON input returns error code `-32700` (Parse error)
 - RULE-5: Unknown methods return error code `-32601` with the method name in the message
 - RULE-6: Unknown tool names in `tools/call` return error code `-32601` with the tool name in the message
-- RULE-7: `sync_status` scans `specs/**/*.md` for RULE-N lines, reads `*.proofs-*.json`, and reports per-feature coverage with actionable directives
+- RULE-7: `sync_status` scans `specs/**/*.md` for RULE-N lines, reads `*.proofs-*.json`, and reports per-feature coverage including own rules, required rules (from `> Requires:`), and global invariant rules, with actionable directives
 - RULE-8: `sync_status` reports "READY" with vhash when all rules for a feature are proved
 - RULE-9: `sync_status` warns about unnumbered lines under `## Rules` and missing `## Rules` sections
-- RULE-10: `sync_status` includes rules from `> Requires:` specs in the coverage report
+- RULE-10: Required rules from `> Requires:` specs count toward a feature's coverage total (X/total) with `(required)` label; proofs are looked up under the source spec's feature name
 - RULE-11: `sync_status` detects manual proof staleness by checking if scope files have commits newer than the stamp's commit SHA
 - RULE-12: `purlin_config` reads the full config or a single key, and writes single keys via `update_config`
 - RULE-13: `changelog` resolves the "since" anchor from: explicit argument (integer or date), most recent `verify:` commit, most recent tag, or fallback to last 20 commits
 - RULE-14: `changelog` classifies changed files into categories: CHANGED_SPECS, TESTS_ADDED, CHANGED_BEHAVIOR, NO_IMPACT, NEW_BEHAVIOR
 - RULE-15: `changelog` returns JSON with `since`, `commits`, `files`, `spec_changes`, and `proof_status` fields
 - RULE-16: Server logs startup to stderr — stdout is reserved for JSON-RPC responses
-- RULE-17: `vhash` is computed as `sha256(sorted rule IDs + "|" + sorted proof ID:status pairs)[:8]`
+- RULE-17: `vhash` is computed as `sha256(sorted rule IDs including prefixed required/global keys + "|" + sorted proof ID:status pairs for all relevant proofs)[:8]`
 - RULE-18: `sync_status` reports "READY (structural only)" when all proofs for a feature are grep/existence checks with no behavioral tests, and suggests creating E2E proofs in specs/integration/
 - RULE-19: `changelog` proof_status entries include a `structural_only` boolean, true when the feature is READY and all proofs are structural
+- RULE-20: `_scan_specs` detects `> Global: true` metadata on invariant specs and sets the `is_global` flag in the feature dict
+- RULE-21: Global invariant rules auto-apply to all non-anchor, non-invariant feature specs without needing `> Requires:`; they appear in coverage with `(global)` label
+- RULE-22: `sync_status` displays rule labels: `(own)` for the feature's own rules, `(required)` for `> Requires:` rules, `(global)` for global invariant rules
+- RULE-23: `sync_status` shows a scope overlap advisory when an anchor's `> Scope:` overlaps a feature's scope but is not in `> Requires:`
+- RULE-24: `changelog` proof_status totals include required and global invariant rules, not just own rules
 
 ## Proof
 
@@ -39,19 +44,24 @@ MCP stdio server implementing JSON-RPC 2.0 transport for Purlin's three tools: `
 - PROOF-4 (RULE-4): Send `not valid json` to the server; verify response has error code `-32700` @slow
 - PROOF-5 (RULE-5): Send `{"method":"bogus","id":3}`; verify response has error code `-32601` and message contains "bogus" @slow
 - PROOF-6 (RULE-6): Send `tools/call` with `name: "nonexistent"`; verify error code `-32601` and message contains "nonexistent" @slow
-- PROOF-7 (RULE-7): Create a spec with RULE-1 and RULE-2 in a temp project; run sync_status; verify output lists both rules with "NO PROOF" directives @slow
+- PROOF-7 (RULE-7): Create a spec with RULE-1 and RULE-2 plus a required anchor with RULE-1 in a temp project; run sync_status; verify output lists own rules and required rules with appropriate directives @slow
 - PROOF-8 (RULE-8): Create a spec with RULE-1 and a passing proof file for RULE-1; run sync_status; verify output says "READY" and includes a vhash @slow
 - PROOF-9 (RULE-9): Create a spec with `- some unnumbered rule` under `## Rules`; run sync_status; verify output contains "WARNING" about unnumbered rules @slow
-- PROOF-10 (RULE-10): Create spec A with RULE-1 and spec B with `> Requires: A`; run sync_status for B; verify A's RULE-1 appears in B's report @slow
+- PROOF-10 (RULE-10): Create spec A with RULE-1 and spec B with `> Requires: A` and own RULE-1; run sync_status; verify B's coverage is 0/2 (includes A's rule in total) and A/RULE-1 shows `(required)` label @slow
 - PROOF-11 (RULE-11): Create a spec with a manual stamp at an old commit SHA and a scope file modified after that commit; run sync_status; verify it reports "MANUAL PROOF STALE" @slow
 - PROOF-12 (RULE-12): Call `handle_purlin_config` with `action: "read"` and `action: "write", key: "test_key", value: "test_val"`; verify read returns the written value @slow
 - PROOF-13 (RULE-13): Call `_resolve_since_anchor` with `since="5"`; verify it returns `HEAD~5`. Call with `since=None` and a `verify:` commit in git log; verify it returns that commit's SHA @slow
 - PROOF-14 (RULE-14): Call `changelog` on a project with a changed spec file, a test file, and a README; verify they are classified as CHANGED_SPECS, TESTS_ADDED, and NO_IMPACT respectively @slow
 - PROOF-15 (RULE-15): Call `changelog`; parse the JSON output; verify it contains all 5 top-level keys: `since`, `commits`, `files`, `spec_changes`, `proof_status` @slow
 - PROOF-16 (RULE-16): Start the server; verify startup message appears on stderr, not stdout @slow
-- PROOF-17 (RULE-17): Compute `_compute_vhash({"RULE-1": "desc"}, [{"id": "PROOF-1", "status": "pass"}])`; verify it equals `sha256("RULE-1|PROOF-1:pass")[:8]`
+- PROOF-17 (RULE-17): Compute `_compute_vhash({"RULE-1": "x", "anchor/RULE-1": "y"}, [{"id": "PROOF-1", "status": "pass"}])`; verify hash includes the prefixed key and differs from hash without it
 - PROOF-18 (RULE-18): Create a spec where all proof descriptions are grep-based; run sync_status; verify output contains "READY (structural only)" and suggests E2E proofs @slow
 - PROOF-19 (RULE-19): Create a spec with only grep-based proofs and all rules proved; call changelog; verify the feature's proof_status has `structural_only: true` @slow
+- PROOF-20 (RULE-20): Create an invariant spec with `> Global: true` in a temp project; call `_scan_specs`; verify the feature dict has `is_global: True` @slow
+- PROOF-21 (RULE-21): Create a global invariant with RULE-1 and a regular feature with no `> Requires:`; run sync_status; verify the invariant's rule appears in the feature's coverage with `(global)` label @slow
+- PROOF-22 (RULE-22): Create a feature with own RULE-1 requiring an anchor with RULE-1; run sync_status; verify own rule shows `(own)` and anchor rule shows `(required)` @slow
+- PROOF-23 (RULE-23): Create an anchor with `> Scope: src/api/` and a feature with `> Scope: src/api/login.js` but no `> Requires:`; run sync_status; verify output contains `⚠ Anchor` and `→ Consider: add > Requires:` @slow
+- PROOF-24 (RULE-24): Create a feature requiring an anchor with 2 rules; call changelog; verify proof_status total includes the anchor's rules in the count @slow
 
 ## Implementation Notes
 
