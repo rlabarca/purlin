@@ -304,21 +304,88 @@ purlin:verify
 
 Runs ALL tests (every tier), issues verification receipts for features with 100% coverage. The receipt includes a `vhash` — a tamper-evident hash of rules + proof results.
 
-### Manual proofs
+---
 
-Some rules need human verification. Mark them `@manual` in the spec:
+## Manual Proofs
+
+Some rules can't be automated — visual quality, UX flow, brand voice, accessibility feel. These need a human to verify and stamp.
+
+### How manual proofs work
+
+1. **Mark the proof `@manual` in the spec** when writing it:
 
 ```markdown
+## Proof
+- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT
+- PROOF-2 (RULE-2): POST invalid password; verify 401
 - PROOF-5 (RULE-5): Verify login error messages are clear and non-technical @manual
 ```
 
-After verifying by hand:
+2. **`sync_status` surfaces it** as a required action:
+
+```
+login: 2/5 rules proved
+  RULE-1: PASS
+  RULE-2: PASS
+  RULE-5: MANUAL PROOF NEEDED
+  → Verify manually, then run: purlin:verify --manual login PROOF-5
+```
+
+The directive tells you exactly which proof needs human attention and what command to run after verifying.
+
+3. **Verify by hand** — read the proof description, perform the check. In this case: open the login page, enter a wrong password, read the error message, decide if it's clear to a non-technical user.
+
+4. **Stamp it:**
 
 ```
 verify login PROOF-5 manually
 ```
 
-Auto-stamps with your email, date, and commit SHA. If code changes later, `sync_status` flags it stale.
+This writes a stamp directly into the spec file:
+
+```markdown
+- PROOF-5 (RULE-5): Verify login error messages are clear and non-technical @manual(alice@company.com, 2026-04-02, f8e9d0c)
+```
+
+The stamp captures:
+- **Who** — `git config user.email` (the person who verified)
+- **When** — today's date
+- **What commit** — `git rev-parse HEAD` (the exact code state that was verified)
+
+5. **`sync_status` counts it as PASS:**
+
+```
+login: 3/5 rules proved
+  RULE-5: PASS (PROOF-5, manual, verified 2026-04-02)
+```
+
+### Staleness detection
+
+When code changes after a manual stamp, the stamp becomes stale. `sync_status` detects this automatically by checking if any files in `> Scope:` have commits newer than the stamp's commit SHA:
+
+```
+login: 4/5 rules proved
+  RULE-5: MANUAL PROOF STALE (PROOF-5, verified 2026-04-02)
+  → Re-verify and run: purlin:verify --manual login PROOF-5
+```
+
+This means: someone changed the code after you verified. The error message might have changed. Re-verify and re-stamp.
+
+### When to use manual proofs
+
+| Use manual | Use automated |
+|-----------|--------------|
+| "Error messages are clear to non-technical users" | "Returns 401 on invalid credentials" |
+| "Login page matches the Figma design" | "Button color is #1a73e8" |
+| "Checkout flow is intuitive — under 3 clicks" | "POST /checkout returns 200 with order ID" |
+| "Brand voice in error copy is friendly, not scary" | "Error response contains 'error' field" |
+| "Accessibility: screen reader can navigate the form" | "All inputs have aria-label attributes" |
+
+The rule of thumb: if a human must make a judgment call, use `@manual`. If a machine can check it, automate it.
+
+### Manual proofs count toward coverage
+
+A feature with 5 rules, 4 automated proofs, and 1 manual stamp is READY — `purlin:verify` issues a receipt. Manual proofs are first-class proofs, not second-class workarounds.
 
 ---
 
