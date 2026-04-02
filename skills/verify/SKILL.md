@@ -138,8 +138,6 @@ When tests fail during verify:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-The verify skill MUST NOT fix code or tests. If you find yourself about to edit a file, STOP — exit verify and use `purlin:build` instead.
-
 ### Step 5 — Commit
 
 ```

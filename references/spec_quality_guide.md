@@ -115,6 +115,10 @@ Assign a tier tag based on what the proof requires to execute. Proofs without a 
 | Needs browser, full app stack, or UI rendering | `@e2e` | Playwright login flow, screenshot comparison, full page render |
 | Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
 
+**When in doubt, tag `@slow`.** A fast test with a `@slow` tag is harmless. A slow test with no tag blocks the default tier.
+
+Tier tags are not optional — they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing.
+
 Append the tier tag to the end of the proof description line:
 
 ```
@@ -148,23 +152,6 @@ Anchors capture **cross-cutting constraints shared across features**. If 3+ feat
 | `legal_` | Cookie consent, privacy policy refs, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
 
 **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor — not be buried in individual feature specs.
-
-## Tier Tags on Proofs
-
-Every proof description must be tagged with the appropriate tier. Don't leave it to the test writer to guess.
-
-| Heuristic | Tag | Examples |
-|-----------|-----|----------|
-| Pure logic, in-memory assertions, grep on local files | (none — default) | Parse a config, validate format, check string output |
-| Shells out to git, calls external APIs, needs database/filesystem setup | `@slow` | git log comparison, API roundtrip, database query |
-| Requires browser, full app rendering, UI interaction | `@e2e` | Playwright flow, screenshot comparison, full page render |
-| Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
-
-**When in doubt, tag `@slow`.** A fast test with a `@slow` tag is harmless. A slow test with no tag blocks the default tier.
-
-### Mandatory Tier Review
-
-Tier tags are not optional metadata — they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing. An untagged proof that shells out to `subprocess` or hits a database will block the default tier and slow down every developer's iteration loop. Review every proof against the heuristics above and tag it before the tests run.
 
 ## FORBIDDEN Grep Precision
 
