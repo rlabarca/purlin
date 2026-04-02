@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_rules_no_proofs",
+      "test_name": "test_rules_with_required_no_proofs",
       "status": "pass",
       "tier": "default"
     },
@@ -87,7 +87,7 @@
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_requires_includes_rules",
+      "test_name": "test_requires_counts_for_coverage",
       "status": "pass",
       "tier": "default"
     },
@@ -97,6 +97,42 @@
       "rule": "RULE-11",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_manual_proof_staleness",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scan_specs_detects_global",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_global_invariant_auto_applies",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_rule_labels",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scope_overlap_suggestion",
       "status": "pass",
       "tier": "default"
     },
@@ -156,6 +192,15 @@
     },
     {
       "feature": "mcp_server",
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_changelog_includes_required_in_total",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "mcp_server",
       "id": "PROOF-16",
       "rule": "RULE-16",
       "test_file": "dev/test_mcp_server.py",
@@ -168,7 +213,7 @@
       "id": "PROOF-17",
       "rule": "RULE-17",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_vhash_computation",
+      "test_name": "test_vhash_with_prefixed_keys",
       "status": "pass",
       "tier": "default"
     }

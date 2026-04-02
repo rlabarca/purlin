@@ -1,20 +1,76 @@
 {
   "feature": "purlin_references",
   "vhash": "2b240c30",
-  "commit": "955559073c50a9a30d3b965ce665671d711c08ba",
-  "timestamp": "2026-04-02T11:44:03Z",
-  "rules": ["RULE-1", "RULE-2", "RULE-3", "RULE-4", "RULE-5", "RULE-6", "RULE-7", "RULE-8", "RULE-9", "RULE-10", "RULE-11"],
+  "commit": "358bbdfb67015b2dbffebdf314466c3bcb193afd",
+  "timestamp": "2026-04-02T12:27:09.037666+00:00",
+  "rules": [
+    "RULE-1",
+    "RULE-10",
+    "RULE-11",
+    "RULE-2",
+    "RULE-3",
+    "RULE-4",
+    "RULE-5",
+    "RULE-6",
+    "RULE-7",
+    "RULE-8",
+    "RULE-9"
+  ],
   "proofs": [
-    {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
-    {"id": "PROOF-2", "rule": "RULE-2", "status": "pass"},
-    {"id": "PROOF-3", "rule": "RULE-3", "status": "pass"},
-    {"id": "PROOF-4", "rule": "RULE-4", "status": "pass"},
-    {"id": "PROOF-5", "rule": "RULE-5", "status": "pass"},
-    {"id": "PROOF-6", "rule": "RULE-6", "status": "pass"},
-    {"id": "PROOF-7", "rule": "RULE-7", "status": "pass"},
-    {"id": "PROOF-8", "rule": "RULE-8", "status": "pass"},
-    {"id": "PROOF-9", "rule": "RULE-9", "status": "pass"},
-    {"id": "PROOF-10", "rule": "RULE-10", "status": "pass"},
-    {"id": "PROOF-11", "rule": "RULE-11", "status": "pass"}
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass"
+    }
   ]
 }
