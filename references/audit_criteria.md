@@ -1,4 +1,4 @@
-> Criteria-Version: 1
+> Criteria-Version: 2
 
 # Proof Audit Criteria
 
@@ -51,6 +51,17 @@ A proof is STRONG when ALL of these are true:
 Integrity score = (STRONG count + MANUAL count) / total proofs x 100%
 
 WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+
+## Invariant Rules
+
+When auditing proofs for rules that come from invariants (via `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule — invariant files are read-only and externally owned.
+
+For HOLLOW or WEAK proofs on invariant rules:
+- Recommend strengthening the TEST to fully satisfy the rule as written
+- If the rule itself seems wrong or unclear, output a separate "Recommendations for Invariant Author" section with the suggested change and the invariant source (`> Source:` URL)
+- Format: `→ Recommend to invariant author (<source>): RULE-N could be clearer — suggest: <proposed rewording>`
+
+The invariant rule is the contract. The test must satisfy it. If the contract is bad, flag it — but don't change it.
 
 ## Custom Criteria
 
