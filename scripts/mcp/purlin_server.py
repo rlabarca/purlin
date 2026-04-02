@@ -36,7 +36,7 @@ _MANUAL_STAMPED_RE = re.compile(
 )
 _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
 _PROOF_LINE_RE = re.compile(
-    r'^-\s+(PROOF-\d+)\s*\((RULE-\d+)\):\s*(.+)', re.MULTILINE
+    r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)', re.MULTILINE
 )
 _STRUCTURAL_PROOF_RE = re.compile(
     r'grep|verify\s.*exist|verify\s.*present|verify\s.*section'
@@ -119,23 +119,26 @@ def _scan_specs(project_root):
                 if not proof_match:
                     continue
                 proof_id = proof_match.group(1)
-                rule_id = proof_match.group(2)
+                rule_ids_raw = proof_match.group(2)
                 proof_desc = proof_match.group(3).strip()
                 proof_descriptions.append(proof_desc)
+                # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
+                rule_ids = [r.strip() for r in rule_ids_raw.split(',')]
                 stamp = _MANUAL_STAMPED_RE.search(line)
-                if stamp:
-                    manual_proofs[proof_id] = {
-                        'rule': rule_id,
-                        'email': stamp.group(1),
-                        'date': stamp.group(2),
-                        'commit_sha': stamp.group(3),
-                        'stamped': True,
-                    }
-                elif _MANUAL_UNSTAMPED_RE.search(line):
-                    manual_proofs[proof_id] = {
-                        'rule': rule_id,
-                        'stamped': False,
-                    }
+                for rule_id in rule_ids:
+                    if stamp:
+                        manual_proofs[f"{proof_id}_{rule_id}"] = {
+                            'rule': rule_id,
+                            'email': stamp.group(1),
+                            'date': stamp.group(2),
+                            'commit_sha': stamp.group(3),
+                            'stamped': True,
+                        }
+                    elif _MANUAL_UNSTAMPED_RE.search(line):
+                        manual_proofs[f"{proof_id}_{rule_id}"] = {
+                            'rule': rule_id,
+                            'stamped': False,
+                        }
 
         features[feature_name] = {
             'path': rel_path,

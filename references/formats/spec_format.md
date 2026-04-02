@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Feature Spec Format
 
@@ -78,9 +78,10 @@ Each proof is a line under `## Proof`:
 
 ```
 - PROOF-N (RULE-N): <observable assertion description>
+- PROOF-N (RULE-A, RULE-B, RULE-C): <multi-rule assertion — for Level 3 lifecycle tests>
 ```
 
-Proofs describe what a test should assert, not how to implement it. Each rule must have at least one proof. Multiple proofs can reference the same rule.
+Proofs describe what a test should assert, not how to implement it. Each rule must have at least one proof. Multiple proofs can reference the same rule. A single proof can reference multiple rules when it tests a flow that exercises several rules in sequence (common in Level 3 E2E tests).
 
 ### Tier tags
 
