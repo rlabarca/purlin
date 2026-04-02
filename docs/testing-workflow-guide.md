@@ -105,6 +105,32 @@ Runs your test suite with the proof plugin active. The plugin:
 
 This is **feature-scoped overwrite** — running `pytest tests/login/` only updates login's proofs without wiping checkout or payments.
 
+## Proof Plugins
+
+A proof plugin is the bridge between your test framework and Purlin. It reads proof markers from your tests, collects pass/fail results, and writes `.proofs-*.json` files that `sync_status` reads.
+
+### Built-in plugins
+
+Purlin ships with plugins for three frameworks:
+
+| Framework | Plugin file | Marker syntax |
+|-----------|------------|---------------|
+| **pytest** | `scripts/proof/pytest_purlin.py` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
+| **Jest** | `scripts/proof/jest_purlin.js` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
+| **Shell** | `scripts/proof/shell_purlin.sh` | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
+
+`purlin:init` detects your framework and copies the right plugin to `.purlin/plugins/`.
+
+### Which plugin is active?
+
+Check `.purlin/plugins/` — that's where your project's proof plugin lives. It was scaffolded by `purlin:init` based on your test framework.
+
+### Adding support for another framework
+
+If your project uses Go, Rust, C, or any framework without a built-in plugin, you can write one. A proof plugin does one thing: read test metadata, write a JSON file. See [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below for the schema, requirements, and a minimal example.
+
+No registration is needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
+
 ## Checking Coverage
 
 ```
