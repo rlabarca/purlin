@@ -400,31 +400,36 @@ test login — iterate until all rules pass and verify
 ```
 Reading specs/auth/login.md... 5 rules found.
 
-Writing tests with proof markers...
+Spawning purlin-builder and purlin-auditor teammates...
+
+Builder: writing tests with proof markers...
   PROOF-1 (RULE-1): POST valid credentials → 200 + JWT
   PROOF-2 (RULE-2): POST invalid password → 401
   PROOF-3 (RULE-3): bcrypt hash check
   PROOF-4 (RULE-4): Rate limit after 10 attempts → 429
   PROOF-5 (RULE-5): error messages @manual (skipping)
 
-Running pytest...
-  3 passed, 1 failed
-
+Builder: running pytest... 3 passed, 1 failed
   FAIL: test_rate_limiting — expected 429, got 200
   Diagnosis: code bug — rate_limit.py doesn't check attempt count
   Fixing src/auth/rate_limit.py...
 
-Running pytest...
-  4 passed
+Builder: running pytest... 4 passed
 
-Calling sync_status...
-  login: 4/5 rules proved (PROOF-5 is @manual)
+Auditor: reviewing 4 proofs...
+  Auditor → Builder: "PROOF-3 WEAK — asserts hash exists but doesn't verify bcrypt specifically."
+  Builder → Auditor: "Fixed — now calls bcrypt.checkpw with original password."
+  Auditor → Builder: "PROOF-3 now STRONG ✓."
 
-Running purlin:verify...
-  Receipt issued: login vhash=a3f7c912
+Auditor: login integrity 100% (4/4 STRONG)
 
-Done. 4/4 auto proofs pass. 1 manual proof pending (PROOF-5).
+sync_status: login 4/5 rules proved (PROOF-5 is @manual)
+Receipt issued: login vhash=a3f7c912
+
+Done. 4/4 auto proofs STRONG. 1 manual proof pending (PROOF-5).
 ```
+
+The builder and auditor handle the quality loop autonomously. The builder fixes code and tests, the auditor checks honesty, they iterate until the proofs are strong. You see the conversation and can intervene at any point.
 
 ---
 
@@ -582,18 +587,36 @@ This catches:
 
 ## Proof Quality Auditing
 
-After `purlin:verify` issues receipts, an audit subagent evaluates whether your tests actually prove what the proof descriptions claim. The audit is independent — it runs in a separate context with no memory of writing the tests.
+After tests pass, an independent auditor evaluates whether the tests actually prove what the proof descriptions claim. The auditor reads the spec, reads the test code, and judges whether they match.
 
-Each proof is assessed as STRONG (**✓**), WEAK (**~**), HOLLOW (**✗**), or MANUAL (**●**). The criteria are documented in [references/audit_criteria.md](../references/audit_criteria.md) and can be overridden with an external criteria file for teams with custom quality standards.
+Each proof is assessed as STRONG (**✓**), WEAK (**~**), HOLLOW (**✗**), or MANUAL (**●**). The criteria are documented in [references/audit_criteria.md](../references/audit_criteria.md).
 
-If the audit finds HOLLOW or WEAK proofs, it directs you back to the build loop:
+### How audit runs: agent teams
 
+Purlin uses [agent teams](https://code.claude.com/docs/en/agent-teams) to keep the auditor independent from the builder. When you verify or build, Purlin spawns teammates that work in parallel and communicate directly:
+
+**During build** — the builder writes code and tests, the auditor reviews them:
 ```
-test login — fix PROOF-3 (use real bcrypt instead of mock)
-purlin:verify
+Builder → Auditor: "login complete — 5 proofs written."
+Auditor → Builder: "PROOF-3 is HOLLOW — mocks bcrypt. Rewrite with real bcrypt call."
+Builder → Auditor: "Fixed. Re-audit."
+Auditor → Builder: "PROOF-3 now STRONG ✓."
 ```
 
-The loop continues until the audit reports no HOLLOW proofs.
+**During verify** — after receipts are issued, the auditor checks all receipted features:
+```
+Auditor → Lead: "login 5/5 STRONG (100%). checkout 3/4 — PROOF-2 WEAK."
+Lead: "→ Run: test checkout (fix PROOF-2)"
+```
+
+The auditor never modifies files. The builder never judges its own tests. They communicate through direct messaging — no round-trip through the lead for every finding.
+
+Three teammate roles are defined in `.claude/agents/`:
+- **purlin-auditor** — reads test code against proof descriptions, assesses quality
+- **purlin-builder** — writes code and tests, fixes proofs based on audit feedback
+- **purlin-reviewer** — reviews specs for drift and completeness
+
+When agent teams aren't available, the audit falls back to a background subagent that reports findings for you to fix manually.
 
 ### The fastest path to high integrity
 
@@ -603,19 +626,21 @@ One prompt does the full audit-fix-verify cycle:
 do a purlin:audit and then fix all HOLLOW and WEAK proofs from the audit, then re-verify and re-audit until integrity score is above 90%
 ```
 
-Claude audits all proofs, fixes the hollow and weak ones in the build loop, re-verifies, re-audits, and repeats until the integrity score crosses 90%. You review the final result.
+With agent teams, the builder and auditor handle the loop autonomously — the builder fixes, the auditor re-checks, they go back and forth until the integrity score crosses your threshold. You review the final result.
 
 ### Invariant rules in audit
 
-When audit finds issues with proofs for invariant rules (from `> Requires:` or `> Global:`), it can't suggest changing the rule — invariants are read-only. Instead it tells you to strengthen the test. If the rule itself is ambiguous, audit produces a "Recommendations for Invariant Authors" section with suggested clarifications and the invariant's `> Source:` URL so you can contact the owner.
+When the auditor finds issues with proofs for invariant rules (from `> Requires:` or `> Global:`), it can't suggest changing the rule — invariants are read-only. It tells the builder to strengthen the test. If the rule itself is ambiguous, the auditor messages the lead (not the builder) with a recommendation for the invariant author, including the `> Source:` URL.
 
-**Custom criteria:** Teams with specific quality requirements (security, compliance, domain-specific) can point to an external criteria file:
+### Custom audit criteria
+
+Teams with specific quality requirements can point to an external criteria file owned by their compliance or QA team:
 
 ```json
 { "audit_criteria": "git@github.com:acme/quality-standards.git#audit_criteria.md" }
 ```
 
-This is configured during `purlin:init` or updated with `purlin:init --sync-audit-criteria`.
+The external team owns the criteria. Developers can't change the standards that judge their tests. Configure during `purlin:init` or update with `purlin:init --sync-audit-criteria`.
 
 ---
 
