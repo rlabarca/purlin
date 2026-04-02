@@ -1,6 +1,6 @@
 """Tests for purlin_skills — 15 rules.
 
-Structural verification of the 12 skill definition files under skills/.
+Structural verification of the 13 skill definition files under skills/.
 """
 
 import glob
@@ -37,7 +37,7 @@ class TestPurlinSkills:
     @pytest.mark.proof("purlin_skills", "PROOF-2", "RULE-2")
     def test_exactly_twelve_skill_files(self):
         files = _skill_files()
-        assert len(files) == 12, f"Expected 12 skills, found {len(files)}: {[os.path.basename(os.path.dirname(f)) for f in files]}"
+        assert len(files) == 13, f"Expected 13 skills, found {len(files)}: {[os.path.basename(os.path.dirname(f)) for f in files]}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-3", "RULE-3")
     def test_each_skill_has_usage_section(self):

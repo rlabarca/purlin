@@ -92,7 +92,7 @@ class TestPurlinAgent:
         assert routing_match
         section = routing_match.group(1)
         for keyword in ('test', 'status', 'changelog', 'spec', 'verify',
-                        'engineer', 'qa'):
+                        'engineer', 'qa', 'team'):
             assert keyword.lower() in section.lower(), \
                 f"Missing routing for: {keyword}"
 
@@ -106,7 +106,7 @@ class TestPurlinAgent:
         section = skills_match.group(1)
         # Count table rows with purlin: skills (excluding header/separator)
         rows = re.findall(r'^\|.*`purlin:\w[\w-]*`.*\|', section, re.MULTILINE)
-        assert len(rows) == 12, f"Expected 12 skill rows, found {len(rows)}"
+        assert len(rows) == 13, f"Expected 13 skill rows, found {len(rows)}"
 
     @pytest.mark.proof("purlin_agent", "PROOF-8", "RULE-8")
     def test_references_table_eight_entries(self):
@@ -119,4 +119,4 @@ class TestPurlinAgent:
         # Count data rows (exclude header and separator)
         rows = [l for l in section.strip().splitlines()
                 if l.startswith('|') and '---' not in l and 'Document' not in l]
-        assert len(rows) == 8, f"Expected 8 reference rows, found {len(rows)}"
+        assert len(rows) == 11, f"Expected 11 reference rows, found {len(rows)}"
