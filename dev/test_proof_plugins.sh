@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for proof_plugins — 19 rules.
+# Tests for proof_plugins — 20 rules.
 # Shared behavior (RULE-1..7), pytest (RULE-8..11), jest (RULE-12..15), shell (RULE-16..19).
 set -euo pipefail
 
@@ -502,6 +502,30 @@ assert len(d['proofs']) == 1, f'expected 1, got {len(d[\"proofs\"])}'
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-19" "RULE-19" "shell entries cleared after finish" test_shell_clear
+
+echo "--- Installation and discovery ---"
+
+# PROOF-20 (RULE-20): Custom plugin proof files discovered by sync_status via glob
+test_custom_discovery() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/custom"
+  echo -e "# Feature: my_custom\n\n## Rules\n- RULE-1: Does the thing" > "$d/specs/custom/my_custom.md"
+  # Hand-write a proof file as if a custom (non-built-in) plugin emitted it
+  cat > "$d/specs/custom/my_custom.proofs-default.json" << 'JSON'
+{"tier":"default","proofs":[{"feature":"my_custom","id":"PROOF-1","rule":"RULE-1","test_file":"tests/test_custom.go","test_name":"TestDoesTheThing","status":"pass","tier":"default"}]}
+JSON
+  # Run sync_status on the temp project — it should discover the proof
+  local output
+  output=$(python3 -c "
+import sys, os
+sys.path.insert(0, os.path.join('$PROJECT_ROOT', 'scripts', 'mcp'))
+from purlin_server import sync_status
+print(sync_status('$d'))
+" 2>&1)
+  echo "$output" | grep -q "1/1 rules proved"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "PROOF-20" "RULE-20" "custom plugin proofs discovered by sync_status" test_custom_discovery
 
 # Emit proof files
 cd "$PROJECT_ROOT"
