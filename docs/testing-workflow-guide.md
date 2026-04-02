@@ -178,20 +178,64 @@ Each tier writes to a separate file: `login.proofs-default.json`, `login.proofs-
 
 ## Manual Proofs
 
-Some rules can't be automated ("brand voice must be playful", "checkout is intuitive"). Mark them `@manual` in the spec:
+Some rules can't be automated ("error message is clear to non-technical users", "login page matches the design"). Mark them `@manual` in the spec:
 
 ```markdown
 ## Proof
-- PROOF-3 (RULE-3): Review error copy against brand guide @manual
+- PROOF-5 (RULE-5): Verify login error messages are clear and non-technical @manual
 ```
 
 After verifying by hand:
 
 ```
-purlin:verify --manual auth_login PROOF-3
+verify login PROOF-5 manually
 ```
 
 Auto-stamps: `@manual(alice@company.com, 2026-04-01, f8e9d0c)` — who, when, at what commit. If code changes after the stamp, `sync_status` flags it stale.
+
+---
+
+## Real-World Loop: Test, Fix, Validate
+
+Here's what a typical session looks like. One prompt does the whole loop:
+
+```
+test login — iterate until all rules pass and verify
+```
+
+Claude runs through the full cycle:
+
+```
+Reading specs/auth/login.md... 5 rules found.
+
+Writing tests with proof markers...
+  PROOF-1 (RULE-1): POST valid credentials → 200 + JWT
+  PROOF-2 (RULE-2): POST invalid password → 401
+  PROOF-3 (RULE-3): bcrypt hash check
+  PROOF-4 (RULE-4): Rate limit after 10 attempts → 429
+  PROOF-5 (RULE-5): error messages @manual (skipping)
+
+Running pytest...
+  3 passed, 1 failed
+
+  FAIL: test_rate_limiting — expected 429, got 200
+  Diagnosis: code bug — rate_limit.py doesn't check attempt count
+  Fixing src/auth/rate_limit.py...
+
+Running pytest...
+  4 passed
+
+Calling sync_status...
+  login: 4/5 rules proved (PROOF-5 is @manual)
+  → READY for verification (manual proof pending)
+
+Running purlin:verify...
+  Receipt issued: login vhash=a3f7c912
+
+Done. 4/4 auto proofs pass. 1 manual proof pending (PROOF-5).
+```
+
+The agent reads the spec, writes tests, runs them, diagnoses the failure (code bug, not test bug), fixes the code, re-runs, confirms coverage, and issues the receipt. One prompt.
 
 ---
 
