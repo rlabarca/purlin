@@ -119,6 +119,20 @@ Reason: API returns 400 for validation errors, not 401. Spec rule may need updat
 
 If you changed what a test asserts (not just how), the proof description in the spec may be wrong. The commit message MUST explain why the assertion changed.
 
+## Teammate Mode
+
+When running as a purlin-builder teammate in an agent team:
+
+- Listen for messages from the purlin-auditor teammate
+- When audit feedback arrives with HOLLOW or WEAK assessments:
+  a. Read the specific finding (which proof, what's wrong, suggested fix)
+  b. Read the spec's proof description for the affected proof
+  c. Fix the test following the audit's suggestion
+  d. Run purlin:unit-test to verify the fix doesn't break other proofs
+  e. Message the auditor: "Fixed PROOF-N in <feature>. Re-audit please."
+- Do NOT weaken assertions to satisfy audit — if the audit says a proof is HOLLOW because it mocks bcrypt, replace the mock with real bcrypt. Don't remove the assertion.
+- If fixing a proof requires changing the spec rule (because the rule is wrong), message the lead instead of the auditor: "RULE-N in <feature> needs updating — <reason>. Can the reviewer handle this?"
+
 ## Step 5 — Commit
 
 ```

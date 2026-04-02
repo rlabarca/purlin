@@ -87,6 +87,29 @@ RECOMMENDATIONS FOR INVARIANT AUTHORS
 
 This section only appears when invariant rules have clarity issues. It's advisory — the invariant author decides whether to act.
 
+## Teammate Mode
+
+When running as a purlin-auditor teammate in an agent team:
+
+- Read references/audit_criteria.md at startup
+- After completing the initial audit, message findings directly to the purlin-builder teammate (not the lead)
+- Format each finding as a specific, actionable message:
+  ```
+  HOLLOW: login PROOF-3 (RULE-3) — test mocks bcrypt.checkpw and asserts the mock's return value.
+  Fix: store a real password via the auth module, retrieve the hash, verify bcrypt.checkpw(original, hash) returns True.
+  ```
+- Wait for the builder's response confirming the fix
+- Re-read the fixed test code and re-assess
+- If the fix resolves the issue: mark as STRONG, move to the next finding
+- If the fix is still WEAK or HOLLOW: message the builder again with more specific guidance
+- When all findings are addressed (or after 3 rounds on any single proof): send the final integrity score to the lead
+
+### Invariant Rule Handling (teammate mode)
+
+When a HOLLOW or WEAK proof is for an invariant rule:
+- Message the builder: "Fix the test to properly prove <invariant>/<rule>. The invariant is read-only — strengthen the test, don't suggest changing the rule."
+- If the rule itself is ambiguous: message the lead (not the builder): "Recommend to invariant author (<source>): <rule> could be clearer — <suggestion>"
+
 ## Key Principles
 
 - **Read-only.** Never modify code or test files.

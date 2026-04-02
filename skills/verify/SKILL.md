@@ -140,7 +140,31 @@ When tests fail during verify:
 
 ### Step 4e — Spawn Audit
 
-After issuing receipts, spawn a background audit subagent:
+After issuing receipts, spawn an audit:
+
+**If agent teams are available** (the lead is part of a team or teams are enabled):
+
+Spawn a teammate using the purlin-auditor agent type:
+
+```
+Spawn purlin-auditor teammate with prompt:
+  "Audit all features that just received receipts: <feature list>.
+   Read references/audit_criteria.md for assessment criteria.
+   For each proof, read the spec description and the test code.
+   Assess as STRONG/WEAK/HOLLOW. Message the purlin-builder teammate
+   with any HOLLOW or WEAK findings. Report the integrity score when done."
+```
+
+If HOLLOW or WEAK findings are reported, the lead:
+1. Checks if a purlin-builder teammate exists — if not, spawns one
+2. The auditor messages the builder directly with specific fix instructions
+3. The builder fixes proofs and messages the auditor back
+4. The auditor re-checks the fixed proofs
+5. Loop continues until no HOLLOW proofs remain or the auditor is satisfied
+
+**If agent teams are NOT available** (single session, no team):
+
+Fall back to current behavior — spawn a background subagent:
 
 ```
 Agent(subagent_type="general-purpose", run_in_background=true, prompt=
