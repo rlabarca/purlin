@@ -595,6 +595,20 @@ purlin:verify
 
 The loop continues until the audit reports no HOLLOW proofs.
 
+### The fastest path to high integrity
+
+One prompt does the full audit-fix-verify cycle:
+
+```
+do a purlin:audit and then fix all HOLLOW and WEAK proofs from the audit, then re-verify and re-audit until integrity score is above 90%
+```
+
+Claude audits all proofs, fixes the hollow and weak ones in the build loop, re-verifies, re-audits, and repeats until the integrity score crosses 90%. You review the final result.
+
+### Invariant rules in audit
+
+When audit finds issues with proofs for invariant rules (from `> Requires:` or `> Global:`), it can't suggest changing the rule — invariants are read-only. Instead it tells you to strengthen the test. If the rule itself is ambiguous, audit produces a "Recommendations for Invariant Authors" section with suggested clarifications and the invariant's `> Source:` URL so you can contact the owner.
+
 **Custom criteria:** Teams with specific quality requirements (security, compliance, domain-specific) can point to an external criteria file:
 
 ```json
