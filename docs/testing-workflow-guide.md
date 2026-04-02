@@ -254,11 +254,11 @@ purlin:init --add-plugin ./my-plugin.py
 purlin:init --add-plugin git@github.com:someone/purlin-go-proof.git
 ```
 
-Copies the plugin to `.purlin/plugins/`. No registration needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`.
+Copies the plugin to `.purlin/plugins/`. No registration needed — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
 
 To see what's installed: `purlin:init --list-plugins`
 
-To write your own plugin, see [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below.
+To write your own plugin, see [Writing a Custom Proof Plugin](#writing-a-custom-proof-plugin) below. Full proof file schema: [references/formats/proofs_format.md](../references/formats/proofs_format.md).
 
 ---
 
@@ -425,8 +425,3 @@ def write_proofs(results, tier="default"):
             json.dump({"tier": tier, "proofs": kept + new_entries}, f, indent=2)
 ```
 
-### Registering with Purlin
-
-No registration needed. `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plugin writes files in that pattern, it works automatically.
-
-Full format reference: [references/formats/proofs_format.md](../references/formats/proofs_format.md)
