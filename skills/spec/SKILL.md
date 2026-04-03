@@ -289,23 +289,21 @@ When the user provides an image (screenshot, mockup, design comp, whiteboard pho
 
 2. Save the image to `specs/<category>/screenshots/<name>.png` (create the screenshots directory if needed).
 
-3. Read the image and extract visual rules — dimensions, colors, typography, layout, spacing. Apply the same extraction criteria as Figma (see `references/figma_extraction_criteria.md`).
-
-4. Create an anchor spec with:
-   - `> Visual-Reference: ./specs/<category>/screenshots/<name>.png`
-   - `> Scope:` pointing to the code files that will implement the design
-   - Visual rules extracted from the image
-   - All proofs tagged `@e2e`
-   - A screenshot comparison proof as the final catch-all
-
-5. When saving the reference image, also compute and store the image hash in the spec metadata:
+3. Compute and store the image hash in the spec metadata:
    ```
    > Visual-Reference: ./specs/<category>/screenshots/<name>.png
    > Visual-Hash: sha256:a1b2c3d4e5f6...
    ```
-   This enables staleness detection — if the image is later replaced, `sync_status` will warn that the rules may need re-extraction.
+   This enables staleness detection — if the image is later replaced, `sync_status` will warn that the anchor may need review.
 
-6. Commit the image AND the spec together.
+4. Create an anchor spec with:
+   - `> Visual-Reference:` and `> Visual-Hash:` as above
+   - `> Scope:` pointing to the code files that will implement the design
+   - One visual match rule: `RULE-1: Implementation must visually match the reference image`
+   - One screenshot comparison proof tagged `@e2e`
+   - If the user describes behavioral requirements alongside the image, add those as additional rules (these ARE locally owned, unlike invariant annotations)
+
+5. Commit the image AND the spec together.
 
 ## Invariant Specs
 
