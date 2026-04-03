@@ -32,8 +32,10 @@ The files in `references/formats/` are **versioned contracts**. External tools, 
 **Format files and what they govern:**
 - `spec_format.md` — parsed by `sync_status` (rule extraction, metadata)
 - `anchor_format.md` — same parser, different naming convention
-- `invariant_format.md` (v3) — parsed by `sync_status` + `purlin:invariant sync`. v2 added `> Global: true` metadata field. v3 added `> Visual-Reference:` metadata field.
+- `invariant_format.md` — parsed by `sync_status` + `purlin:invariant sync`
 - `proofs_format.md` — emitted by proof plugins, read by `sync_status`
+
+Each file has its own `> Format-Version: N` line — check the file directly for the current version.
 
 ## Tool Folder Separation
 

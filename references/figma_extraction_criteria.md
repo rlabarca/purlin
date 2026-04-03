@@ -143,7 +143,7 @@ The default pixel difference threshold is 5%. Override per-project in `.purlin/c
 Override per-proof when tighter or looser tolerance is needed:
 
 ```
-- PROOF-N (ALL): Screenshot comparison against reference; verify <2% pixel difference @e2e
+- PROOF-N (RULE-1, RULE-2, ...): Screenshot comparison against reference; verify <2% pixel difference @e2e
 - PROOF-M (RULE-3): Screenshot comparison of text rendering; verify <10% pixel difference @e2e
 ```
 
