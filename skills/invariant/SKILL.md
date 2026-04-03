@@ -82,8 +82,13 @@ Import a new Figma-sourced design invariant. Read `references/figma_extraction_c
 5. **Extract behavioral rules** from annotations — look for spec frames, text nodes with behavioral descriptions, component descriptions, and Figma comments. Every annotation MUST produce at least one rule.
 6. **Write proofs** — all proofs get `@e2e` tag (Figma proofs require rendering). Group related visual properties into multi-rule proofs. Keep behavioral proofs separate from visual proofs.
 7. **Quality gate** — before writing, verify: every component has visual rules, every annotation has behavioral rules, every proof is tagged `@e2e`, dimensions include both width AND height.
-8. Create `specs/_invariants/i_design_<name>.md` with `> Type: design`, `> Source:`, `> Pinned:`.
-9. Commit.
+8. **Visual reference and screenshot comparison proof:**
+   a. Add `> Visual-Reference: figma://fileKey/nodeId` to the invariant metadata.
+   b. Call `get_screenshot` to capture the reference screenshot, save to `specs/_invariants/screenshots/i_design_<name>.png`.
+   c. Add a screenshot comparison proof as the last proof:
+      `- PROOF-N (ALL): Render component, capture screenshot, compare against specs/_invariants/screenshots/i_design_<name>.png; verify <5% pixel difference @e2e`
+9. Create `specs/_invariants/i_design_<name>.md` with `> Type: design`, `> Source:`, `> Pinned:`, `> Visual-Reference:`.
+10. Commit.
 
 ## list
 
