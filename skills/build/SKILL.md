@@ -17,8 +17,7 @@ purlin:build                    Resume building the current feature
 1. Find the spec: `specs/**/<name>.md`.
 2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
 3. Read all `> Requires:` specs (including invariants in `specs/_invariants/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
-4. For design invariants with `> Source: <figma-url>`, read the Figma file via MCP (`get_design_context`) to get visual context for implementation.
-5. If the feature spec itself or any required spec (anchor or invariant) has a `> Visual-Reference:` field, load the visual reference:
+4. If the feature spec itself or any required spec (anchor or invariant) has a `> Visual-Reference:` field, load the visual reference at **full fidelity**:
    - `figma://fileKey/nodeId` → call `get_design_context` and `get_screenshot` MCP tools
    - `./path/to/image.png` → read the image file
    - `./path/to/file.html` → read the HTML file
@@ -33,9 +32,10 @@ Own rules: RULE-1, RULE-2, RULE-3
 Required from api_rest_conventions:
   RULE-1: All endpoints return JSON with {data, error, meta} envelope
   PROOF-1: GET /endpoint returns {data: ..., error: null, meta: {}}
-Required from i_security_session:
-  RULE-1: Sessions expire after 30 minutes
-  PROOF-1: Login → wait 31 minutes → request → verify 401 @e2e
+Required from i_design_modal:
+  RULE-1: Implementation must visually match the Figma design
+  PROOF-1: Screenshot comparison against Figma reference @e2e
+  Visual reference loaded from: figma://ABC123/1:234
 Scope: src/auth.js, src/auth.test.js
 ```
 
@@ -46,7 +46,12 @@ Write code that satisfies all rules. Use `> Scope:` paths as guidance for where 
 - Implement the feature naturally — there is no required order or ceremony.
 - Keep the rules visible. If a rule constrains behavior, make sure the code satisfies it.
 - If implementation reveals that a rule is wrong or missing, update the spec (this is expected).
-- **When a visual reference is loaded, match the implementation to the visual reference as closely as possible.** Rules verify specific measurable properties; the visual reference captures everything rules miss — layout relationships, alignment, visual hierarchy, spacing proportions. The rules are the verification gate. The visual reference is the implementation target. When the visual reference and a rule conflict, the visual reference wins for implementation — but the rule must still be satisfied for verification.
+- **When building a feature that requires a design invariant or anchor with `> Visual-Reference:`:**
+  - Read the visual reference at FULL FIDELITY (Figma MCP, image file, etc.)
+  - Build from the visual reference, not from rules — the invariant's rule just says "match the design," so the visual reference IS the spec
+  - The visual reference captures everything: layout relationships, alignment, visual hierarchy, spacing proportions, colors, typography
+  - Feature spec rules describe behavioral requirements — build those from the rules
+  - When the visual reference and a behavioral rule conflict, the visual reference wins for visual implementation — but the behavioral rule must still be satisfied for verification
 
 ## Step 3 — Write Tests with Proof Markers
 
