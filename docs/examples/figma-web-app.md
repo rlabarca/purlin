@@ -12,7 +12,7 @@ Build a weather app from scratch using a Figma design invariant. Six messages fr
 ```bash
 mkdir weather-app && cd weather-app
 git init
-claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
+claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git --scope project
 ```
 
 Then start Claude Code, install Purlin, and set up the project:
