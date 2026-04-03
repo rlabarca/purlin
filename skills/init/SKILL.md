@@ -17,6 +17,7 @@ purlin:init --sync-audit-criteria       Sync external audit criteria to latest v
 
 ## Step 1 — Pre-flight
 
+- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git — proofs, receipts, manual stamps, changelog, and the pre-push hook all depend on git.
 - If `.purlin/` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
 - If `.purlin/` exists and `--force` is set: proceed, preserve existing `config.json`.
 

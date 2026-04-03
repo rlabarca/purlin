@@ -35,6 +35,7 @@ From your terminal:
 
 ```bash
 cd my-project
+git init                # required — Purlin needs git for proofs, receipts, and changelog
 claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git
 ```
 
