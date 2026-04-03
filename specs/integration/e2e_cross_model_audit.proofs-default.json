@@ -16,7 +16,7 @@
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_cross_model_audit.sh",
       "test_name": "external LLM approves strong tests as STRONG",
-      "status": "pass",
+      "status": "fail",
       "tier": "default"
     },
     {
@@ -34,6 +34,15 @@
       "rule": "RULE-4",
       "test_file": "dev/test_e2e_cross_model_audit.sh",
       "test_name": "two-pass: static catches HOLLOW, Gemini rates STRONG",
+      "status": "pass",
+      "tier": "default"
+    },
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "custom audit LLM configured and used in two-pass flow",
       "status": "pass",
       "tier": "default"
     }

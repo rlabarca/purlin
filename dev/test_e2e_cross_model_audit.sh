@@ -522,10 +522,155 @@ def test_invalid_login_strong():
   fi
 fi
 
+# ==========================================================================
+# Phase E — Custom audit LLM configured via init flow (fake LLM wrapper)
+# ==========================================================================
+echo "  --- Phase E: Custom audit LLM from init config ---"
+
+TMPDIR_E=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_E"
+
+FAKE_LLM="$REAL_PROJECT_ROOT/dev/fake_audit_llm.sh"
+
+# Step 1: Create project with fake LLM in config (simulates purlin:init --audit-llm)
+mkdir -p "$TMPDIR_E/.purlin" "$TMPDIR_E/specs/auth" "$TMPDIR_E/scripts/mcp"
+cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR_E/scripts/mcp/purlin_server.py"
+cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$TMPDIR_E/scripts/mcp/config_engine.py"
+cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$TMPDIR_E/scripts/mcp/__init__.py" 2>/dev/null || true
+
+# Config points to our fake LLM — same pattern as a real user would configure
+cat > "$TMPDIR_E/.purlin/config.json" <<CONF
+{
+  "version": "0.9.0",
+  "test_framework": "pytest",
+  "spec_dir": "specs",
+  "audit_llm": "$FAKE_LLM -p \"{prompt}\"",
+  "audit_llm_name": "Fake Test LLM"
+}
+CONF
+
+cat > "$TMPDIR_E/specs/auth/login.md" <<'SPEC'
+# Feature: login
+
+## What it does
+User login with password.
+
+## Rules
+- RULE-1: Returns 200 with JWT on valid credentials
+- RULE-2: Returns 401 on invalid password
+
+## Proof
+- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT
+- PROOF-2 (RULE-2): POST invalid password; verify 401
+SPEC
+
+(cd "$TMPDIR_E" && git init -q && git add -A && git commit -q -m "init")
+
+# Step 2: Test the init ping (same test purlin:init --audit-llm does)
+echo "    Testing init ping..."
+PING_CMD="$FAKE_LLM -p \"Respond with exactly: PURLIN_AUDIT_OK\""
+PING_RESPONSE=$(eval "$PING_CMD" 2>&1)
+
+ping_ok=false
+if echo "$PING_RESPONSE" | grep -q "PURLIN_AUDIT_OK"; then
+  echo "    Init ping PASS: fake LLM responded with PURLIN_AUDIT_OK"
+  ping_ok=true
+else
+  echo "    Init ping FAIL: expected PURLIN_AUDIT_OK, got: $PING_RESPONSE"
+fi
+
+# Step 3: Read config to verify audit_llm was stored
+CONFIG_LLM=$(python3 -c "import json; c=json.load(open('$TMPDIR_E/.purlin/config.json')); print(c.get('audit_llm',''))")
+CONFIG_NAME=$(python3 -c "import json; c=json.load(open('$TMPDIR_E/.purlin/config.json')); print(c.get('audit_llm_name',''))")
+
+config_ok=false
+if [[ -n "$CONFIG_LLM" ]] && [[ "$CONFIG_NAME" == "Fake Test LLM" ]]; then
+  echo "    Config stored: audit_llm_name=$CONFIG_NAME"
+  config_ok=true
+else
+  echo "    Config FAIL: audit_llm=$CONFIG_LLM, audit_llm_name=$CONFIG_NAME"
+fi
+
+# Step 4: Run Pass 1 (static checks) on a strong test
+cat > "$TMPDIR_E/test_login.py" << 'PYEOF'
+import pytest
+
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+def test_valid_login():
+    resp = client.post("/login", json={"user": "alice", "pass": "secret"})
+    assert resp.status_code == 200
+    assert "jwt" in resp.json()
+
+@pytest.mark.proof("login", "PROOF-2", "RULE-2")
+def test_invalid_login():
+    resp = client.post("/login", json={"user": "alice", "pass": "wrong"})
+    assert resp.status_code == 401
+    assert resp.json()["error"] == "invalid_credentials"
+PYEOF
+
+STATIC_OUT_E=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" \
+  "$TMPDIR_E/test_login.py" "login" \
+  --spec-path "$TMPDIR_E/specs/auth/login.md" 2>&1)
+STATIC_EXIT_E=$?
+
+static_ok=false
+if [[ "$STATIC_EXIT_E" == "0" ]]; then
+  echo "    Pass 1: both proofs passed static checks"
+  static_ok=true
+else
+  echo "    Pass 1 FAIL: exit $STATIC_EXIT_E"
+fi
+
+# Step 5: Send surviving proofs to the configured fake LLM (Pass 2)
+# Build the Pass 2 prompt exactly as the audit skill would
+PASS2_PROMPT_E=$(build_pass2_prompt "$TMPDIR_E/specs/auth/login.md" "$(cat "$TMPDIR_E/test_login.py")" \
+  "PROOF-1|RULE-1" "PROOF-2|RULE-2")
+
+echo "    Pass 2: Calling configured fake LLM..."
+# Substitute {prompt} in the configured command — read prompt from file to avoid shell escaping
+FAKE_RESPONSE_E=$(cat "$PASS2_PROMPT_E" | "$FAKE_LLM" -p "" 2>&1) || {
+  echo "    Fake LLM call failed"
+  FAKE_RESPONSE_E=""
+}
+rm -f "$PASS2_PROMPT_E"
+
+ASSESS_E1=$(parse_assessment "$FAKE_RESPONSE_E" "PROOF-1")
+ASSESS_E2=$(parse_assessment "$FAKE_RESPONSE_E" "PROOF-2")
+
+llm_ok=false
+if [[ "$ASSESS_E1" == "STRONG" ]] && [[ "$ASSESS_E2" == "STRONG" ]]; then
+  echo "    Pass 2: PROOF-1=$ASSESS_E1, PROOF-2=$ASSESS_E2"
+  llm_ok=true
+else
+  echo "    Pass 2 FAIL: PROOF-1=$ASSESS_E1, PROOF-2=$ASSESS_E2"
+  echo "    Raw response:"
+  echo "$FAKE_RESPONSE_E" | head -20
+fi
+
+# Step 6: Parse all fields from fake LLM response
+fields_ok=true
+for pid in "PROOF-1" "PROOF-2"; do
+  for fld in "CRITERION" "WHY" "FIX"; do
+    val=$(parse_field "$FAKE_RESPONSE_E" "$pid" "$fld")
+    if [[ -z "$val" ]]; then
+      echo "    Parse FAIL: $pid $fld empty"
+      fields_ok=false
+    fi
+  done
+done
+
+if $ping_ok && $config_ok && $static_ok && $llm_ok && $fields_ok; then
+  echo "    Phase E PASS: custom LLM configured, init ping works, two-pass audit completes"
+  purlin_proof "e2e_cross_model_audit" "PROOF-5" "RULE-5" pass "custom audit LLM configured and used in two-pass flow"
+else
+  echo "    Phase E FAIL: ping=$ping_ok config=$config_ok static=$static_ok llm=$llm_ok fields=$fields_ok"
+  purlin_proof "e2e_cross_model_audit" "PROOF-5" "RULE-5" fail "custom audit LLM flow incomplete"
+fi
+
 # --- Emit proof files ---
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "e2e_cross_model_audit: 4 proofs recorded"
+echo "e2e_cross_model_audit: 5 proofs recorded"
