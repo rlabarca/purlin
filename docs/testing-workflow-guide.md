@@ -217,6 +217,8 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:slow]", async ()
 
 Marker embedded in test title: `[proof:feature:PROOF-ID:RULE-ID:tier]`.
 
+Works with `ts-jest` for TypeScript projects. **Vitest** users: Vitest supports Jest-compatible reporters — the same proof plugin works via `--reporter`. If you hit incompatibilities, install a Vitest-specific plugin via `purlin:init --add-plugin`.
+
 ### Shell (Bash)
 
 ```bash
@@ -238,7 +240,7 @@ A proof plugin is the bridge between your test framework and Purlin. It reads pr
 | Framework | Language | Plugin file | Marker syntax |
 |-----------|----------|------------|---------------|
 | **pytest** | Python | `scripts/proof/pytest_purlin.py` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
-| **Jest** | JavaScript / TypeScript | `scripts/proof/jest_purlin.js` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
+| **Jest** | JavaScript / TypeScript (also Vitest) | `scripts/proof/jest_purlin.js` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
 | **Shell** | Bash | `scripts/proof/shell_purlin.sh` | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
 
 `purlin:init` detects your framework and copies the right plugin to `.purlin/plugins/`.
