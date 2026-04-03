@@ -527,9 +527,9 @@ def test_invalid_login_strong():
 fi
 
 # ==========================================================================
-# Phase E — Custom audit LLM configured via init flow (fake LLM wrapper)
+# Phase E — Custom audit LLM command in config (fake LLM wrapper)
 # ==========================================================================
-echo "  --- Phase E: Custom audit LLM from init config ---"
+echo "  --- Phase E: Custom audit LLM command in config ---"
 
 TMPDIR_E=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_E"
