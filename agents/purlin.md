@@ -90,7 +90,7 @@ When the user's intent is clear, act directly:
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
 - "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:changelog --role eng`, then invoke `purlin:build` or `purlin:unit-test` for each item
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
-- Figma URL pasted (figma.com/design/...) → run `purlin:invariant sync figma <url>`
+- Figma URL pasted (figma.com/design/...) → IMMEDIATELY create a design invariant: run `purlin:invariant add-figma <url>`. Do NOT just read the Figma and wait — the invariant must be created as the first action. After creating the invariant, ask: "Design invariant created. What should this app do? Describe the behavior and I'll create a feature spec."
 - Image pasted or referenced (screenshot, mockup, design comp) → run `purlin:spec --anchor` to create a design anchor
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify` (spawns auditor teammate automatically)
