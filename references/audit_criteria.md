@@ -1,4 +1,4 @@
-> Criteria-Version: 6
+> Criteria-Version: 7
 
 # Proof Audit Criteria
 
@@ -82,26 +82,28 @@ Integrity score = (STRONG count + MANUAL count) / total proofs x 100%
 
 WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
-## Figma Design Proofs
+## Design Invariant Proofs
 
-Design invariant proofs (from `i_design_*` specs) have additional criteria:
+Design invariants (`i_design_*` specs) use a thin visual-match model: one rule per viewport saying "match the design," one screenshot comparison proof per rule. Behavioral proofs belong in the feature spec, not the invariant.
+
+### What a design invariant proof must do
+
+- Render the real component (not mock DOM, not stylesheet inspection)
+- Capture a screenshot at the same viewport size as the Figma frame
+- Compare against the original source (Figma screenshot or reference image)
+- Be tagged `@e2e`
 
 ### Automatic HOLLOW
 
-- **Stylesheet inspection without rendering** — test reads CSS/style values directly (parsing source files or stylesheets) instead of rendering the component and checking computed styles. The component might not render at all and the test would still pass
-- **Mocked DOM** — test creates a fake DOM structure matching expected values instead of rendering the real component. Proves the mock, not the code
+- **Stylesheet inspection without rendering** — test reads CSS/style values directly instead of rendering the component and comparing screenshots. The component might not render at all and the test would still pass
+- **Mocked DOM** — test creates a fake DOM structure instead of rendering the real component. Proves the mock, not the code
 
 ### Automatic WEAK
 
-- **Visual-only coverage for behavioral rules** — the invariant has behavioral rules from annotations (interactions, validation, state changes) but all proofs only check CSS properties. Behavioral rules require interaction tests (click, type, select), not style checks
-- **Missing `@e2e` tag** — all Figma proofs require rendering and must be tagged `@e2e`. Untagged Figma proofs will run in the default tier where they're likely to fail due to missing rendering infrastructure
-
-### Automatic WEAK (visual reference)
-
-- **Built from rules instead of visual reference** — when a `> Visual-Reference:` exists but the implementation clearly doesn't match the reference screenshot (layout relationships wrong, alignment off, spacing proportions incorrect), even if individual rules pass. The builder should have used the visual reference during implementation, not just optimized for the rules.
-- **Missing screenshot comparison proof** — invariant has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught.
-
-See [references/figma_extraction_criteria.md](figma_extraction_criteria.md) for the full extraction criteria.
+- **Missing screenshot comparison proof** — invariant has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught
+- **Wrong viewport size** — Figma frame is 428px wide but test renders at 1024px. The comparison must use the same viewport size as the design
+- **Missing `@e2e` tag** — all design proofs require rendering and must be tagged `@e2e`
+- **Behavioral proofs in invariant** — behavioral proofs (click, type, select) belong in the feature spec that requires the invariant, not in the invariant itself
 
 ## Invariant Rules
 
