@@ -33,23 +33,32 @@ specs/
 
 ## Step 3 — Detect Test Framework
 
-Check project files and show the user what was detected and why:
+Read `references/supported_frameworks.md` for the detection order and framework list. Check project files and show the user what was detected and why:
 
-- `conftest.py` or `pyproject.toml` with `[tool.pytest]` → `"pytest"`
-- `package.json` with `jest` → `"jest"`
-- `*.test.sh` files → `"shell"`
+1. `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` → **pytest** (Python)
+2. `package.json` contains `vitest` → **Jest** (TypeScript/JavaScript — Vitest-compatible)
+3. `package.json` contains `jest` → **Jest** (TypeScript/JavaScript)
+4. No match → ask the user
 
 Display the detection result:
 ```
 Detected: pytest (found conftest.py at project root)
-Scaffolding: .purlin/plugins/purlin_proof.py
+Scaffolding: .purlin/plugins/pytest_purlin.py
 ```
 
-If no framework is detected, do NOT silently default to `"auto"` or `"shell"`. Ask the user:
+For TypeScript projects using Jest or Vitest:
 ```
-No test framework detected (no conftest.py, package.json, or go.mod found).
-Which framework? [pytest / jest / shell / other]
+Detected: Jest (found vitest in package.json — Vitest uses Jest-compatible reporters)
+Scaffolding: .purlin/plugins/jest_purlin.js
 ```
+
+If no framework is detected, do NOT silently default to shell. Ask the user:
+```
+No test framework detected.
+Which framework? [pytest (Python) / jest (JS/TS) / shell (Bash) / other]
+```
+
+If the user selects "other", suggest `purlin:init --add-plugin` to install a custom proof plugin.
 
 Write the detected (or user-selected) framework to `.purlin/config.json` under `test_framework`.
 
