@@ -108,6 +108,30 @@ your-project/
   .gitignore               # Updated with Purlin entries
 ```
 
+## Changing Settings After Init
+
+Already initialized? Use `purlin:init --force` to reconfigure, or change individual settings:
+
+| What you want | How |
+|---------------|-----|
+| Switch pre-push mode (warn/strict) | `purlin:config pre_push strict` |
+| Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
+| See installed plugins | `purlin:init --list-plugins` |
+| Set external audit criteria | `purlin:init --sync-audit-criteria` |
+| Change test framework | `purlin:config test_framework jest` |
+| Re-run full setup | `purlin:init --force` |
+
+You can also edit `.purlin/config.json` directly:
+
+```json
+{
+  "version": "0.9.0",
+  "test_framework": "pytest,jest",
+  "spec_dir": "specs",
+  "pre_push": "strict"
+}
+```
+
 ## Updating Purlin
 
 From the terminal:
