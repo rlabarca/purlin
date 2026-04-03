@@ -298,7 +298,14 @@ When the user provides an image (screenshot, mockup, design comp, whiteboard pho
    - All proofs tagged `@e2e`
    - A screenshot comparison proof as the final catch-all
 
-5. Commit the image AND the spec together.
+5. When saving the reference image, also compute and store the image hash in the spec metadata:
+   ```
+   > Visual-Reference: ./specs/<category>/screenshots/<name>.png
+   > Visual-Hash: sha256:a1b2c3d4e5f6...
+   ```
+   This enables staleness detection — if the image is later replaced, `sync_status` will warn that the rules may need re-extraction.
+
+6. Commit the image AND the spec together.
 
 ## Invariant Specs
 

@@ -50,6 +50,8 @@ _BEHAVIORAL_PROOF_RE = re.compile(
     re.IGNORECASE,
 )
 _GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
+_VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
+_VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
 _ANCHOR_PREFIXES = (
     'design_', 'api_', 'security_', 'brand_',
     'platform_', 'schema_', 'legal_', 'prodbrief_',
@@ -140,6 +142,12 @@ def _scan_specs(project_root):
                             'stamped': False,
                         }
 
+        # Extract visual reference and hash for staleness detection
+        visual_ref_match = _VISUAL_REF_RE.search(content)
+        visual_hash_match = _VISUAL_HASH_RE.search(content)
+        visual_ref = visual_ref_match.group(1).strip() if visual_ref_match else None
+        visual_hash = visual_hash_match.group(1).strip() if visual_hash_match else None
+
         features[feature_name] = {
             'path': rel_path,
             'rules': rules,
@@ -151,6 +159,8 @@ def _scan_specs(project_root):
             'has_rules_section': rules_section is not None,
             'manual_proofs': manual_proofs,
             'proof_descriptions': proof_descriptions,
+            'visual_ref': visual_ref,
+            'visual_hash': visual_hash,
         }
 
     return features
@@ -198,6 +208,28 @@ def _check_manual_staleness(project_root, scope_files, commit_sha):
         )
         return bool(result.stdout.strip())
     except (subprocess.SubprocessError, OSError):
+        return False
+
+
+def _check_visual_hash(project_root, visual_ref, stored_hash):
+    """Check if a visual reference image's hash matches the stored hash.
+
+    Returns True if the image has changed (hash mismatch), False otherwise.
+    Returns False if the image doesn't exist or isn't a local path.
+    """
+    if not visual_ref or not stored_hash:
+        return False
+    # Only check local file paths (not figma:// or https://)
+    if visual_ref.startswith(('figma://', 'http://', 'https://')):
+        return False
+    image_path = os.path.join(project_root, visual_ref.lstrip('./'))
+    if not os.path.isfile(image_path):
+        return False
+    try:
+        with open(image_path, 'rb') as f:
+            current_hash = hashlib.sha256(f.read()).hexdigest()
+        return current_hash != stored_hash
+    except (IOError, OSError):
         return False
 
 
@@ -366,6 +398,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
 
+    # Check visual reference staleness
+    visual_ref = info.get('visual_ref')
+    visual_hash = info.get('visual_hash')
+    if _check_visual_hash(project_root, visual_ref, visual_hash):
+        warnings.append("  \u26a0 Visual reference image was modified since rules were extracted")
+        warnings.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
+
     # Check manual proofs
     manual_proofs = info.get('manual_proofs', {})
 
@@ -376,22 +415,31 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         lines.append(f"  → Run: purlin:spec {name}")
         return lines
 
+    # Separate visual hash warnings from structural warnings
+    visual_hash_changed = _check_visual_hash(project_root, visual_ref, visual_hash)
+    structural_warnings = [w for w in warnings if '\u26a0 Visual reference' not in w and 're-extract rules' not in w]
+
     # Header — all proved
-    if proved == total and not warnings:
+    if proved == total and not structural_warnings:
         structural_only = _is_structural_only(info.get('proof_descriptions', []))
-        if structural_only:
+        if visual_hash_changed:
+            lines.append(f"{name}: READY but visual reference changed")
+        elif structural_only:
             lines.append(f"{name}: READY (structural only)")
         else:
             lines.append(f"{name}: READY")
-        lines.append(f"  {proved}/{total} rules proved ✓")
+        lines.append(f"  {proved}/{total} rules proved \u2713")
         all_rules_dict = {key: True for key, _, _ in rule_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         lines.append(f"  vhash={vhash}")
-        if structural_only:
-            lines.append(f"  → Note: all {total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
-            lines.append("  → Consider: create E2E proofs in specs/integration/ that test actual behavior")
+        if visual_hash_changed:
+            lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
+            lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
+        elif structural_only:
+            lines.append(f"  \u2192 Note: all {total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
+            lines.append("  \u2192 Consider: create E2E proofs in specs/integration/ that test actual behavior")
         else:
-            lines.append("  → No action needed.")
+            lines.append("  \u2192 No action needed.")
         _append_scope_suggestions(lines, name, info, all_features, global_invariants)
         return lines
 

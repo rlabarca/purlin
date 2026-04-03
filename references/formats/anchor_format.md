@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Anchor Spec Format
 
@@ -39,6 +39,15 @@ Anchors are regular specs with type-prefixed names that define cross-cutting con
 - PROOF-1 (RULE-1): <How to verify compliance>
 - PROOF-2 (RULE-2): <How to verify compliance>
 ```
+
+## Metadata Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `> Scope:` | No | File patterns or modules this anchor governs |
+| `> Stack:` | No | Language/framework if relevant |
+| `> Visual-Reference:` | No | Path to the visual reference image (e.g., `./specs/components/screenshots/modal.png`) |
+| `> Visual-Hash:` | No | SHA-256 hash of the visual reference image. When the image file changes (hash mismatch), sync_status reports the anchor's rules as potentially stale. |
 
 ## How Anchors Work
 
