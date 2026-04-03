@@ -89,6 +89,7 @@ When the user's intent is clear, act directly:
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
 - "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:changelog --role eng`, then invoke `purlin:build` or `purlin:unit-test` for each item
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
+- Figma URL pasted (figma.com/design/...) → run `purlin:invariant sync figma <url>` to create a design invariant with rules extracted from the design. Then suggest creating feature specs that `> Requires:` the invariant.
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify`
 - "create a purlin team" / "team up" → spawn purlin-auditor + purlin-builder + purlin-reviewer teammates
