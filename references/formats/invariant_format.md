@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Invariant Spec Format
 
@@ -62,18 +62,15 @@ Design token constraints imported from the shared design system repository.
 
 ## What it does
 
-Navigation layout and spacing constraints from the Figma design source.
+Visual design constraints for the navigation component, sourced from Figma.
 
 ## Rules
 
-- RULE-1: Navigation bar height is 64px on desktop, 56px on mobile
-- RULE-2: Menu items use 16px horizontal padding
+- RULE-1: Implementation must visually match the Figma design at the referenced node
 
 ## Proof
 
-- PROOF-1 (RULE-1): Rendered nav element height matches spec per breakpoint
-- PROOF-2 (RULE-2): Menu item padding matches design tokens
-- PROOF-3 (RULE-1, RULE-2): Render component, capture screenshot, compare against specs/_invariants/screenshots/i_design_navigation.png; verify <5% pixel difference @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
 ```
 
 ## Metadata Fields
