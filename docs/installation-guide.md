@@ -118,6 +118,7 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
+| Change audit LLM | `purlin:init --audit-llm` |
 | Change test framework | `purlin:config test_framework jest` |
 | Re-run full setup | `purlin:init --force` |
 
@@ -131,6 +132,26 @@ You can also edit `.purlin/config.json` directly:
   "pre_push": "strict"
 }
 ```
+
+## Scaling
+
+Purlin uses the filesystem as its state — specs are Markdown files, proofs are JSON files next to specs, `sync_status` scans both on every call. This is intentional: zero infrastructure, zero dependencies, works offline, nothing to configure.
+
+**What this means for project size:**
+
+| Project size | Specs | sync_status scan time | Experience |
+|---|---|---|---|
+| Small (startup, side project) | 5-20 | <100ms | Instant |
+| Medium (team product) | 20-50 | <500ms | Fast |
+| Large (multi-team) | 50-100 | <1s | Fine |
+| Very large (monorepo, 100+) | 100+ | Seconds | Consider splitting |
+
+Purlin is designed for projects with up to ~100 feature specs. If your project grows beyond this:
+
+- **Split by domain:** create separate `specs/` directories per team or service, each with its own Purlin workspace
+- **Use git worktrees:** each worktree has independent proof files, reducing merge conflicts
+
+If `sync_status` becomes noticeably slow, the project has likely outgrown a single spec directory.
 
 ## Updating Purlin
 
