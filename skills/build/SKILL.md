@@ -18,6 +18,12 @@ purlin:build                    Resume building the current feature
 2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
 3. Read all `> Requires:` specs (including invariants in `specs/_invariants/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
 4. For design invariants with `> Source: <figma-url>`, read the Figma file via MCP (`get_design_context`) to get visual context for implementation.
+5. If any required spec (anchor or invariant) has a `> Visual-Reference:` field, load the visual reference:
+   - `figma://fileKey/nodeId` → call `get_design_context` and `get_screenshot` MCP tools
+   - `./path/to/image.png` → read the image file
+   - `./path/to/file.html` → read the HTML file
+   - `https://url` → take a screenshot via Playwright MCP if available
+   - Display: `Visual reference loaded from: <source>`
 
 Display the combined rule set with proof descriptions:
 
@@ -40,6 +46,7 @@ Write code that satisfies all rules. Use `> Scope:` paths as guidance for where 
 - Implement the feature naturally — there is no required order or ceremony.
 - Keep the rules visible. If a rule constrains behavior, make sure the code satisfies it.
 - If implementation reveals that a rule is wrong or missing, update the spec (this is expected).
+- **When a visual reference is loaded, match the implementation to the visual reference as closely as possible.** Rules verify specific measurable properties; the visual reference captures everything rules miss — layout relationships, alignment, visual hierarchy, spacing proportions. The rules are the verification gate. The visual reference is the implementation target. When the visual reference and a rule conflict, the visual reference wins for implementation — but the rule must still be satisfied for verification.
 
 ## Step 3 — Write Tests with Proof Markers
 
@@ -86,6 +93,8 @@ Review every proof marker just written. Apply tier heuristics from `references/s
 - Pure logic/in-memory → default (no tag)
 
 If ANY proof marker is missing a tier tag and the test clearly isn't default tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
+
+After writing tests, ALWAYS spawn a purlin-auditor teammate to review proofs. Do NOT audit your own tests in the same context — the auditor must be independent. This applies regardless of the number of proofs.
 
 ## Step 4 — Run Tests and Iterate
 
