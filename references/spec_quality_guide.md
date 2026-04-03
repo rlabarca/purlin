@@ -228,9 +228,39 @@ Populate from the **actual imports/dependencies in the feature's source files**,
 
 ## `> Scope:` Guidance
 
-- List the source files this feature touches — for humans and the staleness detection system.
+Scope lists the source files THIS feature implements. It serves two purposes:
+1. **Manual proof staleness detection** — if scope files change after a manual stamp, the stamp goes stale
+2. **Documentation** — helps developers find the code that implements a feature
+
+### What to Include
+
+- Files that implement THIS feature's behavior: `src/auth/login.js, src/auth/session.js`
+- Test files for this feature: `tests/auth/test_login.py`
+- Config files specific to this feature: `src/auth/auth.config.js`
+
+### What NOT to Include
+
+- **Shared utilities** (`utils/helpers.js`, `lib/common.py`) — these change frequently and would make manual proofs stale constantly. If a shared utility changes, your feature's behavior probably didn't change.
+- **Framework files** (`package.json`, `tsconfig.json`) — these affect every feature. Including them would make every manual proof stale on every dependency update.
+- **Generated files** (`dist/`, `build/`) — these are outputs, not source.
+- **Broad directories** (`src/`) — too wide. Scope individual files or narrow directories.
+
+### The Staleness Test
+
+Ask: "If THIS file changes, does it mean my feature's behavior MIGHT have changed?" If yes, include it. If no, leave it out.
+
+- `src/auth/login.js` changes → login behavior might have changed → **include**
+- `utils/format-date.js` changes → login behavior didn't change → **exclude**
+- `src/auth/auth.config.js` changes → login config might affect behavior → **include**
+- `package.json` changes → probably just a dependency bump → **exclude**
+
+### Tight Scope = Useful Staleness Detection
+
+A feature with 3 files in scope gets meaningful staleness alerts. A feature with 50 files in scope gets constant false alarms and developers start ignoring the alerts.
+
+### Existing Rules
+
 - Verify each file path exists on disk before listing it.
-- Used by `sync_status` to detect manual proof staleness (newer commits to scope files invalidate manual stamps).
 - Not used for verification hashing — purely informational for navigation and staleness.
 
 ## Spec Categories
