@@ -27,6 +27,7 @@ Accept ANY of these input types without asking which format it is:
 - Slack/email thread describing a problem
 - Existing spec name to update
 - A file path to code that needs a spec
+- **Image** (screenshot, mockup, design comp, whiteboard photo) — create a **design anchor**, not an invariant. Images are locally owned. See "Image-Based Design Anchors" below.
 
 **If a spec name was given**, search `specs/**/<name>.md`:
 - **Found:** Read the spec. Call `sync_status` for coverage. Go to Step 7 (Update Existing Spec).
@@ -280,9 +281,31 @@ Anchors are regular specs with type-prefixed names. Use `--anchor` flag.
 Type prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`.
 See `references/formats/anchor_format.md` for format, `references/spec_quality_guide.md` for when to create anchors and FORBIDDEN pattern guidance.
 
+### Image-Based Design Anchors
+
+When the user provides an image (screenshot, mockup, design comp, whiteboard photo):
+
+1. **This is an anchor, NOT an invariant.** Images are locally owned. Invariants require an external sync source (Figma URL, git repo). If the user says "make an invariant from this image," explain: "Images are locally owned — they become design anchors. Invariants sync from external sources like Figma or git repos. I'll create a design anchor instead."
+
+2. Save the image to `specs/<category>/screenshots/<name>.png` (create the screenshots directory if needed).
+
+3. Read the image and extract visual rules — dimensions, colors, typography, layout, spacing. Apply the same extraction criteria as Figma (see `references/figma_extraction_criteria.md`).
+
+4. Create an anchor spec with:
+   - `> Visual-Reference: ./specs/<category>/screenshots/<name>.png`
+   - `> Scope:` pointing to the code files that will implement the design
+   - Visual rules extracted from the image
+   - All proofs tagged `@e2e`
+   - A screenshot comparison proof as the final catch-all
+
+5. Commit the image AND the spec together.
+
 ## Invariant Specs
 
-Invariants live in `specs/_invariants/i_<prefix>_<name>.md`. Use `--invariant` flag.
+Invariants require an external source — Figma URL or git repo. They live in `specs/_invariants/i_<prefix>_<name>.md`. Use `--invariant` flag.
+
+**Invariants cannot be created from local images.** If the user provides an image and asks for an invariant, redirect to a design anchor (see above). If they want an invariant, they need to upload the image to Figma or a git repo first and provide the URL.
+
 See `references/formats/invariant_format.md` for the invariant format with `> Source:` and `> Pinned:` metadata.
 
 ---

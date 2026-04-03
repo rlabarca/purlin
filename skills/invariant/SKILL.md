@@ -5,6 +5,8 @@ description: Sync read-only constraint files from external sources
 
 Manage invariant specs — read-only constraint files sourced from git repos or Figma. Invariants live in `specs/_invariants/i_<prefix>_<name>.md`.
 
+**Invariants require an external source.** If the user provides a local image (screenshot, mockup) and asks for an invariant, refuse: "Images are locally owned — use `purlin:spec --anchor` to create a design anchor instead. Invariants sync from external sources (Figma URLs, git repos)."
+
 ## Usage
 
 ```
