@@ -35,6 +35,13 @@ claude
 /plugin install purlin@purlin
 ```
 
+Exit and restart Claude Code for skill autocomplete to take effect:
+
+```bash
+exit
+claude
+```
+
 Then initialize the Purlin workspace:
 
 ```

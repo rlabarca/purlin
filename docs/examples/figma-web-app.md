@@ -23,10 +23,20 @@ claude
 
 ```
 /plugin install purlin@purlin
+```
+
+Exit and restart for autocomplete, then set up the project:
+
+```bash
+exit
+claude
+```
+
+```
 create a new React weather app project
 ```
 
-Claude installs Purlin and scaffolds the project. Then initialize:
+Claude scaffolds the project. Then initialize:
 
 ```
 purlin:init
