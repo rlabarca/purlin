@@ -1,12 +1,14 @@
 {
-  "feature": "e2e_feature_scoped_overwrite",
-  "vhash": "7748e8cb",
+  "feature": "e2e_cross_model_audit",
+  "vhash": "175608df",
   "commit": "95e8ec0969f1ac2302c8aff15bf9400b6853fa99",
   "timestamp": "2026-04-03T23:38:36.166005+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
-    "RULE-3"
+    "RULE-3",
+    "RULE-4",
+    "RULE-5"
   ],
   "proofs": [
     {
@@ -22,6 +24,16 @@
     {
       "id": "PROOF-3",
       "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
       "status": "pass"
     }
   ]

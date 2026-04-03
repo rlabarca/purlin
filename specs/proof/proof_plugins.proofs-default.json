@@ -5,7 +5,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "spec dir resolution",
       "status": "pass",
       "tier": "default"
@@ -14,7 +14,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "proof file naming",
       "status": "pass",
       "tier": "default"
@@ -23,7 +23,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "fallback to specs/",
       "status": "pass",
       "tier": "default"
@@ -32,7 +32,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "feature-scoped overwrite",
       "status": "pass",
       "tier": "default"
@@ -41,7 +41,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "all 7 required fields",
       "status": "pass",
       "tier": "default"
@@ -50,7 +50,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "pass/fail status",
       "status": "pass",
       "tier": "default"
@@ -59,7 +59,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "no markers no files",
       "status": "pass",
       "tier": "default"
@@ -68,7 +68,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "pytest marker signature",
       "status": "pass",
       "tier": "default"
@@ -77,7 +77,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "pytest fewer args skipped",
       "status": "pass",
       "tier": "default"
@@ -86,7 +86,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "pytest test_file relative",
       "status": "pass",
       "tier": "default"
@@ -95,7 +95,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "pytest_configure registers marker + plugin",
       "status": "pass",
       "tier": "default"
@@ -104,7 +104,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-12",
       "rule": "RULE-12",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "jest marker parsing",
       "status": "pass",
       "tier": "default"
@@ -113,7 +113,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "jest no marker ignored",
       "status": "pass",
       "tier": "default"
@@ -122,7 +122,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "jest test_file relative",
       "status": "pass",
       "tier": "default"
@@ -131,7 +131,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "jest status mapping",
       "status": "pass",
       "tier": "default"
@@ -140,7 +140,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "shell tier from PURLIN_PROOF_TIER",
       "status": "pass",
       "tier": "default"
@@ -149,7 +149,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-17",
       "rule": "RULE-17",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "shell test_file from BASH_SOURCE",
       "status": "pass",
       "tier": "default"
@@ -158,7 +158,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-18",
       "rule": "RULE-18",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "shell finish required to write",
       "status": "pass",
       "tier": "default"
@@ -167,7 +167,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-19",
       "rule": "RULE-19",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "shell entries cleared after finish",
       "status": "pass",
       "tier": "default"
@@ -176,7 +176,7 @@
       "feature": "proof_plugins",
       "id": "PROOF-20",
       "rule": "RULE-20",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_file": "dev/test_proof_plugins.sh",
       "test_name": "custom plugin proofs discovered by sync_status",
       "status": "pass",
       "tier": "default"
