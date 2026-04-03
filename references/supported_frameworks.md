@@ -13,14 +13,19 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 | **Vitest** | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `vitest` | Same as Jest — Vitest supports Jest-compatible reporters |
 | **Shell** | Bash | `scripts/proof/shell_purlin.sh` | Fallback when no other framework detected | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
 
-## Detection Order
+## Detection
 
-`purlin:init` detects frameworks in this order (first match wins):
+`purlin:init` detects ALL matching frameworks — not just the first match. A project can have multiple plugins (e.g., pytest for the server, Jest for the client):
 
-1. `conftest.py` at project root OR `[tool.pytest]` in `pyproject.toml` → **pytest**
-2. `package.json` contains `vitest` → **Jest** (Vitest-compatible)
-3. `package.json` contains `jest` → **Jest**
-4. No match → **Shell** (fallback)
+| Check | Framework |
+|-------|-----------|
+| `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` | pytest |
+| `package.json` contains `vitest` | Jest (Vitest-compatible) |
+| `package.json` contains `jest` | Jest |
+
+All detected frameworks are scaffolded. If none are detected, the user is asked to choose or install a custom plugin.
+
+The `test_framework` config field stores a comma-separated list when multiple are detected: `"pytest,jest"`.
 
 ## Adding More Frameworks
 

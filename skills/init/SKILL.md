@@ -33,44 +33,48 @@ specs/
 
 ## Step 3 — Detect Test Framework
 
-Read `references/supported_frameworks.md` for the detection order and framework list. Check project files and show the user what was detected and why:
+Read `references/supported_frameworks.md` for the framework list and detection logic. Check project files for ALL matching frameworks — a project can use multiple (e.g., Python server + TypeScript client):
 
 1. `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` → **pytest** (Python)
 2. `package.json` contains `vitest` → **Jest** (TypeScript/JavaScript — Vitest-compatible)
 3. `package.json` contains `jest` → **Jest** (TypeScript/JavaScript)
-4. No match → ask the user
 
-Display the detection result:
+Display ALL detected frameworks:
+```
+Detected 2 test frameworks:
+  pytest (found conftest.py at project root)
+  Jest (found jest in package.json)
+Scaffolding both plugins to .purlin/plugins/
+```
+
+For a single detection:
 ```
 Detected: pytest (found conftest.py at project root)
 Scaffolding: .purlin/plugins/pytest_purlin.py
 ```
 
-For TypeScript projects using Jest or Vitest:
-```
-Detected: Jest (found vitest in package.json — Vitest uses Jest-compatible reporters)
-Scaffolding: .purlin/plugins/jest_purlin.js
-```
-
 If no framework is detected, do NOT silently default to shell. Ask the user:
 ```
 No test framework detected.
-Which framework? [pytest (Python) / jest (JS/TS) / shell (Bash) / other]
+Which framework(s)? [pytest (Python) / jest (JS/TS) / shell (Bash) / other]
+You can select multiple, e.g.: pytest, jest
 ```
 
 If the user selects "other", suggest `purlin:init --add-plugin` to install a custom proof plugin.
 
-Write the detected (or user-selected) framework to `.purlin/config.json` under `test_framework`.
+Write detected frameworks to `.purlin/config.json` under `test_framework`. For multiple frameworks, use a comma-separated list: `"pytest,jest"`.
 
-## Step 4 — Scaffold Proof Plugin
+## Step 4 — Scaffold Proof Plugins
 
-Copy the appropriate proof plugin from `scripts/proof/` to `.purlin/plugins/`:
+Copy ALL detected proof plugins from `scripts/proof/` to `.purlin/plugins/`:
 
 | Framework | Source | Destination |
 |-----------|--------|-------------|
 | pytest | `scripts/proof/pytest_purlin.py` | `.purlin/plugins/pytest_purlin.py` |
 | jest | `scripts/proof/jest_purlin.js` | `.purlin/plugins/jest_purlin.js` |
 | shell | `scripts/proof/shell_purlin.sh` | `.purlin/plugins/purlin-proof.sh` |
+
+If multiple frameworks were detected or selected, scaffold ALL of them. A project with both Python and TypeScript gets both `pytest_purlin.py` and `jest_purlin.js`.
 
 For pytest, also create or update `conftest.py` at the project root:
 
