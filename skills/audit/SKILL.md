@@ -21,18 +21,74 @@ purlin:audit --criteria <path>      Use a specific criteria file
 4. If `--criteria <path>` was passed, use that file instead (overrides both config and default).
 5. Display: `Using audit criteria: <source> (Criteria-Version: N)`
 
-## Step 2 — Evaluate Each Proof
+## Step 2 — Two-Pass Audit
+
+### Pass 1: Deterministic Structural Checks (always runs first)
+
+Before any LLM evaluation, run the deterministic static checker:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py <test_file> <feature_name> --spec-path <spec_path>
+```
+
+Any proof that fails a structural check is immediately rated HOLLOW — no LLM override possible:
+
+```
+PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
+  Check: logic_mirroring
+  Why: expected value computed by hash_func() — same function being tested. If hash_func has a bug, test confirms the bug.
+  Fix: replace expected = hash_func(input) with a precomputed literal: assert result == "5e884898..."
+```
+
+The `(deterministic)` label tells the user this was caught by static analysis, not LLM judgment.
+
+### Pass 2: Semantic Alignment (LLM — only for proofs that passed Pass 1)
+
+Proofs that passed structural checks go to the LLM for semantic evaluation. The LLM prompt is STRIPPED of all structural heuristics. It ONLY evaluates semantic alignment.
 
 For each feature being audited:
 
 1. Read the spec's `## Proof` section — get every proof description.
 2. For each proof, find the test file and test function from `.proofs-*.json` entries.
 3. Read the actual test code (the function body, not just the marker).
-4. Check if the rule being proved comes from an invariant (the rule key contains a `/` prefix from a spec in `specs/_invariants/`). If it does:
+4. Skip any proof already rated HOLLOW by Pass 1.
+5. Check if the rule being proved comes from an invariant (the rule key contains a `/` prefix from a spec in `specs/_invariants/`). If it does:
    - The fix directive must say "strengthen the test" not "update the rule"
    - If the rule itself is ambiguous or seems wrong, collect it for the invariant author recommendations section (see Step 3)
-5. Apply the HOLLOW, WEAK, STRONG criteria from the loaded criteria document.
 6. For `@manual` proofs: check staleness only, assess as MANUAL.
+
+**For Claude (default auditor or teammate):**
+
+```
+You are evaluating semantic alignment between spec rules and test code.
+Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
+
+For each proof, answer ONLY these questions:
+1. Does the test set up a scenario that exercises the rule's constraint?
+2. Does the test check the specific outcome the proof description claims?
+3. Is anything described in the proof missing from the test?
+
+Rate each: STRONG (test matches rule intent) or WEAK (test partially matches — something is missing or too loose).
+Do NOT check for structural issues — those were already handled.
+```
+
+**For external LLM (`audit_llm` configured):**
+
+Same prompt, but wrapped in the structured response format:
+
+```
+For each proof, respond in EXACTLY this format:
+
+PROOF-ID: PROOF-N
+RULE-ID: RULE-N
+ASSESSMENT: STRONG|WEAK
+CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>
+WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>
+FIX: <specific change to align test with rule, or "none" if STRONG>
+---
+```
+
+Note: the LLM can ONLY return STRONG or WEAK in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). This prevents the LLM from disagreeing with the static checker.
 
 ## Step 3 — Report
 
@@ -42,19 +98,18 @@ Use the bordered output format:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROOF AUDIT: <feature> (<N> proofs)
 Criteria: <source> (Criteria-Version: N)
+Auditor: Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  PROOF-1 (RULE-1): <proof description>
-    Test: <test_name> in <test_file>:<line>
-    Assessment: STRONG ✓
-    Reason: <why it's strong>
-
-  PROOF-2 (RULE-2): <proof description>
-    Test: <test_name> in <test_file>:<line>
-    Assessment: HOLLOW ✗
-    Criterion: <which criterion from audit_criteria.md was violated>
-    Why: <what would slip through — why this matters>
-    Fix: <specific, actionable change the builder should make>
+  PROOF-1 (RULE-1): STRONG ✓ (semantic)
+  PROOF-2 (RULE-2): WEAK ~ (semantic)
+    Criterion: test checks status code but not error body
+    Why: proof says "verify 401 with error message" — body not checked
+    Fix: add assert "invalid_credentials" in resp.json()["error"]
+  PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
+    Check: logic_mirroring
+    Why: expected value uses same hash function as code under test
+    Fix: use precomputed literal
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTEGRITY SCORE: <N>%
@@ -116,48 +171,48 @@ When a HOLLOW or WEAK proof is for an invariant rule:
 
 ## External LLM Mode
 
-When `.purlin/config.json` has `audit_llm` set, the audit runs Step 1 (Load Criteria) first, then uses the loaded criteria in the prompt sent to the external LLM instead of evaluating proofs inline.
+When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Only proofs that pass structural checks go to the external LLM for Pass 2.
 
 1. Load criteria via Step 1 above (respects `--criteria`, external criteria config, and defaults).
-2. For each feature being audited, construct the prompt:
+2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.
+3. For proofs that passed Pass 1, construct the Pass 2 prompt:
 
 ```
-You are a code test auditor. Evaluate whether each test actually proves what the proof description claims.
-
-CRITERIA:
-<paste full contents of references/audit_criteria.md>
+You are evaluating semantic alignment between spec rules and test code.
+Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
 
 SPEC PROOF DESCRIPTIONS:
-<paste the ## Proof section from the spec>
+<paste the ## Proof section from the spec — only proofs that passed Pass 1>
 
 TEST CODE:
 <paste the actual test function code for each proof>
 
-For each proof, respond in EXACTLY this format (one block per proof, no other text):
+For each proof, respond in EXACTLY this format:
 
 PROOF-ID: PROOF-N
 RULE-ID: RULE-N
-ASSESSMENT: STRONG|WEAK|HOLLOW
-CRITERION: <which criterion was violated, or "matches proof description" if STRONG>
-WHY: <what real problem this creates, or "test meaningfully proves the rule" if STRONG>
-FIX: <specific change to make, or "none" if STRONG>
+ASSESSMENT: STRONG|WEAK
+CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>
+WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>
+FIX: <specific change to align test with rule, or "none" if STRONG>
 ---
 ```
 
-3. Shell out: replace `{prompt}` in the configured command with the constructed prompt. Capture stdout.
-4. Parse the response: look for `PROOF-ID:`, `ASSESSMENT:`, `CRITERION:`, `WHY:`, `FIX:` lines. Be flexible — different LLMs format slightly differently. Look for the keywords, not exact whitespace.
-5. If parsing fails for a proof (LLM didn't follow the format): mark that proof as `UNKNOWN — external LLM response could not be parsed` and include the raw response excerpt.
-6. Display the same report format as the default mode:
+4. Shell out: replace `{prompt}` in the configured command with the constructed prompt. Capture stdout.
+5. Parse the response: look for `PROOF-ID:`, `ASSESSMENT:`, `CRITERION:`, `WHY:`, `FIX:` lines. Be flexible — different LLMs format slightly differently. Look for the keywords, not exact whitespace.
+6. If the external LLM returns HOLLOW for a proof, override to WEAK — only Pass 1 can produce HOLLOW.
+7. If parsing fails for a proof (LLM didn't follow the format): mark that proof as `UNKNOWN — external LLM response could not be parsed` and include the raw response excerpt.
+8. Display the combined report:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROOF AUDIT: <feature> (<N> proofs)
 Criteria: references/audit_criteria.md (Criteria-Version: N)
-Auditor: Gemini Pro (external — cross-model)
+Auditor: Pass 1 — static_checks.py | Pass 2 — Gemini Pro (external — cross-model)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-The report header shows which LLM did the audit.
+The report header shows both audit passes.
 
 ### External LLM with Agent Teams
 
