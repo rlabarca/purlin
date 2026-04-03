@@ -197,7 +197,7 @@ Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file an
 purlin:invariant sync figma figma.com/design/abc123/Brand-System
 ```
 
-Reads the Figma file via MCP, extracts both visual constraints (dimensions, colors, typography) AND behavioral rules from annotations (interactions, validation, state changes). Every annotation must produce at least one rule. All proofs are tagged `@e2e`. See [references/figma_extraction_criteria.md](../references/figma_extraction_criteria.md) for the full extraction criteria.
+Reads the Figma file via MCP. Creates a thin invariant with one visual match rule per viewport and a screenshot comparison proof. Behavioral annotations from the design are documented as context but go into feature specs as rules, not the invariant. See [references/figma_extraction_criteria.md](../references/figma_extraction_criteria.md) for the full extraction criteria.
 
 **CI staleness check:**
 
@@ -207,18 +207,35 @@ purlin:invariant sync --check-only
 
 Compares all invariants' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`.
 
-### Visual references and screenshot comparison
+### The thin invariant model
 
-When a Figma invariant is created, `purlin:invariant add-figma` also:
-1. Adds `> Visual-Reference: figma://fileKey/nodeId` pointing to the original design
-2. Captures a reference screenshot to `specs/_invariants/screenshots/i_design_<name>.png`
-3. Adds a screenshot comparison proof as the final catch-all — renders the component, compares it pixel-by-pixel against the reference, fails if difference exceeds 5%
+Figma design invariants are thin — one rule per viewport saying "match the design," one screenshot comparison proof per rule:
 
-The visual reference is used by `purlin:build` during implementation — the builder matches the original design, not just the extracted rules. The screenshot comparison proof catches visual drift that individual rules miss (spatial relationships, alignment, visual weight).
+```markdown
+# Invariant: i_design_feedback_modal
+
+> Type: design
+> Source: figma.com/design/ABC123/Feedback-Modal
+> Visual-Reference: figma://ABC123/0-1
+> Pinned: 2026-04-03T00:00:00Z
+
+## What it does
+Visual design constraints for the feedback modal, sourced from Figma.
+
+## Rules
+- RULE-1: Implementation must visually match the Figma design at the referenced node
+
+## Proof
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
+```
+
+The invariant doesn't extract granular CSS values. The LLM reads Figma directly during build for full fidelity. The screenshot comparison proof catches drift.
+
+Behavioral annotations from the Figma design (interactions, validation, state changes) are documented in the invariant's "What it does" section but become rules in the feature spec that requires the invariant.
 
 ### Build time vs test time (Figma)
 
-During `purlin:build`, the agent reads Figma directly via MCP for full visual context (screenshots, layout, tokens). During `purlin:verify`, the system just runs tests against the extracted rules — never touches Figma. Build time is creative; test time is mechanical.
+During `purlin:build`, the agent reads Figma directly via MCP for full visual context — the visual reference IS the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
 
 ---
 
