@@ -8,12 +8,16 @@ Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, dete
 ## Usage
 
 ```
-purlin:init                             Initialize a new project
-purlin:init --force                     Re-initialize (preserves existing config)
-purlin:init --add-plugin <source>       Install a proof plugin from file or git URL
-purlin:init --list-plugins              List installed proof plugins
-purlin:init --sync-audit-criteria       Sync external audit criteria to latest version
+purlin:init                             Full setup (all steps)
+purlin:init --force                     Re-run full setup
+purlin:init --add-plugin <source>       Add a proof plugin
+purlin:init --list-plugins              List proof plugins
+purlin:init --sync-audit-criteria       Sync external audit criteria
+purlin:init --audit-llm                 Change audit LLM (default/external)
+purlin:init --pre-push                  Change pre-push mode (warn/strict)
 ```
+
+Each `--flag` runs ONLY that step, not the full init.
 
 ## Step 1 — Pre-flight
 
@@ -146,6 +150,8 @@ Pre-push hook mode:
 
 Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"` or `"pre_push": "strict"`.
 
+When called via `purlin:init --pre-push`, ONLY the mode selection above runs (no hook installation). The hook install steps below only run during the full init flow.
+
 1. Locate the Purlin plugin root (`$CLAUDE_PLUGIN_ROOT` or the framework scripts directory).
 2. Check if `.git/hooks/pre-push` already exists:
    - If it exists and is already the Purlin hook (contains `purlin`): skip, print `Pre-push hook already installed.`
@@ -186,6 +192,48 @@ If **custom**: ask for the git URL and file path (e.g., `git@github.com:acme/qua
 ```
 
 Clone the repo to a temp directory, read the file at HEAD, record the commit SHA as `audit_criteria_pinned`, then clean up.
+
+## Step 7c — Audit LLM Configuration
+
+Ask the user which LLM should perform proof audits:
+
+```
+Audit LLM:
+  [default] Claude audits (same model — fastest, uses agent teams)
+  [external] Use a different LLM for cross-model auditing
+```
+
+If **default**: no config change. The auditor runs as a Claude teammate or subagent.
+
+If **external**: ask for the CLI command:
+
+```
+Enter the command to call your external LLM.
+Use {prompt} where the audit prompt should go.
+
+Examples:
+  gemini -m pro -p "{prompt}"
+  openai chat -m gpt-4o "{prompt}"
+  ollama run llama3 "{prompt}"
+
+Command:
+```
+
+After the user enters the command:
+
+1. **Test it:** shell out with a simple test prompt — replace `{prompt}` with `"Respond with exactly: PURLIN_AUDIT_OK"` and run the command.
+2. **Check the response** contains `PURLIN_AUDIT_OK`.
+3. **If it works:** save to `.purlin/config.json`:
+   ```json
+   {
+     "audit_llm": "gemini -m pro -p \"{prompt}\"",
+     "audit_llm_name": "Gemini Pro"
+   }
+   ```
+   Print: `Audit LLM configured: Gemini Pro ✓`
+4. **If it fails:** print the error and ask the user to try again or skip.
+
+This step is also callable independently via `purlin:init --audit-llm`.
 
 ## Step 8 — Commit
 
