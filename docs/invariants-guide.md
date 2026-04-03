@@ -197,7 +197,7 @@ Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file an
 purlin:invariant sync figma figma.com/design/abc123/Brand-System
 ```
 
-Reads the Figma file via MCP, extracts design constraints as rules. `> Pinned:` is the Figma `lastModified` timestamp.
+Reads the Figma file via MCP, extracts both visual constraints (dimensions, colors, typography) AND behavioral rules from annotations (interactions, validation, state changes). Every annotation must produce at least one rule. All proofs are tagged `@e2e`. See [references/figma_extraction_criteria.md](../references/figma_extraction_criteria.md) for the full extraction criteria.
 
 **CI staleness check:**
 

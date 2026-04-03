@@ -1,4 +1,4 @@
-> Criteria-Version: 4
+> Criteria-Version: 5
 
 # Proof Audit Criteria
 
@@ -81,6 +81,22 @@ Beyond matching the proof description, the audit checks the test code itself for
 Integrity score = (STRONG count + MANUAL count) / total proofs x 100%
 
 WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+
+## Figma Design Proofs
+
+Design invariant proofs (from `i_design_*` specs) have additional criteria:
+
+### Automatic HOLLOW
+
+- **Stylesheet inspection without rendering** — test reads CSS/style values directly (parsing source files or stylesheets) instead of rendering the component and checking computed styles. The component might not render at all and the test would still pass
+- **Mocked DOM** — test creates a fake DOM structure matching expected values instead of rendering the real component. Proves the mock, not the code
+
+### Automatic WEAK
+
+- **Visual-only coverage for behavioral rules** — the invariant has behavioral rules from annotations (interactions, validation, state changes) but all proofs only check CSS properties. Behavioral rules require interaction tests (click, type, select), not style checks
+- **Missing `@e2e` tag** — all Figma proofs require rendering and must be tagged `@e2e`. Untagged Figma proofs will run in the default tier where they're likely to fail due to missing rendering infrastructure
+
+See [references/figma_extraction_criteria.md](figma_extraction_criteria.md) for the full extraction criteria.
 
 ## Invariant Rules
 

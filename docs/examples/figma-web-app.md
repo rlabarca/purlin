@@ -59,7 +59,7 @@ Share your Figma link:
 here's our design system: figma.com/design/abc123/Weather-App-Design
 ```
 
-Claude reads the Figma file via MCP and creates an invariant:
+Claude reads the Figma file via MCP, extracts visual properties AND behavioral rules from annotations, and creates an invariant. All proofs are tagged `@e2e`. See [references/figma_extraction_criteria.md](../../references/figma_extraction_criteria.md) for what gets extracted.
 
 ```
 specs/_invariants/i_design_weather.md
