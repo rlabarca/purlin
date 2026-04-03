@@ -116,6 +116,14 @@ For HOLLOW or WEAK proofs on invariant rules:
 
 The invariant rule is the contract. The test must satisfy it. If the contract is bad, flag it — but don't change it.
 
+## External LLM Auditing
+
+When Purlin is configured with an external audit LLM (`audit_llm` in config), the full contents of this criteria document are included in the prompt sent to the external LLM. The external LLM evaluates tests against these exact criteria.
+
+This eliminates shared-model bias: the builder (Claude) and auditor (e.g., Gemini) use different model weights, different training data, and different biases. If Claude writes a subtly flawed test, the external LLM evaluates it independently.
+
+The audit criteria must be self-contained and unambiguous — the external LLM has no other context about Purlin. Every assessment level, every detection heuristic, and every quality check must be fully described in this document.
+
 ## Custom Criteria
 
 Teams can override this file by pointing to an external version:
