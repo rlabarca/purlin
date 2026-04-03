@@ -16,7 +16,7 @@
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_skills.py",
       "test_name": "test_exactly_twelve_skill_files",
-      "status": "pass",
+      "status": "fail",
       "tier": "default"
     },
     {
