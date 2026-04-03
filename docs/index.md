@@ -53,7 +53,7 @@ specs/
 
 ## Skills Reference
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full 13-skill reference.
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full 14-skill reference.
 
 | Resource | What it covers |
 |----------|---------------|
@@ -70,6 +70,7 @@ Key skills:
 - `purlin:status` — show rule coverage via `sync_status`
 - `purlin:changelog` — PM-readable summary of what changed
 - `purlin:spec-from-code` — reverse-engineer specs from existing code
+- `purlin:rename` — rename a feature across specs, proofs, markers, and references
 - `purlin:init` — initialize a new project
 
 ## Hard Gates (only 2)

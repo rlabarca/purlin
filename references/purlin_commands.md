@@ -1,6 +1,6 @@
 # Purlin Commands
 
-> Read and printed by `purlin:help`. 14 skills, no modes, no permission system.
+> Read and printed by `purlin:help`. 15 skills, no modes, no permission system.
 
 ```
 Purlin — Spec-Driven Development
@@ -36,6 +36,7 @@ Purlin — Spec-Driven Development
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
   purlin:init --list-plugins    List installed proof plugins
+  purlin:rename <old> <new>     Rename feature across all Purlin artifacts
   purlin:config [key] [value]   View or change .purlin/config.json settings
   purlin:invariant <cmd>        Sync read-only constraints from external sources
   purlin:init --sync-audit-criteria
@@ -59,6 +60,7 @@ Purlin — Spec-Driven Development
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
 | `purlin:invariant` | Sync external constraints | `specs/_invariants/i_*.md` |
 | `purlin:find` | Search specs | Nothing (read-only) |
+| `purlin:rename` | Rename feature | Specs, proofs, markers, references |
 | `purlin:config` | Read/write config | `.purlin/config.json` |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
 | `purlin:help` | Command reference | Nothing (read-only) |

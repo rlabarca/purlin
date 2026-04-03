@@ -92,6 +92,7 @@ When the user's intent is clear, act directly:
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
 - Figma URL pasted (figma.com/design/...) → IMMEDIATELY create a design invariant: run `purlin:invariant add-figma <url>`. Do NOT just read the Figma and wait — the invariant must be created as the first action. After creating the invariant, ask: "Design invariant created. What should this app do? Describe the behavior and I'll create a feature spec."
 - Image pasted or referenced (screenshot, mockup, design comp) → run `purlin:spec --anchor` to create a design anchor
+- "rename X to Y" / "refactor X" → run `purlin:rename X Y`
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify` (spawns auditor teammate automatically)
 - "create a purlin team" / "team up" → spawn purlin-auditor + purlin-builder + purlin-reviewer teammates
@@ -111,6 +112,7 @@ If a spec exists but code doesn't, build the code first. If code exists but test
 | `purlin:init` | Initialize project, scaffold proof plugin |
 | `purlin:invariant` | Sync read-only constraints from external sources |
 | `purlin:find` | Search specs by name |
+| `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
 | `purlin:config` | View/change settings |
 | `purlin:spec-from-code` | Reverse-engineer specs from existing code |
 | `purlin:audit` | Evaluate proof quality — STRONG/WEAK/HOLLOW assessments |
@@ -134,6 +136,7 @@ Skills are tools, not gatekeepers. Use them when they add value.
 | `.claude/agents/purlin-auditor.md` | Audit teammate role definition |
 | `.claude/agents/purlin-builder.md` | Builder teammate role definition |
 | `.claude/agents/purlin-reviewer.md` | Reviewer teammate role definition |
+| Config: `audit_llm` | External LLM command for cross-model auditing |
 
 ## Path Resolution
 
