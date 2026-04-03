@@ -1,4 +1,4 @@
-> Criteria-Version: 1
+> Criteria-Version: 2
 
 # Figma Extraction Criteria
 
@@ -121,6 +121,24 @@ Design invariants should include `> Stack:` with the rendering technology so the
 ```
 
 If the stack is unknown at invariant creation time, omit it — the feature spec that requires the invariant will have its own `> Stack:`.
+
+## Screenshot Comparison Proof
+
+Every design invariant SHOULD include a screenshot comparison proof as the final catch-all:
+
+```
+- PROOF-N (ALL): Render component, capture screenshot, compare against visual reference; verify <5% pixel difference @e2e
+```
+
+This proof catches everything individual rules miss — spatial relationships, alignment, visual weight. Individual rules check measurable properties. The screenshot catches the gestalt.
+
+The screenshot comparison:
+1. Renders the built component in a real browser (Playwright)
+2. Captures a screenshot
+3. Compares pixel-by-pixel against the visual reference (Figma screenshot or reference image)
+4. Fails if pixel difference exceeds threshold (default 5%)
+
+This proof is OPTIONAL but RECOMMENDED. Without it, a component can satisfy every individual rule while looking wrong overall.
 
 ## Quality Gate
 
