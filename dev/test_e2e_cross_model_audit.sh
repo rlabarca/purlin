@@ -125,6 +125,55 @@ build_audit_prompt() {
   echo "$prompt_file"
 }
 
+# --- Helper: construct Pass 2 (semantic-only) prompt ---
+# This is the two-pass architecture prompt: structural checks already ran,
+# the LLM only evaluates semantic alignment — returns STRONG or WEAK only.
+build_pass2_prompt() {
+  local spec_path="$1"
+  local test_code="$2"
+  shift 2
+  # Remaining args are PROOF-ID/RULE-ID pairs that passed Pass 1
+  local proof_ids=("$@")
+
+  local proof_section
+  proof_section=$(awk '/^## Proof/{found=1; print; next} found && /^## /{exit} found{print}' "$spec_path")
+
+  local prompt_file
+  prompt_file=$(mktemp)
+
+  {
+    printf '%s\n' 'You are evaluating semantic alignment between spec rules and test code.'
+    printf '%s\n' 'Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.'
+    printf '\n%s\n' 'For each proof, answer ONLY these questions:'
+    printf '%s\n' '1. Does the test set up a scenario that exercises the rules constraint?'
+    printf '%s\n' '2. Does the test check the specific outcome the proof description claims?'
+    printf '%s\n' '3. Is anything described in the proof missing from the test?'
+    printf '\n%s\n' 'Rate each: STRONG (test matches rule intent) or WEAK (test partially matches — something is missing or too loose).'
+    printf '%s\n' 'Do NOT check for structural issues — those were already handled.'
+    printf '\n%s\n' 'SPEC PROOF DESCRIPTIONS:'
+    printf '%s\n' "$proof_section"
+    printf '\n%s\n' 'TEST CODE:'
+    printf '%s\n' "$test_code"
+    printf '\n%s\n' 'For each proof, respond in EXACTLY this format (one block per proof, no other text). Each field must be on a single line.'
+
+    for pair in "${proof_ids[@]}"; do
+      local pid rid
+      pid=$(echo "$pair" | cut -d'|' -f1)
+      rid=$(echo "$pair" | cut -d'|' -f2)
+      printf '\n'
+      printf '%s\n' "PROOF-ID: $pid"
+      printf '%s\n' "RULE-ID: $rid"
+      printf '%s\n' 'ASSESSMENT: STRONG|WEAK'
+      printf '%s\n' 'CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>'
+      printf '%s\n' 'WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>'
+      printf '%s\n' 'FIX: <specific change to align test with rule, or "none" if STRONG>'
+      printf '%s\n' '---'
+    done
+  } > "$prompt_file"
+
+  echo "$prompt_file"
+}
+
 # --- Helper: parse audit response ---
 # Extracts ASSESSMENT for a given PROOF-ID from the LLM response.
 # Handles minor formatting variations across different LLMs.
@@ -355,10 +404,128 @@ else
   purlin_proof "e2e_cross_model_audit" "PROOF-3" "RULE-3" fail "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX"
 fi
 
+# ==========================================================================
+# Phase D — Two-pass flow: static_checks (Pass 1) then Gemini (Pass 2)
+# ==========================================================================
+echo "  --- Phase D: Two-pass hybrid audit with Gemini ---"
+
+TMPDIR_D=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_D"
+create_test_project "$TMPDIR_D"
+
+# Write a Python test file with mixed quality:
+# - PROOF-1: assert True (should be caught by static_checks → HOLLOW)
+# - PROOF-2: real assertions (should pass static_checks, go to Gemini → STRONG)
+cat > "$TMPDIR_D/test_login.py" << 'PYEOF'
+import pytest
+import requests
+
+@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+def test_valid_login_hollow():
+    assert True
+
+@pytest.mark.proof("login", "PROOF-2", "RULE-2")
+def test_invalid_login_strong():
+    resp = requests.post("http://localhost:8000/login", json={"username": "alice", "password": "wrong"})
+    assert resp.status_code == 401
+    body = resp.json()
+    assert body["error"] == "invalid_credentials"
+    assert "alice" not in body.get("message", "")
+PYEOF
+
+# Pass 1: Run static_checks.py
+echo "    Pass 1: Running static_checks.py..."
+STATIC_OUTPUT=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" \
+  "$TMPDIR_D/test_login.py" "login" \
+  --spec-path "$TMPDIR_D/specs/auth/login.md" 2>&1 || true)
+
+# Check that PROOF-1 was caught deterministically
+PROOF1_STATIC=$(echo "$STATIC_OUTPUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for p in d['proofs']:
+    if p['proof_id'] == 'PROOF-1':
+        print(f\"{p['status']}/{p.get('check','none')}\")
+        break
+else:
+    print('missing')
+")
+PROOF2_STATIC=$(echo "$STATIC_OUTPUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for p in d['proofs']:
+    if p['proof_id'] == 'PROOF-2':
+        print(p['status'])
+        break
+else:
+    print('missing')
+")
+
+echo "    Pass 1 results: PROOF-1=$PROOF1_STATIC, PROOF-2=$PROOF2_STATIC"
+
+if [[ "$PROOF1_STATIC" != "fail/assert_true" ]]; then
+  echo "    Phase D FAIL: Pass 1 should catch PROOF-1 as fail/assert_true, got $PROOF1_STATIC"
+  purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" fail "two-pass: static_checks did not catch PROOF-1"
+else
+  if [[ "$PROOF2_STATIC" != "pass" ]]; then
+    echo "    Phase D FAIL: Pass 1 should pass PROOF-2, got $PROOF2_STATIC"
+    purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" fail "two-pass: PROOF-2 should pass static checks"
+  else
+    # Pass 2: Send only PROOF-2 (the one that passed Pass 1) to Gemini
+    echo "    Pass 2: Sending only PROOF-2 to Gemini (PROOF-1 already HOLLOW)..."
+
+    PASS2_TEST='
+import requests
+
+def test_invalid_login_strong():
+    """PROOF-2 for RULE-2"""
+    resp = requests.post("http://localhost:8000/login", json={"username": "alice", "password": "wrong"})
+    assert resp.status_code == 401
+    body = resp.json()
+    assert body["error"] == "invalid_credentials"
+    assert "alice" not in body.get("message", "")
+'
+
+    PROMPT_FILE_D=$(build_pass2_prompt "$TMPDIR_D/specs/auth/login.md" "$PASS2_TEST" "PROOF-2|RULE-2")
+
+    GEMINI_STDERR_D=$(mktemp)
+    RESPONSE_D=$(cat "$PROMPT_FILE_D" | gemini -m pro -p "" 2>"$GEMINI_STDERR_D") || {
+      rm -f "$PROMPT_FILE_D" "$GEMINI_STDERR_D"
+      echo "    Gemini CLI failed in Phase D"
+      purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" fail "gemini CLI returned error in two-pass flow"
+      export PROJECT_ROOT="$REAL_PROJECT_ROOT"
+      cd "$PROJECT_ROOT"
+      purlin_proof_finish
+      exit 1
+    }
+    rm -f "$PROMPT_FILE_D" "$GEMINI_STDERR_D"
+
+    ASSESS_D=$(parse_assessment "$RESPONSE_D" "PROOF-2")
+    echo "    Pass 2 result: PROOF-2=$ASSESS_D"
+
+    # Gemini should return STRONG or WEAK (never HOLLOW — that's Pass 1 only)
+    if [[ "$ASSESS_D" == "STRONG" ]]; then
+      echo "    Phase D PASS: Pass 1 caught PROOF-1 (HOLLOW), Pass 2 approved PROOF-2 (STRONG)"
+      purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" pass "two-pass: static catches HOLLOW, Gemini rates STRONG"
+    elif [[ "$ASSESS_D" == "WEAK" ]]; then
+      echo "    Phase D PASS (WEAK): Pass 1 caught PROOF-1, Gemini rated PROOF-2 as WEAK (acceptable — semantic judgment)"
+      purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" pass "two-pass: static catches HOLLOW, Gemini rates WEAK"
+    elif [[ "$ASSESS_D" == "HOLLOW" ]]; then
+      echo "    Phase D FAIL: Gemini returned HOLLOW in Pass 2 — should only return STRONG or WEAK"
+      echo "    Raw response: $(echo "$RESPONSE_D" | head -15)"
+      purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" fail "Gemini returned HOLLOW in Pass 2 (should be overridden to WEAK)"
+    else
+      echo "    Phase D FAIL: Gemini returned unexpected assessment '$ASSESS_D'"
+      echo "    Raw response: $(echo "$RESPONSE_D" | head -15)"
+      purlin_proof "e2e_cross_model_audit" "PROOF-4" "RULE-4" fail "unexpected assessment from Gemini in Pass 2"
+    fi
+  fi
+fi
+
 # --- Emit proof files ---
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "e2e_cross_model_audit: 3 proofs recorded"
+echo "e2e_cross_model_audit: 4 proofs recorded"

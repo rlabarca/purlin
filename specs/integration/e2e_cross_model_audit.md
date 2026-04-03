@@ -12,9 +12,11 @@ End-to-end test of cross-model auditing with a real external LLM (Gemini). Verif
 - RULE-1: External LLM detects deliberately hollow tests (assert True, assert None) as non-STRONG
 - RULE-2: External LLM approves well-structured tests with real assertions as STRONG
 - RULE-3: Response parsing extracts all required fields (PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX) from the external LLM output
+- RULE-4: Two-pass flow works end-to-end: static_checks catches HOLLOW in Pass 1, only surviving proofs go to external LLM in Pass 2
 
 ## Proof
 
 - PROOF-1 (RULE-1): Audit hollow test code (assert True, assert result is None) with Gemini; verify it returns HOLLOW or WEAK for both proofs @e2e
 - PROOF-2 (RULE-2): Audit strong test code (real HTTP assertions, JWT decode, negative test) with Gemini; verify it returns STRONG for both proofs @e2e
 - PROOF-3 (RULE-3): Parse the Gemini response from the strong-test audit; verify ASSESSMENT, CRITERION, WHY, FIX fields are all extracted for every PROOF-ID @e2e
+- PROOF-4 (RULE-4): Mixed-quality test file — static_checks catches assert True as HOLLOW, passes valid test to Gemini, Gemini rates STRONG or WEAK @e2e
