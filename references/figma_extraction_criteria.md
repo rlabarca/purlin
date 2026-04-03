@@ -1,4 +1,4 @@
-> Criteria-Version: 2
+> Criteria-Version: 3
 
 # Figma Extraction Criteria
 
@@ -132,11 +132,32 @@ Every design invariant SHOULD include a screenshot comparison proof as the final
 
 This proof catches everything individual rules miss — spatial relationships, alignment, visual weight. Individual rules check measurable properties. The screenshot catches the gestalt.
 
+The default pixel difference threshold is 5%. Override per-project in `.purlin/config.json`:
+
+```json
+{
+  "visual_diff_threshold": 5
+}
+```
+
+Override per-proof when tighter or looser tolerance is needed:
+
+```
+- PROOF-N (ALL): Screenshot comparison against reference; verify <2% pixel difference @e2e
+- PROOF-M (RULE-3): Screenshot comparison of text rendering; verify <10% pixel difference @e2e
+```
+
+Common thresholds:
+- 2% — pixel-perfect designs, same-OS CI
+- 5% — default, handles minor font rendering differences
+- 10% — cross-platform CI (macOS dev, Linux CI), text-heavy components
+- 15% — components with animations or dynamic content that may differ between captures
+
 The screenshot comparison:
 1. Renders the built component in a real browser (Playwright)
 2. Captures a screenshot
 3. Compares pixel-by-pixel against the visual reference (Figma screenshot or reference image)
-4. Fails if pixel difference exceeds threshold (default 5%)
+4. Fails if pixel difference exceeds the threshold (project default from config, or per-proof override)
 
 This proof is OPTIONAL but RECOMMENDED. Without it, a component can satisfy every individual rule while looking wrong overall.
 

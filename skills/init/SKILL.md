@@ -31,6 +31,16 @@ specs/
   _invariants/        # invariant specs go here
 ```
 
+Config template fields (from `templates/config.json`):
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `version` | `"0.9.0"` | Purlin framework version |
+| `test_framework` | `"auto"` | Detected test framework(s) |
+| `spec_dir` | `"specs"` | Directory containing specs |
+| `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |
+| `visual_diff_threshold` | `5` | Default pixel difference threshold (%) for screenshot comparison proofs. Advanced setting — don't ask during init, changed via `purlin:config`. |
+
 ## Step 3 — Detect Test Framework
 
 Read `references/supported_frameworks.md` for the framework list and detection logic. Check project files for ALL matching frameworks — a project can use multiple (e.g., Python server + TypeScript client):
