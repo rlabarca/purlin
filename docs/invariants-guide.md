@@ -207,6 +207,15 @@ purlin:invariant sync --check-only
 
 Compares all invariants' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`.
 
+### Visual references and screenshot comparison
+
+When a Figma invariant is created, `purlin:invariant add-figma` also:
+1. Adds `> Visual-Reference: figma://fileKey/nodeId` pointing to the original design
+2. Captures a reference screenshot to `specs/_invariants/screenshots/i_design_<name>.png`
+3. Adds a screenshot comparison proof as the final catch-all — renders the component, compares it pixel-by-pixel against the reference, fails if difference exceeds 5%
+
+The visual reference is used by `purlin:build` during implementation — the builder matches the original design, not just the extracted rules. The screenshot comparison proof catches visual drift that individual rules miss (spatial relationships, alignment, visual weight).
+
 ### Build time vs test time (Figma)
 
 During `purlin:build`, the agent reads Figma directly via MCP for full visual context (screenshots, layout, tokens). During `purlin:verify`, the system just runs tests against the extracted rules — never touches Figma. Build time is creative; test time is mechanical.

@@ -630,6 +630,10 @@ do a purlin:audit and then fix all HOLLOW and WEAK proofs from the audit, then r
 
 With agent teams, the builder and auditor handle the loop autonomously — the builder fixes, the auditor re-checks, they go back and forth until the integrity score crosses your threshold. You review the final result.
 
+### Visual reference in audit
+
+For design invariants with `> Visual-Reference:`, the audit also checks whether the implementation matches the visual reference, not just the individual rules. A component can pass every rule but look wrong because spatial relationships were lost in the spec. The screenshot comparison proof catches this.
+
 ### Invariant rules in audit
 
 When the auditor finds issues with proofs for invariant rules (from `> Requires:` or `> Global:`), it can't suggest changing the rule — invariants are read-only. It tells the builder to strengthen the test. If the rule itself is ambiguous, the auditor messages the lead (not the builder) with a recommendation for the invariant author, including the `> Source:` URL.
