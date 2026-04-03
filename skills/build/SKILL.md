@@ -18,7 +18,7 @@ purlin:build                    Resume building the current feature
 2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
 3. Read all `> Requires:` specs (including invariants in `specs/_invariants/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
 4. For design invariants with `> Source: <figma-url>`, read the Figma file via MCP (`get_design_context`) to get visual context for implementation.
-5. If any required spec (anchor or invariant) has a `> Visual-Reference:` field, load the visual reference:
+5. If the feature spec itself or any required spec (anchor or invariant) has a `> Visual-Reference:` field, load the visual reference:
    - `figma://fileKey/nodeId` → call `get_design_context` and `get_screenshot` MCP tools
    - `./path/to/image.png` → read the image file
    - `./path/to/file.html` → read the HTML file

@@ -127,7 +127,7 @@ If the stack is unknown at invariant creation time, omit it — the feature spec
 Every design invariant SHOULD include a screenshot comparison proof as the final catch-all:
 
 ```
-- PROOF-N (ALL): Render component, capture screenshot, compare against visual reference; verify <5% pixel difference @e2e
+- PROOF-N (RULE-1, RULE-2, ...): Render component, capture screenshot, compare against visual reference; verify <5% pixel difference @e2e
 ```
 
 This proof catches everything individual rules miss — spatial relationships, alignment, visual weight. Individual rules check measurable properties. The screenshot catches the gestalt.

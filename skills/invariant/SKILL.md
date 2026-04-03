@@ -61,8 +61,9 @@ Compare `> Pinned:` value to the upstream source. Pull if different.
    b. Call `get_design_context` to fetch the current design data.
    c. Update the invariant file with new rules extracted from the design.
    d. Update `> Pinned:` with the new timestamp.
-   e. Delete the bypass lock.
-   f. Commit.
+   e. If `> Visual-Reference:` exists, call `get_screenshot` to recapture the reference screenshot to `specs/_invariants/screenshots/`.
+   f. Delete the bypass lock.
+   g. Commit.
 
 ## add
 
@@ -88,7 +89,8 @@ Import a new Figma-sourced design invariant. Read `references/figma_extraction_c
    a. Add `> Visual-Reference: figma://fileKey/nodeId` to the invariant metadata.
    b. Call `get_screenshot` to capture the reference screenshot, save to `specs/_invariants/screenshots/i_design_<name>.png`.
    c. Add a screenshot comparison proof as the last proof:
-      `- PROOF-N (ALL): Render component, capture screenshot, compare against specs/_invariants/screenshots/i_design_<name>.png; verify <5% pixel difference @e2e`
+      `- PROOF-N (RULE-1, RULE-2, ...): Render component, capture screenshot, compare against specs/_invariants/screenshots/i_design_<name>.png; verify <5% pixel difference @e2e`
+      (List all RULE IDs from the invariant — the screenshot comparison covers the entire design.)
 9. Create `specs/_invariants/i_design_<name>.md` with `> Type: design`, `> Source:`, `> Pinned:`, `> Visual-Reference:`.
 10. Commit.
 

@@ -73,6 +73,7 @@ Navigation layout and spacing constraints from the Figma design source.
 
 - PROOF-1 (RULE-1): Rendered nav element height matches spec per breakpoint
 - PROOF-2 (RULE-2): Menu item padding matches design tokens
+- PROOF-3 (RULE-1, RULE-2): Render component, capture screenshot, compare against specs/_invariants/screenshots/i_design_navigation.png; verify <5% pixel difference @e2e
 ```
 
 ## Metadata Fields
