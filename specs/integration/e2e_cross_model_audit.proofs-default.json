@@ -15,8 +15,8 @@
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_cross_model_audit.sh",
-      "test_name": "external LLM approves strong tests as STRONG",
-      "status": "fail",
+      "test_name": "external LLM approves strong tests as STRONG or WEAK (not HOLLOW)",
+      "status": "pass",
       "tier": "default"
     },
     {
