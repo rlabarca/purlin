@@ -140,6 +140,32 @@ The screenshot comparison:
 
 This proof is OPTIONAL but RECOMMENDED. Without it, a component can satisfy every individual rule while looking wrong overall.
 
+## Responsive Designs
+
+When a Figma file contains multiple viewport variants (desktop, tablet, mobile):
+
+1. Extract rules for EACH variant. Prefix variant-specific rules:
+   ```
+   - RULE-1: Modal width is 428px (desktop)
+   - RULE-2: Modal width is 100% (mobile)
+   - RULE-3: Sidebar collapses to hamburger menu below 768px
+   ```
+
+2. Capture a reference screenshot for EACH variant:
+   ```
+   specs/_invariants/screenshots/i_design_modal_desktop.png
+   specs/_invariants/screenshots/i_design_modal_tablet.png
+   specs/_invariants/screenshots/i_design_modal_mobile.png
+   ```
+
+3. Write separate screenshot comparison proofs per viewport:
+   ```
+   - PROOF-N (RULE-1, RULE-4, RULE-7): Render at 1440px width; compare against desktop reference @e2e
+   - PROOF-M (RULE-2, RULE-5, RULE-8): Render at 375px width; compare against mobile reference @e2e
+   ```
+
+4. The `> Visual-Reference:` can point to the primary variant. Additional variants are referenced in the proofs directly.
+
 ## Quality Gate
 
 Before writing the invariant file, verify:
