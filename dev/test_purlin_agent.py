@@ -149,7 +149,7 @@ class TestPurlinAgent:
         # Count data rows (exclude header and separator)
         rows = [l for l in section.strip().splitlines()
                 if l.startswith('|') and '---' not in l and 'Document' not in l]
-        assert len(rows) == 11, f"Expected 11 reference rows, found {len(rows)}"
+        assert len(rows) == 12, f"Expected 12 reference rows, found {len(rows)}"
         # Verify each row has a non-empty topic column
         for row in rows:
             cells = [c.strip() for c in row.split('|') if c.strip()]
