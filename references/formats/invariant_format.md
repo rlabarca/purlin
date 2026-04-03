@@ -70,7 +70,7 @@ Visual design constraints for the navigation component, sourced from Figma.
 
 ## Proof
 
-- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 ## Metadata Fields

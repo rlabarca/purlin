@@ -1,4 +1,4 @@
-> Criteria-Version: 4
+> Criteria-Version: 5
 
 # Figma Extraction Criteria
 
@@ -34,7 +34,7 @@ Visual design constraints for the feedback modal, sourced from Figma.
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
 ## Proof
-- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 One rule. One proof. The LLM reads Figma directly during build for full fidelity. The test does a visual comparison to catch drift.
@@ -91,9 +91,9 @@ When a Figma file contains multiple viewport variants (desktop, tablet, mobile),
 - RULE-3: Implementation must visually match the Figma design at mobile viewport (375px)
 
 ## Proof
-- PROOF-1 (RULE-1): Render at 1440px width, capture screenshot, compare against desktop Figma screenshot; verify visual match within configured threshold @e2e
-- PROOF-2 (RULE-2): Render at 768px width, capture screenshot, compare against tablet Figma screenshot; verify visual match within configured threshold @e2e
-- PROOF-3 (RULE-3): Render at 375px width, capture screenshot, compare against mobile Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render at 1440px width, capture screenshot, compare against desktop Figma screenshot; verify visual match at design fidelity @e2e
+- PROOF-2 (RULE-2): Render at 768px width, capture screenshot, compare against tablet Figma screenshot; verify visual match at design fidelity @e2e
+- PROOF-3 (RULE-3): Render at 375px width, capture screenshot, compare against mobile Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 Capture a reference screenshot for EACH variant:
@@ -116,8 +116,8 @@ When a design has theme variants (light/dark, high contrast), create one rule pe
 - RULE-2: Implementation must visually match the Figma design in dark theme
 
 ## Proof
-- PROOF-1 (RULE-1): Render with light theme, capture screenshot, compare against light theme Figma screenshot; verify visual match within configured threshold @e2e
-- PROOF-2 (RULE-2): Render with dark theme, capture screenshot, compare against dark theme Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render with light theme, capture screenshot, compare against light theme Figma screenshot; verify visual match at design fidelity @e2e
+- PROOF-2 (RULE-2): Render with dark theme, capture screenshot, compare against dark theme Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 Capture one screenshot per theme:
@@ -127,33 +127,51 @@ specs/_invariants/screenshots/i_design_modal_light.png
 specs/_invariants/screenshots/i_design_modal_dark.png
 ```
 
-## Configurable Threshold
+## Visual Fidelity Tiers
 
-The default pixel difference threshold is 5%. Override per-project in `.purlin/config.json`:
+Instead of raw pixel percentages, Purlin uses named fidelity tiers that describe what you want to catch:
 
-```json
-{
-  "visual_diff_threshold": 5
-}
+| Tier | What it catches | What it allows | Use when |
+|------|----------------|----------------|----------|
+| **structure** | Missing sections, wrong arrangement, major spacing breaks | Color differences, font rendering, minor spacing | Early development, wireframe-level matching |
+| **design** | Wrong colors, missing borders, icon changes, spacing shifts | Font rendering differences across OS, subpixel antialiasing | Production components, design handoff |
+| **pixel-perfect** | Everything — font weight, subpixel spacing, antialiasing | Almost nothing | Same-OS CI, strict brand requirements |
+
+If no fidelity tier is specified in a proof, the default is **design**.
+
+The fidelity tier is written by whoever creates the invariant or anchor — in the proof description:
+
+```
+- PROOF-1 (RULE-1): Screenshot comparison at design fidelity @e2e
 ```
 
-Override per-proof when tighter or looser tolerance is needed:
+For a wireframe-stage mockup:
 
 ```
-- PROOF-1 (RULE-1): Render at 1440px, screenshot comparison; verify <2% pixel difference @e2e
+- PROOF-1 (RULE-1): Screenshot comparison at structure fidelity @e2e
 ```
 
-Common thresholds:
-- 2% — pixel-perfect designs, same-OS CI
-- 5% — default, handles minor font rendering differences
-- 10% — cross-platform CI (macOS dev, Linux CI), text-heavy components
-- 15% — components with animations or dynamic content
+For strict brand requirements:
+
+```
+- PROOF-1 (RULE-1): Screenshot comparison at pixel-perfect fidelity @e2e
+```
+
+### Internal mapping (reference only)
+
+The tiers map to pixel diff thresholds internally. Users don't need to set these — they're documentation for how the comparison works:
+
+| Tier | Pixel diff threshold |
+|------|---------------------|
+| structure | 15% |
+| design | 5% |
+| pixel-perfect | 2% |
 
 The screenshot comparison:
 1. Renders the built component in a real browser (Playwright)
 2. Captures a screenshot
 3. Compares pixel-by-pixel against the visual reference (Figma screenshot)
-4. Fails if pixel difference exceeds the threshold (project default from config, or per-proof override)
+4. Fails if pixel difference exceeds the tier's threshold
 
 ## Tier Tags
 

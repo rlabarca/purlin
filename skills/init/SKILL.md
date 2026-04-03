@@ -39,7 +39,6 @@ Config template fields (from `templates/config.json`):
 | `test_framework` | `"auto"` | Detected test framework(s) |
 | `spec_dir` | `"specs"` | Directory containing specs |
 | `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |
-| `visual_diff_threshold` | `5` | Default pixel difference threshold (%) for screenshot comparison proofs. Advanced setting — don't ask during init, changed via `purlin:config`. |
 
 ## Step 3 — Detect Test Framework
 

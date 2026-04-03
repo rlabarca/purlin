@@ -226,7 +226,7 @@ Visual design constraints for the feedback modal, sourced from Figma.
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
 ## Proof
-- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 The invariant doesn't extract granular CSS values. The LLM reads Figma directly during build for full fidelity. The screenshot comparison proof catches drift.

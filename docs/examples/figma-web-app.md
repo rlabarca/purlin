@@ -80,7 +80,7 @@ Visual design constraints for the weather app, sourced from Figma.
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
 ## Proof
-- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
 The invariant is read-only — the gate hook prevents edits. One rule, one proof. The visual reference IS the spec.
@@ -150,7 +150,7 @@ it("matches Figma design [proof:i_design_weather:PROOF-1:RULE-1:e2e]", async () 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/weather/austin");
   const screenshot = await page.screenshot();
-  expect(screenshot).toMatchSnapshot("i_design_weather.png", { threshold: 0.05 });
+  expect(screenshot).toMatchSnapshot("i_design_weather.png", { threshold: 0.05 }); // design fidelity
 });
 ```
 
