@@ -73,13 +73,17 @@ Import a new git-sourced invariant.
 
 ## add-figma
 
-Import a new Figma-sourced design invariant.
+Import a new Figma-sourced design invariant. Read `references/figma_extraction_criteria.md` for the full extraction criteria.
 
 1. Parse the Figma URL to get file key and node ID.
-2. Call `get_design_context` to fetch design data.
-3. Extract design rules (colors, typography, spacing, etc.).
-4. Create `specs/_invariants/i_design_<name>.md` with `> Source:`, `> Pinned:`.
-5. Commit.
+2. Call `get_metadata` to get the design tree structure.
+3. Call `get_design_context` to fetch full design data including screenshots.
+4. **Extract visual rules** from the design tree — dimensions, colors, typography, spacing, borders, shadows for every component. See the criteria doc for the completeness checklist.
+5. **Extract behavioral rules** from annotations — look for spec frames, text nodes with behavioral descriptions, component descriptions, and Figma comments. Every annotation MUST produce at least one rule.
+6. **Write proofs** — all proofs get `@e2e` tag (Figma proofs require rendering). Group related visual properties into multi-rule proofs. Keep behavioral proofs separate from visual proofs.
+7. **Quality gate** — before writing, verify: every component has visual rules, every annotation has behavioral rules, every proof is tagged `@e2e`, dimensions include both width AND height.
+8. Create `specs/_invariants/i_design_<name>.md` with `> Type: design`, `> Source:`, `> Pinned:`.
+9. Commit.
 
 ## list
 
