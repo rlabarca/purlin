@@ -1,45 +1,59 @@
-> Criteria-Version: 7
+> Criteria-Version: 8
 
 # Proof Audit Criteria
 
-This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit skill reads this file at runtime. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
+This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit runs in two passes: Pass 1 (deterministic static analysis) catches structural issues, Pass 2 (LLM) evaluates semantic alignment. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
 
 ## Assessment Levels
 
-| Level | Symbol | Meaning |
-|-------|--------|---------|
-| STRONG | ✓ | Test meaningfully proves the rule — assertions match proof description, tests real behavior |
-| WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described |
-| HOLLOW | ✗ | Test passes but doesn't prove the rule — mocks the thing being tested, tautological |
-| MANUAL | ● | Human-verified via @manual stamp — assess staleness only |
+| Level | Symbol | Meaning | Determined by |
+|-------|--------|---------|---------------|
+| STRONG | ✓ | Test meaningfully proves the rule — assertions match proof description, tests real behavior | Pass 2 (LLM) |
+| WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described | Pass 2 (LLM) |
+| HOLLOW | ✗ | Test passes but doesn't prove the rule — structural defect caught deterministically | Pass 1 (static) |
+| MANUAL | ● | Human-verified via @manual stamp — assess staleness only | Either pass |
 
-## HOLLOW Detection (test proves nothing)
+## Pass 1 — Deterministic Checks (static_checks.py)
 
-A proof is HOLLOW when ANY of these are true:
+These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM involved. A proof that fails any deterministic check is HOLLOW — no override possible.
 
-- Test contains `assert True`, `assert result is not None`, or `assert len(x) >= 0`
-- Test mocks the exact function the rule is about (rule says "bcrypt hashing", test mocks bcrypt.checkpw)
-- Test setup creates the expected output, then test asserts that same value back
-- Test has no assertions (runs code but checks nothing)
-- Test asserts a mock's return value (mock returns 200, test asserts 200)
-- For FORBIDDEN proofs: test greps a mock filesystem instead of the real codebase
-- **Logic mirroring** — the expected value is calculated at runtime using the same function or logic as the system under test. Example: `expected = hash_func(input); assert result == expected` where `hash_func` is the same code being tested. If the function has a bug, the test confirms the bug. Expected values must be literal constants or derived from an independent source
+### HOLLOW (always caught)
 
-## WEAK Detection (test partially proves)
+- **Tautological assertions** — `assert True`, `assert result is not None`, `assert len(x) >= 0`, `self.assertTrue(True)`. These are true regardless of code behavior
+- **No assertion statements** — test function body contains zero assertion statements (`assert`, `self.assert*`, `pytest.raises`, `expect`). Test runs code but checks nothing
+- **Bare `except: pass`** — `except:` or `except Exception:` followed by `pass` around the code being tested. Failures are silently swallowed
+- **Logic mirroring** — the expected value is computed by the same function as the system under test. Example: `expected = hash_func(input); assert result == expected` where `hash_func` is the same code being tested. If the function has a bug, the test confirms the bug. Expected values must be literal constants or derived from an independent source
+- **Mock target match** — a `@patch` or `mock.patch` target contains the exact function name that the rule describes. Example: `@patch("auth.bcrypt.checkpw")` on a test proving a rule about bcrypt. The mock replaces the very behavior the rule requires
 
-A proof is WEAK when ANY of these are true:
+### Shell-specific checks
+
+- **Hardcoded pass** — `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check)
+- **No assertion commands** — no `test`, `[`, `grep`, `diff`, or `||` patterns between proof markers
+
+### JavaScript/TypeScript-specific checks
+
+- **`expect(true).toBe(true)`** — tautological, same as `assert True`
+- **No `expect()` calls** — test function body contains no assertions
+
+## Pass 2 — Semantic Alignment (LLM)
+
+The LLM evaluates whether the test semantically matches the rule. It does NOT check structural issues — those are handled by Pass 1. The LLM can only return STRONG or WEAK.
+
+### WEAK (LLM judgment)
 
 - Proof description says "verify X AND Y" but test only checks X
 - Test checks status code but not response body when proof mentions both
 - Test only covers the happy path when the rule implies error handling
 - Assertion is looser than the proof description ("greater than 0" when proof says "exactly 3")
-- Test uses hardcoded expected values that coincidentally match the mock, not real behavior
 - For API tests: checks status code but not the response shape or content
 - **Deep mocking** — for critical paths (auth, payments, data integrity), the test mocks the data-persistence layer entirely (database connector, file system, external API) rather than using an ephemeral real version (in-memory database, temp directory, test server). The test exercises application logic but the state is artificial — a real database constraint violation or network timeout would not be caught
-- **Assertion farming** — multiple assertions on the same object that test individual properties redundantly (`assert user.email is not None`, `assert "@" in user.email`, `assert len(user.email) > 5`) instead of one meaningful check (`assert user.email == "alice@example.com"` or schema validation). Redundant property-level assertions create brittle tests that break on irrelevant formatting changes
+- **Assertion farming** — multiple assertions on the same object that test individual properties redundantly (`assert user.email is not None`, `assert "@" in user.email`, `assert len(user.email) > 5`) instead of one meaningful check (`assert user.email == "alice@example.com"` or schema validation)
 - **Missing negative test for constraint rules** — when the rule describes rejection or constraint behavior ("reject passwords under 8 characters", "block after 5 failed attempts"), the test only checks the happy path (valid password accepted). STRONG requires at least one negative test proving the constraint rejects what it should
+- **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
+- **String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
+- **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
 
-## STRONG Detection (test meaningfully proves)
+### STRONG (LLM judgment)
 
 A proof is STRONG when ALL of these are true:
 
@@ -49,24 +63,6 @@ A proof is STRONG when ALL of these are true:
 - Expected outputs match the proof description's expected outcomes
 - For negative tests: actually attempts the bad input and verifies rejection
 - For FORBIDDEN proofs: greps the real codebase, not a test fixture
-
-## Test Code Quality (independent of proof description)
-
-Beyond matching the proof description, the audit checks the test code itself for patterns that produce unreliable results:
-
-### Automatic HOLLOW (regardless of proof match)
-
-- **Bare `except: pass`** or `except Exception: pass` around the code being tested — failures are silently swallowed
-- **No setup for the asserted value** — the variable being asserted was never assigned in the test (relies on leaked state from another test)
-- **Assert on a literal** — `assert "login" == "login"` or `assert 200 == 200` without any code execution producing the value
-
-### Automatic WEAK (regardless of proof match)
-
-- **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
-- **String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
-- **No negative assertion** — test only checks the happy path when the rule describes a constraint that should reject bad input
-- **Setup and assertion in different scopes** — value assigned in a try block, asserted outside it without verifying the try succeeded
-- **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
 
 ### Quality factors that strengthen STRONG
 
