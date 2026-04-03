@@ -1,11 +1,3 @@
 M .purlin/cache/feature_status.json
  M .purlin/cache/status.json
  M .purlin/cache/status_commit_cache.json
- M agents/purlin.md
- M docs/lifecycle-guide.md
- M docs/testing-workflow-guide.md
- M references/purlin_commands.md
- M skills/init/SKILL.md
- M skills/verify/SKILL.md
-?? references/audit_criteria.md
-?? skills/audit/
