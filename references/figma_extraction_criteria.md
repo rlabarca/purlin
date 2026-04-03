@@ -166,6 +166,28 @@ When a Figma file contains multiple viewport variants (desktop, tablet, mobile):
 
 4. The `> Visual-Reference:` can point to the primary variant. Additional variants are referenced in the proofs directly.
 
+## Theme Variants
+
+When a design has theme variants (light/dark, high contrast):
+
+1. Write theme-qualified rules:
+   ```
+   - RULE-1: Background is #FFFFFF (light) / #1a1a1a (dark)
+   - RULE-2: Text color is #121212 (light) / #f0f0f0 (dark)
+   ```
+
+2. Write separate proofs per theme:
+   ```
+   - PROOF-N (RULE-1, RULE-2): Render with light theme; verify background #FFFFFF and text #121212 @e2e
+   - PROOF-M (RULE-1, RULE-2): Render with dark theme; verify background #1a1a1a and text #f0f0f0 @e2e
+   ```
+
+3. If a screenshot comparison proof exists, capture one per theme:
+   ```
+   specs/_invariants/screenshots/i_design_modal_light.png
+   specs/_invariants/screenshots/i_design_modal_dark.png
+   ```
+
 ## Quality Gate
 
 Before writing the invariant file, verify:
