@@ -1,136 +1,133 @@
-> Criteria-Version: 3
+> Criteria-Version: 4
 
 # Figma Extraction Criteria
 
-This document defines how `purlin:invariant sync figma` extracts rules from Figma designs. The invariant skill reads this file at runtime. All extracted rules go into the invariant file — both visual and behavioral.
+This document defines how `purlin:invariant add-figma` creates design invariants from Figma files. The invariant skill reads this file at runtime.
 
-## Extraction Sources
+## Core Principle
 
-Figma designs contain two types of information. Both MUST be extracted:
+A design invariant has ONE job: point to the visual reference and say "match this." The LLM reads the full Figma design during build for implementation fidelity. The invariant doesn't capture individual CSS values — the visual comparison proof catches drift.
 
-| Source | What it contains | Rule type |
-|--------|-----------------|-----------|
-| **Design tree** (frames, components, styles) | Visual properties — dimensions, colors, typography, spacing, borders | Visual rules |
-| **Annotations** (comments, notes, spec frames) | Behavioral requirements — interactions, validation, accepted inputs, error states | Behavioral rules |
+## What Goes Where
 
-## Visual Extraction (from design tree)
+| Information | Where it goes | Why |
+|------------|--------------|-----|
+| Visual design (layout, colors, typography, spacing) | Invariant: ONE visual match rule + screenshot comparison proof | LLM reads Figma directly during build — higher fidelity than extracted rules |
+| Behavioral annotations (interactions, validation, state changes) | Feature spec that `> Requires:` the invariant | Behavior is owned by the feature, not the design source |
 
-### Required extractions
+## Invariant Structure
 
-For each component in the design, extract these when present:
+A Figma design invariant is thin — one rule per viewport, one screenshot comparison proof per rule:
 
-| Property | Example rule |
-|----------|-------------|
-| **Dimensions** | `RULE-N: Modal width is 428px, height is 541px` |
-| **Border radius** | `RULE-N: Modal has 16px border-radius` |
-| **Padding** | `RULE-N: Header has 16px 24px padding` |
-| **Spacing** | `RULE-N: Sections are spaced 16px apart` |
-| **Colors** | `RULE-N: Submit button background is #f59e0b` |
-| **Typography** | `RULE-N: Title is Inter Semi Bold 16px, color #121212` |
-| **Borders** | `RULE-N: Input has 1px solid #dadada border` |
-| **Shadows** | `RULE-N: Dropdown shadow is 0 4px 8px rgba(0,0,0,0.1)` |
-| **Component dimensions** | `RULE-N: Upload button is 140px wide, 32px tall` |
+```markdown
+# Invariant: i_design_feedback_modal
 
-### Completeness check
+> Type: design
+> Source: figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test
+> Visual-Reference: figma://TEZI0T6lObCJrC9mkmZT8v/0-1
+> Pinned: 2026-04-03T00:00:00Z
 
-After extraction, verify:
-- Every frame with explicit dimensions has a width/height rule
-- Every text node has a typography rule (font, size, weight, color)
-- Every component with borders has a border rule
-- Every component with shadows has a shadow rule
-- Interactive elements (buttons, inputs, dropdowns) have dimension rules
+## What it does
+Visual design constraints for the feedback modal, sourced from Figma.
 
-If a property is present in the design tree but missing from the extracted rules, add it.
+## Rules
+- RULE-1: Implementation must visually match the Figma design at the referenced node
 
-## Behavioral Extraction (from annotations)
-
-### Where to find annotations
-
-1. **Text nodes named "Specs" or similar** — frames containing spec text (like the "Specs" frame in the design tree)
-2. **Figma comments** — attached to specific nodes
-3. **Component descriptions** — in the component's description field
-4. **Annotation frames** — dedicated frames with behavioral descriptions
-
-### Required extractions
-
-Every annotation that describes behavior MUST become at least one rule:
-
-| Annotation type | Example rule |
-|----------------|-------------|
-| **Interactions** | `RULE-N: Clicking upload button triggers native file picker` |
-| **Validation** | `RULE-N: Accepted file types are .jpg, .png, .pdf` |
-| **Constraints** | `RULE-N: Max file size is 5MB` |
-| **State changes** | `RULE-N: After file selection, filename appears in attachment area` |
-| **Error states** | `RULE-N: If file exceeds 5MB, show error message` |
-| **Default values** | `RULE-N: Textarea placeholder is "Add any details here ..."` |
-| **Options/content** | `RULE-N: Dropdown options are: "Something isn't working", ...` |
-| **Conditional behavior** | `RULE-N: If user cancels file picker, no change occurs` |
-
-### Annotation completeness check
-
-After extraction, verify:
-- Every annotation text block has produced at least one rule
-- Interactive components (buttons, dropdowns, file inputs) have behavioral rules, not just visual ones
-- If an annotation mentions an error state, there's a rule for it
-- If an annotation mentions a default/placeholder, there's a rule for it
-
-If an annotation exists but has no corresponding rule, add one.
-
-## Proof Descriptions
-
-### Tier tags
-
-All proofs from Figma invariants require rendering the component — they are `@e2e` by definition:
-
-```
-- PROOF-1 (RULE-1): Render modal; verify width is 428px and height is 541px @e2e
-- PROOF-8 (RULE-15, RULE-16): Click upload; select a 3MB .jpg; verify filename appears @e2e
+## Proof
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
 ```
 
-Do NOT leave Figma proofs untagged. Every proof from a design invariant gets `@e2e`.
+One rule. One proof. The LLM reads Figma directly during build for full fidelity. The test does a visual comparison to catch drift.
 
-### Behavioral proofs
+## Behavioral Annotations
 
-Behavioral rules from annotations require interaction tests, not just style checks:
+When the Figma file contains annotations (spec frames, text nodes with behavioral descriptions, component descriptions, Figma comments), document them in the invariant's "What it does" section as context:
 
-```
-# Visual-only (checking CSS)
-- PROOF-1 (RULE-1): Render modal; verify width is 428px @e2e
+```markdown
+## What it does
+Visual design constraints for the feedback modal, sourced from Figma.
 
-# Behavioral (checking interaction)
-- PROOF-8 (RULE-15): Click upload button; select a 6MB .pdf; verify error message shown @e2e
-- PROOF-9 (RULE-16): Click upload button; select valid .jpg; verify filename appears in attachment area @e2e
-```
+Behavioral annotations from design:
+- Clicking upload button triggers native file picker
+- Accepted file types: .jpg, .png, .pdf
+- Max file size: 5MB
+- After file selection, filename appears in attachment area
 
-### Multi-rule proofs
-
-Group related visual properties into multi-rule proofs when they're verified in the same render:
-
-```
-- PROOF-4 (RULE-5, RULE-6, RULE-7, RULE-8): Render modal; verify all typography matches design tokens @e2e
+These behavioral requirements should be added to feature specs that require this invariant.
 ```
 
-Don't group visual and behavioral proofs — they test different things (CSS vs interaction).
+The annotations are listed for reference but do NOT become rules in the invariant. They become rules in the feature spec:
 
-## `> Stack:` for Invariants
+```markdown
+# Feature: feedback_modal
 
-Design invariants should include `> Stack:` with the rendering technology so the agent knows how to write proofs:
+> Requires: i_design_feedback_modal
+> Scope: src/components/FeedbackModal.jsx
+> Stack: react/tailwind
+
+## Rules
+- RULE-1: Clicking upload button triggers native file picker
+- RULE-2: Accepted file types are .jpg, .png, .pdf
+- RULE-3: Max file size is 5MB
+- RULE-4: After file selection, filename appears in attachment area
+
+## Proof
+- PROOF-1 (RULE-1): Click upload button; verify file picker dialog opens @e2e
+- PROOF-2 (RULE-2): Attempt to upload a .exe file; verify it's rejected @e2e
+- PROOF-3 (RULE-3): Upload a 6MB file; verify error message @e2e
+- PROOF-4 (RULE-4): Upload valid file; verify filename displayed @e2e
+```
+
+The feature spec has `> Requires: i_design_feedback_modal` — so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
+
+## Responsive Designs
+
+When a Figma file contains multiple viewport variants (desktop, tablet, mobile), create one rule per viewport:
+
+```markdown
+## Rules
+- RULE-1: Implementation must visually match the Figma design at desktop viewport (1440px)
+- RULE-2: Implementation must visually match the Figma design at tablet viewport (768px)
+- RULE-3: Implementation must visually match the Figma design at mobile viewport (375px)
+
+## Proof
+- PROOF-1 (RULE-1): Render at 1440px width, capture screenshot, compare against desktop Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-2 (RULE-2): Render at 768px width, capture screenshot, compare against tablet Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-3 (RULE-3): Render at 375px width, capture screenshot, compare against mobile Figma screenshot; verify visual match within configured threshold @e2e
+```
+
+Capture a reference screenshot for EACH variant:
 
 ```
-> Stack: react/tailwind (or vue/css, svelte, html/css)
+specs/_invariants/screenshots/i_design_modal_desktop.png
+specs/_invariants/screenshots/i_design_modal_tablet.png
+specs/_invariants/screenshots/i_design_modal_mobile.png
 ```
 
-If the stack is unknown at invariant creation time, omit it — the feature spec that requires the invariant will have its own `> Stack:`.
+The `> Visual-Reference:` points to the primary variant. Additional variants are referenced in the proofs directly.
 
-## Screenshot Comparison Proof
+## Theme Variants
 
-Every design invariant SHOULD include a screenshot comparison proof as the final catch-all:
+When a design has theme variants (light/dark, high contrast), create one rule per theme:
+
+```markdown
+## Rules
+- RULE-1: Implementation must visually match the Figma design in light theme
+- RULE-2: Implementation must visually match the Figma design in dark theme
+
+## Proof
+- PROOF-1 (RULE-1): Render with light theme, capture screenshot, compare against light theme Figma screenshot; verify visual match within configured threshold @e2e
+- PROOF-2 (RULE-2): Render with dark theme, capture screenshot, compare against dark theme Figma screenshot; verify visual match within configured threshold @e2e
+```
+
+Capture one screenshot per theme:
 
 ```
-- PROOF-N (RULE-1, RULE-2, ...): Render component, capture screenshot, compare against visual reference; verify <5% pixel difference @e2e
+specs/_invariants/screenshots/i_design_modal_light.png
+specs/_invariants/screenshots/i_design_modal_dark.png
 ```
 
-This proof catches everything individual rules miss — spatial relationships, alignment, visual weight. Individual rules check measurable properties. The screenshot catches the gestalt.
+## Configurable Threshold
 
 The default pixel difference threshold is 5%. Override per-project in `.purlin/config.json`:
 
@@ -143,101 +140,31 @@ The default pixel difference threshold is 5%. Override per-project in `.purlin/c
 Override per-proof when tighter or looser tolerance is needed:
 
 ```
-- PROOF-N (RULE-1, RULE-2, ...): Screenshot comparison against reference; verify <2% pixel difference @e2e
-- PROOF-M (RULE-3): Screenshot comparison of text rendering; verify <10% pixel difference @e2e
+- PROOF-1 (RULE-1): Render at 1440px, screenshot comparison; verify <2% pixel difference @e2e
 ```
 
 Common thresholds:
 - 2% — pixel-perfect designs, same-OS CI
 - 5% — default, handles minor font rendering differences
 - 10% — cross-platform CI (macOS dev, Linux CI), text-heavy components
-- 15% — components with animations or dynamic content that may differ between captures
+- 15% — components with animations or dynamic content
 
 The screenshot comparison:
 1. Renders the built component in a real browser (Playwright)
 2. Captures a screenshot
-3. Compares pixel-by-pixel against the visual reference (Figma screenshot or reference image)
+3. Compares pixel-by-pixel against the visual reference (Figma screenshot)
 4. Fails if pixel difference exceeds the threshold (project default from config, or per-proof override)
 
-This proof is OPTIONAL but RECOMMENDED. Without it, a component can satisfy every individual rule while looking wrong overall.
+## Tier Tags
 
-## Responsive Designs
+All proofs from Figma invariants require rendering — they are `@e2e` by definition. Do NOT leave Figma proofs untagged.
 
-When a Figma file contains multiple viewport variants (desktop, tablet, mobile):
+## `> Stack:` for Invariants
 
-1. Extract rules for EACH variant. Prefix variant-specific rules:
-   ```
-   - RULE-1: Modal width is 428px (desktop)
-   - RULE-2: Modal width is 100% (mobile)
-   - RULE-3: Sidebar collapses to hamburger menu below 768px
-   ```
+Design invariants should include `> Stack:` with the rendering technology so the agent knows how to write proofs:
 
-2. Capture a reference screenshot for EACH variant:
-   ```
-   specs/_invariants/screenshots/i_design_modal_desktop.png
-   specs/_invariants/screenshots/i_design_modal_tablet.png
-   specs/_invariants/screenshots/i_design_modal_mobile.png
-   ```
+```
+> Stack: react/tailwind (or vue/css, svelte, html/css)
+```
 
-3. Write separate screenshot comparison proofs per viewport:
-   ```
-   - PROOF-N (RULE-1, RULE-4, RULE-7): Render at 1440px width; compare against desktop reference @e2e
-   - PROOF-M (RULE-2, RULE-5, RULE-8): Render at 375px width; compare against mobile reference @e2e
-   ```
-
-4. The `> Visual-Reference:` can point to the primary variant. Additional variants are referenced in the proofs directly.
-
-## Theme Variants
-
-When a design has theme variants (light/dark, high contrast):
-
-1. Write theme-qualified rules:
-   ```
-   - RULE-1: Background is #FFFFFF (light) / #1a1a1a (dark)
-   - RULE-2: Text color is #121212 (light) / #f0f0f0 (dark)
-   ```
-
-2. Write separate proofs per theme:
-   ```
-   - PROOF-N (RULE-1, RULE-2): Render with light theme; verify background #FFFFFF and text #121212 @e2e
-   - PROOF-M (RULE-1, RULE-2): Render with dark theme; verify background #1a1a1a and text #f0f0f0 @e2e
-   ```
-
-3. If a screenshot comparison proof exists, capture one per theme:
-   ```
-   specs/_invariants/screenshots/i_design_modal_light.png
-   specs/_invariants/screenshots/i_design_modal_dark.png
-   ```
-
-## Interactive States
-
-When a component has multiple states (default, hover, active, disabled, loading, error):
-
-1. Extract rules for each state shown in the design:
-   ```
-   - RULE-5: Disabled button has opacity 0.5 and cursor not-allowed
-   - RULE-6: Hover state changes background to #e0a30d
-   - RULE-7: Loading state shows spinner and disables click
-   ```
-
-2. Write state-specific interaction proofs — these MUST exercise the actual state, not just check CSS:
-   ```
-   - PROOF-5 (RULE-5): Render button with disabled prop; verify opacity is 0.5; click button; verify no event fires @e2e
-   - PROOF-6 (RULE-6): Render button; hover over it; verify background changes to #e0a30d @e2e
-   - PROOF-7 (RULE-7): Render button; trigger loading state; verify spinner visible; click; verify no event fires @e2e
-   ```
-
-3. The main screenshot comparison proof covers the DEFAULT state only. State-specific proofs cover the rest.
-
-## Quality Gate
-
-Before writing the invariant file, verify:
-
-1. **Every design tree component** with explicit properties has at least one visual rule
-2. **Every annotation** has at least one behavioral rule
-3. **Every proof** is tagged `@e2e`
-4. **No orphan annotations** — behavioral specs without rules
-5. **Dimensions are complete** — width AND height for major components, not just width
-6. **Interactive elements have behavioral rules** — buttons do things, inputs validate things, dropdowns have options
-
-If any check fails, add the missing rules before writing the file.
+If the stack is unknown at invariant creation time, omit it — the feature spec that requires the invariant will have its own `> Stack:`.
