@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Invariant Spec Format
 
@@ -58,6 +58,7 @@ Design token constraints imported from the shared design system repository.
 > Type: design
 > Source: https://www.figma.com/design/ABC123/Navigation
 > Pinned: 2026-03-31T12:00:00Z
+> Visual-Reference: figma://ABC123/1:234
 
 ## What it does
 
@@ -83,6 +84,7 @@ Navigation layout and spacing constraints from the Figma design source.
 | `> Path:` | Git only | Path within the repo to the source file |
 | `> Pinned:` | Yes | Git commit SHA (git-sourced) or ISO 8601 timestamp (Figma-sourced) |
 | `> Global:` | No | When `true`, this invariant's rules auto-apply to ALL non-anchor, non-invariant feature specs without needing `> Requires:`. Use for project-wide constraints like `i_security_no_eval`. |
+| `> Visual-Reference:` | No | Direct pointer to the visual source for build-time reference. Figma: `figma://fileKey/nodeId`. Image: `./designs/modal.png`. HTML: `./designs/modal.html`. URL: `https://staging.app.com/modal`. |
 
 ## Sync Behavior
 

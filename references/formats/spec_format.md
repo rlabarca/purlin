@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Feature Spec Format
 
@@ -49,6 +49,7 @@ Every spec MUST have these 3 sections (case-insensitive heading match):
 | `> Requires:` | No | Comma-separated list of other spec names or invariant names whose rules also apply |
 | `> Scope:` | No | Comma-separated file paths this feature touches (used for manual proof staleness) |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` (helps rebuild from spec) |
+| `> Visual-Reference:` | No | Visual source for build-time reference. Figma: `figma://fileKey/nodeId`. Image: `./designs/modal.png`. HTML: `./designs/modal.html`. URL: `https://staging.app.com/modal`. See invariant format for full syntax. |
 
 ## Rules Format
 
