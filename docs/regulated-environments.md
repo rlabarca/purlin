@@ -112,7 +112,13 @@ The compliance team owns and versions the criteria file. Developers cannot chang
 
 This addresses the "test quality gate" concern: while Purlin can't structurally prevent tautological tests, the audit criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 
-Note: the audit is LLM-based judgment, not deterministic analysis. It can miss subtle test weaknesses. For regulated environments, the audit report should be reviewed by a human as part of the QA process, not treated as a final authority.
+For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the builder. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's.
+
+```json
+{ "audit_llm": "gemini -m pro -p \"{prompt}\"" }
+```
+
+Note: cross-model auditing is an improvement over same-model auditing, but both are LLM-based judgment. Neither replaces human code review for critical systems. For regulated environments, the audit report should be reviewed by a human as part of the QA process, not treated as a final authority.
 
 ### External Invariant Validation
 
