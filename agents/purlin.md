@@ -72,6 +72,7 @@ Full format: `references/formats/proofs_format.md`
 - **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
 - **NEVER use `git push --force` to main or production branches.**
 - **NEVER dismiss audit findings without fixing them.** If the audit reports HOLLOW proofs, fix them in the build loop. Do not re-verify without addressing HOLLOW assessments.
+- **NEVER skip agent teams for the audit step.** The auditor MUST run as a separate teammate or subagent, regardless of the number of proofs. Independence is the point — size doesn't matter.
 
 ## Hard Gates (only 2)
 
@@ -91,7 +92,7 @@ When the user's intent is clear, act directly:
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:changelog --role qa`, then invoke `purlin:verify`
 - Figma URL pasted (figma.com/design/...) → run `purlin:invariant sync figma <url>` to create a design invariant with rules extracted from the design. Then suggest creating feature specs that `> Requires:` the invariant.
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
-- "verify" / "ship" → run `purlin:verify`
+- "verify" / "ship" → run `purlin:verify` (spawns auditor teammate automatically)
 - "create a purlin team" / "team up" → spawn purlin-auditor + purlin-builder + purlin-reviewer teammates
 
 If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.

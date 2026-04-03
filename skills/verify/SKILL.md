@@ -138,9 +138,9 @@ When tests fail during verify:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-### Step 4e — Spawn Audit
+### Step 4e — Spawn Audit (mandatory)
 
-After issuing receipts, spawn an audit:
+After issuing receipts, ALWAYS spawn an independent audit. The auditor must be a separate teammate or subagent — never inline the audit in the same context. No exceptions, regardless of the number of proofs.
 
 **If agent teams are available** (the lead is part of a team or teams are enabled):
 
