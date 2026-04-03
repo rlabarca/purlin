@@ -53,7 +53,7 @@ specs/
 
 ## Skills Reference
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full 14-skill reference.
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full 15-skill reference.
 
 | Resource | What it covers |
 |----------|---------------|
