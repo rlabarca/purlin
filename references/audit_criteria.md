@@ -1,4 +1,4 @@
-> Criteria-Version: 5
+> Criteria-Version: 6
 
 # Proof Audit Criteria
 
@@ -95,6 +95,11 @@ Design invariant proofs (from `i_design_*` specs) have additional criteria:
 
 - **Visual-only coverage for behavioral rules** — the invariant has behavioral rules from annotations (interactions, validation, state changes) but all proofs only check CSS properties. Behavioral rules require interaction tests (click, type, select), not style checks
 - **Missing `@e2e` tag** — all Figma proofs require rendering and must be tagged `@e2e`. Untagged Figma proofs will run in the default tier where they're likely to fail due to missing rendering infrastructure
+
+### Automatic WEAK (visual reference)
+
+- **Built from rules instead of visual reference** — when a `> Visual-Reference:` exists but the implementation clearly doesn't match the reference screenshot (layout relationships wrong, alignment off, spacing proportions incorrect), even if individual rules pass. The builder should have used the visual reference during implementation, not just optimized for the rules.
+- **Missing screenshot comparison proof** — invariant has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught.
 
 See [references/figma_extraction_criteria.md](figma_extraction_criteria.md) for the full extraction criteria.
 
