@@ -616,6 +616,21 @@ After tests pass, an independent auditor evaluates whether the tests actually pr
 
 Each proof is assessed as STRONG (**✓**), WEAK (**~**), HOLLOW (**✗**), or MANUAL (**●**). The criteria are documented in [references/audit_criteria.md](../references/audit_criteria.md).
 
+### How the audit works: two passes
+
+The audit runs in two passes to combine reliability with judgment:
+
+**Pass 1 — Deterministic checks** (`static_checks.py`, no LLM):
+Catches structural issues that are always wrong: `assert True`, no assertions, logic mirroring, bare `except: pass`, mocking the tested function. If a proof fails here, it's HOLLOW — no LLM can override this.
+
+**Pass 2 — Semantic alignment** (Claude or external LLM):
+For proofs that passed structural checks, the LLM evaluates whether the test actually exercises the rule's intent. It rates STRONG (test matches rule) or WEAK (test partially matches).
+
+This hybrid approach means:
+- `assert True` is ALWAYS caught, regardless of which LLM you use
+- External models (Gemini, GPT) don't need to be good at structural code analysis — they only evaluate semantic alignment
+- The LLM prompt is simpler and more focused, so it gives better results
+
 ### How audit runs: agent teams
 
 Purlin uses [agent teams](https://code.claude.com/docs/en/agent-teams) to keep the auditor independent from the builder. When you verify or build, Purlin spawns teammates that work in parallel and communicate directly:
@@ -643,7 +658,9 @@ Three teammate roles are defined in `.claude/agents/`:
 
 When agent teams aren't available, the audit falls back to a background subagent that reports findings for you to fix manually.
 
-### Cross-model auditing
+### Cross-model auditing with static pre-checks
+
+When using an external LLM (`purlin:init --audit-llm`), the deterministic pass runs first — so structural issues like `assert True` are caught even if the external model would miss them. The external model only evaluates semantic alignment, which is what LLMs are actually good at.
 
 By default, Claude audits Claude — fast but shares model biases. For higher independence, configure an external LLM as the auditor:
 

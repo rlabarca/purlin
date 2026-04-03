@@ -129,9 +129,13 @@ You can also edit `.purlin/config.json` directly:
   "version": "0.9.0",
   "test_framework": "pytest,jest",
   "spec_dir": "specs",
-  "pre_push": "strict"
+  "pre_push": "strict",
+  "audit_llm": "gemini -m pro -p \"{prompt}\"",
+  "audit_llm_name": "Gemini Pro"
 }
 ```
+
+(`audit_llm` and `audit_llm_name` only present if external LLM configured via `purlin:init --audit-llm`)
 
 ## Scaling
 
