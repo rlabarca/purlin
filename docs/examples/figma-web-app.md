@@ -59,7 +59,7 @@ Share your Figma link:
 here's our design system: figma.com/design/abc123/Weather-App-Design
 ```
 
-Claude reads the Figma file via MCP, extracts visual properties AND behavioral rules from annotations, and creates an invariant. All proofs are tagged `@e2e`. See [references/figma_extraction_criteria.md](../../references/figma_extraction_criteria.md) for what gets extracted.
+Claude reads the Figma file via MCP, captures a reference screenshot, and creates a thin invariant with one visual match rule. The invariant doesn't extract individual CSS values — the LLM reads Figma directly during build for full fidelity. See [references/figma_extraction_criteria.md](../../references/figma_extraction_criteria.md) for the extraction criteria.
 
 ```
 specs/_invariants/i_design_weather.md
@@ -70,26 +70,20 @@ specs/_invariants/i_design_weather.md
 
 > Type: design
 > Source: figma.com/design/abc123/Weather-App-Design
+> Visual-Reference: figma://abc123/0-1
 > Pinned: 2026-04-01T14:30:00Z
 
+## What it does
+Visual design constraints for the weather app, sourced from Figma.
+
 ## Rules
-- RULE-1: Temperature display uses 48px Inter Bold
-- RULE-2: Background gradient shifts by condition (sunny=#FDB813, cloudy=#94A3B8, rainy=#3B82F6)
-- RULE-3: Weather icon is 64x64px, centered above temperature
-- RULE-4: City name uses 20px Inter Medium, white, top-left
-- RULE-5: 5-day forecast cards use 8px border-radius, 16px padding
-- RULE-6: All spacing uses 8px grid
+- RULE-1: Implementation must visually match the Figma design at the referenced node
 
 ## Proof
-- PROOF-1 (RULE-1): Render temperature; verify font-size is 48px and font-weight is 700 @e2e
-- PROOF-2 (RULE-2): Render with condition="sunny"; verify gradient starts with #FDB813 @e2e
-- PROOF-3 (RULE-3): Render weather icon; verify 64x64px and centered in parent @e2e
-- PROOF-4 (RULE-4): Render city name; verify 20px, white, top-left @e2e
-- PROOF-5 (RULE-5): Render forecast card; verify 8px radius and 16px padding @e2e
-- PROOF-6 (RULE-6): Render layout; verify spacing values are multiples of 8px @e2e
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match within configured threshold @e2e
 ```
 
-The invariant is read-only — the gate hook prevents edits. Rules come from Figma, not from the developer.
+The invariant is read-only — the gate hook prevents edits. One rule, one proof. The visual reference IS the spec.
 
 ## Step 3: Write a Feature Spec
 
@@ -97,7 +91,7 @@ The invariant is read-only — the gate hook prevents edits. Rules come from Fig
 I need a feature that shows current weather for a city using the OpenWeatherMap API
 ```
 
-Claude writes the spec:
+Claude writes the spec. Behavioral requirements come from the PM, not the Figma invariant:
 
 ```markdown
 # Feature: current_weather
@@ -126,7 +120,7 @@ the design system.
 - PROOF-5 (RULE-5): Call fetchWeather("Austin") twice in 10 min; verify 1 API call
 ```
 
-The spec requires `i_design_weather` — so `sync_status` will include the design rules in coverage for this feature.
+The spec requires `i_design_weather` — so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
 ## Step 4: Build It
 
@@ -134,27 +128,29 @@ The spec requires `i_design_weather` — so `sync_status` will include the desig
 build it
 ```
 
-Claude reads the spec and the Figma design (via MCP for full visual context), then:
+Claude reads the spec and the Figma design directly via MCP for full visual fidelity. The invariant says "match the design" — so the builder reads the visual reference, not extracted rules:
 
+- Reads Figma via MCP — gets the full design context (layout, colors, typography, spacing)
 - Writes `src/components/WeatherDisplay.jsx` — React component matching Figma layout
 - Writes `src/api/weather.js` — API client with caching
 - Writes `src/utils/cache.js` — simple TTL cache
 - Writes tests with proof markers for both feature rules and design invariant rules:
 
 ```javascript
-// Feature proofs
+// Feature proofs (behavioral)
 it("fetches from OpenWeatherMap [proof:current_weather:PROOF-1:RULE-1:default]", async () => {
   const mock = mockApi("/weather");
   await fetchWeather("Austin");
   expect(mock).toHaveBeenCalledWith(expect.stringContaining("q=Austin"));
 });
 
-// Design invariant proofs
-it("temperature uses 48px Inter Bold [proof:i_design_weather:PROOF-1:RULE-1:default]", () => {
-  render(<WeatherDisplay city="Austin" temp={73} />);
-  const temp = screen.getByTestId("temperature");
-  expect(getComputedStyle(temp).fontSize).toBe("48px");
-  expect(getComputedStyle(temp).fontWeight).toBe("700");
+// Design invariant proof (visual comparison)
+it("matches Figma design [proof:i_design_weather:PROOF-1:RULE-1:e2e]", async () => {
+  const page = await browser.newPage();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/weather/austin");
+  const screenshot = await page.screenshot();
+  expect(screenshot).toMatchSnapshot("i_design_weather.png", { threshold: 0.05 });
 });
 ```
 
@@ -167,11 +163,11 @@ run the tests
 ```
 purlin:unit-test
 
-11 tests passed. Proof files written.
+6 tests passed. Proof files written.
 
 Coverage:
   current_weather: 5/5 rules proved
-  i_design_weather: 6/6 rules proved
+  i_design_weather: 1/1 rules proved
 ```
 
 ## Step 6: Ship It
@@ -183,7 +179,7 @@ verify and ship
 ```
 purlin:verify
 
-All tests pass. 11/11 rules proved across 2 specs.
+All tests pass. 6/6 rules proved across 2 specs.
 verify: [Complete:all] features=2 vhash=f7a2b9c1
 
 Committed verification receipt.
@@ -194,13 +190,13 @@ Committed verification receipt.
 In 6 messages:
 
 1. `create a new weather app project` — project scaffolded
-2. `here's our design system: <figma URL>` — design rules extracted as read-only invariant
-3. `I need a feature that shows current weather...` — spec written with rules and proofs
-4. `build it` — code + tests written, Figma referenced for visual context
+2. `here's our design system: <figma URL>` — thin design invariant created (one visual match rule)
+3. `I need a feature that shows current weather...` — spec written with behavioral rules
+4. `build it` — code + tests written, Figma read directly for visual fidelity
 5. `run the tests` — proof files emitted, coverage reported
 6. `verify and ship` — verification receipt committed
 
-The design invariant ensures every feature that requires it proves the design rules. If a designer updates the Figma file, run `purlin:invariant sync` — `sync_status` shows which proofs are stale.
+The design invariant ensures every feature that requires it proves the visual match via screenshot comparison. Behavioral requirements live in the feature spec. If a designer updates the Figma file, run `purlin:invariant sync` — `sync_status` shows which proofs are stale.
 
 ## Later: Checking a Deployed Version
 
