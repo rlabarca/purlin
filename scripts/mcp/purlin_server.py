@@ -388,7 +388,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     proved = sum(1 for key, _, _ in rule_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
 
-    # Format warnings
+    # Format warnings (structural issues with the spec itself)
     warnings = []
     if not info['has_rules_section']:
         warnings.append("  WARNING: No ## Rules section found.")
@@ -398,12 +398,10 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
 
-    # Check visual reference staleness
+    # Check visual reference staleness (computed once, used in multiple paths)
     visual_ref = info.get('visual_ref')
     visual_hash = info.get('visual_hash')
-    if _check_visual_hash(project_root, visual_ref, visual_hash):
-        warnings.append("  \u26a0 Visual reference image was modified since rules were extracted")
-        warnings.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
+    visual_hash_changed = _check_visual_hash(project_root, visual_ref, visual_hash)
 
     # Check manual proofs
     manual_proofs = info.get('manual_proofs', {})
@@ -412,15 +410,14 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     if total == 0:
         lines.append(f"{name}: no rules defined")
         lines.extend(warnings)
-        lines.append(f"  → Run: purlin:spec {name}")
+        if visual_hash_changed:
+            lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
+            lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
+        lines.append(f"  \u2192 Run: purlin:spec {name}")
         return lines
 
-    # Separate visual hash warnings from structural warnings
-    visual_hash_changed = _check_visual_hash(project_root, visual_ref, visual_hash)
-    structural_warnings = [w for w in warnings if '\u26a0 Visual reference' not in w and 're-extract rules' not in w]
-
-    # Header — all proved
-    if proved == total and not structural_warnings:
+    # Header — all proved (no structural warnings)
+    if proved == total and not warnings:
         structural_only = _is_structural_only(info.get('proof_descriptions', []))
         if visual_hash_changed:
             lines.append(f"{name}: READY but visual reference changed")
@@ -445,6 +442,9 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
     lines.append(f"{name}: {proved}/{total} rules proved")
     lines.extend(warnings)
+    if visual_hash_changed:
+        lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
+        lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
 
     # Detail each rule with label
     for key, label, src_feature in rule_entries:
