@@ -188,6 +188,26 @@ When a design has theme variants (light/dark, high contrast):
    specs/_invariants/screenshots/i_design_modal_dark.png
    ```
 
+## Interactive States
+
+When a component has multiple states (default, hover, active, disabled, loading, error):
+
+1. Extract rules for each state shown in the design:
+   ```
+   - RULE-5: Disabled button has opacity 0.5 and cursor not-allowed
+   - RULE-6: Hover state changes background to #e0a30d
+   - RULE-7: Loading state shows spinner and disables click
+   ```
+
+2. Write state-specific interaction proofs — these MUST exercise the actual state, not just check CSS:
+   ```
+   - PROOF-5 (RULE-5): Render button with disabled prop; verify opacity is 0.5; click button; verify no event fires @e2e
+   - PROOF-6 (RULE-6): Render button; hover over it; verify background changes to #e0a30d @e2e
+   - PROOF-7 (RULE-7): Render button; trigger loading state; verify spinner visible; click; verify no event fires @e2e
+   ```
+
+3. The main screenshot comparison proof covers the DEFAULT state only. State-specific proofs cover the rest.
+
 ## Quality Gate
 
 Before writing the invariant file, verify:
