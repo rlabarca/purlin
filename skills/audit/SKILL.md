@@ -114,6 +114,70 @@ When a HOLLOW or WEAK proof is for an invariant rule:
 - Message the builder: "Fix the test to properly prove <invariant>/<rule>. The invariant is read-only — strengthen the test, don't suggest changing the rule."
 - If the rule itself is ambiguous: message the lead (not the builder): "Recommend to invariant author (<source>): <rule> could be clearer — <suggestion>"
 
+## External LLM Mode
+
+When `.purlin/config.json` has `audit_llm` set, the audit runs Step 1 (Load Criteria) first, then uses the loaded criteria in the prompt sent to the external LLM instead of evaluating proofs inline.
+
+1. Load criteria via Step 1 above (respects `--criteria`, external criteria config, and defaults).
+2. For each feature being audited, construct the prompt:
+
+```
+You are a code test auditor. Evaluate whether each test actually proves what the proof description claims.
+
+CRITERIA:
+<paste full contents of references/audit_criteria.md>
+
+SPEC PROOF DESCRIPTIONS:
+<paste the ## Proof section from the spec>
+
+TEST CODE:
+<paste the actual test function code for each proof>
+
+For each proof, respond in EXACTLY this format (one block per proof, no other text):
+
+PROOF-ID: PROOF-N
+RULE-ID: RULE-N
+ASSESSMENT: STRONG|WEAK|HOLLOW
+CRITERION: <which criterion was violated, or "matches proof description" if STRONG>
+WHY: <what real problem this creates, or "test meaningfully proves the rule" if STRONG>
+FIX: <specific change to make, or "none" if STRONG>
+---
+```
+
+3. Shell out: replace `{prompt}` in the configured command with the constructed prompt. Capture stdout.
+4. Parse the response: look for `PROOF-ID:`, `ASSESSMENT:`, `CRITERION:`, `WHY:`, `FIX:` lines. Be flexible — different LLMs format slightly differently. Look for the keywords, not exact whitespace.
+5. If parsing fails for a proof (LLM didn't follow the format): mark that proof as `UNKNOWN — external LLM response could not be parsed` and include the raw response excerpt.
+6. Display the same report format as the default mode:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROOF AUDIT: <feature> (<N> proofs)
+Criteria: references/audit_criteria.md (Criteria-Version: N)
+Auditor: Gemini Pro (external — cross-model)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+The report header shows which LLM did the audit.
+
+### External LLM with Agent Teams
+
+When agent teams are active AND external LLM is configured, the lead relays findings:
+
+1. Lead shells out to the external LLM per feature
+2. Lead parses the response
+3. Lead messages the builder teammate with each finding:
+   ```
+   [Gemini Pro audit] HOLLOW: login PROOF-3
+   Criterion: mocks the function being tested
+   Why: test passes even if bcrypt is misconfigured
+   Fix: remove mock, use real bcrypt call
+   ```
+4. Builder fixes and messages lead back
+5. Lead shells out to external LLM again for re-audit
+6. Loop until no HOLLOW proofs or 3 rounds per proof
+
+The builder teammate never talks to the external LLM. The lead relays.
+
 ## Key Principles
 
 - **Read-only.** Never modify code or test files.
