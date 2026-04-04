@@ -250,10 +250,10 @@ class TestReportDataStructure:
         s = data['summary']
 
         total = s['total_features']
-        components = s['ready'] + s.get('passing', 0) + s['partial'] + s['failing'] + s['no_proofs']
+        components = s['verified'] + s.get('passing', 0) + s['partial'] + s['failing'] + s['no_proofs']
         assert components == total, (
             f'Summary counts do not sum to total: '
-            f"ready={s['ready']} + passing={s.get('passing', 0)} + partial={s['partial']} "
+            f"verified={s['verified']} + passing={s.get('passing', 0)} + partial={s['partial']} "
             f"+ failing={s['failing']} + no_proofs={s['no_proofs']} = {components}, "
             f"expected total={total}"
         )
@@ -287,7 +287,7 @@ class TestReportDataStructure:
         data = self._build(features=features, proofs=proofs)
 
         for feat in data['features']:
-            if feat['status'] in ('READY', 'passing'):
+            if feat['status'] in ('VERIFIED', 'PASSING'):
                 assert feat['vhash'] is not None, \
                     f"Passing feature '{feat['name']}' should have non-null vhash"
             else:

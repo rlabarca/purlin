@@ -38,7 +38,7 @@ Found: specs/auth/login.md
 > Requires: security_auth
 > Scope: src/auth/login.js, src/auth/login.test.js
 
-Rules: 3 | Proved: 3/3 | Status: READY | vhash=a1b2c3d4
+Rules: 3 | Proved: 3/3 | Status: VERIFIED | vhash=a1b2c3d4
 
   RULE-1: PASS (PROOF-1 in tests/test_login.py)
   RULE-2: PASS (PROOF-2 in tests/test_login.py)
@@ -59,7 +59,7 @@ Specs (12 total):
 
   webhooks/ (2 specs)
     webhook_delivery.md — 2/3 rules proved
-    webhook_config.md — READY
+    webhook_config.md — VERIFIED
 
   _anchors/ (2 anchors)
     design_tokens.md — 5 rules

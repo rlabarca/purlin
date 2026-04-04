@@ -133,7 +133,7 @@ Or even simpler:
 test auth_login
 ```
 
-Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows READY. You don't need to write proof markers yourself -- the agent does it.
+Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows VERIFIED. You don't need to write proof markers yourself -- the agent does it.
 
 Under the hood, proof markers link each test to a spec rule. The test framework plugin collects the results and emits proof files that `sync_status` reads. See the [Testing Workflow Guide](docs/testing-workflow-guide.md) for details on how proof markers work, manual proofs, tiers, and writing custom proof plugins.
 

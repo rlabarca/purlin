@@ -31,13 +31,13 @@ Run the full test suite across all tiers by calling `purlin:unit-test --all`. Th
 
 Read the coverage output from `purlin:unit-test --all` (which includes sync_status results). For each feature:
 
-- **READY** (all rules have passing proofs): eligible for receipt.
+- **PASSING** (all rules have passing proofs): eligible for receipt.
 - **Partial coverage**: report which rules lack proofs. No receipt.
 - **Failing proofs**: report failures. No receipt.
 
 ### Step 3 — Issue Receipts
 
-For each feature with READY status:
+For each feature with PASSING status:
 
 1. Compute `vhash = sha256(sorted RULE IDs + sorted proof IDs/statuses)` truncated to 8 hex chars.
 2. Get `commit = git rev-parse HEAD`.
@@ -75,10 +75,10 @@ Where `N` is the number of features that received receipts and `T` is the total 
 
 ### Step 4a2 — Structural Check Summary
 
-After issuing receipts, check if any features have structural checks but are not READY (structural checks are not counted as proofs). If so, add a summary section after the receipts table:
+After issuing receipts, check if any features have structural checks but are not PASSING (structural checks are not counted as proofs). If so, add a summary section after the receipts table:
 
 ```
-Features with structural checks only (not READY):
+Features with structural checks only (not PASSING):
   purlin_agent (8 structural checks, 0 behavioral proofs)
   purlin_skills (6 structural checks, 0 behavioral proofs)
   purlin_references (9 structural checks, 0 behavioral proofs)

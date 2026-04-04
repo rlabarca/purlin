@@ -15,6 +15,6 @@ End-to-end test of the proof plugin's feature-scoped overwrite behavior. When pr
 
 ## Proof
 
-- PROOF-1 (RULE-1): Create 2 specs (login, signup) with separate proof files; write login proofs; write signup proofs; run sync_status; verify both READY @e2e
-- PROOF-2 (RULE-2): Overwrite login proof file with updated entries; run sync_status; verify login still READY and signup still READY with original entries @e2e
+- PROOF-1 (RULE-1): Create 2 specs (login, signup) with separate proof files; write login proofs; write signup proofs; run sync_status; verify both PASSING @e2e
+- PROOF-2 (RULE-2): Overwrite login proof file with updated entries; run sync_status; verify login still PASSING and signup still PASSING with original entries @e2e
 - PROOF-3 (RULE-3): Write login proof file with only 1 of 2 proofs (PROOF-2 removed); run sync_status; verify login shows 1/2 not 2/2 @e2e

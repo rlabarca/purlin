@@ -126,7 +126,7 @@ SPEC
 (cd "$TMPDIR" && git init -q && git add -A && git commit -q -m "init")
 
 # ==========================================================================
-# Phase A — Write login proofs, then signup proofs → both passing
+# Phase A — Write login proofs, then signup proofs → both PASSING
 # ==========================================================================
 echo "  --- Phase A: Write proofs for both features ---"
 
@@ -154,12 +154,12 @@ STATUS_A=$(run_sync_status "$TMPDIR")
 
 login_ready=false
 signup_ready=false
-echo "$STATUS_A" | grep -q "login: passing" && login_ready=true
-echo "$STATUS_A" | grep -q "signup: passing" && signup_ready=true
+echo "$STATUS_A" | grep -q "login: PASSING" && login_ready=true
+echo "$STATUS_A" | grep -q "signup: PASSING" && signup_ready=true
 
 phase_a_ok=false
 if $login_ready && $signup_ready && $signup_untouched; then
-  echo "    Phase A PASS: both passing, signup untouched before its own write"
+  echo "    Phase A PASS: both PASSING, signup untouched before its own write"
   phase_a_ok=true
 else
   echo "    Phase A FAIL: login_ready=$login_ready signup_ready=$signup_ready signup_untouched=$signup_untouched"
@@ -174,7 +174,7 @@ else
 fi
 
 # ==========================================================================
-# Phase B — Overwrite login proofs (feature-scoped) → both still passing
+# Phase B — Overwrite login proofs (feature-scoped) → both still PASSING
 # ==========================================================================
 echo "  --- Phase B: Overwrite login proofs ---"
 
@@ -195,12 +195,12 @@ STATUS_B=$(run_sync_status "$TMPDIR")
 
 login_ready_b=false
 signup_ready_b=false
-echo "$STATUS_B" | grep -q "login: passing" && login_ready_b=true
-echo "$STATUS_B" | grep -q "signup: passing" && signup_ready_b=true
+echo "$STATUS_B" | grep -q "login: PASSING" && login_ready_b=true
+echo "$STATUS_B" | grep -q "signup: PASSING" && signup_ready_b=true
 
 phase_b_ok=false
 if $login_ready_b && $signup_ready_b; then
-  echo "    Phase B PASS: login passing (new entries), signup passing (untouched)"
+  echo "    Phase B PASS: login PASSING (new entries), signup PASSING (untouched)"
   phase_b_ok=true
 else
   echo "    Phase B FAIL: login_ready=$login_ready_b signup_ready=$signup_ready_b"
@@ -228,14 +228,14 @@ write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
 STATUS_C=$(run_sync_status "$TMPDIR")
 
 phase_c_ok=false
-# login should show 1/2 rules proved (not passing, not carrying over old PROOF-2)
+# login should show 1/2 rules proved (not PASSING, not carrying over old PROOF-2)
 if echo "$STATUS_C" | grep -q "login: 1/2 rules proved"; then
-  # Also verify signup is still passing
-  if echo "$STATUS_C" | grep -q "signup: passing"; then
-    echo "    Phase C PASS: login shows 1/2 (purged old proof), signup still passing"
+  # Also verify signup is still PASSING
+  if echo "$STATUS_C" | grep -q "signup: PASSING"; then
+    echo "    Phase C PASS: login shows 1/2 (purged old proof), signup still PASSING"
     phase_c_ok=true
   else
-    echo "    Phase C FAIL: signup not passing"
+    echo "    Phase C FAIL: signup not PASSING"
   fi
 else
   echo "    Phase C FAIL: expected 'login: 1/2 rules proved'"

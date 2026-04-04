@@ -117,6 +117,24 @@
       "test_name": "test_global_integrity_includes_no_proof_from_all_features",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "e2e_audit_cache_pipeline",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_read_side_dedup_keeps_latest_entry",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_audit_cache_pipeline",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_side_pruning_removes_stale_duplicates",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

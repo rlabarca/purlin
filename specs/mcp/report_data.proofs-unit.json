@@ -60,7 +60,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_report_data.py",
-      "test_name": "test_ready_features_have_vhash_others_do_not",
+      "test_name": "test_passing_features_have_vhash_others_do_not",
       "status": "pass",
       "tier": "unit"
     },

@@ -385,9 +385,9 @@ from purlin_server import sync_status
 print(sync_status('$TMPDIR_E'))
 ")
 
-# Check: both login and agent_def should be passing (structural checks count toward passing)
-login_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "login: passing" || true)
-agent_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: passing" || true)
+# Check: both login and agent_def should be PASSING (structural checks count toward PASSING)
+login_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "login: PASSING" || true)
+agent_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: PASSING" || true)
 
 # Also verify check_spec_coverage correctly classifies structural vs behavioral
 COVERAGE_BEHAVIORAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/auth/login.md")
@@ -401,7 +401,7 @@ if [[ "$login_ready" -ge "1" ]] && \
    [[ "$agent_ready" -ge "1" ]] && \
    [[ "$BEHAV_FLAG" == "False" ]] && \
    [[ "$STRUCT_FLAG" == "True" ]]; then
-  echo "    Phase E PASS: behavioral spec=passing, structural spec=passing, coverage classification correct"
+  echo "    Phase E PASS: behavioral spec=PASSING, structural spec=PASSING, coverage classification correct"
   phase_e_ok=true
 else
   echo "    Phase E FAIL: login_ready=$login_ready agent_ready=$agent_ready"
@@ -409,7 +409,7 @@ else
 fi
 
 if $phase_e_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" pass "both specs passing, structural classification correct"
+  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" pass "both specs PASSING, structural classification correct"
 else
   purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" fail "structural classification not working correctly"
 fi

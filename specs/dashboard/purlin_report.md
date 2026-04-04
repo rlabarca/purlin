@@ -12,7 +12,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 
 - RULE-1: HTML loads .purlin/report-data.js via a script tag before rendering
 - RULE-2: When PURLIN_DATA is undefined, dashboard shows a no-data message with instructions
-- RULE-3: Summary strip shows total features, ready, partial, and failing counts from PURLIN_DATA.summary
+- RULE-3: Summary strip shows total features, verified, partial, and failing counts from PURLIN_DATA.summary
 - RULE-4: Feature table renders one row per feature with name, coverage fraction, status badge, integrity, and verified columns
 - RULE-5: Clicking a feature row expands it to show per-rule detail
 - RULE-6: Expanded detail shows each rule with id, description, source (blank for own rules, "required" or "global" for others), status, and proof column showing the proof description as primary text with file path as smaller secondary text below

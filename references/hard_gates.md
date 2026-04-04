@@ -10,7 +10,7 @@ Purlin has exactly 1 hard gate. Everything else is optional guidance.
 
 **How to resolve:** Write tests with proof markers covering every rule, then re-run `purlin:verify`.
 
-**Implementation:** The verify skill reads `sync_status` output. Only features reported as READY (all rules have passing proofs) receive a receipt. This is enforced in the skill logic, not a hook.
+**Implementation:** The verify skill reads `sync_status` output. Only features reported as VERIFIED (all rules have passing proofs) receive a receipt. This is enforced in the skill logic, not a hook.
 
 ## What Is NOT a Gate
 

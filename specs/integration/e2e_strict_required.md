@@ -5,12 +5,12 @@
 
 ## What it does
 
-End-to-end test that strict mode in the pre-push hook correctly accounts for required rules when deciding whether to block. A feature is not READY until both its own rules and all required rules have passing proofs.
+End-to-end test that strict mode in the pre-push hook correctly accounts for required rules when deciding whether to block. A feature is not VERIFIED until both its own rules and all required rules have passing proofs.
 
 ## Rules
 
-- RULE-1: Strict mode blocks push when own rules are proved but required rules have no proof (feature is not READY)
-- RULE-2: Strict mode allows push when both own rules and required rules all have passing proofs (feature is READY)
+- RULE-1: Strict mode blocks push when own rules are proved but required rules have no proof (feature is not VERIFIED)
+- RULE-2: Strict mode allows push when both own rules and required rules all have passing proofs (feature is VERIFIED)
 
 ## Proof
 

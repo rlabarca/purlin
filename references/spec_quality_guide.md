@@ -38,7 +38,7 @@ Added by the PM to explicitly mark that this exact constraint was reviewed and a
 
 ### (deferred)
 
-Added by PM or engineer when a rule is accepted but not being built yet. Deferred rules are excluded from coverage — `sync_status` shows them as DEFERRED and they don't block READY status.
+Added by PM or engineer when a rule is accepted but not being built yet. Deferred rules are excluded from coverage — `sync_status` shows them as DEFERRED and they don't block VERIFIED status.
 
 Use for: next-sprint features, nice-to-haves accepted into the spec but not yet prioritized, rules that depend on infrastructure not yet available.
 

@@ -67,7 +67,7 @@ Pass a project back and forth between collaborators using git branches. Each per
 
 ### Pre-push mode matters
 
-The pre-push hook runs before every push. If it's set to **strict** mode, ALL features must be READY (every rule has a passing proof) before you can push. This blocks handoffs of work-in-progress.
+The pre-push hook runs before every push. If it's set to **strict** mode, ALL features must be VERIFIED (every rule has a passing proof) before you can push. This blocks handoffs of work-in-progress.
 
 **For branch collaboration, use warn mode:**
 

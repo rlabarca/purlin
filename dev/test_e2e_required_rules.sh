@@ -209,7 +209,7 @@ else
 fi
 
 # ==========================================================================
-# Phase B — Partial proofs (own rules only → 2/5, NOT READY)
+# Phase B — Partial proofs (own rules only → 2/5, NOT VERIFIED)
 # ==========================================================================
 echo "  --- Phase B: Partial proofs ---"
 
@@ -224,12 +224,12 @@ STATUS_B=$(run_sync_status "$TMPDIR")
 
 phase_b_ok=false
 if echo "$STATUS_B" | grep -q "login: 2/5 rules proved"; then
-  # Also verify NOT READY (no READY line for login)
-  if ! echo "$STATUS_B" | grep -q "login: READY"; then
-    echo "    Phase B PASS: login shows 2/5, not READY"
+  # Also verify NOT VERIFIED (no VERIFIED line for login)
+  if ! echo "$STATUS_B" | grep -q "login: VERIFIED"; then
+    echo "    Phase B PASS: login shows 2/5, not VERIFIED"
     phase_b_ok=true
   else
-    echo "    Phase B FAIL: login shows READY but should be partial"
+    echo "    Phase B FAIL: login shows VERIFIED but should be partial"
   fi
 else
   echo "    Phase B FAIL: expected 'login: 2/5 rules proved'"
@@ -238,13 +238,13 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" pass "partial proofs show 2/5 and not READY"
+  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" pass "partial proofs show 2/5 and not VERIFIED"
 else
-  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" fail "partial proofs show 2/5 and not READY"
+  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" fail "partial proofs show 2/5 and not VERIFIED"
 fi
 
 # ==========================================================================
-# Phase C — Full proofs (all 5 proved → passing)
+# Phase C — Full proofs (all 5 proved → PASSING)
 # ==========================================================================
 echo "  --- Phase C: Full proofs ---"
 
@@ -262,26 +262,26 @@ create_proof_file "$TMPDIR" "specs/_anchors" "security_no_eval" \
 STATUS_C=$(run_sync_status "$TMPDIR")
 
 phase_c_ok=false
-if echo "$STATUS_C" | grep -q "login: passing"; then
+if echo "$STATUS_C" | grep -q "login: PASSING"; then
   # Verify 5/5 in the detail line
   if echo "$STATUS_C" | grep -q "5/5 rules proved"; then
-    echo "    Phase C PASS: login shows passing with 5/5"
+    echo "    Phase C PASS: login shows PASSING with 5/5"
     phase_c_ok=true
   else
-    echo "    Phase C FAIL: passing but missing 5/5 count"
+    echo "    Phase C FAIL: PASSING but missing 5/5 count"
     echo "    Status output:"
     echo "$STATUS_C"
   fi
 else
-  echo "    Phase C FAIL: expected 'login: passing'"
+  echo "    Phase C FAIL: expected 'login: PASSING'"
   echo "    Status output:"
   echo "$STATUS_C"
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" pass "full proofs show 5/5 and passing"
+  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" pass "full proofs show 5/5 and PASSING"
 else
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" fail "full proofs show 5/5 and passing"
+  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" fail "full proofs show 5/5 and PASSING"
 fi
 
 # --- Emit proof files ---

@@ -25,7 +25,7 @@ The MCP tool returns a per-feature coverage report with `→` directives. Displa
 Example output from `sync_status`:
 
 ```
-auth_login: READY
+auth_login: VERIFIED
   3/3 rules proved
   vhash=a1b2c3d4
   → No action needed.
@@ -58,7 +58,7 @@ design_tokens: 5 rules (global — auto-applied to all features)
 After the detailed output, show a one-line summary:
 
 ```
-Summary: 4 features | 1 READY | 2 partial | 1 no rules
+Summary: 4 features | 1 VERIFIED | 2 PARTIAL | 1 no rules
 ```
 
 ## The Directives

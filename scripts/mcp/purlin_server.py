@@ -445,10 +445,10 @@ def _build_summary_table(summary_rows, audit_summary=None):
     if not summary_rows:
         return []
 
-    # Sort: FAIL first, then partial, then passing, then READY, then —
+    # Sort: FAIL first, then PARTIAL, then PASSING, then VERIFIED, then —
     def _sort_key(row):
         _name, proved, total, status = row
-        priority = {"FAIL": 0, "partial": 1, "passing": 2, "READY": 3}.get(status, 4)
+        priority = {"FAIL": 0, "PARTIAL": 1, "PASSING": 2, "VERIFIED": 3}.get(status, 4)
         ratio = proved / total if total else 0
         return (priority, ratio, _name)
 
@@ -465,14 +465,14 @@ def _build_summary_table(summary_rows, audit_summary=None):
 
     for name, proved, total, status in summary_rows:
         coverage = f"{proved}/{total}"
-        if status == "READY":
-            symbol = "READY"
-        elif status == "passing":
-            symbol = "passing"
+        if status == "VERIFIED":
+            symbol = "VERIFIED"
+        elif status == "PASSING":
+            symbol = "PASSING"
         elif status == "FAIL":
             symbol = "FAIL"
-        elif status == "partial":
-            symbol = "partial"
+        elif status == "PARTIAL":
+            symbol = "PARTIAL"
         else:
             symbol = "\u2014"
         lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>7} \u2502")
@@ -480,9 +480,9 @@ def _build_summary_table(summary_rows, audit_summary=None):
     lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518")
 
     # Summary line with optional integrity
-    ready_count = sum(1 for _, _, _, s in summary_rows if s == "READY")
+    verified_count = sum(1 for _, _, _, s in summary_rows if s == "VERIFIED")
     total_features = len(summary_rows)
-    summary_line = f"{ready_count}/{total_features} features READY"
+    summary_line = f"{verified_count}/{total_features} features VERIFIED"
 
     if audit_summary:
         pct = audit_summary['integrity']
@@ -615,13 +615,13 @@ def sync_status(project_root, role=None):
         if has_fail:
             status = "FAIL"
         elif all_passing and has_current_receipt:
-            status = "READY"
+            status = "VERIFIED"
         elif all_passing:
-            status = "passing"
+            status = "PASSING"
         elif behavioral_proved == 0:
             status = "\u2014"
         else:
-            status = "partial"
+            status = "PARTIAL"
 
         summary_rows.append((name, behavioral_proved, active_total, status))
 
@@ -667,13 +667,13 @@ def sync_status(project_root, role=None):
             if has_fail:
                 a_status = "FAIL"
             elif a_all_passing and a_has_receipt:
-                a_status = "READY"
+                a_status = "VERIFIED"
             elif a_all_passing:
-                a_status = "passing"
+                a_status = "PASSING"
             elif proved == 0:
                 a_status = "\u2014"
             else:
-                a_status = "partial"
+                a_status = "PARTIAL"
 
             summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
 
@@ -883,9 +883,9 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         has_current_receipt = (receipt and receipt.get('vhash') == vhash)
 
         if has_current_receipt:
-            header_status = "READY"
+            header_status = "VERIFIED"
         else:
-            header_status = "passing"
+            header_status = "PASSING"
 
         if visual_hash_changed:
             lines.append(f"{name}: {header_status} but visual reference changed")
@@ -1202,7 +1202,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if pid:
                 audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
-    summary = {'total_features': 0, 'ready': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
+    summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
     anchors_total = 0
     anchors_with_source = 0
     anchors_global = 0
@@ -1268,22 +1268,22 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         elif has_fail:
             status = 'FAIL'
         elif all_passing and has_current_receipt:
-            status = 'READY'
+            status = 'VERIFIED'
         elif all_passing:
-            status = 'passing'
+            status = 'PASSING'
         elif proved > 0:
-            status = 'partial'
+            status = 'PARTIAL'
         else:
             status = 'no_proofs'
 
         # Update summary for non-anchor features
         if not is_anchor:
             summary['total_features'] += 1
-            if status == 'READY':
-                summary['ready'] += 1
-            elif status == 'passing':
+            if status == 'VERIFIED':
+                summary['verified'] += 1
+            elif status == 'PASSING':
                 summary['passing'] += 1
-            elif status == 'partial':
+            elif status == 'PARTIAL':
                 summary['partial'] += 1
             elif status == 'FAIL':
                 summary['failing'] += 1
@@ -1714,7 +1714,7 @@ def drift(project_root, since=None, role=None):
                 _collect_relevant_proofs(name, rule_entries, all_proofs),
             )
             d_has_receipt = (d_receipt.get('vhash') == d_vhash)
-        status = 'READY' if all_pass and d_has_receipt else 'passing' if all_pass else 'FAILING' if failing else 'partial'
+        status = 'VERIFIED' if all_pass and d_has_receipt else 'PASSING' if all_pass else 'FAILING' if failing else 'PARTIAL'
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,

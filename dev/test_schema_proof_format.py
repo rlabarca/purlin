@@ -54,7 +54,7 @@ class TestProofFormatEnforcement:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'foo: passing' in result
+        assert 'foo: PASSING' in result
 
     @pytest.mark.proof("schema_proof_format", "PROOF-2", "RULE-2")
     def test_proof_entry_has_all_seven_fields(self):
@@ -89,7 +89,7 @@ class TestProofFormatEnforcement:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'bar: READY' not in result, "Invalid status 'error' should not yield READY"
+        assert 'bar: VERIFIED' not in result, "Invalid status 'error' should not yield VERIFIED"
         assert '1/2 rules proved' in result, \
             "'pass' should count, 'error' should not"
         # Also verify that "fail" is a valid (non-passing) status distinct from invalid
@@ -102,7 +102,7 @@ class TestProofFormatEnforcement:
              "status": "pass", "tier": "unit"},
         ])
         result2 = purlin_server.sync_status(self.project_root)
-        assert 'bar: READY' not in result2, "'fail' status should not yield READY"
+        assert 'bar: VERIFIED' not in result2, "'fail' status should not yield VERIFIED"
         assert '1/2 rules proved' in result2, \
             "'fail' is valid but non-passing — only 'pass' should count"
 

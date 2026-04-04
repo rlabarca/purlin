@@ -72,7 +72,7 @@ If a skill delegates to `purlin:unit-test`, read coverage from unit-test's outpu
 ## Implicit Routing
 
 When the user's intent is clear, act directly:
-- "test X" / "build X" / "fix X" → read `specs/**/X.md`, build code if missing, write tests, iterate until `sync_status` shows READY
+- "test X" / "build X" / "fix X" → read `specs/**/X.md`, build code if missing, write tests, iterate until `sync_status` shows VERIFIED
 - "what's the status?" → call `sync_status`
 - "what changed?" / "what drifted?" / "what did the team do?" → use `purlin:drift`
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature

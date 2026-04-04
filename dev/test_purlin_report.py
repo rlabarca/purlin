@@ -38,7 +38,7 @@ def make_data(overrides=None):
         "docs_url": "https://example.com/docs",
         "summary": {
             "total_features": 3,
-            "ready": 1,
+            "verified": 1,
             "partial": 1,
             "failing": 0,
             "no_proofs": 1,
@@ -52,7 +52,7 @@ def make_data(overrides=None):
                 "proved": 3,
                 "total": 3,
                 "deferred": 0,
-                "status": "READY",
+                "status": "VERIFIED",
                 "structural_checks": 0,
                 "vhash": "a1b2c3d4",
                 "receipt": {"commit": "abc123", "timestamp": now, "stale": False},
@@ -135,7 +135,7 @@ def make_data(overrides=None):
                 "proved": 1,
                 "total": 2,
                 "deferred": 0,
-                "status": "partial",
+                "status": "PARTIAL",
                 "structural_checks": 0,
                 "vhash": None,
                 "receipt": None,
@@ -178,7 +178,7 @@ def make_data(overrides=None):
                 "proved": 2,
                 "total": 2,
                 "deferred": 0,
-                "status": "READY",
+                "status": "VERIFIED",
                 "structural_checks": 0,
                 "vhash": "e5f6a7b8",
                 "receipt": {"commit": "def456", "timestamp": now, "stale": False},
@@ -328,7 +328,7 @@ class TestPurlinReport:
         data = make_data({
             "summary": {
                 "total_features": 10,
-                "ready": 5,
+                "verified": 5,
                 "partial": 3,
                 "failing": 1,
                 "no_proofs": 1,
@@ -367,18 +367,18 @@ class TestPurlinReport:
             }
 
         features = [
-            make_feature("alpha", "READY", 3, 3),
-            make_feature("beta", "partial", 1, 2),
-            make_feature("gamma", "READY", 2, 2),
-            make_feature("delta", "partial", 0, 1),
-            make_feature("epsilon", "READY", 4, 4),
-            make_feature("zeta", "partial", 2, 3),
-            make_feature("eta", "READY", 1, 1),
-            make_feature("theta", "partial", 0, 2),
+            make_feature("alpha", "VERIFIED", 3, 3),
+            make_feature("beta", "PARTIAL", 1, 2),
+            make_feature("gamma", "VERIFIED", 2, 2),
+            make_feature("delta", "PARTIAL", 0, 1),
+            make_feature("epsilon", "VERIFIED", 4, 4),
+            make_feature("zeta", "PARTIAL", 2, 3),
+            make_feature("eta", "VERIFIED", 1, 1),
+            make_feature("theta", "PARTIAL", 0, 2),
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 8, "ready": 4, "partial": 4, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 8, "verified": 4, "partial": 4, "failing": 0, "no_proofs": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
         })
         load_dashboard(page, dashboard, data=data)
@@ -533,7 +533,7 @@ class TestPurlinReport:
             "proved": 1,
             "total": 1,
             "deferred": 0,
-            "status": "READY",
+            "status": "VERIFIED",
             "structural_checks": 0,
             "vhash": None,
             "receipt": None,
@@ -567,27 +567,27 @@ class TestPurlinReport:
     def test_table_sorting(self, page, dashboard):
         """PROOF-12: Clicking a column header changes the table row sort order."""
         # Use data where default status sort != coverage sort, guaranteeing a row-order change.
-        # Default sort is by status (FAIL=0, partial=1, READY=2).
-        # "alpha" is READY (order 2) with coverage 0/3 = 0.
-        # "beta"  is partial (order 1) with coverage 3/3 = 1.
-        # Default sort: beta first (partial), then alpha (READY).
+        # Default sort is by status (FAIL=0, PARTIAL=1, VERIFIED=2).
+        # "alpha" is VERIFIED (order 2) with coverage 0/3 = 0.
+        # "beta"  is PARTIAL (order 1) with coverage 3/3 = 1.
+        # Default sort: beta first (PARTIAL), then alpha (VERIFIED).
         # Coverage-ascending sort: alpha first (0/3=0%), then beta (3/3=100%).
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         features = [
             {
                 "name": "alpha", "type": "feature", "is_global": False, "source_url": None,
-                "proved": 0, "total": 3, "deferred": 0, "status": "READY",
+                "proved": 0, "total": 3, "deferred": 0, "status": "VERIFIED",
                 "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
             {
                 "name": "beta", "type": "feature", "is_global": False, "source_url": None,
-                "proved": 3, "total": 3, "deferred": 0, "status": "partial",
+                "proved": 3, "total": 3, "deferred": 0, "status": "PARTIAL",
                 "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 2, "ready": 1, "partial": 1, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 2, "verified": 1, "partial": 1, "failing": 0, "no_proofs": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -595,12 +595,12 @@ class TestPurlinReport:
             },
         })
         load_dashboard(page, dashboard, data=data)
-        # Default sort (by status): beta (partial) comes first
+        # Default sort (by status): beta (PARTIAL) comes first
         rows_before = page.query_selector_all("tr.fr")
         assert len(rows_before) == 2, f"Expected 2 feature rows, got {len(rows_before)}"
         first_name_before = rows_before[0].get_attribute("data-name")
         assert first_name_before == "beta", (
-            f"Expected 'beta' (partial) to be first under default status sort, got '{first_name_before}'"
+            f"Expected 'beta' (PARTIAL) to be first under default status sort, got '{first_name_before}'"
         )
         # Click the "Coverage" column header — ascending coverage sort: alpha (0%) first
         coverage_header = page.query_selector("th[data-col='coverage']")
@@ -783,7 +783,7 @@ def make_integrity_feature(name, integrity):
         "proved": 2,
         "total": 2,
         "deferred": 0,
-        "status": "READY",
+        "status": "VERIFIED",
         "structural_checks": 0,
         "vhash": None,
         "receipt": None,
@@ -811,7 +811,7 @@ class TestRulePadding:
             "features": [{
                 "name": "config_engine", "type": "feature", "is_global": False,
                 "source_url": None, "proved": 2, "total": 4, "deferred": 0,
-                "status": "partial", "structural_checks": 2, "vhash": None,
+                "status": "PARTIAL", "structural_checks": 2, "vhash": None,
                 "receipt": None,
                 "rules": [
                     {"id": "RULE-1", "description": "Reads config files", "label": "own",
@@ -839,7 +839,7 @@ class TestRulePadding:
                 ],
                 "audit": None,
             }],
-            "summary": {"total_features": 1, "ready": 0, "partial": 1, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 1, "verified": 0, "partial": 1, "failing": 0, "no_proofs": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": None,
         })
@@ -962,21 +962,21 @@ class TestDashboardVisual:
 
     @pytest.mark.proof("dashboard_visual", "PROOF-6", "RULE-6")
     def test_ready_badge_style(self, page, dashboard):
-        """PROOF-6: .sb-ready has solid green background and white text."""
+        """PROOF-6: .sb-verified has solid green background and white text."""
         load_dashboard(page, dashboard, data=make_data())
 
         bg = page.evaluate(
-            "() => getComputedStyle(document.querySelector('.sb-ready')).backgroundColor"
+            "() => getComputedStyle(document.querySelector('.sb-verified')).backgroundColor"
         )
         assert rgb_to_hex(bg) == "#22c55e", (
-            f"Expected .sb-ready background #22c55e (green), got {bg!r}"
+            f"Expected .sb-verified background #22c55e (green), got {bg!r}"
         )
 
         color = page.evaluate(
-            "() => getComputedStyle(document.querySelector('.sb-ready')).color"
+            "() => getComputedStyle(document.querySelector('.sb-verified')).color"
         )
         assert rgb_to_hex(color) == "#ffffff", (
-            f"Expected .sb-ready text color #ffffff (white), got {color!r}"
+            f"Expected .sb-verified text color #ffffff (white), got {color!r}"
         )
 
     @pytest.mark.proof("dashboard_visual", "PROOF-7", "RULE-7")
@@ -1005,7 +1005,7 @@ class TestDashboardVisual:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         data = make_data({
             "features": [make_fail_feature("broken_feature")],
-            "summary": {"total_features": 1, "ready": 0, "partial": 0, "failing": 1, "no_proofs": 0},
+            "summary": {"total_features": 1, "verified": 0, "partial": 0, "failing": 1, "no_proofs": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -1024,7 +1024,7 @@ class TestDashboardVisual:
     @pytest.mark.proof("dashboard_visual", "PROOF-9", "RULE-9")
     def test_no_proofs_badge_opacity(self, page, dashboard):
         """PROOF-9: .sb-none has reduced opacity (< 1)."""
-        # The default make_data() has a 'checkout' feature with status 'partial',
+        # The default make_data() has a 'checkout' feature with status 'PARTIAL',
         # which doesn't give us .sb-none. We need a feature with no proofs.
         # Status 'no_proofs' doesn't exist in badgeClass — unrecognized status
         # falls through to sb-none. Use a custom status value.
@@ -1046,7 +1046,7 @@ class TestDashboardVisual:
         }
         data = make_data({
             "features": [no_proof_feature],
-            "summary": {"total_features": 1, "ready": 0, "partial": 0, "failing": 0, "no_proofs": 1},
+            "summary": {"total_features": 1, "verified": 0, "partial": 0, "failing": 0, "no_proofs": 1},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -1072,7 +1072,7 @@ class TestDashboardVisual:
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 3, "ready": 3, "partial": 0, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 3, "verified": 3, "partial": 0, "failing": 0, "no_proofs": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": 60, "strong": 3, "weak": 0, "hollow": 0, "manual": 0,

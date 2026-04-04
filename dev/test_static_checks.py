@@ -517,10 +517,10 @@ class TestShellIfElsePair:
         path = _write_tmp('''#!/usr/bin/env bash
 source shell_purlin.sh
 output=$(some_command)
-if echo "$output" | grep -q "READY"; then
-  purlin_proof "testfeat" "PROOF-1" "RULE-1" pass "checks READY"
+if echo "$output" | grep -q "VERIFIED"; then
+  purlin_proof "testfeat" "PROOF-1" "RULE-1" pass "checks VERIFIED"
 else
-  purlin_proof "testfeat" "PROOF-1" "RULE-1" fail "checks READY"
+  purlin_proof "testfeat" "PROOF-1" "RULE-1" fail "checks VERIFIED"
 fi
 ''', suffix='.sh')
         try:

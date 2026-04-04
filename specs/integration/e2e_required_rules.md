@@ -5,18 +5,18 @@
 
 ## What it does
 
-End-to-end test that sync_status correctly merges required rules (via `> Requires:`) and global anchor rules into a feature's coverage totals, and that coverage progresses correctly from 0/N through partial to full READY.
+End-to-end test that sync_status correctly merges required rules (via `> Requires:`) and global anchor rules into a feature's coverage totals, and that coverage progresses correctly from 0/N through PARTIAL to full PASSING.
 
 ## Rules
 
 - RULE-1: sync_status counts required rules and global anchor rules in the feature's total, not just own rules
 - RULE-2: sync_status labels each rule as (own), (required), or (global) in the output
-- RULE-3: Partial proofs (own rules proved, required and global not) show correct fraction and NOT READY status
-- RULE-4: Full proofs (own + required + global all proved) show correct fraction and READY status
+- RULE-3: Partial proofs (own rules proved, required and global not) show correct fraction and NOT VERIFIED status
+- RULE-4: Full proofs (own + required + global all proved) show correct fraction and PASSING status
 
 ## Proof
 
 - PROOF-1 (RULE-1): Create anchor (2 rules), global anchor (1 rule), feature (2 own rules + Requires anchor); run sync_status; verify feature shows 0/5 total rules @e2e
 - PROOF-2 (RULE-2): Run sync_status on same setup; verify output contains (own), (required), and (global) labels on rule lines @e2e
-- PROOF-3 (RULE-3): Add proofs for feature's 2 own rules only; run sync_status; verify 2/5 and not READY @e2e
-- PROOF-4 (RULE-4): Add proofs for anchor's 2 rules and global anchor's 1 rule; run sync_status; verify 5/5 and READY @e2e
+- PROOF-3 (RULE-3): Add proofs for feature's 2 own rules only; run sync_status; verify 2/5 and not VERIFIED @e2e
+- PROOF-4 (RULE-4): Add proofs for anchor's 2 rules and global anchor's 1 rule; run sync_status; verify 5/5 and PASSING @e2e

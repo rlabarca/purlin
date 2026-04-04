@@ -110,7 +110,7 @@ Then start the build/test loop:
 
 ```
 purlin:status          — see what needs tests
-test <feature_name>    — write tests and iterate until READY
+test <feature_name>    — write tests and iterate until VERIFIED
 purlin:verify          — lock in verification receipts
 ```
 

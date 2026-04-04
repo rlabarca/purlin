@@ -174,13 +174,13 @@ Install the Purlin pre-push hook so `git push` checks proof coverage before code
 
 The hook has two modes, set in `.purlin/config.json` under `"pre_push"`:
 - **`"warn"`** (default) — blocks on FAILING proofs, warns on partial coverage
-- **`"strict"`** — blocks on anything non-READY (all features must be fully proved)
+- **`"strict"`** — blocks on anything not VERIFIED (requires verification receipt)
 
 Ask the user which mode they want:
 ```
 Pre-push hook mode:
-  [warn]   Block on failing proofs, warn on partial coverage (default)
-  [strict] Block unless all features are READY (fully proved)
+  [warn]   Block on FAIL, allow PASSING and PARTIAL (default)
+  [strict] Block on anything not VERIFIED (requires verification receipt)
 ```
 
 Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"` or `"pre_push": "strict"`.

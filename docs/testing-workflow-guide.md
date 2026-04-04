@@ -18,7 +18,7 @@ The difference matters:
 test login
 ```
 
-That's it. Claude reads the spec, writes tests with proof markers, runs them, diagnoses failures, fixes the code, and iterates until `sync_status` shows READY. You don't need to understand anything below this line to use Purlin testing.
+That's it. Claude reads the spec, writes tests with proof markers, runs them, diagnoses failures, fixes the code, and iterates until `sync_status` shows VERIFIED. You don't need to understand anything below this line to use Purlin testing.
 
 When you want more control — or want to understand what's happening under the hood — read on.
 
@@ -410,7 +410,7 @@ The rule of thumb: if a human must make a judgment call, use `@manual`. If a mac
 
 ### Manual proofs count toward coverage
 
-A feature with 5 rules, 4 automated proofs, and 1 manual stamp is READY — `purlin:verify` issues a receipt. Manual proofs are first-class proofs, not second-class workarounds.
+A feature with 5 rules, 4 automated proofs, and 1 manual stamp is VERIFIED — `purlin:verify` issues a receipt. Manual proofs are first-class proofs, not second-class workarounds.
 
 ---
 
@@ -477,14 +477,14 @@ Proofs are only valuable if they're actually run. Purlin ships a pre-push hook a
 | Mode | Blocks on | Allows |
 |------|----------|--------|
 | `"warn"` (default) | FAILING proofs | Partial coverage (NO PROOF) with a warning |
-| `"strict"` | Anything non-READY | Only fully proved features |
+| `"strict"` | Anything not VERIFIED | Only fully proved features |
 
 **Warn mode** — for incremental development:
 ```
 purlin: partial coverage:
   checkout → RULE-3: NO PROOF (own)
 
-purlin: passing features:
+purlin: PASSING features:
   login
 ```
 Push goes through. You're still writing tests.
@@ -496,7 +496,7 @@ Push goes through. You're still writing tests.
 
   checkout: 2/3 rules proved
 
-All features must be READY before push in strict mode.
+All features must be VERIFIED before push in strict mode.
   → Run: test checkout
   → Run: purlin:verify
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -11,7 +11,7 @@ End-to-end test of the audit → cache → status → dashboard pipeline. Verifi
 
 - RULE-1: write_audit_cache writes .purlin/cache/audit_cache.json with entries keyed by proof hash
 - RULE-2: Each cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
-- RULE-3: sync_status reads the audit cache and appends an integrity summary line with percentage and relative time after the features READY line
+- RULE-3: sync_status reads the audit cache and appends an integrity summary line with percentage and relative time after the features VERIFIED line
 - RULE-4: sync_status shows "No audit data — run purlin:audit" when the cache does not exist
 - RULE-5: sync_status shows "consider re-auditing" when the cache is older than 24 hours
 - RULE-6: report-data.js includes audit_summary with integrity, assessment counts, last_audit, last_audit_relative, and stale fields when cache exists

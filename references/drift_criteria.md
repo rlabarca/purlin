@@ -134,7 +134,7 @@ For each BEHAVIORAL change, the skill checks existing rules:
 - Rules still match → `Spec up to date ✓`
 - Spec exists but new behavior isn't covered → `⚠ Spec may need new rules`
 - No spec exists → `No spec exists → Run: purlin:spec <name>`
-- Feature is READY but structural-only with code changes → flag as above
+- Feature is VERIFIED but structural-only with code changes → flag as above
 
 The proof count from `proof_status` reflects the state BEFORE the current changes. A feature showing "6/6 proved" after behavioral code changes still needs spec review — those 6 proofs were for the old behavior.
 

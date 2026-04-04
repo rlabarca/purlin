@@ -14,8 +14,8 @@ Defines the visual constants for the Purlin dashboard — colors, typography, st
 - RULE-3: Status green is #22c55e, amber is #f59e0b, red is #ef4444, teal accent is #2dd4bf
 - RULE-4: Font stack is -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
 - RULE-5: Monospace font stack is "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace
-- RULE-6: READY status badge is solid green pill with white text
-- RULE-7: Partial status badge is amber outline pill (transparent background, amber border)
+- RULE-6: VERIFIED status badge is solid green pill with white text
+- RULE-7: PARTIAL status badge is amber outline pill (transparent background, amber border)
 - RULE-8: FAIL status badge is solid red pill with white text
 - RULE-9: No-proofs status badge is gray pill at reduced opacity
 - RULE-10: Integrity color coding: green at 80%+, amber at 50-79%, red below 50%, gray when null
@@ -28,7 +28,7 @@ Defines the visual constants for the Purlin dashboard — colors, typography, st
 - PROOF-3 (RULE-3): Grep purlin-report.html CSS for --green: #22c55e, --amber: #f59e0b, --red: #ef4444, --teal: #2dd4bf; verify all present
 - PROOF-4 (RULE-4): Grep purlin-report.html for the sans-serif font stack; verify it includes -apple-system and Roboto
 - PROOF-5 (RULE-5): Grep purlin-report.html for the monospace font stack; verify it includes "SF Mono" and Consolas
-- PROOF-6 (RULE-6): Load dashboard with a READY feature in Playwright; verify .sb-ready element has background-color matching --green and white text @e2e
+- PROOF-6 (RULE-6): Load dashboard with a VERIFIED feature in Playwright; verify .sb-ready element has background-color matching --green and white text @e2e
 - PROOF-7 (RULE-7): Load dashboard with a partial feature in Playwright; verify .sb-partial element has transparent background and amber border @e2e
 - PROOF-8 (RULE-8): Load dashboard with a FAIL feature in Playwright; verify .sb-fail element has background-color matching --red @e2e
 - PROOF-9 (RULE-9): Load dashboard with a no_proofs feature in Playwright; verify .sb-none element has reduced opacity @e2e
