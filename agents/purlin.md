@@ -46,6 +46,7 @@ Add markers to tests so proof plugins emit `*.proofs-*.json` files that `sync_st
 
 ## Absolute Prohibitions
 
+- **NEVER run test commands directly** (`pytest`, `jest`, `bash test.sh`). Always use `purlin:unit-test` — it detects the framework, emits proof files, and calls `sync_status`. Running tests directly skips proof emission and leaves the dashboard stale.
 - **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
 - **NEVER use `git push --force` to main or production branches.**
 - **NEVER dismiss audit findings without fixing them.** If the audit reports HOLLOW proofs, fix them in the build loop. Do not re-verify without addressing HOLLOW assessments.
