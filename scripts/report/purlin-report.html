@@ -155,14 +155,14 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .vhash{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:6px}
 
 /* ===== CATEGORY SECTIONS ===== */
-.cat-header{cursor:pointer;transition:background .12s;background:var(--bg-card-alt);border-bottom:1px solid var(--border)}
+.cat-header{cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);border-top:2px solid var(--border)}
 .cat-header:hover{background:var(--bg-hover)}
-.cat-header td{padding:10px 16px;font-size:13px;font-weight:600}
-.cat-name{display:flex;align-items:center;gap:6px}
-.cat-chv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--text-dim);font-size:9px;transition:transform .15s;flex-shrink:0;transform-origin:center center}
+.cat-header td{padding:14px 16px;font-size:14px;font-weight:700;letter-spacing:.01em}
+.cat-name{display:flex;align-items:center;gap:8px}
+.cat-chv{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:var(--text-secondary);font-size:10px;transition:transform .15s;flex-shrink:0;transform-origin:center center}
 .cat-header.expanded .cat-chv{transform:rotate(90deg)}
-.cat-label{text-transform:capitalize;color:var(--text-primary)}
-.cat-count{font-size:11px;font-weight:400;color:var(--text-dim);margin-left:4px}
+.cat-label{text-transform:uppercase;color:var(--text-primary);font-size:12px;letter-spacing:.08em}
+.cat-count{font-size:11px;font-weight:400;color:var(--text-dim);margin-left:2px}
 .cat-summary{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-secondary)}
 .cat-stat{display:flex;align-items:center;gap:3px;white-space:nowrap}
 .cat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
@@ -171,6 +171,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .cat-cov-bar{width:48px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
 .cat-cov-fill{height:100%;border-radius:2px;display:block}
 .cat-cov-fill.cov-verified{background:var(--green)}.cat-cov-fill.cov-partial{background:var(--amber)}.cat-cov-fill.cov-fail{background:var(--red)}
+/* Feature rows nested under a category */
+.cat-child td:first-child{padding-left:40px}
+.cat-child{border-left:3px solid var(--border)}
 
 /* ===== EXPANDED DETAIL ===== */
 .dr>td{padding:0!important;border-bottom:1px solid var(--border)!important}
@@ -560,7 +563,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
           var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
           var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
 
-          h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+          h += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
 
           /* Name + type */
           h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
@@ -649,7 +652,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   }
 
   function renderDetail(f) {
-    var h = '<tr class="dr"><td colspan="5"><div class="dc">';
+    var h = '<tr class="dr cat-child"><td colspan="5"><div class="dc">';
 
     /* Rules table */
     h += '<div class="dst">Rules &amp; Proofs</div>';
