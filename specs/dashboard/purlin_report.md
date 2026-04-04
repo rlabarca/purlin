@@ -27,6 +27,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-15: Header shows last audit time from audit_summary, with amber warning when stale
 - RULE-16: Status column is centered in both the feature table and the expanded rules sub-table at all viewport widths
 - RULE-17: Dashboard uses full available width up to 2400px and is responsive down to 1100px
+- RULE-18: Coverage bar fill width matches the proved/total fraction — a feature with 2/6 coverage has a bar fill at ~33%, not 100%
 
 ## Proof
 
@@ -49,3 +50,4 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 - PROOF-15 (RULE-15): Write report-data.js with audit_summary.stale=true; load in Playwright; verify element with class "audit-time stale" exists; take screenshot @e2e
 - PROOF-16 (RULE-16): Load page in Playwright at 1920px and 1280px widths; expand a feature; verify the status badge td in the feature table has text-align:center; verify the status td in the rules sub-table has text-align:center; take screenshots at both widths @e2e
 - PROOF-17 (RULE-17): Load page in Playwright at viewport width 2400px; verify dashboard container max-width is 2400px; resize to 1100px; verify summary strip reflows to 3 columns; take screenshots at both widths @e2e
+- PROOF-18 (RULE-18): Create features with known coverage fractions (2/6 and 5/5); load in Playwright; measure the cov-fill element width as a percentage of the cov-bar; verify 2/6 bar is ~33% and 5/5 bar is 100% @e2e

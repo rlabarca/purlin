@@ -1131,3 +1131,72 @@ class TestDashboardVisual:
             f"Found {len(violations)} hardcoded hex color(s) outside CSS custom property definitions:\n"
             + "\n".join(violations[:20])
         )
+
+    @pytest.mark.proof("purlin_report", "PROOF-18", "RULE-18")
+    def test_coverage_bar_width_matches_fraction(self, page, dashboard):
+        """PROOF-18: Coverage bar fill width matches proved/total fraction."""
+        features = [
+            {
+                "name": "low_coverage",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 2,
+                "total": 6,
+                "deferred": 0,
+                "status": "PARTIAL",
+                "structural_checks": 0,
+                "vhash": None,
+                "receipt": None,
+                "rules": [],
+                "audit": None,
+            },
+            {
+                "name": "full_coverage",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 5,
+                "total": 5,
+                "deferred": 0,
+                "status": "PASSING",
+                "structural_checks": 0,
+                "vhash": "abcd1234",
+                "receipt": None,
+                "rules": [],
+                "audit": None,
+            },
+        ]
+        data = make_data({
+            "features": features,
+            "summary": {"total_features": 2, "verified": 0, "passing": 1,
+                        "partial": 1, "failing": 0, "no_proofs": 0},
+        })
+        load_dashboard(page, dashboard, data=data)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof18_coverage_bars.png"))
+
+        # Measure fill width as percentage of bar width via JS
+        bar_widths = page.evaluate("""() => {
+            const rows = document.querySelectorAll('tr.fr');
+            const results = {};
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const bar = row.querySelector('.cov-bar');
+                const fill = row.querySelector('.cov-fill');
+                if (bar && fill) {
+                    const barW = bar.getBoundingClientRect().width;
+                    const fillW = fill.getBoundingClientRect().width;
+                    results[name] = Math.round(fillW / barW * 100);
+                }
+            });
+            return results;
+        }""")
+
+        # 2/6 = 33%
+        assert 30 <= bar_widths.get('low_coverage', 0) <= 37, (
+            f"Expected low_coverage bar ~33%, got {bar_widths.get('low_coverage')}%"
+        )
+        # 5/5 = 100%
+        assert bar_widths.get('full_coverage', 0) == 100, (
+            f"Expected full_coverage bar 100%, got {bar_widths.get('full_coverage')}%"
+        )

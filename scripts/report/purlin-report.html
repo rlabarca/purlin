@@ -86,7 +86,7 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .no-data code{font-family:var(--font-mono);background:var(--bg-card);padding:2px 8px;border-radius:4px;font-size:13px}
 
 /* ===== SUMMARY STRIP ===== */
-.summary-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.summary-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
 .summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center;transition:background .2s,border-color .2s}
 .summary-card-number{font-size:34px;font-weight:700;line-height:1.1;margin-bottom:2px}
 .summary-card-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em}
@@ -131,7 +131,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
 /* Coverage */
 .cov{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.cov-t{font-family:var(--font-mono);font-size:12px;min-width:30px}
+.cov-t{font-family:var(--font-mono);font-size:12px;min-width:42px;text-align:right}
 .cov-bar{width:56px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
 .cov-fill{height:100%;border-radius:3px}
 .cov-verified{background:var(--green)}.cov-partial{background:var(--amber)}.cov-fail{background:var(--red)}.cov-none{background:var(--gray-badge)}
@@ -205,10 +205,10 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .footer a:hover{text-decoration:underline}
 
 /* ===== RESPONSIVE ===== */
-@media (max-width:1100px) {
+@media (max-width:700px) {
   .summary-strip{grid-template-columns:repeat(3,1fr)}
 }
-@media (max-width:700px) {
+@media (max-width:480px) {
   .summary-strip{grid-template-columns:repeat(2,1fr)}
   .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
 }
@@ -272,8 +272,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   }
 
   function covClass(status) {
-    if (status === 'VERIFIED') return 'cov-ready';
-    if (status === 'PASSING') return 'cov-ready';
+    if (status === 'VERIFIED') return 'cov-verified';
+    if (status === 'PASSING') return 'cov-verified';
     if (status === 'PARTIAL') return 'cov-partial';
     if (status === 'FAIL') return 'cov-fail';
     return 'cov-none';
@@ -292,7 +292,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'PASSING') return 'Passing';
     if (status === 'PARTIAL') return 'Partial';
     if (status === 'FAIL') return 'Fail';
-    return 'Not verified';
+    return 'Untested';
   }
 
   function intClass(v) {
@@ -438,7 +438,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '<div class="summary-card sc-passing"><div class="summary-card-number">' + (S.passing || 0) + '</div><div class="summary-card-label">Passing</div></div>';
     h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
-    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' not verified</div>';
+    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' untested</div>';
     h += '</div>';
     /* Integrity card */
     if (A && A.integrity != null) {
