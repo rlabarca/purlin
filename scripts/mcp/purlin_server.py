@@ -1230,9 +1230,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         active_total = len(active_entries)
 
         structural_rules = _classify_structural_rules(active_entries, info, features)
-        proved = sum(
+        behavioral_proved = sum(
             1 for key, _, _ in active_entries
-            if proof_by_rule.get(key, {}).get('status') == 'pass'
+            if key not in structural_rules
+            and proof_by_rule.get(key, {}).get('status') == 'pass'
         )
         structural_passing = sum(
             1 for key, _, _ in active_entries
@@ -1241,12 +1242,16 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         )
         has_fail = any(
             proof_by_rule.get(key, {}).get('status') == 'fail'
-            for key, _, _ in active_entries
+            for key, _, _ in active_entries if key not in structural_rules
         )
 
-        # Compute vhash when all proofs pass
+        # Compute vhash when all proofs pass (structural + behavioral)
+        all_proved = sum(
+            1 for key, _, _ in active_entries
+            if proof_by_rule.get(key, {}).get('status') == 'pass'
+        )
         vhash = None
-        all_passing = (proved == active_total and active_total > 0)
+        all_passing = (all_proved == active_total and active_total > 0)
         if all_passing:
             all_rules_dict = {key: True for key, _, _ in active_entries}
             vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
@@ -1271,7 +1276,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             status = 'VERIFIED'
         elif all_passing:
             status = 'PASSING'
-        elif proved > 0:
+        elif behavioral_proved > 0:
             status = 'PARTIAL'
         else:
             status = 'no_proofs'
@@ -1357,7 +1362,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'type': 'anchor' if is_anchor else 'feature',
             'is_global': info.get('is_global', False),
             'source_url': info.get('source_url'),
-            'proved': proved,
+            'proved': behavioral_proved,
             'total': active_total,
             'deferred': deferred_count,
             'status': status,

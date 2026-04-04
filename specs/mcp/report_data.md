@@ -25,6 +25,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-14: sync_status output includes dashboard file URL when purlin-report.html exists at project root
 - RULE-15: report-data.js includes an audit_summary object with integrity percentage, assessment counts, last audit timestamp, relative time, and stale boolean; null when no audit cache exists
 - RULE-16: Per-feature audit data is populated from the audit cache when entries exist for that feature
+- RULE-17: Feature proved count excludes structural checks — only behavioral proofs count toward the coverage fraction
 
 ## Proof
 
@@ -40,6 +41,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - PROOF-10 (RULE-10): Parse report data, verify all rule labels are valid enum values
 - PROOF-11 (RULE-11): Call _get_plugin_docs_url, verify it returns a URL derived from git remote
 - PROOF-12 (RULE-12): Create an anchor spec with > Source:, regenerate report, verify source_url in output
+- PROOF-17 (RULE-17): Create a feature with 3 rules (2 behavioral, 1 structural grep-based); write passing proofs for all 3; build report data; verify proved==2 (not 3) and structural_checks==1 @integration
 - PROOF-13 (RULE-13): Parse report data, count anchor features, verify matches anchors_summary.total
 - PROOF-14 (RULE-14): Place purlin-report.html at root, call sync_status with report=true, verify output contains file:// URL
 - PROOF-15 (RULE-15): Create an audit cache with STRONG/WEAK entries and timestamps, regenerate report, verify audit_summary fields; delete cache, regenerate, verify audit_summary is null @integration

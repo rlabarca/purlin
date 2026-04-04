@@ -579,3 +579,60 @@ class TestReportDataStructure:
         finding = hollow_findings[0]
         assert finding['criterion'] == 'No real assertion'
         assert finding['fix'] == 'Add assert on return value'
+
+    @pytest.mark.proof("report_data", "PROOF-17", "RULE-17")
+    def test_proved_count_excludes_structural_checks(self):
+        """RULE-17: Feature proved count excludes structural checks.
+
+        Setup: Feature with 3 rules — 2 behavioral, 1 structural (grep-based).
+        All 3 have passing proofs. The structural proof should count as a
+        structural_check but NOT toward the proved count.
+        Expected: proved==2, structural_checks==1, total==3
+        """
+        _make_project(self.tmp)
+
+        # Create a feature with mixed behavioral + structural rules
+        _write_spec(self.tmp, 'mixed', (
+            '# Feature: mixed\n\n'
+            '> Scope: src/mixed.py\n\n'
+            '## What it does\nMixed feature.\n\n'
+            '## Rules\n'
+            '- RULE-1: Returns correct output on valid input\n'
+            '- RULE-2: Raises error on invalid input\n'
+            '- RULE-3: Config file contains the required section\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Call with valid input, assert output matches expected\n'
+            '- PROOF-2 (RULE-2): Call with invalid input, assert ValueError raised\n'
+            '- PROOF-3 (RULE-3): Grep config.yaml for required_section; verify present\n'
+        ))
+
+        # All 3 proofs pass
+        _write_proofs(self.tmp, 'mixed', [
+            {"feature": "mixed", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test_mixed.py", "test_name": "test_valid",
+             "status": "pass", "tier": "unit"},
+            {"feature": "mixed", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/test_mixed.py", "test_name": "test_invalid",
+             "status": "pass", "tier": "unit"},
+            {"feature": "mixed", "id": "PROOF-3", "rule": "RULE-3",
+             "test_file": "tests/test_mixed.py", "test_name": "test_config",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        mixed = next(f for f in data['features'] if f['name'] == 'mixed')
+
+        # proved should count only behavioral proofs (2), not structural (1)
+        assert mixed['proved'] == 2, (
+            f"Expected proved=2 (behavioral only), got {mixed['proved']}. "
+            f"Structural checks should NOT inflate the proved count."
+        )
+        assert mixed['structural_checks'] == 1, (
+            f"Expected structural_checks=1, got {mixed['structural_checks']}"
+        )
+        assert mixed['total'] == 3, (
+            f"Expected total=3 (all rules), got {mixed['total']}"
+        )
