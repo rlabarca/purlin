@@ -695,3 +695,133 @@ Beta feature.
             f"Expected global 'Integrity: 67%' (4 STRONG / 6 denominator), "
             f"got:\n{output}"
         )
+
+    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-14", "RULE-14", tier="e2e")
+    def test_read_side_dedup_keeps_latest_entry(self):
+        """RULE-14: Read-side dedup keeps only latest per (feature, proof_id).
+
+        Setup: 3 cache entries for the same (login, PROOF-1) with different
+        hashes and timestamps. The oldest is HOLLOW, middle is WEAK, newest
+        is STRONG. After dedup, only the STRONG entry should survive.
+        This verifies that stale entries from prior test code don't inflate
+        the integrity denominator.
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        ts_old = '2026-04-01T10:00:00+00:00'
+        ts_mid = '2026-04-02T10:00:00+00:00'
+        ts_new = '2026-04-03T10:00:00+00:00'
+
+        # 3 entries for same (login, PROOF-1) with different hashes
+        cache = {
+            'old_hash_aaa': {
+                'assessment': 'HOLLOW', 'criterion': 'assert True',
+                'why': 'proves nothing', 'fix': 'add real assertion',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'CRITICAL', 'cached_at': ts_old,
+            },
+            'mid_hash_bbb': {
+                'assessment': 'WEAK', 'criterion': 'missing negative test',
+                'why': 'only happy path', 'fix': 'add error case',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'HIGH', 'cached_at': ts_mid,
+            },
+            'new_hash_ccc': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'good test', 'fix': 'none',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'LOW', 'cached_at': ts_new,
+            },
+        }
+        write_audit_cache(self.tmp_dir, cache)
+
+        # _read_audit_cache_by_feature should return exactly 1 entry
+        by_feature = _read_audit_cache_by_feature(self.tmp_dir)
+        login_entries = by_feature.get('login', [])
+        assert len(login_entries) == 1, (
+            f"Expected 1 deduped entry for login, got {len(login_entries)}"
+        )
+        assert login_entries[0]['assessment'] == 'STRONG', (
+            f"Expected latest entry (STRONG), got {login_entries[0]['assessment']}"
+        )
+
+        # _read_audit_summary should count 1 entry, not 3
+        summary = _read_audit_summary(self.tmp_dir)
+        assert summary['behavioral_total'] == 1, (
+            f"Expected behavioral_total=1 after dedup, got {summary['behavioral_total']}"
+        )
+        assert summary['strong'] == 1, (
+            f"Expected strong=1, got {summary['strong']}"
+        )
+        assert summary['weak'] == 0, (
+            f"Expected weak=0 (stale entry pruned), got {summary['weak']}"
+        )
+        assert summary['hollow'] == 0, (
+            f"Expected hollow=0 (stale entry pruned), got {summary['hollow']}"
+        )
+
+        # _build_feature_audit should compute integrity from deduped entries
+        audit = _build_feature_audit(login_entries)
+        assert audit['integrity'] == 100, (
+            f"Expected integrity=100% (1 STRONG / 1 total), got {audit['integrity']}%"
+        )
+
+    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-15", "RULE-15", tier="e2e")
+    def test_write_side_pruning_removes_stale_duplicates(self):
+        """RULE-15: write_audit_cache prunes duplicate (feature, proof_id) entries.
+
+        Setup: Write a cache with 2 entries for same (login, PROOF-1) —
+        one HOLLOW (older hash), one STRONG (newer hash). After write,
+        only the STRONG entry should remain on disk. The old hash key
+        should be gone entirely.
+        """
+        _make_project(self.tmp_dir, with_git=False)
+
+        ts_old = '2026-04-01T10:00:00+00:00'
+        ts_new = '2026-04-03T10:00:00+00:00'
+
+        cache = {
+            'stale_hash_111': {
+                'assessment': 'HOLLOW', 'criterion': 'no assertions',
+                'why': 'empty test', 'fix': 'add assertions',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'CRITICAL', 'cached_at': ts_old,
+            },
+            'fresh_hash_222': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'good test', 'fix': 'none',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'LOW', 'cached_at': ts_new,
+            },
+            'other_hash_333': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'good test', 'fix': 'none',
+                'feature': 'login', 'proof_id': 'PROOF-2', 'rule_id': 'RULE-2',
+                'priority': 'LOW', 'cached_at': ts_new,
+            },
+        }
+        write_audit_cache(self.tmp_dir, cache)
+
+        # Read back raw file — should have 2 entries, not 3
+        data = read_audit_cache(self.tmp_dir)
+        assert len(data) == 2, (
+            f"Expected 2 entries after pruning (1 deduped + 1 unique), got {len(data)}"
+        )
+
+        # The stale hash key should be gone
+        assert 'stale_hash_111' not in data, (
+            "Stale hash key should have been pruned"
+        )
+
+        # The fresh hash for PROOF-1 should survive
+        assert 'fresh_hash_222' in data, (
+            "Fresh hash key for PROOF-1 should survive pruning"
+        )
+        assert data['fresh_hash_222']['assessment'] == 'STRONG', (
+            f"Surviving entry should be STRONG, got {data['fresh_hash_222']['assessment']}"
+        )
+
+        # The unrelated PROOF-2 entry should be untouched
+        assert 'other_hash_333' in data, (
+            "Unrelated PROOF-2 entry should survive pruning"
+        )

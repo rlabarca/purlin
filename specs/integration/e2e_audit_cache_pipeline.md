@@ -22,6 +22,8 @@ End-to-end test of the audit → cache → status → dashboard pipeline. Verifi
 - RULE-11: Per-feature integrity penalizes own behavioral rules with NO_PROOF — they count in the denominator but contribute 0 to the numerator
 - RULE-12: Per-feature integrity does NOT penalize required anchor rules — only own rules with NO_PROOF affect the denominator
 - RULE-13: Global integrity (project-wide) includes NO_PROOF penalties from all features combined
+- RULE-14: Read-side dedup keeps only the latest cache entry per (feature, proof_id) — stale entries from prior test code do not inflate the integrity denominator
+- RULE-15: Write-side pruning removes duplicate (feature, proof_id) entries on write, keeping only the entry with the latest cached_at timestamp
 
 ## Proof
 
@@ -38,3 +40,5 @@ End-to-end test of the audit → cache → status → dashboard pipeline. Verifi
 - PROOF-11 (RULE-11): Create feature with 5 behavioral rules; write audit cache for only 3 (2 STRONG, 1 WEAK); run _build_report_data; verify per-feature integrity = 2/(3+2) = 40% where 2 is the NO_PROOF count @e2e
 - PROOF-12 (RULE-12): Create feature requiring an anchor with 3 rules; feature has 2 own rules with 2 STRONG proofs; anchor rules have no proofs under the feature; verify integrity = 2/2 = 100% (anchor rules excluded from NO_PROOF penalty) @e2e
 - PROOF-13 (RULE-13): Create two features: A with 1 NO_PROOF rule, B with 1 NO_PROOF rule; write cache with 2 STRONG for each; run sync_status; verify global integrity = 4/(4+2) = 67% @e2e
+- PROOF-14 (RULE-14): Write cache with 3 entries for same (feature, proof_id) with different hashes and timestamps; call _read_audit_cache_by_feature; verify only 1 entry returned (the latest); call _read_audit_summary; verify behavioral_total==1 (not 3); verify _build_feature_audit computes integrity from deduped count @e2e
+- PROOF-15 (RULE-15): Write cache with 2 entries for same (feature, proof_id) — one HOLLOW (older), one STRONG (newer); call write_audit_cache; read back; verify only 1 entry exists (the STRONG one); verify the HOLLOW entry's hash key is gone @e2e

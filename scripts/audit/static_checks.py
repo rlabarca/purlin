@@ -492,13 +492,30 @@ def read_audit_cache(project_root):
 
 
 def write_audit_cache(project_root, cache):
-    """Write audit cache atomically."""
+    """Write audit cache atomically, pruning stale duplicates.
+
+    When test code changes, the proof hash changes and a new entry is added
+    but the old entry stays. This prunes duplicates by (feature, proof_id),
+    keeping only the entry with the latest cached_at timestamp.
+    """
+    # Prune: keep only latest entry per (feature, proof_id)
+    latest = {}  # (feature, proof_id) -> (hash_key, entry)
+    for hash_key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+        existing = latest.get(dedup_key)
+        if existing is None or entry.get('cached_at', '') > existing[1].get('cached_at', ''):
+            latest[dedup_key] = (hash_key, entry)
+
+    pruned = {hk: ent for hk, ent in latest.values()}
+
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
     tmp_path = cache_path + '.tmp'
     with open(tmp_path, 'w') as f:
-        json.dump(cache, f, indent=2)
+        json.dump(pruned, f, indent=2)
     os.replace(tmp_path, cache_path)
 
 
