@@ -103,11 +103,12 @@ Default config:
 {
   "version": "0.9.0",
   "test_framework": "auto",
-  "spec_dir": "specs"
+  "spec_dir": "specs",
+  "report": true
 }
 ```
 
-Add `"report": true` to enable the HTML dashboard. When enabled, `sync_status` writes `.purlin/report-data.js` on every call, and `purlin:init` generates `purlin-report.html` at the project root. Open it in a browser to see live coverage. See the [Dashboard Guide](dashboard-guide.md) for details.
+The HTML dashboard is enabled by default (`"report": true`). When enabled, `sync_status` writes `.purlin/report-data.js` on every call, and `purlin:init` generates `purlin-report.html` at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
 Read or update config with the `purlin_config` MCP tool, or edit the files directly.
 
@@ -131,6 +132,7 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | What you want | How |
 |---------------|-----|
 | Switch pre-push mode (warn/strict) | Edit `.purlin/config.json`: `"pre_push": "strict"` |
+| Toggle HTML dashboard | `purlin:init --report` |
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |

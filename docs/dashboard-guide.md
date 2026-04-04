@@ -15,28 +15,15 @@ Anchors are visually distinguishable with type pills (anchor/global) and externa
 
 ## Setup
 
-### 1. Enable the report setting
+The dashboard is enabled by default. When you run `purlin:init`, it copies `purlin-report.html` to the project root and sets `"report": true` in config.
 
-Add `"report": true` to `.purlin/config.json`:
-
-```json
-{
-  "version": "0.9.0",
-  "test_framework": "auto",
-  "spec_dir": "specs",
-  "report": true
-}
-```
-
-Or edit via `purlin_config`.
-
-### 2. Run purlin:init
+To toggle the dashboard on or off after init:
 
 ```
-purlin:init
+purlin:init --report
 ```
 
-When the report setting is enabled, `purlin:init` generates `purlin-report.html` at the project root. This file is generated once and never rewritten by `sync_status`.
+Or edit `.purlin/config.json` directly: set `"report": false` to disable.
 
 ### 3. Open in a browser
 
