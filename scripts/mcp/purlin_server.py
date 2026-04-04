@@ -1766,9 +1766,20 @@ def handle_purlin_config(project_root, arguments):
 # MCP JSON-RPC transport
 # ---------------------------------------------------------------------------
 
+def _read_version():
+    """Read version from VERSION file at plugin root."""
+    version_path = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), 'VERSION')
+    try:
+        with open(version_path) as f:
+            return f.read().strip()
+    except (IOError, OSError):
+        return '0.0.0'
+
+PURLIN_VERSION = _read_version()
+
 SERVER_INFO = {
     "name": "purlin",
-    "version": "0.9.0",
+    "version": PURLIN_VERSION,
 }
 
 TOOLS = [
@@ -1930,7 +1941,7 @@ def main():
     project_root = find_project_root()
 
     # Log startup to stderr (stdout is reserved for JSON-RPC)
-    print(f"Purlin MCP server v0.9.0 started (root: {project_root})", file=sys.stderr)
+    print(f"Purlin MCP server v{PURLIN_VERSION} started (root: {project_root})", file=sys.stderr)
 
     mod = sys.modules[__name__]
     src_path = os.path.abspath(__file__)

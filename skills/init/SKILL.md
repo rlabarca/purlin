@@ -36,6 +36,8 @@ specs/
   _anchors/           # anchor specs go here
 ```
 
+Read the Purlin framework version from `${CLAUDE_PLUGIN_ROOT}/VERSION` and write it as the `version` field in config.json. This ensures the config always matches the installed framework version.
+
 Config template fields (from `templates/config.json`):
 
 | Field | Default | Description |
