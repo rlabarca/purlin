@@ -92,6 +92,28 @@ AI agents default to Level 2 because it's fast, deterministic, and easy to mock.
 
 PMs write Level 3 rules for user flows. Security engineers write them for compliance. Architects write them for system guarantees. QA engineers write them for regressions. The pattern is the same: **describe the outcome you need to see, not the function you need to call.**
 
+### Visual proof descriptions
+
+For rules about UI rendering, write proofs that describe **what a person would see**, not DOM selectors or CSS classes. The agent picks the tool (Playwright, headless Chrome, MCP browser, screenshot + vision — whatever is available).
+
+Bad (implementation-coupled):
+```
+- PROOF-4 (RULE-4): Count table rows with class "fr"; verify count is 8; take screenshot
+- PROOF-5 (RULE-5): Click first element matching "tr.fr"; verify element with class "dr" becomes visible
+```
+
+Good (outcome-based):
+```
+- PROOF-4 (RULE-4): Load dashboard with 3 features (3/3 VERIFIED, 2/6 PARTIAL, 0/4 untested).
+  Verify the table shows 3 rows. Verify coverage bars are filled proportionally — 3/3 full,
+  2/6 roughly one-third, 0/4 empty. Verify status badges read "Verified", "Partial", "Untested".
+  Take screenshot @e2e
+- PROOF-5 (RULE-5): Load dashboard with features. Click a feature row. Verify a detail panel
+  expands showing individual rules with descriptions and proof status. Take screenshot @e2e
+```
+
+The key differences: no CSS selectors, no class names, no `querySelector`. The proof says what the user sees — the agent decides how to verify it. This also makes proofs resilient to HTML refactors.
+
 ### Anchors for Level 3 enforcement
 
 Anchors are the strongest mechanism for Level 3 enforcement. When anyone writes an anchor with outcome-based rules, every feature that requires it must prove those rules end-to-end:
