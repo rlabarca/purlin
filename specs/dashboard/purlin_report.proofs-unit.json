@@ -162,6 +162,42 @@
       "test_name": "test_rule_id_padding_with_long_anchor_ids",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_coverage_bar_width_matches_fraction",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_category_headers_with_rolled_up_summaries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_categories_collapsed_by_default",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_category_state_persists_across_reloads",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

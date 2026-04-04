@@ -46,6 +46,7 @@ def make_data(overrides=None):
         "features": [
             {
                 "name": "auth_login",
+                "category": "auth",
                 "type": "feature",
                 "is_global": False,
                 "source_url": None,
@@ -129,6 +130,7 @@ def make_data(overrides=None):
             },
             {
                 "name": "checkout",
+                "category": "commerce",
                 "type": "feature",
                 "is_global": False,
                 "source_url": None,
@@ -172,6 +174,7 @@ def make_data(overrides=None):
             },
             {
                 "name": "security_policy",
+                "category": "_anchors",
                 "type": "anchor",
                 "is_global": True,
                 "source_url": "git@github.com:acme/policies.git",
@@ -276,13 +279,25 @@ def dashboard(tmp_path):
     return tmp_path
 
 
-def load_dashboard(page, dashboard_dir, data=None):
+def load_dashboard(page, dashboard_dir, data=None, expand_categories=True):
     """Write data and navigate to the dashboard."""
     if data is not None:
         write_data(str(dashboard_dir), data)
     url = f"file://{dashboard_dir}/purlin-report.html"
     page.goto(url)
     page.wait_for_load_state("networkidle")
+    if expand_categories and data is not None:
+        # Set category open state in localStorage, then reload so the
+        # page picks it up on init.
+        cats = list({f.get("category", "other") for f in data.get("features", [])})
+        if cats:
+            cat_state = {c: True for c in cats}
+            page.evaluate(
+                "s => localStorage.setItem('purlin-categories', JSON.stringify(s))",
+                cat_state,
+            )
+            page.reload()
+            page.wait_for_load_state("networkidle")
 
 
 # ---------------------------------------------------------------------------
@@ -337,7 +352,7 @@ class TestPurlinReport:
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof3_summary.png"))
         cards = page.query_selector_all(".summary-card")
-        assert len(cards) == 5, f"Expected 5 summary cards, got {len(cards)}"
+        assert len(cards) == 6, f"Expected 6 summary cards (incl. integrity), got {len(cards)}"
         strip_text = page.inner_text(".summary-strip")
         assert "10" in strip_text, "Expected total_features=10 in summary strip"
         assert "5" in strip_text, "Expected ready=5 in summary strip"
@@ -349,9 +364,10 @@ class TestPurlinReport:
         """PROOF-4: Feature table renders one row per feature."""
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-        def make_feature(name, status, proved, total):
+        def make_feature(name, status, proved, total, category="test"):
             return {
                 "name": name,
+                "category": category,
                 "type": "feature",
                 "is_global": False,
                 "source_url": None,
@@ -575,12 +591,12 @@ class TestPurlinReport:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         features = [
             {
-                "name": "alpha", "type": "feature", "is_global": False, "source_url": None,
+                "name": "alpha", "category": "test", "type": "feature", "is_global": False, "source_url": None,
                 "proved": 0, "total": 3, "deferred": 0, "status": "VERIFIED",
                 "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
             {
-                "name": "beta", "type": "feature", "is_global": False, "source_url": None,
+                "name": "beta", "category": "test", "type": "feature", "is_global": False, "source_url": None,
                 "proved": 3, "total": 3, "deferred": 0, "status": "PARTIAL",
                 "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
@@ -722,21 +738,18 @@ class TestPurlinReport:
             f"Expected .dashboard max-width=2400px at wide viewport, got '{max_width}'"
         )
 
-        # Narrow viewport: 1100px — verify summary strip reflows to 3 columns
-        page.set_viewport_size({"width": 1100, "height": 900})
+        # Narrow viewport: 600px — verify summary strip reflows to 3 columns
+        # CSS breakpoint: @media (max-width:700px) { repeat(3,1fr) }
+        page.set_viewport_size({"width": 600, "height": 900})
         page.reload()
         page.wait_for_load_state("networkidle")
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof17_narrow.png"))
         grid_cols = page.evaluate(
             "() => getComputedStyle(document.querySelector('.summary-strip')).gridTemplateColumns"
         )
-        # At 1100px width, the @media rule sets repeat(3,1fr)
-        # getComputedStyle returns the resolved value, e.g. "3 columns" as pixel widths
-        # We verify it is NOT 5 equal columns by checking the column count
         col_count = len(grid_cols.split())
-        # 5 columns would give 5 pixel values; 3 columns gives 3 pixel values
         assert col_count == 3, (
-            f"Expected 3 columns in summary-strip at 1100px viewport, "
+            f"Expected 3 columns in summary-strip at 600px viewport, "
             f"got gridTemplateColumns='{grid_cols}' ({col_count} values)"
         )
 
@@ -758,13 +771,14 @@ def make_fail_feature(name):
     """Return a minimal feature dict with FAIL status."""
     return {
         "name": name,
+        "category": "test",
         "type": "feature",
         "is_global": False,
         "source_url": None,
         "proved": 0,
         "total": 1,
         "deferred": 0,
-        "status": "FAIL",
+        "status": "FAILING",
         "structural_checks": 0,
         "vhash": None,
         "receipt": None,
@@ -777,6 +791,7 @@ def make_integrity_feature(name, integrity):
     """Return a feature with a specific audit integrity value."""
     return {
         "name": name,
+        "category": "test",
         "type": "feature",
         "is_global": False,
         "source_url": None,
@@ -809,7 +824,7 @@ class TestRulePadding:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         data = make_data({
             "features": [{
-                "name": "config_engine", "type": "feature", "is_global": False,
+                "name": "config_engine", "category": "mcp", "type": "feature", "is_global": False,
                 "source_url": None, "proved": 2, "total": 4, "deferred": 0,
                 "status": "PARTIAL", "structural_checks": 2, "vhash": None,
                 "receipt": None,
@@ -1015,10 +1030,10 @@ class TestDashboardVisual:
         load_dashboard(page, dashboard, data=data)
 
         bg = page.evaluate(
-            "() => getComputedStyle(document.querySelector('.sb-fail')).backgroundColor"
+            "() => getComputedStyle(document.querySelector('.sb-failing')).backgroundColor"
         )
         assert rgb_to_hex(bg) == "#ef4444", (
-            f"Expected .sb-fail background #ef4444 (red), got {bg!r}"
+            f"Expected .sb-failing background #ef4444 (red), got {bg!r}"
         )
 
     @pytest.mark.proof("dashboard_visual", "PROOF-9", "RULE-9")
@@ -1031,6 +1046,7 @@ class TestDashboardVisual:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         no_proof_feature = {
             "name": "unproved_feature",
+            "category": "test",
             "type": "feature",
             "is_global": False,
             "source_url": None,
@@ -1138,6 +1154,7 @@ class TestDashboardVisual:
         features = [
             {
                 "name": "low_coverage",
+                "category": "test",
                 "type": "feature",
                 "is_global": False,
                 "source_url": None,
@@ -1153,6 +1170,7 @@ class TestDashboardVisual:
             },
             {
                 "name": "full_coverage",
+                "category": "test",
                 "type": "feature",
                 "is_global": False,
                 "source_url": None,
@@ -1199,4 +1217,210 @@ class TestDashboardVisual:
         # 5/5 = 100%
         assert bar_widths.get('full_coverage', 0) == 100, (
             f"Expected full_coverage bar 100%, got {bar_widths.get('full_coverage')}%"
+        )
+
+
+# ---------------------------------------------------------------------------
+# TestCategorySections — foldable category grouping
+# ---------------------------------------------------------------------------
+
+def make_categorized_data():
+    """Generate PURLIN_DATA with features across multiple categories."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    def feat(name, category, status, proved, total, vhash=None, receipt=None):
+        return {
+            "name": name,
+            "category": category,
+            "type": "anchor" if category == "_anchors" else "feature",
+            "is_global": False,
+            "source_url": None,
+            "proved": proved,
+            "total": total,
+            "deferred": 0,
+            "status": status,
+            "structural_checks": 0,
+            "vhash": vhash,
+            "receipt": receipt,
+            "rules": [],
+            "audit": None,
+        }
+
+    features = [
+        feat("skill_build", "skills", "VERIFIED", 7, 7,
+             vhash="abc1", receipt={"commit": "x", "timestamp": now, "stale": False}),
+        feat("skill_audit", "skills", "PASSING", 3, 3, vhash="abc2"),
+        feat("config_engine", "mcp", "PARTIAL", 11, 15),
+        feat("drift", "mcp", "VERIFIED", 23, 23,
+             vhash="abc3", receipt={"commit": "y", "timestamp": now, "stale": False}),
+        feat("dashboard_visual", "_anchors", "PASSING", 11, 11, vhash="abc4"),
+    ]
+    return {
+        "timestamp": now,
+        "project": "test-project",
+        "version": "0.9.0",
+        "docs_url": None,
+        "summary": {
+            "total_features": 4,
+            "verified": 2,
+            "passing": 1,
+            "partial": 1,
+            "failing": 0,
+            "no_proofs": 0,
+        },
+        "features": features,
+        "anchors_summary": {"total": 1, "with_source": 0, "global": 0},
+        "audit_summary": None,
+        "drift": None,
+    }
+
+
+class TestCategorySections:
+
+    @pytest.mark.proof("purlin_report", "PROOF-19", "RULE-19")
+    def test_category_headers_with_rolled_up_summaries(self, page, dashboard):
+        """PROOF-19: Category headers show correct rolled-up counts and breakdowns."""
+        data = make_categorized_data()
+        load_dashboard(page, dashboard, data=data, expand_categories=False)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_collapsed.png"))
+
+        # Verify 3 category header rows exist
+        cat_headers = page.query_selector_all(".cat-header")
+        assert len(cat_headers) == 3, (
+            f"Expected 3 category headers, got {len(cat_headers)}"
+        )
+
+        # Extract category data
+        cat_data = page.evaluate("""() => {
+            const headers = document.querySelectorAll('.cat-header');
+            return Array.from(headers).map(h => ({
+                cat: h.getAttribute('data-cat'),
+                label: h.querySelector('.cat-label')?.textContent,
+                count: h.querySelector('.cat-count')?.textContent,
+                cov: h.querySelector('.cat-cov')?.textContent?.trim(),
+                summary: h.querySelector('.cat-summary')?.textContent?.trim(),
+            }));
+        }""")
+
+        # Verify skills category: 2 features, 10/10 coverage
+        skills = next(c for c in cat_data if c["cat"] == "skills")
+        assert skills["count"] == "(2)", f"Skills count: {skills['count']}"
+        assert "10/10" in skills["cov"], f"Skills coverage: {skills['cov']}"
+        assert "verified" in skills["summary"].lower()
+        assert "passing" in skills["summary"].lower()
+
+        # Verify mcp category: 2 features, 34/38 coverage
+        mcp = next(c for c in cat_data if c["cat"] == "mcp")
+        assert mcp["count"] == "(2)", f"MCP count: {mcp['count']}"
+        assert "34/38" in mcp["cov"], f"MCP coverage: {mcp['cov']}"
+        assert "partial" in mcp["summary"].lower()
+
+        # Verify _anchors category: 1 feature, 11/11
+        anchors = next(c for c in cat_data if c["cat"] == "_anchors")
+        assert anchors["count"] == "(1)", f"Anchors count: {anchors['count']}"
+        assert "11/11" in anchors["cov"], f"Anchors coverage: {anchors['cov']}"
+        assert anchors["label"] == "anchors", (
+            f"Expected _anchors displayed as 'anchors', got '{anchors['label']}'"
+        )
+
+        # Expand all categories (re-query after each click since render rebuilds DOM)
+        for i in range(3):
+            headers = page.query_selector_all(".cat-header:not(.expanded)")
+            if not headers:
+                break
+            headers[0].click()
+            page.wait_for_timeout(200)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_expanded.png"))
+
+    @pytest.mark.proof("purlin_report", "PROOF-20", "RULE-20")
+    def test_categories_collapsed_by_default(self, page, dashboard):
+        """PROOF-20: Categories start collapsed — no feature rows visible initially."""
+        data = make_categorized_data()
+        load_dashboard(page, dashboard, data=data, expand_categories=False)
+
+        # No feature rows should be visible
+        fr_count = page.evaluate("() => document.querySelectorAll('tr.fr').length")
+        assert fr_count == 0, (
+            f"Expected 0 feature rows when categories collapsed, got {fr_count}"
+        )
+
+        # Category headers should exist
+        cat_count = page.evaluate("() => document.querySelectorAll('.cat-header').length")
+        assert cat_count == 3, f"Expected 3 category headers, got {cat_count}"
+
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_collapsed.png"))
+
+        # Click the first category header to expand it
+        page.click(".cat-header")
+        page.wait_for_timeout(300)
+
+        # Now some feature rows should be visible
+        fr_after = page.evaluate("() => document.querySelectorAll('tr.fr').length")
+        assert fr_after > 0, "Expected feature rows after expanding a category"
+
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_one_expanded.png"))
+
+    @pytest.mark.proof("purlin_report", "PROOF-21", "RULE-21")
+    def test_category_state_persists_across_reloads(self, page, dashboard):
+        """PROOF-21: Category open/closed state persists to localStorage and survives reload."""
+        data = make_categorized_data()
+        load_dashboard(page, dashboard, data=data, expand_categories=False)
+
+        # All collapsed initially
+        fr_before = page.evaluate("() => document.querySelectorAll('tr.fr').length")
+        assert fr_before == 0, "Expected all categories collapsed initially"
+
+        # Click the skills category to expand it
+        page.click(".cat-header[data-cat='skills']")
+        page.wait_for_timeout(300)
+
+        # Verify skills features are visible
+        skills_rows = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
+        """)
+        assert skills_rows == 2, f"Expected 2 skills features after expand, got {skills_rows}"
+
+        # Verify localStorage was updated
+        stored = page.evaluate(
+            "() => JSON.parse(localStorage.getItem('purlin-categories') || '{}')"
+        )
+        assert stored.get("skills") is True, (
+            f"Expected skills=true in localStorage, got {stored}"
+        )
+
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof21_before_reload.png"))
+
+        # Reload the page
+        page.reload()
+        page.wait_for_load_state("networkidle")
+
+        # Skills should still be expanded after reload
+        skills_after = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
+        """)
+        assert skills_after == 2, (
+            f"Expected skills still expanded after reload, got {skills_after} rows"
+        )
+
+        # Other categories should still be collapsed
+        mcp_rows = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='config_engine'], tr.fr[data-name='drift']").length
+        """)
+        assert mcp_rows == 0, (
+            f"Expected mcp category still collapsed after reload, got {mcp_rows} rows"
+        )
+
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof21_after_reload.png"))
+
+        # Collapse skills, reload, verify collapsed
+        page.click(".cat-header[data-cat='skills']")
+        page.wait_for_timeout(300)
+        page.reload()
+        page.wait_for_load_state("networkidle")
+
+        skills_final = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
+        """)
+        assert skills_final == 0, (
+            f"Expected skills collapsed after toggle+reload, got {skills_final} rows"
         )

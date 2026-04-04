@@ -670,3 +670,33 @@ class TestReportDataStructure:
         )
         assert login['proved'] == 2, f"Expected proved=2, got {login['proved']}"
         assert login['total'] == 3, f"Expected total=3, got {login['total']}"
+
+    @pytest.mark.proof("report_data", "PROOF-19", "RULE-19")
+    def test_feature_category_derived_from_spec_directory(self):
+        """RULE-19: Every feature has a category field from the spec's parent dir."""
+        # Create specs in two different categories (subdir = category)
+        _write_spec(self.tmp, 'login',
+                    '# Feature: login\n\n'
+                    '## What it does\nHandles login.\n\n'
+                    '## Rules\n- RULE-1: Validate\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n',
+                    subdir='auth')
+        _write_spec(self.tmp, 'cart',
+                    '# Feature: cart\n\n'
+                    '## What it does\nShopping cart.\n\n'
+                    '## Rules\n- RULE-1: Add items\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n',
+                    subdir='commerce')
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        login = next(f for f in data['features'] if f['name'] == 'login')
+        cart = next(f for f in data['features'] if f['name'] == 'cart')
+        assert login['category'] == 'auth', (
+            f"Expected login category='auth', got '{login['category']}'"
+        )
+        assert cart['category'] == 'commerce', (
+            f"Expected cart category='commerce', got '{cart['category']}'"
+        )

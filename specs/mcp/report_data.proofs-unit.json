@@ -162,6 +162,15 @@
       "test_name": "test_partial_coverage_gets_partial_status_not_passing",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_feature_category_derived_from_spec_directory",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
