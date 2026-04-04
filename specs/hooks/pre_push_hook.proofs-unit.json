@@ -69,7 +69,7 @@
       "id": "PROOF-9",
       "rule": "RULE-8",
       "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "strict mode blocks push when features are not READY",
+      "test_name": "strict mode blocks push when features are not PASSING",
       "status": "pass",
       "tier": "unit"
     },
@@ -78,7 +78,7 @@
       "id": "PROOF-10",
       "rule": "RULE-8",
       "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "strict mode allows push when all features READY",
+      "test_name": "strict mode allows push when all features PASSING",
       "status": "pass",
       "tier": "unit"
     },

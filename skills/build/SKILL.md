@@ -85,7 +85,7 @@ After writing tests, ALWAYS spawn a purlin-auditor teammate to review proofs. Do
 
 ## Step 4 — Run Tests and Iterate
 
-The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows READY for the target feature.
+The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all behavioral rules proved). PARTIAL means more tests are still needed.
 
 ```
 purlin:unit-test <name>   # runs tests, emits proofs, calls sync_status, reports coverage

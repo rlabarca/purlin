@@ -144,6 +144,24 @@
       "test_name": "test_per_feature_audit_populated_from_cache",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_proved_count_excludes_structural_checks",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_partial_coverage_gets_partial_status_not_passing",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

@@ -2,7 +2,7 @@
 # Purlin pre-push hook — Layer 1 enforcement.
 #
 # Modes (set in .purlin/config.json → "pre_push"):
-#   "warn"   — block on FAIL, allow PASSING+PARTIAL (default)
+#   "warn"   — block on FAILING, allow VERIFIED+PARTIAL (default)
 #   "strict" — block on anything not VERIFIED (requires verification receipt)
 #   "off"    — disable hook
 set -euo pipefail
@@ -87,19 +87,19 @@ while IFS= read -r line; do
   if [[ "$line" =~ ": VERIFIED" ]]; then
     PASSES="${PASSES}  ${line%%:*}\n"
   fi
-  if [[ "$line" =~ ": PASSING" ]]; then
+  if [[ "$line" =~ ": PARTIAL" ]]; then
     PASSES="${PASSES}  ${line%%:*}\n"
-    # PASSING = all proofs pass but no receipt — blocked in strict mode
+    # PARTIAL = some proofs pass but incomplete coverage — blocked in strict mode
     NON_READY="${NON_READY}  ${line} (needs purlin:verify)\n"
   fi
-  if [[ "$line" =~ "rules proved" ]] && [[ ! "$line" =~ VERIFIED ]] && [[ ! "$line" =~ PASSING ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
+  if [[ "$line" =~ "rules proved" ]] && [[ ! "$line" =~ VERIFIED ]] && [[ ! "$line" =~ PARTIAL ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
     NON_READY="${NON_READY}  ${line}\n"
   fi
 done <<< "$STATUS"
 
 # --- Report and decide ---
 if [[ -n "$PASSES" ]]; then
-  echo "purlin: PASSING features:"
+  echo "purlin: passing features:"
   echo -e "$PASSES"
 fi
 
@@ -132,7 +132,7 @@ if [[ "$MODE" == "strict" ]] && [[ -n "$NON_READY" ]]; then
   echo ""
   echo "All features must be VERIFIED before push in strict mode."
   echo "  → Run: test <feature> for PARTIAL features"
-  echo "  → Run: purlin:verify for PASSING features"
+  echo "  → Run: purlin:verify when all rules pass"
   echo ""
   echo "To switch to warn mode: set \"pre_push\": \"warn\" in .purlin/config.json"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

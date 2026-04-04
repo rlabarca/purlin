@@ -46,7 +46,7 @@ Otherwise, the tool returns structured JSON containing:
 - `commits` — list of one-line commit summaries
 - `files` — each changed file with `path`, `category` (CHANGED_SPECS, CHANGED_BEHAVIOR, TESTS_ADDED, NEW_BEHAVIOR, NO_IMPACT), `spec` (matched spec name or null), and `diff_stat`
 - `spec_changes` — for each changed spec: `new_rules` and `removed_rules`
-- `proof_status` — per-feature: `proved`, `total`, `status` (VERIFIED/FAILING/PARTIAL), `failing_rules`
+- `proof_status` — per-feature: `proved`, `total`, `status` (VERIFIED/PASSING/PARTIAL/FAILING/UNTESTED), `failing_rules`
 - `drift_flags` — precomputed drift indicators: features with structural-only coverage that have changed files. Each entry has `spec`, `reason`, and `files`.
 - `broken_scopes` — specs whose `> Scope:` references files or directories that no longer exist on disk. Each entry has `spec`, `missing_paths`, and `existing_paths`.
 
@@ -194,7 +194,7 @@ List every item that applies, in this order:
 List every item that applies, in this order:
 
 1. **Failing tests** — features with `status: "FAILING"` in `proof_status` → `→ Run: test <name>`
-2. **Unproved rules** — features with `status: "PARTIAL"` → `→ Run: test <name>`
+2. **Unproved rules** — features with `status: "PARTIAL"` or `"UNTESTED"` → `→ Run: test <name>` (PARTIAL means more tests needed to reach PASSING)
 3. **New unspecced code** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
 
 ### QA action items (ordered)
@@ -202,8 +202,8 @@ List every item that applies, in this order:
 List every item that applies, in this order:
 
 1. **Stale manual proofs** — features with stale manual stamps → `→ Run: purlin:verify --manual <feature> <PROOF-N>`
-2. **Features ready for verification** — features with `status: "VERIFIED"` → `→ Run: purlin:verify`
-3. **Coverage gaps** — features with `status: "PARTIAL"` → `→ Run: test <name>`
+2. **Features ready for verification** — features with `status: "PASSING"` (all rules proved, no receipt yet) → `→ Run: purlin:verify`
+3. **Coverage gaps** — features with `status: "PARTIAL"` or `"UNTESTED"` → `→ Run: test <name>`
 
 ### Consistency check
 

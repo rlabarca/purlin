@@ -53,11 +53,12 @@ Call `sync_status` after tests complete. Display the full result. **This is not 
 
 ```
 Test results:
-  auth_login: 3/3 rules proved
-  user_profile: 1/2 rules proved
+  auth_login: PASSING (3/3 rules proved)
+  user_profile: PARTIAL (1/2 rules proved)
     RULE-2: NO PROOF → write a test with @pytest.mark.proof("user_profile", "PROOF-2", "RULE-2")
-  webhook_delivery: RULE-1 FAIL
-    → Fix: test_webhook_basic is failing
+    → PARTIAL means more tests needed to reach PASSING.
+  webhook_delivery: FAILING (2/3 rules proved)
+    RULE-1: FAIL → Fix: test_webhook_basic is failing
 ```
 
 ## Step 4 — Commit proof files (mandatory)

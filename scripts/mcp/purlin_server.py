@@ -171,8 +171,14 @@ def _scan_specs(project_root):
         visual_ref = visual_ref_match.group(1).strip() if visual_ref_match else None
         visual_hash = visual_hash_match.group(1).strip() if visual_hash_match else None
 
+        # Derive category from the spec's parent directory under specs/
+        # e.g. specs/skills/skill_anchor.md -> "skills", specs/_anchors/foo.md -> "_anchors"
+        _parts = rel_path.split(os.sep)
+        category = _parts[1] if len(_parts) >= 3 else ''
+
         features[feature_name] = {
             'path': rel_path,
+            'category': category,
             'rules': rules,
             'deferred_rules': deferred_rules,
             'assumed_rules': assumed_rules,
@@ -445,10 +451,10 @@ def _build_summary_table(summary_rows, audit_summary=None):
     if not summary_rows:
         return []
 
-    # Sort: FAIL first, then PARTIAL, then PASSING, then VERIFIED, then —
+    # Sort: FAILING first, then PARTIAL, then PASSING, then VERIFIED, then UNTESTED
     def _sort_key(row):
         _name, proved, total, status = row
-        priority = {"FAIL": 0, "PARTIAL": 1, "PASSING": 2, "VERIFIED": 3}.get(status, 4)
+        priority = {"FAILING": 0, "PARTIAL": 1, "PASSING": 2, "VERIFIED": 3, "UNTESTED": 4}.get(status, 5)
         ratio = proved / total if total else 0
         return (priority, ratio, _name)
 
@@ -469,12 +475,12 @@ def _build_summary_table(summary_rows, audit_summary=None):
             symbol = "VERIFIED"
         elif status == "PASSING":
             symbol = "PASSING"
-        elif status == "FAIL":
-            symbol = "FAIL"
+        elif status == "FAILING":
+            symbol = "FAILING"
         elif status == "PARTIAL":
             symbol = "PARTIAL"
         else:
-            symbol = "\u2014"
+            symbol = "UNTESTED"
         lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>7} \u2502")
 
     lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518")
@@ -592,18 +598,29 @@ def sync_status(project_root, role=None):
             and key not in structural_rules
             and not proof_by_rule.get(key)
         )
+        proved = sum(1 for key, _, _ in active_entries
+                     if proof_by_rule.get(key, {}).get('status') == 'pass')
         behavioral_proved = sum(1 for key, _, _ in active_entries
                                 if key not in structural_rules
                                 and proof_by_rule.get(key, {}).get('status') == 'pass')
+        behavioral_total = sum(1 for key, _, _ in active_entries
+                               if key not in structural_rules)
         has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
-                       for key, _, _ in active_entries
-                       if key not in structural_rules)
+                       for key, _, _ in active_entries)
 
-        # READY requires a current (non-stale) receipt
-        all_passing = (behavioral_proved == active_total and active_total > 0)
+        # all_proved_passing gates vhash (ALL proofs including structural must pass)
+        all_proved_passing = (
+            sum(1 for key, _, _ in active_entries
+                if proof_by_rule.get(key, {}).get('status') == 'pass') == active_total
+            and active_total > 0
+        )
+        # full_behavioral_coverage gates PASSING/VERIFIED (all behavioral rules proved)
+        full_behavioral_coverage = (
+            behavioral_total > 0 and behavioral_proved == behavioral_total
+        )
         receipt = _read_receipt(project_root, name)
         has_current_receipt = False
-        if all_passing and receipt:
+        if all_proved_passing and receipt:
             cli_rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
             cli_active = [(k, l, s) for k, l, s, is_def in cli_rule_entries if not is_def]
             cli_all_proofs_list = _collect_relevant_proofs(name, cli_rule_entries, all_proofs)
@@ -613,17 +630,20 @@ def sync_status(project_root, role=None):
             has_current_receipt = (receipt.get('vhash') == cli_vhash)
 
         if has_fail:
-            status = "FAIL"
-        elif all_passing and has_current_receipt:
+            status = "FAILING"
+        elif full_behavioral_coverage and has_current_receipt:
             status = "VERIFIED"
-        elif all_passing:
+        elif full_behavioral_coverage:
             status = "PASSING"
+        elif behavioral_total == 0 and all_proved_passing:
+            # Structural-only feature with all checks passing
+            status = "VERIFIED" if has_current_receipt else "PASSING"
         elif behavioral_proved == 0:
-            status = "\u2014"
+            status = "UNTESTED"
         else:
             status = "PARTIAL"
 
-        summary_rows.append((name, behavioral_proved, active_total, status))
+        summary_rows.append((name, proved, active_total, status))
 
     # Process anchors
     for name in sorted(anchors.keys()):
@@ -643,6 +663,11 @@ def sync_status(project_root, role=None):
             deferred = info.get('deferred_rules', set())
             active_rules = set(info['rules'].keys()) - deferred
             active_total = len(active_rules)
+
+            # Classify anchor rules as structural vs behavioral
+            anchor_active_entries = [(r, 'own', name) for r in sorted(active_rules)]
+            anchor_structural = _classify_structural_rules(anchor_active_entries, info, features)
+
             passed_rules = set()
             has_fail = False
             for p in anchor_proofs:
@@ -654,24 +679,34 @@ def sync_status(project_root, role=None):
                         has_fail = True
             proved = len(passed_rules)
 
-            # Anchors: READY requires current receipt too
-            a_all_passing = (proved >= active_total and active_total > 0)
+            # Behavioral coverage for PASSING/VERIFIED
+            behavioral_rules = active_rules - anchor_structural
+            a_behavioral_total = len(behavioral_rules)
+            a_behavioral_proved = len(passed_rules & behavioral_rules)
+            a_full_behavioral_coverage = (
+                a_behavioral_total > 0 and a_behavioral_proved == a_behavioral_total
+            )
+
+            # all_proved_passing gates vhash (ALL proofs including structural)
+            a_all_proved_passing = (proved >= active_total and active_total > 0)
             a_receipt = _read_receipt(project_root, name)
             a_has_receipt = False
-            if a_all_passing and a_receipt:
+            if a_all_proved_passing and a_receipt:
                 a_vhash = _compute_vhash(
                     {r: True for r in active_rules}, anchor_proofs
                 )
                 a_has_receipt = (a_receipt.get('vhash') == a_vhash)
 
             if has_fail:
-                a_status = "FAIL"
-            elif a_all_passing and a_has_receipt:
+                a_status = "FAILING"
+            elif a_full_behavioral_coverage and a_has_receipt:
                 a_status = "VERIFIED"
-            elif a_all_passing:
+            elif a_full_behavioral_coverage:
                 a_status = "PASSING"
-            elif proved == 0:
-                a_status = "\u2014"
+            elif a_behavioral_total == 0 and a_all_proved_passing:
+                a_status = "VERIFIED" if a_has_receipt else "PASSING"
+            elif a_behavioral_proved == 0:
+                a_status = "UNTESTED"
             else:
                 a_status = "PARTIAL"
 
@@ -832,12 +867,17 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
     # Classify each active rule as structural or behavioral
     structural_rules = _classify_structural_rules(active_entries, info, all_features)
+    behavioral_total = sum(1 for key, _, _ in active_entries
+                          if key not in structural_rules)
     behavioral_proved = sum(1 for key, _, _ in active_entries
                            if key not in structural_rules
                            and proof_by_rule.get(key, {}).get('status') == 'pass')
     structural_passing = sum(1 for key, _, _ in active_entries
                             if key in structural_rules
                             and proof_by_rule.get(key, {}).get('status') == 'pass')
+    full_behavioral_coverage = (
+        behavioral_total > 0 and behavioral_proved == behavioral_total
+    )
 
     # Count assumed rules (own only)
     assumed_count = len(info.get('assumed_rules', set()))
@@ -875,12 +915,23 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Header — all active rules proved
-    if proved == active_total and not warnings:
+    # Structural-only features with all proofs passing also earn PASSING/VERIFIED
+    all_proved_passing_report = (proved == active_total and active_total > 0)
+    structural_only_passing = (
+        behavioral_total == 0 and all_proved_passing_report
+    )
+
+    # Header — all behavioral rules proved (or structural-only with all passing)
+    if (full_behavioral_coverage or structural_only_passing) and not warnings:
         all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         receipt = _read_receipt(project_root, name)
-        has_current_receipt = (receipt and receipt.get('vhash') == vhash)
+        # VERIFIED requires vhash match (which needs ALL proofs including structural)
+        has_current_receipt = (
+            proved == active_total
+            and receipt is not None
+            and receipt.get('vhash') == vhash
+        )
 
         if has_current_receipt:
             header_status = "VERIFIED"
@@ -1202,7 +1253,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if pid:
                 audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
-    summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
+    summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'untested': 0}
     anchors_total = 0
     anchors_with_source = 0
     anchors_global = 0
@@ -1230,6 +1281,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         active_total = len(active_entries)
 
         structural_rules = _classify_structural_rules(active_entries, info, features)
+        behavioral_total = sum(
+            1 for key, _, _ in active_entries
+            if key not in structural_rules
+        )
         behavioral_proved = sum(
             1 for key, _, _ in active_entries
             if key not in structural_rules
@@ -1242,19 +1297,24 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         )
         has_fail = any(
             proof_by_rule.get(key, {}).get('status') == 'fail'
-            for key, _, _ in active_entries if key not in structural_rules
+            for key, _, _ in active_entries
         )
 
-        # Compute vhash when all proofs pass (structural + behavioral)
+        # Compute vhash when ALL proofs pass (structural + behavioral)
         all_proved = sum(
             1 for key, _, _ in active_entries
             if proof_by_rule.get(key, {}).get('status') == 'pass'
         )
         vhash = None
-        all_passing = (all_proved == active_total and active_total > 0)
-        if all_passing:
+        all_proved_passing = (all_proved == active_total and active_total > 0)
+        if all_proved_passing:
             all_rules_dict = {key: True for key, _, _ in active_entries}
             vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
+
+        # Full behavioral coverage for PASSING/VERIFIED
+        full_behavioral_coverage = (
+            behavioral_total > 0 and behavioral_proved == behavioral_total
+        )
 
         # Read receipt
         receipt_data = None
@@ -1266,20 +1326,27 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'stale': receipt.get('vhash') != vhash if vhash else True,
             }
 
-        # Determine status — READY requires a current (non-stale) receipt
+        # Determine status
         has_current_receipt = (receipt_data is not None and not receipt_data['stale'])
+        structural_only_passing = (
+            behavioral_total == 0 and all_proved_passing and active_total > 0
+        )
         if active_total == 0:
-            status = 'no_proofs'
+            status = 'UNTESTED'
         elif has_fail:
-            status = 'FAIL'
-        elif all_passing and has_current_receipt:
+            status = 'FAILING'
+        elif full_behavioral_coverage and has_current_receipt:
             status = 'VERIFIED'
-        elif all_passing:
+        elif full_behavioral_coverage:
+            status = 'PASSING'
+        elif structural_only_passing and has_current_receipt:
+            status = 'VERIFIED'
+        elif structural_only_passing:
             status = 'PASSING'
         elif behavioral_proved > 0:
             status = 'PARTIAL'
         else:
-            status = 'no_proofs'
+            status = 'UNTESTED'
 
         # Update summary for non-anchor features
         if not is_anchor:
@@ -1290,10 +1357,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 summary['passing'] += 1
             elif status == 'PARTIAL':
                 summary['partial'] += 1
-            elif status == 'FAIL':
+            elif status == 'FAILING':
                 summary['failing'] += 1
             else:
-                summary['no_proofs'] += 1
+                summary['untested'] += 1
 
         # Build per-rule list
         rules_list = []
@@ -1359,6 +1426,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
         feature_list.append({
             'name': name,
+            'category': info.get('category', ''),
             'type': 'anchor' if is_anchor else 'feature',
             'is_global': info.get('is_global', False),
             'source_url': info.get('source_url'),
@@ -1704,6 +1772,8 @@ def drift(project_root, since=None, role=None):
         failing = [key for key, _, _ in active_entries
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
         structural_rules = _classify_structural_rules(active_entries, info, features)
+        behavioral_total = sum(1 for key, _, _ in active_entries
+                               if key not in structural_rules)
         behavioral_proved = sum(1 for key, _, _ in active_entries
                                if key not in structural_rules
                                and proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -1711,6 +1781,9 @@ def drift(project_root, since=None, role=None):
                                if key in structural_rules
                                and proof_by_rule.get(key, {}).get('status') == 'pass')
         all_pass = (proved == active_total)
+        full_behavioral_coverage = (
+            behavioral_total > 0 and behavioral_proved == behavioral_total
+        )
         d_receipt = _read_receipt(project_root, name)
         d_has_receipt = False
         if all_pass and d_receipt:
@@ -1719,7 +1792,23 @@ def drift(project_root, since=None, role=None):
                 _collect_relevant_proofs(name, rule_entries, all_proofs),
             )
             d_has_receipt = (d_receipt.get('vhash') == d_vhash)
-        status = 'VERIFIED' if all_pass and d_has_receipt else 'PASSING' if all_pass else 'FAILING' if failing else 'PARTIAL'
+        structural_only_passing = (
+            behavioral_total == 0 and all_pass and active_total > 0
+        )
+        if failing:
+            status = 'FAILING'
+        elif full_behavioral_coverage and d_has_receipt:
+            status = 'VERIFIED'
+        elif full_behavioral_coverage:
+            status = 'PASSING'
+        elif structural_only_passing and d_has_receipt:
+            status = 'VERIFIED'
+        elif structural_only_passing:
+            status = 'PASSING'
+        elif behavioral_proved == 0:
+            status = 'UNTESTED'
+        else:
+            status = 'PARTIAL'
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,

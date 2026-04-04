@@ -173,13 +173,13 @@ Next steps:
 Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
 
 The hook has two modes, set in `.purlin/config.json` under `"pre_push"`:
-- **`"warn"`** (default) — blocks on FAILING proofs, warns on partial coverage
+- **`"warn"`** (default) — blocks on FAILING proofs, warns on PARTIAL and UNTESTED coverage
 - **`"strict"`** — blocks on anything not VERIFIED (requires verification receipt)
 
 Ask the user which mode they want:
 ```
 Pre-push hook mode:
-  [warn]   Block on FAIL, allow PASSING and PARTIAL (default)
+  [warn]   Block on FAILING, allow PASSING and PARTIAL (default)
   [strict] Block on anything not VERIFIED (requires verification receipt)
 ```
 

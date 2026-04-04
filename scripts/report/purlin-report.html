@@ -144,6 +144,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
 .sb-fail{background:var(--red);color:#fff}
 .sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
+.sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
 
 /* Integrity */
 .int{font-family:var(--font-mono);font-size:12px}
@@ -153,6 +154,23 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .ver{font-size:12px;color:var(--text-secondary)}
 .ver-stale{color:var(--amber)}
 .vhash{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:6px}
+
+/* ===== CATEGORY SECTIONS ===== */
+.cat-header{cursor:pointer;transition:background .12s;background:var(--bg-card-alt);border-bottom:1px solid var(--border)}
+.cat-header:hover{background:var(--bg-hover)}
+.cat-header td{padding:10px 16px;font-size:13px;font-weight:600}
+.cat-name{display:flex;align-items:center;gap:6px}
+.cat-chv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--text-dim);font-size:9px;transition:transform .15s;flex-shrink:0;transform-origin:center center}
+.cat-header.expanded .cat-chv{transform:rotate(90deg)}
+.cat-label{text-transform:capitalize;color:var(--text-primary)}
+.cat-count{font-size:11px;font-weight:400;color:var(--text-dim);margin-left:4px}
+.cat-summary{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-secondary)}
+.cat-stat{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.cat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.cat-dot-v{background:var(--green)}.cat-dot-pa{background:var(--green);opacity:.6}.cat-dot-pt{background:var(--amber)}.cat-dot-f{background:var(--red)}.cat-dot-u{background:var(--gray-badge);opacity:.5}
+.cat-cov{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.cat-cov-bar{width:48px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
+.cat-cov-fill{height:100%;border-radius:2px}
 
 /* ===== EXPANDED DETAIL ===== */
 .dr>td{padding:0!important;border-bottom:1px solid var(--border)!important}
@@ -275,7 +293,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'VERIFIED') return 'cov-verified';
     if (status === 'PASSING') return 'cov-verified';
     if (status === 'PARTIAL') return 'cov-partial';
-    if (status === 'FAIL') return 'cov-fail';
+    if (status === 'FAILING') return 'cov-fail';
     return 'cov-none';
   }
 
@@ -283,7 +301,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'VERIFIED') return 'sb sb-verified';
     if (status === 'PASSING') return 'sb sb-passing';
     if (status === 'PARTIAL') return 'sb sb-partial';
-    if (status === 'FAIL') return 'sb sb-fail';
+    if (status === 'FAILING') return 'sb sb-failing';
     return 'sb sb-none';
   }
 
@@ -291,7 +309,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'VERIFIED') return 'Verified';
     if (status === 'PASSING') return 'Passing';
     if (status === 'PARTIAL') return 'Partial';
-    if (status === 'FAIL') return 'Fail';
+    if (status === 'FAILING') return 'Failing';
+    if (status === 'UNTESTED') return 'Untested';
     return 'Untested';
   }
 
@@ -365,7 +384,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   var sortCol = 'status';
   var sortAsc = true;
 
-  function statusOrder(s) { return {FAIL:0, PARTIAL:1, PASSING:2, VERIFIED:3, no_proofs:4}[s] || 5; }
+  function statusOrder(s) { return {FAILING:0, PARTIAL:1, PASSING:2, VERIFIED:3, UNTESTED:4}[s] || 5; }
 
   function sortFeatures(features) {
     var arr = features.slice();
@@ -393,9 +412,42 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   }
 
   /* ===== RENDER ===== */
-  /* Persist expanded rows across reloads */
+  /* Persist expanded rows and category state across reloads */
   var expandedSet = {};
   try { expandedSet = JSON.parse(localStorage.getItem('purlin-expanded') || '{}'); } catch(e) {}
+  var categorySet = {};
+  try { categorySet = JSON.parse(localStorage.getItem('purlin-categories') || '{}'); } catch(e) {}
+
+  function groupByCategory(features) {
+    var cats = {};
+    var order = [];
+    for (var i = 0; i < features.length; i++) {
+      var cat = features[i].category || 'other';
+      if (!cats[cat]) { cats[cat] = []; order.push(cat); }
+      cats[cat].push(features[i]);
+    }
+    return { cats: cats, order: order };
+  }
+
+  function catSummary(features) {
+    var s = { total: features.length, verified: 0, passing: 0, partial: 0, failing: 0, untested: 0, proved: 0, rules: 0 };
+    for (var i = 0; i < features.length; i++) {
+      var f = features[i];
+      s.proved += f.proved;
+      s.rules += f.total;
+      if (f.status === 'VERIFIED') s.verified++;
+      else if (f.status === 'PASSING') s.passing++;
+      else if (f.status === 'PARTIAL') s.partial++;
+      else if (f.status === 'FAILING') s.failing++;
+      else s.untested++;
+    }
+    return s;
+  }
+
+  function catDisplayName(cat) {
+    if (cat === '_anchors') return 'anchors';
+    return cat;
+  }
 
   function render() {
     var st = staleness(D.timestamp);
@@ -438,7 +490,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '<div class="summary-card sc-passing"><div class="summary-card-number">' + (S.passing || 0) + '</div><div class="summary-card-label">Passing</div></div>';
     h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
-    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' untested</div>';
+    if (S.untested) h += '<div class="summary-card-sub">' + S.untested + ' untested</div>';
     h += '</div>';
     /* Integrity card */
     if (A && A.integrity != null) {
@@ -471,52 +523,84 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     }
     h += '</tr></thead><tbody>';
 
-    for (var i = 0; i < features.length; i++) {
-      var f = features[i];
-      var isExpanded = expandedSet[f.name];
-      var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
-      var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
+    /* Group features by category */
+    var grouped = groupByCategory(features);
 
-      /* Feature row */
-      h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+    for (var gi = 0; gi < grouped.order.length; gi++) {
+      var cat = grouped.order[gi];
+      var catFeatures = grouped.cats[cat];
+      var cs = catSummary(catFeatures);
+      var catOpen = categorySet[cat] === true; /* collapsed by default */
+      var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
+      var catCovCls = cs.failing > 0 ? 'cov-fail' : cs.partial > 0 ? 'cov-partial' : 'cov-verified';
 
-      /* Name + type */
-      h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
-      if (f.type === 'anchor') {
-        if (f.is_global) {
-          h += '<span class="tp tp-global">global</span>';
-        } else {
-          h += '<span class="tp tp-anchor">anchor</span>';
-        }
-      }
-      if (f.source_url) {
-        h += '<span class="ext-icon" title="Source: ' + esc(f.source_url) + '">' + extIconSvg + '</span>';
-      }
+      /* Category header row */
+      h += '<tr class="cat-header' + (catOpen ? ' expanded' : '') + '" data-cat="' + esc(cat) + '">';
+      h += '<td><div class="cat-name"><span class="cat-chv">&#9654;</span>';
+      h += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
+      h += '<span class="cat-count">(' + cs.total + ')</span>';
       h += '</div></td>';
-
-      /* Coverage */
-      h += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
-      h += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
-
-      /* Status */
-      h += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
-
-      /* Integrity */
-      h += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
-
-      /* Verified */
-      if (f.receipt && f.receipt.timestamp) {
-        var vt = relTime(f.receipt.timestamp);
-        var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
-        h += '<td class="' + vcls + '">' + esc(vt) + '</td>';
-      } else {
-        h += '<td class="ver">&mdash;</td>';
-      }
+      h += '<td><div class="cat-cov">' + cs.proved + '/' + cs.rules;
+      h += '<span class="cat-cov-bar"><span class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></span></span>';
+      h += '</div></td>';
+      h += '<td colspan="3"><div class="cat-summary">';
+      if (cs.verified) h += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
+      if (cs.passing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
+      if (cs.partial) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pt"></span>' + cs.partial + ' partial</span>';
+      if (cs.failing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-f"></span>' + cs.failing + ' failing</span>';
+      if (cs.untested) h += '<span class="cat-stat"><span class="cat-dot cat-dot-u"></span>' + cs.untested + ' untested</span>';
+      h += '</div></td>';
       h += '</tr>';
 
-      /* Detail row (always rendered, hidden via display) */
-      if (isExpanded) {
-        h += renderDetail(f);
+      /* Feature rows (only if category is open) */
+      if (catOpen) {
+        for (var i = 0; i < catFeatures.length; i++) {
+          var f = catFeatures[i];
+          var isExpanded = expandedSet[f.name];
+          var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
+          var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
+
+          h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+
+          /* Name + type */
+          h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
+          if (f.type === 'anchor') {
+            if (f.is_global) {
+              h += '<span class="tp tp-global">global</span>';
+            } else {
+              h += '<span class="tp tp-anchor">anchor</span>';
+            }
+          }
+          if (f.source_url) {
+            h += '<span class="ext-icon" title="Source: ' + esc(f.source_url) + '">' + extIconSvg + '</span>';
+          }
+          h += '</div></td>';
+
+          /* Coverage */
+          h += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
+          h += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
+
+          /* Status */
+          h += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
+
+          /* Integrity */
+          h += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
+
+          /* Verified */
+          if (f.receipt && f.receipt.timestamp) {
+            var vt = relTime(f.receipt.timestamp);
+            var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
+            h += '<td class="' + vcls + '">' + esc(vt) + '</td>';
+          } else {
+            h += '<td class="ver">&mdash;</td>';
+          }
+          h += '</tr>';
+
+          /* Detail row */
+          if (isExpanded) {
+            h += renderDetail(f);
+          }
+        }
       }
     }
 
@@ -539,6 +623,16 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       ths[ti].addEventListener('click', function(e) {
         var col = this.getAttribute('data-col');
         if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+        render();
+      });
+    }
+
+    var cats = app.querySelectorAll('.cat-header');
+    for (var ci2 = 0; ci2 < cats.length; ci2++) {
+      cats[ci2].addEventListener('click', function() {
+        var cat = this.getAttribute('data-cat');
+        categorySet[cat] = !categorySet[cat];
+        try { localStorage.setItem('purlin-categories', JSON.stringify(categorySet)); } catch(e) {}
         render();
       });
     }

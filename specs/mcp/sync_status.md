@@ -11,7 +11,7 @@ Rule coverage reporting tool. Scans specs and proof files, computes per-feature 
 ## Rules
 
 - RULE-1: Scans `specs/**/*.md` for RULE-N lines, reads `*.proofs-*.json`, and reports per-feature coverage including own rules, required rules (from `> Requires:`), and global anchor rules, with actionable directives
-- RULE-2: Reports "PASSING" with vhash when all rules have passing behavioral proofs but no current receipt. Reports "VERIFIED" only when all proofs pass AND a non-stale verification receipt exists. Features with only structural checks get no vhash
+- RULE-2: Status is determined by behavioral proof coverage: VERIFIED (all behavioral rules proved + passing + non-stale receipt exists), PASSING (all behavioral rules proved + passing + no current receipt), PARTIAL (some but not all behavioral rules proved, none failing), FAILING (any proof has status FAIL), UNTESTED (zero behavioral proofs). Partial coverage never earns PASSING — every behavioral rule must have a passing proof. Features with only structural checks get no vhash
 - RULE-3: Warns about unnumbered lines under `## Rules` and missing `## Rules` sections
 - RULE-4: Required rules from `> Requires:` specs count toward a feature's coverage total (X/total) with `(required)` label; proofs are looked up under the source spec's feature name
 - RULE-5: Detects manual proof staleness by checking if scope files have commits newer than the stamp's commit SHA
@@ -27,8 +27,10 @@ Rule coverage reporting tool. Scans specs and proof files, computes per-feature 
 - RULE-15: Explains receipt staleness cause: distinguishes own rule changes from required/global anchor rule changes
 - RULE-16: Warns when `specs/` contains uncommitted changes to `.md` or `.proofs-*.json` files, listing the affected files and recommending a commit before drift or verify
 - RULE-17: Displays structural checks separately from behavioral proofs, with a note that they are not counted toward coverage
-- RULE-18: sync_status output begins with a summary table showing feature name, coverage fraction, and status (VERIFIED/PASSING/FAIL/PARTIAL/—) for all features, sorted by status priority (FAIL, PARTIAL, PASSING, VERIFIED, —)
+- RULE-18: sync_status output begins with a summary table showing feature name, coverage fraction, and status (VERIFIED/PASSING/FAILING/PARTIAL/UNTESTED) for all features, sorted by status priority (FAILING, PARTIAL, PASSING, VERIFIED, UNTESTED)
 - RULE-19: sync_status appends an integrity summary after the features VERIFIED line showing the integrity percentage and relative time since last purlin:audit, sourced from the audit cache; when no cache exists, shows a prompt to run purlin:audit
+- RULE-20: Reports UNTESTED when a feature has zero behavioral proofs — this replaces the em-dash display for features with no proofs
+- RULE-21: Reports PARTIAL (not PASSING) when a feature has some behavioral rules proved and passing but not all behavioral rules are covered — partial coverage never earns PASSING status
 
 ## Proof
 
@@ -51,3 +53,5 @@ Rule coverage reporting tool. Scans specs and proof files, computes per-feature 
 - PROOF-17 (RULE-17): Create a spec with structural-only proofs; verify output shows structural checks with "not counted" label and summary line @integration
 - PROOF-18 (RULE-18): Create 3 features (one VERIFIED, one PARTIAL, one with no proofs); run sync_status; verify output starts with summary table, correct ready count, and detail follows @integration
 - PROOF-19 (RULE-19): Create a temp project with an audit cache containing STRONG and WEAK entries with timestamps; run sync_status; verify output contains "Integrity: NN%" and "last purlin:audit:" with relative time; delete the cache; run sync_status; verify output contains "No audit data" @integration
+- PROOF-20 (RULE-20): Create a spec with 2 behavioral rules but zero proof entries; run sync_status; verify status is "UNTESTED" in the summary table @integration
+- PROOF-21 (RULE-21): Create a spec with 3 behavioral rules; write proof file with 2 passing proofs covering RULE-1 and RULE-2 only; run sync_status; verify status is "PARTIAL" not "PASSING" despite both proofs passing @integration

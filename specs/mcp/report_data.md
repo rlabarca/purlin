@@ -12,7 +12,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-1: When config has `"report": true`, sync_status writes `.purlin/report-data.js`
 - RULE-2: When config lacks `"report"` or it is false, no report file is written
 - RULE-3: Report file contains `const PURLIN_DATA = {...};` that parses as valid JavaScript
-- RULE-4: PURLIN_DATA.summary counts match the feature list (verified + passing + partial + failing + no_proofs == total_features)
+- RULE-4: PURLIN_DATA.summary counts match the feature list (verified + passing + partial + failing + untested == total_features)
 - RULE-5: Every feature entry has fields: name, type, is_global, proved, total, deferred, status, structural_checks, vhash, receipt, rules, audit
 - RULE-6: Features with all proofs passing (status "PASSING" or "VERIFIED") have a non-null vhash; others have null vhash
 - RULE-7: Features with receipt files include commit, timestamp, and stale fields in receipt
@@ -26,6 +26,8 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-15: report-data.js includes an audit_summary object with integrity percentage, assessment counts, last audit timestamp, relative time, and stale boolean; null when no audit cache exists
 - RULE-16: Per-feature audit data is populated from the audit cache when entries exist for that feature
 - RULE-17: Feature proved count excludes structural checks — only behavioral proofs count toward the coverage fraction
+- RULE-18: Features with partial behavioral coverage have status "PARTIAL" in report data, not "PASSING", even if all existing proofs pass — PASSING requires every behavioral rule to have a passing proof
+- RULE-19: Every feature entry includes a `category` field derived from the spec's parent directory under `specs/` (e.g., `specs/skills/skill_build.md` has category `skills`)
 
 ## Proof
 
@@ -46,3 +48,4 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - PROOF-14 (RULE-14): Place purlin-report.html at root, call sync_status with report=true, verify output contains file:// URL
 - PROOF-15 (RULE-15): Create an audit cache with STRONG/WEAK entries and timestamps, regenerate report, verify audit_summary fields; delete cache, regenerate, verify audit_summary is null @integration
 - PROOF-16 (RULE-16): Create an audit cache with entries for a specific feature, regenerate report, verify that feature's audit field is populated with correct integrity and findings @integration
+- PROOF-18 (RULE-18): Create a feature with 3 behavioral rules; write passing proofs for only 2 of them; build report data; verify feature status is "PARTIAL" not "PASSING" @integration

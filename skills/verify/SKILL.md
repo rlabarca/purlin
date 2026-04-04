@@ -31,9 +31,9 @@ Run the full test suite across all tiers by calling `purlin:unit-test --all`. Th
 
 Read the coverage output from `purlin:unit-test --all` (which includes sync_status results). For each feature:
 
-- **PASSING** (all rules have passing proofs): eligible for receipt.
-- **Partial coverage**: report which rules lack proofs. No receipt.
-- **Failing proofs**: report failures. No receipt.
+- **PASSING** (ALL behavioral rules have passing proofs, no receipt yet): eligible for receipt.
+- **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
+- **FAILING** (any proof has status FAIL): report failures. No receipt.
 
 ### Step 3 — Issue Receipts
 
@@ -80,7 +80,7 @@ After issuing receipts, check if any features have structural checks but are not
 ```
 Features with structural checks only (not PASSING):
   purlin_agent (8 structural checks, 0 behavioral proofs)
-  purlin_skills (6 structural checks, 0 behavioral proofs)
+  skill_build (6 structural checks, 0 behavioral proofs)
   purlin_references (9 structural checks, 0 behavioral proofs)
 
 These specs prove documents have the right content, not that the system follows them.
@@ -196,7 +196,7 @@ Behavioral features: 2/2 MATCH
 
 Structural-only features: 2/2 MATCH (not counted toward integrity score)
   purlin_agent: MATCH (vhash=f1a2b3c4) — 8 proofs, all grep/existence
-  purlin_skills: MATCH (vhash=d5e6f7a8) — 6 proofs, all grep/existence
+  skill_build: MATCH (vhash=d5e6f7a8) — 6 proofs, all grep/existence
   → Structural-only features need behavioral rules and E2E proofs for full audit credit
 
 Missing/Mismatched:

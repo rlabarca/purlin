@@ -48,9 +48,20 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 ### Coverage States
 
+**Feature-level statuses** (progression: UNTESTED → PARTIAL → PASSING → VERIFIED):
+
+| Status | Color | Meaning |
+|--------|-------|---------|
+| VERIFIED | green | ALL behavioral rules proved + receipt matches |
+| PASSING | green | ALL behavioral rules proved + no receipt yet |
+| PARTIAL | amber | Some rules proved, none failing — more tests needed to reach PASSING |
+| FAILING | red | Any proof has status FAIL |
+| UNTESTED | gray | No behavioral proofs at all |
+
+**Rule-level statuses** (shown per-rule in detailed output):
+
 | State | Meaning |
 |-------|---------|
-| VERIFIED | All rules proved |
 | PASS | Rule has a passing proof |
 | FAIL | Rule has a failing proof |
 | NO PROOF | No test linked to this rule |
@@ -178,7 +189,7 @@ The drift report shows NEEDS ATTENTION items and ends with ACTION ITEMS — a co
 
 ```
 ACTION ITEMS (PM):
-  1. Spec drift: purlin_skills — 7 new behaviors not covered by existing rules → Run: purlin:spec purlin_skills
+  1. Spec drift: skill_build — 7 new behaviors not covered by existing rules → Run: purlin:spec skill_build
   2. Spec drift: purlin_references — 3 new sections not covered → Run: purlin:spec purlin_references
   3. Missing spec: notifications — new code with no spec → Run: purlin:spec notifications
 ```
@@ -269,7 +280,7 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 
 ---
 
-**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `sync_status` shows VERIFIED. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
+**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `sync_status` shows PASSING (all rules proved). Then `purlin:verify` issues a receipt, moving the feature to VERIFIED. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
 
 ![Engineer Workflow](../assets/lifecycle-eng-workflow.svg)
 
@@ -320,14 +331,14 @@ After `purlin:verify`, an audit runs automatically (three stages: spec coverage 
 ```
 /purlin:drift qa         ← see what needs testing or re-verification
 handle QA items          ← Claude writes missing tests, you stamp manual proofs
-/purlin:verify           ← issue verification receipts for PASSING features
+/purlin:verify           ← issue receipts for PASSING features (all rules proved → VERIFIED)
 ```
 
 Drift, verify, ship. Everything below is detail for when you want more control.
 
 ---
 
-**QA verifies that the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows QA exactly which rules have proofs and which don't, which manual proofs are stale, and which features are ready for verification. QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` to issue the final verification receipt. QA is the last gate before code ships.
+**QA verifies that the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows QA exactly which rules have proofs and which don't, which manual proofs are stale, and which features are PASSING (all rules proved, ready for receipt) vs PARTIAL (more tests needed). QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` to issue the final verification receipt. QA is the last gate before code ships.
 
 ![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 
@@ -452,7 +463,7 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-`sync_status` classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are reported separately and excluded from coverage. A feature is VERIFIED only when all its rules have passing behavioral proofs. Add E2E proofs in `specs/integration/` to get real coverage.
+`sync_status` classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are reported separately and excluded from coverage. A feature reaches PASSING only when ALL behavioral rules have passing proofs, and VERIFIED once a receipt is issued. Features with some but not all rules proved are PARTIAL. Add E2E proofs in `specs/integration/` to get real coverage.
 
 ---
 
@@ -464,7 +475,7 @@ Proofs keep specs and code in sync — but only if they're actually run. Purlin 
 
 `purlin:init` installs a git pre-push hook. Every time you push, unit-tier tests run automatically. Two modes:
 
-- **Warn mode** (default) — blocks on FAILING proofs, warns on partial coverage. For incremental development.
+- **Warn mode** (default) — blocks on FAILING proofs, warns on PARTIAL and UNTESTED coverage. For incremental development.
 - **Strict mode** — blocks unless ALL features are VERIFIED. For teams that want hard enforcement.
 
 Set during `purlin:init` or via `"pre_push": "strict"` in `.purlin/config.json`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.

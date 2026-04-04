@@ -603,6 +603,55 @@ class TestSyncStatus:
         assert 'beta: 1/2 rules proved' in detail_text
         assert 'gamma: 0/2 rules proved' in detail_text
 
+    @pytest.mark.proof("sync_status", "PROOF-20", "RULE-20")
+    def test_untested_status_for_zero_proofs(self):
+        """RULE-20: Features with zero behavioral proofs show UNTESTED."""
+        self._write_spec('empty', (
+            '# Feature: empty\n\n'
+            '## What it does\nEmpty feature.\n\n'
+            '## Rules\n- RULE-1: Does X\n- RULE-2: Does Y\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test X\n'
+            '- PROOF-2 (RULE-2): Test Y\n'
+        ))
+        # No proof file — zero proofs
+        result = purlin_server.sync_status(self.project_root)
+        # Summary table should show UNTESTED status
+        assert 'UNTESTED' in result, (
+            f"Expected UNTESTED in summary table for zero-proof feature, got:\n{result}"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-21", "RULE-21")
+    def test_partial_status_when_not_all_rules_proved(self):
+        """RULE-21: Partial coverage = PARTIAL, not PASSING, even when all existing proofs pass."""
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Validate creds\n- RULE-2: Return token\n'
+            '- RULE-3: Log attempt\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+            '- PROOF-2 (RULE-2): Check token\n'
+            '- PROOF-3 (RULE-3): Check logs\n'
+        ))
+        # Only 2 of 3 rules have proofs — both passing
+        self._write_proofs('login', [
+            {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_creds",
+             "status": "pass", "tier": "unit"},
+            {"feature": "login", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/test.py", "test_name": "test_token",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        # Feature should be PARTIAL, NOT PASSING — incomplete coverage
+        assert 'PASSING' not in result, (
+            f"Feature with 2/3 rules proved should NOT be PASSING:\n{result}"
+        )
+        assert 'login' in result
+        # Detail should show partial coverage
+        assert '2/3 rules proved' in result, (
+            f"Expected '2/3 rules proved' in output:\n{result}"
+        )
+
 
 class TestPurlinConfig:
     """purlin_config RULE-1: config read/write."""

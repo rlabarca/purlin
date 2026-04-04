@@ -250,11 +250,11 @@ class TestReportDataStructure:
         s = data['summary']
 
         total = s['total_features']
-        components = s['verified'] + s.get('passing', 0) + s['partial'] + s['failing'] + s['no_proofs']
+        components = s['verified'] + s.get('passing', 0) + s['partial'] + s['failing'] + s['untested']
         assert components == total, (
             f'Summary counts do not sum to total: '
             f"verified={s['verified']} + passing={s.get('passing', 0)} + partial={s['partial']} "
-            f"+ failing={s['failing']} + no_proofs={s['no_proofs']} = {components}, "
+            f"+ failing={s['failing']} + untested={s['untested']} = {components}, "
             f"expected total={total}"
         )
 
@@ -636,3 +636,37 @@ class TestReportDataStructure:
         assert mixed['total'] == 3, (
             f"Expected total=3 (all rules), got {mixed['total']}"
         )
+
+    @pytest.mark.proof("report_data", "PROOF-18", "RULE-18")
+    def test_partial_coverage_gets_partial_status_not_passing(self):
+        """RULE-18: Features with partial behavioral coverage get PARTIAL, not PASSING."""
+        # Create a feature with 3 behavioral rules but only 2 passing proofs
+        _write_spec(self.tmp, 'login',
+                    '# Feature: login\n\n'
+                    '## What it does\nHandles login.\n\n'
+                    '## Rules\n- RULE-1: Validate creds\n'
+                    '- RULE-2: Return token\n'
+                    '- RULE-3: Log attempt\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test creds\n'
+                    '- PROOF-2 (RULE-2): Test token\n'
+                    '- PROOF-3 (RULE-3): Test logs\n')
+        _write_proofs(self.tmp, 'login', [
+            {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_creds",
+             "status": "pass", "tier": "unit"},
+            {"feature": "login", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/test.py", "test_name": "test_token",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        login = next(f for f in data['features'] if f['name'] == 'login')
+        assert login['status'] == 'PARTIAL', (
+            f"Expected status='PARTIAL' for 2/3 rules proved, got '{login['status']}'. "
+            f"Incomplete behavioral coverage must never be PASSING."
+        )
+        assert login['proved'] == 2, f"Expected proved=2, got {login['proved']}"
+        assert login['total'] == 3, f"Expected total=3, got {login['total']}"

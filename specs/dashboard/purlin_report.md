@@ -12,7 +12,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 
 - RULE-1: HTML loads .purlin/report-data.js via a script tag before rendering
 - RULE-2: When PURLIN_DATA is undefined, dashboard shows a no-data message with instructions
-- RULE-3: Summary strip shows total features, verified, partial, and failing counts from PURLIN_DATA.summary
+- RULE-3: Summary strip shows total features, verified, passing, partial, failing, and untested counts from PURLIN_DATA.summary
 - RULE-4: Feature table renders one row per feature with name, coverage fraction, status badge, integrity, and verified columns
 - RULE-5: Clicking a feature row expands it to show per-rule detail
 - RULE-6: Expanded detail shows each rule with id, description, source (blank for own rules, "required" or "global" for others), status, and proof column showing the proof description as primary text with file path as smaller secondary text below
@@ -28,6 +28,9 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-16: Status column is centered in both the feature table and the expanded rules sub-table at all viewport widths
 - RULE-17: Dashboard uses full available width up to 2400px and is responsive down to 1100px
 - RULE-18: Coverage bar fill width matches the proved/total fraction — a feature with 2/6 coverage has a bar fill at ~33%, not 100%
+- RULE-19: Features are grouped by category with collapsible section headers showing rolled-up summaries (total count, coverage fraction, and status breakdown)
+- RULE-20: Category sections are collapsed by default
+- RULE-21: Category and feature open/closed state is persisted to localStorage and restored on reload
 
 ## Proof
 
@@ -35,7 +38,7 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 
 - PROOF-1 (RULE-1): Use Playwright to read page source; verify script tag with src=".purlin/report-data.js" is present @e2e
 - PROOF-2 (RULE-2): Use Playwright to load purlin-report.html without report-data.js; take screenshot; verify page contains text "No dashboard data" and "purlin:status" @e2e
-- PROOF-3 (RULE-3): Write report-data.js with summary {total_features:10, verified:5, partial:3, failing:1, no_proofs:1}; load page in Playwright; verify 5 summary cards exist; verify card text matches "10", "5", "3", "1"; take screenshot @e2e
+- PROOF-3 (RULE-3): Write report-data.js with summary {total_features:10, verified:4, passing:2, partial:2, failing:1, untested:1}; load page in Playwright; verify 6 summary cards exist; verify card text matches "10", "4", "2", "2", "1", "1"; take screenshot @e2e
 - PROOF-4 (RULE-4): Write report-data.js with 8 features in mixed states; load in Playwright; count table rows with class "fr"; verify count is 8; take screenshot @e2e
 - PROOF-5 (RULE-5): Load page with features; click first feature row; verify a detail row with class "dr" becomes visible; verify it contains a rules table; take screenshot of expanded state @e2e
 - PROOF-6 (RULE-6): Expand a feature with own + global rules; verify own rules have empty Source column; verify global rules show "global" in Source column; verify proof cells contain description text and a secondary file path element with class rprf-loc; take screenshot @e2e
@@ -51,3 +54,6 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 - PROOF-16 (RULE-16): Load page in Playwright at 1920px and 1280px widths; expand a feature; verify the status badge td in the feature table has text-align:center; verify the status td in the rules sub-table has text-align:center; take screenshots at both widths @e2e
 - PROOF-17 (RULE-17): Load page in Playwright at viewport width 2400px; verify dashboard container max-width is 2400px; resize to 1100px; verify summary strip reflows to 3 columns; take screenshots at both widths @e2e
 - PROOF-18 (RULE-18): Create features with known coverage fractions (2/6 and 5/5); load in Playwright; measure the cov-fill element width as a percentage of the cov-bar; verify 2/6 bar is ~33% and 5/5 bar is 100% @e2e
+- PROOF-19 (RULE-19): Write report-data.js with features in 3 categories (2 in "skills", 2 in "mcp", 1 in "_anchors"); load in Playwright; verify 3 category header rows exist with correct rolled-up counts, coverage fractions, and status breakdowns; take screenshot @e2e
+- PROOF-20 (RULE-20): Load page with categorized features; verify no feature rows (.fr) are visible before any interaction; click a category header; verify its features become visible; take screenshot @e2e
+- PROOF-21 (RULE-21): Load page; expand a category; reload page; verify the same category is still expanded; collapse it; reload; verify it is collapsed @e2e
