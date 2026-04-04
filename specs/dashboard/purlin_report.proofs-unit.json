@@ -1,0 +1,158 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_script_tag_loads_data_js",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_data_message",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_summary_strip_counts",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_feature_table_row_count",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_row_expand_shows_detail",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_expanded_rule_sources",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_theme_toggle_persists",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_staleness_warning_amber",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_staleness_stale_red",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_anchor_type_pills",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_anchor_external_link_icon",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_table_sorting",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_footer_docs_url",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_integrity_card_display",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_audit_time_stale_class",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_refresh_button_navigates",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_responsive_layout",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

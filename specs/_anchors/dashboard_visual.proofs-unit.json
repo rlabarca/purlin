@@ -1,0 +1,104 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_dark_theme_backgrounds",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_light_theme_backgrounds",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_status_colors_in_css",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_sans_serif_font_stack",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_mono_font_stack",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_ready_badge_style",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_partial_badge_style",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_fail_badge_style",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_proofs_badge_opacity",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_integrity_color_coding",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_hardcoded_hex_outside_custom_properties",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}
