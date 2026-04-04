@@ -1921,12 +1921,19 @@ def handle_request(request, project_root):
     return None
 
 
+_SERVER_MTIME = os.path.getmtime(os.path.abspath(__file__))
+
+
 def main():
     """Run the MCP server on stdio."""
+    global _SERVER_MTIME
     project_root = find_project_root()
 
     # Log startup to stderr (stdout is reserved for JSON-RPC)
     print(f"Purlin MCP server v0.9.0 started (root: {project_root})", file=sys.stderr)
+
+    mod = sys.modules[__name__]
+    src_path = os.path.abspath(__file__)
 
     for line in sys.stdin:
         line = line.strip()
@@ -1945,7 +1952,18 @@ def main():
             sys.stdout.flush()
             continue
 
-        response = handle_request(request, project_root)
+        # Hot-reload: re-import module when source file changes
+        try:
+            current_mtime = os.path.getmtime(src_path)
+            if current_mtime != _SERVER_MTIME:
+                _SERVER_MTIME = current_mtime
+                import importlib
+                mod = importlib.reload(mod)
+                print("Purlin MCP: reloaded", file=sys.stderr)
+        except Exception:
+            pass
+
+        response = mod.handle_request(request, project_root)
         if response is not None:
             sys.stdout.write(json.dumps(response) + '\n')
             sys.stdout.flush()
