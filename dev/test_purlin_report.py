@@ -65,13 +65,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-1",
                             "test_file": "tests/test_login.py",
                             "test_name": "test_valid",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                     {
                         "id": "RULE-2",
@@ -81,13 +81,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-2",
                             "test_file": "tests/test_login.py",
                             "test_name": "test_invalid",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                     {
                         "id": "security/RULE-1",
@@ -97,13 +97,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-1",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_eval",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                 ],
                 "audit": {
@@ -145,13 +145,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-1",
                             "test_file": "tests/test_checkout.py",
                             "test_name": "test_total",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                     {
                         "id": "RULE-2",
@@ -161,7 +161,7 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "NO_PROOF",
-                        "proof": None,
+                        "proofs": [],
                     },
                 ],
                 "audit": None,
@@ -187,13 +187,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-1",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_eval",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                     {
                         "id": "RULE-2",
@@ -203,13 +203,13 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proof": {
+                        "proofs": [{
                             "id": "PROOF-2",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_exec",
                             "tier": "unit",
                             "status": "pass",
-                        },
+                        }],
                     },
                 ],
                 "audit": None,

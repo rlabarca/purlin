@@ -16,7 +16,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-5: Every feature entry has fields: name, type, is_global, proved, total, deferred, status, structural_checks, vhash, receipt, rules, audit
 - RULE-6: READY features have a non-null vhash; non-READY features have null vhash
 - RULE-7: Features with receipt files include commit, timestamp, and stale fields in receipt
-- RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proof
+- RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proofs (array of proof objects)
 - RULE-9: Rule status is one of PASS, FAIL, NO_PROOF, CHECK, or DEFERRED
 - RULE-10: Rule label is one of own, required, or global
 - RULE-11: docs_url is dynamically derived from the Purlin plugin git remote

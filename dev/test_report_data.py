@@ -325,10 +325,10 @@ class TestReportDataStructure:
 
     @pytest.mark.proof("report_data", "PROOF-8", "RULE-8")
     def test_every_rule_entry_has_required_fields(self):
-        """Every rule entry has id, description, label, source, is_deferred, is_assumed, status, proof."""
+        """Every rule entry has id, description, label, source, is_deferred, is_assumed, status, proofs."""
         required_fields = {
             'id', 'description', 'label', 'source', 'is_deferred',
-            'is_assumed', 'status', 'proof',
+            'is_assumed', 'status', 'proofs',
         }
         data = self._build()
         for feat in data['features']:

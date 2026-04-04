@@ -723,6 +723,29 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
     return proof_by_rule
 
 
+def _build_all_proofs_lookup(name, rule_entries, all_proofs):
+    """Build dict of rule_key -> list of ALL proof entries (not just best).
+
+    Used by report data to show multiple proofs per rule in the dashboard.
+    """
+    all_rule_keys = {key for key, _, _, _ in rule_entries}
+    by_rule = {}
+
+    for p in all_proofs.get(name, []):
+        rule = p.get('rule', '')
+        by_rule.setdefault(rule, []).append(p)
+
+    source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
+    for src_name in source_features:
+        for p in all_proofs.get(src_name, []):
+            rule = p.get('rule', '')
+            key = f"{src_name}/{rule}"
+            if key in all_rule_keys:
+                by_rule.setdefault(key, []).append(p)
+
+    return by_rule
+
+
 def _collect_relevant_proofs(name, rule_entries, all_proofs):
     """Collect all proof entries relevant to the combined rule set (for vhash)."""
     all_rule_keys = {key for key, _, _, _ in rule_entries}
@@ -1127,6 +1150,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         ga = global_anchors if not is_anchor else {}
         rule_entries, _ = _build_coverage_rules(name, info, features, ga)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+        all_proofs_by_rule = _build_all_proofs_lookup(name, rule_entries, all_proofs)
         all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
 
         active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
@@ -1199,24 +1223,26 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 src_info = features.get(src_feature, {})
                 rule_desc = src_info.get('rules', {}).get(bare_rule, '')
 
-            proof = proof_by_rule.get(key)
-            proof_data = None
-            if proof:
-                proof_data = {
-                    'id': proof.get('id', ''),
-                    'test_file': proof.get('test_file', ''),
-                    'test_name': proof.get('test_name', ''),
-                    'tier': proof.get('tier', 'unit'),
-                    'status': proof.get('status', ''),
-                }
+            # Collect ALL proofs for this rule (not just the best one)
+            best_proof = proof_by_rule.get(key)
+            rule_proofs = all_proofs_by_rule.get(key, [])
+            proofs_data = []
+            for p in rule_proofs:
+                proofs_data.append({
+                    'id': p.get('id', ''),
+                    'test_file': p.get('test_file', ''),
+                    'test_name': p.get('test_name', ''),
+                    'tier': p.get('tier', 'unit'),
+                    'status': p.get('status', ''),
+                })
 
             if is_deferred:
                 rule_status = 'DEFERRED'
-            elif key in structural_rules and proof and proof.get('status') == 'pass':
+            elif key in structural_rules and best_proof and best_proof.get('status') == 'pass':
                 rule_status = 'CHECK'
-            elif proof and proof.get('status') == 'pass':
+            elif best_proof and best_proof.get('status') == 'pass':
                 rule_status = 'PASS'
-            elif proof and proof.get('status') == 'fail':
+            elif best_proof and best_proof.get('status') == 'fail':
                 rule_status = 'FAIL'
             else:
                 rule_status = 'NO_PROOF'
@@ -1229,7 +1255,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'is_deferred': is_deferred,
                 'is_assumed': label == 'own' and key in info.get('assumed_rules', set()),
                 'status': rule_status,
-                'proof': proof_data,
+                'proofs': proofs_data,
             })
 
         feature_list.append({

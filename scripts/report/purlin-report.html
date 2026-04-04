@@ -139,6 +139,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .cov-ready{background:var(--green)}.cov-partial{background:var(--amber)}.cov-fail{background:var(--red)}.cov-none{background:var(--gray-badge)}
 
 /* Status badges */
+.col-status{text-align:center}
 .sb{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .sb-ready{background:var(--green);color:#fff}
 .sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
@@ -168,7 +169,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
 .rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
-.rst{font-size:11px;font-weight:600}
+.rst{font-size:11px;font-weight:600;text-align:center}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--text-dim);font-style:italic}.rst-def{color:var(--text-dim);font-style:italic}
 .rprf{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
 .structural td{opacity:.5}
@@ -455,7 +456,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
 
       /* Status */
-      h += '<td><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
+      h += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
 
       /* Integrity */
       h += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
@@ -520,16 +521,21 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     for (var ri = 0; ri < f.rules.length; ri++) {
       var r = f.rules[ri];
       var isStructural = r.status === 'CHECK';
-      h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
-      h += '<td class="rid">' + esc(r.id) + '</td>';
-      h += '<td class="rdesc">' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
-      h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
+      /* Support both old (r.proof) and new (r.proofs) data contract */
+      var proofs = r.proofs || (r.proof ? [r.proof] : []);
+      var rowspan = Math.max(proofs.length, 1);
 
-      if (r.proof) {
-        var ploc = r.proof.id;
-        if (r.proof.test_file) ploc += ' \u00b7 ' + r.proof.test_file;
-        if (r.proof.test_name) ploc += '::' + r.proof.test_name;
+      h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
+      h += '<td class="rid"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.id) + '</td>';
+      h += '<td class="rdesc"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.description) + '</td>';
+      h += '<td class="' + labelCls(r.label) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
+      h += '<td class="' + ruleStatusCls(r.status) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.status) + '</td>';
+
+      if (proofs.length > 0) {
+        var p0 = proofs[0];
+        var ploc = p0.id;
+        if (p0.test_file) ploc += ' \u00b7 ' + p0.test_file;
+        if (p0.test_name) ploc += '::' + p0.test_name;
         h += '<td class="rprf">' + esc(ploc) + '</td>';
       } else if (isStructural) {
         h += '<td class="rprf">structural check</td>';
@@ -537,6 +543,16 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
         h += '<td class="rprf">&mdash;</td>';
       }
       h += '</tr>';
+      /* Additional proof rows (same rule, no rule/desc/source/status columns) */
+      for (var pi = 1; pi < proofs.length; pi++) {
+        var px = proofs[pi];
+        var ploc2 = px.id;
+        if (px.test_file) ploc2 += ' \u00b7 ' + px.test_file;
+        if (px.test_name) ploc2 += '::' + px.test_name;
+        h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
+        h += '<td class="rprf">' + esc(ploc2) + '</td>';
+        h += '</tr>';
+      }
     }
     h += '</tbody></table>';
 
