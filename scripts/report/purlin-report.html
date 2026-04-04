@@ -199,6 +199,22 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .atag-h{background:var(--red-dim);color:var(--red)}
 .structural td{}
 
+/* Action banners */
+.ab{padding:10px 14px;border-left:4px solid;border-radius:0 6px 6px 0;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ab-icon{font-size:15px;flex-shrink:0;line-height:1}
+.ab-text{flex:1}
+.ab-cmd{font-family:var(--font-mono);font-size:11px;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px}
+.ab-partial{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
+.ab-failing{border-left-color:var(--red);background:var(--red-dim);color:var(--red)}
+.ab-passing{border-left-color:var(--green);background:var(--green-dim);color:var(--green)}
+.ab-untested{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08);color:var(--text-dim)}
+
+/* Rule row highlights */
+.rule-np td{border-left:3px solid var(--amber)}
+.rule-fail td{border-left:3px solid var(--red)}
+.rule-np td.rst{font-weight:700}
+.rule-fail td.rst{font-weight:700}
+
 /* Audit summary */
 .asummary{display:flex;align-items:center;gap:16px;margin-bottom:8px;padding:7px 12px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border)}
 .ascore{font-size:18px;font-weight:700;font-family:var(--font-mono)}
@@ -367,9 +383,32 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     return '';
   }
 
+  function actionBanner(f) {
+    if (f.status === 'VERIFIED') return '';
+    if (f.status === 'PASSING') {
+      return '<div class="ab ab-passing"><span class="ab-icon">&#10003;</span><span class="ab-text">All rules proved &mdash; run <span class="ab-cmd">purlin:verify</span> to issue a verification receipt</span></div>';
+    }
+    if (f.status === 'FAILING') {
+      var failCount = 0;
+      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'FAIL') failCount++; }
+      return '<div class="ab ab-failing"><span class="ab-icon">&#10007;</span><span class="ab-text">' + failCount + ' test' + (failCount !== 1 ? 's' : '') + ' failing &mdash; fix code or tests to reach PASSING</span></div>';
+    }
+    if (f.status === 'PARTIAL') {
+      var noProof = 0;
+      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'NO_PROOF') noProof++; }
+      return '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
+    }
+    if (f.status === 'UNTESTED') {
+      return '<div class="ab ab-untested"><span class="ab-icon">&#9744;</span><span class="ab-text">No proofs yet &mdash; write tests to begin coverage</span></div>';
+    }
+    return '';
+  }
+
+  var hasGlobalAudit = false;
+
   function proofCell(p) {
     var h = '';
-    if (p.audit) h += auditTag(p.audit);
+    if (hasGlobalAudit && p.audit) h += auditTag(p.audit);
     if (p.id) h += '<span class="fid">' + esc(p.id) + '</span> ';
     if (p.description) {
       h += '<span>' + esc(p.description) + '</span>';
@@ -455,6 +494,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   function render() {
     var st = staleness(D.timestamp);
     var S = D.summary;
+    var A = D.audit_summary;
+    hasGlobalAudit = !!(A && A.integrity != null);
     var features = sortFeatures(D.features);
 
     var h = '';
@@ -471,7 +512,6 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</div><div class="header-right">';
     h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
     /* Last audit time */
-    var A = D.audit_summary;
     if (A && A.last_audit_relative) {
       var acls = A.stale ? 'audit-time stale' : 'audit-time';
       var atxt = '/audit ' + A.last_audit_relative;
@@ -654,6 +694,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   function renderDetail(f) {
     var h = '<tr class="dr cat-child"><td colspan="5"><div class="dc">';
 
+    /* Action banner */
+    h += actionBanner(f);
+
     /* Rules table */
     h += '<div class="dst">Rules &amp; Proofs</div>';
     h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Source</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
@@ -665,7 +708,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       var proofs = r.proofs || (r.proof ? [r.proof] : []);
       var rowspan = Math.max(proofs.length, 1);
 
-      h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
+      var rowCls = isStructural ? 'structural' : r.status === 'NO_PROOF' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
+      h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
       h += '<td class="rid"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.id) + '</td>';
       h += '<td class="rdesc"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.description) + '</td>';
       h += '<td class="' + labelCls(r.label) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';

@@ -1462,3 +1462,110 @@ class TestCategorySections:
         assert skills_final == 0, (
             f"Expected skills collapsed after toggle+reload, got {skills_final} rows"
         )
+
+
+# ---------------------------------------------------------------------------
+# TestAuditTagVisibility — audit tags gated on audit_summary
+# ---------------------------------------------------------------------------
+
+def make_audit_data(audit_summary=None):
+    """Generate data with per-feature audit info and proof-level audit tags."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return {
+        "timestamp": now,
+        "project": "test-project",
+        "version": "0.9.0",
+        "docs_url": None,
+        "summary": {"total_features": 1, "verified": 1, "partial": 0, "failing": 0, "no_proofs": 0},
+        "features": [{
+            "name": "auth_login",
+            "category": "auth",
+            "type": "feature",
+            "is_global": False,
+            "source_url": None,
+            "proved": 2,
+            "total": 2,
+            "deferred": 0,
+            "status": "VERIFIED",
+            "structural_checks": 0,
+            "vhash": "a1b2c3d4",
+            "receipt": {"commit": "abc", "timestamp": now, "stale": False},
+            "rules": [
+                {
+                    "id": "RULE-1", "description": "Validates credentials",
+                    "label": "own", "source": None, "is_deferred": False,
+                    "is_assumed": False, "status": "PASS",
+                    "proofs": [{
+                        "id": "PROOF-1", "description": "POST valid creds",
+                        "test_file": "tests/test.py", "test_name": "test_valid",
+                        "tier": "unit", "status": "pass", "audit": "STRONG",
+                    }],
+                },
+                {
+                    "id": "RULE-2", "description": "Returns 401 on bad creds",
+                    "label": "own", "source": None, "is_deferred": False,
+                    "is_assumed": False, "status": "PASS",
+                    "proofs": [{
+                        "id": "PROOF-2", "description": "POST bad creds",
+                        "test_file": "tests/test.py", "test_name": "test_bad",
+                        "tier": "unit", "status": "pass", "audit": "HOLLOW",
+                    }],
+                },
+            ],
+            "audit": {
+                "integrity": 50, "strong": 1, "weak": 0, "hollow": 1, "manual": 0,
+                "findings": [],
+            },
+        }],
+        "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        "audit_summary": audit_summary,
+        "drift": None,
+    }
+
+
+class TestAuditTagVisibility:
+
+    @pytest.mark.proof("purlin_report", "PROOF-22", "RULE-22")
+    def test_audit_tags_visible_with_audit_data_hidden_without(self, page, dashboard):
+        """PROOF-22: Audit tags on proofs only render when audit_summary has data."""
+        # Case 1: audit_summary has integrity — tags should appear
+        data_with_audit = make_audit_data(audit_summary={
+            "integrity": 85, "strong": 4, "weak": 1, "hollow": 1, "manual": 0,
+            "behavioral_total": 6, "last_audit": datetime.datetime.now(
+                datetime.timezone.utc).isoformat(),
+            "last_audit_relative": "just now", "stale": False,
+        })
+        load_dashboard(page, dashboard, data=data_with_audit)
+
+        # Expand the feature to see proofs
+        page.click("tr.fr[data-name='auth_login']")
+        page.wait_for_timeout(300)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof22_with_audit.png"))
+
+        tags_with = page.query_selector_all(".atag")
+        assert len(tags_with) >= 2, (
+            f"Expected at least 2 audit tags (.atag) when audit_summary has data, "
+            f"got {len(tags_with)}"
+        )
+
+        # Verify one is STRONG and one is HOLLOW
+        tag_texts = page.evaluate("""() =>
+            Array.from(document.querySelectorAll('.atag')).map(el => el.textContent.trim())
+        """)
+        assert "Strong" in tag_texts, f"Expected a 'Strong' tag, got {tag_texts}"
+        assert "Hollow" in tag_texts, f"Expected a 'Hollow' tag, got {tag_texts}"
+
+        # Case 2: audit_summary is null — tags must NOT appear
+        data_no_audit = make_audit_data(audit_summary=None)
+        load_dashboard(page, dashboard, data=data_no_audit)
+
+        # Expand the feature
+        page.click("tr.fr[data-name='auth_login']")
+        page.wait_for_timeout(300)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof22_no_audit.png"))
+
+        tags_without = page.query_selector_all(".atag")
+        assert len(tags_without) == 0, (
+            f"Expected 0 audit tags when audit_summary is null, "
+            f"got {len(tags_without)}: {page.evaluate('''() => Array.from(document.querySelectorAll('.atag')).map(e => e.textContent)''')}"
+        )

@@ -31,6 +31,10 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-19: Features are grouped by category with collapsible section headers showing rolled-up summaries (total count, coverage fraction, and status breakdown)
 - RULE-20: Category sections are collapsed by default
 - RULE-21: Category and feature open/closed state is persisted to localStorage and restored on reload
+- RULE-22: Proof audit tags (STRONG/WEAK/HOLLOW) only appear when audit_summary has data; when audit_summary is null (integrity card shows dash), no audit tags render on any proof
+- RULE-23: Expanded detail view shows a status-colored action banner above the rules table: PARTIAL shows how many rules need proofs, FAILING shows how many tests are failing, PASSING shows "run purlin:verify", UNTESTED shows "write tests to begin coverage", VERIFIED shows no banner
+- RULE-24: Rules with NO_PROOF status display with an amber left border, visually distinguishing uncovered rules from proved ones
+- RULE-25: Rules with FAIL status display with a red left border, visually distinguishing failing rules from passing ones
 
 ## Proof
 
@@ -57,3 +61,7 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 - PROOF-19 (RULE-19): Write report-data.js with features in 3 categories (2 in "skills", 2 in "mcp", 1 in "_anchors"); load in Playwright; verify 3 category header rows exist with correct rolled-up counts, coverage fractions, and status breakdowns; take screenshot @e2e
 - PROOF-20 (RULE-20): Load page with categorized features; verify no feature rows (.fr) are visible before any interaction; click a category header; verify its features become visible; take screenshot @e2e
 - PROOF-21 (RULE-21): Load page; expand a category; reload page; verify the same category is still expanded; collapse it; reload; verify it is collapsed @e2e
+- PROOF-22 (RULE-22): Load page with audit_summary having integrity=85 and features with proof-level audit tags; expand a feature; verify .atag elements appear on proofs; take screenshot. Then load with audit_summary=null but same per-feature audit data; expand the same feature; verify zero .atag elements render; take screenshot @e2e
+- PROOF-23 (RULE-23): Write report-data.js with features in each status (PARTIAL with 2 NO_PROOF rules, FAILING with 1 FAIL rule, PASSING, UNTESTED, VERIFIED); expand each; verify PARTIAL has .ab-partial banner containing "2 rules need proofs"; FAILING has .ab-failing banner containing "1 test failing"; PASSING has .ab-passing banner containing "purlin:verify"; UNTESTED has .ab-untested banner containing "write tests"; VERIFIED has no .ab element; take screenshots @e2e
+- PROOF-24 (RULE-24): Expand a PARTIAL feature with NO_PROOF rules; verify rule rows with NO_PROOF status have class "rule-np"; verify the first td of those rows has a computed border-left-color matching amber; take screenshot @e2e
+- PROOF-25 (RULE-25): Expand a FAILING feature with FAIL rules; verify rule rows with FAIL status have class "rule-fail"; verify the first td of those rows has a computed border-left-color matching red; take screenshot @e2e
