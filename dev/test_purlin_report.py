@@ -293,11 +293,19 @@ class TestPurlinReport:
 
     @pytest.mark.proof("purlin_report", "PROOF-1", "RULE-1")
     def test_script_tag_loads_data_js(self, page, dashboard):
-        """PROOF-1: HTML loads .purlin/report-data.js via a script tag."""
+        """PROOF-1: HTML loads .purlin/report-data.js dynamically."""
         load_dashboard(page, dashboard, data=make_data())
-        content = page.content()
-        assert 'src=".purlin/report-data.js"' in content, (
-            "Expected <script src=\".purlin/report-data.js\"> in page source"
+        # The data is loaded dynamically with cache-busting query param
+        # Verify PURLIN_DATA is available in the page context
+        has_data = page.evaluate("() => typeof PURLIN_DATA !== 'undefined'")
+        assert has_data, "Expected PURLIN_DATA to be loaded from .purlin/report-data.js"
+        # Verify the script element was injected
+        src = page.evaluate("""() => {
+            const scripts = document.querySelectorAll('script[src*="report-data.js"]');
+            return scripts.length > 0 ? scripts[0].src : null;
+        }""")
+        assert src and 'report-data.js' in src, (
+            f"Expected a script tag loading report-data.js, got: {src}"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-2", "RULE-2")
@@ -680,8 +688,13 @@ class TestPurlinReport:
             assert feature_status_align == "center", \
                 f"Feature table status not centered at {width}px: got '{feature_status_align}'"
 
-            # Expand a feature to get the rules sub-table
-            page.click("tr.fr[data-name='auth_login']")
+            # Ensure auth_login is expanded (click only if collapsed)
+            is_expanded = page.evaluate("""() => {
+                const row = document.querySelector("tr.fr[data-name='auth_login']");
+                return row && row.classList.contains('expanded');
+            }""")
+            if not is_expanded:
+                page.click("tr.fr[data-name='auth_login']")
             page.wait_for_timeout(200)
 
             # Check rules sub-table status centering
@@ -784,6 +797,95 @@ def make_integrity_feature(name, integrity):
             "findings": [],
         },
     }
+
+
+class TestRulePadding:
+    """Test that rule ID and description columns have visible spacing for all rule types."""
+
+    @pytest.mark.proof("purlin_report", "PROOF-18", "RULE-6")
+    def test_rule_id_padding_with_long_anchor_ids(self, page, dashboard):
+        """Rule IDs from required anchors (e.g. security_policy/RULE-1) must have
+        visible gap before the description column at both narrow and wide viewports."""
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        data = make_data({
+            "features": [{
+                "name": "config_engine", "type": "feature", "is_global": False,
+                "source_url": None, "proved": 2, "total": 4, "deferred": 0,
+                "status": "partial", "structural_checks": 2, "vhash": None,
+                "receipt": None,
+                "rules": [
+                    {"id": "RULE-1", "description": "Reads config files", "label": "own",
+                     "source": None, "is_deferred": False, "is_assumed": False,
+                     "status": "PASS", "proofs": [{"id": "PROOF-1", "description": "Read config",
+                     "test_file": "tests/test_config.py", "test_name": "test_read",
+                     "tier": "unit", "status": "pass"}]},
+                    {"id": "security_no_dangerous_patterns/RULE-1",
+                     "description": "FORBIDDEN — No eval() or exec() calls",
+                     "label": "required", "source": "security_no_dangerous_patterns",
+                     "is_deferred": False, "is_assumed": False,
+                     "status": "CHECK", "proofs": []},
+                    {"id": "security_no_dangerous_patterns/RULE-2",
+                     "description": "FORBIDDEN — No subprocess calls with shell=True",
+                     "label": "required", "source": "security_no_dangerous_patterns",
+                     "is_deferred": False, "is_assumed": False,
+                     "status": "CHECK", "proofs": []},
+                    {"id": "security_no_dangerous_patterns/RULE-3",
+                     "description": "FORBIDDEN — No os.system() calls",
+                     "label": "required", "source": "security_no_dangerous_patterns",
+                     "is_deferred": False, "is_assumed": False,
+                     "status": "PASS", "proofs": [{"id": "PROOF-3", "description": "Grep for os.system",
+                     "test_file": "tests/test_sec.py", "test_name": "test_no_ossystem",
+                     "tier": "unit", "status": "pass"}]},
+                ],
+                "audit": None,
+            }],
+            "summary": {"total_features": 1, "ready": 0, "partial": 1, "failing": 0, "no_proofs": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+            "audit_summary": None,
+        })
+
+        for width in [1920, 1280]:
+            page.set_viewport_size({"width": width, "height": 1080})
+            load_dashboard(page, dashboard, data=data)
+            # Click to expand only if not already expanded
+            is_expanded = page.evaluate("""() => {
+                const row = document.querySelector("tr.fr[data-name='config_engine']");
+                return row && row.classList.contains('expanded');
+            }""")
+            if not is_expanded:
+                page.click("tr.fr[data-name='config_engine']")
+            page.wait_for_timeout(300)
+            page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"proof18_padding_{width}.png"))
+
+            # For each rule row, verify the right edge of the rule ID cell
+            # doesn't overlap with the left edge of the description cell
+            gaps = page.evaluate("""() => {
+                const detail = document.querySelector('tr.dr');
+                if (!detail) return [];
+                const rows = detail.querySelectorAll('tr');
+                const results = [];
+                for (const row of rows) {
+                    const rid = row.querySelector('td.rid');
+                    const rdesc = row.querySelector('td.rdesc');
+                    if (!rid || !rdesc) continue;
+                    const ridRect = rid.getBoundingClientRect();
+                    const rdescRect = rdesc.getBoundingClientRect();
+                    const gap = rdescRect.left - ridRect.right;
+                    results.push({
+                        id: rid.textContent.trim(),
+                        gap: Math.round(gap),
+                        ridPaddingRight: parseFloat(getComputedStyle(rid).paddingRight),
+                    });
+                }
+                return results;
+            }""")
+
+            assert len(gaps) >= 3, f"Expected >=3 rule rows at {width}px, got {len(gaps)}"
+            for g in gaps:
+                assert g["ridPaddingRight"] >= 24, \
+                    f"Rule '{g['id']}' padding-right is {g['ridPaddingRight']}px at {width}px viewport (need >=24)"
+                assert g["gap"] >= 0, \
+                    f"Rule '{g['id']}' overlaps description by {abs(g['gap'])}px at {width}px viewport"
 
 
 class TestDashboardVisual:
