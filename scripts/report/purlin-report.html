@@ -275,7 +275,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'READY') return 'Ready';
     if (status === 'partial') return 'Partial';
     if (status === 'FAIL') return 'Fail';
-    return 'No proofs';
+    return 'Not verified';
   }
 
   function intClass(v) {
@@ -405,7 +405,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '<div class="summary-card sc-ready"><div class="summary-card-number">' + S.ready + '</div><div class="summary-card-label">Ready</div></div>';
     h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
-    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' no proofs</div>';
+    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' not verified</div>';
     h += '</div>';
     /* Integrity card */
     if (A && A.integrity != null) {
