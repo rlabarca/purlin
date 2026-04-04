@@ -71,7 +71,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 1/2 features VERIFIED | Integrity: 85% (last purlin:audit: 2 hours ago)
 ```
 
-Detailed per-rule coverage follows below. Features needing attention (FAIL, partial) sort to the top.
+Detailed per-rule coverage follows below. Features needing attention (FAIL, PARTIAL) sort to the top.
 
 The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules. Run `purlin:audit` after significant test changes to refresh the score.
 

@@ -229,7 +229,7 @@ if echo "$STATUS_B" | grep -q "login: 2/5 rules proved"; then
     echo "    Phase B PASS: login shows 2/5, not VERIFIED"
     phase_b_ok=true
   else
-    echo "    Phase B FAIL: login shows VERIFIED but should be partial"
+    echo "    Phase B FAIL: login shows VERIFIED but should be PARTIAL"
   fi
 else
   echo "    Phase B FAIL: expected 'login: 2/5 rules proved'"

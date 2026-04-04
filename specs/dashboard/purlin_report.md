@@ -34,7 +34,7 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 
 - PROOF-1 (RULE-1): Use Playwright to read page source; verify script tag with src=".purlin/report-data.js" is present @e2e
 - PROOF-2 (RULE-2): Use Playwright to load purlin-report.html without report-data.js; take screenshot; verify page contains text "No dashboard data" and "purlin:status" @e2e
-- PROOF-3 (RULE-3): Write report-data.js with summary {total_features:10, ready:5, partial:3, failing:1, no_proofs:1}; load page in Playwright; verify 5 summary cards exist; verify card text matches "10", "5", "3", "1"; take screenshot @e2e
+- PROOF-3 (RULE-3): Write report-data.js with summary {total_features:10, verified:5, partial:3, failing:1, no_proofs:1}; load page in Playwright; verify 5 summary cards exist; verify card text matches "10", "5", "3", "1"; take screenshot @e2e
 - PROOF-4 (RULE-4): Write report-data.js with 8 features in mixed states; load in Playwright; count table rows with class "fr"; verify count is 8; take screenshot @e2e
 - PROOF-5 (RULE-5): Load page with features; click first feature row; verify a detail row with class "dr" becomes visible; verify it contains a rules table; take screenshot of expanded state @e2e
 - PROOF-6 (RULE-6): Expand a feature with own + global rules; verify own rules have empty Source column; verify global rules show "global" in Source column; verify proof cells contain description text and a secondary file path element with class rprf-loc; take screenshot @e2e
