@@ -126,6 +126,7 @@ def _scan_specs(project_root):
         manual_proofs = {}
         proof_descriptions = []
         proof_desc_by_rule = {}
+        proof_desc_by_id = {}
         proof_section = _extract_section(content, '## Proof')
         if proof_section:
             for line in proof_section.strip().splitlines():
@@ -136,7 +137,10 @@ def _scan_specs(project_root):
                 proof_id = proof_match.group(1)
                 rule_ids_raw = proof_match.group(2)
                 proof_desc = proof_match.group(3).strip()
+                # Strip tier tags (@unit, @integration, @e2e, @manual...) from description
+                clean_desc = re.sub(r'\s*@\w+(?:\([^)]*\))?\s*$', '', proof_desc).strip()
                 proof_descriptions.append(proof_desc)
+                proof_desc_by_id[proof_id] = clean_desc
                 # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
                 rule_ids = [r.strip() for r in rule_ids_raw.split(',')]
                 for rule_id in rule_ids:
@@ -182,6 +186,7 @@ def _scan_specs(project_root):
             'manual_proofs': manual_proofs,
             'proof_descriptions': proof_descriptions,
             'proof_desc_by_rule': proof_desc_by_rule,
+            'proof_desc_by_id': proof_desc_by_id,
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
         }
@@ -1226,10 +1231,20 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             # Collect ALL proofs for this rule (not just the best one)
             best_proof = proof_by_rule.get(key)
             rule_proofs = all_proofs_by_rule.get(key, [])
+
+            # Get proof descriptions from the source spec
+            if label == 'own':
+                desc_by_id = info.get('proof_desc_by_id', {})
+            else:
+                src_info = features.get(src_feature, {})
+                desc_by_id = src_info.get('proof_desc_by_id', {})
+
             proofs_data = []
             for p in rule_proofs:
+                pid = p.get('id', '')
                 proofs_data.append({
-                    'id': p.get('id', ''),
+                    'id': pid,
+                    'description': desc_by_id.get(pid, ''),
                     'test_file': p.get('test_file', ''),
                     'test_name': p.get('test_name', ''),
                     'tier': p.get('tier', 'unit'),

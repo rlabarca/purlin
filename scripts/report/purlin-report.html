@@ -168,7 +168,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
 .rt td.rst{font-size:11px;font-weight:600;text-align:center}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--text-dim);font-style:italic}.rst-def{color:var(--text-dim);font-style:italic}
-.rprf{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.rprf{font-size:12px;color:var(--text-primary)}
+.rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px}
 .structural td{opacity:.5}
 
 /* Audit summary */
@@ -314,6 +315,18 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (p === 'HIGH') return 'fgt fgt-high';
     if (p === 'MEDIUM') return 'fgt fgt-med';
     return 'fgt fgt-low';
+  }
+
+  function proofCell(p) {
+    var h = '';
+    if (p.description) {
+      h += '<div>' + esc(p.description) + '</div>';
+    }
+    var loc = p.id || '';
+    if (p.test_file) loc += ' \u00b7 ' + p.test_file;
+    if (p.test_name) loc += '::' + p.test_name;
+    if (loc) h += '<div class="rprf-loc">' + esc(loc) + '</div>';
+    return h;
   }
 
   var extIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
@@ -528,25 +541,17 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '<td class="' + ruleStatusCls(r.status) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.status) + '</td>';
 
       if (proofs.length > 0) {
-        var p0 = proofs[0];
-        var ploc = p0.id;
-        if (p0.test_file) ploc += ' \u00b7 ' + p0.test_file;
-        if (p0.test_name) ploc += '::' + p0.test_name;
-        h += '<td class="rprf">' + esc(ploc) + '</td>';
+        h += '<td class="rprf">' + proofCell(proofs[0]) + '</td>';
       } else if (isStructural) {
-        h += '<td class="rprf">structural check</td>';
+        h += '<td class="rprf" style="color:var(--text-dim)">structural check</td>';
       } else {
         h += '<td class="rprf">&mdash;</td>';
       }
       h += '</tr>';
       /* Additional proof rows (same rule, no rule/desc/source/status columns) */
       for (var pi = 1; pi < proofs.length; pi++) {
-        var px = proofs[pi];
-        var ploc2 = px.id;
-        if (px.test_file) ploc2 += ' \u00b7 ' + px.test_file;
-        if (px.test_name) ploc2 += '::' + px.test_name;
         h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
-        h += '<td class="rprf">' + esc(ploc2) + '</td>';
+        h += '<td class="rprf">' + proofCell(proofs[pi]) + '</td>';
         h += '</tr>';
       }
     }

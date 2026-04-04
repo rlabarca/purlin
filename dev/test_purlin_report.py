@@ -67,6 +67,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-1",
+                            "description": "POST valid creds returns 200 + session token",
                             "test_file": "tests/test_login.py",
                             "test_name": "test_valid",
                             "tier": "unit",
@@ -83,6 +84,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-2",
+                            "description": "POST bad creds returns 401 with error message",
                             "test_file": "tests/test_login.py",
                             "test_name": "test_invalid",
                             "tier": "unit",
@@ -99,6 +101,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-1",
+                            "description": "Grep src/ for eval(); verify zero matches",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_eval",
                             "tier": "unit",
@@ -147,6 +150,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-1",
+                            "description": "Sum item prices times quantities; verify total",
                             "test_file": "tests/test_checkout.py",
                             "test_name": "test_total",
                             "tier": "unit",
@@ -189,6 +193,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-1",
+                            "description": "Grep src/ for eval(); verify zero matches",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_eval",
                             "tier": "unit",
@@ -205,6 +210,7 @@ def make_data(overrides=None):
                         "status": "PASS",
                         "proofs": [{
                             "id": "PROOF-2",
+                            "description": "Grep src/ for exec(); verify zero matches",
                             "test_file": "tests/test_sec.py",
                             "test_name": "test_no_exec",
                             "tier": "unit",
@@ -393,30 +399,52 @@ class TestPurlinReport:
         assert rules_table is not None, "Expected a rules table (.rt) inside the expanded detail row"
 
     @pytest.mark.proof("purlin_report", "PROOF-6", "RULE-6")
-    def test_expanded_rule_sources(self, page, dashboard):
-        """PROOF-6: Own rules show empty Source; global rules show 'global'."""
-        # auth_login feature has 2 own rules and 1 global rule
+    def test_expanded_rule_sources_and_proof_descriptions(self, page, dashboard):
+        """PROOF-6: Own rules show empty Source; global rules show 'global';
+        proof cells show description as primary text and file path as secondary."""
         load_dashboard(page, dashboard, data=make_data())
-        # The default sort is by status; click the feature row for auth_login specifically
-        # by matching data-name attribute
-        auth_row = page.query_selector("tr.fr[data-name='auth_login']")
-        assert auth_row is not None, "Expected a feature row for auth_login"
-        auth_row.click()
-        page.wait_for_timeout(200)
+        page.click("tr.fr[data-name='auth_login']")
+        page.wait_for_timeout(300)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof6_rule_sources.png"))
-        # Collect all rule source cells (.rlbl) within the expanded detail
-        detail_row = page.query_selector("tr.dr")
-        assert detail_row is not None, "Expected a detail row to be present after expanding"
-        source_cells = detail_row.query_selector_all("td.rlbl")
-        assert len(source_cells) >= 3, f"Expected at least 3 source cells in auth_login detail, got {len(source_cells)}"
-        texts = [cell.inner_text().strip() for cell in source_cells]
-        # Own rules have empty source
-        assert "" in texts, "Expected at least one empty source cell for own rules"
-        # Global rule shows 'global' (may be uppercase due to CSS text-transform)
-        lower_texts = [t.lower() for t in texts]
-        assert "global" in lower_texts, (
-            f"Expected 'global' text in source cell for global rules, got: {texts}"
-        )
+
+        # Verify source labels via JS (avoids first-detail-row ambiguity)
+        texts = page.evaluate("""() => {
+            const row = document.querySelector("tr.fr[data-name='auth_login']");
+            const detail = row ? row.nextElementSibling : null;
+            if (!detail || !detail.classList.contains('dr')) return [];
+            return Array.from(detail.querySelectorAll('td.rlbl'))
+                .map(c => c.textContent.trim().toLowerCase());
+        }""")
+        assert len(texts) >= 3, f"Expected >=3 source cells, got {len(texts)}"
+        assert "" in texts, "Expected empty source cell for own rules"
+        assert "global" in texts, f"Expected 'global' in source cells, got {texts}"
+
+        # Verify proof descriptions render — check for .rprf-loc elements (file paths)
+        loc_count = page.evaluate("""() => {
+            const row = document.querySelector("tr.fr[data-name='auth_login']");
+            const detail = row ? row.nextElementSibling : null;
+            if (!detail) return 0;
+            return detail.querySelectorAll('.rprf-loc').length;
+        }""")
+        assert loc_count >= 2, f"Expected >=2 proof file path elements (.rprf-loc), got {loc_count}"
+
+        # Verify proof description text renders separately from file path
+        desc_count = page.evaluate("""() => {
+            const row = document.querySelector("tr.fr[data-name='auth_login']");
+            const detail = row ? row.nextElementSibling : null;
+            if (!detail) return 0;
+            // Description is a direct child div of td.rprf (not .rprf-loc)
+            const cells = detail.querySelectorAll('td.rprf');
+            let count = 0;
+            for (const cell of cells) {
+                const children = cell.children;
+                // Cell should have 2 children: description div + .rprf-loc div
+                if (children.length >= 2) count++;
+            }
+            return count;
+        }""")
+        assert desc_count >= 2, \
+            f"Expected >=2 proof cells with description + file path, got {desc_count}"
 
     @pytest.mark.proof("purlin_report", "PROOF-7", "RULE-7")
     def test_theme_toggle_persists(self, page, dashboard):

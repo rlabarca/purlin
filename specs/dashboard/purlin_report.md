@@ -15,7 +15,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-3: Summary strip shows total features, ready, partial, and failing counts from PURLIN_DATA.summary
 - RULE-4: Feature table renders one row per feature with name, coverage fraction, status badge, integrity, and verified columns
 - RULE-5: Clicking a feature row expands it to show per-rule detail
-- RULE-6: Expanded detail shows each rule with id, description, source (blank for own rules, "required" or "global" for others), status, and proof location
+- RULE-6: Expanded detail shows each rule with id, description, source (blank for own rules, "required" or "global" for others), status, and proof column showing the proof description as primary text with file path as smaller secondary text below
 - RULE-7: Toggling dark/light mode persists the preference to localStorage
 - RULE-8: Staleness indicator shows amber warning when data is older than 1 hour
 - RULE-9: Staleness indicator shows red warning when data is older than 24 hours
@@ -37,7 +37,7 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 - PROOF-3 (RULE-3): Write report-data.js with summary {total_features:10, ready:5, partial:3, failing:1, no_proofs:1}; load page in Playwright; verify 5 summary cards exist; verify card text matches "10", "5", "3", "1"; take screenshot @e2e
 - PROOF-4 (RULE-4): Write report-data.js with 8 features in mixed states; load in Playwright; count table rows with class "fr"; verify count is 8; take screenshot @e2e
 - PROOF-5 (RULE-5): Load page with features; click first feature row; verify a detail row with class "dr" becomes visible; verify it contains a rules table; take screenshot of expanded state @e2e
-- PROOF-6 (RULE-6): Expand a feature with own + global rules; verify own rules have empty Source column; verify global rules show "global" in Source column; take screenshot @e2e
+- PROOF-6 (RULE-6): Expand a feature with own + global rules; verify own rules have empty Source column; verify global rules show "global" in Source column; verify proof cells contain description text and a secondary file path element with class rprf-loc; take screenshot @e2e
 - PROOF-7 (RULE-7): Load page; click theme toggle; verify data-theme attribute changes; reload page; verify theme persisted from localStorage @e2e
 - PROOF-8 (RULE-8): Write report-data.js with timestamp set to 2 hours ago; load in Playwright; verify staleness text contains "ago" and has CSS class "warning"; take screenshot @e2e
 - PROOF-9 (RULE-9): Write report-data.js with timestamp set to 2 days ago; load in Playwright; verify staleness text has CSS class "stale"; take screenshot @e2e
