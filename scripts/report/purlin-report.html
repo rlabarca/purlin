@@ -57,7 +57,7 @@
 /* ===== BASE ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);font-size:14px;line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
-.dashboard{max-width:1400px;margin:0 auto;padding:0 24px}
+.dashboard{max-width:2400px;margin:0 auto;padding:0 clamp(16px, 2vw, 40px)}
 
 /* ===== HEADER ===== */
 .header{display:flex;align-items:center;justify-content:space-between;height:56px;border-bottom:1px solid var(--border);margin-bottom:20px}
@@ -66,11 +66,14 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .header-project{font-size:15px;font-weight:600}
 .header-right{display:flex;align-items:center;gap:20px}
 
-/* Staleness */
-.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary)}
+/* Staleness — clickable refresh */
+.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid transparent;transition:border-color .2s,background .2s}
+.staleness:hover{border-color:var(--border);background:var(--bg-hover)}
 .staleness-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
 .staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
+.staleness-refresh{font-size:11px;color:var(--text-dim);margin-left:2px;opacity:0;transition:opacity .2s}
+.staleness:hover .staleness-refresh{opacity:1}
 
 /* Theme toggle */
 .theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
@@ -159,9 +162,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
 /* Rules sub-table */
 .rt{width:100%;border-collapse:collapse;margin-bottom:4px}
-.rt th{padding:5px 10px;font-size:9px;cursor:default}
-.rt td{padding:5px 10px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top}
-.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap}
+.rt th{padding:5px 12px;font-size:9px;cursor:default}
+.rt td{padding:5px 12px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top}
+.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:16px}
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
 .rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
@@ -195,6 +198,15 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .footer{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim)}
 .footer a{color:var(--teal);text-decoration:none}
 .footer a:hover{text-decoration:underline}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:1100px) {
+  .summary-strip{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:700px) {
+  .summary-strip{grid-template-columns:repeat(2,1fr)}
+  .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
+}
 </style>
 <script src=".purlin/report-data.js"></script>
 </head>
@@ -359,7 +371,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</svg></div>';
     h += '<span class="header-project">' + esc(D.project) + '</span>';
     h += '</div><div class="header-right">';
-    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
+    h += '<div class="staleness" id="refresh-btn" title="Click to refresh"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span><span class="staleness-refresh">&#x21bb;</span></div>';
     /* Last audit time */
     var A = D.audit_summary;
     if (A && A.last_audit_relative) {
@@ -399,11 +411,11 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Feature table */
     var cols = [
-      {key:'name', label:'Feature', w:'32%'},
-      {key:'coverage', label:'Coverage', w:'16%'},
-      {key:'status', label:'Status', w:'12%'},
-      {key:'integrity', label:'Integrity', w:'12%'},
-      {key:'verified', label:'Verified', w:'28%'}
+      {key:'name', label:'Feature', w:''},
+      {key:'coverage', label:'Coverage', w:'140px'},
+      {key:'status', label:'Status', w:'100px'},
+      {key:'integrity', label:'Integrity', w:'100px'},
+      {key:'verified', label:'Verified', w:'180px'}
     ];
 
     h += '<div class="table-container"><table><thead><tr>';
@@ -411,7 +423,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       var c = cols[ci];
       var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
       var acls = (sortCol === c.key) ? ' active' : '';
-      h += '<th style="width:' + c.w + '" data-col="' + c.key + '">' + c.label + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
+      h += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + c.label + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
     }
     h += '</tr></thead><tbody>';
 
@@ -477,6 +489,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
+    document.getElementById('refresh-btn').addEventListener('click', function() { location.reload(); });
 
     var ths = app.querySelectorAll('th[data-col]');
     for (var ti = 0; ti < ths.length; ti++) {
@@ -502,7 +515,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Rules table */
     h += '<div class="dst">Rules &amp; Proofs</div>';
-    h += '<table class="rt"><thead><tr><th style="width:9%">Rule</th><th style="width:38%">Description</th><th style="width:8%">Label</th><th style="width:8%">Status</th><th style="width:37%">Proof</th></tr></thead><tbody>';
+    h += '<table class="rt"><thead><tr><th style="width:120px">Rule</th><th>Description</th><th style="width:80px">Source</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
 
     for (var ri = 0; ri < f.rules.length; ri++) {
       var r = f.rules[ri];
@@ -510,7 +523,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
       h += '<td class="rid">' + esc(r.id) + '</td>';
       h += '<td class="rdesc">' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '">' + esc(r.label) + '</td>';
+      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
       h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
 
       if (r.proof) {
