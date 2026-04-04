@@ -66,14 +66,11 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .header-project{font-size:15px;font-weight:600}
 .header-right{display:flex;align-items:center;gap:20px}
 
-/* Staleness — clickable refresh */
-.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid transparent;transition:border-color .2s,background .2s}
-.staleness:hover{border-color:var(--border);background:var(--bg-hover)}
+/* Staleness — informational only (data updates when sync_status runs, not on page refresh) */
+.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary)}
 .staleness-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
 .staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
-.staleness-refresh{font-size:11px;color:var(--text-dim);margin-left:2px;opacity:0;transition:opacity .2s}
-.staleness:hover .staleness-refresh{opacity:1}
 
 /* Theme toggle */
 .theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
@@ -169,7 +166,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
 .rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
-.rst{font-size:11px;font-weight:600;text-align:center}
+.rt td.rst{font-size:11px;font-weight:600;text-align:center}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--text-dim);font-style:italic}.rst-def{color:var(--text-dim);font-style:italic}
 .rprf{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
 .structural td{opacity:.5}
@@ -372,7 +369,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</svg></div>';
     h += '<span class="header-project">' + esc(D.project) + '</span>';
     h += '</div><div class="header-right">';
-    h += '<div class="staleness" id="refresh-btn" title="Click to refresh"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span><span class="staleness-refresh">&#x21bb;</span></div>';
+    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
     /* Last audit time */
     var A = D.audit_summary;
     if (A && A.last_audit_relative) {
@@ -490,7 +487,6 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
-    document.getElementById('refresh-btn').addEventListener('click', function() { location.reload(); });
 
     var ths = app.querySelectorAll('th[data-col]');
     for (var ti = 0; ti < ths.length; ti++) {

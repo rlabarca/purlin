@@ -25,7 +25,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-13: Footer docs link uses docs_url from PURLIN_DATA, not a hardcoded URL
 - RULE-14: Summary strip shows integrity percentage from audit_summary with color coding, or dash with "run purlin:audit" when null
 - RULE-15: Header shows last audit time from audit_summary, with amber warning when stale
-- RULE-16: Clicking the staleness indicator refreshes the page to load new data
+- RULE-16: Status column is centered in both the feature table and the expanded rules sub-table at all viewport widths
 - RULE-17: Dashboard uses full available width up to 2400px and is responsive down to 1100px
 
 ## Proof
@@ -47,5 +47,5 @@ All visual proofs use Playwright to load the dashboard HTML with synthetic data,
 - PROOF-13 (RULE-13): Write report-data.js with docs_url set to "https://example.com/docs"; load in Playwright; verify footer link href equals "https://example.com/docs" @e2e
 - PROOF-14 (RULE-14): Write report-data.js with audit_summary.integrity=85; load in Playwright; verify a summary card contains "85%"; write another with audit_summary=null; reload; verify dash shown instead; take screenshots of both @e2e
 - PROOF-15 (RULE-15): Write report-data.js with audit_summary.stale=true; load in Playwright; verify element with class "audit-time stale" exists; take screenshot @e2e
-- PROOF-16 (RULE-16): Load page in Playwright; click element with id "refresh-btn"; verify page navigation occurred (URL reloaded) @e2e
+- PROOF-16 (RULE-16): Load page in Playwright at 1920px and 1280px widths; expand a feature; verify the status badge td in the feature table has text-align:center; verify the status td in the rules sub-table has text-align:center; take screenshots at both widths @e2e
 - PROOF-17 (RULE-17): Load page in Playwright at viewport width 2400px; verify dashboard container max-width is 2400px; resize to 1100px; verify summary strip reflows to 3 columns; take screenshots at both widths @e2e

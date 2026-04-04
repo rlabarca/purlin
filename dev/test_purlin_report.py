@@ -638,18 +638,33 @@ class TestPurlinReport:
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
-    def test_refresh_button_navigates(self, page, dashboard):
-        """PROOF-16: Clicking the staleness indicator triggers page navigation."""
-        load_dashboard(page, dashboard, data=make_data())
-        url_before = page.url
-        # Listen for navigation events
-        navigated = []
-        page.on("framenavigated", lambda frame: navigated.append(frame.url))
-        refresh_btn = page.query_selector("#refresh-btn")
-        assert refresh_btn is not None, "Expected element with id='refresh-btn'"
-        refresh_btn.click()
-        page.wait_for_load_state("networkidle")
-        assert len(navigated) > 0, "Expected page navigation to occur after clicking #refresh-btn"
+    def test_status_column_centered_at_multiple_widths(self, page, dashboard):
+        """PROOF-16: Status column centered in feature table and rules sub-table at different widths."""
+        for width in [1920, 1280]:
+            page.set_viewport_size({"width": width, "height": 1080})
+            load_dashboard(page, dashboard, data=make_data())
+
+            # Check feature table status badge centering
+            feature_status_align = page.evaluate("""() => {
+                const td = document.querySelector('td.col-status');
+                return td ? getComputedStyle(td).textAlign : null;
+            }""")
+            assert feature_status_align == "center", \
+                f"Feature table status not centered at {width}px: got '{feature_status_align}'"
+
+            # Expand a feature to get the rules sub-table
+            page.click("tr.fr[data-name='auth_login']")
+            page.wait_for_timeout(200)
+
+            # Check rules sub-table status centering
+            rule_status_align = page.evaluate("""() => {
+                const td = document.querySelector('td.rst');
+                return td ? getComputedStyle(td).textAlign : null;
+            }""")
+            assert rule_status_align == "center", \
+                f"Rules sub-table status not centered at {width}px: got '{rule_status_align}'"
+
+            page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"proof16_centered_{width}.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-17", "RULE-17")
     def test_responsive_layout(self, page, dashboard):
