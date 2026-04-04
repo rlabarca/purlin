@@ -3,7 +3,7 @@ name: drift
 description: Detect spec drift and summarize changes since last verification, cross-referenced with specs
 ---
 
-Read-only skill. Calls the `changelog` MCP tool for structured data, then interprets and formats the results into a PM/QA-readable report with actionable directives.
+Read-only skill. Calls the `drift` MCP tool for structured data, then interprets and formats the results into a PM/QA-readable report with actionable directives.
 
 Classification criteria: see `references/drift_criteria.md` (Criteria-Version: 1).
 
@@ -20,13 +20,17 @@ purlin:drift --since <date>             Since a date (YYYY-MM-DD)
 
 The role can be passed as a bare positional argument (`purlin:drift pm`) or as a flag (`purlin:drift --role pm`). Both are equivalent. If no role is given, show all three priority sections.
 
-## Step 1 — Call the changelog MCP tool
+### Note on uncommitted changes
+
+Drift detection compares committed git history. Uncommitted changes to specs, code, or proof files are invisible to drift. If sync_status warns about uncommitted changes, commit them first for accurate drift reporting.
+
+## Step 1 — Call the drift MCP tool
 
 ```
-changelog(since: <from --since arg if given>, role: <from role arg if given, default "all">)
+drift(since: <from --since arg if given>, role: <from role arg if given, default "all">)
 ```
 
-If the tool returns a JSON object with a `recommendation` field instead of the normal changelog data, the project has no verification history and too many commits for drift tracking to be useful. Display:
+If the tool returns a JSON object with a `recommendation` field instead of the normal drift data, the project has no verification history and too many commits for drift tracking to be useful. Display:
 
 ```
 No verification anchor found. This project has <commits_since_init> commits without verification history.
@@ -35,7 +39,7 @@ No verification anchor found. This project has <commits_since_init> commits with
 → After specs exist and purlin:verify has run, purlin:drift will track ongoing changes.
 ```
 
-Do not attempt to process the response as normal changelog data. Return immediately after displaying this message.
+Do not attempt to process the response as normal drift data. Return immediately after displaying this message.
 
 Otherwise, the tool returns structured JSON containing:
 - `since` — human-readable description of the anchor point
@@ -50,7 +54,7 @@ Deleted files are already filtered out by the tool — only files that exist on 
 
 ## Step 2 — Analyze and Classify Each Change
 
-For each file in the changelog MCP output, the agent must perform the following analysis. Do not summarize multiple files into one paragraph — analyze each change individually, then group by logical change.
+For each file in the drift MCP output, the agent must perform the following analysis. Do not summarize multiple files into one paragraph — analyze each change individually, then group by logical change.
 
 ### 2a — Read the actual diff
 
@@ -101,15 +105,15 @@ For each BEHAVIORAL change, check: do the existing spec rules cover this new beh
 
 Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
 
-**Structural-only drift:** Check the `drift_flags` array in the MCP tool output. Each entry identifies a feature with structural-only coverage whose code changed. For each:
+**Behavioral gap drift:** Check the `drift_flags` array in the MCP tool output. Each entry identifies a feature with no behavioral proofs whose code changed. For each:
 
 ```
-Spec: purlin_agent (8 rules, READY — structural only)
-⚠ All proofs are grep checks. Code changed but no test verifies the new behavior.
+Spec: purlin_agent (8 rules, 0 behavioral proofs)
+⚠ All proofs are structural checks. Code changed but no behavioral test verifies the new behavior.
 → Run: purlin:spec purlin_agent (add behavioral rules)
 ```
 
-Also check individual file entries for `structural_drift: true` — these are CHANGED_BEHAVIOR files whose spec has only grep/existence proofs.
+Also check individual file entries for `behavioral_gap: true` — these are CHANGED_BEHAVIOR files whose spec has only structural checks (no behavioral proofs).
 
 **Broken scopes:** Check the `broken_scopes` array in the MCP tool output. Each entry identifies a spec whose `> Scope:` references a path that no longer exists on disk. For each:
 
@@ -206,7 +210,7 @@ List every item that applies, in this order:
 Before emitting ACTION ITEMS, cross-reference against the NEEDS ATTENTION entries:
 - If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM action items, even if `proof_status` shows all rules proved (the proofs were from before the change)
 - If NEEDS ATTENTION says "no missing specs" → PM action items should not list missing specs
-- **Structural-only drift:** Every entry in `drift_flags` must appear in PM action items: `Spec drift: <name> — code changed, all proofs are structural only (no behavioral coverage) → Run: purlin:spec <name>`
+- **Behavioral gap drift:** Every entry in `drift_flags` must appear in PM action items: `Spec drift: <name> — code changed, no behavioral proofs (only structural checks) → Run: purlin:spec <name>`
 - **Broken scopes:** Every entry in `broken_scopes` must appear in PM action items: `Broken scope: <name> — <path> no longer exists → Run: purlin:rename <name> or purlin:spec <name>`
 - Do not contradict the detailed analysis with the summary
 
@@ -232,7 +236,7 @@ Omit any role section with no action items.
 
 ## Guidelines
 
-- **Read diffs for behavioral changes.** The MCP tool provides the file list; you must read the actual diffs to understand what changed. This is the only additional tool call this skill makes beyond the initial `changelog` MCP call.
+- **Read diffs for behavioral changes.** The MCP tool provides the file list; you must read the actual diffs to understand what changed. This is the only additional tool call this skill makes beyond the initial `drift` MCP call.
 - **Write for a PM, not a developer.** Summarize behavior, not implementation details.
 - **One entry per logical change.** Group related files under a single entry, but never collapse unrelated changes into one paragraph.
 - **Classify from the diff, not the MCP category.** The MCP tool's mechanical classification is a starting point. The diff tells you whether a CHANGED_BEHAVIOR file is actually STRUCTURAL or OPERATIONAL.

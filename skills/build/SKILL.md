@@ -128,6 +128,13 @@ When spawned by the auditor to fix HOLLOW or WEAK proofs:
 Do NOT weaken assertions to satisfy audit — if the audit says a proof is HOLLOW because it mocks bcrypt, replace the mock with real bcrypt. Don't remove the assertion.
 If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating — <reason>."
 
-## Step 5 — Commit
+## Step 5 — Commit (mandatory)
 
-Commit per `references/commit_conventions.md` using the `feat(<name>):` prefix.
+After the build/test loop reaches a stable state (tests pass, coverage improved), commit all changed files:
+
+```
+git add <source files> <test files> specs/**/*.proofs-*.json
+git commit -m "feat(<name>): implement and prove rules"
+```
+
+Do NOT commit after each failed iteration — only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.

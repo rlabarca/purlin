@@ -302,7 +302,7 @@ def test_good():
             os.unlink(path)
 
     @pytest.mark.proof("static_checks", "PROOF-7", "RULE-7")
-    def test_exit_1_when_any_fail(self):
+    def test_exit_0_with_fail_status_when_defects_found(self):
         path = _write_tmp('''
 import pytest
 
@@ -315,7 +315,9 @@ def test_bad():
                 [sys.executable, STATIC_CHECKS_PY, path, "testfeat"],
                 capture_output=True, text=True
             )
-            assert result.returncode == 1
+            assert result.returncode == 0
+            data = json.loads(result.stdout)
+            assert any(p['status'] == 'fail' for p in data['proofs'])
         finally:
             os.unlink(path)
 
@@ -340,6 +342,10 @@ class TestSpecCoverageStructuralOnly:
             assert result['structural_only_spec'] is True
             assert result['rule_count'] == 3
             assert result['behavioral_rule_count'] == 0
+            assert result['structural_count'] == 3
+            assert result['behavioral_count'] == 0
+            assert len(result['structural_proofs']) == 3
+            assert len(result['behavioral_proofs']) == 0
         finally:
             os.unlink(path)
 
@@ -363,6 +369,8 @@ class TestSpecCoverageStructuralOnly:
             data = json.loads(result.stdout)
             assert data['structural_only_spec'] is True
             assert data['rule_count'] == 2
+            assert data['structural_count'] == 2
+            assert data['behavioral_count'] == 0
         finally:
             os.unlink(path)
 
@@ -387,6 +395,9 @@ class TestSpecCoverageBehavioral:
             assert result['structural_only_spec'] is False
             assert result['rule_count'] == 3
             assert result['behavioral_rule_count'] == 3
+            assert result['structural_count'] == 0
+            assert result['behavioral_count'] == 3
+            assert len(result['behavioral_proofs']) == 3
         finally:
             os.unlink(path)
 
@@ -406,6 +417,10 @@ class TestSpecCoverageBehavioral:
             assert result['structural_only_spec'] is False
             assert result['rule_count'] == 2
             assert result['behavioral_rule_count'] == 1
+            assert result['structural_count'] == 1
+            assert result['behavioral_count'] == 1
+            assert result['structural_proofs'] == ['RULE-1']
+            assert result['behavioral_proofs'] == ['RULE-2']
         finally:
             os.unlink(path)
 

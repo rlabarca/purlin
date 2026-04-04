@@ -190,7 +190,16 @@ Before committing, verify:
 - All `> Scope:` file paths exist on disk
 - **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
-Commit per `references/commit_conventions.md`: `spec(<name>): <description of change>`
+### Commit (mandatory)
+
+After the spec is approved, commit immediately. Do not batch with other changes.
+
+```
+git add specs/<category>/<name>.md
+git commit -m "spec(<name>): <description of change>"
+```
+
+This commit is mandatory — drift detection and staleness checks depend on committed spec state. Do not skip or defer.
 
 ## Step 7 — Update Existing Spec
 
@@ -198,7 +207,7 @@ When updating a spec that already exists on disk:
 
 ### 7a — Understand what changed
 
-1. Call the `changelog` MCP tool to see what changed since the last verification
+1. Call the `drift` MCP tool to see what changed since the last verification
 2. Read the CURRENT spec in full — every rule, every proof, every metadata line
 3. Read the changed source files referenced in the diff or in `> Scope:`
 4. Read changed skill/reference files if the feature covers instructions
@@ -277,7 +286,18 @@ Waiting for your response...
 
 ### 7e — Validate and commit
 
-Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags. Commit per `references/commit_conventions.md`: `spec(<name>): update rules for <description>`
+Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags.
+
+### Commit (mandatory)
+
+After the spec update is approved, commit immediately. Do not batch with other changes.
+
+```
+git add specs/<category>/<name>.md
+git commit -m "spec(<name>): update rules for <description>"
+```
+
+This commit is mandatory — drift detection and staleness checks depend on committed spec state. Do not skip or defer.
 
 ### Key principles for updates
 

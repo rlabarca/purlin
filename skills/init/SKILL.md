@@ -130,7 +130,7 @@ HTML dashboard report:
   [off] Disable dashboard report generation
 ```
 
-If **on** (default): set `"report": true` in `.purlin/config.json`. Copy `scripts/report/purlin-report.html` from the Purlin plugin to the project root as `purlin-report.html`. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
+If **on** (default): set `"report": true` in `.purlin/config.json`. Create a symlink at the project root: `purlin-report.html -> ${CLAUDE_PLUGIN_ROOT}/scripts/report/purlin-report.html`. This ensures the dashboard always reflects the latest Purlin version without manual copies. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
 
 If **off**: set `"report": false` in `.purlin/config.json`. Do not copy the HTML file.
 
@@ -233,7 +233,7 @@ Ask the user which LLM should perform proof audits:
 ```
 Audit LLM:
   [default] Claude audits (same model — fastest, independent context)
-  [external] Use a different LLM for cross-model auditing
+  [external] Use a different LLM for cross-model auditing (experimental)
 ```
 
 If **default**: no config change. The auditor runs in an independent context.

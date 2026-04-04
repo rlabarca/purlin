@@ -136,7 +136,7 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
-| Change audit LLM | `purlin:init --audit-llm` |
+| Change audit LLM (experimental) | `purlin:init --audit-llm` |
 | Change test framework | Edit `.purlin/config.json`: `"test_framework": "jest"` |
 | Re-run full setup | `purlin:init --force` |
 

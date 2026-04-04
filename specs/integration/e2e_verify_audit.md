@@ -21,4 +21,4 @@ End-to-end test of the verify → receipt → audit roundtrip. Exercises the ful
 - PROOF-2 (RULE-2): After writing receipt, recompute vhash from same rules+proofs; compare to receipt vhash; verify they match @e2e
 - PROOF-3 (RULE-3): Add RULE-4 to spec; recompute vhash; compare to receipt; verify mismatch because receipt is stale @e2e
 - PROOF-4 (RULE-4): Add passing proof for RULE-4; recompute vhash and write new receipt; verify new vhash differs from Phase A; audit again and verify match @e2e
-- PROOF-5 (RULE-5): Create project with one behavioral spec and one structural-only spec; run sync_status; verify structural-only spec is flagged separately; run check_spec_coverage on both and verify correct structural_only_spec values @e2e
+- PROOF-5 (RULE-5): Create project with one behavioral spec and one structural-only spec; run sync_status; verify behavioral spec is READY and structural-only spec is not READY with structural checks reported separately; run check_spec_coverage on both and verify correct structural_only_spec values @e2e

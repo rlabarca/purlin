@@ -51,7 +51,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_expanded_rule_sources",
+      "test_name": "test_expanded_rule_sources_and_proof_descriptions",
       "status": "pass",
       "tier": "unit"
     },
@@ -141,7 +141,7 @@
       "id": "PROOF-16",
       "rule": "RULE-16",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_refresh_button_navigates",
+      "test_name": "test_status_column_centered_at_multiple_widths",
       "status": "pass",
       "tier": "unit"
     },
@@ -151,6 +151,15 @@
       "rule": "RULE-17",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_responsive_layout",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-18",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_rule_id_padding_with_long_anchor_ids",
       "status": "pass",
       "tier": "unit"
     }

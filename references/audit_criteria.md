@@ -1,8 +1,8 @@
-> Criteria-Version: 11
+> Criteria-Version: 12
 
 # Proof Audit Criteria
 
-This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit pipeline has three stages: a pre-filter (Pass 0) identifies structural-only specs, deterministic static analysis (Pass 1) catches structural test defects like `assert True` and logic mirroring, and LLM semantic evaluation (Pass 2) checks whether tests actually prove their rules. The first two are fast and always run. The LLM stage runs only for proofs that survive the first two. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
+This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit pipeline has three stages: a pre-filter (Pass 0) excludes structural checks, deterministic static analysis (Pass 1) catches structural test defects like `assert True` and logic mirroring, and LLM semantic evaluation (Pass 2) checks whether tests actually prove their rules. The first two are fast and always run. The LLM stage runs only for proofs that survive the first two. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
 
 ## Assessment Levels
 
@@ -10,27 +10,20 @@ This document defines how `purlin:audit` evaluates whether test code actually pr
 |-------|--------|---------|---------------|
 | STRONG | ✓ | Test meaningfully proves the rule — assertions match proof description, tests real behavior | Pass 2 (LLM) |
 | WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described | Pass 2 (LLM) |
-| WEAK (structural) | ~s | All proofs in the spec are grep/existence checks — proves document content, not system behavior | Pass 0 (deterministic) |
 | HOLLOW | ✗ | Test passes but doesn't prove the rule — structural defect caught deterministically | Pass 1 (static) |
 | MANUAL | ● | Human-verified via @manual stamp — assess staleness only | Either pass |
 
-## Pass 0 — Spec Coverage Check (deterministic)
+## Pre-filter: Structural Check Exclusion (Pass 0 — deterministic)
 
-Before evaluating individual proofs, check whether the spec's rules describe behavioral constraints or only structural presence checks. This uses `scripts/audit/static_checks.py --check-spec-coverage`.
+Before evaluating individual proofs, classify each proof description as structural or behavioral.
 
-A **structural-only spec** is one where ALL rules describe document-structure checks (e.g., "file exists", "section contains X", "field present in Y", "grep for Z") and NONE describe behavioral outcomes (e.g., "returns 200", "rejects invalid input", "logs warning when", "blocks push").
+**Structural** — proof describes file/string presence checks: grep for pattern, file exists, section exists, field present, contains string/line. These verify document content, not system behavior.
 
-Detection heuristics (same as `_is_structural_only` in sync_status):
-- **Structural indicators:** grep, verify...exist, verify...present, verify...section, verify...field, verify...appear, verify...contain
-- **Behavioral indicators:** returns, rejects, blocks, logs, sends, creates, deletes, updates, computes, detects, emits
+**Behavioral** — proof describes observable outcomes: returns, rejects, blocks, sends, creates, renders, computes, detects. These verify the system does what the rule claims.
 
-When Pass 0 identifies a structural-only spec:
-- All proofs in that spec are **capped at WEAK** regardless of Pass 1 and Pass 2 results. Structural proofs verify that documents have the right content, not that the system follows those instructions. They count as 0 toward the integrity score.
-- Pass 1 and Pass 2 are skipped for that spec's proofs — the WEAK (structural) assessment is final.
-- The audit report includes a `SPEC COVERAGE` line: `SPEC COVERAGE: structural only (N rules, 0 behavioral)`
-- The report appends: `→ Consider: add behavioral rules that test the system follows these instructions, then write matching E2E proofs`
+Structural proofs are **excluded from the audit**. They are not assessed, not scored, and not included in the integrity score. They still run as checks in the test suite, but they are not proofs.
 
-Specs with at least one behavioral rule proceed to Pass 1 and Pass 2 normally.
+Only behavioral proofs proceed to Pass 1 (static analysis) and Pass 2 (LLM evaluation).
 
 ## Pass 1 — Deterministic Checks (static_checks.py)
 
@@ -103,9 +96,9 @@ These rules apply when writing or reviewing any proof-marked test. Violating the
 
 ## Scoring
 
-Integrity score = (STRONG count + MANUAL count) / total proofs x 100%
+Integrity score = (STRONG count + MANUAL count) / behavioral rules × 100%
 
-WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting). Structural-only proofs (capped WEAK by Pass 0) count as 0 — they are included in the total but not the numerator.
+The denominator is the total number of **behavioral rules** (not just rules with proofs). Rules with NO_PROOF count in the denominator but contribute 0 to the numerator — missing proofs reduce the score. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
 ## Finding Priority
 
@@ -130,18 +123,6 @@ When reporting, group findings by tier. When fixing (manually or via builder), w
 
 - HIGH: any WEAK with "missing" in criterion, "only happy path", "only checks", deep mocking, missing negative test for constraint rules
 - LOW: assertion farming, catch-all assertions, string containment instead of equality, time-dependent tests
-
-### Structural-only in --audit mode
-
-When `purlin:verify --audit` runs, features flagged structural-only by Pass 0 are reported separately from behavioral features:
-
-```
-Behavioral features: 2/2 MATCH
-Structural-only features: 2/2 MATCH (not counted toward integrity score)
-→ Structural-only features need behavioral rules and E2E proofs for full audit credit
-```
-
-Structural-only features still receive receipts and MATCH/MISMATCH reporting, but they are excluded from the integrity score denominator. This makes it visible that coverage is document-level, not behavioral.
 
 ## Audit Caching
 

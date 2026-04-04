@@ -14,9 +14,9 @@ Deterministic pre-filter that catches structural test problems without any LLM. 
 - RULE-4: Detects logic mirroring (expected value from same function as SUT)
 - RULE-5: Detects mock target matching the function being tested (requires --spec-path)
 - RULE-6: Returns JSON with proof_id, rule_id, test_name, status, reason for each proof
-- RULE-7: Exit code 0 when all pass, exit code 1 when any fail
-- RULE-8: check_spec_coverage returns structural_only_spec=true when all rules are structural presence checks
-- RULE-9: check_spec_coverage returns structural_only_spec=false when at least one rule describes behavioral constraints
+- RULE-7: Always exits 0 for completed analysis; defects are reported via JSON output status=fail, not exit codes. Non-zero exits (2) are reserved for real errors (bad args, missing files)
+- RULE-8: check_spec_coverage returns structural_only_spec=true and per-rule structural/behavioral classification when all rules are structural presence checks
+- RULE-9: check_spec_coverage returns structural_only_spec=false and per-rule structural/behavioral classification when at least one rule describes behavioral constraints
 - RULE-10: compute_proof_hash returns a deterministic 16-char hex hash from (rule text, proof description, test code)
 - RULE-11: read_audit_cache returns an empty dict when no cache file exists and parses valid JSON when it does
 - RULE-12: write_audit_cache writes atomically via tmp + os.replace
@@ -31,9 +31,9 @@ Deterministic pre-filter that catches structural test problems without any LLM. 
 - PROOF-4 (RULE-4): Run static_checks on a file with logic mirroring; verify status=fail check=logic_mirroring
 - PROOF-5 (RULE-5): Run static_checks with --spec-path on a file mocking the rule's function; verify status=fail check=mock_target_match
 - PROOF-6 (RULE-6): Run static_checks on any file; verify JSON output has proofs array with required fields
-- PROOF-7 (RULE-7): Run static_checks on a clean file and verify exit 0; run on flawed file and verify exit 1
-- PROOF-8 (RULE-8): Create spec with only grep/existence rules; call check_spec_coverage; verify structural_only_spec is true
-- PROOF-9 (RULE-9): Create spec with behavioral rules (returns, rejects); call check_spec_coverage; verify structural_only_spec is false
+- PROOF-7 (RULE-7): Run static_checks on a clean file and verify exit 0; run on a flawed file and verify exit 0 with status=fail in JSON output
+- PROOF-8 (RULE-8): Create spec with only grep/existence rules; call check_spec_coverage; verify structural_only_spec is true and structural_proofs list contains all rules
+- PROOF-9 (RULE-9): Create spec with behavioral rules (returns, rejects); call check_spec_coverage; verify structural_only_spec is false and behavioral_proofs list contains behavioral rules
 - PROOF-10 (RULE-10): Call compute_proof_hash with same inputs twice and verify identical 16-char hex output; call with different inputs and verify different hash
 - PROOF-11 (RULE-11): Call read_audit_cache on a nonexistent path and verify empty dict; write valid JSON to the cache path and verify it parses correctly
 - PROOF-12 (RULE-12): Call write_audit_cache, then read the file back and verify contents match the written dict

@@ -12,6 +12,18 @@
 - Prove spec / code drift with signed verification
 - Enable multi-discipline collaboration with drift detection and anchor specs with external references
 
+## Quick Start
+
+After [installing Purlin](docs/installation-guide.md):
+
+```
+write a spec for login       ← describe what the feature must do
+build login                  ← code + tests written, iterates until all rules pass
+/purlin:verify               ← verification receipt committed — ship it
+```
+
+Three messages. Spec → code → ship.
+
 ## How It Works
 
 1. **Specs** define what your code must do. Each spec has rules (testable constraints) and proofs (observable assertions).

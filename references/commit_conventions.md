@@ -41,6 +41,23 @@ Where `combined-hash` = `sha256(sorted individual vhashes joined by comma)[:8]`.
 verify(<feature>): manual stamp PROOF-N
 ```
 
+## When to commit
+
+Skills commit at natural boundaries — after reaching a stable state, not after every file change.
+
+| Boundary | What to commit | Why |
+|----------|---------------|-----|
+| Spec approved | The spec .md file | Drift detection compares committed specs |
+| Build/test stable | Code + test files + proof .json files | Proof files are project records |
+| Proof files written | .proofs-*.json files | sync_status reads committed proofs |
+| Verification done | Receipt files + verify commit message | Already mandatory |
+| Anchor synced | Updated anchor file | Staleness checks use committed Pinned SHA |
+
+Do NOT commit:
+- After each failed test iteration (pollutes history)
+- Multiple skills' output in one batch commit (loses traceability)
+- Without checking sync_status first (may miss uncommitted proof files)
+
 ## General Rules
 
 - Commit at logical milestones, not at session end.

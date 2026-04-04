@@ -676,9 +676,9 @@ Builder → Auditor: "Fixed."
 Auditor → Builder: "PROOF-3 now STRONG ✓."
 ```
 
-### Cross-model auditing
+### Cross-model auditing (experimental)
 
-By default, Claude audits Claude. For independence, use an external LLM:
+By default, Claude audits Claude. For independence, you can use an external LLM. This feature is experimental — external LLM response formats vary and parsing may require iteration.
 
 ```
 purlin:init --audit-llm

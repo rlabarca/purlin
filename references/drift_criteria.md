@@ -2,7 +2,7 @@
 
 # Drift Detection Criteria
 
-This document defines how the `changelog` MCP tool and `purlin:drift` skill classify changed files and detect spec drift. The MCP tool implements deterministic classification. The skill applies semantic analysis on top.
+This document defines how the `drift` MCP tool and `purlin:drift` skill classify changed files and detect spec drift. The MCP tool implements deterministic classification. The skill applies semantic analysis on top.
 
 ## File Classification (MCP Tool — Deterministic)
 
@@ -93,7 +93,7 @@ Spec: purlin_agent (8 rules, 0 behavioral proofs)
 
 ## Broken Scope Detection
 
-When a spec's `> Scope:` references a file or directory that no longer exists on disk, the file was likely deleted or renamed without updating the spec. The `changelog` MCP tool checks every scope path in every spec against the filesystem:
+When a spec's `> Scope:` references a file or directory that no longer exists on disk, the file was likely deleted or renamed without updating the spec. The `drift` MCP tool checks every scope path in every spec against the filesystem:
 
 - **Exact paths** — checked via `os.path.exists()`
 - **Prefix paths** (trailing `/`) — checked via `os.path.isdir()`

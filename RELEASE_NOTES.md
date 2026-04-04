@@ -59,9 +59,9 @@ Complete redesign. Purlin v0.9.0 replaces the v1 system (35 skills, 5 agents, 8 
 - `specs/mcp/mcp_server.md` (34 rules) split into 4 focused specs:
   - `mcp_transport.md` (7 rules) — JSON-RPC transport
   - `sync_status.md` (15 rules) — rule coverage reporting
-  - `changelog.md` (11 rules) — structured change summary
+  - `drift.md` (11 rules) — structured change summary
   - `purlin_config.md` (1 rule) — config read/write
-- Tool names unchanged: `sync_status`, `purlin_config`, `changelog`
+- Tool names: `sync_status`, `purlin_config`, `drift`
 
 ### Teammate Spawning Now Invisible (0.9.0)
 

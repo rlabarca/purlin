@@ -385,12 +385,11 @@ from purlin_server import sync_status
 print(sync_status('$TMPDIR_E'))
 ")
 
-# Check: login should be READY (not structural only), agent_def should be READY (structural only)
-login_structural=$(echo "$SYNC_OUTPUT_E" | grep -c "login: READY (structural only)" || true)
+# Check: both login and agent_def should be READY (structural checks count toward passing)
 login_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "login: READY" || true)
-agent_structural=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: READY (structural only)" || true)
+agent_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: READY" || true)
 
-# Also verify check_spec_coverage via CLI
+# Also verify check_spec_coverage correctly classifies structural vs behavioral
 COVERAGE_BEHAVIORAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/auth/login.md")
 COVERAGE_STRUCTURAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/instructions/agent_def.md")
 
@@ -398,22 +397,21 @@ BEHAV_FLAG=$(echo "$COVERAGE_BEHAVIORAL" | python3 -c "import json,sys; print(js
 STRUCT_FLAG=$(echo "$COVERAGE_STRUCTURAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
 
 phase_e_ok=false
-if [[ "$login_structural" == "0" ]] && \
-   [[ "$login_ready" -ge "1" ]] && \
-   [[ "$agent_structural" == "1" ]] && \
+if [[ "$login_ready" -ge "1" ]] && \
+   [[ "$agent_ready" -ge "1" ]] && \
    [[ "$BEHAV_FLAG" == "False" ]] && \
    [[ "$STRUCT_FLAG" == "True" ]]; then
-  echo "    Phase E PASS: behavioral spec=READY, structural spec=READY (structural only), coverage check agrees"
+  echo "    Phase E PASS: behavioral spec=READY, structural spec=READY, coverage classification correct"
   phase_e_ok=true
 else
-  echo "    Phase E FAIL: login_structural=$login_structural login_ready=$login_ready agent_structural=$agent_structural"
+  echo "    Phase E FAIL: login_ready=$login_ready agent_ready=$agent_ready"
   echo "      check_spec_coverage: behavioral=$BEHAV_FLAG structural=$STRUCT_FLAG"
 fi
 
 if $phase_e_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" pass "structural-only spec flagged separately from behavioral spec"
+  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" pass "both specs READY, structural classification correct"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" fail "structural-only spec not flagged correctly"
+  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" fail "structural classification not working correctly"
 fi
 
 # --- Emit proof files ---

@@ -15,6 +15,14 @@ purlin:verify --manual <feature> <PROOF-N>  Stamp a manual proof in the spec
 
 ## Default Mode — Full Verification
 
+### Pre-check: uncommitted changes
+
+Before running verification, call sync_status. If it reports uncommitted spec/proof changes, warn the user:
+
+"There are uncommitted spec/proof changes. Verification receipts reference committed state — uncommitted changes won't be included in the vhash. Commit first?"
+
+If the user says yes, commit the changes. If no, proceed but note the receipts may not reflect current state.
+
 ### Step 1 — Run All Tests
 
 Run the full test suite across all tiers by calling `purlin:unit-test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
@@ -65,15 +73,15 @@ No receipt (M features):
 
 Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
 
-### Step 4a2 — Structural-Only Coverage Summary
+### Step 4a2 — Structural Check Summary
 
-After issuing receipts, check if any READY features have structural-only coverage (sync_status reports them as `READY (structural only)`). If so, add a summary section after the receipts table:
+After issuing receipts, check if any features have structural checks but are not READY (structural checks are not counted as proofs). If so, add a summary section after the receipts table:
 
 ```
-Structural-only coverage (no behavioral proofs):
-  purlin_agent (8 proofs — all grep/existence)
-  purlin_skills (6 proofs — all grep/existence)
-  purlin_references (9 proofs — all grep/existence)
+Features with structural checks only (not READY):
+  purlin_agent (8 structural checks, 0 behavioral proofs)
+  purlin_skills (6 structural checks, 0 behavioral proofs)
+  purlin_references (9 structural checks, 0 behavioral proofs)
 
 These specs prove documents have the right content, not that the system follows them.
 → Consider: create specs/integration/e2e_purlin_lifecycle.md with @e2e proofs that test actual agent behavior
@@ -176,8 +184,8 @@ Clean-room re-execution that compares results against committed receipts.
 1. Run the full test suite via `purlin:unit-test --all` (same as default mode).
 2. Compute vhash for each feature.
 3. Compare against existing `*.receipt.json` files.
-4. For each feature with a matching receipt, check if the spec is structural-only (sync_status reports `READY (structural only)`). Separate these from behavioral features.
-5. Report behavioral and structural-only features separately:
+4. For each feature with a matching receipt, verify it has behavioral proofs (structural-only features cannot have receipts).
+5. Report features:
 
 ```
 AUDIT RESULTS:

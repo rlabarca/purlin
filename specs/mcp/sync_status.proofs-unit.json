@@ -156,6 +156,24 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_warns_uncommitted_spec_changes",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_summary_table",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_mcp_server.py",

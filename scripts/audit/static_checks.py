@@ -435,24 +435,33 @@ def _read_rule_descriptions(spec_path):
 def check_spec_coverage(spec_path):
     """Check whether a spec's rules are behavioral or structural-only.
 
-    Returns dict with structural_only_spec, rule_count, behavioral_rule_count.
+    Returns dict with structural_only_spec, rule_count, behavioral_rule_count,
+    plus per-rule structural/behavioral classification.
     """
     rules = _read_rule_descriptions(spec_path)
     if not rules:
-        return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0}
+        return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0,
+                'structural_proofs': [], 'behavioral_proofs': [], 'structural_count': 0, 'behavioral_count': 0}
 
-    behavioral_count = 0
-    for desc in rules.values():
+    structural_proofs = []
+    behavioral_proofs = []
+    for rule_id, desc in rules.items():
         if _BEHAVIORAL_RULE_RE.search(desc):
-            behavioral_count += 1
-        elif not _STRUCTURAL_RULE_RE.search(desc):
+            behavioral_proofs.append(rule_id)
+        elif _STRUCTURAL_RULE_RE.search(desc):
+            structural_proofs.append(rule_id)
+        else:
             # If it doesn't match structural patterns either, assume behavioral
-            behavioral_count += 1
+            behavioral_proofs.append(rule_id)
 
     return {
-        'structural_only_spec': behavioral_count == 0,
+        'structural_only_spec': len(behavioral_proofs) == 0,
         'rule_count': len(rules),
-        'behavioral_rule_count': behavioral_count,
+        'behavioral_rule_count': len(behavioral_proofs),
+        'structural_proofs': sorted(structural_proofs),
+        'behavioral_proofs': sorted(behavioral_proofs),
+        'structural_count': len(structural_proofs),
+        'behavioral_count': len(behavioral_proofs),
     }
 
 # ---------------------------------------------------------------------------
@@ -577,8 +586,10 @@ def main():
     output = {'proofs': results}
     print(json.dumps(output, indent=2))
 
-    any_fail = any(r['status'] == 'fail' for r in results)
-    sys.exit(1 if any_fail else 0)
+    # Exit 0 even when defects are found — findings are communicated via
+    # JSON output ("status": "fail"), not exit codes.  Non-zero exits (2)
+    # are reserved for real errors (bad args, missing files).
+    sys.exit(0)
 
 
 if __name__ == '__main__':

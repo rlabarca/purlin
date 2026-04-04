@@ -11,7 +11,7 @@ JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdi
 ## Rules
 
 - RULE-1: The server implements MCP protocol version `2024-11-05` and responds to `initialize` with protocolVersion, capabilities, and serverInfo
-- RULE-2: `tools/list` returns exactly 3 tools: `sync_status`, `purlin_config`, `changelog` — matching the manifest definitions
+- RULE-2: `tools/list` returns exactly 3 tools: `sync_status`, `purlin_config`, `drift` — matching the manifest definitions
 - RULE-3: `notifications/initialized` produces no response (notification, not request)
 - RULE-4: Invalid JSON input returns error code `-32700` (Parse error)
 - RULE-5: Unknown methods return error code `-32601` with the method name in the message
@@ -21,7 +21,7 @@ JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdi
 ## Proof
 
 - PROOF-1 (RULE-1): Send initialize request; verify protocolVersion and serverInfo @integration
-- PROOF-2 (RULE-2): Send tools/list; verify exactly 3 tools named sync_status, purlin_config, changelog @integration
+- PROOF-2 (RULE-2): Send tools/list; verify exactly 3 tools named sync_status, purlin_config, drift @integration
 - PROOF-3 (RULE-3): Send notifications/initialized; verify no response on stdout @integration
 - PROOF-4 (RULE-4): Send invalid JSON; verify error code -32700 @integration
 - PROOF-5 (RULE-5): Send unknown method; verify error code -32601 with method name @integration

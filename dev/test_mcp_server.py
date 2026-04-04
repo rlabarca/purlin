@@ -1,4 +1,4 @@
-"""Tests for MCP server specs: mcp_transport (7 rules), sync_status (15 rules), changelog (11 rules), purlin_config (1 rule)."""
+"""Tests for MCP server specs: mcp_transport (7 rules), sync_status (15 rules), drift (11 rules), purlin_config (1 rule)."""
 
 import hashlib
 import json
@@ -44,7 +44,7 @@ class TestMCPProtocol:
         resp = self._call("tools/list")
         tools = resp["result"]["tools"]
         names = sorted(t["name"] for t in tools)
-        assert names == ["changelog", "purlin_config", "sync_status"]
+        assert names == ["drift", "purlin_config", "sync_status"]
         assert len(tools) == 3
 
     @pytest.mark.proof("mcp_transport", "PROOF-3", "RULE-3")
@@ -316,8 +316,8 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'READY (structural only)' in result
-        assert 'E2E' in result or 'behavioral' in result
+        # Structural proofs count toward READY
+        assert 'refs: READY' in result
 
     @pytest.mark.proof("sync_status", "PROOF-12", "RULE-12")
     def test_unresolved_requires_warning(self):
@@ -345,8 +345,8 @@ class TestSyncStatus:
             f.write(
                 '# Anchor: security\n\n'
                 '## What it does\nSecurity rules.\n\n'
-                '## Rules\n- RULE-1: No eval\n\n'
-                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+                '## Rules\n- RULE-1: Rejects code containing eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Run linter; verify eval calls are rejected\n'
             )
         # Create feature requiring anchor, with all proofs passing
         self._write_spec('login', (
@@ -379,8 +379,8 @@ class TestSyncStatus:
             f.write(
                 '# Anchor: security\n\n'
                 '## What it does\nSecurity rules.\n\n'
-                '## Rules\n- RULE-1: No eval\n- RULE-2: No exec\n\n'
-                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n- PROOF-2 (RULE-2): Grep for exec\n'
+                '## Rules\n- RULE-1: Rejects code containing eval\n- RULE-2: Rejects code containing exec\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Run linter; verify eval calls are rejected\n- PROOF-2 (RULE-2): Run linter; verify exec calls are rejected\n'
             )
         # Add proof for the new anchor RULE-2 so feature becomes READY
         self._write_proofs('security', [
@@ -468,8 +468,8 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        # Should NOT say "structural only" since the description is behavioral
-        assert 'structural only' not in result
+        # Should be READY since it's behavioral
+        assert 'api: READY' in result
 
     @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
     def test_structural_regex_accepts_grep_descriptions(self):
@@ -486,7 +486,122 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'READY (structural only)' in result
+        # Structural proofs count toward READY
+        assert 'refs: READY' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-16", "RULE-16")
+    def test_warns_uncommitted_spec_changes(self):
+        """Uncommitted .md and .proofs-*.json changes in specs/ trigger a warning."""
+        # Set up a real git repo in the temp directory
+        subprocess.run(['git', 'init'], cwd=self.project_root, capture_output=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=self.project_root, capture_output=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=self.project_root, capture_output=True)
+
+        # Write and commit a spec
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        subprocess.run(['git', 'add', 'specs/'], cwd=self.project_root, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add spec'], cwd=self.project_root, capture_output=True)
+
+        # Modify the spec without committing
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n- RULE-2: Return 401\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+            '- PROOF-2 (RULE-2): POST invalid creds\n'
+        ))
+
+        result = purlin_server.sync_status(self.project_root)
+        assert '\u26a0 Uncommitted spec/proof changes detected:' in result
+        assert 'login.md' in result
+        assert 'Commit these files' in result
+
+        # Commit the change — warning should disappear
+        subprocess.run(['git', 'add', 'specs/'], cwd=self.project_root, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'update spec'], cwd=self.project_root, capture_output=True)
+
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Uncommitted' not in result
+
+    @pytest.mark.proof("sync_status", "PROOF-18", "RULE-18")
+    def test_summary_table(self):
+        """sync_status output begins with a summary table."""
+        # Feature 1: fully proved (READY)
+        self._write_spec('alpha', (
+            '# Feature: alpha\n\n'
+            '## What it does\nAlpha feature.\n\n'
+            '## Rules\n- RULE-1: Alpha does X\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Run alpha test\n'
+        ))
+        self._write_proofs('alpha', [
+            {"feature": "alpha", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_alpha",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # Feature 2: partially proved
+        self._write_spec('beta', (
+            '# Feature: beta\n\n'
+            '## What it does\nBeta feature.\n\n'
+            '## Rules\n- RULE-1: Beta does X\n- RULE-2: Beta does Y\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Run beta X test\n'
+            '- PROOF-2 (RULE-2): Run beta Y test\n'
+        ))
+        self._write_proofs('beta', [
+            {"feature": "beta", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_beta_x",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # Feature 3: no proofs
+        self._write_spec('gamma', (
+            '# Feature: gamma\n\n'
+            '## What it does\nGamma feature.\n\n'
+            '## Rules\n- RULE-1: Gamma does X\n- RULE-2: Gamma does Y\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Run gamma X test\n'
+            '- PROOF-2 (RULE-2): Run gamma Y test\n'
+        ))
+
+        result = purlin_server.sync_status(self.project_root)
+
+        # Table starts the output (┌ is first character)
+        assert result.startswith('\u250c'), f"Expected table at start, got: {result[:80]}"
+
+        # Summary line with correct count
+        assert '1/3 features READY' in result
+
+        # Verify table contains all features
+        assert '\u2502 alpha' in result
+        assert '\u2502 beta' in result
+        assert '\u2502 gamma' in result
+
+        # Verify sort order: partial before READY before —
+        beta_idx = result.index('\u2502 beta')
+        alpha_idx = result.index('\u2502 alpha')
+        gamma_idx = result.index('\u2502 gamma')
+        assert beta_idx < alpha_idx < gamma_idx, \
+            "Table should sort: partial, READY, \u2014"
+
+        # Detail section follows after table
+        lines = result.split('\n')
+        table_end = None
+        for i, line in enumerate(lines):
+            if line.startswith('\u2514'):
+                table_end = i
+                break
+        assert table_end is not None, "No table closing line found"
+        # After └... line, summary line, blank line, then detail
+        detail_text = '\n'.join(lines[table_end + 3:])
+        assert 'alpha: READY' in detail_text
+        assert 'beta: 1/2 rules proved' in detail_text
+        assert 'gamma: 0/2 rules proved' in detail_text
 
 
 class TestPurlinConfig:
@@ -525,8 +640,8 @@ class TestPurlinConfig:
             f"Full config should be exactly {{test_key: test_val}}, got {full_config}"
 
 
-class TestChangelog:
-    """changelog RULE-1 through RULE-5: changelog tool."""
+class TestDrift:
+    """drift RULE-1 through RULE-5: drift tool."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -569,7 +684,7 @@ class TestChangelog:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("changelog", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("drift", "PROOF-1", "RULE-1")
     def test_since_anchor_resolution(self):
         ref, desc = purlin_server._resolve_since_anchor(self.project_root, since_arg="5")
         assert ref == "HEAD~5"
@@ -584,25 +699,25 @@ class TestChangelog:
         ).stdout.strip()
         assert ref == verify_sha, f"Expected ref={verify_sha}, got ref={ref}"
 
-    @pytest.mark.proof("changelog", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("drift", "PROOF-2", "RULE-2")
     def test_file_classification(self):
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         categories = {f['path']: f['category'] for f in data['files']}
         assert categories.get('specs/auth/login.md') == 'CHANGED_SPECS'
         assert categories.get('tests/test_login.py') == 'TESTS_ADDED'
         assert categories.get('README.md') == 'NO_IMPACT'
 
-    @pytest.mark.proof("changelog", "PROOF-3", "RULE-3")
-    def test_changelog_json_structure(self):
-        result_text = purlin_server.changelog(self.project_root)
+    @pytest.mark.proof("drift", "PROOF-3", "RULE-3")
+    def test_drift_json_structure(self):
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         for key in ('since', 'commits', 'files', 'spec_changes', 'proof_status'):
             assert key in data, f"Missing key: {key}"
 
 
-    @pytest.mark.proof("changelog", "PROOF-4", "RULE-4")
-    def test_changelog_structural_only_flag(self):
+    @pytest.mark.proof("drift", "PROOF-4", "RULE-4")
+    def test_drift_structural_only_flag(self):
         # Add a structural-only spec with passing proofs
         spec_content = (
             '# Feature: refs\n\n'
@@ -626,14 +741,15 @@ class TestChangelog:
         subprocess.run(['git', 'commit', '-m', 'feat: add refs spec'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         assert 'refs' in data['proof_status']
-        assert data['proof_status']['refs']['structural_only'] is True
+        assert data['proof_status']['refs']['structural_checks'] == 1
+        assert data['proof_status']['refs']['proved'] == 1
 
 
-    @pytest.mark.proof("changelog", "PROOF-5", "RULE-5")
-    def test_changelog_includes_required_in_total(self):
+    @pytest.mark.proof("drift", "PROOF-5", "RULE-5")
+    def test_drift_includes_required_in_total(self):
         # Add an anchor with 2 rules
         anchor_dir = os.path.join(self.project_root, 'specs', 'schema')
         os.makedirs(anchor_dir, exist_ok=True)
@@ -658,15 +774,15 @@ class TestChangelog:
         subprocess.run(['git', 'commit', '-m', 'feat: add anchor'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         # login has 2 own rules + 2 required from api_conv = 4 total
         assert 'login' in data['proof_status']
         assert data['proof_status']['login']['total'] == 4
 
 
-class TestChangelogDrift:
-    """changelog RULE-6 through RULE-10: drift detection."""
+class TestDriftDetection:
+    """drift RULE-6 through RULE-10: drift detection."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -691,7 +807,7 @@ class TestChangelogDrift:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("changelog", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("drift", "PROOF-6", "RULE-6")
     def test_skill_md_not_no_impact(self):
         """Skill .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
         skill_dir = os.path.join(self.project_root, 'skills', 'build')
@@ -703,13 +819,13 @@ class TestChangelogDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: add build skill'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         categories = {f['path']: f['category'] for f in data['files']}
         assert categories.get('skills/build/SKILL.md') == 'NEW_BEHAVIOR', \
             f"Expected NEW_BEHAVIOR, got {categories.get('skills/build/SKILL.md')}"
 
-    @pytest.mark.proof("changelog", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("drift", "PROOF-6", "RULE-6")
     def test_agent_md_not_no_impact(self):
         """.claude/agents/ .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
         agent_dir = os.path.join(self.project_root, '.claude', 'agents')
@@ -721,13 +837,13 @@ class TestChangelogDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: add helper agent'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         categories = {f['path']: f['category'] for f in data['files']}
         assert categories.get('.claude/agents/helper.md') == 'NEW_BEHAVIOR', \
             f"Expected NEW_BEHAVIOR, got {categories.get('.claude/agents/helper.md')}"
 
-    @pytest.mark.proof("changelog", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("drift", "PROOF-7", "RULE-7")
     def test_scope_prefix_matching(self):
         """Scope with trailing slash matches files in that directory."""
         # Create a spec with directory scope
@@ -745,7 +861,7 @@ class TestChangelogDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: add api'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         categories = {f['path']: f['category'] for f in data['files']}
         assert categories.get('src/api/login.js') == 'CHANGED_BEHAVIOR', \
@@ -754,9 +870,9 @@ class TestChangelogDrift:
         spec_map = {f['path']: f['spec'] for f in data['files']}
         assert spec_map.get('src/api/login.js') == 'login'
 
-    @pytest.mark.proof("changelog", "PROOF-8", "RULE-8")
+    @pytest.mark.proof("drift", "PROOF-8", "RULE-8")
     def test_structural_drift_flag(self):
-        """CHANGED_BEHAVIOR file gets structural_drift when spec is structural-only."""
+        """CHANGED_BEHAVIOR file gets behavioral_gap when spec has no behavioral proofs."""
         # Create a structural-only spec with scope and passing proof
         with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
             f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
@@ -786,17 +902,17 @@ class TestChangelogDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: implement login'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         login_entry = next((f for f in data['files'] if f['path'] == 'src/login.py'), None)
-        assert login_entry is not None, "src/login.py not in changelog files"
+        assert login_entry is not None, "src/login.py not in drift files"
         assert login_entry['category'] == 'CHANGED_BEHAVIOR'
-        assert login_entry.get('structural_drift') is True, \
-            f"Expected structural_drift=True, got {login_entry}"
+        assert login_entry.get('behavioral_gap') is True, \
+            f"Expected behavioral_gap=True, got {login_entry}"
 
-    @pytest.mark.proof("changelog", "PROOF-9", "RULE-9")
+    @pytest.mark.proof("drift", "PROOF-9", "RULE-9")
     def test_drift_flags_array(self):
-        """drift_flags array contains structural-only features with changed files."""
+        """drift_flags array contains features with behavioral gap and changed files."""
         # Same setup as structural_drift test
         with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
             f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
@@ -825,16 +941,16 @@ class TestChangelogDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: implement login'],
                        cwd=self.project_root, capture_output=True, check=True)
 
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         assert 'drift_flags' in data
         assert len(data['drift_flags']) >= 1
         login_drift = next((d for d in data['drift_flags'] if d['spec'] == 'login'), None)
         assert login_drift is not None, f"No drift flag for login, got {data['drift_flags']}"
-        assert login_drift['reason'] == 'structural_only_with_code_change'
+        assert login_drift['reason'] == 'behavioral_gap_with_code_change'
         assert 'src/login.py' in login_drift['files']
 
-    @pytest.mark.proof("changelog", "PROOF-10", "RULE-10")
+    @pytest.mark.proof("drift", "PROOF-10", "RULE-10")
     def test_broken_scope_detection(self):
         """Broken scope: spec references a file that doesn't exist on disk."""
         # Update the spec to reference a non-existent file
@@ -849,7 +965,7 @@ class TestChangelogDrift:
                        cwd=self.project_root, capture_output=True, check=True)
 
         # Do NOT create src/deleted.py on disk
-        result_text = purlin_server.changelog(self.project_root)
+        result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         assert 'broken_scopes' in data, "broken_scopes field missing from result"
         broken = [b for b in data['broken_scopes'] if b['spec'] == 'login']
@@ -857,10 +973,10 @@ class TestChangelogDrift:
         assert 'src/deleted.py' in broken[0]['missing_paths']
 
 
-class TestChangelogSmartFallback:
-    """changelog RULE-11: smart fallback."""
+class TestDriftSmartFallback:
+    """drift RULE-11: smart fallback."""
 
-    @pytest.mark.proof("changelog", "PROOF-11", "RULE-11")
+    @pytest.mark.proof("drift", "PROOF-11", "RULE-11")
     def test_large_repo_recommends_spec_from_code(self):
         """50+ commits, no verify, no tag → recommendation."""
         project_root = tempfile.mkdtemp()
@@ -887,7 +1003,7 @@ class TestChangelogSmartFallback:
             subprocess.run(['git', 'commit', '-m', f'feat: change {i}'],
                            cwd=project_root, capture_output=True, check=True)
         try:
-            result_text = purlin_server.changelog(project_root)
+            result_text = purlin_server.drift(project_root)
             data = json.loads(result_text)
             assert data.get('recommendation') == 'spec-from-code', \
                 f"Expected recommendation, got: {list(data.keys())}"
@@ -895,9 +1011,9 @@ class TestChangelogSmartFallback:
         finally:
             shutil.rmtree(project_root)
 
-    @pytest.mark.proof("changelog", "PROOF-11", "RULE-11")
-    def test_small_repo_returns_normal_changelog(self):
-        """10 commits, no verify, no tag → normal changelog."""
+    @pytest.mark.proof("drift", "PROOF-11", "RULE-11")
+    def test_small_repo_returns_normal_drift(self):
+        """10 commits, no verify, no tag → normal drift."""
         project_root = tempfile.mkdtemp()
         os.makedirs(os.path.join(project_root, '.purlin'))
         subprocess.run(['git', 'init'], cwd=project_root,
@@ -923,10 +1039,10 @@ class TestChangelogSmartFallback:
             subprocess.run(['git', 'commit', '-m', f'feat: change {i}'],
                            cwd=project_root, capture_output=True, check=True)
         try:
-            result_text = purlin_server.changelog(project_root)
+            result_text = purlin_server.drift(project_root)
             data = json.loads(result_text)
-            # Should be normal changelog, not a recommendation
-            assert 'since' in data, f"Expected normal changelog, got: {list(data.keys())}"
+            # Should be normal drift, not a recommendation
+            assert 'since' in data, f"Expected normal drift, got: {list(data.keys())}"
             assert 'recommendation' not in data
         finally:
             shutil.rmtree(project_root)

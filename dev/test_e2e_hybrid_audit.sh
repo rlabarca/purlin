@@ -233,19 +233,20 @@ fi
 # ==========================================================================
 # Phase G — Exit codes
 # ==========================================================================
-echo "  --- Phase G: Exit codes (0 for clean, 1 for failures) ---"
+echo "  --- Phase G: Exit 0 always, defects reported in JSON ---"
 
-# Exit 0 from Phase E (all pass), Exit 1 from Phase A (has failures)
+# Exit 0 from Phase E (all pass) and exit 0 from Phase A (has failures — defects in JSON)
 EXIT_CLEAN=$EXIT_E
-EXIT_FAIL=0
-python3 "$STATIC_CHECKS" "$TMPDIR_A/test_login.py" "login" --spec-path "$TMPDIR_A/specs/auth/login.md" > /dev/null 2>&1 || EXIT_FAIL=$?
+EXIT_DEFECTS=0
+DEFECTS_OUTPUT=$(python3 "$STATIC_CHECKS" "$TMPDIR_A/test_login.py" "login" --spec-path "$TMPDIR_A/specs/auth/login.md" 2>&1) || EXIT_DEFECTS=$?
+HAS_FAIL=$(echo "$DEFECTS_OUTPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if any(p['status']=='fail' for p in d['proofs']) else 'false')")
 
-if [[ "$EXIT_CLEAN" == "0" && "$EXIT_FAIL" == "1" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" pass "exit 0 on clean, exit 1 on failures"
-  echo "    PASS: exit 0 (clean) and exit 1 (failures)"
+if [[ "$EXIT_CLEAN" == "0" && "$EXIT_DEFECTS" == "0" && "$HAS_FAIL" == "true" ]]; then
+  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" pass "exit 0 on clean and on failures; defects reported via JSON status=fail"
+  echo "    PASS: exit 0 (clean), exit 0 (failures with status=fail in JSON)"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" fail "Expected exit 0/1; got $EXIT_CLEAN/$EXIT_FAIL"
-  echo "    FAIL: got exit $EXIT_CLEAN (clean) $EXIT_FAIL (failures)"
+  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" fail "Expected exit 0/0 with JSON fail; got exit_clean=$EXIT_CLEAN exit_defects=$EXIT_DEFECTS has_fail=$HAS_FAIL"
+  echo "    FAIL: got exit_clean=$EXIT_CLEAN exit_defects=$EXIT_DEFECTS has_fail=$HAS_FAIL"
 fi
 
 # ==========================================================================

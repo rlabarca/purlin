@@ -28,7 +28,17 @@ Create a new anchor spec in `specs/_anchors/`.
 3. Write the spec using the anchor format from `references/formats/anchor_format.md`.
 4. If `--source <url>` is provided, add `> Source:` and `> Pinned:` metadata and read the external content to inform the rules.
 5. Validate all references exist before committing.
-6. Commit the anchor spec per `references/commit_conventions.md`.
+
+### Commit (mandatory)
+
+After creating the anchor, commit immediately:
+
+```
+git add specs/_anchors/<name>.md
+git commit -m "anchor(<name>): create cross-cutting constraint"
+```
+
+Do not batch with other changes. Drift detection and staleness checks depend on committed anchor state.
 
 ## add-figma
 

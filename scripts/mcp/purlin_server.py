@@ -363,9 +363,11 @@ def _relative_time(iso_timestamp):
     return f"{days} day{'s' if days != 1 else ''} ago"
 
 
-def _read_audit_summary(project_root):
+def _read_audit_summary(project_root, total_behavioral_rules=None):
     """Read audit cache and compute project-wide integrity summary.
 
+    If total_behavioral_rules is provided, rules with NO_PROOF reduce the
+    integrity score (they count in the denominator but contribute 0).
     Returns dict with integrity stats or None if no cache exists.
     """
     cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
@@ -406,7 +408,8 @@ def _read_audit_summary(project_root):
     if behavioral_total == 0:
         return None
 
-    integrity = round((strong + manual) / behavioral_total * 100)
+    denominator = max(behavioral_total, total_behavioral_rules or 0)
+    integrity = round((strong + manual) / denominator * 100)
     stale = False
     if latest_ts:
         try:
@@ -556,6 +559,7 @@ def sync_status(project_root, role=None):
 
     summary_rows = []
     detail = []
+    total_behavioral_rules = 0
 
     # Process regular features
     for name in sorted(regular.keys()):
@@ -572,6 +576,9 @@ def sync_status(project_root, role=None):
         active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
         active_total = len(active_entries)
         structural_rules = _classify_structural_rules(active_entries, info, features)
+        feature_behavioral = sum(1 for key, _, _ in active_entries
+                                 if key not in structural_rules)
+        total_behavioral_rules += feature_behavioral
         behavioral_proved = sum(1 for key, _, _ in active_entries
                                 if key not in structural_rules
                                 and proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -631,7 +638,7 @@ def sync_status(project_root, role=None):
             summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
 
     # Read audit cache for integrity summary
-    audit_summary = _read_audit_summary(project_root)
+    audit_summary = _read_audit_summary(project_root, total_behavioral_rules)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary)
@@ -828,13 +835,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Header — all active rules have behavioral proofs (READY)
-    if behavioral_proved == active_total and not warnings:
+    # Header — all active rules proved (READY)
+    if proved == active_total and not warnings:
         if visual_hash_changed:
             lines.append(f"{name}: READY but visual reference changed")
         else:
             lines.append(f"{name}: READY")
-        lines.append(f"  {behavioral_proved}/{active_total} rules proved \u2713{deferred_suffix}")
+        lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         lines.append(f"  vhash={vhash}")
@@ -879,9 +886,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         _append_scope_suggestions(lines, name, info, all_features, global_anchors)
         return lines
 
-    lines.append(f"{name}: {behavioral_proved}/{active_total} rules proved{deferred_suffix}")
-    if structural_passing:
-        lines.append(f"  {structural_passing} structural checks passing (not counted as proofs)")
+    lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
@@ -912,10 +917,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
                     break
 
         if proof and proof.get('status') == 'pass':
-            if key in structural_rules:
-                lines.append(f"  {key}: CHECK ({label}) \u2014 structural, not counted")
-            else:
-                lines.append(f"  {key}: PASS ({label})")
+            lines.append(f"  {key}: PASS ({label})")
         elif proof and proof.get('status') == 'fail':
             test_name = proof.get('test_name', '?')
             lines.append(f"  {key}: FAIL ({label})")
@@ -949,14 +951,6 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             if src_info.get('is_anchor'):
                 lines.append(f"  Note: read specs/_anchors/{src_feature}.md for exact assertion values before writing tests")
             lines.append(f"  \u2192 Run: purlin:unit-test")
-
-    # Structural-only guidance
-    if structural_passing and behavioral_proved == 0:
-        lines.append("  \u2192 Structural checks verify document content, not system behavior")
-        lines.append("  \u2192 Add behavioral rules with E2E proofs for real coverage")
-    elif structural_passing:
-        needs_behavioral = active_total - behavioral_proved
-        lines.append(f"  \u2192 {needs_behavioral} rules need behavioral proofs")
 
     # If no proof files at all
     feature_proofs = all_proofs.get(name, [])
@@ -1074,8 +1068,12 @@ def _read_audit_cache_by_feature(project_root):
     return by_feature
 
 
-def _build_feature_audit(entries):
-    """Build per-feature audit data from cache entries."""
+def _build_feature_audit(entries, behavioral_rule_count=None):
+    """Build per-feature audit data from cache entries.
+
+    If behavioral_rule_count is provided, rules with NO_PROOF reduce the
+    integrity score (they count in the denominator but contribute 0).
+    """
     strong = 0
     weak = 0
     hollow = 0
@@ -1113,7 +1111,11 @@ def _build_feature_audit(entries):
     if behavioral_total == 0:
         return None
 
-    integrity = round((strong + manual) / behavioral_total * 100)
+    denominator = max(behavioral_total, behavioral_rule_count or 0)
+    if denominator == 0:
+        return None
+
+    integrity = round((strong + manual) / denominator * 100)
 
     # Sort findings by priority
     prio_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
@@ -1133,6 +1135,13 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                        audit_summary=None):
     """Build the structured PURLIN_DATA dict for the dashboard."""
     audit_by_feature = _read_audit_cache_by_feature(project_root)
+    # Build per-proof audit lookup: (feature_name, proof_id) -> assessment
+    audit_by_proof = {}
+    for feat_name, entries in audit_by_feature.items():
+        for e in entries:
+            pid = e.get('proof_id', '')
+            if pid:
+                audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
     summary = {'total_features': 0, 'ready': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
     anchors_total = 0
@@ -1162,10 +1171,9 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         active_total = len(active_entries)
 
         structural_rules = _classify_structural_rules(active_entries, info, features)
-        behavioral_proved = sum(
+        proved = sum(
             1 for key, _, _ in active_entries
-            if key not in structural_rules
-            and proof_by_rule.get(key, {}).get('status') == 'pass'
+            if proof_by_rule.get(key, {}).get('status') == 'pass'
         )
         structural_passing = sum(
             1 for key, _, _ in active_entries
@@ -1174,7 +1182,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         )
         has_fail = any(
             proof_by_rule.get(key, {}).get('status') == 'fail'
-            for key, _, _ in active_entries if key not in structural_rules
+            for key, _, _ in active_entries
         )
 
         # Determine status
@@ -1182,9 +1190,9 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             status = 'no_proofs'
         elif has_fail:
             status = 'FAIL'
-        elif behavioral_proved == active_total:
+        elif proved == active_total:
             status = 'READY'
-        elif behavioral_proved > 0:
+        elif proved > 0:
             status = 'partial'
         else:
             status = 'no_proofs'
@@ -1239,8 +1247,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 desc_by_id = src_info.get('proof_desc_by_id', {})
 
             proofs_data = []
+            audit_feat = name if label == 'own' else src_feature
             for p in rule_proofs:
                 pid = p.get('id', '')
+                proof_audit = audit_by_proof.get((audit_feat, pid), '')
+                if not proof_audit and label != 'own':
+                    proof_audit = audit_by_proof.get((name, pid), '')
                 proofs_data.append({
                     'id': pid,
                     'description': desc_by_id.get(pid, ''),
@@ -1248,12 +1260,15 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'test_name': p.get('test_name', ''),
                     'tier': p.get('tier', 'unit'),
                     'status': p.get('status', ''),
+                    'audit': proof_audit,
                 })
 
             if is_deferred:
                 rule_status = 'DEFERRED'
             elif key in structural_rules and best_proof and best_proof.get('status') == 'pass':
                 rule_status = 'CHECK'
+            elif key in structural_rules and best_proof and best_proof.get('status') == 'fail':
+                rule_status = 'CHECK_FAIL'
             elif best_proof and best_proof.get('status') == 'pass':
                 rule_status = 'PASS'
             elif best_proof and best_proof.get('status') == 'fail':
@@ -1277,7 +1292,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'type': 'anchor' if is_anchor else 'feature',
             'is_global': info.get('is_global', False),
             'source_url': info.get('source_url'),
-            'proved': behavioral_proved,
+            'proved': proved,
             'total': active_total,
             'deferred': deferred_count,
             'status': status,
@@ -1285,7 +1300,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'vhash': vhash,
             'receipt': receipt_data,
             'rules': rules_list,
-            'audit': _build_feature_audit(audit_by_feature.get(name, [])),
+            'audit': _build_feature_audit(
+                audit_by_feature.get(name, []),
+                behavioral_rule_count=sum(
+                    1 for key, _, _ in active_entries if key not in structural_rules
+                ),
+            ),
         })
 
     return {
@@ -1328,7 +1348,7 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
 
 
 # ---------------------------------------------------------------------------
-# changelog tool
+# drift tool
 # ---------------------------------------------------------------------------
 
 _NO_IMPACT_PATTERNS = (
@@ -1396,7 +1416,7 @@ def _resolve_since_anchor(project_root, since_arg=None):
         count = int(count_str) if count_str.isdigit() else 0
         if count < 30:
             return init_sha, f'since Purlin init ({count} commits)'
-        # Too many commits — return recommendation instead of changelog
+        # Too many commits — return recommendation instead of drift
         return None, json.dumps({
             'recommendation': 'spec-from-code',
             'reason': (f'No verification history found and {count} commits exist '
@@ -1471,8 +1491,8 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
     return changes
 
 
-def changelog(project_root, since=None, role=None):
-    """Generate structured changelog data as JSON."""
+def drift(project_root, since=None, role=None):
+    """Generate structured drift data as JSON."""
     since_ref, since_desc = _resolve_since_anchor(project_root, since)
 
     # If ref is None, _resolve_since_anchor returned a recommendation
@@ -1617,10 +1637,10 @@ def changelog(project_root, since=None, role=None):
         structural_checks = sum(1 for key, _, _ in active_entries
                                if key in structural_rules
                                and proof_by_rule.get(key, {}).get('status') == 'pass')
-        status = 'READY' if behavioral_proved == active_total else 'FAILING' if failing else 'partial'
+        status = 'READY' if proved == active_total else 'FAILING' if failing else 'partial'
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
-            'proved': behavioral_proved,
+            'proved': proved,
             'total': active_total,
             'status': status,
             'failing_rules': failing,
@@ -1637,7 +1657,8 @@ def changelog(project_root, since=None, role=None):
         spec_name = entry.get('spec')
         if spec_name and entry['category'] == 'CHANGED_BEHAVIOR':
             ps = proof_status.get(spec_name, {})
-            if ps.get('structural_checks', 0) > 0 and ps.get('proved', 0) == 0:
+            sc = ps.get('structural_checks', 0)
+            if sc > 0 and sc == ps.get('proved', 0):
                 entry['behavioral_gap'] = True
 
     # Build drift_flags summary (deduplicated by spec name)
@@ -1765,8 +1786,8 @@ TOOLS = [
         }
     },
     {
-        "name": "changelog",
-        "description": "Structured changelog since last verification. Returns JSON with commits, categorized files, spec changes, and proof status for the purlin:drift skill to interpret.",
+        "name": "drift",
+        "description": "Structured drift summary since last verification. Returns JSON with commits, categorized files, spec changes, and proof status for the purlin:drift skill to interpret.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1843,15 +1864,15 @@ def handle_request(request, project_root):
                 }
             }
 
-        if tool_name == 'changelog':
+        if tool_name == 'drift':
             try:
-                result_text = changelog(
+                result_text = drift(
                     project_root,
                     since=arguments.get('since'),
                     role=arguments.get('role'),
                 )
             except Exception as e:
-                result_text = f"Error running changelog: {e}"
+                result_text = f"Error running drift: {e}"
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,

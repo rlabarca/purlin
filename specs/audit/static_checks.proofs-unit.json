@@ -114,7 +114,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_static_checks.py",
-      "test_name": "test_exit_1_when_any_fail",
+      "test_name": "test_exit_0_with_fail_status_when_defects_found",
       "status": "pass",
       "tier": "unit"
     },

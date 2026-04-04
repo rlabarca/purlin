@@ -70,7 +70,7 @@ class TestPurlinSkills:
     def test_mcp_skills_reference_tools(self):
         checks = {
             'status': 'sync_status',
-            'drift': 'changelog',
+            'drift': 'drift',
             'find': 'sync_status',
         }
         for skill, tool_name in checks.items():

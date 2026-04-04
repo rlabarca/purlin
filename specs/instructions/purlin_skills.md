@@ -15,7 +15,7 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - RULE-3: Each skill file contains a `## Usage` section documenting the command syntax
 - RULE-4: Skill names in frontmatter match their directory names (e.g., `skills/build/SKILL.md` has `name: build`)
 - RULE-5: Skills that modify files (build, spec, unit-test, verify, init, anchor) include commit instructions or git operations
-- RULE-6: Skills that call MCP tools (status, drift, find) reference the tool by name (`sync_status`, `changelog`)
+- RULE-6: Skills that call MCP tools (status, drift, find) reference the tool by name (`sync_status`, `drift`)
 - RULE-7: Build and unit-test skills require calling `sync_status` after tests and state it is not optional
 - RULE-8: Verify skill prohibits modifying code or test files during verification
 - RULE-9: Build skill includes test failure diagnosis guidance requiring root cause analysis before fixing
@@ -33,7 +33,7 @@ Twelve skill definition files that define user-facing Purlin commands. Each skil
 - PROOF-3 (RULE-3): For each `skills/*/SKILL.md`, grep for `## Usage`; verify the section exists
 - PROOF-4 (RULE-4): For each `skills/*/SKILL.md`, extract the `name:` from frontmatter and the directory name; verify they match
 - PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/spec/SKILL.md`, `skills/unit-test/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md`, `skills/anchor/SKILL.md` for `git commit` or `commit the` or `create.*commit`; verify each contains positive commit instructions
-- PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/drift/SKILL.md` for `changelog`; grep `skills/find/SKILL.md` for `sync_status`; verify each references its MCP tool
+- PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/drift/SKILL.md` for `drift`; grep `skills/find/SKILL.md` for `sync_status`; verify each references its MCP tool
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` and `skills/unit-test/SKILL.md` for `sync_status`; verify both contain the reference. Grep build for "not optional"; verify present.
 - PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
 - PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both are present

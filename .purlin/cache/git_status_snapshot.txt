@@ -1,136 +1,41 @@
-M .claude/agents/purlin-auditor.md
- M .claude/agents/purlin-builder.md
- M .claude/agents/purlin-reviewer.md
- M .purlin/cache/feature_status.json
+M .purlin/cache/feature_status.json
  M .purlin/cache/git_status_snapshot.txt
  M .purlin/cache/status.json
  M .purlin/cache/status_commit_cache.json
- M CLAUDE.md
+ M .purlin/config.json
  M README.md
  M RELEASE_NOTES.md
- M agents/purlin.md
- M assets/lifecycle-big-picture.svg
- M assets/lifecycle-eng-workflow.svg
- M assets/lifecycle-handoff.svg
- M assets/lifecycle-pm-workflow.svg
- M assets/lifecycle-qa-workflow.svg
- M dev/run_tests.sh
- M dev/test_e2e_feature_scoped_overwrite.sh
  M dev/test_e2e_hybrid_audit.sh
- M dev/test_e2e_manual_staleness.sh
- M dev/test_e2e_required_rules.sh
- M dev/test_e2e_strict_required.sh
- M dev/test_e2e_teammate_audit_loop.sh
  M dev/test_e2e_verify_audit.sh
- D dev/test_gate_hook.sh
  M dev/test_mcp_server.py
- M dev/test_pre_push_hook.sh
- M dev/test_proof_jest.sh
- M dev/test_proof_plugins.sh
- M dev/test_proof_pytest.sh
- M dev/test_proof_shell.sh
- M dev/test_purlin_agent.py
- M dev/test_purlin_references.py
  M dev/test_purlin_skills.py
- M dev/test_schema_proof_format.py
- M dev/test_schema_spec_format.py
- D dev/test_session_start.sh
  M dev/test_static_checks.py
- M docs/examples/figma-web-app.md
- M docs/index.md
  M docs/installation-guide.md
- D docs/invariants-guide.md
- M docs/lifecycle-guide.md
  M docs/regulated-environments.md
- M docs/spec-from-code-guide.md
  M docs/testing-workflow-guide.md
- M hooks/hooks.json
  M references/audit_criteria.md
  M references/commit_conventions.md
- M references/figma_extraction_criteria.md
- M references/formats/anchor_format.md
- D references/formats/invariant_format.md
- M references/formats/proofs_format.md
- M references/formats/spec_format.md
- M references/hard_gates.md
- M references/purlin_commands.md
- M references/spec_quality_guide.md
- M references/supported_frameworks.md
+ M references/drift_criteria.md
  M scripts/audit/static_checks.py
- D scripts/gate.sh
- M scripts/hooks/pre-push.sh
+ M scripts/mcp/manifest.json
  M scripts/mcp/purlin_server.py
- M scripts/proof/jest_purlin.js
- M scripts/proof/pytest_purlin.py
- M scripts/proof/shell_purlin.sh
- D scripts/session-start.sh
-RM skills/invariant/SKILL.md -> skills/anchor/SKILL.md
- M skills/audit/SKILL.md
+ M scripts/report/purlin-report.html
+ M skills/anchor/SKILL.md
  M skills/build/SKILL.md
- D skills/changelog/SKILL.md
- D skills/config/SKILL.md
- M skills/find/SKILL.md
- D skills/help/SKILL.md
+ M skills/drift/SKILL.md
  M skills/init/SKILL.md
- M skills/rename/SKILL.md
- M skills/spec-from-code/SKILL.md
  M skills/spec/SKILL.md
- M skills/status/SKILL.md
  M skills/unit-test/SKILL.md
  M skills/verify/SKILL.md
-RM specs/schema/schema_proof_format.md -> specs/_anchors/schema_proof_format.md
-RM specs/schema/schema_proof_format.proofs-default.json -> specs/_anchors/schema_proof_format.proofs-unit.json
-R  specs/schema/schema_proof_format.receipt.json -> specs/_anchors/schema_proof_format.receipt.json
-RM specs/schema/schema_spec_format.md -> specs/_anchors/schema_spec_format.md
-RM specs/schema/schema_spec_format.proofs-default.json -> specs/_anchors/schema_spec_format.proofs-unit.json
-R  specs/schema/schema_spec_format.receipt.json -> specs/_anchors/schema_spec_format.receipt.json
-RM specs/schema/security_no_dangerous_patterns.md -> specs/_anchors/security_no_dangerous_patterns.md
-RM specs/schema/security_no_dangerous_patterns.proofs-default.json -> specs/_anchors/security_no_dangerous_patterns.proofs-unit.json
-R  specs/schema/security_no_dangerous_patterns.receipt.json -> specs/_anchors/security_no_dangerous_patterns.receipt.json
  M specs/audit/static_checks.md
-RM specs/audit/static_checks.proofs-default.json -> specs/audit/static_checks.proofs-unit.json
- D specs/hooks/gate_hook.md
- D specs/hooks/gate_hook.proofs-default.json
- D specs/hooks/gate_hook.receipt.json
- M specs/hooks/pre_push_hook.md
-RM specs/hooks/pre_push_hook.proofs-default.json -> specs/hooks/pre_push_hook.proofs-unit.json
- D specs/hooks/session_start.md
- D specs/hooks/session_start.proofs-default.json
- D specs/hooks/session_start.receipt.json
- M specs/instructions/purlin_agent.md
-RM specs/instructions/purlin_agent.proofs-default.json -> specs/instructions/purlin_agent.proofs-unit.json
- M specs/instructions/purlin_references.md
-RM specs/instructions/purlin_references.proofs-default.json -> specs/instructions/purlin_references.proofs-unit.json
+ M specs/audit/static_checks.proofs-unit.json
+ M specs/dashboard/purlin_report.proofs-unit.json
  M specs/instructions/purlin_skills.md
-RM specs/instructions/purlin_skills.proofs-default.json -> specs/instructions/purlin_skills.proofs-unit.json
- M specs/instructions/purlin_teammate_definitions.md
-RM specs/instructions/purlin_teammate_definitions.proofs-default.json -> specs/instructions/purlin_teammate_definitions.proofs-unit.json
-RM specs/integration/e2e_cross_model_audit.proofs-default.json -> specs/integration/e2e_cross_model_audit.proofs-unit.json
-RM specs/integration/e2e_feature_scoped_overwrite.proofs-default.json -> specs/integration/e2e_feature_scoped_overwrite.proofs-unit.json
  M specs/integration/e2e_hybrid_audit.md
-RM specs/integration/e2e_hybrid_audit.proofs-default.json -> specs/integration/e2e_hybrid_audit.proofs-unit.json
-RM specs/integration/e2e_manual_staleness.proofs-default.json -> specs/integration/e2e_manual_staleness.proofs-unit.json
- M specs/integration/e2e_required_rules.md
-RM specs/integration/e2e_required_rules.proofs-default.json -> specs/integration/e2e_required_rules.proofs-unit.json
-RM specs/integration/e2e_strict_required.proofs-default.json -> specs/integration/e2e_strict_required.proofs-unit.json
- M specs/integration/e2e_teammate_audit_loop.md
-RM specs/integration/e2e_teammate_audit_loop.proofs-default.json -> specs/integration/e2e_teammate_audit_loop.proofs-unit.json
  M specs/integration/e2e_verify_audit.md
-RM specs/integration/e2e_verify_audit.proofs-default.json -> specs/integration/e2e_verify_audit.proofs-unit.json
- M specs/mcp/config_engine.md
-RM specs/mcp/config_engine.proofs-default.json -> specs/mcp/config_engine.proofs-unit.json
- M specs/mcp/mcp_server.md
-RM specs/mcp/mcp_server.proofs-default.json -> specs/mcp/mcp_server.proofs-unit.json
-RM specs/proof-pytest.proofs-default.json -> specs/proof-pytest.proofs-unit.json
- M specs/proof/proof_plugins.md
-RM specs/proof/proof_plugins.proofs-default.json -> specs/proof/proof_plugins.proofs-unit.json
- D specs/session-start.proofs-default.json
-?? dev/SIMPLIFICATION_PROMPT.md
-?? docs/anchors-guide.md
-?? docs/collaboration-guide.md
-?? references/drift_criteria.md
-?? skills/drift/
-?? specs/mcp/changelog.md
-?? specs/mcp/mcp_transport.md
-?? specs/mcp/purlin_config.md
-?? specs/mcp/sync_status.md
+ M specs/mcp/config_engine.proofs-unit.json
+RM specs/mcp/changelog.md -> specs/mcp/drift.md
+RM specs/mcp/changelog.proofs-unit.json -> specs/mcp/drift.proofs-unit.json
+ M specs/mcp/mcp_transport.md
+ M specs/mcp/report_data.md
+ M specs/mcp/sync_status.proofs-unit.json

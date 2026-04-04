@@ -132,8 +132,8 @@ class TestPurlinReferences:
             "Missing 'Behavioral Directory Exclusions' section"
         assert 'Significance Classification' in content, \
             "Missing 'Significance Classification' section"
-        assert re.search(r'Structural.Only Drift', content), \
-            "Missing 'Structural-Only Drift' section"
+        assert re.search(r'Behavioral Gap Drift', content), \
+            "Missing 'Behavioral Gap Drift Detection' section"
         assert 'drift_flags' in content, \
             "Missing 'drift_flags' documentation"
 

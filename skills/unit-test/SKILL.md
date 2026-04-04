@@ -60,14 +60,21 @@ Test results:
     → Fix: test_webhook_basic is failing
 ```
 
-## Step 4 — Commit Proof Files
+## Step 4 — Commit proof files (mandatory)
 
-Proof files are always committed to git. Commit per `references/commit_conventions.md` using the `test(<feature>):` prefix:
+After proof files are written, commit them:
 
 ```
+git add specs/**/*.proofs-*.json
 git commit -m "test(<feature>): <passed>/<total> rules proved"
+```
+
+For multi-feature runs:
+```
 git commit -m "test: run unit tier (<passed>/<total> features fully proved)"
 ```
+
+Proof files are project records, not ephemeral build artifacts. Uncommitted proof files make sync_status output inconsistent with what purlin:verify and purlin:drift see.
 
 ## Writing Tests with Proof Markers
 
