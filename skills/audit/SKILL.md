@@ -55,7 +55,7 @@ After the audit completes, write all new assessments to the cache (both cached h
 
 After loading the cache, run Pass 0 (`--check-spec-coverage`) for every feature to categorize them:
 
-- **Skip entirely:** structural-only specs — emit WEAK ~s report immediately in main context, no subagent needed
+- **Skip entirely:** structural-only specs — report structural checks as excluded, no subagent needed
 - **Cache-only:** non-structural specs where every proof hash exists in the cache. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed.
 - **Needs LLM:** at least one proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
 
@@ -78,30 +78,33 @@ For features in "Skip entirely" and "Cache-only" categories, evaluate them in th
 
 ## Step 2 — Audit Pipeline
 
-### Pre-filter: Spec Coverage Check (Pass 0 — always runs first)
+### Pre-filter: Structural Check Exclusion (Pass 0 — always runs first)
 
-Before evaluating individual proofs, check whether the spec's rules are behavioral or structural-only:
+Before evaluating individual proofs, classify each proof as structural or behavioral using the proof description.
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-spec-coverage --spec-path <spec_path>
 ```
 
-If the result has `"structural_only_spec": true`:
-1. Count the rules from the spec
-2. Emit the structural-only report block immediately (all proofs WEAK ~s)
-3. Do NOT read proof files, do NOT read test code, do NOT run Pass 1 or Pass 2
-4. Move to the next feature
+**Structural proofs** (grep, file exists, section present — matches structural pattern, no behavioral indicators):
+- Skip entirely — do not send to Pass 1 or Pass 2
+- Do not include in the audit total
+- Report once per feature: "N structural checks excluded from audit"
+
+**Behavioral proofs** proceed to Pass 1 and Pass 2 as normal.
+
+If a feature has ONLY structural proofs:
+- Report: "All proofs are structural checks — excluded from audit. Add behavioral proofs for audit coverage."
+- Do not include the feature in the integrity score
+
+If a feature has a mix:
+- Structural proofs excluded, behavioral proofs audited normally
 
 Report:
 
 ```
-SPEC COVERAGE: structural only (6 rules, 0 behavioral)
-
-  PROOF-1 (RULE-1): WEAK ~s (structural — grep/existence check)
-  PROOF-2 (RULE-2): WEAK ~s (structural — grep/existence check)
-  ...
-
-→ Consider: add behavioral rules that test the system follows these instructions, then write matching E2E proofs
+N structural checks excluded from audit
+→ Add behavioral rules that test what the system does, not what files contain
 ```
 
 Specs with at least one behavioral rule proceed to Pass 1 normally.
@@ -210,7 +213,7 @@ STRONG (no action needed):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTEGRITY SCORE: <N>%
   CRITICAL: N   HIGH: N   MEDIUM: N   LOW: N   STRONG: N   MANUAL: N
-  Audited: N proofs (M cached, K fresh, J structural-only)
+  Audited: N proofs (M cached, K fresh) | J structural excluded
   Fix priority: N critical, then N high-value, then N medium
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -241,22 +244,17 @@ LOW — weak assertion form:
 
 When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
 
-For structural-only specs, the report looks like:
+For features with structural checks excluded, the report looks like:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROOF AUDIT: purlin_agent (8 proofs)
-SPEC COVERAGE: structural only (8 rules, 0 behavioral)
+PROOF AUDIT: purlin_agent (0 behavioral proofs)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  PROOF-1 (RULE-1): WEAK ~s (structural — grep/existence check)
-  PROOF-2 (RULE-2): WEAK ~s (structural — grep/existence check)
-  ...
+  8 structural checks excluded from audit
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-INTEGRITY SCORE: 0%
-  STRONG: 0   WEAK: 0   WEAK (structural): 8   HOLLOW: 0   MANUAL: 0
-→ All proofs are grep/existence checks. Add behavioral rules and E2E proofs.
+→ All proofs are structural checks. Add behavioral rules and E2E proofs.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -369,6 +367,16 @@ When external LLM is configured, the lead relays findings:
 6. Loop until no HOLLOW proofs or 3 rounds per proof
 
 The builder never calls the external LLM. The lead relays.
+
+## Step 4 — Refresh Status
+
+After the audit report is complete and the cache has been written, call `sync_status` to refresh the dashboard data:
+
+```
+sync_status()
+```
+
+This updates `.purlin/report-data.js` so the HTML dashboard reflects the new integrity score immediately. Without this step, the dashboard stays stale until the next `purlin:status` call.
 
 ## Key Principles
 
