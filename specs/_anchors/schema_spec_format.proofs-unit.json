@@ -1,0 +1,68 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_format_documents_three_sections",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_unnumbered_rule_triggers_warning",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_rule_without_proof_shows_uncovered",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_requires_includes_referenced_rules",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_scope_metadata_parsed",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_all_proof_lines_match_pattern",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_spec_headings_use_correct_prefix",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

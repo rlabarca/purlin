@@ -1,0 +1,50 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "external LLM detects hollow tests as non-STRONG",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "external LLM approves strong tests as STRONG or WEAK (not HOLLOW)",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "two-pass: static catches HOLLOW, Gemini rates STRONG",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "e2e_cross_model_audit",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_cross_model_audit.sh",
+      "test_name": "custom audit LLM configured and used in two-pass flow",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

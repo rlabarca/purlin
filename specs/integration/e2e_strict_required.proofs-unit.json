@@ -1,0 +1,23 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "e2e_strict_required",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict blocks when required rules lack proofs",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "e2e_strict_required",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict allows when all rules (own+required) proved",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}
