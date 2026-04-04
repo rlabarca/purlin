@@ -93,6 +93,7 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .summary-card-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
 .sc-total .summary-card-number{color:var(--text-primary)}
 .sc-ready .summary-card-number{color:var(--green)}
+.sc-passing .summary-card-number{color:var(--green);opacity:.7}
 .sc-partial .summary-card-number{color:var(--amber)}
 .sc-failing .summary-card-number{color:var(--red)}
 .sc-integrity .summary-card-number{color:var(--green)}
@@ -139,6 +140,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .col-status{text-align:center}
 .sb{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .sb-ready{background:var(--green);color:#fff}
+.sb-passing{background:transparent;color:var(--green);border:1.5px solid var(--green)}
 .sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
 .sb-fail{background:var(--red);color:#fff}
 .sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
@@ -271,6 +273,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
   function covClass(status) {
     if (status === 'READY') return 'cov-ready';
+    if (status === 'passing') return 'cov-ready';
     if (status === 'partial') return 'cov-partial';
     if (status === 'FAIL') return 'cov-fail';
     return 'cov-none';
@@ -278,6 +281,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
   function badgeClass(status) {
     if (status === 'READY') return 'sb sb-ready';
+    if (status === 'passing') return 'sb sb-passing';
     if (status === 'partial') return 'sb sb-partial';
     if (status === 'FAIL') return 'sb sb-fail';
     return 'sb sb-none';
@@ -285,6 +289,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
   function badgeText(status) {
     if (status === 'READY') return 'Ready';
+    if (status === 'passing') return 'Passing';
     if (status === 'partial') return 'Partial';
     if (status === 'FAIL') return 'Fail';
     return 'Not verified';
@@ -360,7 +365,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   var sortCol = 'status';
   var sortAsc = true;
 
-  function statusOrder(s) { return {FAIL:0, partial:1, READY:2, no_proofs:3}[s] || 4; }
+  function statusOrder(s) { return {FAIL:0, partial:1, passing:2, READY:3, no_proofs:4}[s] || 5; }
 
   function sortFeatures(features) {
     var arr = features.slice();
@@ -430,6 +435,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (D.anchors_summary.total) h += '<div class="summary-card-sub">+ ' + D.anchors_summary.total + ' anchors</div>';
     h += '</div>';
     h += '<div class="summary-card sc-ready"><div class="summary-card-number">' + S.ready + '</div><div class="summary-card-label">Ready</div></div>';
+    h += '<div class="summary-card sc-passing"><div class="summary-card-number">' + (S.passing || 0) + '</div><div class="summary-card-label">Passing</div></div>';
     h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
     if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' not verified</div>';

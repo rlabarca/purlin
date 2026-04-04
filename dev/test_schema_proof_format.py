@@ -54,7 +54,7 @@ class TestProofFormatEnforcement:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'foo: READY' in result
+        assert 'foo: passing' in result
 
     @pytest.mark.proof("schema_proof_format", "PROOF-2", "RULE-2")
     def test_proof_entry_has_all_seven_fields(self):

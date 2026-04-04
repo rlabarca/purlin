@@ -140,7 +140,7 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        assert 'login: READY' in result
+        assert 'login: passing' in result
         assert 'vhash=' in result
 
     @pytest.mark.proof("sync_status", "PROOF-3", "RULE-3")
@@ -317,7 +317,7 @@ class TestSyncStatus:
         ])
         result = purlin_server.sync_status(self.project_root)
         # Structural proofs count toward READY
-        assert 'refs: READY' in result
+        assert 'refs: passing' in result
 
     @pytest.mark.proof("sync_status", "PROOF-12", "RULE-12")
     def test_unresolved_requires_warning(self):
@@ -382,7 +382,7 @@ class TestSyncStatus:
                 '## Rules\n- RULE-1: Rejects code containing eval\n- RULE-2: Rejects code containing exec\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Run linter; verify eval calls are rejected\n- PROOF-2 (RULE-2): Run linter; verify exec calls are rejected\n'
             )
-        # Add proof for the new anchor RULE-2 so feature becomes READY
+        # Add proof for the new anchor RULE-2 so feature passes all rules
         self._write_proofs('security', [
             {"feature": "security", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "tests/test.py", "test_name": "test_no_eval",
@@ -435,7 +435,7 @@ class TestSyncStatus:
         ])
         result = purlin_server.sync_status(self.project_root)
         # Should use the subdirectory proof (pass), not root (fail)
-        assert 'READY' in result
+        assert 'passing' in result
         assert 'FAIL' not in result
 
     @pytest.mark.proof("sync_status", "PROOF-13", "RULE-13")
@@ -469,7 +469,7 @@ class TestSyncStatus:
         ])
         result = purlin_server.sync_status(self.project_root)
         # Should be READY since it's behavioral
-        assert 'api: READY' in result
+        assert 'api: passing' in result
 
     @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
     def test_structural_regex_accepts_grep_descriptions(self):
@@ -487,7 +487,7 @@ class TestSyncStatus:
         ])
         result = purlin_server.sync_status(self.project_root)
         # Structural proofs count toward READY
-        assert 'refs: READY' in result
+        assert 'refs: passing' in result
 
     @pytest.mark.proof("sync_status", "PROOF-16", "RULE-16")
     def test_warns_uncommitted_spec_changes(self):
@@ -533,7 +533,7 @@ class TestSyncStatus:
     @pytest.mark.proof("sync_status", "PROOF-18", "RULE-18")
     def test_summary_table(self):
         """sync_status output begins with a summary table."""
-        # Feature 1: fully proved (READY)
+        # Feature 1: fully proved (passing — no receipt, so not READY)
         self._write_spec('alpha', (
             '# Feature: alpha\n\n'
             '## What it does\nAlpha feature.\n\n'
@@ -574,20 +574,20 @@ class TestSyncStatus:
         # Table starts the output (┌ is first character)
         assert result.startswith('\u250c'), f"Expected table at start, got: {result[:80]}"
 
-        # Summary line with correct count
-        assert '1/3 features READY' in result
+        # Summary line — no receipts exist so 0 features READY
+        assert '0/3 features READY' in result
 
         # Verify table contains all features
         assert '\u2502 alpha' in result
         assert '\u2502 beta' in result
         assert '\u2502 gamma' in result
 
-        # Verify sort order: partial before READY before —
+        # Verify sort order: partial before passing before —
         beta_idx = result.index('\u2502 beta')
         alpha_idx = result.index('\u2502 alpha')
         gamma_idx = result.index('\u2502 gamma')
         assert beta_idx < alpha_idx < gamma_idx, \
-            "Table should sort: partial, READY, \u2014"
+            "Table should sort: partial, passing, \u2014"
 
         # Detail section follows after table
         lines = result.split('\n')
@@ -599,7 +599,7 @@ class TestSyncStatus:
         assert table_end is not None, "No table closing line found"
         # After └... line, summary line, blank line, then detail
         detail_text = '\n'.join(lines[table_end + 3:])
-        assert 'alpha: READY' in detail_text
+        assert 'alpha: passing' in detail_text
         assert 'beta: 1/2 rules proved' in detail_text
         assert 'gamma: 0/2 rules proved' in detail_text
 

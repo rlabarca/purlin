@@ -250,11 +250,12 @@ class TestReportDataStructure:
         s = data['summary']
 
         total = s['total_features']
-        components = s['ready'] + s['partial'] + s['failing'] + s['no_proofs']
+        components = s['ready'] + s.get('passing', 0) + s['partial'] + s['failing'] + s['no_proofs']
         assert components == total, (
             f'Summary counts do not sum to total: '
-            f"ready={s['ready']} + partial={s['partial']} + failing={s['failing']} "
-            f"+ no_proofs={s['no_proofs']} = {components}, expected total={total}"
+            f"ready={s['ready']} + passing={s.get('passing', 0)} + partial={s['partial']} "
+            f"+ failing={s['failing']} + no_proofs={s['no_proofs']} = {components}, "
+            f"expected total={total}"
         )
 
     @pytest.mark.proof("report_data", "PROOF-5", "RULE-5")
@@ -271,8 +272,8 @@ class TestReportDataStructure:
                 f"Feature '{feat.get('name', '?')}' missing fields: {missing}"
 
     @pytest.mark.proof("report_data", "PROOF-6", "RULE-6")
-    def test_ready_features_have_vhash_others_do_not(self):
-        """READY features have non-null vhash; non-READY features have null vhash."""
+    def test_passing_features_have_vhash_others_do_not(self):
+        """Features with all proofs passing have non-null vhash; others have null."""
         _write_spec(self.tmp, 'feature_ready', _minimal_spec_content('feature_ready'))
         _write_spec(self.tmp, 'feature_noproof',
                     '# Feature: feature_noproof\n\n'
@@ -286,12 +287,12 @@ class TestReportDataStructure:
         data = self._build(features=features, proofs=proofs)
 
         for feat in data['features']:
-            if feat['status'] == 'READY':
+            if feat['status'] in ('READY', 'passing'):
                 assert feat['vhash'] is not None, \
-                    f"READY feature '{feat['name']}' should have non-null vhash"
+                    f"Passing feature '{feat['name']}' should have non-null vhash"
             else:
                 assert feat['vhash'] is None, \
-                    f"Non-READY feature '{feat['name']}' (status={feat['status']}) should have null vhash"
+                    f"Non-passing feature '{feat['name']}' (status={feat['status']}) should have null vhash"
 
     @pytest.mark.proof("report_data", "PROOF-7", "RULE-7")
     def test_receipt_fields_present_when_receipt_file_exists(self):

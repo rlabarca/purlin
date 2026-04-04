@@ -12,9 +12,9 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-1: When config has `"report": true`, sync_status writes `.purlin/report-data.js`
 - RULE-2: When config lacks `"report"` or it is false, no report file is written
 - RULE-3: Report file contains `const PURLIN_DATA = {...};` that parses as valid JavaScript
-- RULE-4: PURLIN_DATA.summary counts match the feature list (ready + partial + failing + no_proofs == total_features)
+- RULE-4: PURLIN_DATA.summary counts match the feature list (ready + passing + partial + failing + no_proofs == total_features)
 - RULE-5: Every feature entry has fields: name, type, is_global, proved, total, deferred, status, structural_checks, vhash, receipt, rules, audit
-- RULE-6: READY features have a non-null vhash; non-READY features have null vhash
+- RULE-6: Features with all proofs passing (status "passing" or "READY") have a non-null vhash; others have null vhash
 - RULE-7: Features with receipt files include commit, timestamp, and stale fields in receipt
 - RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proofs (array of proof objects where each proof has id, description, test_file, test_name, tier, status, audit)
 - RULE-9: Rule status is one of PASS, FAIL, NO_PROOF, CHECK, CHECK_FAIL, or DEFERRED
@@ -33,7 +33,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - PROOF-3 (RULE-3): Read report-data.js, strip JS wrapper, verify JSON parses successfully
 - PROOF-4 (RULE-4): Parse report data, verify summary counts sum correctly
 - PROOF-5 (RULE-5): Parse report data, verify every feature has all required fields
-- PROOF-6 (RULE-6): Parse report data, verify READY features have vhash and others don't
+- PROOF-6 (RULE-6): Parse report data, verify passing/READY features have vhash and others don't
 - PROOF-7 (RULE-7): Create a receipt file, regenerate report, verify receipt fields present
 - PROOF-8 (RULE-8): Parse report data, verify every rule entry has all required fields
 - PROOF-9 (RULE-9): Parse report data, verify all rule statuses are valid enum values

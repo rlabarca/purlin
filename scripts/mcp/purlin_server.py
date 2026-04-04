@@ -445,10 +445,10 @@ def _build_summary_table(summary_rows, audit_summary=None):
     if not summary_rows:
         return []
 
-    # Sort: FAIL first, then partial (ascending coverage), then READY, then —
+    # Sort: FAIL first, then partial, then passing, then READY, then —
     def _sort_key(row):
         _name, proved, total, status = row
-        priority = {"FAIL": 0, "partial": 1, "READY": 2}.get(status, 3)
+        priority = {"FAIL": 0, "partial": 1, "passing": 2, "READY": 3}.get(status, 4)
         ratio = proved / total if total else 0
         return (priority, ratio, _name)
 
@@ -467,6 +467,8 @@ def _build_summary_table(summary_rows, audit_summary=None):
         coverage = f"{proved}/{total}"
         if status == "READY":
             symbol = "READY"
+        elif status == "passing":
+            symbol = "passing"
         elif status == "FAIL":
             symbol = "FAIL"
         elif status == "partial":
@@ -597,10 +599,25 @@ def sync_status(project_root, role=None):
                        for key, _, _ in active_entries
                        if key not in structural_rules)
 
+        # READY requires a current (non-stale) receipt
+        all_passing = (behavioral_proved == active_total and active_total > 0)
+        receipt = _read_receipt(project_root, name)
+        has_current_receipt = False
+        if all_passing and receipt:
+            cli_rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
+            cli_active = [(k, l, s) for k, l, s, is_def in cli_rule_entries if not is_def]
+            cli_all_proofs_list = _collect_relevant_proofs(name, cli_rule_entries, all_proofs)
+            cli_vhash = _compute_vhash(
+                {key: True for key, _, _ in cli_active}, cli_all_proofs_list
+            )
+            has_current_receipt = (receipt.get('vhash') == cli_vhash)
+
         if has_fail:
             status = "FAIL"
-        elif behavioral_proved == active_total and active_total > 0:
+        elif all_passing and has_current_receipt:
             status = "READY"
+        elif all_passing:
+            status = "passing"
         elif behavioral_proved == 0:
             status = "\u2014"
         else:
@@ -637,10 +654,22 @@ def sync_status(project_root, role=None):
                         has_fail = True
             proved = len(passed_rules)
 
+            # Anchors: READY requires current receipt too
+            a_all_passing = (proved >= active_total and active_total > 0)
+            a_receipt = _read_receipt(project_root, name)
+            a_has_receipt = False
+            if a_all_passing and a_receipt:
+                a_vhash = _compute_vhash(
+                    {r: True for r in active_rules}, anchor_proofs
+                )
+                a_has_receipt = (a_receipt.get('vhash') == a_vhash)
+
             if has_fail:
                 a_status = "FAIL"
-            elif proved >= active_total and active_total > 0:
+            elif a_all_passing and a_has_receipt:
                 a_status = "READY"
+            elif a_all_passing:
+                a_status = "passing"
             elif proved == 0:
                 a_status = "\u2014"
             else:
@@ -846,24 +875,30 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Header — all active rules proved (READY)
+    # Header — all active rules proved
     if proved == active_total and not warnings:
-        if visual_hash_changed:
-            lines.append(f"{name}: READY but visual reference changed")
-        else:
-            lines.append(f"{name}: READY")
-        lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
-        lines.append(f"  vhash={vhash}")
-        # Check receipt staleness
         receipt = _read_receipt(project_root, name)
-        if receipt and receipt.get('vhash') != vhash:
+        has_current_receipt = (receipt and receipt.get('vhash') == vhash)
+
+        if has_current_receipt:
+            header_status = "READY"
+        else:
+            header_status = "passing"
+
+        if visual_hash_changed:
+            lines.append(f"{name}: {header_status} but visual reference changed")
+        else:
+            lines.append(f"{name}: {header_status}")
+        lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
+        lines.append(f"  vhash={vhash}")
+
+        if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
             current_rules = set(all_rules_dict.keys())
             added_rules = current_rules - receipt_rules
             removed_rules = receipt_rules - current_rules
-            # Classify: anchor-sourced rules contain '/'
             anchor_added = {}
             own_added = []
             for r in sorted(added_rules):
@@ -883,10 +918,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             if not added_rules and not removed_rules:
                 lines.append("  \u26a0 Proof statuses changed since last verification")
             lines.append(f"  \u2192 Run: purlin:verify to re-issue receipt")
+        elif not receipt:
+            lines.append("  \u2192 Run: purlin:verify to issue receipt")
+
         if visual_hash_changed:
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
-        else:
+        elif has_current_receipt:
             lines.append("  \u2192 No action needed.")
         if assumed_count:
             lines.append(f"  \u26a0 {assumed_count} rule{'s' if assumed_count != 1 else ''} ha{'ve' if assumed_count != 1 else 's'} (assumed) values \u2014 PM should confirm")
@@ -1164,7 +1202,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if pid:
                 audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
-    summary = {'total_features': 0, 'ready': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
+    summary = {'total_features': 0, 'ready': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
     anchors_total = 0
     anchors_with_source = 0
     anchors_global = 0
@@ -1206,33 +1244,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             for key, _, _ in active_entries
         )
 
-        # Determine status
-        if active_total == 0:
-            status = 'no_proofs'
-        elif has_fail:
-            status = 'FAIL'
-        elif proved == active_total:
-            status = 'READY'
-        elif proved > 0:
-            status = 'partial'
-        else:
-            status = 'no_proofs'
-
-        # Update summary for non-anchor features
-        if not is_anchor:
-            summary['total_features'] += 1
-            if status == 'READY':
-                summary['ready'] += 1
-            elif status == 'partial':
-                summary['partial'] += 1
-            elif status == 'FAIL':
-                summary['failing'] += 1
-            else:
-                summary['no_proofs'] += 1
-
-        # Compute vhash when READY
+        # Compute vhash when all proofs pass
         vhash = None
-        if status == 'READY':
+        all_passing = (proved == active_total and active_total > 0)
+        if all_passing:
             all_rules_dict = {key: True for key, _, _ in active_entries}
             vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
 
@@ -1245,6 +1260,35 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'timestamp': receipt.get('timestamp', ''),
                 'stale': receipt.get('vhash') != vhash if vhash else True,
             }
+
+        # Determine status — READY requires a current (non-stale) receipt
+        has_current_receipt = (receipt_data is not None and not receipt_data['stale'])
+        if active_total == 0:
+            status = 'no_proofs'
+        elif has_fail:
+            status = 'FAIL'
+        elif all_passing and has_current_receipt:
+            status = 'READY'
+        elif all_passing:
+            status = 'passing'
+        elif proved > 0:
+            status = 'partial'
+        else:
+            status = 'no_proofs'
+
+        # Update summary for non-anchor features
+        if not is_anchor:
+            summary['total_features'] += 1
+            if status == 'READY':
+                summary['ready'] += 1
+            elif status == 'passing':
+                summary['passing'] += 1
+            elif status == 'partial':
+                summary['partial'] += 1
+            elif status == 'FAIL':
+                summary['failing'] += 1
+            else:
+                summary['no_proofs'] += 1
 
         # Build per-rule list
         rules_list = []
@@ -1661,7 +1705,16 @@ def drift(project_root, since=None, role=None):
         structural_checks = sum(1 for key, _, _ in active_entries
                                if key in structural_rules
                                and proof_by_rule.get(key, {}).get('status') == 'pass')
-        status = 'READY' if proved == active_total else 'FAILING' if failing else 'partial'
+        all_pass = (proved == active_total)
+        d_receipt = _read_receipt(project_root, name)
+        d_has_receipt = False
+        if all_pass and d_receipt:
+            d_vhash = _compute_vhash(
+                {key: True for key, _, _ in active_entries},
+                _collect_relevant_proofs(name, rule_entries, all_proofs),
+            )
+            d_has_receipt = (d_receipt.get('vhash') == d_vhash)
+        status = 'READY' if all_pass and d_has_receipt else 'passing' if all_pass else 'FAILING' if failing else 'partial'
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,
