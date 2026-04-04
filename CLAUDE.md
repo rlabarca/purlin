@@ -46,6 +46,18 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 
 **When modifying a skill:** grep all other skills for the same concept. If you find duplicates, consolidate into the reference file and update all skills to point to it in the same commit.
 
+## Releasing a New Version
+
+The version string lives in **one file**: `VERSION` at the project root. Everything else reads from it.
+
+**When tagging a release or updating RELEASE_NOTES.md with a new version:**
+1. Update `VERSION` to the new semver (e.g., `echo "1.0.0" > VERSION`)
+2. Update `templates/config.json` to match (the `"version"` field)
+3. Commit both in the same commit
+4. Tag and push
+
+`purlin_server.py` reads `VERSION` at startup — no code changes needed. The `purlin_version` structural spec (`specs/instructions/purlin_version.md`) catches drift if `VERSION` and `templates/config.json` disagree.
+
 ## Tool Folder Separation
 
 *   **`scripts/`** — Consumer-facing framework tooling. Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
