@@ -26,13 +26,13 @@ Purlin generates structured artifacts that a real compliance system can consume:
 | **Proof files** | `specs/<category>/<name>.proofs-*.json` | Test results linked to specific rules | Evidence of verification, consumed by QMS |
 | **Verification receipts** | Git commit messages (`verify: [Complete:all] vhash=...`) | Hash of rules + proof results | Snapshot for compliance ledger to ingest |
 | **Manual proof stamps** | `@manual(email, date, sha)` in spec | Record of human verification | Starting point — QMS must re-authenticate and countersign |
-| **Invariant files** | `specs/_invariants/i_*.md` | External constraints with `> Pinned:` version | Source-of-truth tracking for external standards |
+| **Anchor files** | `specs/_anchors/*.md` | External constraints with `> Pinned:` version | Source-of-truth tracking for external standards |
 
 These artifacts are **inputs to your compliance pipeline**, not the pipeline itself.
 
 ### Purlin's enforcement layers
 
-Purlin enforces proofs at three layers, each with different trust properties:
+Purlin's pre-push hook is the built-in enforcement layer. CI and deploy gates are integration patterns you configure:
 
 | Layer | Trust level | What it catches |
 |-------|------------|----------------|
@@ -68,7 +68,7 @@ Developer / AI Agent
 
 1. **Policy lives outside the repo.** Compliance rules, required verification levels, and approval requirements are enforced by CI/CD infrastructure — not by config files the agent can edit.
 
-2. **Signatures come from an identity provider.** Human approvals (manual proofs, invariant syncs, test lock sign-offs) go through MFA-backed authentication, not `git config user.email` or GPG keys.
+2. **Signatures come from an identity provider.** Human approvals (manual proofs, anchor syncs, test lock sign-offs) go through MFA-backed authentication, not `git config user.email` or GPG keys.
 
 3. **Audit trail lives outside git.** Verification receipts are ingested into an immutable external ledger. Git history is a convenient view, not the compliance record.
 
@@ -110,7 +110,7 @@ Purlin's audit skill evaluates whether tests actually prove what they claim. For
 
 The compliance team owns and versions the criteria file. Developers cannot change the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
 
-This addresses the "test quality gate" concern: while Purlin can't structurally prevent tautological tests, the audit criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
+This addresses the "test quality gate" concern: the audit pipeline (spec coverage → structural defects → semantic alignment) deterministically catches tautological tests and structural-only specs before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 
 For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the builder. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's.
 
@@ -120,9 +120,9 @@ For teams concerned about shared-model bias (the "AI auditing AI" critique), Pur
 
 Note: cross-model auditing is an improvement over same-model auditing, but both are LLM-based judgment. Neither replaces human code review for critical systems. For regulated environments, the audit report should be reviewed by a human as part of the QA process, not treated as a final authority.
 
-### External Invariant Validation
+### External Anchor Validation
 
-Invariant `> Pinned:` SHAs track which version of an external standard is in use. Your CI pipeline can compare the pinned SHA against the authoritative source and fail the build if the invariant is stale — enforced by CI policy, not by Purlin config.
+Anchor `> Pinned:` SHAs track which version of an external standard is in use. Your CI pipeline can compare the pinned SHA against the authoritative source and fail the build if the anchor is stale -- enforced by CI policy, not by Purlin config.
 
 ---
 

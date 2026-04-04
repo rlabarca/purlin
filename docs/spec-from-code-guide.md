@@ -69,9 +69,9 @@ Authenticates users via email and password, issues JWT tokens.
 - RULE-3: Passwords are compared using bcrypt, never plaintext
 
 ## Proof
-- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT in response @slow
-- PROOF-2 (RULE-2): POST invalid password; verify 401 @slow
-- PROOF-3 (RULE-3): Store password; verify bcrypt hash in database @slow
+- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT in response @integration
+- PROOF-2 (RULE-2): POST invalid password; verify 401 @integration
+- PROOF-3 (RULE-3): Store password; verify bcrypt hash in database @integration
 
 ## Implementation Notes
 <!-- TODO from src/auth/login.js:42 — add OAuth2 support -->

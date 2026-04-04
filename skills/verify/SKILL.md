@@ -17,18 +17,11 @@ purlin:verify --manual <feature> <PROOF-N>  Stamp a manual proof in the spec
 
 ### Step 1 — Run All Tests
 
-Run the full test suite (all tiers). The proof plugins emit `*.proofs-*.json` files next to specs.
-
-```bash
-# Detect framework from config or project files
-pytest                    # Python
-npx jest                  # JavaScript
-bash test.sh              # Shell
-```
+Run the full test suite across all tiers by calling `purlin:unit-test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
 
 ### Step 2 — Collect Results
 
-Call `sync_status` to get per-feature coverage. For each feature:
+Read the coverage output from `purlin:unit-test --all` (which includes sync_status results). For each feature:
 
 - **READY** (all rules have passing proofs): eligible for receipt.
 - **Partial coverage**: report which rules lack proofs. No receipt.
@@ -120,10 +113,10 @@ The directive block ensures the agent does not stop after the first batch of rec
 When tests fail during verify:
 
 1. Do NOT fix code or tests. Do NOT iterate. Report the failures with diagnosis and stop.
-2. For each failing proof, output:
+2. For each failing proof, diagnose using the framework in `references/spec_quality_guide.md` ("When Tests Fail"): is this a code bug, test bug, or spec drift? Output:
    - The rule it proves
    - What the test expected vs what it got
-   - Diagnosis: is this likely a code bug, test bug, or spec drift?
+   - The diagnosis
    - Directive: `→ Run: test <feature>` to fix in the build loop
 
 3. After reporting all failures, display the action block:
@@ -138,43 +131,21 @@ When tests fail during verify:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-### Step 4e — Spawn Audit (mandatory)
+### Step 4e — Independent Audit (automatic)
 
-After issuing receipts, ALWAYS spawn an independent audit. The auditor must be a separate teammate or subagent — never inline the audit in the same context. No exceptions, regardless of the number of proofs.
+After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate context for unbiased evaluation. No exceptions, regardless of the number of proofs.
 
-**If agent teams are available** (the lead is part of a team or teams are enabled):
-
-Spawn a teammate using the purlin-auditor agent type:
-
-```
-Spawn purlin-auditor teammate with prompt:
+Spawn a purlin-auditor with prompt:
   "Audit all features that just received receipts: <feature list>.
    Read references/audit_criteria.md for assessment criteria.
+   Audit cache is at .purlin/cache/audit_cache.json — use cached results where proof hashes match.
    For each proof, read the spec description and the test code.
-   Assess as STRONG/WEAK/HOLLOW. Message the purlin-builder teammate
-   with any HOLLOW or WEAK findings. Report the integrity score when done."
-```
+   Assess as STRONG/WEAK/HOLLOW.
+   If HOLLOW or WEAK findings exist, spawn a purlin-builder to fix them.
+   Loop until no HOLLOW proofs remain or 3 rounds per proof.
+   Report the final integrity score."
 
-If HOLLOW or WEAK findings are reported, the lead:
-1. Checks if a purlin-builder teammate exists — if not, spawns one
-2. The auditor messages the builder directly with specific fix instructions
-3. The builder fixes proofs and messages the auditor back
-4. The auditor re-checks the fixed proofs
-5. Loop continues until no HOLLOW proofs remain or the auditor is satisfied
-
-**If agent teams are NOT available** (single session, no team):
-
-Fall back to current behavior — spawn a background subagent:
-
-```
-Agent(subagent_type="general-purpose", run_in_background=true, prompt=
-  "Run purlin:audit for all features that just received receipts: <feature list>.
-   Report the integrity score and any HOLLOW or WEAK proofs.")
-```
-
-The audit runs while the engineer reviews receipts. When it completes, display the report.
-
-If the audit finds HOLLOW or WEAK proofs:
+If HOLLOW or WEAK proofs are found:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -194,11 +165,7 @@ The loop: verify → audit → if issues → build fixes → verify again. Verif
 
 ### Step 5 — Commit
 
-```
-git commit -m "verify: [Complete:all] features=N/T vhash=<combined-hash>"
-```
-
-Where `N/T` is the verified/total count (e.g., `features=5/11`). The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
+Commit per `references/commit_conventions.md` using the `verify:` prefix: `verify: [Complete:all] features=N/T vhash=<combined-hash>`. `N/T` is verified/total count. The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
 
 ---
 
@@ -206,12 +173,31 @@ Where `N/T` is the verified/total count (e.g., `features=5/11`). The combined ha
 
 Clean-room re-execution that compares results against committed receipts.
 
-1. Run the full test suite (same as default mode).
+1. Run the full test suite via `purlin:unit-test --all` (same as default mode).
 2. Compute vhash for each feature.
 3. Compare against existing `*.receipt.json` files.
-4. Report: MATCH (receipt valid), MISMATCH (receipt stale — rules or proofs changed), MISSING (no receipt on file).
+4. For each feature with a matching receipt, check if the spec is structural-only (sync_status reports `READY (structural only)`). Separate these from behavioral features.
+5. Report behavioral and structural-only features separately:
 
-For CI integration: exit code 0 if all receipts match, exit code 1 if any mismatch or missing.
+```
+AUDIT RESULTS:
+
+Behavioral features: 2/2 MATCH
+  auth_login: MATCH (vhash=a1b2c3d4)
+  user_profile: MATCH (vhash=e5f6a7b8)
+
+Structural-only features: 2/2 MATCH (not counted toward integrity score)
+  purlin_agent: MATCH (vhash=f1a2b3c4) — 8 proofs, all grep/existence
+  purlin_skills: MATCH (vhash=d5e6f7a8) — 6 proofs, all grep/existence
+  → Structural-only features need behavioral rules and E2E proofs for full audit credit
+
+Missing/Mismatched:
+  webhook_delivery: MISMATCH (receipt stale)
+```
+
+6. Report: MATCH (receipt valid), MISMATCH (receipt stale — rules or proofs changed), MISSING (no receipt on file).
+
+For CI integration: exit code 0 if all receipts match (both behavioral and structural-only), exit code 1 if any mismatch or missing. The structural-only separation is informational — it does not change the exit code, but it makes the coverage quality visible in audit reports.
 
 ---
 

@@ -2,37 +2,39 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/invariant_format.md, references/formats/anchor_format.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
 > Stack: markdown (reference documentation)
 
 ## What it does
 
-Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source for spec format, proof file schema, invariant protocol, anchor types, commit conventions, hard gates, command reference, and spec writing quality guidance. Skills and agents reference these documents — they must stay structurally complete and consistent.
+Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source for spec format, proof file schema, anchor format and types, commit conventions, hard gates, command reference, spec writing quality guidance, and drift detection criteria. Skills and agents reference these documents — they must stay structurally complete and consistent.
 
 ## Rules
 
 - RULE-1: `spec_format.md` documents the 3 required sections (`## What it does`, `## Rules`, `## Proof`) and the RULE-N/PROOF-N numbering convention
 - RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields and the feature-scoped overwrite merge behavior
 - RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
-- RULE-4: `invariant_format.md` documents invariant file location (`specs/_invariants/i_*.md`), metadata fields (`> Source:`, `> Pinned:`), and sync protocol
-- RULE-5: `anchor_format.md` documents all 8 type prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`
-- RULE-6: `hard_gates.md` documents exactly 2 gates: invariant protection and proof coverage
-- RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, invariant, chore, docs
-- RULE-8: `purlin_commands.md` lists all 13 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
+- RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
+- RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
+- RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage
+- RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, anchor, chore, docs
+- RULE-8: `purlin_commands.md` lists all 12 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
 - RULE-9: `spec_quality_guide.md` includes guidance on writing rules (5-10 per feature), proof descriptions, tier assignment, and FORBIDDEN patterns
 - RULE-10: `spec_quality_guide.md` includes test failure diagnosis guidance with the three categories (code bug, test bug, spec drift) and assertion integrity rules
 - RULE-11: `spec_quality_guide.md` includes audience-appropriate language guidance mapping artifacts to their intended readers
+- RULE-12: `drift_criteria.md` documents file classification order, NO_IMPACT patterns, behavioral directory exclusions, significance mapping, structural-only drift indicators, and precomputed drift flags
 
 ## Proof
 
 - PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## What it does`, `## Rules`, `## Proof`; verify all three appear as required sections. Grep for `RULE-N` pattern documentation
 - PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear. Grep for "feature-scoped overwrite"
 - PROOF-3 (RULE-3): Grep `references/formats/proofs_format.md` for `### pytest`, `### Jest`, `### Shell`; verify all 3 framework subsections exist
-- PROOF-4 (RULE-4): Grep `references/formats/invariant_format.md` for `_invariants/`, `> Source:`, `> Pinned:`; verify all appear
-- PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`; verify all appear in the type prefix table
-- PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Invariant protection" and "Proof coverage"; verify both appear and no third gate is defined
-- PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes: `spec`, `feat`, `fix`, `test`, `verify`, `invariant`, `chore`, `docs`; verify all 8 appear
-- PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Quality`, `Reporting`, `Project`; verify all 5 category headers exist. Count skill entries; verify 13
+- PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear
+- PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`; verify all appear in the type metadata documentation
+- PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Proof coverage"; verify it appears and no second gate is defined
+- PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes: `spec`, `feat`, `fix`, `test`, `verify`, `anchor`, `chore`, `docs`; verify all 8 appear
+- PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Quality`, `Reporting`, `Project`; verify all 5 category headers exist. Count skill entries; verify 12
 - PROOF-9 (RULE-9): Grep `references/spec_quality_guide.md` for "5–10 rules", "FORBIDDEN", "Tier"; verify the guide covers rule count guidance, forbidden patterns, and tier assignment
 - PROOF-10 (RULE-10): Grep `references/spec_quality_guide.md` for `Code bug`, `Test bug`, `Spec drift`, and `Assertion Integrity`; verify all appear
 - PROOF-11 (RULE-11): Grep `references/spec_quality_guide.md` for `Audience-Appropriate Language`; verify the section exists
+- PROOF-12 (RULE-12): Grep `references/drift_criteria.md` for `File Classification`, `NO_IMPACT Patterns`, `Behavioral Directory Exclusions`, `Significance Classification`, `Structural-Only Drift`, `drift_flags`; verify all sections present

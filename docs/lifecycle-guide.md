@@ -22,7 +22,7 @@ That's it. No tracking system, no ledger, no state files. The filesystem is the 
 ```markdown
 # Feature: login
 
-> Requires: i_security_policy
+> Requires: security_policy
 > Scope: src/auth/login.js, src/auth/session.js
 > Stack: node/express, bcrypt, jsonwebtoken
 
@@ -34,13 +34,13 @@ User authentication with email and password.
 - RULE-2: Failed logins are rate-limited to 5 per minute
 
 ## Proof
-- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database @slow
-- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429 @slow
+- PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database @integration
+- PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429 @integration
 ```
 
 **`## Rules`** — parsed by `sync_status`. Must use `RULE-N:` format.
 **`## Proof`** — NOT parsed (except `@manual` stamps). Blueprint for the agent writing tests.
-**`> Requires:`** — other specs/invariants whose rules also apply.
+**`> Requires:`** — other specs/anchors whose rules also apply.
 **`> Scope:`** — files this feature covers. Documentation only.
 
 Full format: [references/formats/spec_format.md](../references/formats/spec_format.md)
@@ -65,6 +65,18 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 ## PM Workflow
 
+### Just do this
+
+```
+/purlin:drift pm        ← see what changed and what you need to do
+handle PM items          ← Claude updates all affected specs, you review each one
+/purlin:status           ← confirm coverage looks right
+```
+
+That's the daily loop. Everything below is detail for when you want more control.
+
+---
+
 **The PM defines what the software must do.** They own the rules — the testable constraints that the code must satisfy. Purlin helps PMs transform raw ideas (PRDs, customer feedback, Slack threads) into structured specs with numbered rules and proof descriptions. When engineers build and test, the PM sees exactly which rules are proved and which aren't via `sync_status`. No more "is this feature done?" — the coverage number answers it.
 
 ![PM Workflow](../assets/lifecycle-pm-workflow.svg)
@@ -73,14 +85,13 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 | What you want | What you type |
 |---------------|---------------|
-| See what changed | `/purlin:changelog pm` |
+| See what changed | `/purlin:drift pm` |
 | Handle all PM work | `handle PM items` |
 | See rule coverage | `/purlin:status` |
 | Write a new spec | `write a spec for notifications` |
 | Add a rule to a spec | `add a rule to login: passwords must expire after 90 days` |
 | Update a spec after code changed | `update the spec for login to reflect the recent changes` |
 | Stamp a manual proof | `/purlin:verify --manual login PROOF-3` |
-| Find a spec | `/purlin:find login` |
 
 ### Turning ideas into specs
 
@@ -101,6 +112,21 @@ Here's our PRD for the checkout flow: [paste or reference the doc]
 
 Claude reads the entire document, extracts every testable constraint as a rule, generates proof descriptions, suggests anchors if it detects cross-cutting concerns (API conventions, security requirements), and presents the complete spec. It only asks follow-up questions about genuine gaps — not things already answered in the PRD.
 
+**From a vague description (assumed tags):**
+```
+I need password reset. Link should expire quickly.
+```
+
+Claude drafts:
+```
+RULE-1: POST /reset sends email with link
+RULE-2: Link expires after 24 hours (assumed — user said "quickly")
+RULE-3: Clicking valid link allows new password
+RULE-4: Expired link shows error message
+```
+
+The PM sees `(assumed)` on RULE-2 and says "actually make it 1 hour, not 24." Claude updates and removes the tag. Rules without a tag are implicitly accepted; the PM can also change a tag to `(confirmed)` to signal explicit approval.
+
 **From customer feedback:**
 ```
 Customers are complaining that search is slow and doesn't handle typos.
@@ -111,7 +137,7 @@ Claude translates complaints into rules: `RULE-1: Search returns results in unde
 **What the PM DOESN'T do:**
 - Write `RULE-N:` format — Claude does that
 - Know what `> Requires:`, `> Scope:`, or `> Stack:` mean — Claude fills metadata automatically
-- Decide on proof tiers (`@slow`, `@e2e`, `@manual`) — Claude applies the heuristics
+- Decide on proof tiers (`@integration`, `@e2e`, `@manual`) — Claude applies the heuristics
 - Write proof descriptions — Claude generates observable assertions from the rules
 
 **What the PM DOES do:**
@@ -126,10 +152,10 @@ Engineers change code. The PM needs to know: do the specs still match? Here's th
 
 **Step 1: See what changed**
 ```
-/purlin:changelog pm
+/purlin:drift pm
 ```
 
-The changelog shows NEEDS ATTENTION items and ends with ACTION ITEMS — a complete list of everything the PM needs to do:
+The drift report shows NEEDS ATTENTION items and ends with ACTION ITEMS — a complete list of everything the PM needs to do:
 
 ```
 ACTION ITEMS (PM):
@@ -191,7 +217,7 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 - Write proof descriptions from scratch
 
 **What the PM DOES do:**
-- Run changelog to see what changed
+- Run drift detection to see what changed
 - Say "update the spec for X" and review the proposed deltas
 - Approve or adjust the changes
 
@@ -206,11 +232,23 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 - Write code and tests (just ask Claude)
 - Run tests (`test login`)
 - Verify features (`/purlin:verify`)
-- Create invariants from external sources (`/purlin:invariant sync`)
+- Create anchors from external sources (`/purlin:anchor sync`)
 
 ---
 
 ## Engineer Workflow
+
+### Just do this
+
+```
+/purlin:drift eng        ← see what needs work
+handle engineer items    ← Claude builds code + tests for each gap, iterates until READY
+/purlin:verify           ← lock it in with a verification receipt
+```
+
+That's it. Build, test, verify. Everything below is detail for when you want more control.
+
+---
 
 **The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `sync_status` shows READY. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
 
@@ -220,7 +258,7 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 
 | What you want | What you type |
 |---------------|---------------|
-| See what needs work | `/purlin:changelog eng` |
+| See what needs work | `/purlin:drift eng` |
 | Build a feature | `build login` |
 | Test a feature | `test login` |
 | Handle all engineer work | `handle engineer items` |
@@ -244,18 +282,30 @@ You can also say `build login` to just write code (Claude injects the spec rules
 
 ### Proof quality audit
 
-After `purlin:verify`, an audit subagent checks proof quality in the background. If it finds HOLLOW or WEAK proofs, fix them in the build loop and re-verify.
+After `purlin:verify`, an audit runs automatically (three stages: spec coverage check → structural defect detection → semantic alignment). Structural-only specs get capped at WEAK. `assert True` and friends get caught deterministically. Everything else goes to the LLM for STRONG/WEAK judgment. Fix HOLLOW and WEAK proofs in the build loop and re-verify.
 
 ### Engineers can also
 
 - Write and edit specs (`write a spec for notifications`)
 - Stamp manual proofs (`/purlin:verify --manual login PROOF-3`)
-- Create invariants (`/purlin:invariant sync`)
-- Review changelogs for any role (`/purlin:changelog pm`)
+- Create anchors (`/purlin:anchor sync`)
+- Review drift reports for any role (`/purlin:drift pm`)
 
 ---
 
 ## QA Workflow
+
+### Just do this
+
+```
+/purlin:drift qa         ← see what needs testing or re-verification
+handle QA items          ← Claude writes missing tests, you stamp manual proofs
+/purlin:verify           ← issue verification receipts for READY features
+```
+
+Drift, verify, ship. Everything below is detail for when you want more control.
+
+---
 
 **QA verifies that the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows QA exactly which rules have proofs and which don't, which manual proofs are stale, and which features are ready for verification. QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` to issue the final verification receipt. QA is the last gate before code ships.
 
@@ -265,7 +315,7 @@ After `purlin:verify`, an audit subagent checks proof quality in the background.
 
 | What you want | What you type |
 |---------------|---------------|
-| See what needs testing | `/purlin:changelog qa` |
+| See what needs testing | `/purlin:drift qa` |
 | Handle all QA work | `handle QA items` |
 | See coverage gaps | `/purlin:status` |
 | Run all tests | `/purlin:unit-test` |
@@ -337,7 +387,7 @@ Spec the structure of instructions — verify sections exist, required content i
 - PROOF-2 (RULE-2): For each file in references/formats/, grep for "## Template"; verify present
 ```
 
-These are default-tier tests. They catch accidental deletions and structural drift immediately.
+These are unit-tier tests. They catch accidental deletions and structural drift immediately.
 
 ### Level 3: E2E integration tests (expensive, nightly)
 
@@ -381,17 +431,17 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-`sync_status` flags features with structural-only proofs: `READY (structural only)`. This means the document's sections exist but no test verifies the system actually follows the instructions. When you see this, consider adding E2E proofs in `specs/integration/`.
+`sync_status` flags features with structural-only proofs: `READY (structural only)`. The audit (Pass 0) caps these at WEAK — they count as 0 toward the integrity score. This means the document's sections exist but no test verifies the system actually follows the instructions. Add E2E proofs in `specs/integration/` to get real coverage.
 
 ---
 
 ## Enforcement
 
-Proofs keep specs and code in sync — but only if they're actually run. Purlin enforces proofs at three layers:
+Proofs keep specs and code in sync — but only if they're actually run. Purlin ships a pre-push hook; you add CI and deploy gates:
 
 ### Layer 1: Pre-push hook (automatic)
 
-`purlin:init` installs a git pre-push hook. Every time you push, default-tier tests run automatically. Two modes:
+`purlin:init` installs a git pre-push hook. Every time you push, unit-tier tests run automatically. Two modes:
 
 - **Warn mode** (default) — blocks on FAILING proofs, warns on partial coverage. For incremental development.
 - **Strict mode** — blocks unless ALL features are READY. For teams that want hard enforcement.
@@ -400,7 +450,7 @@ Set during `purlin:init` or via `"pre_push": "strict"` in `.purlin/config.json`.
 
 ### Layer 2: CI pipeline (you configure)
 
-Your CI runs tiered tests per trigger — PRs get default + `@slow`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for GitHub Actions and Bitbucket Pipelines examples.
+Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for GitHub Actions and Bitbucket Pipelines examples.
 
 ### Layer 3: Deploy gate (you configure)
 

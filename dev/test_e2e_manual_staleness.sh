@@ -83,8 +83,8 @@ User login feature.
 SPEC
 
 # Create a passing proof file for RULE-1 (automated proof)
-cat > "$TMPDIR/specs/auth/login.proofs-default.json" << JSON
-{"tier": "default", "proofs": [
+cat > "$TMPDIR/specs/auth/login.proofs-unit.json" << JSON
+{"tier": "unit", "proofs": [
   {
     "feature": "login",
     "id": "PROOF-1",
@@ -92,7 +92,7 @@ cat > "$TMPDIR/specs/auth/login.proofs-default.json" << JSON
     "test_file": "dev/test_login.sh",
     "test_name": "test login",
     "status": "pass",
-    "tier": "default"
+    "tier": "unit"
   }
 ]}
 JSON

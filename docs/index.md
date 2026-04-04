@@ -8,7 +8,7 @@
 
 - Write better code through proof-based specs
 - Prove spec / code drift with signed verification
-- Enable multi-discipline collaboration with smart changelogs and remote invariant specs that cannot be adjusted during development
+- Enable multi-discipline collaboration with drift detection and anchor specs with external references
 
 ## Guides
 
@@ -17,14 +17,15 @@
 | [The Purlin Lifecycle](lifecycle-guide.md) | Spec format, sync model, PM/Engineer/QA workflows, CI integration |
 | [Installation](installation-guide.md) | Installing Purlin, initializing a project, proof plugin setup |
 | [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
-| [Anchors & Invariants](invariants-guide.md) | Anchors, invariants, FORBIDDEN patterns, external constraints |
-| [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 — what Purlin is and isn't |
+| [Anchors and External References](anchors-guide.md) | Anchors, external references, FORBIDDEN patterns, cross-cutting constraints |
+| [Collaboration](collaboration-guide.md) | External anchors, branch handoff, merge conflicts |
+| [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 -- what Purlin is and isn't |
 
 ## Example Workflows
 
 | Example | What it shows |
 |---------|---------------|
-| [Figma Web App Example](examples/figma-web-app.md) | Build a weather app from scratch using a Figma design invariant |
+| [Figma Web App Example](examples/figma-web-app.md) | Build a weather app from scratch using a Figma design anchor |
 
 ## Architecture at a Glance
 
@@ -38,8 +39,8 @@ specs/
     <feature>.md           # Spec (3-section format)
     <feature>.proofs-*.json  # Proof files (emitted by test runners)
     <feature>.receipt.json   # Verification receipts
-  _invariants/
-    i_<name>.md            # Read-only external constraints
+  _anchors/
+    <name>.md              # Cross-cutting constraints (optionally synced from external sources)
 ```
 
 ## Runtime Components
@@ -47,35 +48,36 @@ specs/
 | Component | Path | Purpose |
 |-----------|------|---------|
 | MCP server | `scripts/mcp/purlin_server.py` | Provides `sync_status` and `purlin_config` tools |
-| Gate hook | `scripts/gate.sh` | Blocks writes to invariant files |
 | Proof plugins | `scripts/proof/` | pytest, Jest, and shell proof collectors |
-| Session start | `scripts/session-start.sh` | Clears stale runtime files |
 
 ## Skills Reference
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full 15-skill reference.
+See [references/purlin_commands.md](../references/purlin_commands.md) for the full skill reference.
 
 | Resource | What it covers |
 |----------|---------------|
 | [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
-| [Audit Criteria](../references/audit_criteria.md) | How proofs are judged — STRONG/WEAK/HOLLOW definitions |
+| [Audit Criteria](../references/audit_criteria.md) | Three-pass audit -- spec coverage, structural checks, semantic alignment |
+| [Drift Criteria](../references/drift_criteria.md) | File classification, drift detection, config field ownership |
 | [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
 Key skills:
 
-- `purlin:spec` — create/edit specs
-- `purlin:build` — implement from spec rules
-- `purlin:verify` — run all tests, issue verification receipts
-- `purlin:audit` — evaluate proof quality (STRONG/WEAK/HOLLOW)
-- `purlin:status` — show rule coverage via `sync_status`
-- `purlin:changelog` — PM-readable summary of what changed
-- `purlin:spec-from-code` — reverse-engineer specs from existing code
-- `purlin:rename` — rename a feature across specs, proofs, markers, and references
-- `purlin:init` — initialize a new project
+- `purlin:spec` -- create/edit specs
+- `purlin:build` -- implement from spec rules
+- `purlin:verify` -- run all tests, issue verification receipts
+- `purlin:unit-test` -- run tests and emit proof files
+- `purlin:audit` -- evaluate proof quality (STRONG/WEAK/HOLLOW)
+- `purlin:status` -- show rule coverage via `sync_status`
+- `purlin:drift` -- drift detection and change summary
+- `purlin:spec-from-code` -- reverse-engineer specs from existing code
+- `purlin:find` -- search specs by name
+- `purlin:rename` -- rename a feature across specs, proofs, markers, and references
+- `purlin:anchor` -- sync cross-cutting constraints from external sources
+- `purlin:init` -- initialize and configure a project
 
-## Hard Gates (only 2)
+## Hard Gate (only 1)
 
-1. **Invariant protection** — `specs/_invariants/i_*` files are read-only. Use `purlin:invariant sync` to update.
-2. **Proof coverage** — `purlin:verify` won't issue a receipt unless every rule has a passing proof.
+1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
 
 Everything else is optional guidance.

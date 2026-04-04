@@ -28,9 +28,7 @@ run_suite "Purlin Skills" pytest "$SCRIPT_DIR/test_purlin_skills.py" -v
 run_suite "Schema Spec Format" pytest "$SCRIPT_DIR/test_schema_spec_format.py" -v
 run_suite "Schema Proof Format" pytest "$SCRIPT_DIR/test_schema_proof_format.py" -v
 run_suite "Security Patterns" pytest "$SCRIPT_DIR/test_security.py" -v
-run_suite "Gate Hook" bash "$SCRIPT_DIR/test_gate_hook.sh"
 run_suite "Proof Plugins" bash "$SCRIPT_DIR/test_proof_plugins.sh"
-run_suite "Session Start" bash "$SCRIPT_DIR/test_session_start.sh"
 run_suite "Teammate Definitions" pytest "$SCRIPT_DIR/test_purlin_teammate_definitions.py" -v
 run_suite "E2E Teammate Audit Loop" bash "$SCRIPT_DIR/test_e2e_teammate_audit_loop.sh"
 

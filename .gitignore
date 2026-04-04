@@ -15,6 +15,7 @@ venv/
 .purlin/runtime/
 .purlin/config.local.json
 .purlin/plugins/__pycache__/
+.purlin/cache/
 
 # Plugin data (persists across updates)
 .claude-plugin-data/

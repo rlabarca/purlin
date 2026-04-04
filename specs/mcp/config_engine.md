@@ -24,16 +24,16 @@ Two-file configuration resolution system for Purlin projects. Reads `.purlin/con
 
 ## Proof
 
-- PROOF-1 (RULE-1): Set `PURLIN_PROJECT_ROOT=/tmp/test_root` with `.purlin/` inside; call `find_project_root()`; verify it returns `/tmp/test_root` without climbing @slow
-- PROOF-2 (RULE-2): Create `/tmp/a/b/c/` with `.purlin/` in `/tmp/a/`; call `find_project_root(start_dir="/tmp/a/b/c")`; verify it returns `/tmp/a` @slow
-- PROOF-3 (RULE-3): Call `find_project_root(start_dir="/tmp/no_purlin_marker")` with no `.purlin/` in any ancestor; verify it returns the current working directory @slow
-- PROOF-4 (RULE-4): Create `.purlin/config.local.json` with `{"key": "local_val"}`; call `resolve_config()`; verify it returns `{"key": "local_val"}` @slow
-- PROOF-5 (RULE-5): Create `.purlin/config.json` with `{"key": "shared_val"}` and no `config.local.json`; call `resolve_config()`; verify it returns `{"key": "shared_val"}` and `config.local.json` now exists with the same contents @slow
-- PROOF-6 (RULE-6): Create `.purlin/config.local.json` with invalid JSON `{bad` and `.purlin/config.json` with `{"key": "fallback"}`; call `resolve_config()`; verify it returns `{"key": "fallback"}` and a warning was printed to stderr @slow
-- PROOF-7 (RULE-7): Call `resolve_config()` in a directory with no `.purlin/config.json` or `config.local.json`; verify it returns `{}` @slow
-- PROOF-8 (RULE-8): Call `update_config(root, "newkey", "newval")`; verify `config.local.json` contains `"newkey": "newval"` and no `.tmp` file remains @slow
-- PROOF-9 (RULE-9): Create `config.local.json` with `{"existing": "keep"}`; call `update_config(root, "added", "new")`; verify result contains both `{"existing": "keep", "added": "new"}` @slow
-- PROOF-10 (RULE-10): Run `config_engine.py --dump` with a config file present; verify it prints valid JSON to stdout. Run `config_engine.py --key test_key` with `{"test_key": "val"}`; verify it prints `val` @slow
+- PROOF-1 (RULE-1): Set `PURLIN_PROJECT_ROOT=/tmp/test_root` with `.purlin/` inside; call `find_project_root()`; verify it returns `/tmp/test_root` without climbing @integration
+- PROOF-2 (RULE-2): Create `/tmp/a/b/c/` with `.purlin/` in `/tmp/a/`; call `find_project_root(start_dir="/tmp/a/b/c")`; verify it returns `/tmp/a` @integration
+- PROOF-3 (RULE-3): Call `find_project_root(start_dir="/tmp/no_purlin_marker")` with no `.purlin/` in any ancestor; verify it returns the current working directory @integration
+- PROOF-4 (RULE-4): Create `.purlin/config.local.json` with `{"key": "local_val"}`; call `resolve_config()`; verify it returns `{"key": "local_val"}` @integration
+- PROOF-5 (RULE-5): Create `.purlin/config.json` with `{"key": "shared_val"}` and no `config.local.json`; call `resolve_config()`; verify it returns `{"key": "shared_val"}` and `config.local.json` now exists with the same contents @integration
+- PROOF-6 (RULE-6): Create `.purlin/config.local.json` with invalid JSON `{bad` and `.purlin/config.json` with `{"key": "fallback"}`; call `resolve_config()`; verify it returns `{"key": "fallback"}` and a warning was printed to stderr @integration
+- PROOF-7 (RULE-7): Call `resolve_config()` in a directory with no `.purlin/config.json` or `config.local.json`; verify it returns `{}` @integration
+- PROOF-8 (RULE-8): Call `update_config(root, "newkey", "newval")`; verify `config.local.json` contains `"newkey": "newval"` and no `.tmp` file remains @integration
+- PROOF-9 (RULE-9): Create `config.local.json` with `{"existing": "keep"}`; call `update_config(root, "added", "new")`; verify result contains both `{"existing": "keep", "added": "new"}` @integration
+- PROOF-10 (RULE-10): Run `config_engine.py --dump` with a config file present; verify it prints valid JSON to stdout. Run `config_engine.py --key test_key` with `{"test_key": "val"}`; verify it prints `val` @integration
 
 ## Implementation Notes
 

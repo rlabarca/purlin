@@ -49,31 +49,29 @@ class TestPurlinReferences:
                 f"Missing framework section: {fw}"
 
     @pytest.mark.proof("purlin_references", "PROOF-4", "RULE-4")
-    def test_invariant_format_metadata(self):
-        content = _read(os.path.join(FORMATS, 'invariant_format.md'))
-        assert '_invariants/' in content
+    def test_anchor_format_metadata(self):
+        content = _read(os.path.join(FORMATS, 'anchor_format.md'))
+        assert '_anchors/' in content
         assert '> Source:' in content
         assert '> Pinned:' in content
-        assert re.search(r'[Ss]ync|purlin:invariant', content), \
+        assert re.search(r'[Ss]ync|purlin:anchor', content), \
             "Missing sync protocol documentation"
 
     @pytest.mark.proof("purlin_references", "PROOF-5", "RULE-5")
-    def test_anchor_format_eight_prefixes(self):
+    def test_anchor_format_eight_type_values(self):
         content = _read(os.path.join(FORMATS, 'anchor_format.md'))
-        prefixes = ['design_', 'api_', 'security_', 'brand_',
-                     'platform_', 'schema_', 'legal_', 'prodbrief_']
-        for prefix in prefixes:
-            assert prefix in content, f"Missing prefix: {prefix}"
+        type_values = ['design', 'api', 'security', 'brand',
+                       'platform', 'schema', 'legal', 'prodbrief']
+        for tv in type_values:
+            assert tv in content, f"Missing type value: {tv}"
 
     @pytest.mark.proof("purlin_references", "PROOF-6", "RULE-6")
-    def test_hard_gates_exactly_two(self):
+    def test_hard_gates_exactly_one(self):
         content = _read(os.path.join(REFS, 'hard_gates.md'))
-        assert 'Invariant Protection' in content, \
-            "Missing 'Invariant Protection' gate name"
         assert 'Proof Coverage' in content, \
             "Missing 'Proof Coverage' gate name"
         gate_headers = re.findall(r'^## Gate \d+', content, re.MULTILINE)
-        assert len(gate_headers) == 2
+        assert len(gate_headers) == 1
 
     @pytest.mark.proof("purlin_references", "PROOF-7", "RULE-7")
     def test_commit_conventions_eight_prefixes(self):
@@ -83,7 +81,7 @@ class TestPurlinReferences:
                 if l.strip().startswith('|') or l.strip().startswith('- `')]
         row_text = '\n'.join(rows)
         for prefix in ('spec', 'feat', 'fix', 'test',
-                        'verify', 'invariant', 'chore', 'docs'):
+                        'verify', 'anchor', 'chore', 'docs'):
             assert prefix in row_text, \
                 f"Missing commit prefix '{prefix}' in table/list rows"
 
@@ -95,9 +93,9 @@ class TestPurlinReferences:
         expected_skills = {
             'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
             'purlin:unit-test', 'purlin:verify', 'purlin:audit',
-            'purlin:status', 'purlin:find', 'purlin:changelog',
-            'purlin:config', 'purlin:init', 'purlin:invariant',
-            'purlin:help',
+            'purlin:status', 'purlin:find', 'purlin:drift',
+            'purlin:init', 'purlin:anchor',
+            'purlin:rename',
         }
         skills = re.findall(r'`(purlin:[\w-]+)`', content)
         found = set(skills)
@@ -112,7 +110,7 @@ class TestPurlinReferences:
         # Verify tier assignment is documented as a dedicated section/topic
         assert re.search(r'(?i)##.*tier|tier\s+assign', content), \
             "Missing tier assignment section heading or guidance"
-        assert '@slow' in content, "Missing @slow tier tag documentation"
+        assert '@integration' in content, "Missing @integration tier tag documentation"
         assert '@e2e' in content, "Missing @e2e tier tag documentation"
 
     @pytest.mark.proof("purlin_references", "PROOF-10", "RULE-10")
@@ -122,6 +120,22 @@ class TestPurlinReferences:
         assert 'Test bug' in content, "Missing 'Test bug' diagnosis category"
         assert 'Spec drift' in content, "Missing 'Spec drift' diagnosis category"
         assert 'Assertion Integrity' in content, "Missing Assertion Integrity section"
+
+    @pytest.mark.proof("purlin_references", "PROOF-12", "RULE-12")
+    def test_drift_criteria_sections(self):
+        content = _read(os.path.join(REFS, 'drift_criteria.md'))
+        assert 'File Classification' in content, \
+            "Missing 'File Classification' section"
+        assert 'NO_IMPACT Patterns' in content, \
+            "Missing 'NO_IMPACT Patterns' section"
+        assert 'Behavioral Directory Exclusions' in content, \
+            "Missing 'Behavioral Directory Exclusions' section"
+        assert 'Significance Classification' in content, \
+            "Missing 'Significance Classification' section"
+        assert re.search(r'Structural.Only Drift', content), \
+            "Missing 'Structural-Only Drift' section"
+        assert 'drift_flags' in content, \
+            "Missing 'drift_flags' documentation"
 
     @pytest.mark.proof("purlin_references", "PROOF-11", "RULE-11")
     def test_quality_guide_audience_language(self):
@@ -135,8 +149,10 @@ class TestPurlinReferences:
         )
         assert m, "Could not extract Audience-Appropriate Language section"
         section_body = m.group(1)
-        # Must map at least one artifact type to its reader
-        assert re.search(r'(?i)(rules|specs|proofs|proof desc)', section_body), \
-            "Section must mention at least one artifact type (Rules, Specs, Proofs)"
-        assert re.search(r'(?i)(agent|human|developer|reader)', section_body), \
-            "Section must mention at least one audience (agent, human, developer)"
+        # Must contain a table or mapping where an artifact and audience appear on the same line
+        lines = section_body.splitlines()
+        paired = [l for l in lines
+                  if re.search(r'(?i)(rules?|specs?|proofs?|drift)', l)
+                  and re.search(r'(?i)(engineer|PM|QA|agent|developer)', l)]
+        assert len(paired) >= 3, \
+            f"Expected at least 3 artifact-to-audience mapping rows, found {len(paired)}"

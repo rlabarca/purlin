@@ -1,0 +1,68 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_initialize",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_tools_list",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_notification_no_response",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_parse_error",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unknown_method",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unknown_tool",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_startup_logs_to_stderr",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

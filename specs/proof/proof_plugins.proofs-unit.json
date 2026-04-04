@@ -180,6 +180,15 @@
       "test_name": "custom plugin proofs discovered by sync_status",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "fallback warning to stderr",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

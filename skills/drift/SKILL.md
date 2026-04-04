@@ -1,22 +1,24 @@
 ---
-name: changelog
-description: Plain-English summary of changes since last verification, cross-referenced with specs
+name: drift
+description: Detect spec drift and summarize changes since last verification, cross-referenced with specs
 ---
 
 Read-only skill. Calls the `changelog` MCP tool for structured data, then interprets and formats the results into a PM/QA-readable report with actionable directives.
 
+Classification criteria: see `references/drift_criteria.md` (Criteria-Version: 1).
+
 ## Usage
 
 ```
-purlin:changelog                        Summarize changes since last verification
-purlin:changelog pm                     Summarize with PM priorities only
-purlin:changelog eng                    Summarize with engineer priorities only
-purlin:changelog qa                     Summarize with QA priorities only
-purlin:changelog --since <N>            Last N commits
-purlin:changelog --since <date>         Since a date (YYYY-MM-DD)
+purlin:drift                            Summarize changes since last verification
+purlin:drift pm                         Summarize with PM priorities only
+purlin:drift eng                        Summarize with engineer priorities only
+purlin:drift qa                         Summarize with QA priorities only
+purlin:drift --since <N>                Last N commits
+purlin:drift --since <date>             Since a date (YYYY-MM-DD)
 ```
 
-The role can be passed as a bare positional argument (`purlin:changelog pm`) or as a flag (`purlin:changelog --role pm`). Both are equivalent. If no role is given, show all three priority sections.
+The role can be passed as a bare positional argument (`purlin:drift pm`) or as a flag (`purlin:drift --role pm`). Both are equivalent. If no role is given, show all three priority sections.
 
 ## Step 1 — Call the changelog MCP tool
 
@@ -24,12 +26,25 @@ The role can be passed as a bare positional argument (`purlin:changelog pm`) or 
 changelog(since: <from --since arg if given>, role: <from role arg if given, default "all">)
 ```
 
-The tool returns structured JSON containing:
+If the tool returns a JSON object with a `recommendation` field instead of the normal changelog data, the project has no verification history and too many commits for drift tracking to be useful. Display:
+
+```
+No verification anchor found. This project has <commits_since_init> commits without verification history.
+
+→ Use purlin:spec-from-code to generate initial specs from the existing codebase.
+→ After specs exist and purlin:verify has run, purlin:drift will track ongoing changes.
+```
+
+Do not attempt to process the response as normal changelog data. Return immediately after displaying this message.
+
+Otherwise, the tool returns structured JSON containing:
 - `since` — human-readable description of the anchor point
 - `commits` — list of one-line commit summaries
 - `files` — each changed file with `path`, `category` (CHANGED_SPECS, CHANGED_BEHAVIOR, TESTS_ADDED, NEW_BEHAVIOR, NO_IMPACT), `spec` (matched spec name or null), and `diff_stat`
 - `spec_changes` — for each changed spec: `new_rules` and `removed_rules`
 - `proof_status` — per-feature: `proved`, `total`, `status` (READY/FAILING/partial), `failing_rules`
+- `drift_flags` — precomputed drift indicators: features with structural-only coverage that have changed files. Each entry has `spec`, `reason`, and `files`.
+- `broken_scopes` — specs whose `> Scope:` references files or directories that no longer exist on disk. Each entry has `spec`, `missing_paths`, and `existing_paths`.
 
 Deleted files are already filtered out by the tool — only files that exist on disk are included.
 
@@ -86,15 +101,29 @@ For each BEHAVIORAL change, check: do the existing spec rules cover this new beh
 
 Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
 
-**Structural-only coverage check:** When `proof_status` reports a feature as `structural_only: true`, include that in the spec status line:
+**Structural-only drift:** Check the `drift_flags` array in the MCP tool output. Each entry identifies a feature with structural-only coverage whose code changed. For each:
 
 ```
 Spec: purlin_agent (8 rules, READY — structural only)
-⚠ All proofs are grep checks. No E2E test verifies the agent actually follows the new behavior.
-→ Run: purlin:spec purlin_agent (to add behavioral proofs)
+⚠ All proofs are grep checks. Code changed but no test verifies the new behavior.
+→ Run: purlin:spec purlin_agent (add behavioral rules)
 ```
 
-A feature that is READY but structural-only AND appeared in NEEDS ATTENTION means the proofs don't actually test the changed behavior — they only verify the instruction text exists.
+Also check individual file entries for `structural_drift: true` — these are CHANGED_BEHAVIOR files whose spec has only grep/existence proofs.
+
+**Broken scopes:** Check the `broken_scopes` array in the MCP tool output. Each entry identifies a spec whose `> Scope:` references a path that no longer exists on disk. For each:
+
+```
+Spec: login
+⚠ Broken scope — src/auth/old_login.py no longer exists
+→ Was it renamed? Run: purlin:rename login (to update scope and references)
+→ Was it deleted? Run: purlin:spec login (to update or remove the spec)
+```
+
+### Anchor External Reference Drift
+
+When an anchor with `> Source:` has been synced (Pinned changed) and also has local rules, flag as a PM action item:
+- "**<anchor_name>**: external reference updated — N local rules may conflict. Review and update or confirm."
 
 ### 2e — Format by audience
 
@@ -151,9 +180,10 @@ After all sections, print a `---` separator and role-aware action items. These M
 
 List every item that applies, in this order:
 
-1. **Missing specs** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
-2. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `→ Run: purlin:spec <name>`
-3. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `→ Run: test <name>`
+1. **Assumed values** — features with rules tagged `(assumed)` that need PM confirmation → `→ Run: purlin:spec <name>`
+2. **Missing specs** — BEHAVIORAL changes with no spec → `→ Run: purlin:spec <name>`
+3. **Spec drift** — BEHAVIORAL changes where existing spec rules don't cover the new behavior → `→ Run: purlin:spec <name>`
+4. **Unproved new rules** — changed specs with `new_rules` that lack proofs → `→ Run: test <name>`
 
 ### Engineer action items (ordered)
 
@@ -176,7 +206,8 @@ List every item that applies, in this order:
 Before emitting ACTION ITEMS, cross-reference against the NEEDS ATTENTION entries:
 - If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM action items, even if `proof_status` shows all rules proved (the proofs were from before the change)
 - If NEEDS ATTENTION says "no missing specs" → PM action items should not list missing specs
-- **Structural-only with code changes:** If a feature is READY but `structural_only: true` AND it appeared in NEEDS ATTENTION (code changed), it must appear in PM action items: `Spec drift: <name> — code changed, all proofs are structural only (no behavioral coverage) → Run: purlin:spec <name>`
+- **Structural-only drift:** Every entry in `drift_flags` must appear in PM action items: `Spec drift: <name> — code changed, all proofs are structural only (no behavioral coverage) → Run: purlin:spec <name>`
+- **Broken scopes:** Every entry in `broken_scopes` must appear in PM action items: `Broken scope: <name> — <path> no longer exists → Run: purlin:rename <name> or purlin:spec <name>`
 - Do not contradict the detailed analysis with the summary
 
 ### Format

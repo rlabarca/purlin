@@ -46,7 +46,7 @@ import pytest
 def test_it(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  [[ -f "$d/specs/hooks/gate_hook.proofs-default.json" ]]
+  [[ -f "$d/specs/hooks/gate_hook.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-1" "RULE-1" "spec dir resolution" test_spec_dir_resolution
@@ -62,10 +62,10 @@ import pytest
 def test_it(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  local fpath="$d/specs/hooks/gate_hook.proofs-default.json"
+  local fpath="$d/specs/hooks/gate_hook.proofs-unit.json"
   [[ -f "$fpath" ]] || { rm -rf "$d"; return 1; }
   local fname=$(basename "$fpath")
-  [[ "$fname" == "gate_hook.proofs-default.json" ]]
+  [[ "$fname" == "gate_hook.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-2" "RULE-2" "proof file naming" test_proof_naming
@@ -80,7 +80,7 @@ import pytest
 def test_it(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  [[ -f "$d/specs/nonexistent_feature.proofs-default.json" ]]
+  [[ -f "$d/specs/nonexistent_feature.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-3" "RULE-3" "fallback to specs/" test_fallback
@@ -90,7 +90,7 @@ test_overwrite() {
   local d=$(mktemp -d)
   mkdir -p "$d/specs/auth"
   echo -e "# Feature: feat_a\n\n## Rules\n- RULE-1: A" > "$d/specs/auth/feat_a.md"
-  echo '{"tier":"default","proofs":[{"feature":"feat_b","id":"PROOF-1","rule":"RULE-1","test_file":"t.py","test_name":"t","status":"pass","tier":"default"}]}' > "$d/specs/auth/feat_a.proofs-default.json"
+  echo '{"tier":"unit","proofs":[{"feature":"feat_b","id":"PROOF-1","rule":"RULE-1","test_file":"t.py","test_name":"t","status":"pass","tier":"unit"}]}' > "$d/specs/auth/feat_a.proofs-unit.json"
   cat > "$d/test_s.py" << 'PY'
 import pytest
 @pytest.mark.proof("feat_a", "PROOF-1", "RULE-1")
@@ -99,7 +99,7 @@ PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
   python3 -c "
 import json, sys
-data = json.load(open('$d/specs/auth/feat_a.proofs-default.json'))
+data = json.load(open('$d/specs/auth/feat_a.proofs-unit.json'))
 feats = [p['feature'] for p in data['proofs']]
 assert 'feat_b' in feats, 'feat_b was removed'
 assert 'feat_a' in feats, 'feat_a missing'
@@ -122,7 +122,7 @@ PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/f.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/f.proofs-unit.json'))['proofs'][0]
 for f in ['feature','id','rule','test_file','test_name','status','tier']:
     assert f in e, f'missing {f}'
 "
@@ -145,7 +145,7 @@ PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null) || true
   python3 -c "
 import json, sys
-ps = json.load(open('$d/specs/a/f.proofs-default.json'))['proofs']
+ps = json.load(open('$d/specs/a/f.proofs-unit.json'))['proofs']
 by = {p['id']:p['status'] for p in ps}
 assert by['PROOF-1'] == 'pass'
 assert by['PROOF-2'] == 'fail'
@@ -183,11 +183,11 @@ PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
 assert e['feature'] == 'feat'
 assert e['id'] == 'PROOF-1', f'Expected id PROOF-1, got {e[\"id\"]}'
 assert e['rule'] == 'RULE-1', f'Expected rule RULE-1, got {e[\"rule\"]}'
-assert e['tier'] == 'default'
+assert e['tier'] == 'unit'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
@@ -204,10 +204,10 @@ def test_two_args(): assert True
 PY
   (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
   # Either no file created, or file created with 0 entries — both valid
-  if [[ -f "$d/specs/feat.proofs-default.json" ]]; then
+  if [[ -f "$d/specs/feat.proofs-unit.json" ]]; then
     python3 -c "
 import json, sys
-d = json.load(open('$d/specs/feat.proofs-default.json'))
+d = json.load(open('$d/specs/feat.proofs-unit.json'))
 assert len(d['proofs']) == 0, f'Expected 0 proofs, got {len(d[\"proofs\"])}'
 "
     local rc=$?; rm -rf "$d"; return $rc
@@ -231,7 +231,7 @@ PY
   (cd "$d" && python3 -m pytest tests/test_feat.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
 assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
@@ -322,10 +322,10 @@ test_jest_marker() {
   local d=$(mktemp -d)
   mkdir -p "$d/specs/a"
   echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:default]" "passed"
+  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:unit]" "passed"
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
 assert e['feature'] == 'feat'
 assert e['id'] == 'PROOF-1'
 assert e['rule'] == 'RULE-1'
@@ -366,10 +366,10 @@ test_jest_relpath() {
   local d=$(mktemp -d)
   mkdir -p "$d/specs/a"
   echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:default]" "passed"
+  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:unit]" "passed"
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
 assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
@@ -409,13 +409,13 @@ const r = new Reporter({rootDir: '$d'}, {});
 r.onTestResult(null, {
   testFilePath: '$d/tests/t.js',
   testResults: [
-    {title: 'p [proof:feat:PROOF-1:RULE-1:default]', status: 'passed'},
-    {title: 'f [proof:feat:PROOF-2:RULE-2:default]', status: 'failed'}
+    {title: 'p [proof:feat:PROOF-1:RULE-1:unit]', status: 'passed'},
+    {title: 'f [proof:feat:PROOF-2:RULE-2:unit]', status: 'failed'}
   ]
 });
 process.chdir('$d');
 r.onRunComplete();
-const ps = JSON.parse(fs.readFileSync('$d/specs/a/feat.proofs-default.json','utf8')).proofs;
+const ps = JSON.parse(fs.readFileSync('$d/specs/a/feat.proofs-unit.json','utf8')).proofs;
 const by = {};
 ps.forEach(p => by[p.id] = p.status);
 if (by['PROOF-1'] !== 'pass') process.exit(1);
@@ -434,15 +434,15 @@ test_shell_tier() {
   echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
   (
     cd "$d"
-    export PURLIN_PROOF_TIER=slow
+    export PURLIN_PROOF_TIER=integration
     source "$SHELL_HARNESS"
     purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"
     purlin_proof_finish
   )
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-slow.json'))['proofs'][0]
-assert e['tier'] == 'slow'
+e = json.load(open('$d/specs/a/feat.proofs-integration.json'))['proofs'][0]
+assert e['tier'] == 'integration'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
@@ -463,7 +463,7 @@ SHEOF
   (cd "$d" && bash "$d/my_test.sh")
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-default.json'))['proofs'][0]
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
 assert 'my_test.sh' in e['test_file'], f'unexpected: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
@@ -492,7 +492,7 @@ test_shell_finish_required() {
     purlin_proof_finish
   )
   local has_files=false
-  [[ -f "$d/specs/a/feat.proofs-default.json" ]] && has_files=true
+  [[ -f "$d/specs/a/feat.proofs-unit.json" ]] && has_files=true
   [[ "$no_files" == "true" ]] && [[ "$has_files" == "true" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
@@ -515,7 +515,7 @@ test_shell_clear() {
   )
   python3 -c "
 import json, sys
-d = json.load(open('$d/specs/a/feat.proofs-default.json'))
+d = json.load(open('$d/specs/a/feat.proofs-unit.json'))
 assert len(d['proofs']) == 1, f'expected 1, got {len(d[\"proofs\"])}'
 "
   local rc=$?; rm -rf "$d"; return $rc
@@ -530,8 +530,8 @@ test_custom_discovery() {
   mkdir -p "$d/specs/custom"
   echo -e "# Feature: my_custom\n\n## Rules\n- RULE-1: Does the thing" > "$d/specs/custom/my_custom.md"
   # Hand-write a proof file as if a custom (non-built-in) plugin emitted it
-  cat > "$d/specs/custom/my_custom.proofs-default.json" << 'JSON'
-{"tier":"default","proofs":[{"feature":"my_custom","id":"PROOF-1","rule":"RULE-1","test_file":"tests/test_custom.go","test_name":"TestDoesTheThing","status":"pass","tier":"default"}]}
+  cat > "$d/specs/custom/my_custom.proofs-unit.json" << 'JSON'
+{"tier":"unit","proofs":[{"feature":"my_custom","id":"PROOF-1","rule":"RULE-1","test_file":"tests/test_custom.go","test_name":"TestDoesTheThing","status":"pass","tier":"unit"}]}
 JSON
   # Run sync_status on the temp project — it should discover the proof
   local output
@@ -545,6 +545,25 @@ print(sync_status('$d'))
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "PROOF-20" "RULE-20" "custom plugin proofs discovered by sync_status" test_custom_discovery
+
+# PROOF-21 (RULE-21): Fallback to specs/ emits warning to stderr
+test_fallback_warning() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs"
+  cat > "$d/test_s.py" << 'PY'
+import pytest
+@pytest.mark.proof("missing_feature", "PROOF-1", "RULE-1")
+def test_it(): assert True
+PY
+  local stderr_output
+  stderr_output=$( (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header) 2>&1 1>/dev/null )
+  # stderr must mention the feature name and suggest purlin:spec
+  echo "$stderr_output" | grep -q "missing_feature" || { rm -rf "$d"; return 1; }
+  echo "$stderr_output" | grep -q "purlin:spec" || { rm -rf "$d"; return 1; }
+  rm -rf "$d"
+  return 0
+}
+run "PROOF-21" "RULE-21" "fallback warning to stderr" test_fallback_warning
 
 # Emit proof files
 cd "$PROJECT_ROOT"

@@ -25,7 +25,7 @@ Available specs:
   specs/auth/login.md
   specs/auth/user_profile.md
   specs/webhooks/webhook_delivery.md
-  specs/_invariants/i_design_tokens.md
+  specs/_anchors/design_tokens.md
 ```
 
 4. If found, read the spec and call `sync_status`. Display the spec's coverage:
@@ -35,7 +35,7 @@ Found: specs/auth/login.md
 
 # Feature: login
 
-> Requires: i_security_auth
+> Requires: security_auth
 > Scope: src/auth/login.js, src/auth/login.test.js
 
 Rules: 3 | Proved: 3/3 | Status: READY | vhash=a1b2c3d4
@@ -61,7 +61,7 @@ Specs (12 total):
     webhook_delivery.md — 2/3 rules proved
     webhook_config.md — READY
 
-  _invariants/ (2 invariants)
-    i_design_tokens.md — 5 rules
-    i_api_contracts.md — 3 rules
+  _anchors/ (2 anchors)
+    design_tokens.md — 5 rules
+    api_contracts.md — 3 rules
 ```

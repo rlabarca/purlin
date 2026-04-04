@@ -48,7 +48,7 @@ create_proof_file() {
   proofs="$proofs
   ]"
 
-  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$tmpdir/$spec_dir/${feature}.proofs-default.json"
+  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$tmpdir/$spec_dir/${feature}.proofs-unit.json"
 }
 
 # --- Helper: run the hook ---

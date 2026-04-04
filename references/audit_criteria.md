@@ -1,8 +1,8 @@
-> Criteria-Version: 8
+> Criteria-Version: 11
 
 # Proof Audit Criteria
 
-This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit runs in two passes: Pass 1 (deterministic static analysis) catches structural issues, Pass 2 (LLM) evaluates semantic alignment. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
+This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit pipeline has three stages: a pre-filter (Pass 0) identifies structural-only specs, deterministic static analysis (Pass 1) catches structural test defects like `assert True` and logic mirroring, and LLM semantic evaluation (Pass 2) checks whether tests actually prove their rules. The first two are fast and always run. The LLM stage runs only for proofs that survive the first two. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
 
 ## Assessment Levels
 
@@ -10,8 +10,27 @@ This document defines how `purlin:audit` evaluates whether test code actually pr
 |-------|--------|---------|---------------|
 | STRONG | ✓ | Test meaningfully proves the rule — assertions match proof description, tests real behavior | Pass 2 (LLM) |
 | WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described | Pass 2 (LLM) |
+| WEAK (structural) | ~s | All proofs in the spec are grep/existence checks — proves document content, not system behavior | Pass 0 (deterministic) |
 | HOLLOW | ✗ | Test passes but doesn't prove the rule — structural defect caught deterministically | Pass 1 (static) |
 | MANUAL | ● | Human-verified via @manual stamp — assess staleness only | Either pass |
+
+## Pass 0 — Spec Coverage Check (deterministic)
+
+Before evaluating individual proofs, check whether the spec's rules describe behavioral constraints or only structural presence checks. This uses `scripts/audit/static_checks.py --check-spec-coverage`.
+
+A **structural-only spec** is one where ALL rules describe document-structure checks (e.g., "file exists", "section contains X", "field present in Y", "grep for Z") and NONE describe behavioral outcomes (e.g., "returns 200", "rejects invalid input", "logs warning when", "blocks push").
+
+Detection heuristics (same as `_is_structural_only` in sync_status):
+- **Structural indicators:** grep, verify...exist, verify...present, verify...section, verify...field, verify...appear, verify...contain
+- **Behavioral indicators:** returns, rejects, blocks, logs, sends, creates, deletes, updates, computes, detects, emits
+
+When Pass 0 identifies a structural-only spec:
+- All proofs in that spec are **capped at WEAK** regardless of Pass 1 and Pass 2 results. Structural proofs verify that documents have the right content, not that the system follows those instructions. They count as 0 toward the integrity score.
+- Pass 1 and Pass 2 are skipped for that spec's proofs — the WEAK (structural) assessment is final.
+- The audit report includes a `SPEC COVERAGE` line: `SPEC COVERAGE: structural only (N rules, 0 behavioral)`
+- The report appends: `→ Consider: add behavioral rules that test the system follows these instructions, then write matching E2E proofs`
+
+Specs with at least one behavioral rule proceed to Pass 1 and Pass 2 normally.
 
 ## Pass 1 — Deterministic Checks (static_checks.py)
 
@@ -27,7 +46,7 @@ These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM i
 
 ### Shell-specific checks
 
-- **Hardcoded pass** — `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check)
+- **Hardcoded pass** — `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check). Note: if/else pairs where the same proof ID appears in both branches (one pass, one fail) are recognized as conditional proofs — the if-condition is the assertion, and they are NOT flagged
 - **No assertion commands** — no `test`, `[`, `grep`, `diff`, or `||` patterns between proof markers
 
 ### JavaScript/TypeScript-specific checks
@@ -72,17 +91,87 @@ A proof is STRONG when ALL of these are true:
 - Test exercises exactly one code path per assertion
 - Test name describes the scenario, not the implementation
 
+### Test Quality Rules (quick reference)
+
+These rules apply when writing or reviewing any proof-marked test. Violating them produces HOLLOW or WEAK assessments:
+
+- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
+- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
+- **Never assert True.** Every assertion must check a specific expected value.
+- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
+- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
+
 ## Scoring
 
 Integrity score = (STRONG count + MANUAL count) / total proofs x 100%
 
-WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting). Structural-only proofs (capped WEAK by Pass 0) count as 0 — they are included in the total but not the numerator.
 
-## Design Invariant Proofs
+## Finding Priority
 
-Design invariants (`i_design_*` specs) use a thin visual-match model: one rule per viewport saying "match the design," one screenshot comparison proof per rule. Behavioral proofs belong in the feature spec, not the invariant.
+Audit findings are grouped by the value of fixing them — how much real coverage the fix adds.
 
-### What a design invariant proof must do
+| Tier | What it catches | Fix value |
+|------|----------------|-----------|
+| CRITICAL | Test proves nothing (no assertions, bare except, literal assert True) | Highest — the test is functionally absent |
+| HIGH | Real coverage gap (missing assertions, happy-path only, no negative test) | High — real behavior is untested |
+| MEDIUM | Self-confirming test (logic mirroring, mock target match) | Medium — test passes but could confirm bugs |
+| LOW | Weak assertion form (heuristic assert_true, assertion farming) | Low — test works but assertions are imprecise |
+
+When reporting, group findings by tier. When fixing (manually or via builder), work top-down: CRITICAL first, then HIGH, MEDIUM, LOW. This ensures the highest-value fixes happen first, regardless of how many low-value findings exist.
+
+**Pass 1 (deterministic) tier mapping by check name:**
+
+- CRITICAL: `assert_true` (when `literal: true`), `no_assertions`, `bare_except`
+- MEDIUM: `logic_mirroring`, `mock_target_match`
+- LOW: `assert_true` (when `literal: false` — heuristic patterns like `assert x is not None`)
+
+**Pass 2 (LLM) tier mapping by criterion:**
+
+- HIGH: any WEAK with "missing" in criterion, "only happy path", "only checks", deep mocking, missing negative test for constraint rules
+- LOW: assertion farming, catch-all assertions, string containment instead of equality, time-dependent tests
+
+### Structural-only in --audit mode
+
+When `purlin:verify --audit` runs, features flagged structural-only by Pass 0 are reported separately from behavioral features:
+
+```
+Behavioral features: 2/2 MATCH
+Structural-only features: 2/2 MATCH (not counted toward integrity score)
+→ Structural-only features need behavioral rules and E2E proofs for full audit credit
+```
+
+Structural-only features still receive receipts and MATCH/MISMATCH reporting, but they are excluded from the integrity score denominator. This makes it visible that coverage is document-level, not behavioral.
+
+## Audit Caching
+
+To avoid redundant LLM calls, audit results are cached in `.purlin/cache/audit_cache.json`.
+
+### Cache key
+
+The cache key is `sha256(rule_text + "\0" + proof_description + "\0" + test_function_code)[:16]`. The null-byte separator prevents input-shifting collisions (e.g. a `|` in rule text causing two different inputs to hash identically). If any of these three inputs change, the cache is invalidated for that proof and Pass 2 re-runs.
+
+### Cache behavior
+
+- Cache hits skip Pass 2 entirely — the cached STRONG/WEAK assessment is reused
+- Pass 0 (structural-only) and Pass 1 (deterministic) ALWAYS run — they are not cached. A test that was STRONG last time could have been edited to `assert True` — Pass 1 must catch this.
+- Cache misses go through Pass 2 normally, and the result is stored in the cache
+- The cache file is gitignored (per-machine, not shared)
+
+### Cache invalidation
+
+The cache self-invalidates per-proof when:
+- The spec rule text changes (rule was reworded)
+- The proof description changes (proof was rewritten)
+- The test function code changes (test was modified)
+
+No manual invalidation is needed. To force a full re-audit, delete `.purlin/cache/audit_cache.json`.
+
+## Design Anchor Proofs
+
+Design anchors (`design_*` specs) use a thin visual-match model: one rule per viewport saying "match the design," one screenshot comparison proof per rule. Behavioral proofs belong in the feature spec, not the anchor.
+
+### What a design anchor proof must do
 
 - Render the real component (not mock DOM, not stylesheet inspection)
 - Capture a screenshot at the same viewport size as the Figma frame
@@ -96,21 +185,21 @@ Design invariants (`i_design_*` specs) use a thin visual-match model: one rule p
 
 ### Automatic WEAK
 
-- **Missing screenshot comparison proof** — invariant has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught
+- **Missing screenshot comparison proof** — anchor has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught
 - **Wrong viewport size** — Figma frame is 428px wide but test renders at 1024px. The comparison must use the same viewport size as the design
 - **Missing `@e2e` tag** — all design proofs require rendering and must be tagged `@e2e`
-- **Behavioral proofs in invariant** — behavioral proofs (click, type, select) belong in the feature spec that requires the invariant, not in the invariant itself
+- **Behavioral proofs in anchor** — behavioral proofs (click, type, select) belong in the feature spec that requires the anchor, not in the anchor itself
 
-## Invariant Rules
+## Anchor Rules
 
-When auditing proofs for rules that come from invariants (via `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule — invariant files are read-only and externally owned.
+When auditing proofs for rules that come from anchors (via `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule — anchor files are read-only and externally owned.
 
-For HOLLOW or WEAK proofs on invariant rules:
+For HOLLOW or WEAK proofs on anchor rules:
 - Recommend strengthening the TEST to fully satisfy the rule as written
-- If the rule itself seems wrong or unclear, output a separate "Recommendations for Invariant Author" section with the suggested change and the invariant source (`> Source:` URL)
-- Format: `→ Recommend to invariant author (<source>): RULE-N could be clearer — suggest: <proposed rewording>`
+- If the rule itself seems wrong or unclear, output a separate "Recommendations for Anchor Author" section with the suggested change and the anchor source (`> Source:` URL)
+- Format: `→ Recommend to anchor author (<source>): RULE-N could be clearer — suggest: <proposed rewording>`
 
-The invariant rule is the contract. The test must satisfy it. If the contract is bad, flag it — but don't change it.
+The anchor rule is the contract. The test must satisfy it. If the contract is bad, flag it — but don't change it.
 
 ## External LLM Auditing
 

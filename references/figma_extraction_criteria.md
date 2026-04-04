@@ -2,25 +2,25 @@
 
 # Figma Extraction Criteria
 
-This document defines how `purlin:invariant add-figma` creates design invariants from Figma files. The invariant skill reads this file at runtime.
+This document defines how `purlin:anchor add-figma` creates design anchors from Figma files. The anchor skill reads this file at runtime.
 
 ## Core Principle
 
-A design invariant has ONE job: point to the visual reference and say "match this." The LLM reads the full Figma design during build for implementation fidelity. The invariant doesn't capture individual CSS values — the visual comparison proof catches drift.
+A design anchor has ONE job: point to the visual reference and say "match this." The LLM reads the full Figma design during build for implementation fidelity. The anchor doesn't capture individual CSS values — the visual comparison proof catches drift.
 
 ## What Goes Where
 
 | Information | Where it goes | Why |
 |------------|--------------|-----|
-| Visual design (layout, colors, typography, spacing) | Invariant: ONE visual match rule + screenshot comparison proof | LLM reads Figma directly during build — higher fidelity than extracted rules |
-| Behavioral annotations (interactions, validation, state changes) | Feature spec that `> Requires:` the invariant | Behavior is owned by the feature, not the design source |
+| Visual design (layout, colors, typography, spacing) | Anchor: ONE visual match rule + screenshot comparison proof | LLM reads Figma directly during build — higher fidelity than extracted rules |
+| Behavioral annotations (interactions, validation, state changes) | Feature spec that `> Requires:` the anchor | Behavior is owned by the feature, not the design source |
 
-## Invariant Structure
+## Anchor Structure
 
-A Figma design invariant is thin — one rule per viewport, one screenshot comparison proof per rule:
+A Figma design anchor is thin — one rule per viewport, one screenshot comparison proof per rule:
 
 ```markdown
-# Invariant: i_design_feedback_modal
+# Anchor: design_feedback_modal
 
 > Type: design
 > Source: figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test
@@ -41,7 +41,7 @@ One rule. One proof. The LLM reads Figma directly during build for full fidelity
 
 ## Behavioral Annotations
 
-When the Figma file contains annotations (spec frames, text nodes with behavioral descriptions, component descriptions, Figma comments), document them in the invariant's "What it does" section as context:
+When the Figma file contains annotations (spec frames, text nodes with behavioral descriptions, component descriptions, Figma comments), document them in the anchor's "What it does" section as context:
 
 ```markdown
 ## What it does
@@ -53,15 +53,15 @@ Behavioral annotations from design:
 - Max file size: 5MB
 - After file selection, filename appears in attachment area
 
-These behavioral requirements should be added to feature specs that require this invariant.
+These behavioral requirements should be added to feature specs that require this anchor.
 ```
 
-The annotations are listed for reference but do NOT become rules in the invariant. They become rules in the feature spec:
+The annotations are listed for reference but do NOT become rules in the anchor. They become rules in the feature spec:
 
 ```markdown
 # Feature: feedback_modal
 
-> Requires: i_design_feedback_modal
+> Requires: design_feedback_modal
 > Scope: src/components/FeedbackModal.jsx
 > Stack: react/tailwind
 
@@ -78,11 +78,11 @@ The annotations are listed for reference but do NOT become rules in the invarian
 - PROOF-4 (RULE-4): Upload valid file; verify filename displayed @e2e
 ```
 
-The feature spec has `> Requires: i_design_feedback_modal` — so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
+The feature spec has `> Requires: design_feedback_modal` — so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
 ## Responsive Designs
 
-When a Figma file contains multiple viewport variants (desktop, tablet, mobile), create one rule per viewport:
+When a Figma file contains multiple viewport variants (desktop, tablet, mobile), create one rule per viewport in the anchor:
 
 ```markdown
 ## Rules
@@ -99,9 +99,9 @@ When a Figma file contains multiple viewport variants (desktop, tablet, mobile),
 Capture a reference screenshot for EACH variant:
 
 ```
-specs/_invariants/screenshots/i_design_modal_desktop.png
-specs/_invariants/screenshots/i_design_modal_tablet.png
-specs/_invariants/screenshots/i_design_modal_mobile.png
+specs/_anchors/screenshots/design_modal_desktop.png
+specs/_anchors/screenshots/design_modal_tablet.png
+specs/_anchors/screenshots/design_modal_mobile.png
 ```
 
 The `> Visual-Reference:` points to the primary variant. Additional variants are referenced in the proofs directly.
@@ -123,66 +123,40 @@ When a design has theme variants (light/dark, high contrast), create one rule pe
 Capture one screenshot per theme:
 
 ```
-specs/_invariants/screenshots/i_design_modal_light.png
-specs/_invariants/screenshots/i_design_modal_dark.png
+specs/_anchors/screenshots/design_modal_light.png
+specs/_anchors/screenshots/design_modal_dark.png
 ```
 
-## Visual Fidelity Tiers
+## Visual Fidelity Conventions
 
-Instead of raw pixel percentages, Purlin uses named fidelity tiers that describe what you want to catch:
+When writing screenshot comparison proofs, use a named fidelity tier in the proof description to communicate the expected strictness:
 
-| Tier | What it catches | What it allows | Use when |
-|------|----------------|----------------|----------|
-| **structure** | Missing sections, wrong arrangement, major spacing breaks | Color differences, font rendering, minor spacing | Early development, wireframe-level matching |
-| **design** | Wrong colors, missing borders, icon changes, spacing shifts | Font rendering differences across OS, subpixel antialiasing | Production components, design handoff |
-| **pixel-perfect** | Everything — font weight, subpixel spacing, antialiasing | Almost nothing | Same-OS CI, strict brand requirements |
+| Convention | Intent | Suggested threshold | Use when |
+|------------|--------|-------------------|----------|
+| **structure** | Layout and arrangement only | ~15% pixel diff | Early development, wireframe matching |
+| **design** | Colors, borders, spacing | ~5% pixel diff | Production components, design handoff |
+| **pixel-perfect** | Everything including font rendering | ~2% pixel diff | Same-OS CI, strict brand requirements |
 
-If no fidelity tier is specified in a proof, the default is **design**.
+Default is **design** when no tier is specified.
 
-The fidelity tier is written by whoever creates the invariant or anchor — in the proof description:
+These are **naming conventions**, not built-in enforcement. Purlin does not ship a visual comparison tool. The actual comparison happens in your test framework — for example:
 
-```
-- PROOF-1 (RULE-1): Screenshot comparison at design fidelity @e2e
-```
+- **Playwright + Jest:** `expect(screenshot).toMatchSnapshot("ref.png", { threshold: 0.05 })`
+- **Playwright + pixelmatch:** Custom comparison with configurable tolerance
+- **Cypress:** `cy.compareSnapshot("ref", 0.05)`
 
-For a wireframe-stage mockup:
-
-```
-- PROOF-1 (RULE-1): Screenshot comparison at structure fidelity @e2e
-```
-
-For strict brand requirements:
-
-```
-- PROOF-1 (RULE-1): Screenshot comparison at pixel-perfect fidelity @e2e
-```
-
-### Internal mapping (reference only)
-
-The tiers map to pixel diff thresholds internally. Users don't need to set these — they're documentation for how the comparison works:
-
-| Tier | Pixel diff threshold |
-|------|---------------------|
-| structure | 15% |
-| design | 5% |
-| pixel-perfect | 2% |
-
-The screenshot comparison:
-1. Renders the built component in a real browser (Playwright)
-2. Captures a screenshot
-3. Compares pixel-by-pixel against the visual reference (Figma screenshot)
-4. Fails if pixel difference exceeds the tier's threshold
+The convention tells the agent (and human readers) what level of strictness the proof expects, and guides `purlin:build` to write the test with an appropriate threshold.
 
 ## Tier Tags
 
-All proofs from Figma invariants require rendering — they are `@e2e` by definition. Do NOT leave Figma proofs untagged.
+All proofs from Figma anchors require rendering — they are `@e2e` by definition. Do NOT leave Figma proofs untagged.
 
-## `> Stack:` for Invariants
+## `> Stack:` for Anchors
 
-Design invariants should include `> Stack:` with the rendering technology so the agent knows how to write proofs:
+Design anchors should include `> Stack:` with the rendering technology so the agent knows how to write proofs:
 
 ```
 > Stack: react/tailwind (or vue/css, svelte, html/css)
 ```
 
-If the stack is unknown at invariant creation time, omit it — the feature spec that requires the invariant will have its own `> Stack:`.
+If the stack is unknown at anchor creation time, omit it — the feature spec that requires the anchor will have its own `> Stack:`.

@@ -225,6 +225,51 @@
       "test_name": "test_write_cache_atomic",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_if_else_pair_not_flagged",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_hardcoded_pass_still_caught",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_if_else_pair_no_condition_flagged",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_literal_assert_true_has_literal_true",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_heuristic_assert_has_literal_false",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

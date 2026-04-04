@@ -93,6 +93,15 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_drift_criteria_sections",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-11",
       "rule": "RULE-11",
       "test_file": "dev/test_purlin_references.py",

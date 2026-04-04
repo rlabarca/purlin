@@ -1,0 +1,14 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "purlin_config",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_read_write",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

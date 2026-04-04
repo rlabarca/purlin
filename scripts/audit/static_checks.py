@@ -12,6 +12,7 @@ Output: JSON to stdout with per-proof results.
 """
 
 import ast
+import hashlib
 import json
 import os
 import re
@@ -87,20 +88,25 @@ def _has_assertion(node):
 
 
 def _check_assert_true(node, source):
-    """Detect tautological assertions: assert True, assert x is not None, assert len(x) >= 0."""
+    """Detect tautological assertions: assert True, assert x is not None, assert len(x) >= 0.
+
+    Returns None if no tautological assertion found, or a dict with:
+      'literal': True  — for assert True, assertTrue(True)
+      'literal': False — for assert x is not None, assert len(x) >= 0
+    """
     for child in ast.walk(node):
         if isinstance(child, ast.Assert):
             test = child.test
             # assert True
             if isinstance(test, ast.Constant) and test.value is True:
-                return True
+                return {'literal': True}
             # assert result is not None
             if isinstance(test, ast.Compare):
                 if len(test.ops) == 1 and isinstance(test.ops[0], ast.IsNot):
                     if len(test.comparators) == 1:
                         comp = test.comparators[0]
                         if isinstance(comp, ast.Constant) and comp.value is None:
-                            return True
+                            return {'literal': False}
                 # assert len(x) >= 0
                 if len(test.ops) == 1 and isinstance(test.ops[0], ast.GtE):
                     if len(test.comparators) == 1:
@@ -109,14 +115,14 @@ def _check_assert_true(node, source):
                             if isinstance(test.left, ast.Call):
                                 fn = test.left.func
                                 if isinstance(fn, ast.Name) and fn.id == 'len':
-                                    return True
+                                    return {'literal': False}
         # self.assertTrue(True)
         if isinstance(child, ast.Call):
             func = child.func
             if isinstance(func, ast.Attribute) and func.attr == 'assertTrue':
                 if child.args and isinstance(child.args[0], ast.Constant) and child.args[0].value is True:
-                    return True
-    return False
+                    return {'literal': True}
+    return None
 
 
 def _check_bare_except(node):
@@ -220,26 +226,30 @@ def check_python(filepath, feature_name, rule_descs=None):
     results = []
     for proof_id, rule_id, test_name, func_node in proofs:
         checks_failed = []
-        if _check_assert_true(func_node, source):
-            checks_failed.append(('assert_true', 'tautological assertion (assert True or equivalent)'))
+        assert_true_result = _check_assert_true(func_node, source)
+        if assert_true_result is not None:
+            checks_failed.append(('assert_true', 'tautological assertion (assert True or equivalent)', assert_true_result.get('literal', True)))
         if not _has_assertion(func_node):
-            checks_failed.append(('no_assertions', 'test function has no assertion statements'))
+            checks_failed.append(('no_assertions', 'test function has no assertion statements', None))
         if _check_bare_except(func_node):
-            checks_failed.append(('bare_except', 'bare except:pass swallows failures'))
+            checks_failed.append(('bare_except', 'bare except:pass swallows failures', None))
         if _check_logic_mirroring(func_node):
-            checks_failed.append(('logic_mirroring', 'expected value computed by same function as SUT'))
+            checks_failed.append(('logic_mirroring', 'expected value computed by same function as SUT', None))
         rdesc = rule_descs.get(rule_id, '')
         if rdesc and _check_mock_target_match(func_node, source, rdesc):
-            checks_failed.append(('mock_target_match', 'mock target matches the function the rule describes'))
+            checks_failed.append(('mock_target_match', 'mock target matches the function the rule describes', None))
 
         if checks_failed:
             # Report the first failure (most severe)
-            check, reason = checks_failed[0]
-            results.append({
+            check, reason, literal = checks_failed[0]
+            result_dict = {
                 'proof_id': proof_id, 'rule_id': rule_id,
                 'test_name': test_name, 'status': 'fail',
                 'check': check, 'reason': reason,
-            })
+            }
+            if check == 'assert_true' and literal is not None:
+                result_dict['literal'] = literal
+            results.append(result_dict)
         else:
             results.append({
                 'proof_id': proof_id, 'rule_id': rule_id,
@@ -264,13 +274,57 @@ def check_shell(filepath, feature_name):
         if m and m.group(1) == feature_name:
             proof_locations.append((i, m.group(2), m.group(3), m.group(4)))
 
+    # Detect if/else pairs: same (proof_id, rule_id) with one pass and one fail
+    merged = []
+    seen = set()
     for idx, (line_no, proof_id, rule_id, status) in enumerate(proof_locations):
-        # Check assert_true: hardcoded pass with no test logic before it
+        key = (proof_id, rule_id)
+        if key in seen:
+            continue
+        # Look for a matching pair
+        pair = None
+        for idx2, (line_no2, pid2, rid2, status2) in enumerate(proof_locations):
+            if idx2 != idx and pid2 == proof_id and rid2 == rule_id and status2 != status:
+                pair = (idx2, line_no2, pid2, rid2, status2)
+                break
+        if pair is not None:
+            # if/else pair — use the earlier line, treat as single proof
+            earlier_line = min(line_no, pair[1])
+            merged.append((earlier_line, proof_id, rule_id, 'pair'))
+            seen.add(key)
+        else:
+            merged.append((line_no, proof_id, rule_id, status))
+            seen.add(key)
+
+    # Sort by line number
+    merged.sort(key=lambda x: x[0])
+
+    for idx, (line_no, proof_id, rule_id, status) in enumerate(merged):
+        start = merged[idx - 1][0] + 1 if idx > 0 else 0
+        segment = '\n'.join(lines[start:line_no])
+
+        if status == 'pair':
+            # if/else pair — check that the segment has real test logic
+            # Include \bif\b since the if-condition IS the assertion for pairs
+            has_logic = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\||\bif\b', segment))
+            if not has_logic:
+                results.append({
+                    'proof_id': proof_id, 'rule_id': rule_id,
+                    'test_name': f'line_{line_no + 1}', 'status': 'fail',
+                    'check': 'assert_true',
+                    'reason': 'if/else proof pair with no test logic in condition',
+                })
+            else:
+                results.append({
+                    'proof_id': proof_id, 'rule_id': rule_id,
+                    'test_name': f'line_{line_no + 1}', 'status': 'pass',
+                    'reason': 'structural checks passed (if/else pair with condition)',
+                })
+            continue
+
+        # Single proof — original logic (no \bif\b in pattern)
+        has_logic = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\|', segment))
         if status == 'pass':
-            # Look backwards for test logic between this proof and the previous one
-            start = proof_locations[idx - 1][0] + 1 if idx > 0 else 0
-            segment = '\n'.join(lines[start:line_no])
-            has_logic = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\|', segment))
             if not has_logic:
                 results.append({
                     'proof_id': proof_id, 'rule_id': rule_id,
@@ -279,10 +333,8 @@ def check_shell(filepath, feature_name):
                 })
                 continue
 
-        # Check no_assertions: no assertion commands between this and previous proof
-        start = proof_locations[idx - 1][0] + 1 if idx > 0 else 0
-        segment = '\n'.join(lines[start:line_no])
-        has_assertion = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\|', segment))
+        # Check no_assertions
+        has_assertion = has_logic
         if not has_assertion:
             results.append({
                 'proof_id': proof_id, 'rule_id': rule_id,
@@ -326,6 +378,7 @@ def check_js(filepath, feature_name):
                 'proof_id': proof_id, 'rule_id': rule_id,
                 'test_name': test_title[:60], 'status': 'fail',
                 'check': 'assert_true', 'reason': 'expect(true).toBe(true) is tautological',
+                'literal': True,
             })
             continue
 
@@ -355,6 +408,20 @@ def check_js(filepath, feature_name):
 
 _RULE_LINE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 
+_STRUCTURAL_RULE_RE = re.compile(
+    r'grep|verify\s.*exist|verify\s.*present|verify\s.*section'
+    r'|verify\s.*field|verify\s.*appear|verify\s.*contain'
+    r'|file\s+exists|contains?\s+section|contains?\s+field',
+    re.IGNORECASE,
+)
+
+_BEHAVIORAL_RULE_RE = re.compile(
+    r'returns?|rejects?|blocks?|logs?|sends?|creates?|deletes?'
+    r'|updates?|computes?|detects?|emits?|produces?|triggers?'
+    r'|fails?|raises?|validates?|enforces?|prevents?',
+    re.IGNORECASE,
+)
+
 
 def _read_rule_descriptions(spec_path):
     """Read rule descriptions from a spec file."""
@@ -364,13 +431,123 @@ def _read_rule_descriptions(spec_path):
         content = f.read()
     return {m.group(1): m.group(2).strip() for m in _RULE_LINE_RE.finditer(content)}
 
+
+def check_spec_coverage(spec_path):
+    """Check whether a spec's rules are behavioral or structural-only.
+
+    Returns dict with structural_only_spec, rule_count, behavioral_rule_count.
+    """
+    rules = _read_rule_descriptions(spec_path)
+    if not rules:
+        return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0}
+
+    behavioral_count = 0
+    for desc in rules.values():
+        if _BEHAVIORAL_RULE_RE.search(desc):
+            behavioral_count += 1
+        elif not _STRUCTURAL_RULE_RE.search(desc):
+            # If it doesn't match structural patterns either, assume behavioral
+            behavioral_count += 1
+
+    return {
+        'structural_only_spec': behavioral_count == 0,
+        'rule_count': len(rules),
+        'behavioral_rule_count': behavioral_count,
+    }
+
+# ---------------------------------------------------------------------------
+# Audit cache helpers
+# ---------------------------------------------------------------------------
+
+def compute_proof_hash(spec_rule_text, proof_description, test_code):
+    """Hash the inputs that determine an audit result."""
+    # Use null byte separator to prevent input-shifting collisions
+    # (e.g. "a|b" + "c" vs "a" + "b|c" would collide with | separator)
+    payload = f"{spec_rule_text}\x00{proof_description}\x00{test_code}"
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def read_audit_cache(project_root):
+    """Read .purlin/cache/audit_cache.json. Returns dict of proof_hash → assessment."""
+    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
+    if os.path.isfile(cache_path):
+        try:
+            with open(cache_path) as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {}
+            return data
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def write_audit_cache(project_root, cache):
+    """Write audit cache atomically."""
+    cache_dir = os.path.join(project_root, '.purlin', 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    tmp_path = cache_path + '.tmp'
+    with open(tmp_path, 'w') as f:
+        json.dump(cache, f, indent=2)
+    os.replace(tmp_path, cache_path)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
+    # --compute-proof-hash mode: hash inputs for cache key
+    if '--compute-proof-hash' in sys.argv:
+        rule_text = ''
+        proof_desc = ''
+        test_code = ''
+        if '--rule' in sys.argv:
+            idx = sys.argv.index('--rule')
+            if idx + 1 < len(sys.argv):
+                rule_text = sys.argv[idx + 1]
+        if '--proof-desc' in sys.argv:
+            idx = sys.argv.index('--proof-desc')
+            if idx + 1 < len(sys.argv):
+                proof_desc = sys.argv[idx + 1]
+        if '--test-code' in sys.argv:
+            idx = sys.argv.index('--test-code')
+            if idx + 1 < len(sys.argv):
+                test_code = sys.argv[idx + 1]
+        print(compute_proof_hash(rule_text, proof_desc, test_code))
+        sys.exit(0)
+
+    # --read-cache mode: read and print audit cache
+    if '--read-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        cache = read_audit_cache(project_root)
+        print(json.dumps(cache, indent=2))
+        sys.exit(0)
+
+    # --check-spec-coverage mode: only check spec rules, no test file needed
+    if '--check-spec-coverage' in sys.argv:
+        spec_path = None
+        if '--spec-path' in sys.argv:
+            idx = sys.argv.index('--spec-path')
+            if idx + 1 < len(sys.argv):
+                spec_path = sys.argv[idx + 1]
+        if not spec_path or not os.path.isfile(spec_path):
+            print(json.dumps({'error': '--check-spec-coverage requires --spec-path <path>'}))
+            sys.exit(2)
+        result = check_spec_coverage(spec_path)
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
+
     if len(sys.argv) < 3:
         print(f"Usage: {sys.argv[0]} <test_file> <feature_name> [--spec-path <path>]", file=sys.stderr)
+        print(f"       {sys.argv[0]} --check-spec-coverage --spec-path <path>", file=sys.stderr)
+        print(f"       {sys.argv[0]} --compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>", file=sys.stderr)
+        print(f"       {sys.argv[0]} --read-cache [--project-root <path>]", file=sys.stderr)
         sys.exit(2)
 
     test_file = sys.argv[1]

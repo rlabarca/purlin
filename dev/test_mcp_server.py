@@ -1,12 +1,4 @@
-"""Tests for mcp_server — 24 rules.
-
-Covers JSON-RPC transport (initialize, tools/list, notifications, errors),
-sync_status (coverage, READY/vhash, warnings, Requires, manual staleness,
-structural-only detection, global invariants, rule labels, scope overlap),
-purlin_config (read/write), changelog (since anchor, classification, structure,
-structural_only flag, required rules in totals), server output (stderr logging),
-and vhash computation.
-"""
+"""Tests for MCP server specs: mcp_transport (7 rules), sync_status (15 rules), changelog (11 rules), purlin_config (1 rule)."""
 
 import hashlib
 import json
@@ -25,7 +17,7 @@ import purlin_server
 
 
 class TestMCPProtocol:
-    """RULE-1 through RULE-6: JSON-RPC transport."""
+    """mcp_transport RULE-1 through RULE-7: JSON-RPC transport."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -40,14 +32,14 @@ class TestMCPProtocol:
             request["params"] = params
         return purlin_server.handle_request(request, self.project_root)
 
-    @pytest.mark.proof("mcp_server", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("mcp_transport", "PROOF-1", "RULE-1")
     def test_initialize(self):
         resp = self._call("initialize")
         result = resp["result"]
         assert result["protocolVersion"] == "2024-11-05"
         assert result["serverInfo"]["name"] == "purlin"
 
-    @pytest.mark.proof("mcp_server", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("mcp_transport", "PROOF-2", "RULE-2")
     def test_tools_list(self):
         resp = self._call("tools/list")
         tools = resp["result"]["tools"]
@@ -55,13 +47,13 @@ class TestMCPProtocol:
         assert names == ["changelog", "purlin_config", "sync_status"]
         assert len(tools) == 3
 
-    @pytest.mark.proof("mcp_server", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("mcp_transport", "PROOF-3", "RULE-3")
     def test_notification_no_response(self):
         request = {"jsonrpc": "2.0", "method": "notifications/initialized"}
         resp = purlin_server.handle_request(request, self.project_root)
         assert resp is None
 
-    @pytest.mark.proof("mcp_server", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("mcp_transport", "PROOF-4", "RULE-4")
     def test_parse_error(self):
         stdin_mock = StringIO("not valid json\n")
         stdout_mock = StringIO()
@@ -71,13 +63,13 @@ class TestMCPProtocol:
         resp = json.loads(stdout_mock.getvalue().strip())
         assert resp["error"]["code"] == -32700
 
-    @pytest.mark.proof("mcp_server", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("mcp_transport", "PROOF-5", "RULE-5")
     def test_unknown_method(self):
         resp = self._call("bogus")
         assert resp["error"]["code"] == -32601
         assert "bogus" in resp["error"]["message"]
 
-    @pytest.mark.proof("mcp_server", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("mcp_transport", "PROOF-6", "RULE-6")
     def test_unknown_tool(self):
         resp = self._call("tools/call", {"name": "nonexistent", "arguments": {}})
         assert resp["error"]["code"] == -32601
@@ -85,7 +77,7 @@ class TestMCPProtocol:
 
 
 class TestSyncStatus:
-    """RULE-7 through RULE-11: sync_status coverage reporting."""
+    """sync_status RULE-1 through RULE-15: coverage reporting."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -102,13 +94,13 @@ class TestSyncStatus:
         with open(os.path.join(d, f'{name}.md'), 'w') as f:
             f.write(content)
 
-    def _write_proofs(self, name, proofs, tier='default', subdir='auth'):
+    def _write_proofs(self, name, proofs, tier='unit', subdir='auth'):
         d = os.path.join(self.project_root, 'specs', subdir)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, f'{name}.proofs-{tier}.json'), 'w') as f:
             json.dump({"tier": tier, "proofs": proofs}, f)
 
-    @pytest.mark.proof("mcp_server", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("sync_status", "PROOF-1", "RULE-1")
     def test_rules_with_required_no_proofs(self):
         self._write_spec('api_conv', (
             '# Anchor: api_conv\n\n'
@@ -134,7 +126,7 @@ class TestSyncStatus:
         assert 'RULE-2: NO PROOF (own)' in result
         assert 'api_conv/RULE-1: NO PROOF (required)' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-8", "RULE-8")
+    @pytest.mark.proof("sync_status", "PROOF-2", "RULE-2")
     def test_ready_with_vhash(self):
         self._write_spec('login', (
             '# Feature: login\n\n'
@@ -145,13 +137,13 @@ class TestSyncStatus:
         self._write_proofs('login', [
             {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "tests/test.py", "test_name": "test_valid",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
         assert 'login: READY' in result
         assert 'vhash=' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-9", "RULE-9")
+    @pytest.mark.proof("sync_status", "PROOF-3", "RULE-3")
     def test_warns_unnumbered_rules(self):
         self._write_spec('login', (
             '# Feature: login\n\n'
@@ -166,20 +158,20 @@ class TestSyncStatus:
         assert 'not numbered' in result.lower(), \
             f"WARNING doesn't mention unnumbered rules: {result}"
 
-    @pytest.mark.proof("mcp_server", "PROOF-10", "RULE-10")
+    @pytest.mark.proof("sync_status", "PROOF-4", "RULE-4")
     def test_requires_counts_for_coverage(self):
-        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
-        os.makedirs(inv_dir)
-        with open(os.path.join(inv_dir, 'i_security.md'), 'w') as f:
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir)
+        with open(os.path.join(anchor_dir, 'security.md'), 'w') as f:
             f.write(
-                '# Invariant: i_security\n\n'
+                '# Anchor: security\n\n'
                 '## What it does\nSecurity rules.\n\n'
                 '## Rules\n- RULE-1: No eval\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
             )
         self._write_spec('login', (
             '# Feature: login\n\n'
-            '> Requires: i_security\n\n'
+            '> Requires: security\n\n'
             '## What it does\nHandles login.\n\n'
             '## Rules\n- RULE-1: Return 200\n\n'
             '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
@@ -187,9 +179,9 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         # 1 own + 1 required = 2 total
         assert 'login: 0/2 rules proved' in result
-        assert 'i_security/RULE-1: NO PROOF (required)' in result
+        assert 'security/RULE-1: NO PROOF (required)' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-11", "RULE-11")
+    @pytest.mark.proof("sync_status", "PROOF-5", "RULE-5")
     def test_manual_proof_staleness(self):
         subprocess.run(['git', 'init'], cwd=self.project_root,
                        capture_output=True, check=True)
@@ -231,30 +223,30 @@ class TestSyncStatus:
         assert 'MANUAL PROOF STALE' in result
 
 
-    @pytest.mark.proof("mcp_server", "PROOF-20", "RULE-20")
+    @pytest.mark.proof("sync_status", "PROOF-8", "RULE-8")
     def test_scan_specs_detects_global(self):
-        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
-        os.makedirs(inv_dir, exist_ok=True)
-        with open(os.path.join(inv_dir, 'i_security_no_eval.md'), 'w') as f:
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'security_no_eval.md'), 'w') as f:
             f.write(
-                '# Invariant: i_security_no_eval\n\n'
+                '# Anchor: security_no_eval\n\n'
                 '> Global: true\n\n'
                 '## What it does\nNo eval.\n\n'
                 '## Rules\n- RULE-1: No eval\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
             )
         features = purlin_server._scan_specs(self.project_root)
-        assert 'i_security_no_eval' in features
-        assert features['i_security_no_eval']['is_global'] is True
-        assert features['i_security_no_eval']['is_invariant'] is True
+        assert 'security_no_eval' in features
+        assert features['security_no_eval']['is_global'] is True
+        assert features['security_no_eval']['is_anchor'] is True
 
-    @pytest.mark.proof("mcp_server", "PROOF-21", "RULE-21")
-    def test_global_invariant_auto_applies(self):
-        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
-        os.makedirs(inv_dir, exist_ok=True)
-        with open(os.path.join(inv_dir, 'i_security_no_eval.md'), 'w') as f:
+    @pytest.mark.proof("sync_status", "PROOF-9", "RULE-9")
+    def test_global_anchor_auto_applies(self):
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'security_no_eval.md'), 'w') as f:
             f.write(
-                '# Invariant: i_security_no_eval\n\n'
+                '# Anchor: security_no_eval\n\n'
                 '> Global: true\n\n'
                 '## What it does\nNo eval.\n\n'
                 '## Rules\n- RULE-1: No eval\n\n'
@@ -269,9 +261,9 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         # 1 own + 1 global = 2 total
         assert 'login: 0/2 rules proved' in result
-        assert 'i_security_no_eval/RULE-1: NO PROOF (global)' in result
+        assert 'security_no_eval/RULE-1: NO PROOF (global)' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-22", "RULE-22")
+    @pytest.mark.proof("sync_status", "PROOF-10", "RULE-10")
     def test_rule_labels(self):
         self._write_spec('api_conv', (
             '# Anchor: api_conv\n\n'
@@ -290,7 +282,7 @@ class TestSyncStatus:
         assert 'RULE-1: NO PROOF (own)' in result
         assert 'api_conv/RULE-1: NO PROOF (required)' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-23", "RULE-23")
+    @pytest.mark.proof("sync_status", "PROOF-11", "RULE-11")
     def test_scope_overlap_suggestion(self):
         self._write_spec('api_rest_conventions', (
             '# Anchor: api_rest_conventions\n\n'
@@ -310,7 +302,7 @@ class TestSyncStatus:
         assert '\u26a0 Anchor api_rest_conventions' in result
         assert '\u2192 Consider: add > Requires: api_rest_conventions' in result
 
-    @pytest.mark.proof("mcp_server", "PROOF-18", "RULE-18")
+    @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
     def test_structural_only_detection(self):
         self._write_spec('refs', (
             '# Feature: refs\n\n'
@@ -321,15 +313,184 @@ class TestSyncStatus:
         self._write_proofs('refs', [
             {"feature": "refs", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "tests/test.py", "test_name": "test_grep",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
         assert 'READY (structural only)' in result
         assert 'E2E' in result or 'behavioral' in result
 
+    @pytest.mark.proof("sync_status", "PROOF-12", "RULE-12")
+    def test_unresolved_requires_warning(self):
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Requires: does_not_exist\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        self._write_proofs('login', [
+            {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_valid",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Requires "does_not_exist" but no spec with that name exists' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-15", "RULE-15")
+    def test_receipt_staleness_from_anchor_change(self):
+        # Create anchor with 1 rule
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'security.md'), 'w') as f:
+            f.write(
+                '# Anchor: security\n\n'
+                '## What it does\nSecurity rules.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        # Create feature requiring anchor, with all proofs passing
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Requires: security\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        self._write_proofs('login', [
+            {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_valid",
+             "status": "pass", "tier": "unit"},
+        ])
+        self._write_proofs('security', [
+            {"feature": "security", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_no_eval",
+             "status": "pass", "tier": "unit"},
+        ], subdir='_anchors')
+        # Write a receipt with only the original rules (RULE-1 + security/RULE-1)
+        with open(os.path.join(self.spec_dir, 'login.receipt.json'), 'w') as f:
+            json.dump({
+                "feature": "login",
+                "vhash": "oldvhash",
+                "rules": ["RULE-1", "security/RULE-1"],
+                "proofs": []
+            }, f)
+        # Now add a second rule to the anchor and provide proof for it
+        with open(os.path.join(anchor_dir, 'security.md'), 'w') as f:
+            f.write(
+                '# Anchor: security\n\n'
+                '## What it does\nSecurity rules.\n\n'
+                '## Rules\n- RULE-1: No eval\n- RULE-2: No exec\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n- PROOF-2 (RULE-2): Grep for exec\n'
+            )
+        # Add proof for the new anchor RULE-2 so feature becomes READY
+        self._write_proofs('security', [
+            {"feature": "security", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_no_eval",
+             "status": "pass", "tier": "unit"},
+            {"feature": "security", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/test.py", "test_name": "test_no_exec",
+             "status": "pass", "tier": "unit"},
+        ], subdir='_anchors')
+        result = purlin_server.sync_status(self.project_root)
+        # Should explain staleness is from anchor change
+        assert 'Required anchor "security" changed' in result
+        assert 'RULE-2' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-13")
+    def test_manual_proof_without_scope_warning(self):
+        # Spec with manual proof but NO > Scope: → should warn
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Must authenticate\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Verified auth @manual(dev@test.com, 2026-01-01, abc1234)\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Manual proof without > Scope:' in result
+        assert 'staleness cannot be detected' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-14", "RULE-14")
+    def test_prefers_subdirectory_proofs(self):
+        # Create spec in subdirectory
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        # Write proof at specs/ root (fallback location)
+        root_proof_dir = os.path.join(self.project_root, 'specs')
+        with open(os.path.join(root_proof_dir, 'login.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/old_test.py", "test_name": "test_old",
+                 "status": "fail", "tier": "unit"},
+            ]}, f)
+        # Write proof in subdirectory (adjacent to spec)
+        self._write_proofs('login', [
+            {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_valid",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        # Should use the subdirectory proof (pass), not root (fail)
+        assert 'READY' in result
+        assert 'FAIL' not in result
+
+    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-13")
+    def test_manual_proof_with_scope_no_warning(self):
+        # Spec with manual proof AND > Scope: → should NOT warn
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Scope: src/app.py\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Must authenticate\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Verified auth @manual(dev@test.com, 2026-01-01, abc1234)\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Manual proof without > Scope:' not in result
+
+    @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
+    def test_structural_regex_rejects_behavioral_descriptions(self):
+        """Behavioral descriptions must NOT be classified as structural."""
+        # "Verify the API endpoint exists and returns 200" is behavioral
+        self._write_spec('api', (
+            '# Feature: api\n\n'
+            '## What it does\nAPI.\n\n'
+            '## Rules\n- RULE-1: Endpoint returns 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Verify the API endpoint exists and returns 200\n'
+        ))
+        self._write_proofs('api', [
+            {"feature": "api", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_api",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        # Should NOT say "structural only" since the description is behavioral
+        assert 'structural only' not in result
+
+    @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
+    def test_structural_regex_accepts_grep_descriptions(self):
+        """Pure grep/existence checks should be classified as structural."""
+        self._write_spec('refs', (
+            '# Feature: refs\n\n'
+            '## What it does\nReference docs.\n\n'
+            '## Rules\n- RULE-1: File exists\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Verify file exists at specs/auth/login.md\n'
+        ))
+        self._write_proofs('refs', [
+            {"feature": "refs", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_file",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        assert 'READY (structural only)' in result
+
 
 class TestPurlinConfig:
-    """RULE-12: purlin_config read and write."""
+    """purlin_config RULE-1: config read/write."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -338,7 +499,7 @@ class TestPurlinConfig:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("mcp_server", "PROOF-12", "RULE-12")
+    @pytest.mark.proof("purlin_config", "PROOF-1", "RULE-1")
     def test_read_write(self):
         # Write a key — returns confirmation string
         result = purlin_server.handle_purlin_config(
@@ -365,7 +526,7 @@ class TestPurlinConfig:
 
 
 class TestChangelog:
-    """RULE-13 through RULE-15: changelog tool."""
+    """changelog RULE-1 through RULE-5: changelog tool."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -408,7 +569,7 @@ class TestChangelog:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("mcp_server", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("changelog", "PROOF-1", "RULE-1")
     def test_since_anchor_resolution(self):
         ref, desc = purlin_server._resolve_since_anchor(self.project_root, since_arg="5")
         assert ref == "HEAD~5"
@@ -423,7 +584,7 @@ class TestChangelog:
         ).stdout.strip()
         assert ref == verify_sha, f"Expected ref={verify_sha}, got ref={ref}"
 
-    @pytest.mark.proof("mcp_server", "PROOF-14", "RULE-14")
+    @pytest.mark.proof("changelog", "PROOF-2", "RULE-2")
     def test_file_classification(self):
         result_text = purlin_server.changelog(self.project_root)
         data = json.loads(result_text)
@@ -432,7 +593,7 @@ class TestChangelog:
         assert categories.get('tests/test_login.py') == 'TESTS_ADDED'
         assert categories.get('README.md') == 'NO_IMPACT'
 
-    @pytest.mark.proof("mcp_server", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("changelog", "PROOF-3", "RULE-3")
     def test_changelog_json_structure(self):
         result_text = purlin_server.changelog(self.project_root)
         data = json.loads(result_text)
@@ -440,7 +601,7 @@ class TestChangelog:
             assert key in data, f"Missing key: {key}"
 
 
-    @pytest.mark.proof("mcp_server", "PROOF-19", "RULE-19")
+    @pytest.mark.proof("changelog", "PROOF-4", "RULE-4")
     def test_changelog_structural_only_flag(self):
         # Add a structural-only spec with passing proofs
         spec_content = (
@@ -453,11 +614,11 @@ class TestChangelog:
         os.makedirs(refs_dir, exist_ok=True)
         with open(os.path.join(refs_dir, 'refs.md'), 'w') as f:
             f.write(spec_content)
-        with open(os.path.join(refs_dir, 'refs.proofs-default.json'), 'w') as f:
-            json.dump({"tier": "default", "proofs": [
+        with open(os.path.join(refs_dir, 'refs.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
                 {"feature": "refs", "id": "PROOF-1", "rule": "RULE-1",
                  "test_file": "tests/test.py", "test_name": "test_grep",
-                 "status": "pass", "tier": "default"},
+                 "status": "pass", "tier": "unit"},
             ]}, f)
 
         subprocess.run(['git', 'add', '.'], cwd=self.project_root,
@@ -471,7 +632,7 @@ class TestChangelog:
         assert data['proof_status']['refs']['structural_only'] is True
 
 
-    @pytest.mark.proof("mcp_server", "PROOF-24", "RULE-24")
+    @pytest.mark.proof("changelog", "PROOF-5", "RULE-5")
     def test_changelog_includes_required_in_total(self):
         # Add an anchor with 2 rules
         anchor_dir = os.path.join(self.project_root, 'specs', 'schema')
@@ -504,10 +665,277 @@ class TestChangelog:
         assert data['proof_status']['login']['total'] == 4
 
 
-class TestServerOutput:
-    """RULE-16 and RULE-17."""
+class TestChangelogDrift:
+    """changelog RULE-6 through RULE-10: drift detection."""
 
-    @pytest.mark.proof("mcp_server", "PROOF-16", "RULE-16")
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        subprocess.run(['git', 'init'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=self.project_root, capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=self.project_root, capture_output=True, check=True)
+        # Initial commit
+        os.makedirs(os.path.join(self.project_root, 'specs', 'auth'))
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n## What it does\nLogin.\n\n'
+                    '## Rules\n- RULE-1: Auth\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'verify: initial'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    @pytest.mark.proof("changelog", "PROOF-6", "RULE-6")
+    def test_skill_md_not_no_impact(self):
+        """Skill .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
+        skill_dir = os.path.join(self.project_root, 'skills', 'build')
+        os.makedirs(skill_dir, exist_ok=True)
+        with open(os.path.join(skill_dir, 'SKILL.md'), 'w') as f:
+            f.write('---\nname: build\n---\nBuild skill.\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add build skill'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        categories = {f['path']: f['category'] for f in data['files']}
+        assert categories.get('skills/build/SKILL.md') == 'NEW_BEHAVIOR', \
+            f"Expected NEW_BEHAVIOR, got {categories.get('skills/build/SKILL.md')}"
+
+    @pytest.mark.proof("changelog", "PROOF-6", "RULE-6")
+    def test_agent_md_not_no_impact(self):
+        """.claude/agents/ .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
+        agent_dir = os.path.join(self.project_root, '.claude', 'agents')
+        os.makedirs(agent_dir, exist_ok=True)
+        with open(os.path.join(agent_dir, 'helper.md'), 'w') as f:
+            f.write('---\nname: helper\n---\nHelper agent.\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add helper agent'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        categories = {f['path']: f['category'] for f in data['files']}
+        assert categories.get('.claude/agents/helper.md') == 'NEW_BEHAVIOR', \
+            f"Expected NEW_BEHAVIOR, got {categories.get('.claude/agents/helper.md')}"
+
+    @pytest.mark.proof("changelog", "PROOF-7", "RULE-7")
+    def test_scope_prefix_matching(self):
+        """Scope with trailing slash matches files in that directory."""
+        # Create a spec with directory scope
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n> Scope: src/api/\n\n'
+                    '## What it does\nLogin.\n\n'
+                    '## Rules\n- RULE-1: Auth\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n')
+        # Create a file inside that scope dir
+        os.makedirs(os.path.join(self.project_root, 'src', 'api'), exist_ok=True)
+        with open(os.path.join(self.project_root, 'src', 'api', 'login.js'), 'w') as f:
+            f.write('module.exports = {};\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add api'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        categories = {f['path']: f['category'] for f in data['files']}
+        assert categories.get('src/api/login.js') == 'CHANGED_BEHAVIOR', \
+            f"Expected CHANGED_BEHAVIOR, got {categories.get('src/api/login.js')}"
+        # Verify the spec was matched
+        spec_map = {f['path']: f['spec'] for f in data['files']}
+        assert spec_map.get('src/api/login.js') == 'login'
+
+    @pytest.mark.proof("changelog", "PROOF-8", "RULE-8")
+    def test_structural_drift_flag(self):
+        """CHANGED_BEHAVIOR file gets structural_drift when spec is structural-only."""
+        # Create a structural-only spec with scope and passing proof
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
+                    '## What it does\nLogin.\n\n'
+                    '## Rules\n- RULE-1: Verify config contains auth section\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Grep config for auth section; verify present\n')
+        with open(os.path.join(self.project_root, 'specs', 'auth',
+                               'login.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "test.py", "test_name": "test_grep",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+        # Create the scope file
+        os.makedirs(os.path.join(self.project_root, 'src'), exist_ok=True)
+        with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
+            f.write('pass\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'verify: add structural spec'],
+                       cwd=self.project_root, capture_output=True, check=True)
+        # Now modify the scope file
+        with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
+            f.write('def login(): return 200\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: implement login'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        login_entry = next((f for f in data['files'] if f['path'] == 'src/login.py'), None)
+        assert login_entry is not None, "src/login.py not in changelog files"
+        assert login_entry['category'] == 'CHANGED_BEHAVIOR'
+        assert login_entry.get('structural_drift') is True, \
+            f"Expected structural_drift=True, got {login_entry}"
+
+    @pytest.mark.proof("changelog", "PROOF-9", "RULE-9")
+    def test_drift_flags_array(self):
+        """drift_flags array contains structural-only features with changed files."""
+        # Same setup as structural_drift test
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
+                    '## What it does\nLogin.\n\n'
+                    '## Rules\n- RULE-1: Verify config contains auth section\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Grep config for auth section; verify present\n')
+        with open(os.path.join(self.project_root, 'specs', 'auth',
+                               'login.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "test.py", "test_name": "test_grep",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+        os.makedirs(os.path.join(self.project_root, 'src'), exist_ok=True)
+        with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
+            f.write('pass\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'verify: structural spec'],
+                       cwd=self.project_root, capture_output=True, check=True)
+        # Modify scope file
+        with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
+            f.write('def login(): return 200\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: implement login'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        assert 'drift_flags' in data
+        assert len(data['drift_flags']) >= 1
+        login_drift = next((d for d in data['drift_flags'] if d['spec'] == 'login'), None)
+        assert login_drift is not None, f"No drift flag for login, got {data['drift_flags']}"
+        assert login_drift['reason'] == 'structural_only_with_code_change'
+        assert 'src/login.py' in login_drift['files']
+
+    @pytest.mark.proof("changelog", "PROOF-10", "RULE-10")
+    def test_broken_scope_detection(self):
+        """Broken scope: spec references a file that doesn't exist on disk."""
+        # Update the spec to reference a non-existent file
+        with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n> Scope: src/deleted.py\n\n'
+                    '## What it does\nLogin.\n\n'
+                    '## Rules\n- RULE-1: Auth\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: update spec scope'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        # Do NOT create src/deleted.py on disk
+        result_text = purlin_server.changelog(self.project_root)
+        data = json.loads(result_text)
+        assert 'broken_scopes' in data, "broken_scopes field missing from result"
+        broken = [b for b in data['broken_scopes'] if b['spec'] == 'login']
+        assert len(broken) == 1, f"Expected 1 broken scope for login, got {broken}"
+        assert 'src/deleted.py' in broken[0]['missing_paths']
+
+
+class TestChangelogSmartFallback:
+    """changelog RULE-11: smart fallback."""
+
+    @pytest.mark.proof("changelog", "PROOF-11", "RULE-11")
+    def test_large_repo_recommends_spec_from_code(self):
+        """50+ commits, no verify, no tag → recommendation."""
+        project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(project_root, '.purlin'))
+        subprocess.run(['git', 'init'], cwd=project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=project_root, capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=project_root, capture_output=True, check=True)
+        # Add .purlin/config.json early
+        with open(os.path.join(project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({}, f)
+        subprocess.run(['git', 'add', '.'], cwd=project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'init purlin'],
+                       cwd=project_root, capture_output=True, check=True)
+        # Create 50 more commits
+        for i in range(50):
+            with open(os.path.join(project_root, f'file_{i}.txt'), 'w') as f:
+                f.write(f'content {i}\n')
+            subprocess.run(['git', 'add', '.'], cwd=project_root,
+                           capture_output=True, check=True)
+            subprocess.run(['git', 'commit', '-m', f'feat: change {i}'],
+                           cwd=project_root, capture_output=True, check=True)
+        try:
+            result_text = purlin_server.changelog(project_root)
+            data = json.loads(result_text)
+            assert data.get('recommendation') == 'spec-from-code', \
+                f"Expected recommendation, got: {list(data.keys())}"
+            assert data['commits_since_init'] >= 30
+        finally:
+            shutil.rmtree(project_root)
+
+    @pytest.mark.proof("changelog", "PROOF-11", "RULE-11")
+    def test_small_repo_returns_normal_changelog(self):
+        """10 commits, no verify, no tag → normal changelog."""
+        project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(project_root, '.purlin'))
+        subprocess.run(['git', 'init'], cwd=project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=project_root, capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=project_root, capture_output=True, check=True)
+        # Add .purlin/config.json
+        with open(os.path.join(project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({}, f)
+        os.makedirs(os.path.join(project_root, 'specs'))
+        subprocess.run(['git', 'add', '.'], cwd=project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'init purlin'],
+                       cwd=project_root, capture_output=True, check=True)
+        # Create 10 more commits
+        for i in range(10):
+            with open(os.path.join(project_root, f'file_{i}.txt'), 'w') as f:
+                f.write(f'content {i}\n')
+            subprocess.run(['git', 'add', '.'], cwd=project_root,
+                           capture_output=True, check=True)
+            subprocess.run(['git', 'commit', '-m', f'feat: change {i}'],
+                           cwd=project_root, capture_output=True, check=True)
+        try:
+            result_text = purlin_server.changelog(project_root)
+            data = json.loads(result_text)
+            # Should be normal changelog, not a recommendation
+            assert 'since' in data, f"Expected normal changelog, got: {list(data.keys())}"
+            assert 'recommendation' not in data
+        finally:
+            shutil.rmtree(project_root)
+
+
+class TestServerOutput:
+    """mcp_transport RULE-7 and sync_status RULE-6."""
+
+    @pytest.mark.proof("mcp_transport", "PROOF-7", "RULE-7")
     def test_startup_logs_to_stderr(self):
         project_root = tempfile.mkdtemp()
         os.makedirs(os.path.join(project_root, '.purlin'))
@@ -525,7 +953,7 @@ class TestServerOutput:
         finally:
             shutil.rmtree(project_root)
 
-    @pytest.mark.proof("mcp_server", "PROOF-17", "RULE-17")
+    @pytest.mark.proof("sync_status", "PROOF-6", "RULE-6")
     def test_vhash_with_prefixed_keys(self):
         rules_own = {"RULE-1": "x"}
         proofs = [{"id": "PROOF-1", "status": "pass"}]

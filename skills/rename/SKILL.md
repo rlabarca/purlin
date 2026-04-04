@@ -34,8 +34,8 @@ purlin:rename <old-name> <new-name>    Rename a feature
 
 Search `specs/**/<old-name>.md`.
 
-- **Not found:** Stop with: `No spec found for '<old-name>'. Check the name with purlin:find.`
-- **Invariant (`i_*`):** Stop with: `Cannot rename invariant '<old-name>'. Invariants are read-only and synced from an external source. Rename at the source and run purlin:invariant sync.`
+- **Not found:** Stop with: `No spec found for '<old-name>'. Verify the spec exists in specs/.`
+- **Anchor with `> Source:` (external):** Stop with: `Cannot rename anchor '<old-name>'. Anchors with external sources are read-only and synced from that source. Rename at the source and re-sync.`
 - **Multiple matches:** List them and use `AskUserQuestion` to ask the user which one.
 - **Found:** Continue.
 
@@ -49,7 +49,7 @@ Scan for all artifacts that reference the old name and present a summary:
 
 Files to rename:
   specs/auth/login.md → specs/auth/authentication.md
-  specs/auth/login.proofs-default.json → specs/auth/authentication.proofs-default.json
+  specs/auth/login.proofs-unit.json → specs/auth/authentication.proofs-unit.json
 
 Proof markers to update:
   tests/test_login.py: 5 markers
@@ -76,7 +76,7 @@ Perform all changes in this order:
 **a. Rename files** — use `git mv` for spec, proof, and receipt files:
 ```bash
 git mv specs/auth/login.md specs/auth/authentication.md
-git mv specs/auth/login.proofs-default.json specs/auth/authentication.proofs-default.json
+git mv specs/auth/login.proofs-unit.json specs/auth/authentication.proofs-unit.json
 git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # if exists
 ```
 
@@ -101,10 +101,7 @@ git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # i
 
 **g. Run `sync_status`** to verify everything still resolves.
 
-**h. Commit:**
-```
-git commit -m "rename(<old-name>): rename to <new-name>"
-```
+**h. Commit** per `references/commit_conventions.md`: `rename(<old-name>): rename to <new-name>`
 
 ### Step 5 — Verify
 
@@ -118,5 +115,5 @@ If `sync_status` shows issues after rename, warn the user and show the directive
 - **Old name appears in test function names**: do NOT rename test functions — only rename proof marker strings. `test_login_valid()` stays as-is; only `proof("login",` changes.
 - **Old name appears in code comments or docs**: do NOT rename. Only rename in Purlin artifacts (specs, proofs, markers, `> Requires:`).
 - **Multiple specs match**: if `specs/**/login.md` matches multiple files, list them and ask the user which one.
-- **Invariant specs (`i_*`)**: refuse to rename — invariants are read-only and managed by `purlin:invariant sync`. The rename must happen at the external source.
+- **Anchors with `> Source:` (external)**: refuse to rename — anchors with external sources are read-only and synced from that source. The rename must happen at the external source.
 - **`> Requires:` partial matches**: use word-boundary matching when replacing in `> Requires:` lines. The old name must match as a complete comma-separated entry, not as a substring of another name.

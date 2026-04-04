@@ -82,7 +82,7 @@ r.onTestResult(null, {
 process.chdir('$tmpdir');
 r.onRunComplete();
 
-const proof = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-default.json', 'utf8'));
+const proof = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8'));
 if (proof.proofs[0].feature !== 'my_feat') process.exit(1);
 " 2>/dev/null
 
@@ -139,7 +139,7 @@ r.onTestResult(null, {
 process.chdir('$tmpdir');
 r.onRunComplete();
 
-const entry = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-default.json', 'utf8')).proofs[0];
+const entry = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8')).proofs[0];
 const required = ['feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'];
 for (const f of required) {
   if (!(f in entry)) { console.error('missing field:', f); process.exit(1); }
@@ -200,7 +200,7 @@ r.onTestResult(null, {
 process.chdir('$tmpdir');
 r.onRunComplete();
 
-if (!fs.existsSync('$tmpdir/specs/billing/invoice.proofs-default.json')) process.exit(1);
+if (!fs.existsSync('$tmpdir/specs/billing/invoice.proofs-unit.json')) process.exit(1);
 " 2>/dev/null
 
   local rc=$?
@@ -241,7 +241,7 @@ r.onTestResult(null, {
 process.chdir('$tmpdir');
 r.onRunComplete();
 
-if (!fs.existsSync('$tmpdir/specs/unknown_feat.proofs-default.json')) process.exit(1);
+if (!fs.existsSync('$tmpdir/specs/unknown_feat.proofs-unit.json')) process.exit(1);
 " 2>/dev/null
 
   local rc=$?
@@ -308,7 +308,7 @@ r2.onTestResult(null, {
 });
 r2.onRunComplete();
 
-const data = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-default.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8'));
 if (data.proofs.length !== 1) { console.error('expected 1, got:', data.proofs.length); process.exit(1); }
 if (data.proofs[0].status !== 'pass') { console.error('expected pass, got:', data.proofs[0].status); process.exit(1); }
 " 2>/dev/null

@@ -83,25 +83,25 @@ class TestSpecFormatEnforcement:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-5", "RULE-5")
     def test_requires_includes_referenced_rules(self):
-        # Create an invariant spec
-        inv_dir = os.path.join(self.project_root, 'specs', '_invariants')
-        os.makedirs(inv_dir)
-        with open(os.path.join(inv_dir, 'i_base.md'), 'w') as f:
+        # Create an anchor spec
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir)
+        with open(os.path.join(anchor_dir, 'base.md'), 'w') as f:
             f.write(
-                '# Invariant: i_base\n\n'
+                '# Anchor: base\n\n'
                 '## What it does\nBase rules.\n\n'
                 '## Rules\n- RULE-1: Base rule\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Test\n'
             )
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
-            '> Requires: i_base\n\n'
+            '> Requires: base\n\n'
             '## What it does\nTesting.\n\n'
             '## Rules\n- RULE-1: Own rule\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert 'i_base/RULE-1' in result, \
+        assert 'base/RULE-1' in result, \
             f"Required spec's rules not included in coverage: {result}"
 
     @pytest.mark.proof("schema_spec_format", "PROOF-6", "RULE-6")
@@ -110,7 +110,7 @@ class TestSpecFormatEnforcement:
         # so sync_status exercises the scope in its overlap suggestion
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
-            '> Scope: scripts/gate.sh, src/app.py\n\n'
+            '> Scope: scripts/mcp/purlin_server.py, src/app.py\n\n'
             '## What it does\nTesting.\n\n'
             '## Rules\n- RULE-1: Must work\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
@@ -126,7 +126,7 @@ class TestSpecFormatEnforcement:
         features = purlin_server._scan_specs(self.project_root)
         assert 'test_feat' in features
         scope = features['test_feat']['scope']
-        assert scope == ['scripts/gate.sh', 'src/app.py'], \
+        assert scope == ['scripts/mcp/purlin_server.py', 'src/app.py'], \
             f"Scope should be parsed as comma-separated list, got: {scope}"
         # Verify sync_status uses the parsed scope in its output (overlap suggestion)
         result = purlin_server.sync_status(self.project_root)
@@ -161,7 +161,7 @@ class TestSpecFormatConventions:
     def test_spec_headings_use_correct_prefix(self):
         spec_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),
                                recursive=True)
-        valid = re.compile(r'^# (Feature|Anchor|Invariant): ')
+        valid = re.compile(r'^# (Feature|Anchor): ')
         for path in spec_files:
             with open(path) as f:
                 content = f.read()

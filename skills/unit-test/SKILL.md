@@ -3,34 +3,31 @@ name: unit-test
 description: Run tests and emit proof files with coverage report
 ---
 
-Run tests (default tier unless `--all`), emit proof files via feature-scoped overwrite, and report coverage per feature.
+Run tests (unit tier unless `--all`), emit proof files via feature-scoped overwrite, and report coverage per feature.
 
 ## Usage
 
 ```
-purlin:unit-test [feature]      Run tests for a specific feature (default tier)
-purlin:unit-test                Run all default-tier tests
+purlin:unit-test [feature]      Run tests for a specific feature (unit tier)
+purlin:unit-test                Run all unit-tier tests
 purlin:unit-test --all          Run all tests across all tiers
 ```
 
 ## Step 1 — Detect Test Framework
 
-Read `.purlin/config.json` for `test_framework`. If `"auto"`, detect from project files:
-- `conftest.py` or `pyproject.toml` with `[tool.pytest]` → pytest
-- `package.json` with `jest` in devDependencies → jest
-- `*.test.sh` files → shell
+Read `.purlin/config.json` for `test_framework`. If set to a specific framework, use it. If `"auto"` or missing, detect from project files using the same heuristics as `purlin:init` Step 3 (see `references/supported_frameworks.md` for the full detection logic).
 
 ## Step 2 — Run Tests
 
 ```bash
-# pytest (default tier)
-pytest -m "not slow"
+# pytest (unit tier)
+pytest -m "not integration"
 
 # pytest (all tiers with --all)
 pytest
 
-# jest (default tier)
-npx jest --testPathPattern="default"
+# jest (unit tier)
+npx jest --testPathPattern="unit"
 
 # jest (all tiers with --all)
 npx jest
@@ -65,58 +62,16 @@ Test results:
 
 ## Step 4 — Commit Proof Files
 
-Proof files are always committed to git.
+Proof files are always committed to git. Commit per `references/commit_conventions.md` using the `test(<feature>):` prefix:
 
 ```
 git commit -m "test(<feature>): <passed>/<total> rules proved"
-```
-
-If no feature argument was given (ran all tests):
-```
-git commit -m "test: run default tier (<passed>/<total> features fully proved)"
+git commit -m "test: run unit tier (<passed>/<total> features fully proved)"
 ```
 
 ## Writing Tests with Proof Markers
 
-When tests are missing, write them with proof markers. See `references/formats/proofs_format.md` for the full proof format specification.
-
-**pytest:**
-```python
-@pytest.mark.proof("feature_name", "PROOF-1", "RULE-1")
-def test_validates_input():
-    result = validate(bad_input)
-    assert result.status == "error"
-    assert result.code == 400
-```
-
-**Jest:**
-```javascript
-it("validates input [proof:feature_name:PROOF-1:RULE-1:default]", () => {
-  const result = validate(badInput);
-  expect(result.status).toBe("error");
-  expect(result.code).toBe(400);
-});
-```
-
-**Shell:**
-```bash
-source scripts/proof/shell_purlin.sh
-result=$(validate_input "bad")
-if [[ "$result" == *"error"* ]]; then
-  purlin_proof "feature_name" "PROOF-1" "RULE-1" pass "validates input"
-else
-  purlin_proof "feature_name" "PROOF-1" "RULE-1" fail "validates input"
-fi
-purlin_proof_finish
-```
-
-### Test Quality Rules
-
-- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
-- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
-- **Never assert True.** Every assertion must check a specific expected value.
-- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
-- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
+When tests are missing, write them with proof markers. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`. For test quality rules (what makes a proof STRONG vs HOLLOW), see `references/audit_criteria.md`.
 
 ## Note
 

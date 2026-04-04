@@ -90,6 +90,15 @@
       "test_name": "full lifecycle: FAIL\u2192blocks, fix\u2192warns, complete\u2192allows",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-11",
+      "rule": "RULE-9",
+      "test_file": "dev/test_pre_push_hook.sh",
+      "test_name": "init installs executable pre-push hook that blocks on FAIL",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

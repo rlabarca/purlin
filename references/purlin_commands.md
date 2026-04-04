@@ -1,6 +1,6 @@
 # Purlin Commands
 
-> Read and printed by `purlin:help`. 15 skills, no modes, no permission system.
+> 12 skills, no modes, no permission system.
 
 ```
 Purlin — Spec-Driven Development
@@ -28,8 +28,8 @@ Purlin — Spec-Driven Development
   Reporting
   ──────
   purlin:status                 Show rule coverage via sync_status (with → directives)
-  purlin:changelog [pm|eng|qa] [--since N]
-                                Plain-English summary of changes since last verify
+  purlin:drift [pm|eng|qa] [--since N]
+                                Detect spec drift, summarize changes since last verify
 
   Project
   ──────
@@ -37,11 +37,9 @@ Purlin — Spec-Driven Development
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
   purlin:init --list-plugins    List installed proof plugins
   purlin:rename <old> <new>     Rename feature across all Purlin artifacts
-  purlin:config [key] [value]   View or change .purlin/config.json settings
-  purlin:invariant <cmd>        Sync read-only constraints from external sources
+  purlin:anchor <cmd>           Sync read-only constraints from external sources
   purlin:init --sync-audit-criteria
                                 Sync external audit criteria to latest version
-  purlin:help                   This command reference
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -56,11 +54,9 @@ Purlin — Spec-Driven Development
 | `purlin:unit-test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
 | `purlin:audit` | Evaluate proof quality | Nothing (read-only) |
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
-| `purlin:changelog` | Changes since last verify | Nothing (read-only) |
+| `purlin:drift` | Drift detection since last verify | Nothing (read-only) |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
-| `purlin:invariant` | Sync external constraints | `specs/_invariants/i_*.md` |
+| `purlin:anchor` | Sync external constraints | `specs/_anchors/*.md` |
 | `purlin:find` | Search specs | Nothing (read-only) |
 | `purlin:rename` | Rename feature | Specs, proofs, markers, references |
-| `purlin:config` | Read/write config | `.purlin/config.json` |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
-| `purlin:help` | Command reference | Nothing (read-only) |

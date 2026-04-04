@@ -47,7 +47,7 @@ notification_system: no rules defined
   WARNING: No ## Rules section found.
   → Run: purlin:spec notification_system
 
-i_design_tokens: 5 rules (global — apply to all features with > Requires: i_design_tokens)
+design_tokens: 5 rules (global — auto-applied to all features)
   RULE-1: Font sizes use rem units
   RULE-2: Colors reference design token variables
   ...

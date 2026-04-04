@@ -1,33 +1,30 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Anchor Spec Format
 
-Anchors are regular specs with type-prefixed names that define cross-cutting constraints. They live in `specs/<category>/` alongside other specs and use the same 3-section format.
+Anchors define cross-cutting constraints that other features reference via `> Requires:`. They live in `specs/_anchors/` and use the standard 3-section format.
 
-## Type Prefixes
+Anchors may optionally have an external reference (`> Source:`), which links them to a git repo, Figma file, or URL. The external reference is authoritative context — the anchor file itself is always editable.
 
-| Prefix | Domain | Example |
-|--------|--------|---------|
-| `design_` | Visual/UX standards | `design_typography.md` |
-| `api_` | API contracts | `api_rest_conventions.md` |
-| `security_` | Security requirements | `security_auth_policy.md` |
-| `brand_` | Brand guidelines | `brand_voice.md` |
-| `platform_` | Platform constraints | `platform_browser_support.md` |
-| `schema_` | Data schemas | `schema_user_model.md` |
-| `legal_` | Legal/compliance | `legal_gdpr.md` |
-| `prodbrief_` | Product brief requirements | `prodbrief_launch.md` |
+## Location
 
-## Template
+```
+specs/_anchors/<name>.md
+```
+
+Users name anchors freely. No enforced prefixes.
+
+## Template — Local Anchor
 
 ```markdown
-# Anchor: <type_prefix><name>
+# Anchor: <name>
 
-> Scope: <file patterns or modules this anchor governs>
-> Stack: <language/framework if relevant — optional for anchors>
+> Scope: <file patterns this anchor governs>
+> Type: <optional: design, api, security, brand, platform, schema, legal, prodbrief>
 
 ## What it does
 
-<One paragraph: what cross-cutting concern this anchor defines.>
+<What cross-cutting concern this anchor defines.>
 
 ## Rules
 
@@ -40,30 +37,80 @@ Anchors are regular specs with type-prefixed names that define cross-cutting con
 - PROOF-2 (RULE-2): <How to verify compliance>
 ```
 
+## Template — Externally-Referenced Anchor (Git)
+
+```markdown
+# Anchor: <name>
+
+> Source: git@github.com:org/repo.git
+> Path: docs/spec.md
+> Pinned: abc1234def5678
+> Type: api
+
+## What it does
+
+<What this anchor defines, sourced from an external repo.>
+
+## Rules
+
+- RULE-1: <Rule from external source>
+- RULE-2: <Rule added locally>
+
+## Proof
+
+- PROOF-1 (RULE-1): <Verification>
+- PROOF-2 (RULE-2): <Verification>
+```
+
+## Template — Externally-Referenced Anchor (Figma)
+
+```markdown
+# Anchor: <name>
+
+> Source: https://www.figma.com/design/ABC123/Design-System
+> Pinned: 2026-03-31T12:00:00Z
+> Visual-Reference: figma://ABC123/1:234
+> Type: design
+
+## What it does
+
+Visual design constraints sourced from Figma.
+
+## Rules
+
+- RULE-1: Implementation must visually match the Figma design at the referenced node
+
+## Proof
+
+- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
+```
+
 ## Metadata Fields
+
+These fields are available on ANY spec (features, anchors). None are enforced by code.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `> Scope:` | No | File patterns or modules this anchor governs |
-| `> Stack:` | No | Language/framework if relevant |
-| `> Visual-Reference:` | No | Path to the visual reference image (e.g., `./specs/components/screenshots/modal.png`) |
-| `> Visual-Hash:` | No | SHA-256 hash of the visual reference image. When the image file changes (hash mismatch), sync_status reports the anchor's rules as potentially stale. |
+| `> Scope:` | No | File patterns this spec governs. Used for manual proof staleness detection. |
+| `> Stack:` | No | Language/framework. |
+| `> Requires:` | No | Comma-separated list of anchor names whose rules also apply. |
+| `> Type:` | No | Suggested types: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`. Not enforced. |
+| `> Source:` | No | External reference: git repo URL, Figma URL, or HTTP URL. When present, `purlin:build` MUST read the source for full context. |
+| `> Path:` | No | For git-sourced anchors: path within the repo to the source file. |
+| `> Pinned:` | No | Git commit SHA (git-sourced) or ISO 8601 timestamp (Figma-sourced). Updated by `purlin:anchor sync`. |
+| `> Global:` | No | When `true`, this anchor's rules auto-apply to ALL feature specs without needing `> Requires:`. |
+| `> Visual-Reference:` | No | Pointer to visual source: `figma://fileKey/nodeId`, `./path.png`, `./path.html`, `https://url`. |
+| `> Visual-Hash:` | No | SHA-256 hash of visual reference image for staleness detection. |
 
-## How Anchors Work
+## Sync Behavior
 
-1. An anchor defines rules in the same format as a regular spec.
-2. Other specs reference the anchor via `> Requires: design_typography`.
-3. `sync_status` includes the anchor's rules in the requiring spec's coverage.
-4. Tests in the requiring feature use proof markers to prove the anchor's rules.
+`purlin:anchor sync <name>` compares `> Pinned:` to the upstream source:
 
-## Anchors vs Invariants
+- **Git:** `git ls-remote` to get HEAD SHA. If different, pull new content and update `> Pinned:`.
+- **Figma:** `get_metadata` MCP call to get `lastModified`. If different, fetch new data and update.
 
-| | Anchor | Invariant |
-|---|--------|-----------|
-| Location | `specs/<category>/` | `specs/_invariants/` |
-| Prefix | `design_`, `api_`, etc. | `i_design_`, `i_api_`, etc. |
-| Source | Written locally | Synced from external source |
-| Editable | Yes | No (read-only, gate-protected) |
-| Has `> Source:`/`> Pinned:` | No | Yes |
+If the anchor has local rules and the external source changed, `purlin:drift` surfaces this as a PM action item.
 
-Use anchors for constraints you define. Use invariants for constraints imported from external sources.
+## Global Anchors
+
+An anchor with `> Global: true` has its rules auto-applied to every non-anchor feature spec. Features don't need `> Requires:` — the rules are included automatically. In `sync_status`, global anchor rules appear with a `(global)` label.

@@ -23,21 +23,21 @@ Three proof collection plugins — pytest, Jest, and shell — that parse framew
 
 ### pytest-specific
 
-- RULE-8: The marker signature is `@pytest.mark.proof("feature", "PROOF-N", "RULE-N", tier="default")` where tier defaults to `"default"`
+- RULE-8: The marker signature is `@pytest.mark.proof("feature", "PROOF-N", "RULE-N", tier="unit")` where tier defaults to `"unit"`
 - RULE-9: Markers with fewer than 3 positional args are silently skipped
 - RULE-10: `test_file` is recorded as the path relative to the pytest rootdir
 - RULE-11: The plugin registers itself via `pytest_configure` and collects results in `pytest_runtest_makereport` during the `call` phase only
 
 ### Jest-specific
 
-- RULE-12: The marker is parsed from the test title using the pattern `[proof:feature:PROOF-N:RULE-N:tier]` where tier defaults to `"default"`
+- RULE-12: The marker is parsed from the test title using the pattern `[proof:feature:PROOF-N:RULE-N:tier]` where tier defaults to `"unit"`
 - RULE-13: Test names without a `[proof:...]` marker are ignored
 - RULE-14: `test_file` is recorded as the path relative to Jest's `rootDir`
 - RULE-15: Jest status `"passed"` maps to `"pass"` and all other statuses map to `"fail"`
 
 ### Shell-specific
 
-- RULE-16: `purlin_proof` accepts 5 args: `feature`, `proof_id`, `rule_id`, `status`, `test_name`; tier comes from `PURLIN_PROOF_TIER` env var (default: `"default"`)
+- RULE-16: `purlin_proof` accepts 5 args: `feature`, `proof_id`, `rule_id`, `status`, `test_name`; tier comes from `PURLIN_PROOF_TIER` env var (default: `"unit"`)
 - RULE-17: `test_file` is recorded from `BASH_SOURCE[1]` (the caller's file)
 - RULE-18: `purlin_proof_finish` must be called to write proof files — entries are accumulated in memory until then
 - RULE-19: After `purlin_proof_finish`, the accumulated entries are cleared (reset for next batch)
@@ -45,43 +45,45 @@ Three proof collection plugins — pytest, Jest, and shell — that parse framew
 ### Installation and discovery
 
 - RULE-20: Custom/community proof plugins installed to `.purlin/plugins/` require no registration — `sync_status` discovers proof files by globbing `specs/**/*.proofs-*.json`, so any plugin that writes files in that pattern works automatically
+- RULE-21: When spec directory lookup falls back to specs/ root, the plugin emits a warning to stderr naming the missing spec and suggesting purlin:spec <feature>
 
 ## Proof
 
 ### Shared behavior
 
-- PROOF-1 (RULE-1): Create `specs/hooks/gate_hook.md` and run a proof plugin with feature `gate_hook`; verify the proof file is written to `specs/hooks/` @slow
-- PROOF-2 (RULE-2): Run a proof plugin for feature `gate_hook` tier `default`; verify output file is named `gate_hook.proofs-default.json` @slow
-- PROOF-3 (RULE-3): Run a proof plugin for feature `nonexistent_feature` (no matching spec); verify proof file is written to `specs/` @slow
-- PROOF-4 (RULE-4): Create a proof file with entries for features A and B; run the plugin for feature A only; verify feature B entries are preserved and feature A entries are replaced @slow
-- PROOF-5 (RULE-5): Run a proof plugin and read the output JSON; verify each entry in `proofs` array contains all 7 fields: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier` @slow
-- PROOF-6 (RULE-6): Run a passing test and a failing test with proof markers; verify the passing test has `status: "pass"` and the failing test has `status: "fail"` @slow
-- PROOF-7 (RULE-7): Run a test suite with no proof markers; verify no `*.proofs-*.json` files are created @slow
+- PROOF-1 (RULE-1): Create `specs/hooks/gate_hook.md` and run a proof plugin with feature `gate_hook`; verify the proof file is written to `specs/hooks/` @integration
+- PROOF-2 (RULE-2): Run a proof plugin for feature `gate_hook` tier `unit`; verify output file is named `gate_hook.proofs-unit.json` @integration
+- PROOF-3 (RULE-3): Run a proof plugin for feature `nonexistent_feature` (no matching spec); verify proof file is written to `specs/` @integration
+- PROOF-4 (RULE-4): Create a proof file with entries for features A and B; run the plugin for feature A only; verify feature B entries are preserved and feature A entries are replaced @integration
+- PROOF-5 (RULE-5): Run a proof plugin and read the output JSON; verify each entry in `proofs` array contains all 7 fields: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier` @integration
+- PROOF-6 (RULE-6): Run a passing test and a failing test with proof markers; verify the passing test has `status: "pass"` and the failing test has `status: "fail"` @integration
+- PROOF-7 (RULE-7): Run a test suite with no proof markers; verify no `*.proofs-*.json` files are created @integration
 
 ### pytest-specific
 
-- PROOF-8 (RULE-8): Create a test with `@pytest.mark.proof("feat", "PROOF-1", "RULE-1")`; run pytest; verify the proof entry has `feature: "feat"`, `tier: "default"` @slow
-- PROOF-9 (RULE-9): Create a test with `@pytest.mark.proof("feat", "PROOF-1")`(only 2 args); run pytest; verify no proof entry is emitted for that test @slow
-- PROOF-10 (RULE-10): Run pytest from a project root; verify `test_file` in the proof entry is relative to the root (not absolute) @slow
-- PROOF-11 (RULE-11): Verify `pytest_configure` registers the `proof` marker and the `purlin_proof` plugin @slow
+- PROOF-8 (RULE-8): Create a test with `@pytest.mark.proof("feat", "PROOF-1", "RULE-1")`; run pytest; verify the proof entry has `feature: "feat"`, `tier: "unit"` @integration
+- PROOF-9 (RULE-9): Create a test with `@pytest.mark.proof("feat", "PROOF-1")`(only 2 args); run pytest; verify no proof entry is emitted for that test @integration
+- PROOF-10 (RULE-10): Run pytest from a project root; verify `test_file` in the proof entry is relative to the root (not absolute) @integration
+- PROOF-11 (RULE-11): Verify `pytest_configure` registers the `proof` marker and the `purlin_proof` plugin @integration
 
 ### Jest-specific
 
-- PROOF-12 (RULE-12): Create a test `it("works [proof:feat:PROOF-1:RULE-1:default]", ...)`; run Jest; verify proof entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"` @e2e
+- PROOF-12 (RULE-12): Create a test `it("works [proof:feat:PROOF-1:RULE-1:unit]", ...)`; run Jest; verify proof entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"` @e2e
 - PROOF-13 (RULE-13): Create a test without `[proof:...]` in the title; run Jest; verify no proof entry is emitted for that test @e2e
 - PROOF-14 (RULE-14): Run Jest; verify `test_file` is relative to `rootDir` @e2e
 - PROOF-15 (RULE-15): Create a failing Jest test with a proof marker; verify `status` is `"fail"` @e2e
 
 ### Shell-specific
 
-- PROOF-16 (RULE-16): Call `purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"` with `PURLIN_PROOF_TIER=slow`; call `purlin_proof_finish`; verify the proof entry has `tier: "slow"` @slow
-- PROOF-17 (RULE-17): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @slow
-- PROOF-18 (RULE-18): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @slow
-- PROOF-19 (RULE-19): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @slow
+- PROOF-16 (RULE-16): Call `purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"` with `PURLIN_PROOF_TIER=integration`; call `purlin_proof_finish`; verify the proof entry has `tier: "integration"` @integration
+- PROOF-17 (RULE-17): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @integration
+- PROOF-18 (RULE-18): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @integration
+- PROOF-19 (RULE-19): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @integration
 
 ### Installation and discovery
 
-- PROOF-20 (RULE-20): Place a `.proofs-default.json` file in a spec directory written by a non-built-in source; run `sync_status`; verify it reads the proofs @slow
+- PROOF-20 (RULE-20): Place a `.proofs-unit.json` file in a spec directory written by a non-built-in source; run `sync_status`; verify it reads the proofs @integration
+- PROOF-21 (RULE-21): Run a proof plugin for a feature with no matching spec; verify stderr contains a warning naming the feature and suggesting purlin:spec @integration
 
 ## Implementation Notes
 

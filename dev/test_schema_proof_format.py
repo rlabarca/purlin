@@ -34,7 +34,7 @@ class TestProofFormatEnforcement:
         with open(os.path.join(d, f'{name}.md'), 'w') as f:
             f.write(content)
 
-    def _write_proofs(self, name, proofs, tier='default', subdir='test'):
+    def _write_proofs(self, name, proofs, tier='unit', subdir='test'):
         d = os.path.join(self.project_root, 'specs', subdir)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, f'{name}.proofs-{tier}.json'), 'w') as f:
@@ -51,7 +51,7 @@ class TestProofFormatEnforcement:
         self._write_proofs('foo', [
             {"feature": "foo", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "tests/test_foo.py", "test_name": "test_it",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
         assert 'foo: READY' in result
@@ -83,10 +83,10 @@ class TestProofFormatEnforcement:
         self._write_proofs('bar', [
             {"feature": "bar", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "t.py", "test_name": "t",
-             "status": "error", "tier": "default"},
+             "status": "error", "tier": "unit"},
             {"feature": "bar", "id": "PROOF-2", "rule": "RULE-2",
              "test_file": "t.py", "test_name": "t2",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
         assert 'bar: READY' not in result, "Invalid status 'error' should not yield READY"
@@ -96,10 +96,10 @@ class TestProofFormatEnforcement:
         self._write_proofs('bar', [
             {"feature": "bar", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "t.py", "test_name": "t",
-             "status": "fail", "tier": "default"},
+             "status": "fail", "tier": "unit"},
             {"feature": "bar", "id": "PROOF-2", "rule": "RULE-2",
              "test_file": "t.py", "test_name": "t2",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         result2 = purlin_server.sync_status(self.project_root)
         assert 'bar: READY' not in result2, "'fail' status should not yield READY"
@@ -119,7 +119,7 @@ class TestProofFormatEnforcement:
         self._write_proofs('feat_a', [
             {"feature": "feat_b", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "t.py", "test_name": "t_b",
-             "status": "pass", "tier": "default"},
+             "status": "pass", "tier": "unit"},
         ])
         # Create a test file with a proof marker for feat_a
         test_file = os.path.join(self.project_root, 'test_feat_a.py')
@@ -147,7 +147,7 @@ class TestProofFormatEnforcement:
         )
         # Verify feat_b preserved and feat_a added by the real plugin
         proof_path = os.path.join(self.project_root, 'specs', 'test',
-                                  'feat_a.proofs-default.json')
+                                  'feat_a.proofs-unit.json')
         assert os.path.exists(proof_path), \
             f"Proof file not written. stdout={result.stdout} stderr={result.stderr}"
         with open(proof_path) as f:
@@ -161,7 +161,7 @@ class TestProofFormatConventions:
 
     @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
     def test_standard_tiers_documented(self):
-        valid_tiers = {'default', 'slow', 'e2e'}
+        valid_tiers = {'unit', 'integration', 'e2e'}
         # Verify all existing proof files only use valid tiers
         proof_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
                                              '*.proofs-*.json'), recursive=True)
@@ -181,7 +181,7 @@ class TestProofFormatConventions:
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
                                'spec_format.md')) as f:
             fmt = f.read()
-        assert '@slow' in fmt
+        assert '@integration' in fmt
         assert '@e2e' in fmt
 
     @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
@@ -202,7 +202,7 @@ class TestProofFormatConventions:
                 f"Broad gitignore pattern '{line}' would exclude proof files"
         # Use git check-ignore to verify a proof file path is not ignored
         result = subprocess.run(
-            ['git', 'check-ignore', '-q', 'specs/test/foo.proofs-default.json'],
+            ['git', 'check-ignore', '-q', 'specs/test/foo.proofs-unit.json'],
             cwd=PROJECT_ROOT, capture_output=True
         )
         assert result.returncode != 0, \

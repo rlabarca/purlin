@@ -308,6 +308,111 @@ else
   echo "    FAIL: got $PROOF1_STATUS_I/$PROOF1_CHECK_I"
 fi
 
+# ==========================================================================
+# Phase J — Pass 0: spec coverage check (structural vs behavioral)
+# ==========================================================================
+echo "  --- Phase J: Pass 0 spec coverage check ---"
+TMPDIR_J=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_J"
+mkdir -p "$TMPDIR_J/specs/instructions"
+
+# Create a structural-only spec
+cat > "$TMPDIR_J/specs/instructions/agent_def.md" << 'SPECEOF'
+# Feature: agent_def
+
+## What it does
+
+Agent definition structural checks.
+
+## Rules
+
+- RULE-1: Verify agent.md contains ## Core Loop section
+- RULE-2: Grep skill files for ## Usage heading
+- RULE-3: Verify config field appears in output
+
+## Proof
+
+- PROOF-1 (RULE-1): Grep agent.md for heading
+- PROOF-2 (RULE-2): Grep skill files
+- PROOF-3 (RULE-3): Grep config output
+SPECEOF
+
+# Create a behavioral spec
+cat > "$TMPDIR_J/specs/instructions/login.md" << 'SPECEOF'
+# Feature: login
+
+## What it does
+
+Login feature.
+
+## Rules
+
+- RULE-1: Returns 200 with JWT on valid credentials
+- RULE-2: Rejects invalid password with 401
+
+## Proof
+
+- PROOF-1 (RULE-1): POST valid creds; verify 200 and JWT
+- PROOF-2 (RULE-2): POST invalid; verify 401
+SPECEOF
+
+# Check structural-only spec
+OUTPUT_J_STRUCT=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TMPDIR_J/specs/instructions/agent_def.md" 2>&1)
+STRUCT_ONLY=$(echo "$OUTPUT_J_STRUCT" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
+
+# Check behavioral spec
+OUTPUT_J_BEHAV=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TMPDIR_J/specs/instructions/login.md" 2>&1)
+BEHAV_ONLY=$(echo "$OUTPUT_J_BEHAV" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
+
+if [[ "$STRUCT_ONLY" == "True" && "$BEHAV_ONLY" == "False" ]]; then
+  purlin_proof "e2e_hybrid_audit" "PROOF-10" "RULE-10" pass "Pass 0 correctly identifies structural-only and behavioral specs"
+  echo "    PASS: structural_only=True for grep spec, False for behavioral spec"
+else
+  purlin_proof "e2e_hybrid_audit" "PROOF-10" "RULE-10" fail "Expected structural=True/behavioral=False; got $STRUCT_ONLY/$BEHAV_ONLY"
+  echo "    FAIL: structural=$STRUCT_ONLY behavioral=$BEHAV_ONLY"
+fi
+
+# ==========================================================================
+# Phase K — Shell if/else pair NOT flagged as hardcoded pass
+# ==========================================================================
+echo "  --- Phase K: shell if/else pair recognized as conditional proof ---"
+TMPDIR_K=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_K"
+
+cat > "$TMPDIR_K/test_shell_ifelse.sh" << 'SHEOF'
+#!/usr/bin/env bash
+source shell_purlin.sh
+output=$(some_command)
+if echo "$output" | grep -q "READY"; then
+  purlin_proof "shell_feat" "PROOF-1" "RULE-1" pass "checks READY"
+else
+  purlin_proof "shell_feat" "PROOF-1" "RULE-1" fail "checks READY"
+fi
+SHEOF
+
+OUTPUT_K=$(python3 "$STATIC_CHECKS" "$TMPDIR_K/test_shell_ifelse.sh" "shell_feat" 2>&1 || true)
+EXIT_K=$?
+PROOF1_STATUS_K=$(echo "$OUTPUT_K" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('status','missing'))")
+
+# Also test that a bare hardcoded pass is still caught
+cat > "$TMPDIR_K/test_shell_bare.sh" << 'SHEOF'
+#!/usr/bin/env bash
+source shell_purlin.sh
+purlin_proof "shell_feat" "PROOF-1" "RULE-1" pass "no test here"
+SHEOF
+
+OUTPUT_K2=$(python3 "$STATIC_CHECKS" "$TMPDIR_K/test_shell_bare.sh" "shell_feat" 2>&1 || true)
+BARE_STATUS=$(echo "$OUTPUT_K2" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('status','missing'))")
+BARE_CHECK=$(echo "$OUTPUT_K2" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('check','none'))")
+
+if [[ "$PROOF1_STATUS_K" == "pass" && "$BARE_STATUS" == "fail" && "$BARE_CHECK" == "assert_true" ]]; then
+  purlin_proof "e2e_hybrid_audit" "PROOF-11" "RULE-11" pass "if/else pair passes, bare hardcoded pass still caught"
+  echo "    PASS: if/else pair → pass, bare pass → fail/assert_true"
+else
+  purlin_proof "e2e_hybrid_audit" "PROOF-11" "RULE-11" fail "Expected pair=pass, bare=fail/assert_true; got pair=$PROOF1_STATUS_K, bare=$BARE_STATUS/$BARE_CHECK"
+  echo "    FAIL: pair=$PROOF1_STATUS_K, bare=$BARE_STATUS/$BARE_CHECK"
+fi
+
 # --- Finish ---
 purlin_proof_finish
 echo "=== e2e_hybrid_audit complete ==="

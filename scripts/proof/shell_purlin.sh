@@ -12,7 +12,7 @@ _PURLIN_PROOFS=""
 
 purlin_proof() {
   local feature="$1" proof_id="$2" rule_id="$3" status="$4" test_name="${5:-}"
-  local tier="${PURLIN_PROOF_TIER:-default}"
+  local tier="${PURLIN_PROOF_TIER:-unit}"
   local test_file="${BASH_SOURCE[1]:-unknown}"
 
   _PURLIN_PROOFS="${_PURLIN_PROOFS}${feature}|${proof_id}|${rule_id}|${status}|${test_name}|${test_file}|${tier}
@@ -53,7 +53,10 @@ for line in sys.stdin.read().strip().split('\n'):
 
 # Write proof files (feature-scoped overwrite)
 for (feature, tier), new_entries in entries.items():
-    spec_dir = spec_dirs.get(feature, 'specs')
+    spec_dir = spec_dirs.get(feature)
+    if spec_dir is None:
+        print(f'WARNING: No spec found for feature \"{feature}\" — writing proofs to specs/{feature}.proofs-{tier}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
+        spec_dir = 'specs'
     path = os.path.join(spec_dir, f'{feature}.proofs-{tier}.json')
     existing = []
     if os.path.exists(path):

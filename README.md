@@ -10,7 +10,7 @@
 
 - Write better code through proof-based specs
 - Prove spec / code drift with signed verification
-- Enable multi-discipline collaboration with smart changelogs and remote invariant specs that cannot be adjusted during development
+- Enable multi-discipline collaboration with drift detection and anchor specs with external references
 
 ## How It Works
 
@@ -35,7 +35,7 @@ From your terminal:
 
 ```bash
 cd my-project
-git init                # required — Purlin needs git for proofs, receipts, and changelog
+git init                # required -- Purlin needs git for proofs, receipts, and drift detection
 claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git --scope project
 ```
 
@@ -121,7 +121,7 @@ Or even simpler:
 test auth_login
 ```
 
-Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows READY. You don't need to write proof markers yourself — the agent does it.
+Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows READY. You don't need to write proof markers yourself -- the agent does it.
 
 Under the hood, proof markers link each test to a spec rule. The test framework plugin collects the results and emits proof files that `sync_status` reads. See the [Testing Workflow Guide](docs/testing-workflow-guide.md) for details on how proof markers work, manual proofs, tiers, and writing custom proof plugins.
 
@@ -141,7 +141,7 @@ purlin:verify
 
 Runs ALL tests, issues verification receipts for every feature with 100% rule coverage.
 
-## 12 Skills
+## Skills
 
 | Skill | Purpose |
 |-------|---------|
@@ -149,22 +149,21 @@ Runs ALL tests, issues verification receipts for every feature with 100% rule co
 | `purlin:build` | Implement from spec rules |
 | `purlin:verify` | Run all tests, issue receipts |
 | `purlin:unit-test` | Run tests, emit proof files |
+| `purlin:audit` | Evaluate proof quality |
 | `purlin:status` | Show coverage + directives |
-| `purlin:changelog` | PM-readable summary of changes |
+| `purlin:drift` | Drift detection and change summary |
 | `purlin:init` | Initialize project |
-| `purlin:invariant` | Sync external constraints |
+| `purlin:anchor` | Sync external constraints |
 | `purlin:find` | Search specs |
-| `purlin:config` | Read/write settings |
+| `purlin:rename` | Rename feature across artifacts |
 | `purlin:spec-from-code` | Generate specs from code |
-| `purlin:help` | Command reference |
 
 
-Skills are **optional** — you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
+Skills are **optional** -- you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
 
-## Hard Gates (only 2)
+## Hard Gate (only 1)
 
-1. **Invariant protection** — `specs/_invariants/i_*` files are read-only. Use `purlin:invariant sync` to update.
-2. **Proof coverage** — `purlin:verify` won't issue a receipt unless every rule has a passing proof.
+1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
 
 Everything else is optional guidance.
 
@@ -179,10 +178,9 @@ specs/
     <feature>.md          # Feature specs (3-section format)
     <feature>.proofs-*.json  # Proof files (emitted by test runners)
     <feature>.receipt.json   # Verification receipts
-  _invariants/
-    i_<prefix>_<name>.md  # Read-only external constraints
+  _anchors/
+    <name>.md             # Cross-cutting constraints (optionally synced from external sources)
 ```
 
-**MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status` and `purlin_config` tools.
-**Gate Hook:** `scripts/gate.sh` — blocks writes to invariant files.
-**Proof Plugins:** `scripts/proof/` — pytest, Jest, and shell proof collectors.
+**MCP Server:** `scripts/mcp/purlin_server.py` -- provides `sync_status` and `purlin_config` tools.
+**Proof Plugins:** `scripts/proof/` -- pytest, Jest, and shell proof collectors.

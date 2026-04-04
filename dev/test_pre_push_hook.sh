@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests for pre_push_hook — 8 proofs covering 7 rules.
-# Most tests are @slow (Level 2) — they create temp directories and run the hook.
+# Most tests are @integration (Level 2) — they create temp directories and run the hook.
 # PROOF-8 is @e2e (Level 3) — full lifecycle across proof states.
 set -euo pipefail
 
@@ -98,7 +98,7 @@ create_proof_file() {
     spec_dir="$tmpdir/specs"
   fi
 
-  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$spec_dir/${feature}.proofs-default.json"
+  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$spec_dir/${feature}.proofs-unit.json"
 }
 
 # --- Helper: run the hook in a test project ---
@@ -270,7 +270,7 @@ else
 fi
 
 # ==========================================================================
-# PROOF-6 (RULE-6): Runs only default tier (pytest -m "not slow")
+# PROOF-6 (RULE-6): Runs only unit tier (pytest -m "not integration")
 # ==========================================================================
 TMPDIR6=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR6"
@@ -283,35 +283,35 @@ touch "$TMPDIR6/conftest.py"
 # Remove config so auto-detection kicks in
 rm -f "$TMPDIR6/.purlin/config.json"
 
-# Create two test files: one default (runs), one slow (should be skipped)
-SENTINEL_DEFAULT="$TMPDIR6/.sentinel_default"
-SENTINEL_SLOW="$TMPDIR6/.sentinel_slow"
+# Create two test files: one unit (runs), one integration (should be skipped)
+SENTINEL_UNIT="$TMPDIR6/.sentinel_unit"
+SENTINEL_INTEGRATION="$TMPDIR6/.sentinel_integration"
 
-cat > "$TMPDIR6/test_default_tier.py" << PYEOF
-def test_default_runs():
-    open("${SENTINEL_DEFAULT}", "w").close()
+cat > "$TMPDIR6/test_unit_tier.py" << PYEOF
+def test_unit_runs():
+    open("${SENTINEL_UNIT}", "w").close()
 PYEOF
 
-cat > "$TMPDIR6/test_slow_tier.py" << PYEOF
+cat > "$TMPDIR6/test_integration_tier.py" << PYEOF
 import pytest
-@pytest.mark.slow
-def test_slow_skipped():
-    open("${SENTINEL_SLOW}", "w").close()
+@pytest.mark.integration
+def test_integration_skipped():
+    open("${SENTINEL_INTEGRATION}", "w").close()
 PYEOF
 
-rm -f "$SENTINEL_DEFAULT" "$SENTINEL_SLOW"
+rm -f "$SENTINEL_UNIT" "$SENTINEL_INTEGRATION"
 
-# Run the hook — it should invoke pytest -m "not slow", running default but not slow
+# Run the hook — it should invoke pytest -m "not integration", running unit but not integration
 output6=$(run_hook "$TMPDIR6") || true
 
-if [[ -f "$SENTINEL_DEFAULT" ]] && [[ ! -f "$SENTINEL_SLOW" ]]; then
-  echo "  PASS: default test ran, slow test was skipped (pytest -m 'not slow' effective)"
-  purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" pass "hook runs only default-tier tests (pytest -m not slow)"
+if [[ -f "$SENTINEL_UNIT" ]] && [[ ! -f "$SENTINEL_INTEGRATION" ]]; then
+  echo "  PASS: unit test ran, integration test was skipped (pytest -m 'not integration' effective)"
+  purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" pass "hook runs only unit-tier tests (pytest -m not integration)"
 else
-  echo "  FAIL: expected default sentinel present and slow sentinel absent"
-  [[ -f "$SENTINEL_DEFAULT" ]] && echo "    default: ran" || echo "    default: DID NOT RUN"
-  [[ -f "$SENTINEL_SLOW" ]] && echo "    slow: ran (should not have)" || echo "    slow: skipped (correct)"
-  purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" fail "hook runs only default-tier tests (pytest -m not slow)"
+  echo "  FAIL: expected unit sentinel present and integration sentinel absent"
+  [[ -f "$SENTINEL_UNIT" ]] && echo "    unit: ran" || echo "    unit: DID NOT RUN"
+  [[ -f "$SENTINEL_INTEGRATION" ]] && echo "    integration: ran (should not have)" || echo "    integration: skipped (correct)"
+  purlin_proof "pre_push_hook" "PROOF-6" "RULE-6" fail "hook runs only unit-tier tests (pytest -m not integration)"
 fi
 
 # ==========================================================================
@@ -478,10 +478,51 @@ else
   purlin_proof "pre_push_hook" "PROOF-8" "RULE-1" fail "full lifecycle: FAIL→blocks, fix→warns, complete→allows"
 fi
 
+# ==========================================================================
+# PROOF-11 (RULE-9): After purlin:init, .git/hooks/pre-push exists,
+#   is executable, and runs scripts/hooks/pre-push.sh — @e2e (Level 3)
+# ==========================================================================
+TMPDIR11=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR11"
+create_test_project "$TMPDIR11" 3
+
+# Simulate what purlin:init Step 7 does: install the pre-push hook
+cp "$HOOK_SCRIPT" "$TMPDIR11/.git/hooks/pre-push"
+chmod +x "$TMPDIR11/.git/hooks/pre-push"
+
+# Verify: hook file exists and is executable
+hook_exists=false
+hook_executable=false
+hook_blocks=false
+
+[[ -f "$TMPDIR11/.git/hooks/pre-push" ]] && hook_exists=true
+[[ -x "$TMPDIR11/.git/hooks/pre-push" ]] && hook_executable=true
+
+# Verify: hook actually intercepts a push with failing proofs
+create_proof_file "$TMPDIR11" "test_feature" \
+  "PROOF-1|RULE-1|pass" \
+  "PROOF-2|RULE-2|fail" \
+  "PROOF-3|RULE-3|pass"
+(cd "$TMPDIR11" && git add -A && git commit -q -m "add failing proofs")
+
+# Run the installed hook directly (simulates git push triggering it)
+output11=""
+ec11=0
+output11=$(cd "$TMPDIR11" && bash .git/hooks/pre-push 2>&1) || ec11=$?
+[[ $ec11 -eq 1 ]] && echo "$output11" | grep -q "PUSH BLOCKED" && hook_blocks=true
+
+if $hook_exists && $hook_executable && $hook_blocks; then
+  echo "  PASS: hook installed, executable, and blocks push on FAIL"
+  purlin_proof "pre_push_hook" "PROOF-11" "RULE-9" pass "init installs executable pre-push hook that blocks on FAIL"
+else
+  echo "  FAIL: exists=$hook_exists executable=$hook_executable blocks=$hook_blocks"
+  purlin_proof "pre_push_hook" "PROOF-11" "RULE-9" fail "init installs executable pre-push hook that blocks on FAIL"
+fi
+
 # --- Emit proof files ---
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "pre_push_hook: 8 proofs recorded"
+echo "pre_push_hook: 9 proofs recorded"

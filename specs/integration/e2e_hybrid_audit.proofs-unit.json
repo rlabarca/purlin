@@ -90,6 +90,15 @@
       "test_name": "Pass 0 correctly identifies structural-only and behavioral specs",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "e2e_hybrid_audit",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "if/else pair passes, bare hardcoded pass still caught",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

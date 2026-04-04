@@ -4,7 +4,7 @@
 
 ## What it does
 
-End-to-end test for the two-pass hybrid audit architecture. Creates temp projects with deliberately flawed and valid Python tests, runs the deterministic static checker, and verifies that structural defects are caught without any LLM and that structurally valid tests pass through to the semantic pass.
+End-to-end test for the three-pass hybrid audit architecture. Creates temp projects with deliberately flawed and valid Python tests, runs the deterministic static checker, and verifies that structural defects are caught without any LLM, that structurally valid tests pass through to the semantic pass, and that structural-only specs are correctly identified by Pass 0.
 
 ## Rules
 
@@ -17,6 +17,8 @@ End-to-end test for the two-pass hybrid audit architecture. Creates temp project
 - RULE-7: Exit code 0 when all proofs pass, exit code 1 when any fail
 - RULE-8: Mock target matching the rule's described function is detected as HOLLOW
 - RULE-9: Bare except:pass around code under test is detected as HOLLOW
+- RULE-10: Pass 0 detects specs with only structural rules and returns structural_only_spec=true via --check-spec-coverage
+- RULE-11: Shell if/else proof pairs (same proof_id/rule_id, one pass/one fail) are recognized as conditional proofs and not flagged as hardcoded pass
 
 ## Proof
 
@@ -29,3 +31,5 @@ End-to-end test for the two-pass hybrid audit architecture. Creates temp project
 - PROOF-7 (RULE-7): Verify exit 0 on clean file and exit 1 on flawed file @e2e
 - PROOF-8 (RULE-8): Create test mocking bcrypt on rule about bcrypt; run static_checks; verify fail/mock_target_match @e2e
 - PROOF-9 (RULE-9): Create test with except Exception: pass; run static_checks; verify fail/bare_except @e2e
+- PROOF-10 (RULE-10): Create spec with only structural rules; run static_checks --check-spec-coverage; verify structural_only_spec=true; create spec with behavioral rules; verify structural_only_spec=false @e2e
+- PROOF-11 (RULE-11): Create shell test with if/else purlin_proof pair; run static_checks; verify pass. Create bare hardcoded pass; verify still caught as assert_true @e2e

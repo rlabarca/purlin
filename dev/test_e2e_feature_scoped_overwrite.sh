@@ -131,12 +131,12 @@ SPEC
 echo "  --- Phase A: Write proofs for both features ---"
 
 # Write login proofs first
-write_proof_file "$TMPDIR/specs/auth/login.proofs-default.json" "login" \
+write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
   "PROOF-1|RULE-1|pass" \
   "PROOF-2|RULE-2|pass"
 
 # Verify signup proof file does not exist yet (non-interference)
-signup_file="$TMPDIR/specs/auth/signup.proofs-default.json"
+signup_file="$TMPDIR/specs/auth/signup.proofs-unit.json"
 signup_untouched=true
 if [[ -f "$signup_file" ]]; then
   echo "    WARNING: signup proof file exists before writing signup proofs"
@@ -220,7 +220,7 @@ fi
 echo "  --- Phase C: Simulate deleted test ---"
 
 # Write login proof file with only PROOF-1 (PROOF-2 removed — simulates a test deletion)
-write_proof_file "$TMPDIR/specs/auth/login.proofs-default.json" "login" \
+write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
   "PROOF-1|RULE-1|pass"
 
 (cd "$TMPDIR" && git add -A && git commit -q -m "remove PROOF-2 from login")

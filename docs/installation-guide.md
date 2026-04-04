@@ -8,7 +8,7 @@
 
 ## Set Up a Project
 
-Your project must be a git repository. Purlin uses git for verification receipts, manual proof stamps, changelog history, and commit-based staleness detection.
+Your project must be a git repository. Purlin uses git for verification receipts, manual proof stamps, drift detection, and commit-based staleness detection.
 
 ```bash
 # New project
@@ -53,7 +53,7 @@ purlin:init
 This does 5 things:
 
 1. **Creates `.purlin/`** — config directory with `config.json` (team defaults) and `config.local.json` (per-user overrides, gitignored).
-2. **Creates `specs/`** — directory for spec files, with a `_invariants/` subdirectory for read-only external constraints.
+2. **Creates `specs/`** -- directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
 3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, or shell) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files.
 4. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are READY).
 5. **Configures audit criteria** — built-in criteria by default, or point to an external criteria file owned by your compliance team. See [references/audit_criteria.md](../references/audit_criteria.md).
@@ -93,7 +93,7 @@ Default config:
 }
 ```
 
-Read or update config with `purlin:config` or the `purlin_config` MCP tool.
+Read or update config with the `purlin_config` MCP tool, or edit the files directly.
 
 ## What Gets Created
 
@@ -104,7 +104,7 @@ your-project/
     config.local.json      # Per-user (gitignored)
     plugins/               # Proof collector for your test framework
   specs/
-    _invariants/           # Read-only external constraints
+    _anchors/              # Cross-cutting constraints (optionally synced from external sources)
   .gitignore               # Updated with Purlin entries
 ```
 
@@ -114,12 +114,12 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 
 | What you want | How |
 |---------------|-----|
-| Switch pre-push mode (warn/strict) | `purlin:config pre_push strict` |
+| Switch pre-push mode (warn/strict) | Edit `.purlin/config.json`: `"pre_push": "strict"` |
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
 | Change audit LLM | `purlin:init --audit-llm` |
-| Change test framework | `purlin:config test_framework jest` |
+| Change test framework | Edit `.purlin/config.json`: `"test_framework": "jest"` |
 | Re-run full setup | `purlin:init --force` |
 
 You can also edit `.purlin/config.json` directly:

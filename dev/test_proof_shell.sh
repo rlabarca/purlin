@@ -50,7 +50,7 @@ test_basic_proof_output() {
   )
 
   # Verify proof file exists and has correct content
-  local proof_file="$tmpdir/specs/auth/login.proofs-default.json"
+  local proof_file="$tmpdir/specs/auth/login.proofs-unit.json"
   [[ -f "$proof_file" ]] || return 1
 
   local feature id rule status
@@ -75,13 +75,13 @@ test_tier_naming() {
 
   (
     cd "$tmpdir"
-    export PURLIN_PROOF_TIER=slow
+    export PURLIN_PROOF_TIER=integration
     source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-    purlin_proof "login" "PROOF-1" "RULE-1" pass "test_slow"
+    purlin_proof "login" "PROOF-1" "RULE-1" pass "test_integration"
     purlin_proof_finish
   )
 
-  local proof_file="$tmpdir/specs/auth/login.proofs-slow.json"
+  local proof_file="$tmpdir/specs/auth/login.proofs-integration.json"
   [[ -f "$proof_file" ]]
   local rc=$?
   rm -rf "$tmpdir"
@@ -104,7 +104,7 @@ test_proof_file_location() {
   )
 
   # Must be in specs/billing/, not specs/
-  [[ -f "$tmpdir/specs/billing/invoice.proofs-default.json" ]]
+  [[ -f "$tmpdir/specs/billing/invoice.proofs-unit.json" ]]
   local rc=$?
   rm -rf "$tmpdir"
   return $rc
@@ -134,7 +134,7 @@ test_replace_on_rerun() {
     purlin_proof_finish
   )
 
-  local proof_file="$tmpdir/specs/auth/login.proofs-default.json"
+  local proof_file="$tmpdir/specs/auth/login.proofs-unit.json"
   local count status
   count=$(python3 -c "import json; d=json.load(open('$proof_file')); print(len(d['proofs']))")
   status=$(python3 -c "import json; d=json.load(open('$proof_file')); print(d['proofs'][0]['status'])")

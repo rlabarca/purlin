@@ -27,7 +27,7 @@ if [[ ! -d "$SPEC_DIR" ]] || [[ -z "$(find "$SPEC_DIR" -maxdepth 2 -name '*.md' 
   exit 0  # No specs yet
 fi
 
-# --- Run default-tier tests ---
+# --- Run unit-tier tests ---
 FRAMEWORK="auto"
 if [[ -f "$ROOT/.purlin/config.json" ]]; then
   FRAMEWORK=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('test_framework','auto'))" "$ROOT/.purlin/config.json" 2>/dev/null || echo "auto")
@@ -42,10 +42,10 @@ if [[ "$FRAMEWORK" == "auto" ]]; then
   fi
 fi
 
-echo "purlin: running default-tier tests ($FRAMEWORK)..."
+echo "purlin: running unit-tier tests ($FRAMEWORK)..."
 case "$FRAMEWORK" in
-  pytest) (cd "$ROOT" && python3 -m pytest -m "not slow" -q 2>&1) || true ;;
-  jest)   (cd "$ROOT" && npx jest --testPathPattern=default 2>&1) || true ;;
+  pytest) (cd "$ROOT" && python3 -m pytest -m "not integration" -q 2>&1) || true ;;
+  jest)   (cd "$ROOT" && npx jest --testPathPattern=unit 2>&1) || true ;;
   shell)  for t in "$ROOT"/*.test.sh; do [[ -f "$t" ]] && bash "$t" 2>&1; done || true ;;
 esac
 

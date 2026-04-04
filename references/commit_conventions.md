@@ -9,7 +9,7 @@
 | `fix(<name>):` | Fixing a bug |
 | `test(<name>):` | Writing or updating tests |
 | `verify:` | Issuing verification receipts |
-| `invariant(<name>):` | Syncing an invariant from upstream |
+| `anchor(<name>):` | Syncing an anchor from upstream |
 | `chore:` | Project setup, config changes, cleanup |
 | `docs:` | Documentation updates |
 
@@ -21,7 +21,7 @@ feat(auth_login): implement SSO redirect and callback
 test(auth_login): 3/3 rules proved
 fix(auth_login): handle expired tokens in callback
 verify: [Complete:all] features=5 vhash=a1b2c3d4
-invariant(i_design_tokens): sync from upstream (abc1234)
+anchor(design_tokens): sync from upstream (abc1234)
 chore: initialize purlin project
 ```
 

@@ -11,8 +11,7 @@ For **syntax**: `references/formats/spec_format.md`. For **quality**: `reference
 
 ```
 purlin:spec <name>              Create or edit a spec
-purlin:spec <name> --anchor     Create an anchor spec (design_, api_, etc.)
-purlin:spec <name> --invariant  Create an invariant spec (i_<prefix>_<name>)
+purlin:spec <name> --anchor     Delegate to purlin:anchor create
 purlin:spec                     (no name — extract from user's input)
 ```
 
@@ -27,7 +26,7 @@ Accept ANY of these input types without asking which format it is:
 - Slack/email thread describing a problem
 - Existing spec name to update
 - A file path to code that needs a spec
-- **Image** (screenshot, mockup, design comp, whiteboard photo) — create a **design anchor**, not an invariant. Images are locally owned. See "Image-Based Design Anchors" below.
+- **Image** (screenshot, mockup, design comp, whiteboard photo) — create a **design anchor**. Images are locally owned. See "Image-Based Design Anchors" below.
 
 **If a spec name was given**, search `specs/**/<name>.md`:
 - **Found:** Read the spec. Call `sync_status` for coverage. Go to Step 7 (Update Existing Spec).
@@ -52,7 +51,16 @@ If the input is substantial (more than a sentence or two), extract as much as po
 - **Scope** — if code files are mentioned or inferable
 - **Stack** — if technologies are mentioned
 
-Present the **complete draft spec** to the user, followed by the approval block:
+Present the **complete draft spec** to the user, followed by the approval block. Assumed rules should be visually obvious in the draft:
+
+```
+RULE-1: Fetches weather from OpenWeatherMap
+RULE-2: Shows temperature in Fahrenheit
+RULE-3: Cache results for 10 minutes (assumed — user said "don't hit the API too much")
+RULE-4: Show error message on API failure
+```
+
+The PM sees the assumed tag and either confirms, changes the value, or asks a gap question.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -96,9 +104,9 @@ If the input is **vague or minimal** (e.g., "write a spec for password reset" wi
 > - RULE-4: Clicking an expired link shows an error message
 >
 > *Proofs:*
-> - PROOF-1 (RULE-1): POST /reset with registered email; verify 200 and email sent @slow
+> - PROOF-1 (RULE-1): POST /reset with registered email; verify 200 and email sent @integration
 > - PROOF-2 (RULE-2): Create a link, advance clock 24h; verify link returns 410 Gone
-> - PROOF-3 (RULE-3): Click valid link, submit new password; verify password changed @slow
+> - PROOF-3 (RULE-3): Click valid link, submit new password; verify password changed @integration
 > - PROOF-4 (RULE-4): Click expired link; verify error message displayed
 >
 > Now tell me about your feature and I'll draft the spec.
@@ -122,19 +130,29 @@ When extracting rules from unstructured input, look for:
 
 For each extracted rule, generate an observable proof description with concrete inputs and expected outputs. Apply tier tags per `references/spec_quality_guide.md` ("Tier Tags on Proofs").
 
+**Assumption tagging (mandatory):** After extracting rules, review each one. If the rule contains a specific number, threshold, algorithm, or constraint that the user did NOT explicitly state, add the `(assumed)` tag with context:
+
+- User said "fast" → `RULE-3: Under 500ms (assumed — user said "fast")`
+- User said "secure" → `RULE-4: bcrypt hashing (assumed — user said "secure")`
+- User said "handles errors" → `RULE-5: Returns 500 with error body (assumed — user said "handles errors")`
+
+If the user WAS explicit, no tag:
+- User said "must return in under 200ms" → `RULE-3: Under 200ms` (no tag)
+- User said "use argon2" → `RULE-4: argon2 hashing` (no tag)
+
 ## Step 6 — Enhance with Metadata
 
 After the core spec (What it does, Rules, Proof) is solid, add metadata:
 
 1. **Scan for matching anchors** in `specs/` and suggest `> Requires:` based on scope overlap:
-   - For each anchor (specs with `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, or `prodbrief_` prefix), read its `> Scope:` patterns
+   - For each anchor (specs in `specs/_anchors/`), read its `> Scope:` patterns
    - If the feature's `> Scope:` files overlap with the anchor's scope, suggest requiring it
-   - Also note any global invariants (these are auto-applied and don't need `> Requires:`)
+   - Also note any global anchors (these are auto-applied and don't need `> Requires:`)
    - Present suggestions:
      ```
      Suggested > Requires: based on file overlap:
        api_rest_conventions — your Scope overlaps with src/api/
-       i_security_no_eval — global invariant (auto-applied, no action needed)
+       security_no_eval — global anchor (auto-applied, no action needed)
      Add api_rest_conventions to > Requires:? [y/n]
      ```
 2. If the user mentioned code files, populate `> Scope:` (verify paths exist)
@@ -172,9 +190,7 @@ Before committing, verify:
 - All `> Scope:` file paths exist on disk
 - **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
-```
-git commit -m "spec(<name>): <description of change>"
-```
+Commit per `references/commit_conventions.md`: `spec(<name>): <description of change>`
 
 ## Step 7 — Update Existing Spec
 
@@ -205,24 +221,24 @@ Compare the current spec against the code changes. Categorize each finding:
 Show the user EXACTLY what will change and what will stay:
 
 ```
-Spec: specs/hooks/gate_hook.md (8 rules currently)
+Spec: specs/mcp/sync_status.md (15 rules currently)
 
 KEEPING (unchanged):
-  RULE-1: The hook triggers on Write, Edit, and NotebookEdit ✓
-  RULE-2: Files not matching specs/invariants/i* pass through ✓
-  RULE-3: When no bypass lock exists, writes are blocked ✓
+  RULE-1: sync_status tool returns valid report ✓
+  RULE-2: Proof files are parsed correctly ✓
+  RULE-3: Coverage is computed for all features ✓
   ...
 
 ADDING:
-  RULE-9 (new): Agent must re-read proof description after fixing a failing test
-    Reason: New guardrail added to build skill
-    Proposed proof: PROOF-9 (RULE-9): Fix a test, verify build skill re-reads the original proof description from the spec
+  RULE-23 (new): sync_status scans specs/_anchors/ for anchor specs
+    Reason: Anchor directory support added
+    Proposed proof: PROOF-23 (RULE-23): Create anchor in specs/_anchors/, run sync_status, verify anchor rules appear
 
 UPDATING:
-  RULE-5 (changed): Error message includes specific corrective action
-    Was: "Error message is written to stderr"
-    Now: "Error message is written to stderr AND includes the exact purlin:invariant sync command"
-    Reason: gate.sh error messages were enhanced
+  RULE-20 (changed): Global anchors auto-apply to all features
+    Was: "Global specs with > Global: true auto-apply"
+    Now: "Anchor specs in specs/_anchors/ with > Global: true auto-apply to all non-anchor features"
+    Reason: Anchor unification
 
 REMOVING:
   (none)
@@ -254,16 +270,14 @@ Waiting for your response...
 5. For each new or updated rule, add or update the corresponding PROOF-N line
 6. Apply tier tags to new proofs per `references/spec_quality_guide.md`
 7. Preserve any existing `@manual` stamps — do NOT remove manual proof stamps unless the rule they reference was removed
-8. Update `> Scope:` if new files were added to the feature
-9. Update `> Stack:` if new dependencies were introduced
+8. Preserve rule tags on unchanged rules — `(assumed)`, `(confirmed)`, `(deferred)` stay as-is
+9. If updating a rule that had `(confirmed)`, change the tag to `(assumed)` since the new value hasn't been confirmed yet
+10. Update `> Scope:` if new files were added to the feature
+11. Update `> Stack:` if new dependencies were introduced
 
 ### 7e — Validate and commit
 
-Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags.
-
-```
-git commit -m "spec(<name>): update rules for <description>"
-```
+Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags. Commit per `references/commit_conventions.md`: `spec(<name>): update rules for <description>`
 
 ### Key principles for updates
 
@@ -277,41 +291,31 @@ git commit -m "spec(<name>): update rules for <description>"
 
 ## Anchor Specs
 
-Anchors are regular specs with type-prefixed names. Use `--anchor` flag.
-Type prefixes: `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, `prodbrief_`.
+When `--anchor` is specified, delegate to `purlin:anchor create` with the same arguments. Do not create the anchor directly in this skill.
+
 See `references/formats/anchor_format.md` for format, `references/spec_quality_guide.md` for when to create anchors and FORBIDDEN pattern guidance.
 
 ### Image-Based Design Anchors
 
 When the user provides an image (screenshot, mockup, design comp, whiteboard photo):
 
-1. **This is an anchor, NOT an invariant.** Images are locally owned. Invariants require an external sync source (Figma URL, git repo). If the user says "make an invariant from this image," explain: "Images are locally owned — they become design anchors. Invariants sync from external sources like Figma or git repos. I'll create a design anchor instead."
+1. Save the image to `specs/_anchors/screenshots/<name>.png` (create the screenshots directory if needed).
 
-2. Save the image to `specs/<category>/screenshots/<name>.png` (create the screenshots directory if needed).
-
-3. Compute and store the image hash in the spec metadata:
+2. Compute and store the image hash in the spec metadata:
    ```
-   > Visual-Reference: ./specs/<category>/screenshots/<name>.png
+   > Visual-Reference: ./specs/_anchors/screenshots/<name>.png
    > Visual-Hash: sha256:a1b2c3d4e5f6...
    ```
    This enables staleness detection — if the image is later replaced, `sync_status` will warn that the anchor may need review.
 
-4. Create an anchor spec with:
+3. Create an anchor spec with:
    - `> Visual-Reference:` and `> Visual-Hash:` as above
    - `> Scope:` pointing to the code files that will implement the design
    - One visual match rule: `RULE-1: Implementation must visually match the reference image`
-   - One screenshot comparison proof tagged `@e2e`
-   - If the user describes behavioral requirements alongside the image, add those as additional rules (these ARE locally owned, unlike invariant annotations)
+   - One screenshot comparison proof (using the project's test framework) tagged `@e2e`
+   - If the user describes behavioral requirements alongside the image, add those as additional rules
 
-5. Commit the image AND the spec together.
-
-## Invariant Specs
-
-Invariants require an external source — Figma URL or git repo. They live in `specs/_invariants/i_<prefix>_<name>.md`. Use `--invariant` flag.
-
-**Invariants cannot be created from local images.** If the user provides an image and asks for an invariant, redirect to a design anchor (see above). If they want an invariant, they need to upload the image to Figma or a git repo first and provide the URL.
-
-See `references/formats/invariant_format.md` for the invariant format with `> Source:` and `> Pinned:` metadata.
+4. Commit the image AND the spec together.
 
 ---
 
@@ -321,4 +325,4 @@ See `references/formats/invariant_format.md` for the invariant format with `> So
 - Extract everything possible from the input before asking questions.
 - Questions are specific and gap-filling, not generic.
 - Show, don't tell. Present the draft spec, then refine — don't ask the user to write rules.
-- Progressive disclosure: core spec first, metadata second, anchors/invariants third.
+- Progressive disclosure: core spec first, metadata second, anchors third.

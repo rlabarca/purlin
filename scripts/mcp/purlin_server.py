@@ -29,6 +29,9 @@ from config_engine import find_project_root, resolve_config, update_config
 # ---------------------------------------------------------------------------
 
 _RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
+_DEFERRED_TAG_RE = re.compile(r'\(deferred\)\s*$', re.IGNORECASE)
+_ASSUMED_TAG_RE = re.compile(r'\(assumed\s*—\s*.+?\)\s*$', re.IGNORECASE)
+_CONFIRMED_TAG_RE = re.compile(r'\(confirmed\)\s*$', re.IGNORECASE)
 _REQUIRES_RE = re.compile(r'^>\s*Requires:\s*(.+)', re.MULTILINE)
 _SCOPE_RE = re.compile(r'^>\s*Scope:\s*(.+)', re.MULTILINE)
 _MANUAL_STAMPED_RE = re.compile(
@@ -39,8 +42,11 @@ _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)', re.MULTILINE
 )
 _STRUCTURAL_PROOF_RE = re.compile(
-    r'grep|verify\s.*exist|verify\s.*present|verify\s.*section'
-    r'|verify\s.*field|verify\s.*appear|verify\s.*contain',
+    r'\bgrep\b'
+    r'|(?:file|directory|folder)\s+exists'
+    r'|(?:section|field|heading|key|entry)\s+(?:exists|is\s+present)'
+    r'|contains?\s+(?:string|line|entry|section|field|heading)'
+    r'|verify\s+(?:file|section|field|heading|key)\s+(?:exists|present|appears)',
     re.IGNORECASE,
 )
 _BEHAVIORAL_PROOF_RE = re.compile(
@@ -52,10 +58,6 @@ _BEHAVIORAL_PROOF_RE = re.compile(
 _GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
 _VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
 _VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
-_ANCHOR_PREFIXES = (
-    'design_', 'api_', 'security_', 'brand_',
-    'platform_', 'schema_', 'legal_', 'prodbrief_',
-)
 
 
 def _scan_specs(project_root):
@@ -77,18 +79,26 @@ def _scan_specs(project_root):
         with open(spec_path, 'r') as f:
             content = f.read()
 
-        # Determine if this is an invariant
-        is_invariant = '/_invariants/' in rel_path
+        # Determine if this is an anchor
+        is_anchor = '/_anchors/' in rel_path or content.lstrip().startswith('# Anchor:')
 
-        # Detect global invariants (> Global: true)
-        is_global = is_invariant and bool(_GLOBAL_RE.search(content))
+        # Detect global anchors (> Global: true)
+        is_global = is_anchor and bool(_GLOBAL_RE.search(content))
 
         # Extract rules from ## Rules section
         rules = {}
+        deferred_rules = set()
+        assumed_rules = set()
         rules_section = _extract_section(content, '## Rules')
         if rules_section is not None:
             for m in _RULE_RE.finditer(rules_section):
-                rules[m.group(1)] = m.group(2).strip()
+                rule_id = m.group(1)
+                rule_desc = m.group(2).strip()
+                rules[rule_id] = rule_desc
+                if _DEFERRED_TAG_RE.search(rule_desc):
+                    deferred_rules.add(rule_id)
+                elif _ASSUMED_TAG_RE.search(rule_desc):
+                    assumed_rules.add(rule_id)
             # Check for unnumbered rule lines
             unnumbered = []
             for line in rules_section.strip().splitlines():
@@ -151,9 +161,11 @@ def _scan_specs(project_root):
         features[feature_name] = {
             'path': rel_path,
             'rules': rules,
+            'deferred_rules': deferred_rules,
+            'assumed_rules': assumed_rules,
             'requires': requires,
             'scope': scope,
-            'is_invariant': is_invariant,
+            'is_anchor': is_anchor,
             'is_global': is_global,
             'unnumbered_lines': unnumbered,
             'has_rules_section': rules_section is not None,
@@ -177,15 +189,50 @@ def _extract_section(content, heading):
 
 
 def _read_proofs(project_root):
-    """Read all proof JSON files and return dict of feature -> list of proofs."""
+    """Read all proof JSON files and return dict of feature -> list of proofs.
+
+    When the same (feature, tier) proof file exists both at specs/ root and in
+    a subdirectory, prefer the subdirectory version (adjacent to its spec).
+    """
     spec_dir = os.path.join(project_root, 'specs')
     if not os.path.isdir(spec_dir):
         return {}
 
-    all_proofs = {}
+    # Build spec directory map: feature_name -> directory containing its .md
+    spec_dirs = {}
+    for spec_path in glob.glob(os.path.join(spec_dir, '**', '*.md'), recursive=True):
+        stem = os.path.splitext(os.path.basename(spec_path))[0]
+        spec_dirs[stem] = os.path.dirname(spec_path)
+
+    # Collect all proof files, grouped by (feature_stem, tier)
+    proof_files = {}  # (feature_stem, tier) -> [paths]
+    proof_re = re.compile(r'^(.+)\.proofs-(.+)\.json$')
     for proof_path in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
+        basename = os.path.basename(proof_path)
+        m = proof_re.match(basename)
+        if not m:
+            continue
+        feature_stem = m.group(1)
+        tier = m.group(2)
+        proof_files.setdefault((feature_stem, tier), []).append(proof_path)
+
+    # For each (feature, tier), pick the best proof file
+    all_proofs = {}
+    for (feature_stem, tier), paths in proof_files.items():
+        if len(paths) == 1:
+            chosen = paths[0]
+        else:
+            # Prefer the path in the same directory as the spec
+            spec_directory = spec_dirs.get(feature_stem)
+            subdir_paths = [p for p in paths if os.path.dirname(p) == spec_directory] if spec_directory else []
+            if subdir_paths:
+                chosen = subdir_paths[0]
+            else:
+                # No spec match — pick most recently modified
+                chosen = max(paths, key=os.path.getmtime)
+
         try:
-            with open(proof_path, 'r') as f:
+            with open(chosen, 'r') as f:
                 data = json.load(f)
         except (json.JSONDecodeError, IOError, OSError):
             continue
@@ -253,6 +300,20 @@ def _is_structural_only(proof_descriptions):
     return True
 
 
+def _read_receipt(project_root, feature_name):
+    """Read a receipt JSON for a feature, or return None if not found."""
+    spec_dir = os.path.join(project_root, 'specs')
+    if not os.path.isdir(spec_dir):
+        return None
+    for path in glob.glob(os.path.join(spec_dir, '**', f'{feature_name}.receipt.json'), recursive=True):
+        try:
+            with open(path, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            continue
+    return None
+
+
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     features = _scan_specs(project_root)
@@ -263,25 +324,25 @@ def sync_status(project_root, role=None):
 
     lines = []
 
-    # Separate invariants from regular features
-    invariants = {k: v for k, v in features.items() if v['is_invariant']}
-    regular = {k: v for k, v in features.items() if not v['is_invariant']}
+    # Separate anchors from regular features
+    anchors = {k: v for k, v in features.items() if v['is_anchor']}
+    regular = {k: v for k, v in features.items() if not v['is_anchor']}
 
-    # Identify global invariants (auto-applied to all features)
-    global_invariants = {k: v for k, v in invariants.items() if v.get('is_global')}
+    # Identify global anchors (auto-applied to all features)
+    global_anchors = {k: v for k, v in anchors.items() if v.get('is_global')}
 
     # Process regular features
     for name in sorted(regular.keys()):
         info = regular[name]
         feature_lines = _report_feature(
-            name, info, features, all_proofs, project_root, role, global_invariants
+            name, info, features, all_proofs, project_root, role, global_anchors
         )
         lines.extend(feature_lines)
         lines.append('')
 
-    # Process invariants
-    for name in sorted(invariants.keys()):
-        info = invariants[name]
+    # Process anchors
+    for name in sorted(anchors.keys()):
+        info = anchors[name]
         rule_count = len(info['rules'])
         if info.get('is_global'):
             lines.append(f"{name}: {rule_count} rules (global — auto-applied to all features)")
@@ -303,32 +364,40 @@ def _scopes_overlap(scope_a, scope_b):
     return False
 
 
-def _build_coverage_rules(name, info, all_features, global_invariants=None):
+def _build_coverage_rules(name, info, all_features, global_anchors=None):
     """Build combined rule entries for a feature (own + required + global).
 
-    Returns list of (key, label, source_feature) tuples.
+    Returns (entries, unresolved_requires) where entries is a list of
+    (key, label, source_feature, is_deferred) tuples and unresolved_requires
+    is a list of names from > Requires: that don't match any known spec.
     """
-    if global_invariants is None:
-        global_invariants = {}
+    if global_anchors is None:
+        global_anchors = {}
 
     entries = []
+    unresolved_requires = []
+    deferred = info.get('deferred_rules', set())
     for rule_id in sorted(info['rules'].keys()):
-        entries.append((rule_id, 'own', name))
+        entries.append((rule_id, 'own', name, rule_id in deferred))
 
     for req_name in info.get('requires', []):
         req_info = all_features.get(req_name)
         if req_info:
+            req_deferred = req_info.get('deferred_rules', set())
             for rule_id in sorted(req_info['rules'].keys()):
-                entries.append((f"{req_name}/{rule_id}", 'required', req_name))
+                entries.append((f"{req_name}/{rule_id}", 'required', req_name, rule_id in req_deferred))
+        else:
+            unresolved_requires.append(req_name)
 
-    for inv_name in sorted(global_invariants.keys()):
-        if inv_name in info.get('requires', []):
+    for anchor_name in sorted(global_anchors.keys()):
+        if anchor_name in info.get('requires', []):
             continue
-        inv_info = global_invariants[inv_name]
-        for rule_id in sorted(inv_info['rules'].keys()):
-            entries.append((f"{inv_name}/{rule_id}", 'global', inv_name))
+        anchor_info = global_anchors[anchor_name]
+        anchor_deferred = anchor_info.get('deferred_rules', set())
+        for rule_id in sorted(anchor_info['rules'].keys()):
+            entries.append((f"{anchor_name}/{rule_id}", 'global', anchor_name, rule_id in anchor_deferred))
 
-    return entries
+    return entries, unresolved_requires
 
 
 def _build_proof_lookup(name, rule_entries, all_proofs):
@@ -336,7 +405,7 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
 
     Returns dict of rule_key -> best proof entry.
     """
-    all_rule_keys = {key for key, _, _ in rule_entries}
+    all_rule_keys = {key for key, _, _, _ in rule_entries}
 
     proof_by_rule = {}
     # Own proofs
@@ -346,7 +415,7 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
             proof_by_rule[rule] = p
 
     # Required/global proofs — filed under the source feature's name
-    source_features = {src for _, label, src in rule_entries if label != 'own'}
+    source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
             rule = p.get('rule', '')
@@ -360,10 +429,10 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
 
 def _collect_relevant_proofs(name, rule_entries, all_proofs):
     """Collect all proof entries relevant to the combined rule set (for vhash)."""
-    all_rule_keys = {key for key, _, _ in rule_entries}
+    all_rule_keys = {key for key, _, _, _ in rule_entries}
 
     proofs = list(all_proofs.get(name, []))
-    source_features = {src for _, label, src in rule_entries if label != 'own'}
+    source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
             key = f"{src_name}/{p.get('rule', '')}"
@@ -373,20 +442,26 @@ def _collect_relevant_proofs(name, rule_entries, all_proofs):
 
 
 def _report_feature(name, info, all_features, all_proofs, project_root, role,
-                    global_invariants=None):
+                    global_anchors=None):
     """Generate report lines for a single feature."""
     lines = []
-    if global_invariants is None:
-        global_invariants = {}
+    if global_anchors is None:
+        global_anchors = {}
 
     # Build combined rule set (own + required + global)
-    rule_entries = _build_coverage_rules(name, info, all_features, global_invariants)
+    rule_entries, unresolved_requires = _build_coverage_rules(name, info, all_features, global_anchors)
     proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
     all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
 
     total = len(rule_entries)
-    proved = sum(1 for key, _, _ in rule_entries
+    deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
+    active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+    active_total = len(active_entries)
+    proved = sum(1 for key, _, _ in active_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
+
+    # Count assumed rules (own only)
+    assumed_count = len(info.get('assumed_rules', set()))
 
     # Format warnings (structural issues with the spec itself)
     warnings = []
@@ -410,14 +485,19 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     if total == 0:
         lines.append(f"{name}: no rules defined")
         lines.extend(warnings)
+        for missing_name in unresolved_requires:
+            lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
         if visual_hash_changed:
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
         lines.append(f"  \u2192 Run: purlin:spec {name}")
         return lines
 
-    # Header — all proved (no structural warnings)
-    if proved == total and not warnings:
+    # Build deferred suffix for header
+    deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
+
+    # Header — all active rules proved (no structural warnings)
+    if proved == active_total and not warnings:
         structural_only = _is_structural_only(info.get('proof_descriptions', []))
         if visual_hash_changed:
             lines.append(f"{name}: READY but visual reference changed")
@@ -425,29 +505,74 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             lines.append(f"{name}: READY (structural only)")
         else:
             lines.append(f"{name}: READY")
-        lines.append(f"  {proved}/{total} rules proved \u2713")
-        all_rules_dict = {key: True for key, _, _ in rule_entries}
+        lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
+        all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         lines.append(f"  vhash={vhash}")
+        # Check receipt staleness
+        receipt = _read_receipt(project_root, name)
+        if receipt and receipt.get('vhash') != vhash:
+            receipt_rules = set(receipt.get('rules', []))
+            current_rules = set(all_rules_dict.keys())
+            added_rules = current_rules - receipt_rules
+            removed_rules = receipt_rules - current_rules
+            # Classify: anchor-sourced rules contain '/'
+            anchor_added = {}
+            own_added = []
+            for r in sorted(added_rules):
+                if '/' in r:
+                    src = r.split('/')[0]
+                    anchor_added.setdefault(src, []).append(r.split('/')[1])
+                else:
+                    own_added.append(r)
+            lines.append("  \u26a0 Receipt stale (vhash mismatch)")
+            if anchor_added:
+                for src, rules in sorted(anchor_added.items()):
+                    lines.append(f"  \u26a0 Required anchor \"{src}\" changed: added {', '.join(rules)}")
+            if own_added:
+                lines.append(f"  \u26a0 Own rules changed since last verification")
+            if removed_rules:
+                lines.append(f"  \u26a0 Rules removed since last verification: {', '.join(sorted(removed_rules))}")
+            if not added_rules and not removed_rules:
+                lines.append("  \u26a0 Proof statuses changed since last verification")
+            lines.append(f"  \u2192 Run: purlin:verify to re-issue receipt")
         if visual_hash_changed:
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
         elif structural_only:
-            lines.append(f"  \u2192 Note: all {total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
+            lines.append(f"  \u2192 Note: all {active_total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
             lines.append("  \u2192 Consider: create E2E proofs in specs/integration/ that test actual behavior")
         else:
             lines.append("  \u2192 No action needed.")
-        _append_scope_suggestions(lines, name, info, all_features, global_invariants)
+        if assumed_count:
+            lines.append(f"  \u26a0 {assumed_count} rule{'s' if assumed_count != 1 else ''} ha{'ve' if assumed_count != 1 else 's'} (assumed) values \u2014 PM should confirm")
+        for missing_name in unresolved_requires:
+            lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
+        if manual_proofs and not info.get('scope'):
+            lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected. Add > Scope: to enable stale detection.")
+        _append_scope_suggestions(lines, name, info, all_features, global_anchors)
         return lines
 
-    lines.append(f"{name}: {proved}/{total} rules proved")
+    lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
 
     # Detail each rule with label
-    for key, label, src_feature in rule_entries:
+    for key, label, src_feature, is_deferred in rule_entries:
+        # Deferred rules get their own status line
+        if is_deferred:
+            rule_desc = info['rules'].get(key, '') if label == 'own' else ''
+            if not rule_desc and '/' in key:
+                src_info = all_features.get(src_feature, {})
+                bare_rule = key.split('/', 1)[1]
+                rule_desc = src_info.get('rules', {}).get(bare_rule, '')
+            # Strip the (deferred) tag from the description for display
+            short_desc = _DEFERRED_TAG_RE.sub('', rule_desc).strip()
+            lines.append(f"  {key}: DEFERRED ({short_desc})")
+            continue
+
         proof = proof_by_rule.get(key)
         manual = None
 
@@ -463,8 +588,8 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         elif proof and proof.get('status') == 'fail':
             test_name = proof.get('test_name', '?')
             lines.append(f"  {key}: FAIL ({label})")
-            lines.append(f"  → Fix: {test_name} is failing. Check the test or fix the code.")
-            lines.append(f"  → Run: purlin:unit-test")
+            lines.append(f"  \u2192 Fix: {test_name} is failing. Check the test or fix the code.")
+            lines.append(f"  \u2192 Run: purlin:unit-test")
         elif manual:
             mp_id, mp_info = manual
             if mp_info.get('stamped'):
@@ -473,12 +598,12 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
                 )
                 if stale:
                     lines.append(f"  {key}: MANUAL PROOF STALE ({mp_id}, verified {mp_info['date']}) ({label})")
-                    lines.append(f"  → Re-verify and run: purlin:verify --manual {name} {mp_id}")
+                    lines.append(f"  \u2192 Re-verify and run: purlin:verify --manual {name} {mp_id}")
                 else:
                     lines.append(f"  {key}: PASS ({mp_id}, manual, verified {mp_info['date']}) ({label})")
             else:
                 lines.append(f"  {key}: MANUAL PROOF NEEDED ({label})")
-                lines.append(f"  → Verify manually, then run: purlin:verify --manual {name} {mp_id}")
+                lines.append(f"  \u2192 Verify manually, then run: purlin:verify --manual {name} {mp_id}")
         else:
             lines.append(f"  {key}: NO PROOF ({label})")
             # Determine proof marker feature name and rule id
@@ -488,39 +613,46 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             else:
                 marker_feature = name
                 rule_id = key
-            lines.append(f'  → Fix: write a test with @pytest.mark.proof("{marker_feature}", "PROOF-N", "{rule_id}")')
+            lines.append(f'  \u2192 Fix: write a test with @pytest.mark.proof("{marker_feature}", "PROOF-N", "{rule_id}")')
             src_info = all_features.get(src_feature, {})
-            if src_info.get('is_invariant'):
-                lines.append(f"  Note: read specs/_invariants/{src_feature}.md for exact assertion values before writing tests")
-            lines.append(f"  → Run: purlin:unit-test")
+            if src_info.get('is_anchor'):
+                lines.append(f"  Note: read specs/_anchors/{src_feature}.md for exact assertion values before writing tests")
+            lines.append(f"  \u2192 Run: purlin:unit-test")
 
     # If no proof files at all
     feature_proofs = all_proofs.get(name, [])
     if not feature_proofs and not manual_proofs and not any(
-        proof_by_rule.get(key) for key, _, _ in rule_entries
+        proof_by_rule.get(key) for key, _, _ in active_entries
     ):
-        lines.append(f"  → Run: purlin:unit-test")
+        lines.append(f"  \u2192 Run: purlin:unit-test")
 
-    _append_scope_suggestions(lines, name, info, all_features, global_invariants)
+    if assumed_count:
+        lines.append(f"  \u26a0 {assumed_count} rule{'s' if assumed_count != 1 else ''} ha{'ve' if assumed_count != 1 else 's'} (assumed) values \u2014 PM should confirm")
+
+    for missing_name in unresolved_requires:
+        lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
+
+    if manual_proofs and not info.get('scope'):
+        lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected. Add > Scope: to enable stale detection.")
+
+    _append_scope_suggestions(lines, name, info, all_features, global_anchors)
     return lines
 
 
-def _append_scope_suggestions(lines, name, info, all_features, global_invariants):
+def _append_scope_suggestions(lines, name, info, all_features, global_anchors):
     """Append scope-overlap anchor suggestions to report lines."""
     feature_scope = info.get('scope', [])
     if not feature_scope:
         return
 
     required_names = set(info.get('requires', []))
-    required_names.update(global_invariants.keys())
+    required_names.update(global_anchors.keys())
 
     for anchor_name in sorted(all_features.keys()):
         if anchor_name == name or anchor_name in required_names:
             continue
         anchor_info = all_features[anchor_name]
-        if anchor_info['is_invariant']:
-            continue
-        if not any(anchor_name.startswith(p) for p in _ANCHOR_PREFIXES):
+        if not anchor_info.get('is_anchor'):
             continue
         anchor_scope = anchor_info.get('scope', [])
         if not anchor_scope:
@@ -543,6 +675,11 @@ _NO_IMPACT_PATTERNS = (
 )
 
 _TEST_PATTERNS = ('.proofs-', 'test_', '_test.', '.test.', 'tests/', 'dev/test_')
+
+# Directories containing behavioral definitions even when files are .md.
+# Files here must NOT be caught by the .md catch-all in NO_IMPACT.
+# See references/drift_criteria.md for rationale.
+_BEHAVIORAL_MD_PREFIXES = ('skills/', 'agents/', '.claude/agents/')
 
 
 def _resolve_since_anchor(project_root, since_arg=None):
@@ -587,8 +724,40 @@ def _resolve_since_anchor(project_root, since_arg=None):
         relative = _run_git(['log', '-1', '--format=%ar', tag])
         return tag, f'{tag} ({relative})'
 
-    # Fallback
-    return 'HEAD~20', 'last 20 commits (no verification or tag found)'
+    # Smart fallback: check when Purlin was initialized
+    init_sha = _run_git(['log', '--diff-filter=A', '--format=%H',
+                          '--follow', '--', '.purlin/config.json'])
+    # Take the earliest (last line) if multiple results
+    if init_sha:
+        init_sha = init_sha.strip().splitlines()[-1]
+        count_str = _run_git(['rev-list', '--count', f'{init_sha}..HEAD'])
+        count = int(count_str) if count_str.isdigit() else 0
+        if count < 30:
+            return init_sha, f'since Purlin init ({count} commits)'
+        # Too many commits — return recommendation instead of changelog
+        return None, json.dumps({
+            'recommendation': 'spec-from-code',
+            'reason': (f'No verification history found and {count} commits exist '
+                       f'since Purlin was initialized. Drift tracks changes between '
+                       f'verifications. For initial spec coverage of an existing '
+                       f'codebase, use purlin:spec-from-code.'),
+            'commits_since_init': count,
+            'since_init_commit': init_sha,
+        })
+
+    # No .purlin in git history — count all commits on current branch
+    count_str = _run_git(['rev-list', '--count', 'HEAD'])
+    count = int(count_str) if count_str.isdigit() else 0
+    if count < 30:
+        return 'HEAD~' + str(min(count, 20)), f'last {min(count, 20)} commits (no verification or tag found)'
+    return None, json.dumps({
+        'recommendation': 'spec-from-code',
+        'reason': (f'No verification history found and {count} commits exist. '
+                   f'Drift tracks changes between verifications. For initial spec '
+                   f'coverage of an existing codebase, use purlin:spec-from-code.'),
+        'commits_since_init': count,
+        'since_init_commit': None,
+    })
 
 
 def _get_diff_stat(project_root, since_ref, filepath):
@@ -643,6 +812,10 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
 def changelog(project_root, since=None, role=None):
     """Generate structured changelog data as JSON."""
     since_ref, since_desc = _resolve_since_anchor(project_root, since)
+
+    # If ref is None, _resolve_since_anchor returned a recommendation
+    if since_ref is None:
+        return since_desc  # already JSON-encoded recommendation
 
     # Gather commits
     try:
@@ -712,8 +885,13 @@ def changelog(project_root, since=None, role=None):
             })
             continue
 
-        # Check scope map → CHANGED_BEHAVIOR
+        # Check scope map → CHANGED_BEHAVIOR (exact match then prefix match)
         matched_specs = scope_to_specs.get(filepath, [])
+        if not matched_specs:
+            for scope_path, specs in scope_to_specs.items():
+                if scope_path.endswith('/') and filepath.startswith(scope_path):
+                    matched_specs = specs
+                    break
         if matched_specs:
             file_entries.append({
                 'path': filepath,
@@ -723,9 +901,12 @@ def changelog(project_root, since=None, role=None):
             })
             continue
 
-        # Docs/config/assets → NO_IMPACT
-        if any(filepath.startswith(p) or filepath == p or filepath.endswith(p)
-               for p in _NO_IMPACT_PATTERNS) or filepath.endswith('.md'):
+        # Docs/config/assets → NO_IMPACT (but not behavioral .md dirs)
+        is_behavioral_md = any(filepath.startswith(d) for d in _BEHAVIORAL_MD_PREFIXES)
+        is_no_impact = any(filepath.startswith(p) or filepath == p or filepath.endswith(p)
+                           for p in _NO_IMPACT_PATTERNS) and not is_behavioral_md
+        is_generic_md = filepath.endswith('.md') and not is_behavioral_md
+        if is_no_impact or is_generic_md:
             file_entries.append({
                 'path': filepath,
                 'category': 'NO_IMPACT',
@@ -747,35 +928,88 @@ def changelog(project_root, since=None, role=None):
 
     # Collect proof status per feature (including required + global rules)
     all_proofs = _read_proofs(project_root)
-    global_invariants = {
+    global_anchors = {
         k: v for k, v in features.items()
-        if v.get('is_invariant') and v.get('is_global')
+        if v.get('is_anchor') and v.get('is_global')
     }
     proof_status = {}
     for name, info in features.items():
-        if info['is_invariant']:
+        if info['is_anchor']:
             continue
-        rule_entries = _build_coverage_rules(name, info, features, global_invariants)
+        rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
         total = len(rule_entries)
         if total == 0:
             continue
+        deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
+        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        active_total = len(active_entries)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
-        proved = sum(1 for key, _, _ in rule_entries
+        proved = sum(1 for key, _, _ in active_entries
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
-        failing = [key for key, _, _ in rule_entries
+        failing = [key for key, _, _ in active_entries
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
-        status = 'READY' if proved == total else 'FAILING' if failing else 'partial'
+        status = 'READY' if proved == active_total else 'FAILING' if failing else 'partial'
         structural_only = (
             status == 'READY'
             and _is_structural_only(info.get('proof_descriptions', []))
         )
-        proof_status[name] = {
+        assumed_count = len(info.get('assumed_rules', set()))
+        entry = {
             'proved': proved,
-            'total': total,
+            'total': active_total,
             'status': status,
             'failing_rules': failing,
             'structural_only': structural_only,
         }
+        if deferred_count:
+            entry['deferred'] = deferred_count
+        if assumed_count:
+            entry['assumed'] = assumed_count
+        proof_status[name] = entry
+
+    # Annotate file entries with structural drift flags
+    for entry in file_entries:
+        spec_name = entry.get('spec')
+        if spec_name and entry['category'] == 'CHANGED_BEHAVIOR':
+            ps = proof_status.get(spec_name, {})
+            if ps.get('structural_only'):
+                entry['structural_drift'] = True
+
+    # Build drift_flags summary (deduplicated by spec name)
+    seen_drift = set()
+    drift_flags = []
+    for entry in file_entries:
+        if entry.get('structural_drift') and entry['spec'] not in seen_drift:
+            seen_drift.add(entry['spec'])
+            drift_flags.append({
+                'spec': entry['spec'],
+                'reason': 'structural_only_with_code_change',
+                'files': [e['path'] for e in file_entries
+                          if e.get('spec') == entry['spec']
+                          and e.get('structural_drift')],
+            })
+
+    # Detect broken scopes — spec scope paths that no longer exist on disk
+    broken_scopes = []
+    for name, info in features.items():
+        missing_paths = []
+        existing_paths = []
+        for scope_path in info.get('scope', []):
+            full = os.path.join(project_root, scope_path)
+            if scope_path.endswith('/'):
+                exists = os.path.isdir(full.rstrip('/'))
+            else:
+                exists = os.path.exists(full)
+            if exists:
+                existing_paths.append(scope_path)
+            else:
+                missing_paths.append(scope_path)
+        if missing_paths:
+            broken_scopes.append({
+                'spec': name,
+                'missing_paths': missing_paths,
+                'existing_paths': existing_paths,
+            })
 
     result = {
         'since': since_desc,
@@ -783,6 +1017,8 @@ def changelog(project_root, since=None, role=None):
         'files': file_entries,
         'spec_changes': spec_changes,
         'proof_status': proof_status,
+        'drift_flags': drift_flags,
+        'broken_scopes': broken_scopes,
     }
 
     return json.dumps(result, indent=2)
@@ -865,7 +1101,7 @@ TOOLS = [
     },
     {
         "name": "changelog",
-        "description": "Structured changelog since last verification. Returns JSON with commits, categorized files, spec changes, and proof status for the purlin:changelog skill to interpret.",
+        "description": "Structured changelog since last verification. Returns JSON with commits, categorized files, spec changes, and proof status for the purlin:drift skill to interpret.",
         "inputSchema": {
             "type": "object",
             "properties": {

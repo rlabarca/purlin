@@ -16,7 +16,7 @@ purlin:spec-from-code --resume       Resume from last incomplete phase
 
 Before starting, check for `.purlin/cache/sfc_state.json`.
 
-- If it exists: read it and resume from the last incomplete phase. Skip phases whose `status` is `"complete"`. Do not re-ask questions whose answers are preserved in prior artifacts (`sfc_inventory.md`, `sfc_taxonomy.md`).
+- If it exists: read it and verify it has the expected shape (`{"phases": [{"name": "...", "status": "complete"|"pending"}], ...}`). If malformed or missing required fields, warn the user and offer to start fresh. If valid, resume from the last incomplete phase. Skip phases whose `status` is `"complete"`. Do not re-ask questions whose answers are preserved in prior artifacts (`sfc_inventory.md`, `sfc_taxonomy.md`).
 - If it does not exist: begin from Phase 1.
 
 ---
@@ -41,7 +41,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    - **Agent A (Structure):** "Scan the following directories for: directory tree structure, entry points (main/index files), route definitions, CLI entry points, config files, and file types present. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary."
 
-   - **Agent B (Domain):** "Analyze the following directories for: frameworks used, domain concepts and terminology, tech stack (languages, key dependencies from package manifests), module boundaries, and public API surfaces. Also identify test characteristics for each module: does it require database setup, network calls, external APIs, browser automation, or manual human judgment? Flag modules that would need slow, e2e, or manual test tiers. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary."
+   - **Agent B (Domain):** "Analyze the following directories for: frameworks used, domain concepts and terminology, tech stack (languages, key dependencies from package manifests), module boundaries, and public API surfaces. Also identify test characteristics for each module: does it require database setup, network calls, external APIs, browser automation, or manual human judgment? Flag modules that would need integration, e2e, or manual test tiers. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary."
 
    - **Agent C (Comments):** "Scan the following directories for: significant code comments (TODO, FIXME, HACK, architectural decision comments), module-level docstrings, and inline documentation. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary with file locations."
 
@@ -51,11 +51,11 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Preliminary feature candidates (module-level granularity)
    - Cross-cutting concerns detected (auth, logging, error handling, config patterns)
    - Code comments index (significant comments with file locations)
-   - Test tier flags per module (from Agent B: which modules need slow, e2e, or manual tiers)
+   - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
 
 5. Update state: `phase: 1, status: "complete"`.
 
-6. Commit: `git commit -m "chore(sfc): codebase survey complete (Phase 1)"`
+6. Commit per `references/commit_conventions.md`: `chore(sfc): codebase survey complete (Phase 1)`
 
 ---
 
@@ -97,7 +97,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - If consolidated: merge into a single spec whose rules cover the shared behavior and add per-implementation rules only where behavior diverges (e.g., marker syntax differences).
    - If kept separate: proceed, but note the overlap so the user is aware.
 
-6. **Detect anchor/invariant candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
+6. **Detect anchor candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
 
    | Prefix | Domain | Detection heuristics |
    |--------|--------|---------------------|
@@ -156,7 +156,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 9. Update state: `phase: 2, status: "complete"`.
 
-10. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
+10. Commit per `references/commit_conventions.md`: `chore(sfc): taxonomy review complete (Phase 2)`
 
 ---
 
@@ -190,7 +190,7 @@ For each approved anchor from the taxonomy:
 - PROOF-2 (RULE-2): <How to verify compliance>
 ```
 
-2. Commit each anchor individually: `git commit -m "spec(sfc): create anchor <name>"`
+2. Commit each anchor individually per `references/commit_conventions.md`: `spec(sfc): create anchor <name>`
 
 ### Step 2 — Generate Feature Specs per Category
 
@@ -212,7 +212,7 @@ For each category:
      api_rest_conventions — Scope overlaps with src/api/
    Add to > Requires:? [y/n]
    ```
-   Global invariants (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
+   Global anchors (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
 
 3. For each feature in the category, write `specs/<category>/<name>.md`:
 
@@ -257,12 +257,12 @@ Examples:
 - `> Stack: shell/bash, jq, curl`
 
 4. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
-   - Does the proof shell out to git, subprocess, or call an external service? → append `@slow`
+   - Does the proof shell out to git, subprocess, or call an external service? → append `@integration`
    - Does the proof need a browser or full app stack? → append `@e2e`
    - Does the proof need human judgment (visual, UX, brand)? → append `@manual`
-   - Pure logic or local grep? → leave as default (no tag)
+   - Pure logic or local grep? → leave as unit (no tag)
 
-   Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@slow`.
+   Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@integration`.
 
 5. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
@@ -292,7 +292,7 @@ Examples:
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-7. Commit the category batch: `git commit -m "spec(sfc): generate <category_name> specs"`
+7. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
 8. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
@@ -314,7 +314,6 @@ Features with implementation notes: J
 Next:
   purlin:status      — see what needs tests
   purlin:unit-test   — write proof-marked tests
-  purlin:find <name> — review a specific spec
   purlin:spec <name> — refine a generated spec
 ```
 
@@ -323,7 +322,7 @@ Next:
    - `.purlin/cache/sfc_inventory.md`
    - `.purlin/cache/sfc_taxonomy.md`
 
-4. Commit cleanup: `git commit -m "chore(sfc): finalize spec-from-code (Phase 4)"`
+4. Commit cleanup per `references/commit_conventions.md`: `chore(sfc): finalize spec-from-code (Phase 4)`
 
 ---
 
@@ -335,8 +334,9 @@ For audit criteria (what makes a proof STRONG vs WEAK vs HOLLOW), see **`referen
 
 Additional spec-from-code-specific guidelines:
 
+- **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
 - **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top.
 - **Implementation Notes capture architecture, not just TODOs.** Include whenever the source reveals decisions a rebuilding agent would need to replicate: design patterns, caching strategies, concurrency models, data flow, key tradeoffs. Omit only if the feature has trivially simple implementation.
-- If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@slow` unless the specific proof can be unit-tested in isolation.
+- If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.

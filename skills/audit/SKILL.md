@@ -21,11 +21,94 @@ purlin:audit --criteria <path>      Use a specific criteria file
 4. If `--criteria <path>` was passed, use that file instead (overrides both config and default).
 5. Display: `Using audit criteria: <source> (Criteria-Version: N)`
 
-## Step 2 — Two-Pass Audit
+## Step 1.5 — Load Audit Cache
 
-### Pass 1: Deterministic Structural Checks (always runs first)
+Read `.purlin/cache/audit_cache.json` via:
 
-Before any LLM evaluation, run the deterministic static checker:
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --read-cache
+```
+
+The cache maps proof hashes to previous assessments:
+
+```json
+{
+  "a1b2c3d4e5f6a7b8": {
+    "assessment": "STRONG",
+    "criterion": "matches rule intent",
+    "why": "test exercises the rule correctly",
+    "fix": "none",
+    "cached_at": "2026-04-03T..."
+  }
+}
+```
+
+For each proof that reaches Pass 2, compute the proof hash from (rule text + proof description + test function code). If the hash exists in the cache, use the cached assessment — skip the LLM call. Report cached results with a `(cached)` label:
+
+```
+PROOF-1 (RULE-1): STRONG ✓ (cached)
+```
+
+After the audit completes, write all new assessments to the cache (both cached hits and fresh LLM results). This means the cache grows over time and subsequent runs are faster.
+
+## Step 1.6 — Plan Parallel Execution
+
+After loading the cache, run Pass 0 (`--check-spec-coverage`) for every feature to categorize them:
+
+- **Skip entirely:** structural-only specs — emit WEAK ~s report immediately in main context, no subagent needed
+- **Cache-only:** non-structural specs where every proof hash exists in the cache. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed.
+- **Needs LLM:** at least one proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
+
+For features in the "Needs LLM" category, launch up to 3 parallel evaluations using the Agent tool:
+
+```
+Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
+Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
+Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
+```
+
+Each subagent receives:
+- The audit criteria
+- The audit cache (so it can check for hits on its assigned feature)
+- The feature's spec and test files to evaluate
+
+When all subagents complete, merge their results into the final report and update the cache with all new assessments.
+
+For features in "Skip entirely" and "Cache-only" categories, evaluate them in the main context (no subagent needed — they're fast).
+
+## Step 2 — Audit Pipeline
+
+### Pre-filter: Spec Coverage Check (Pass 0 — always runs first)
+
+Before evaluating individual proofs, check whether the spec's rules are behavioral or structural-only:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-spec-coverage --spec-path <spec_path>
+```
+
+If the result has `"structural_only_spec": true`:
+1. Count the rules from the spec
+2. Emit the structural-only report block immediately (all proofs WEAK ~s)
+3. Do NOT read proof files, do NOT read test code, do NOT run Pass 1 or Pass 2
+4. Move to the next feature
+
+Report:
+
+```
+SPEC COVERAGE: structural only (6 rules, 0 behavioral)
+
+  PROOF-1 (RULE-1): WEAK ~s (structural — grep/existence check)
+  PROOF-2 (RULE-2): WEAK ~s (structural — grep/existence check)
+  ...
+
+→ Consider: add behavioral rules that test the system follows these instructions, then write matching E2E proofs
+```
+
+Specs with at least one behavioral rule proceed to Pass 1 normally.
+
+### Static Analysis: Structural Defect Detection (Pass 1 — deterministic, no LLM)
+
+For specs that passed Pass 0 (have behavioral rules), run the deterministic static checker:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py <test_file> <feature_name> --spec-path <spec_path>
@@ -42,22 +125,26 @@ PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
 
 The `(deterministic)` label tells the user this was caught by static analysis, not LLM judgment.
 
-### Pass 2: Semantic Alignment (LLM — only for proofs that passed Pass 1)
+### Semantic Evaluation: LLM Alignment Check (Pass 2 — only for surviving proofs)
 
 Proofs that passed structural checks go to the LLM for semantic evaluation. The LLM prompt is STRIPPED of all structural heuristics. It ONLY evaluates semantic alignment.
+
+**Batch all proofs for a feature into a single LLM evaluation.** Do NOT evaluate proofs one-at-a-time — this wastes LLM calls. Construct one prompt per feature containing ALL surviving proofs (those that passed Pass 0 and Pass 1 and are not cache hits).
 
 For each feature being audited:
 
 1. Read the spec's `## Proof` section — get every proof description.
 2. For each proof, find the test file and test function from `.proofs-*.json` entries.
 3. Read the actual test code (the function body, not just the marker).
-4. Skip any proof already rated HOLLOW by Pass 1.
-5. Check if the rule being proved comes from an invariant (the rule key contains a `/` prefix from a spec in `specs/_invariants/`). If it does:
+4. Drop any proof already rated HOLLOW by Pass 1 or resolved by cache hit.
+5. For `@manual` proofs: check staleness only, assess as MANUAL — exclude from LLM batch.
+6. Check if any remaining proof's rule comes from an anchor (the rule key contains a `/` prefix from a spec in `specs/_anchors/`). If so:
    - The fix directive must say "strengthen the test" not "update the rule"
-   - If the rule itself is ambiguous or seems wrong, collect it for the invariant author recommendations section (see Step 3)
-6. For `@manual` proofs: check staleness only, assess as MANUAL.
+   - If the rule itself is ambiguous or seems wrong, collect it for the anchor author recommendations section (see Step 3)
+7. If zero proofs remain after steps 4–5: skip Pass 2 entirely for this feature.
+8. If proofs remain: construct a single prompt containing ALL surviving proof descriptions and ALL test code. Send one LLM call per feature, not one per proof.
 
-**For Claude (default auditor or teammate):**
+**For Claude (default auditor):**
 
 ```
 You are evaluating semantic alignment between spec rules and test code.
@@ -92,28 +179,84 @@ Note: the LLM can ONLY return STRONG or WEAK in Pass 2. HOLLOW is exclusively de
 
 ## Step 3 — Report
 
-Use the bordered output format:
+Use the bordered output format with findings grouped by value tier (see `references/audit_criteria.md` § Finding Priority):
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROOF AUDIT: <feature> (<N> proofs)
 Criteria: <source> (Criteria-Version: N)
-Auditor: Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
+Auditor: Pass 0 — spec coverage | Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  PROOF-1 (RULE-1): STRONG ✓ (semantic)
-  PROOF-2 (RULE-2): WEAK ~ (semantic)
-    Criterion: test checks status code but not error body
-    Why: proof says "verify 401 with error message" — body not checked
-    Fix: add assert "invalid_credentials" in resp.json()["error"]
-  PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
-    Check: logic_mirroring
-    Why: expected value uses same hash function as code under test
-    Fix: use precomputed literal
+CRITICAL (fix first — tests prove nothing):
+  PROOF-4 (RULE-4): HOLLOW ✗ — no assertions
+    Why: test function has zero assert/expect statements
+    Fix: add assertions checking the response status and body
+
+HIGH VALUE (real coverage gaps):
+  PROOF-2 (RULE-2): WEAK ~ — missing negative test
+    Why: rule says "reject invalid passwords" but test only checks valid login
+    Fix: add test with invalid password, assert 401 response
+
+MEDIUM VALUE (self-confirming tests):
+  PROOF-6 (RULE-6): HOLLOW ✗ — logic mirroring
+    Why: expected = compute_hash(input) — same function as code under test
+    Fix: replace with precomputed literal: assert result == "5e884898..."
+
+STRONG (no action needed):
+  PROOF-1 (RULE-1): STRONG ✓
+  PROOF-3 (RULE-3): STRONG ✓
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTEGRITY SCORE: <N>%
-  STRONG: N   WEAK: N   HOLLOW: N   MANUAL: N
+  CRITICAL: N   HIGH: N   MEDIUM: N   LOW: N   STRONG: N   MANUAL: N
+  Audited: N proofs (M cached, K fresh, J structural-only)
+  Fix priority: N critical, then N high-value, then N medium
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Finding Priority
+
+Group findings by value tier. Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
+
+**Value tier mapping** (authoritative source: `references/audit_criteria.md` § Finding Priority):
+
+CRITICAL — test proves nothing:
+  - HOLLOW: no_assertions, bare_except
+  - HOLLOW: assert_true when the assertion is literally `assert True`, `assertTrue(True)`, or `expect(true).toBe(true)`
+
+HIGH — real coverage gap:
+  - WEAK: missing assertions (proof says X AND Y, test only checks X)
+  - WEAK: only happy path (rule implies error handling, test has none)
+  - WEAK: missing negative test (constraint rule, no rejection test)
+  - WEAK: deep mocking on critical path
+
+MEDIUM — self-confirming test:
+  - HOLLOW: logic_mirroring
+  - HOLLOW: mock_target_match
+
+LOW — weak assertion form:
+  - HOLLOW: assert_true when heuristic (assert x is True, assert len >= 0)
+  - WEAK: assertion_farming, catch_all_assertions, string_containment
+
+When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
+
+For structural-only specs, the report looks like:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROOF AUDIT: purlin_agent (8 proofs)
+SPEC COVERAGE: structural only (8 rules, 0 behavioral)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PROOF-1 (RULE-1): WEAK ~s (structural — grep/existence check)
+  PROOF-2 (RULE-2): WEAK ~s (structural — grep/existence check)
+  ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTEGRITY SCORE: 0%
+  STRONG: 0   WEAK: 0   WEAK (structural): 8   HOLLOW: 0   MANUAL: 0
+→ All proofs are grep/existence checks. Add behavioral rules and E2E proofs.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -125,49 +268,43 @@ Fix proof quality in the build loop, then re-verify:
   → Run: purlin:verify
 ```
 
-If any invariant rules have clarity issues, append a separate section:
+If any anchor rules have clarity issues, append a separate section:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RECOMMENDATIONS FOR INVARIANT AUTHORS
+RECOMMENDATIONS FOR ANCHOR AUTHORS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  i_security_no_eval (Source: git@github.com:acme/security-policies.git)
+  security_no_eval (Source: git@github.com:acme/security-policies.git)
     RULE-1: "No eval() calls in source code"
     → Suggest: clarify scope — does this include test files? Current wording is ambiguous.
 
-  i_prodbrief_checkout (Source: git@bitbucket.org:acme/product-briefs.git)
+  prodbrief_checkout (Source: git@bitbucket.org:acme/product-briefs.git)
     RULE-3: "Order confirmation email arrives within 60 seconds"
     → Suggest: specify what "arrives" means — delivered to SMTP server, or in user's inbox?
 ```
 
-This section only appears when invariant rules have clarity issues. It's advisory — the invariant author decides whether to act.
+This section only appears when anchor rules have clarity issues. It's advisory — the anchor author decides whether to act.
 
-## Teammate Mode
+## When Running as Independent Auditor
 
-When running as a purlin-auditor teammate in an agent team:
+When spawned by purlin:verify or another agent:
 
 - Read references/audit_criteria.md at startup
-- After completing the initial audit, message findings directly to the purlin-builder teammate (not the lead)
-- Format each finding with the three-part structure:
-  ```
-  HOLLOW: login PROOF-3 (RULE-3)
-  Criterion: mocks the exact function the rule is about
-  Why: test passes even if bcrypt is misconfigured — a real auth bypass would not be caught
-  Fix: remove bcrypt.checkpw mock. Store a password via create_user('alice', 'secret'),
-       retrieve the hash, assert bcrypt.checkpw(b'secret', stored_hash) returns True.
-  ```
-- Wait for the builder's response confirming the fix
-- Re-read the fixed test code and re-assess
-- If the fix resolves the issue: mark as STRONG, move to the next finding
-- If the fix is still WEAK or HOLLOW: message the builder again with more specific guidance
-- When all findings are addressed (or after 3 rounds on any single proof): send the final integrity score to the lead
+- For each proof, assess as STRONG/WEAK/HOLLOW using the three-pass pipeline
+- After completing the audit, if HOLLOW or WEAK proofs are found:
+  - Spawn a purlin-builder to fix the identified issues
+  - Format each finding with the three-part structure (PROOF-ID, finding, fix)
+  - After the builder responds, re-audit the fixed proofs
+  - If still WEAK or HOLLOW, provide more specific guidance
+  - After 3 rounds on any single proof, move on
+- When all findings are addressed (or rounds exhausted): report the final integrity score
 
-### Invariant Rule Handling (teammate mode)
+### Anchor Rule Handling
 
-When a HOLLOW or WEAK proof is for an invariant rule:
-- Message the builder: "Fix the test to properly prove <invariant>/<rule>. The invariant is read-only — strengthen the test, don't suggest changing the rule."
-- If the rule itself is ambiguous: message the lead (not the builder): "Recommend to invariant author (<source>): <rule> could be clearer — <suggestion>"
+When a HOLLOW or WEAK proof is for an anchor rule:
+- Message the builder: "Fix the test to properly prove <anchor>/<rule>. The anchor is read-only — strengthen the test, don't suggest changing the rule."
+- If the rule itself is ambiguous: message the lead (not the builder): "Recommend to anchor author (<source>): <rule> could be clearer — <suggestion>"
 
 ## External LLM Mode
 
@@ -175,7 +312,7 @@ When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (det
 
 1. Load criteria via Step 1 above (respects `--criteria`, external criteria config, and defaults).
 2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.
-3. For proofs that passed Pass 1, construct the Pass 2 prompt:
+3. For proofs that passed Pass 1 and are not cache hits, **batch all proofs per feature** into a single shell-out. Construct the Pass 2 prompt:
 
 ```
 You are evaluating semantic alignment between spec rules and test code.
@@ -214,24 +351,24 @@ Auditor: Pass 1 — static_checks.py | Pass 2 — Gemini Pro (external — cross
 
 The report header shows both audit passes.
 
-### External LLM with Agent Teams
+### External LLM with Independent Audit
 
-When agent teams are active AND external LLM is configured, the lead relays findings:
+When external LLM is configured, the lead relays findings:
 
 1. Lead shells out to the external LLM per feature
 2. Lead parses the response
-3. Lead messages the builder teammate with each finding:
+3. Lead spawns a builder with each finding:
    ```
    [Gemini Pro audit] HOLLOW: login PROOF-3
    Criterion: mocks the function being tested
    Why: test passes even if bcrypt is misconfigured
    Fix: remove mock, use real bcrypt call
    ```
-4. Builder fixes and messages lead back
+4. Builder fixes and reports results back
 5. Lead shells out to external LLM again for re-audit
 6. Loop until no HOLLOW proofs or 3 rounds per proof
 
-The builder teammate never talks to the external LLM. The lead relays.
+The builder never calls the external LLM. The lead relays.
 
 ## Key Principles
 

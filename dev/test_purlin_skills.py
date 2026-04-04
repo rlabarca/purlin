@@ -1,6 +1,6 @@
 """Tests for purlin_skills — 15 rules.
 
-Structural verification of the 13 skill definition files under skills/.
+Structural verification of the 12 skill definition files under skills/.
 """
 
 import glob
@@ -35,9 +35,9 @@ class TestPurlinSkills:
             assert 'description:' in fm, f"Missing description: in {path}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-2", "RULE-2")
-    def test_exactly_twelve_skill_files(self):
+    def test_exactly_fourteen_skill_files(self):
         files = _skill_files()
-        assert len(files) == 13, f"Expected 13 skills, found {len(files)}: {[os.path.basename(os.path.dirname(f)) for f in files]}"
+        assert len(files) == 12, f"Expected 12 skills, found {len(files)}: {[os.path.basename(os.path.dirname(f)) for f in files]}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-3", "RULE-3")
     def test_each_skill_has_usage_section(self):
@@ -59,7 +59,7 @@ class TestPurlinSkills:
     @pytest.mark.proof("purlin_skills", "PROOF-5", "RULE-5")
     def test_modify_skills_have_commit_instructions(self):
         # Skills listed in PROOF-5 description (config excluded — modifies local-only file)
-        for skill in ('build', 'spec', 'unit-test', 'verify', 'init', 'invariant'):
+        for skill in ('build', 'spec', 'unit-test', 'verify', 'init', 'anchor'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
             # Assert a positive commit instruction, not just the word "commit"
@@ -70,8 +70,7 @@ class TestPurlinSkills:
     def test_mcp_skills_reference_tools(self):
         checks = {
             'status': 'sync_status',
-            'changelog': 'changelog',
-            'config': 'purlin_config',
+            'drift': 'changelog',
             'find': 'sync_status',
         }
         for skill, tool_name in checks.items():
@@ -107,10 +106,10 @@ class TestPurlinSkills:
             "build skill missing 'Never weaken' assertion guardrail"
 
     @pytest.mark.proof("purlin_skills", "PROOF-10", "RULE-10")
-    def test_changelog_requires_reading_diffs(self):
-        content = _read(os.path.join(SKILLS_DIR, 'changelog', 'SKILL.md'))
+    def test_drift_requires_reading_diffs(self):
+        content = _read(os.path.join(SKILLS_DIR, 'drift', 'SKILL.md'))
         assert 'git diff' in content, \
-            "changelog skill missing git diff requirement"
+            "drift skill missing git diff requirement"
 
     @pytest.mark.proof("purlin_skills", "PROOF-11", "RULE-11")
     def test_spec_has_delta_report_structure(self):
@@ -128,8 +127,8 @@ class TestPurlinSkills:
             assert re.search(r'(?i)(tier\s+(assign|review|tag)|review.*tier|assign.*tier)', content), \
                 f"{skill} skill missing tier review step/instruction"
             # Must also reference the actual tier tags
-            assert re.search(r'@slow|@e2e|default.*tier|tier.*default', content), \
-                f"{skill} skill missing tier tag references (@slow/@e2e/default)"
+            assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
+                f"{skill} skill missing tier tag references (@integration/@e2e/unit)"
 
     @pytest.mark.proof("purlin_skills", "PROOF-13", "RULE-13")
     def test_init_add_plugin_validates_by_language(self):

@@ -55,7 +55,7 @@ PYEOF
 
   (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
 
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-default.json"
+  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
   [[ -f "$proof_file" ]] || return 1
   local status
   status=$(python3 -c "import json; print(json.load(open('$proof_file'))['proofs'][0]['status'])")
@@ -84,7 +84,7 @@ PYEOF
 
   (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
 
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-default.json"
+  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
   python3 -c "
 import json, sys
 entry = json.load(open('$proof_file'))['proofs'][0]
@@ -118,7 +118,7 @@ PYEOF
 
   (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
 
-  [[ -f "$tmpdir/specs/billing/invoice.proofs-default.json" ]]
+  [[ -f "$tmpdir/specs/billing/invoice.proofs-unit.json" ]]
   local rc=$?
   rm -rf "$tmpdir"
   return $rc
@@ -142,7 +142,7 @@ PYEOF
 
   (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
 
-  [[ -f "$tmpdir/specs/unknown_feat.proofs-default.json" ]]
+  [[ -f "$tmpdir/specs/unknown_feat.proofs-unit.json" ]]
   local rc=$?
   rm -rf "$tmpdir"
   return $rc
@@ -179,7 +179,7 @@ PYEOF
 
   (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
 
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-default.json"
+  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
   python3 -c "
 import json, sys
 data = json.load(open('$proof_file'))

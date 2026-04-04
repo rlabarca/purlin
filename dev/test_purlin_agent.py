@@ -72,25 +72,26 @@ class TestPurlinAgent:
                                   re.MULTILINE | re.DOTALL)
         assert markers_match
         section = markers_match.group(1)
+        # Proof markers delegate to reference file for all three frameworks
+        assert 'proofs_format.md' in section, \
+            "Proof Markers section must reference proofs_format.md"
         for fw in ('pytest', 'Jest', 'Shell'):
-            assert re.search(rf'\*\*{fw}:', section, re.IGNORECASE), \
-                f"Missing framework subsection for {fw} in ## Proof Markers"
+            assert fw in section, \
+                f"Missing framework mention for {fw} in ## Proof Markers"
 
     @pytest.mark.proof("purlin_agent", "PROOF-5", "RULE-5")
-    def test_hard_gates_exactly_two(self):
+    def test_hard_gates_exactly_one(self):
         content = _read()
         assert '## Hard Gates' in content
         gates_match = re.search(r'## Hard Gates.*?\n(.*?)(?=^## |\Z)', content,
                                 re.MULTILINE | re.DOTALL)
         assert gates_match
         section = gates_match.group(1)
-        assert re.search(r'[Ii]nvariant\s+[Pp]rotection', section), \
-            "Hard Gates section missing 'Invariant protection'"
         assert re.search(r'[Pp]roof\s+[Cc]overage', section), \
             "Hard Gates section missing 'Proof coverage'"
         gates = re.findall(r'^\d+\.', section, re.MULTILINE)
-        assert len(gates) == 2, \
-            f"Expected exactly 2 gates, found {len(gates)}"
+        assert len(gates) == 1, \
+            f"Expected exactly 1 gate, found {len(gates)}"
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
     def test_implicit_routing(self):
@@ -103,10 +104,8 @@ class TestPurlinAgent:
         # Extract routing entry lines (bullets with → or ->)
         routing_lines = [l for l in section.splitlines()
                          if '\u2192' in l or '->' in l]
-        assert len(routing_lines) >= 5, \
-            f"Expected at least 5 routing entries, found {len(routing_lines)}"
         # Each keyword must appear as a source term (before the arrow) in a routing line
-        for keyword in ('test', 'status', 'changelog', 'spec', 'verify',
+        for keyword in ('test', 'status', 'drift', 'spec', 'verify',
                         'engineer', 'qa', 'team'):
             found = any(keyword.lower() in l.lower().split('\u2192')[0].split('->')[0]
                         for l in routing_lines)
@@ -114,7 +113,7 @@ class TestPurlinAgent:
                 f"Missing routing source for: {keyword} (must appear before → arrow)"
 
     @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
-    def test_skills_table_twelve_entries(self):
+    def test_skills_table_fourteen_entries(self):
         content = _read()
         assert '## Skills' in content
         skills_match = re.search(r'## Skills.*?\n(.*?)(?=^## |\Z)', content,
@@ -123,13 +122,13 @@ class TestPurlinAgent:
         section = skills_match.group(1)
         # Extract skill names from table rows
         rows = re.findall(r'^\|.*`(purlin:[\w-]+)`.*\|', section, re.MULTILINE)
-        assert len(rows) == 13, f"Expected 13 skill rows, found {len(rows)}: {rows}"
+        assert len(rows) == 12, f"Expected 12 skill rows, found {len(rows)}: {rows}"
         expected_skills = {
             'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
             'purlin:unit-test', 'purlin:verify', 'purlin:audit',
-            'purlin:status', 'purlin:find', 'purlin:changelog',
-            'purlin:config', 'purlin:init', 'purlin:invariant',
-            'purlin:help',
+            'purlin:status', 'purlin:find', 'purlin:drift',
+            'purlin:init', 'purlin:anchor',
+            'purlin:rename',
         }
         assert set(rows) == expected_skills, \
             f"Skill mismatch: missing={expected_skills - set(rows)}, extra={set(rows) - expected_skills}"
@@ -139,7 +138,7 @@ class TestPurlinAgent:
             assert purpose.strip(), f"Row {i+1} has empty purpose column"
 
     @pytest.mark.proof("purlin_agent", "PROOF-8", "RULE-8")
-    def test_references_table_eight_entries(self):
+    def test_references_table_twelve_entries(self):
         content = _read()
         assert '## References' in content
         refs_match = re.search(r'## References\n(.*?)(?=^## |\Z)', content,
@@ -150,8 +149,8 @@ class TestPurlinAgent:
         rows = [l for l in section.strip().splitlines()
                 if l.startswith('|') and '---' not in l and 'Document' not in l]
         assert len(rows) == 12, f"Expected 12 reference rows, found {len(rows)}"
-        # Verify each row has a non-empty topic column
+        # Verify each row has a meaningful topic column (>5 chars)
         for row in rows:
             cells = [c.strip() for c in row.split('|') if c.strip()]
             assert len(cells) >= 2, f"Row missing topic column: {row}"
-            assert cells[1], f"Empty topic in row: {row}"
+            assert len(cells[1]) > 5, f"Topic too short in row: {row}"

@@ -44,6 +44,31 @@ Complete redesign. Purlin v0.9.0 replaces the v1 system (35 skills, 5 agents, 8 
 - **Verification receipts:** `*.receipt.json` files with `vhash` and commit SHA. `--audit` mode for CI.
 - **Feature-scoped proof overwrite:** Each test run replaces only its feature's entries in the proof file, preserving others.
 
+### Tier Rename (0.9.0)
+
+- `default` → `unit` (isolated logic, controlled inputs)
+- `slow` → `integration` (real dependencies — DB, APIs, filesystem)
+- `e2e` and `manual` unchanged
+- Rename your proof files: `*.proofs-default.json` → `*.proofs-unit.json`
+- Update pytest markers: `@pytest.mark.slow` → `@pytest.mark.integration`
+- Update jest markers: tier segment in `[proof:...]` tag
+- Update shell env var: `PURLIN_PROOF_TIER=slow` → `PURLIN_PROOF_TIER=integration`
+
+### MCP Server Spec Split (0.9.0)
+
+- `specs/mcp/mcp_server.md` (34 rules) split into 4 focused specs:
+  - `mcp_transport.md` (7 rules) — JSON-RPC transport
+  - `sync_status.md` (15 rules) — rule coverage reporting
+  - `changelog.md` (11 rules) — structured change summary
+  - `purlin_config.md` (1 rule) — config read/write
+- Tool names unchanged: `sync_status`, `purlin_config`, `changelog`
+
+### Teammate Spawning Now Invisible (0.9.0)
+
+- "team up" / "create a purlin team" removed as user-facing concept
+- Teammates are automatically spawned by verify and audit
+- Auditor, builder, reviewer still exist as agents — just no longer user-managed
+
 ### Migration
 
 v0.9.0 is a clean break from v1. There is no automated migration path. Start fresh with `purlin:init`.

@@ -9,7 +9,7 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 | Framework | Languages | Plugin file | Detection | Marker syntax |
 |-----------|-----------|------------|-----------|---------------|
 | **pytest** | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
-| **Jest** | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:default]` in test title |
+| **Jest** | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title |
 | **Vitest** | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `vitest` | Same as Jest — Vitest supports Jest-compatible reporters |
 | **Shell** | Bash | `scripts/proof/shell_purlin.sh` | Fallback when no other framework detected | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
 

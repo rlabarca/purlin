@@ -21,7 +21,7 @@ Each `--flag` runs ONLY that step, not the full init.
 
 ## Step 1 — Pre-flight
 
-- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git — proofs, receipts, manual stamps, changelog, and the pre-push hook all depend on git.
+- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git — proofs, receipts, manual stamps, drift detection, and the pre-push hook all depend on git.
 - If `.purlin/` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
 - If `.purlin/` exists and `--force` is set: proceed, preserve existing `config.json`.
 
@@ -32,7 +32,7 @@ Each `--flag` runs ONLY that step, not the full init.
   config.json         # from templates/config.json
   plugins/            # proof plugin installed here
 specs/
-  _invariants/        # invariant specs go here
+  _anchors/           # anchor specs go here
 ```
 
 Config template fields (from `templates/config.json`):
@@ -111,6 +111,7 @@ Ensure `.gitignore` contains:
 # Purlin runtime (not committed)
 .purlin/runtime/
 .purlin/plugins/__pycache__/
+.purlin/cache/
 ```
 
 ## Step 6 — Confirmation
@@ -122,7 +123,7 @@ Created:
   .purlin/config.json
   .purlin/plugins/<proof_plugin>
   specs/
-  specs/_invariants/
+  specs/_anchors/
   .git/hooks/pre-push (if installed)
 
 Test framework: <detected>
@@ -199,11 +200,11 @@ Ask the user which LLM should perform proof audits:
 
 ```
 Audit LLM:
-  [default] Claude audits (same model — fastest, uses agent teams)
+  [default] Claude audits (same model — fastest, independent context)
   [external] Use a different LLM for cross-model auditing
 ```
 
-If **default**: no config change. The auditor runs as a Claude teammate or subagent.
+If **default**: no config change. The auditor runs in an independent context.
 
 If **external**: ask for the CLI command:
 
@@ -236,6 +237,8 @@ After the user enters the command:
 This step is also callable independently via `purlin:init --audit-llm`.
 
 ## Step 8 — Commit
+
+Commit per `references/commit_conventions.md`:
 
 ```
 git commit -m "chore: initialize purlin project"

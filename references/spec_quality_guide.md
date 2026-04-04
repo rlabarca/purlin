@@ -15,6 +15,35 @@ Rules describe **behavior, not implementation**:
 - Bad: "Use bcrypt.compare for password verification"
 - Good: "Return 401 when password does not match stored hash"
 
+## Rule Tags
+
+Three tags can be added to rule lines:
+
+### (assumed)
+
+Added by `purlin:spec` when the AI translates vague input into a specific constraint. The tag includes what the user actually said so the PM can see the gap:
+
+User: "search should be fast"
+→ RULE-3: Search returns in under 500ms (assumed — user said "fast")
+
+The AI picked 500ms. The user said "fast." The PM decides whether 500ms is right, changes it to 200ms, or confirms it.
+
+**When to add:** only when `purlin:spec` invents a specific number, threshold, algorithm, or constraint that the user didn't explicitly state. NOT when the user was explicit ("must return in under 200ms" → no tag needed).
+
+**When to remove:** PM either confirms the value (change to `(confirmed)`) or edits the value to what they actually want (and removes the tag).
+
+### (confirmed)
+
+Added by the PM to explicitly mark that this exact constraint was reviewed and approved. Optional — rules without any tag are implicitly accepted. Use `(confirmed)` when you want to signal "I specifically chose this value, don't second-guess it."
+
+### (deferred)
+
+Added by PM or engineer when a rule is accepted but not being built yet. Deferred rules are excluded from coverage — `sync_status` shows them as DEFERRED and they don't block READY status.
+
+Use for: next-sprint features, nice-to-haves accepted into the spec but not yet prioritized, rules that depend on infrastructure not yet available.
+
+Remove the tag when work begins. The rule immediately starts requiring proofs.
+
 ## Writing Proof Descriptions
 
 Proof descriptions must be **observable assertions with concrete inputs and expected outputs**. The description should tell the agent exactly what to do and what to assert — it should be copy-pasteable into a test without interpretation.
@@ -63,12 +92,12 @@ AI agents default to Level 2 because it's fast, deterministic, and easy to mock.
 
 PMs write Level 3 rules for user flows. Security engineers write them for compliance. Architects write them for system guarantees. QA engineers write them for regressions. The pattern is the same: **describe the outcome you need to see, not the function you need to call.**
 
-### Invariants for Level 3 enforcement
+### Anchors for Level 3 enforcement
 
-Invariants are the strongest mechanism for Level 3 enforcement. When anyone writes an invariant with outcome-based rules, every feature that requires it must prove those rules end-to-end:
+Anchors are the strongest mechanism for Level 3 enforcement. When anyone writes an anchor with outcome-based rules, every feature that requires it must prove those rules end-to-end:
 
 ```markdown
-# Invariant: i_prodbrief_checkout
+# Anchor: prodbrief_checkout
 
 > Type: prodbrief
 > Source: git@bitbucket.org:acme/product-briefs.git
@@ -86,7 +115,7 @@ Invariants are the strongest mechanism for Level 3 enforcement. When anyone writ
 - PROOF-3 (RULE-3): Complete checkout → poll inbox for 60s → verify email contains order number @e2e
 ```
 
-Every feature that `> Requires: i_prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests — the rules describe what users see, not what functions return.
+Every feature that `> Requires: prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests — the rules describe what users see, not what functions return.
 
 ### When to write rules at each level
 
@@ -106,16 +135,16 @@ If a proof description says "verify X exists", "check that Y is not null", or "a
 
 ## Tier Assignment
 
-Assign a tier tag based on what the proof requires to execute. Proofs without a tag are `default` tier.
+Assign a tier tag based on what the proof requires to execute. Proofs without a tag are `unit` tier.
 
 | Heuristic | Tier | Example |
 |-----------|------|---------|
-| Pure logic, no I/O, no external dependencies | default (no tag) | Validate input format, compute hash, parse config |
-| Needs database, network, filesystem, or external service | `@slow` | API roundtrip, database query, file system operations |
+| Pure logic, no I/O, no external dependencies | unit (no tag) | Validate input format, compute hash, parse config |
+| Needs database, network, filesystem, or external service | `@integration` | API roundtrip, database query, file system operations |
 | Needs browser, full app stack, or UI rendering | `@e2e` | Playwright login flow, screenshot comparison, full page render |
 | Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
 
-**When in doubt, tag `@slow`.** A fast test with a `@slow` tag is harmless. A slow test with no tag blocks the default tier.
+**When in doubt, tag `@integration`.** A fast test with an `@integration` tag is harmless. A slow test with no tag blocks the unit tier.
 
 Tier tags are not optional — they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing.
 
@@ -123,7 +152,7 @@ Append the tier tag to the end of the proof description line:
 
 ```
 - PROOF-1 (RULE-1): Parse config file and return default values
-- PROOF-2 (RULE-2): POST to /api/users with mock database; verify 201 response @slow
+- PROOF-2 (RULE-2): POST to /api/users with mock database; verify 201 response @integration
 - PROOF-3 (RULE-3): Load checkout page in browser; verify 3-click flow @e2e
 - PROOF-4 (RULE-4): Review error messages against brand voice guide @manual
 ```
@@ -134,9 +163,9 @@ Append the tier tag to the end of the proof description line:
 
 Anchors capture **cross-cutting constraints shared across features**. If 3+ features would have the same rule, it belongs in an anchor.
 
-- Architecture choices shared across features → `api_` or `schema_` anchor
-- Security patterns applied everywhere → `security_` anchor (always include FORBIDDEN rules)
-- Design system tokens used by multiple components → `design_` anchor
+- Architecture choices shared across features → `api_` or `schema_` prefix
+- Security patterns applied everywhere → `security_` prefix (always include FORBIDDEN rules)
+- Design system tokens used by multiple components → `design_` prefix
 
 **Anchor type detection heuristics:**
 
@@ -221,8 +250,7 @@ Populate from the **actual imports/dependencies in the feature's source files**,
 
 ## `> Requires:` Guidance
 
-- Reference anchors when the feature must follow shared rules.
-- Reference invariants when external constraints apply.
+- Reference anchors when the feature must follow shared rules or when external constraints apply.
 - **Don't reference specs that are just related** — only specs whose rules MUST be proved by this feature's tests. `> Requires:` means "my tests must also prove these rules."
 - Verify each reference exists (or is queued for generation) before writing it. Broken references produce silent gaps in coverage.
 
@@ -269,10 +297,10 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 
 | Category dir | What goes here | Tier expectations | Example |
 |-------------|---------------|-------------------|---------|
-| Component dirs (`hooks/`, `mcp/`, `proof/`) | Behavioral specs for executable code | Default tier for unit-level proofs | `specs/hooks/gate-hook.md` |
-| `schema/` | Anchors defining formats, contracts, and cross-cutting standards | Default tier | `specs/schema/schema_spec_format.md` |
+| Component dirs (`hooks/`, `mcp/`, `proof/`) | Behavioral specs for executable code | Unit tier for unit-level proofs | `specs/hooks/gate-hook.md` |
+| `schema/` | Anchors defining formats, contracts, and cross-cutting standards | Unit tier | `specs/schema/schema_spec_format.md` |
 | `integration/` | E2E flows testing the full system working together | All proofs tagged `@e2e` | `specs/integration/e2e_purlin_lifecycle.md` |
-| `instructions/` | Structural specs for agent instructions — reference docs, skill definitions, agent definitions | Default tier (grep-based structural checks) | `specs/instructions/purlin_references.md` |
+| `instructions/` | Structural specs for agent instructions — reference docs, skill definitions, agent definitions | Unit tier (grep-based structural checks) | `specs/instructions/purlin_references.md` |
 
 ### Guidelines
 
@@ -284,16 +312,16 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 
 ## Audience-Appropriate Language
 
-Specs, changelogs, and reports serve different audiences. Match the language to the reader:
+Specs, drift reports, and other reports serve different audiences. Match the language to the reader:
 
 | Artifact | Audience | Language |
 |----------|----------|----------|
 | Spec rules and proofs | Engineers and agents | Precise, technical — status codes, function names, exact inputs |
-| Changelog CHANGED BEHAVIOR | PMs and QA | User-visible impact — "login is faster", "error message changed" |
-| Changelog NO IMPACT | Engineers | Implementation details — "refactored middleware", "updated dependency" |
+| Drift report CHANGED BEHAVIOR | PMs and QA | User-visible impact — "login is faster", "error message changed" |
+| Drift report NO IMPACT | Engineers | Implementation details — "refactored middleware", "updated dependency" |
 | Verification reports | Engineers and CI | Concise, structured — feature names, rule counts, directives |
 
-**The test for good changelog language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
+**The test for good drift report language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
 
 ## When Tests Fail: Fix the Code, Not the Test
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# E2E test: Required Rules + Global Invariants in sync_status
+# E2E test: Required Rules + Global Anchors in sync_status
 # 4 proofs covering 4 rules — all @e2e (Level 3).
-# Creates a real temp git repo with anchor, global invariant, and feature specs.
+# Creates a real temp git repo with anchor, global anchor, and feature specs.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,13 +14,13 @@ source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
 echo "=== e2e_required_rules tests ==="
 
-# --- Helper: create project with anchor, global invariant, and feature spec ---
+# --- Helper: create project with anchor, global anchor, and feature spec ---
 create_test_project() {
   local tmpdir="$1"
 
   mkdir -p "$tmpdir/.purlin"
   mkdir -p "$tmpdir/specs/schema"
-  mkdir -p "$tmpdir/specs/_invariants"
+  mkdir -p "$tmpdir/specs/_anchors"
   mkdir -p "$tmpdir/specs/auth"
   mkdir -p "$tmpdir/scripts/mcp"
 
@@ -53,16 +53,16 @@ API conventions anchor defining cross-cutting API rules.
 - PROOF-2 (RULE-2): Verify error responses use standard format @e2e
 SPEC
 
-  # Global invariant: i_security_no_eval with 1 rule
-  cat > "$tmpdir/specs/_invariants/i_security_no_eval.md" << 'SPEC'
-# Invariant: i_security_no_eval
+  # Global anchor: security_no_eval with 1 rule
+  cat > "$tmpdir/specs/_anchors/security_no_eval.md" << 'SPEC'
+# Anchor: security_no_eval
 
 > Type: security
 > Global: true
 
 ## What it does
 
-Global security invariant prohibiting eval() usage.
+Global security anchor prohibiting eval() usage.
 
 ## Rules
 
@@ -132,7 +132,7 @@ create_proof_file() {
   proofs="$proofs
   ]"
 
-  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$tmpdir/$spec_dir/${feature}.proofs-default.json"
+  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$tmpdir/$spec_dir/${feature}.proofs-unit.json"
 }
 
 # --- Helper: run sync_status ---
@@ -190,7 +190,7 @@ has_global=false
 # Verify labels appear on the correct rule lines (not just anywhere in output)
 echo "$STATUS_A" | grep -q "RULE-1.*\(own\)\|RULE-2.*\(own\)" && has_own=true
 echo "$STATUS_A" | grep -q "api_conventions/RULE.*\(required\)" && has_required=true
-echo "$STATUS_A" | grep -q "i_security_no_eval/RULE.*\(global\)" && has_global=true
+echo "$STATUS_A" | grep -q "security_no_eval/RULE.*\(global\)" && has_global=true
 
 phase_a2_ok=false
 if $has_own && $has_required && $has_global; then
@@ -253,8 +253,8 @@ create_proof_file "$TMPDIR" "specs/schema" "api_conventions" \
   "PROOF-1|RULE-1|pass" \
   "PROOF-2|RULE-2|pass"
 
-# Add proofs for i_security_no_eval (1 rule)
-create_proof_file "$TMPDIR" "specs/_invariants" "i_security_no_eval" \
+# Add proofs for security_no_eval (1 rule)
+create_proof_file "$TMPDIR" "specs/_anchors" "security_no_eval" \
   "PROOF-1|RULE-1|pass"
 
 (cd "$TMPDIR" && git add -A && git commit -q -m "add required+global proofs")
