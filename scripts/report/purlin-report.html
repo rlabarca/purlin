@@ -250,11 +250,11 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   }
 
   function staleness(iso) {
-    if (!iso) return { cls: 'stale', text: 'No data', warn: '' };
+    if (!iso) return { cls: 'stale', text: '/status never run', warn: '' };
     var diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (diff < 3600) return { cls: 'fresh', text: 'Updated ' + relTime(iso), warn: '' };
-    if (diff < 86400) return { cls: 'warning', text: 'Updated ' + relTime(iso), warn: ' — Data may be stale. Run purlin:status to refresh.' };
-    return { cls: 'stale', text: 'Updated ' + relTime(iso), warn: ' — Data is stale. Run purlin:status to refresh.' };
+    if (diff < 3600) return { cls: 'fresh', text: '/status ' + relTime(iso), warn: '' };
+    if (diff < 86400) return { cls: 'warning', text: '/status ' + relTime(iso), warn: ' — run purlin:status to refresh' };
+    return { cls: 'stale', text: '/status ' + relTime(iso), warn: ' — run purlin:status to refresh' };
   }
 
   function covClass(status) {
@@ -387,8 +387,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     var A = D.audit_summary;
     if (A && A.last_audit_relative) {
       var acls = A.stale ? 'audit-time stale' : 'audit-time';
-      var atxt = 'Audit: ' + A.last_audit_relative;
-      if (A.stale) atxt += ' — consider re-auditing';
+      var atxt = '/audit ' + A.last_audit_relative;
+      if (A.stale) atxt += ' — run purlin:audit to refresh';
       h += '<span class="' + acls + '">' + esc(atxt) + '</span>';
     }
     h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
