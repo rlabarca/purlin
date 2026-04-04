@@ -61,22 +61,22 @@ The skill re-classifies MCP categories by reading the actual `git diff`. The MCP
 | DOCUMENTATION | Changes to docs, comments, guides | NO_IMPACT files, or CHANGED_BEHAVIOR files where only comments changed |
 | TRIVIAL | Formatting, whitespace, typos | Any file where the diff is cosmetic |
 
-## Structural-Only Drift Detection
+## Behavioral Gap Drift Detection
 
-When a feature has `structural_only: true` in proof_status AND has changed files, the proofs don't actually test the changed behavior — they only verify that instruction text exists.
+When a feature has no behavioral proofs (only structural checks) AND has changed files, the proofs don't actually test the changed behavior — they only verify that instruction text exists.
 
 The MCP tool precomputes this. Each file entry classified as CHANGED_BEHAVIOR includes:
 
-- `structural_drift: true` — when the file's spec has `structural_only: true` in proof_status
+- `behavioral_gap: true` — when the file's spec has no behavioral proofs (only structural checks)
 
-The top-level result includes a `drift_flags` array summarizing all features with structural-only coverage that have changed files:
+The top-level result includes a `drift_flags` array summarizing all features with no behavioral proofs that have changed files:
 
 ```json
 {
   "drift_flags": [
     {
       "spec": "purlin_agent",
-      "reason": "structural_only_with_code_change",
+      "reason": "behavioral_gap_with_code_change",
       "files": ["agents/purlin.md"]
     }
   ]
@@ -86,8 +86,8 @@ The top-level result includes a `drift_flags` array summarizing all features wit
 The skill should surface these prominently:
 
 ```
-Spec: purlin_agent (8 rules, READY — structural only)
-⚠ All proofs are grep checks. Code changed but no test verifies the new behavior.
+Spec: purlin_agent (8 rules, 0 behavioral proofs)
+⚠ All proofs are structural checks. Code changed but no behavioral test verifies the new behavior.
 → Run: purlin:spec purlin_agent (add behavioral rules)
 ```
 
@@ -152,5 +152,6 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `purlin:audit` (Step 1) | not set |
 | `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
+| `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
 
 `purlin:init` is the only skill that writes config. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `unit-test` auto-detects the framework).

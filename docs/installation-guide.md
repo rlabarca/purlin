@@ -96,7 +96,7 @@ Purlin uses a two-file config system:
 - **`.purlin/config.json`** — committed, team defaults
 - **`.purlin/config.local.json`** — gitignored, per-user overrides
 
-Resolution: `config.local.json` wins if it exists. On first access, `config.json` is copied to `config.local.json` automatically (copy-on-first-access).
+Resolution: `config.json` is the base layer. `config.local.json` overrides on top — local keys win for any key present in both. Keys only in `config.json` (like new framework defaults) are always visible. `config.local.json` should be sparse — only override what you need.
 
 Default config:
 ```json
