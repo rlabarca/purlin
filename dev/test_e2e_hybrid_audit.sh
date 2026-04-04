@@ -384,10 +384,10 @@ cat > "$TMPDIR_K/test_shell_ifelse.sh" << 'SHEOF'
 #!/usr/bin/env bash
 source shell_purlin.sh
 output=$(some_command)
-if echo "$output" | grep -q "READY"; then
-  purlin_proof "shell_feat" "PROOF-1" "RULE-1" pass "checks READY"
+if echo "$output" | grep -q "passing"; then
+  purlin_proof "shell_feat" "PROOF-1" "RULE-1" pass "checks passing"
 else
-  purlin_proof "shell_feat" "PROOF-1" "RULE-1" fail "checks READY"
+  purlin_proof "shell_feat" "PROOF-1" "RULE-1" fail "checks passing"
 fi
 SHEOF
 

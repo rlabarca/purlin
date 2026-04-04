@@ -244,7 +244,7 @@ else
 fi
 
 # ==========================================================================
-# Phase C — Full proofs (all 5 proved → READY)
+# Phase C — Full proofs (all 5 proved → passing)
 # ==========================================================================
 echo "  --- Phase C: Full proofs ---"
 
@@ -262,26 +262,26 @@ create_proof_file "$TMPDIR" "specs/_anchors" "security_no_eval" \
 STATUS_C=$(run_sync_status "$TMPDIR")
 
 phase_c_ok=false
-if echo "$STATUS_C" | grep -q "login: READY"; then
+if echo "$STATUS_C" | grep -q "login: passing"; then
   # Verify 5/5 in the detail line
   if echo "$STATUS_C" | grep -q "5/5 rules proved"; then
-    echo "    Phase C PASS: login shows READY with 5/5"
+    echo "    Phase C PASS: login shows passing with 5/5"
     phase_c_ok=true
   else
-    echo "    Phase C FAIL: READY but missing 5/5 count"
+    echo "    Phase C FAIL: passing but missing 5/5 count"
     echo "    Status output:"
     echo "$STATUS_C"
   fi
 else
-  echo "    Phase C FAIL: expected 'login: READY'"
+  echo "    Phase C FAIL: expected 'login: passing'"
   echo "    Status output:"
   echo "$STATUS_C"
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" pass "full proofs show 5/5 and READY"
+  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" pass "full proofs show 5/5 and passing"
 else
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" fail "full proofs show 5/5 and READY"
+  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" fail "full proofs show 5/5 and passing"
 fi
 
 # --- Emit proof files ---

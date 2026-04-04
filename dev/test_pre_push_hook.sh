@@ -184,7 +184,7 @@ else
 fi
 
 # ==========================================================================
-# PROOF-4 (RULE-4): Allows push when all proofs pass (READY)
+# PROOF-4 (RULE-4): Allows push when all proofs pass (passing)
 # ==========================================================================
 TMPDIR4=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR4"
@@ -359,21 +359,21 @@ cfg = json.load(open('$TMPDIR9/.purlin/config.json'))
 cfg['pre_push'] = 'strict'
 json.dump(cfg, open('$TMPDIR9/.purlin/config.json', 'w'))
 "
-# Create proofs for only 2 of 3 rules (partial — no FAIL, but not READY)
+# Create proofs for only 2 of 3 rules (partial — no FAIL, but not passing)
 create_proof_file "$TMPDIR9" "test_feature" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
 OUTPUT9=$(run_hook "$TMPDIR9" 2>&1) || EXIT9=$?
 EXIT9=${EXIT9:-0}
 if [[ "$EXIT9" -eq 1 ]] && echo "$OUTPUT9" | grep -q "strict mode"; then
   echo "  PASS: strict mode blocks on partial coverage"
-  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" pass "strict mode blocks push when features are not READY"
+  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" pass "strict mode blocks push when features are not passing"
 else
   echo "  FAIL: expected exit 1 + strict mode block, got exit=$EXIT9"
   echo "  Output: $OUTPUT9"
-  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" fail "strict mode blocks push when features are not READY"
+  purlin_proof "pre_push_hook" "PROOF-9" "RULE-8" fail "strict mode blocks push when features are not passing"
 fi
 
 # ==========================================================================
-# PROOF-10 (RULE-8): Strict mode allows when all READY
+# PROOF-10 (RULE-8): Strict mode allows when all passing
 # ==========================================================================
 TMPDIR10=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR10"
@@ -388,19 +388,19 @@ create_proof_file "$TMPDIR10" "test_feature" "PROOF-1|RULE-1|pass" "PROOF-2|RULE
 OUTPUT10=$(run_hook "$TMPDIR10" 2>&1) || EXIT10=$?
 EXIT10=${EXIT10:-0}
 if [[ "$EXIT10" -eq 0 ]] && ! echo "$OUTPUT10" | grep -q "strict mode" && ! echo "$OUTPUT10" | grep -q "PUSH BLOCKED"; then
-  echo "  PASS: strict mode allows when all READY (no block, no strict mode message)"
-  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" pass "strict mode allows push when all features READY"
+  echo "  PASS: strict mode allows when all passing (no block, no strict mode message)"
+  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" pass "strict mode allows push when all features passing"
 else
   echo "  FAIL: expected exit 0 without strict mode/block, got exit=$EXIT10"
   echo "  Output: $OUTPUT10"
-  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" fail "strict mode allows push when all features READY"
+  purlin_proof "pre_push_hook" "PROOF-10" "RULE-8" fail "strict mode allows push when all features passing"
 fi
 
 # ==========================================================================
 # PROOF-8 (RULE-1, RULE-2, RULE-4): Full lifecycle — @e2e (Level 3)
 #   Phase A: 1 PASS, 1 FAIL, 1 NO PROOF → exit 1 (blocked by FAIL)
 #   Phase B: Fix FAIL to PASS → exit 0 with warning (NO PROOF remains)
-#   Phase C: Add missing proof as PASS → exit 0 silently (all READY)
+#   Phase C: Add missing proof as PASS → exit 0 silently (all passing)
 # ==========================================================================
 TMPDIR8=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR8"
@@ -449,7 +449,7 @@ else
   echo "    Output: $output8b"
 fi
 
-echo "  --- Phase C: Add missing proof (all READY) ---"
+echo "  --- Phase C: Add missing proof (all passing) ---"
 create_proof_file "$TMPDIR8" "test_feature" \
   "PROOF-1|RULE-1|pass" \
   "PROOF-2|RULE-2|pass" \
@@ -463,7 +463,7 @@ output8c=$(run_hook "$TMPDIR8") || ec8c=$?
 
 phase_c_ok=false
 if [[ $ec8c -eq 0 ]]; then
-  echo "    Phase C PASS: exit 0 (all READY)"
+  echo "    Phase C PASS: exit 0 (all passing)"
   phase_c_ok=true
 else
   echo "    Phase C FAIL: expected exit 0, got exit=$ec8c"
