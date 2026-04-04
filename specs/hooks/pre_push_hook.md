@@ -6,18 +6,18 @@
 
 ## What it does
 
-Layer 1 enforcement hook that runs before `git push`. Executes unit-tier tests and checks sync_status for proof coverage. Two modes: warn (default) blocks on FAIL only; strict blocks on anything non-READY. Allows silently if all proofs pass or no specs exist.
+Layer 1 enforcement hook that runs before `git push`. Executes unit-tier tests and checks sync_status for proof coverage. Two modes: warn (default) blocks on FAIL only, allows passing and partial; strict blocks on anything not READY (requires verification receipt). Allows silently when no specs exist.
 
 ## Rules
 
 - RULE-1: Blocks push with exit 1 when any proof has status FAIL in sync_status output
 - RULE-2: Allows push with exit 0 and prints a warning when proofs are partial (NO PROOF rules exist but none are FAIL)
 - RULE-3: Allows push with exit 0 silently when no specs directory exists or specs directory contains no .md files
-- RULE-4: Allows push with exit 0 when all proofs pass (READY status, no FAIL, no NO PROOF)
+- RULE-4: Allows push with exit 0 when all proofs pass (passing or READY status, no FAIL, no NO PROOF)
 - RULE-5: Detects test framework from `.purlin/config.json` `test_framework` field, falling back to auto-detection (pytest if conftest.py or pyproject.toml [tool.pytest] exists, jest if package.json contains jest, shell otherwise)
 - RULE-6: Runs only unit-tier tests (pytest excludes `not integration`, jest uses `--testPathPattern=unit`, shell runs `*.test.sh`)
 - RULE-7: Produces output showing which features passed, which have partial coverage, and which are blocked with FAIL proofs
-- RULE-8: In strict mode (`"pre_push": "strict"` in config), blocks push with exit 1 when any feature is not READY (partial coverage or failing); allows push when all features are READY
+- RULE-8: In strict mode (`"pre_push": "strict"` in config), blocks push with exit 1 when any feature is not READY — this includes "passing" features that lack a verification receipt; allows push only when all features are READY
 - RULE-9: After `purlin:init`, `.git/hooks/pre-push` exists, is executable, and runs `scripts/hooks/pre-push.sh`
 
 ## Proof
