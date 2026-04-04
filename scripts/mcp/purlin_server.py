@@ -381,15 +381,23 @@ def _read_audit_summary(project_root, total_no_proof_count=0):
     if not isinstance(cache, dict) or not cache:
         return None
 
+    # Deduplicate by (feature, proof_id) — keep latest entry
+    latest = {}
+    for _key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+        existing = latest.get(dedup_key)
+        if existing is None or entry.get('cached_at', '') > existing.get('cached_at', ''):
+            latest[dedup_key] = entry
+
     strong = 0
     weak = 0
     hollow = 0
     manual = 0
     latest_ts = None
 
-    for _key, entry in cache.items():
-        if not isinstance(entry, dict):
-            continue
+    for entry in latest.values():
         assessment = entry.get('assessment', '').upper()
         if assessment == 'STRONG':
             strong += 1
@@ -1060,14 +1068,23 @@ def _read_audit_cache_by_feature(project_root):
     if not isinstance(cache, dict):
         return {}
 
-    by_feature = {}
+    # Collect all entries, deduplicating by (feature, proof_id) — keep latest
+    latest = {}  # (feature, proof_id) -> entry
     for _key, entry in cache.items():
         if not isinstance(entry, dict):
             continue
         feat = entry.get('feature')
         if not feat:
             continue
-        by_feature.setdefault(feat, []).append(entry)
+        pid = entry.get('proof_id', '')
+        dedup_key = (feat, pid)
+        existing = latest.get(dedup_key)
+        if existing is None or entry.get('cached_at', '') > existing.get('cached_at', ''):
+            latest[dedup_key] = entry
+
+    by_feature = {}
+    for (_feat, _pid), entry in latest.items():
+        by_feature.setdefault(_feat, []).append(entry)
     return by_feature
 
 
