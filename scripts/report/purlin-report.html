@@ -502,7 +502,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       if (f.receipt && f.receipt.timestamp) {
         var vt = relTime(f.receipt.timestamp);
         var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
-        h += '<td class="' + vcls + '">' + esc(vt) + (f.vhash ? '<span class="vhash">' + esc(f.vhash) + '</span>' : '') + '</td>';
+        h += '<td class="' + vcls + '">' + esc(vt) + '</td>';
       } else {
         h += '<td class="ver">&mdash;</td>';
       }
