@@ -620,12 +620,12 @@ Full criteria: [references/audit_criteria.md](../references/audit_criteria.md) (
 
 **Pass 0 — Are the spec's rules behavioral?** (deterministic, no LLM)
 
-If every rule in a spec is a grep or existence check ("verify section exists", "file contains X"), the whole spec is flagged **structural-only**. All its proofs are capped at WEAK (`~s`) and count as 0 toward the integrity score. No point running deeper checks on tests that only prove documents have the right headings.
+Structural proofs (grep checks, file existence, section presence) are **excluded from the audit entirely**. They are not assessed, not scored, and not included in the integrity score. They still run as checks, but they are not proofs.
 
-This keeps structural specs from inflating your score. A spec like "verify agent.md contains ## Core Loop" passes every test, but it doesn't prove the agent actually follows the core loop.
+This prevents structural specs from inflating your score. A spec like "verify agent.md contains ## Core Loop" is a useful check, but it doesn't prove the agent actually follows the core loop.
 
 ```
-SPEC COVERAGE: structural only (8 rules, 0 behavioral)
+N structural checks excluded from audit
 → Add behavioral rules that test what the system does, not what files contain
 ```
 
@@ -661,6 +661,10 @@ WEAK, HOLLOW, and structural-only proofs all count as 0. They're in the denomina
 ### Audit caching
 
 Results are cached in `.purlin/cache/audit_cache.json`. The cache key is a hash of (rule text + proof description + test code). If none of those changed since the last audit, the cached STRONG/WEAK result is reused — no LLM call needed. Pass 0 and Pass 1 always run (they're fast and deterministic). Only Pass 2 is cached. Delete the cache file to force a full re-audit.
+
+### Audit results are reused
+
+After `purlin:audit` runs, results are cached in `.purlin/cache/audit_cache.json`. Both `purlin:status` and the HTML dashboard read this cache to display the integrity score without re-running the audit. The cache self-invalidates when rule text, proof descriptions, or test code changes.
 
 ### How it runs
 

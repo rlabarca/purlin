@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purlin Dashboard — Mockup</title>
+<style>
+/* ===== CSS CUSTOM PROPERTIES ===== */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}
+
+/* ===== DARK MODE — black background, warm accents from mockup 1 ===== */
+[data-theme="dark"] {
+  --bg-body: #09090f;
+  --bg-card: #131320;
+  --bg-card-alt: #10101c;
+  --bg-hover: #1c1c30;
+  --bg-expanded: #0e0e1a;
+  --text-primary: #e0e0e8;
+  --text-secondary: #8888a0;
+  --text-dim: #55556a;
+  --border: #222236;
+  --border-light: #1a1a2c;
+  --green: #4ade80;
+  --green-dim: rgba(74, 222, 128, 0.12);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.12);
+  --red: #f87171;
+  --red-dim: rgba(248, 113, 113, 0.12);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96, 165, 250, 0.12);
+  --teal: #36d6c9;
+  --gray-badge: #4a4a60;
+  --logo-fill: #e0e0e8;
+  --logo-guide: #55556a;
+  --header-accent: #4ade80;
+}
+
+/* ===== BLUEPRINT MODE — deep navy, teal/cyan aesthetic from mockup 2 ===== */
+[data-theme="blueprint"] {
+  --bg-body: #0a1929;
+  --bg-card: #0d2137;
+  --bg-card-alt: #0b1c30;
+  --bg-hover: #122a42;
+  --bg-expanded: #091825;
+  --text-primary: #b8e0dc;
+  --text-secondary: #5e9a96;
+  --text-dim: #3a6a66;
+  --border: #163040;
+  --border-light: #112636;
+  --green: #3dd6c8;
+  --green-dim: rgba(61, 214, 200, 0.12);
+  --amber: #e8872a;
+  --amber-dim: rgba(232, 135, 42, 0.12);
+  --red: #e85454;
+  --red-dim: rgba(232, 84, 84, 0.12);
+  --blue: #4eaaf0;
+  --blue-dim: rgba(78, 170, 240, 0.12);
+  --teal: #3dd6c8;
+  --gray-badge: #2a5a56;
+  --logo-fill: #3dd6c8;
+  --logo-guide: #1a4a46;
+  --header-accent: #3dd6c8;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* ===== LAYOUT ===== */
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-logo svg {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
+.header-project {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Staleness */
+.staleness {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.staleness-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.staleness-dot.fresh { background: var(--green); }
+.staleness-dot.warning { background: var(--amber); }
+.staleness-dot.stale { background: var(--red); }
+
+.staleness-text.warning { color: var(--amber); }
+.staleness-text.stale { color: var(--red); }
+
+/* Theme toggle — sun/moon icon button */
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: background 0.2s, color 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Show moon in dark mode, sun in blueprint mode */
+[data-theme="dark"] .icon-sun { display: none; }
+[data-theme="dark"] .icon-moon { display: block; }
+[data-theme="blueprint"] .icon-sun { display: block; }
+[data-theme="blueprint"] .icon-moon { display: none; }
+
+/* ===== SUMMARY STRIP ===== */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  text-align: center;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.summary-card-number {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.summary-card-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.summary-card-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.summary-card.total .summary-card-number { color: var(--text-primary); }
+.summary-card.ready .summary-card-number { color: var(--green); }
+.summary-card.partial .summary-card-number { color: var(--amber); }
+.summary-card.failing .summary-card-number { color: var(--red); }
+
+/* ===== FEATURE TABLE ===== */
+.table-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.feature-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.feature-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.feature-table th:hover { color: var(--text-secondary); }
+
+.feature-table th .sort-arrow {
+  display: inline-block;
+  margin-left: 3px;
+  opacity: 0.4;
+  font-size: 9px;
+}
+
+.feature-table th .sort-arrow.active {
+  opacity: 1;
+  color: var(--teal);
+}
+
+.feature-table td {
+  padding: 9px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.feature-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.feature-row:hover { background: var(--bg-hover); }
+.feature-row:nth-child(even) { background: var(--bg-card-alt); }
+.feature-row:nth-child(even):hover { background: var(--bg-hover); }
+.feature-row.expanded { background: var(--bg-hover); }
+
+/* ===== FEATURE NAME + TYPE INDICATORS ===== */
+.feature-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.expand-chevron {
+  display: inline-flex;
+  width: 18px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 9px;
+  transition: transform 0.15s;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.feature-row.expanded .expand-chevron {
+  transform: rotate(90deg);
+}
+
+.feature-name-text {
+  margin-right: 8px;
+}
+
+/* Type pill — appears on every row */
+.type-pill {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.type-pill.feature {
+  /* Feature type is implicit — no pill shown */
+  display: none;
+}
+
+.type-pill.anchor {
+  background: var(--gray-badge);
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+.type-pill.global {
+  background: rgba(61, 214, 200, 0.2);
+  color: var(--teal);
+}
+
+/* External reference icon — small link icon next to anchor name */
+.ext-ref-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  color: var(--teal);
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.ext-ref-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ext-ref-icon[title]:hover {
+  opacity: 1;
+}
+
+/* ===== COVERAGE COLUMN ===== */
+.coverage-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.coverage-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 30px;
+}
+
+.coverage-bar {
+  width: 56px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.coverage-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.coverage-bar-fill.ready { background: var(--green); }
+.coverage-bar-fill.partial { background: var(--amber); }
+.coverage-bar-fill.fail { background: var(--red); }
+.coverage-bar-fill.none { background: var(--gray-badge); }
+
+/* ===== STATUS BADGES ===== */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.status-badge.ready { background: var(--green); color: #000; }
+.status-badge.partial { background: transparent; color: var(--amber); border: 1.5px solid var(--amber); }
+.status-badge.fail { background: var(--red); color: #000; }
+.status-badge.no-proofs { background: var(--gray-badge); color: var(--text-primary); opacity: 0.45; }
+
+/* ===== INTEGRITY COLUMN ===== */
+.integrity-cell {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.integrity-cell.high { color: var(--green); }
+.integrity-cell.medium { color: var(--amber); }
+.integrity-cell.low { color: var(--red); }
+.integrity-cell.none { color: var(--text-dim); }
+
+/* ===== VERIFIED COLUMN ===== */
+.verified-cell {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.verified-cell.stale-receipt { color: var(--amber); }
+
+.verified-cell .vhash {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+
+/* ===== EXPANDED DETAIL ===== */
+.detail-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.detail-content {
+  background: var(--bg-expanded);
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.detail-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.detail-section-title:first-child { margin-top: 0; }
+
+/* Rules sub-table */
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4px;
+}
+
+.rules-table th {
+  text-align: left;
+  padding: 5px 10px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.rules-table td {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+}
+
+.rule-id { font-family: var(--font-mono); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.rule-desc { color: var(--text-primary); }
+.rule-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+.rule-label.global { color: var(--teal); }
+.rule-label.required { color: var(--blue); }
+.rule-status { font-size: 11px; font-weight: 600; }
+.rule-status.pass { color: var(--green); }
+.rule-status.fail { color: var(--red); }
+.rule-status.no-proof { color: var(--text-dim); }
+.rule-status.check { color: var(--text-dim); font-style: italic; }
+.rule-status.deferred { color: var(--text-dim); font-style: italic; }
+.rule-proof { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+.structural-row td { opacity: 0.5; }
+
+/* Audit summary bar */
+.audit-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding: 7px 12px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.audit-score {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.audit-score.high { color: var(--green); }
+.audit-score.medium { color: var(--amber); }
+.audit-score.low { color: var(--red); }
+
+.audit-breakdown {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.audit-breakdown span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.audit-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.audit-dot.strong { background: var(--green); }
+.audit-dot.weak { background: var(--amber); }
+.audit-dot.hollow { background: var(--red); }
+
+/* Findings */
+.finding-group-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.finding-group-title.critical { color: var(--red); }
+.finding-group-title.high { color: var(--amber); }
+.finding-group-title.medium { color: var(--blue); }
+.finding-group-title.low { color: var(--text-dim); }
+
+.finding-item {
+  padding: 7px 12px;
+  border-left: 3px solid;
+  margin-bottom: 5px;
+  border-radius: 0 4px 4px 0;
+  font-size: 12px;
+}
+
+.finding-item.critical { border-left-color: var(--red); background: var(--red-dim); }
+.finding-item.high { border-left-color: var(--amber); background: var(--amber-dim); }
+.finding-item.medium { border-left-color: var(--blue); background: var(--blue-dim); }
+.finding-item.low { border-left-color: var(--gray-badge); background: rgba(100, 116, 139, 0.08); }
+
+.finding-proof-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.finding-criterion { color: var(--text-primary); }
+
+.finding-fix {
+  color: var(--text-secondary);
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.finding-fix::before {
+  content: "Fix: ";
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.footer a {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg" height="28">
+          <g stroke-width="2" fill="none" style="stroke: var(--logo-guide)">
+            <line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8" />
+            <line x1="500" y1="145" x2="170" y2="409" />
+            <line x1="500" y1="145" x2="830" y2="409" />
+            <line x1="400" y1="210" x2="400" y2="255" />
+            <line x1="600" y1="210" x2="600" y2="255" />
+          </g>
+          <polyline points="400,280 500,390 600,280" fill="none" stroke-width="14" stroke-linejoin="miter" style="stroke: var(--logo-fill)"/>
+          <path d="M 500 160 L 190 408 L 190 440 L 810 440 L 810 408 Z M 500 200 L 262.5 390 L 737.5 390 Z" fill-rule="evenodd" style="fill: var(--logo-fill)"/>
+          <text x="500" y="550" text-anchor="middle" style="font-family: 'Montserrat', var(--font-sans); font-weight: 200; font-size: 76px; letter-spacing: 0.12em; fill: var(--logo-fill)">PURLIN</text>
+        </svg>
+      </div>
+      <span class="header-project">weather-app</span>
+    </div>
+    <div class="header-right">
+      <div class="staleness">
+        <span class="staleness-dot fresh"></span>
+        <span class="staleness-text">Updated 3 minutes ago</span>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark / blueprint mode">
+        <!-- Moon icon (shown in dark mode — click to go to blueprint) -->
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <!-- Sun icon (shown in blueprint mode — click to go to dark) -->
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== SUMMARY STRIP ===== -->
+  <div class="summary-strip">
+    <div class="summary-card total">
+      <div class="summary-card-number">10</div>
+      <div class="summary-card-label">Features</div>
+      <div class="summary-card-sub">+ 3 anchors</div>
+    </div>
+    <div class="summary-card ready">
+      <div class="summary-card-number">5</div>
+      <div class="summary-card-label">Ready</div>
+    </div>
+    <div class="summary-card partial">
+      <div class="summary-card-number">3</div>
+      <div class="summary-card-label">Partial</div>
+    </div>
+    <div class="summary-card failing">
+      <div class="summary-card-number">1</div>
+      <div class="summary-card-label">Failing</div>
+      <div class="summary-card-sub">1 no proofs</div>
+    </div>
+  </div>
+
+  <!-- ===== FEATURE TABLE ===== -->
+  <div class="table-container">
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th style="width:32%">Feature <span class="sort-arrow active">&#9660;</span></th>
+          <th style="width:16%">Coverage <span class="sort-arrow">&#9660;</span></th>
+          <th style="width:12%">Status <span class="sort-arrow">&#9660;</span></th>
+          <th style="width:12%">Integrity <span class="sort-arrow">&#9660;</span></th>
+          <th style="width:28%">Verified <span class="sort-arrow">&#9660;</span></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- 1. search_filters — FAIL -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">search_filters</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">2/4</span><div class="coverage-bar"><div class="coverage-bar-fill fail" style="width:50%"></div></div></div></td>
+          <td><span class="status-badge fail">Fail</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+
+        <!-- 2. checkout — partial (EXPANDED) -->
+        <tr class="feature-row expanded" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">checkout</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">3/5</span><div class="coverage-bar"><div class="coverage-bar-fill partial" style="width:60%"></div></div></div></td>
+          <td><span class="status-badge partial">Partial</span></td>
+          <td class="integrity-cell medium">60%</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="5">
+            <div class="detail-content">
+              <div class="detail-section-title">Rules &amp; Proofs</div>
+              <table class="rules-table">
+                <thead><tr>
+                  <th style="width:9%">Rule</th>
+                  <th style="width:38%">Description</th>
+                  <th style="width:8%">Label</th>
+                  <th style="width:8%">Status</th>
+                  <th style="width:37%">Proof</th>
+                </tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="rule-id">RULE-1</td>
+                    <td class="rule-desc">Cart total matches sum of item prices times quantities</td>
+                    <td class="rule-label">own</td>
+                    <td class="rule-status pass">PASS</td>
+                    <td class="rule-proof">PROOF-1 &middot; tests/test_checkout.py::test_cart_total</td>
+                  </tr>
+                  <tr>
+                    <td class="rule-id">RULE-2</td>
+                    <td class="rule-desc">Applying a valid coupon reduces total by coupon percentage</td>
+                    <td class="rule-label">own</td>
+                    <td class="rule-status pass">PASS</td>
+                    <td class="rule-proof">PROOF-2 &middot; tests/test_checkout.py::test_coupon_apply</td>
+                  </tr>
+                  <tr>
+                    <td class="rule-id">RULE-3</td>
+                    <td class="rule-desc">Expired coupons return 400 with error message</td>
+                    <td class="rule-label">own</td>
+                    <td class="rule-status fail">FAIL</td>
+                    <td class="rule-proof">PROOF-3 &middot; tests/test_checkout.py::test_expired_coupon &mdash; assertion error</td>
+                  </tr>
+                  <tr>
+                    <td class="rule-id">RULE-4</td>
+                    <td class="rule-desc">Checkout creates a Stripe payment intent with correct amount</td>
+                    <td class="rule-label">own</td>
+                    <td class="rule-status pass">PASS</td>
+                    <td class="rule-proof">PROOF-4 &middot; tests/test_checkout.py::test_stripe_intent</td>
+                  </tr>
+                  <tr>
+                    <td class="rule-id">RULE-5</td>
+                    <td class="rule-desc">Order confirmation email sent after successful payment</td>
+                    <td class="rule-label">own</td>
+                    <td class="rule-status no-proof">NO PROOF</td>
+                    <td class="rule-proof">&mdash;</td>
+                  </tr>
+                  <tr class="structural-row">
+                    <td class="rule-id" style="font-style:italic">security/<br>RULE-1</td>
+                    <td class="rule-desc">No eval() in user-facing code</td>
+                    <td class="rule-label global">global</td>
+                    <td class="rule-status check">CHECK</td>
+                    <td class="rule-proof">structural &middot; grep-based</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="detail-section-title">Audit Findings</div>
+              <div class="audit-summary">
+                <span class="audit-score medium">60%</span>
+                <div class="audit-breakdown">
+                  <span><span class="audit-dot strong"></span> 2 strong</span>
+                  <span><span class="audit-dot weak"></span> 1 weak</span>
+                  <span><span class="audit-dot hollow"></span> 0 hollow</span>
+                </div>
+              </div>
+              <div class="audit-findings">
+                <div class="finding-group-title high">High Value</div>
+                <div class="finding-item high">
+                  <span class="finding-proof-id">PROOF-2</span>
+                  <span class="finding-criterion">Missing negative test &mdash; proof says "reduces total" but test only checks happy path with valid coupon</span>
+                  <div class="finding-fix">Add test applying coupon with 0% discount and coupon that exceeds cart total; verify correct handling</div>
+                </div>
+                <div class="finding-group-title low">Low</div>
+                <div class="finding-item low">
+                  <span class="finding-proof-id">PROOF-4</span>
+                  <span class="finding-criterion">Deep mocking &mdash; Stripe API fully mocked; real payment intent creation not tested</span>
+                  <div class="finding-fix">Use Stripe test mode API key with real HTTP call to stripe.com/v1/payment_intents</div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- 3. notifications — partial -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">notifications</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">1/3</span><div class="coverage-bar"><div class="coverage-bar-fill partial" style="width:33%"></div></div></div></td>
+          <td><span class="status-badge partial">Partial</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+
+        <!-- 4. settings_panel — partial -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">settings_panel</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">2/3</span><div class="coverage-bar"><div class="coverage-bar-fill partial" style="width:66%"></div></div></div></td>
+          <td><span class="status-badge partial">Partial</span></td>
+          <td class="integrity-cell medium">75%</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+
+        <!-- 5. auth_login — READY -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">auth_login</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">5/5</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell high">100%</td>
+          <td class="verified-cell">2 hours ago <span class="vhash">a1b2c3d4</span></td>
+        </tr>
+
+        <!-- 6. user_profile — READY -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">user_profile</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">3/3</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell high">85%</td>
+          <td class="verified-cell">1 day ago <span class="vhash">f7c9e2a1</span></td>
+        </tr>
+
+        <!-- 7. data_export — READY -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">data_export</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">4/4</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell high">100%</td>
+          <td class="verified-cell">30 min ago <span class="vhash">e4d1f8b2</span></td>
+        </tr>
+
+        <!-- 8. webhook_delivery — READY -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">webhook_delivery</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">3/3</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell high">90%</td>
+          <td class="verified-cell">5 hours ago <span class="vhash">b3a8c7d9</span></td>
+        </tr>
+
+        <!-- 9. dashboard_layout — READY (stale receipt) -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">dashboard_layout</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">2/2</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell high">100%</td>
+          <td class="verified-cell stale-receipt">3 days ago <span class="vhash">91c4e6f0</span></td>
+        </tr>
+
+        <!-- 10. api_rate_limiting — no proofs -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name"><span class="expand-chevron">&#9654;</span><span class="feature-name-text">api_rate_limiting</span></div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">0/2</span><div class="coverage-bar"><div class="coverage-bar-fill none" style="width:0%"></div></div></div></td>
+          <td><span class="status-badge no-proofs">No proofs</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+
+        <!-- ===== ANCHORS ===== -->
+
+        <!-- security_no_eval — anchor, global, has external source -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name">
+            <span class="expand-chevron">&#9654;</span>
+            <span class="feature-name-text">security_no_eval</span>
+            <span class="type-pill global">global</span>
+            <span class="ext-ref-icon" title="Source: git@github.com:acme/security-policies.git">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </span>
+          </div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">5/5</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">2 hours ago <span class="vhash">d4e5f6a7</span></td>
+        </tr>
+
+        <!-- schema_spec_format — anchor, no external source -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name">
+            <span class="expand-chevron">&#9654;</span>
+            <span class="feature-name-text">schema_spec_format</span>
+            <span class="type-pill anchor">anchor</span>
+          </div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">3/3</span><div class="coverage-bar"><div class="coverage-bar-fill ready" style="width:100%"></div></div></div></td>
+          <td><span class="status-badge ready">Ready</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">1 day ago <span class="vhash">c1d2e3f4</span></td>
+        </tr>
+
+        <!-- design_tokens — anchor, has Figma external source, partial -->
+        <tr class="feature-row" onclick="toggleDetail(this)">
+          <td><div class="feature-name">
+            <span class="expand-chevron">&#9654;</span>
+            <span class="feature-name-text">design_tokens</span>
+            <span class="type-pill anchor">anchor</span>
+            <span class="ext-ref-icon" title="Source: figma.com/design/ABC123/Design-System">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </span>
+          </div></td>
+          <td><div class="coverage-cell"><span class="coverage-text">2/4</span><div class="coverage-bar"><div class="coverage-bar-fill partial" style="width:50%"></div></div></div></td>
+          <td><span class="status-badge partial">Partial</span></td>
+          <td class="integrity-cell none">&mdash;</td>
+          <td class="verified-cell">&mdash;</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <span>Generated by Purlin v0.9.0</span>
+    <a href="https://github.com/rlabarca/purlin/blob/main/docs/index.md">Documentation</a>
+  </footer>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'blueprint' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('purlin-theme', next);
+}
+
+(function() {
+  const saved = localStorage.getItem('purlin-theme');
+  if (saved && (saved === 'dark' || saved === 'blueprint')) {
+    document.documentElement.setAttribute('data-theme', saved);
+  }
+})();
+
+function toggleDetail(row) {
+  const isExpanded = row.classList.contains('expanded');
+  const nextRow = row.nextElementSibling;
+  if (isExpanded) {
+    row.classList.remove('expanded');
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      nextRow.style.display = 'none';
+    }
+  } else {
+    row.classList.add('expanded');
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      nextRow.style.display = 'table-row';
+    }
+  }
+}
+
+document.querySelectorAll('.detail-row').forEach(row => {
+  const prevRow = row.previousElementSibling;
+  if (!prevRow || !prevRow.classList.contains('expanded')) {
+    row.style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>

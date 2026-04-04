@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purlin Dashboard</title>
+<style>
+/* ===== FONTS ===== */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  /* Status colors — shared across themes */
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.15);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.15);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.15);
+  --teal: #2dd4bf;
+  --gray-badge: #64748b;
+}
+
+/* ===== DARK THEME ===== */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-alt: #172033;
+  --bg-hover: #263350;
+  --bg-expanded: #162032;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --border: #334155;
+  --border-light: #1e293b;
+  --logo-fill: #e2e8f0;
+  --logo-guide: #94a3b8;
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-alt: #f8fafc;
+  --bg-hover: #e2e8f0;
+  --bg-expanded: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-dim: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --logo-fill: #1e293b;
+  --logo-guide: #94a3b8;
+}
+
+/* ===== BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);font-size:14px;line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
+.dashboard{max-width:1400px;margin:0 auto;padding:0 24px}
+
+/* ===== HEADER ===== */
+.header{display:flex;align-items:center;justify-content:space-between;height:56px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-logo svg{height:26px;width:auto;display:block}
+.header-project{font-size:15px;font-weight:600}
+.header-right{display:flex;align-items:center;gap:20px}
+
+/* Staleness */
+.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary)}
+.staleness-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
+.staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
+
+/* Theme toggle */
+.theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
+.theme-toggle:hover{background:var(--bg-hover);color:var(--text-primary)}
+.theme-toggle svg{width:18px;height:18px}
+[data-theme="dark"] .icon-sun{display:none}[data-theme="dark"] .icon-moon{display:block}
+[data-theme="light"] .icon-sun{display:block}[data-theme="light"] .icon-moon{display:none}
+
+/* ===== NO DATA STATE ===== */
+.no-data{text-align:center;padding:80px 20px;color:var(--text-secondary)}
+.no-data h2{font-size:18px;margin-bottom:8px;color:var(--text-primary)}
+.no-data p{font-size:14px}
+.no-data code{font-family:var(--font-mono);background:var(--bg-card);padding:2px 8px;border-radius:4px;font-size:13px}
+
+/* ===== SUMMARY STRIP ===== */
+.summary-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center;transition:background .2s,border-color .2s}
+.summary-card-number{font-size:34px;font-weight:700;line-height:1.1;margin-bottom:2px}
+.summary-card-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em}
+.summary-card-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
+.sc-total .summary-card-number{color:var(--text-primary)}
+.sc-ready .summary-card-number{color:var(--green)}
+.sc-partial .summary-card-number{color:var(--amber)}
+.sc-failing .summary-card-number{color:var(--red)}
+.sc-integrity .summary-card-number{color:var(--green)}
+.sc-integrity.int-mid .summary-card-number{color:var(--amber)}
+.sc-integrity.int-lo .summary-card-number{color:var(--red)}
+.sc-integrity.int-na .summary-card-number{color:var(--text-dim)}
+.audit-time{font-size:12px;color:var(--text-dim);margin-left:4px}
+.audit-time.stale{color:var(--amber)}
+
+/* ===== TABLE ===== */
+.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--text-secondary)}
+th .sa{display:inline-block;margin-left:3px;opacity:.3;font-size:9px}
+th .sa.active{opacity:1;color:var(--teal)}
+td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);vertical-align:middle}
+.fr{cursor:pointer;transition:background .12s}
+.fr:hover{background:var(--bg-hover)}
+.fr:nth-child(even of .fr){background:var(--bg-card-alt)}
+.fr:nth-child(even of .fr):hover{background:var(--bg-hover)}
+.fr.expanded{background:var(--bg-hover)}
+
+/* Feature name + type indicators */
+.fn{display:flex;align-items:center;font-weight:500}
+.chv{display:inline-flex;width:18px;text-align:center;color:var(--text-dim);font-size:9px;transition:transform .15s;margin-right:4px;flex-shrink:0}
+.fr.expanded .chv{transform:rotate(90deg)}
+.fnt{margin-right:8px}
+.tp{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.tp-anchor{background:var(--gray-badge);color:#fff;opacity:.6}
+.tp-global{background:rgba(45,212,191,.2);color:var(--teal)}
+.ext-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;color:var(--teal);flex-shrink:0;opacity:.7}
+.ext-icon svg{width:12px;height:12px}
+.ext-icon:hover{opacity:1}
+
+/* Coverage */
+.cov{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.cov-t{font-family:var(--font-mono);font-size:12px;min-width:30px}
+.cov-bar{width:56px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.cov-fill{height:100%;border-radius:3px}
+.cov-ready{background:var(--green)}.cov-partial{background:var(--amber)}.cov-fail{background:var(--red)}.cov-none{background:var(--gray-badge)}
+
+/* Status badges */
+.sb{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.sb-ready{background:var(--green);color:#fff}
+.sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
+.sb-fail{background:var(--red);color:#fff}
+.sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
+
+/* Integrity */
+.int{font-family:var(--font-mono);font-size:12px}
+.int-hi{color:var(--green)}.int-mid{color:var(--amber)}.int-lo{color:var(--red)}.int-na{color:var(--text-dim)}
+
+/* Verified */
+.ver{font-size:12px;color:var(--text-secondary)}
+.ver-stale{color:var(--amber)}
+.vhash{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:6px}
+
+/* ===== EXPANDED DETAIL ===== */
+.dr td{padding:0!important;border-bottom:1px solid var(--border)!important}
+.dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border)}
+.dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
+.dst:first-child{margin-top:0}
+
+/* Rules sub-table */
+.rt{width:100%;border-collapse:collapse;margin-bottom:4px}
+.rt th{padding:5px 10px;font-size:9px;cursor:default}
+.rt td{padding:5px 10px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top}
+.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap}
+.rdesc{color:var(--text-primary)}
+.rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
+.rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
+.rst{font-size:11px;font-weight:600}
+.rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--text-dim);font-style:italic}.rst-def{color:var(--text-dim);font-style:italic}
+.rprf{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.structural td{opacity:.5}
+
+/* Audit summary */
+.asummary{display:flex;align-items:center;gap:16px;margin-bottom:8px;padding:7px 12px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border)}
+.ascore{font-size:18px;font-weight:700;font-family:var(--font-mono)}
+.ascore-hi{color:var(--green)}.ascore-mid{color:var(--amber)}.ascore-lo{color:var(--red)}
+.abd{display:flex;gap:12px;font-size:11px;color:var(--text-secondary)}
+.abd span{display:flex;align-items:center;gap:4px}
+.adot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.adot-s{background:var(--green)}.adot-w{background:var(--amber)}.adot-h{background:var(--red)}
+
+/* Findings */
+.fgt{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:5px}
+.fgt-crit{color:var(--red)}.fgt-high{color:var(--amber)}.fgt-med{color:var(--blue)}.fgt-low{color:var(--text-dim)}
+.fi{padding:7px 12px;border-left:3px solid;margin-bottom:5px;border-radius:0 4px 4px 0;font-size:12px}
+.fi-crit{border-left-color:var(--red);background:var(--red-dim)}
+.fi-high{border-left-color:var(--amber);background:var(--amber-dim)}
+.fi-med{border-left-color:var(--blue);background:var(--blue-dim)}
+.fi-low{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08)}
+.fid{font-family:var(--font-mono);font-size:11px;font-weight:600;margin-right:6px}
+.ffix{color:var(--text-secondary);margin-top:3px;font-size:11px}
+.ffix::before{content:"Fix: ";font-weight:600;color:var(--text-dim)}
+
+/* ===== FOOTER ===== */
+.footer{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim)}
+.footer a{color:var(--teal);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+</style>
+<script src=".purlin/report-data.js"></script>
+</head>
+<body>
+<div class="dashboard" id="app"></div>
+<script>
+'use strict';
+(function(){
+  /* ===== DATA ===== */
+  var D = (typeof PURLIN_DATA !== 'undefined') ? PURLIN_DATA : null;
+
+  var app = document.getElementById('app');
+
+  if (!D) {
+    app.innerHTML = '<div class="no-data"><h2>No dashboard data</h2><p>Run <code>purlin:status</code> to generate data, then refresh this page.</p><p style="margin-top:8px">Make sure <code>"report": true</code> is set in <code>.purlin/config.json</code></p></div>';
+    return;
+  }
+
+  /* ===== THEME ===== */
+  var savedTheme = localStorage.getItem('purlin-theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('purlin-theme', next);
+  }
+
+  /* ===== HELPERS ===== */
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function relTime(iso) {
+    if (!iso) return null;
+    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function staleness(iso) {
+    if (!iso) return { cls: 'stale', text: 'No data', warn: '' };
+    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 3600) return { cls: 'fresh', text: 'Updated ' + relTime(iso), warn: '' };
+    if (diff < 86400) return { cls: 'warning', text: 'Updated ' + relTime(iso), warn: ' — Data may be stale. Run purlin:status to refresh.' };
+    return { cls: 'stale', text: 'Updated ' + relTime(iso), warn: ' — Data is stale. Run purlin:status to refresh.' };
+  }
+
+  function covClass(status) {
+    if (status === 'READY') return 'cov-ready';
+    if (status === 'partial') return 'cov-partial';
+    if (status === 'FAIL') return 'cov-fail';
+    return 'cov-none';
+  }
+
+  function badgeClass(status) {
+    if (status === 'READY') return 'sb sb-ready';
+    if (status === 'partial') return 'sb sb-partial';
+    if (status === 'FAIL') return 'sb sb-fail';
+    return 'sb sb-none';
+  }
+
+  function badgeText(status) {
+    if (status === 'READY') return 'Ready';
+    if (status === 'partial') return 'Partial';
+    if (status === 'FAIL') return 'Fail';
+    return 'No proofs';
+  }
+
+  function intClass(v) {
+    if (v == null) return 'int int-na';
+    if (v >= 80) return 'int int-hi';
+    if (v >= 50) return 'int int-mid';
+    return 'int int-lo';
+  }
+
+  function ruleStatusCls(s) {
+    if (s === 'PASS') return 'rst rst-pass';
+    if (s === 'FAIL') return 'rst rst-fail';
+    if (s === 'CHECK') return 'rst rst-chk';
+    if (s === 'DEFERRED') return 'rst rst-def';
+    return 'rst rst-np';
+  }
+
+  function labelCls(l) {
+    if (l === 'global') return 'rlbl rlbl-global';
+    if (l === 'required') return 'rlbl rlbl-required';
+    return 'rlbl';
+  }
+
+  function priorityOrder(p) {
+    return {CRITICAL:0, HIGH:1, MEDIUM:2, LOW:3}[p] || 4;
+  }
+
+  function findingCls(p) {
+    if (p === 'CRITICAL') return 'fi fi-crit';
+    if (p === 'HIGH') return 'fi fi-high';
+    if (p === 'MEDIUM') return 'fi fi-med';
+    return 'fi fi-low';
+  }
+
+  function findingGroupCls(p) {
+    if (p === 'CRITICAL') return 'fgt fgt-crit';
+    if (p === 'HIGH') return 'fgt fgt-high';
+    if (p === 'MEDIUM') return 'fgt fgt-med';
+    return 'fgt fgt-low';
+  }
+
+  var extIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+
+  /* ===== SORTING ===== */
+  var sortCol = 'status';
+  var sortAsc = true;
+
+  function statusOrder(s) { return {FAIL:0, partial:1, READY:2, no_proofs:3}[s] || 4; }
+
+  function sortFeatures(features) {
+    var arr = features.slice();
+    arr.sort(function(a, b) {
+      var va, vb;
+      switch (sortCol) {
+        case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+        case 'coverage': va = a.total ? a.proved / a.total : -1; vb = b.total ? b.proved / b.total : -1; break;
+        case 'status': va = statusOrder(a.status); vb = statusOrder(b.status); break;
+        case 'integrity':
+          va = (a.audit && a.audit.integrity != null) ? a.audit.integrity : -1;
+          vb = (b.audit && b.audit.integrity != null) ? b.audit.integrity : -1;
+          break;
+        case 'verified':
+          va = (a.receipt && a.receipt.timestamp) ? new Date(a.receipt.timestamp).getTime() : 0;
+          vb = (b.receipt && b.receipt.timestamp) ? new Date(b.receipt.timestamp).getTime() : 0;
+          break;
+        default: va = statusOrder(a.status); vb = statusOrder(b.status);
+      }
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    });
+    return arr;
+  }
+
+  /* ===== RENDER ===== */
+  var expandedSet = {};
+
+  function render() {
+    var st = staleness(D.timestamp);
+    var S = D.summary;
+    var features = sortFeatures(D.features);
+
+    var h = '';
+
+    /* Header */
+    h += '<header class="header"><div class="header-left">';
+    h += '<div class="header-logo"><svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg" height="28">';
+    h += '<g stroke-width="2" fill="none" style="stroke:var(--logo-guide)"><line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/><line x1="500" y1="145" x2="170" y2="409"/><line x1="500" y1="145" x2="830" y2="409"/><line x1="400" y1="210" x2="400" y2="255"/><line x1="600" y1="210" x2="600" y2="255"/></g>';
+    h += '<polyline points="400,280 500,390 600,280" fill="none" stroke-width="14" stroke-linejoin="miter" style="stroke:var(--logo-fill)"/>';
+    h += '<path d="M500 160L190 408 190 440 810 440 810 408ZM500 200L262.5 390 737.5 390Z" fill-rule="evenodd" style="fill:var(--logo-fill)"/>';
+    h += '<text x="500" y="550" text-anchor="middle" style="font-family:Montserrat,var(--font-sans);font-weight:200;font-size:76px;letter-spacing:.12em;fill:var(--logo-fill)">PURLIN</text>';
+    h += '</svg></div>';
+    h += '<span class="header-project">' + esc(D.project) + '</span>';
+    h += '</div><div class="header-right">';
+    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
+    /* Last audit time */
+    var A = D.audit_summary;
+    if (A && A.last_audit_relative) {
+      var acls = A.stale ? 'audit-time stale' : 'audit-time';
+      var atxt = 'Audit: ' + A.last_audit_relative;
+      if (A.stale) atxt += ' — consider re-auditing';
+      h += '<span class="' + acls + '">' + esc(atxt) + '</span>';
+    }
+    h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
+    h += '<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    h += '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+    h += '</button>';
+    h += '</div></header>';
+
+    /* Summary strip */
+    h += '<div class="summary-strip">';
+    h += '<div class="summary-card sc-total"><div class="summary-card-number">' + S.total_features + '</div><div class="summary-card-label">Features</div>';
+    if (D.anchors_summary.total) h += '<div class="summary-card-sub">+ ' + D.anchors_summary.total + ' anchors</div>';
+    h += '</div>';
+    h += '<div class="summary-card sc-ready"><div class="summary-card-number">' + S.ready + '</div><div class="summary-card-label">Ready</div></div>';
+    h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
+    h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
+    if (S.no_proofs) h += '<div class="summary-card-sub">' + S.no_proofs + ' no proofs</div>';
+    h += '</div>';
+    /* Integrity card */
+    if (A && A.integrity != null) {
+      var icls = A.integrity >= 80 ? '' : A.integrity >= 50 ? ' int-mid' : ' int-lo';
+      h += '<div class="summary-card sc-integrity' + icls + '"><div class="summary-card-number">' + A.integrity + '%</div><div class="summary-card-label">Integrity</div>';
+      h += '<div class="summary-card-sub">' + A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H</div>';
+      h += '</div>';
+    } else {
+      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Integrity</div>';
+      h += '<div class="summary-card-sub">run purlin:audit</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    /* Feature table */
+    var cols = [
+      {key:'name', label:'Feature', w:'32%'},
+      {key:'coverage', label:'Coverage', w:'16%'},
+      {key:'status', label:'Status', w:'12%'},
+      {key:'integrity', label:'Integrity', w:'12%'},
+      {key:'verified', label:'Verified', w:'28%'}
+    ];
+
+    h += '<div class="table-container"><table><thead><tr>';
+    for (var ci = 0; ci < cols.length; ci++) {
+      var c = cols[ci];
+      var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
+      var acls = (sortCol === c.key) ? ' active' : '';
+      h += '<th style="width:' + c.w + '" data-col="' + c.key + '">' + c.label + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
+    }
+    h += '</tr></thead><tbody>';
+
+    for (var i = 0; i < features.length; i++) {
+      var f = features[i];
+      var isExpanded = expandedSet[f.name];
+      var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
+      var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
+
+      /* Feature row */
+      h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+
+      /* Name + type */
+      h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
+      if (f.type === 'anchor') {
+        if (f.is_global) {
+          h += '<span class="tp tp-global">global</span>';
+        } else {
+          h += '<span class="tp tp-anchor">anchor</span>';
+        }
+      }
+      if (f.source_url) {
+        h += '<span class="ext-icon" title="Source: ' + esc(f.source_url) + '">' + extIconSvg + '</span>';
+      }
+      h += '</div></td>';
+
+      /* Coverage */
+      h += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
+      h += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
+
+      /* Status */
+      h += '<td><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
+
+      /* Integrity */
+      h += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
+
+      /* Verified */
+      if (f.receipt && f.receipt.timestamp) {
+        var vt = relTime(f.receipt.timestamp);
+        var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
+        h += '<td class="' + vcls + '">' + esc(vt) + (f.vhash ? '<span class="vhash">' + esc(f.vhash) + '</span>' : '') + '</td>';
+      } else {
+        h += '<td class="ver">&mdash;</td>';
+      }
+      h += '</tr>';
+
+      /* Detail row (always rendered, hidden via display) */
+      if (isExpanded) {
+        h += renderDetail(f);
+      }
+    }
+
+    h += '</tbody></table></div>';
+
+    /* Footer */
+    h += '<footer class="footer"><span>Generated by Purlin' + (D.version ? ' v' + esc(D.version) : '') + '</span>';
+    if (D.docs_url) {
+      h += '<a href="' + esc(D.docs_url) + '" target="_blank" rel="noopener">Documentation</a>';
+    }
+    h += '</footer>';
+
+    app.innerHTML = h;
+
+    /* Attach event listeners */
+    document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
+
+    var ths = app.querySelectorAll('th[data-col]');
+    for (var ti = 0; ti < ths.length; ti++) {
+      ths[ti].addEventListener('click', function(e) {
+        var col = this.getAttribute('data-col');
+        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+        render();
+      });
+    }
+
+    var frs = app.querySelectorAll('.fr');
+    for (var fi = 0; fi < frs.length; fi++) {
+      frs[fi].addEventListener('click', function() {
+        var name = this.getAttribute('data-name');
+        expandedSet[name] = !expandedSet[name];
+        render();
+      });
+    }
+  }
+
+  function renderDetail(f) {
+    var h = '<tr class="dr"><td colspan="5"><div class="dc">';
+
+    /* Rules table */
+    h += '<div class="dst">Rules &amp; Proofs</div>';
+    h += '<table class="rt"><thead><tr><th style="width:9%">Rule</th><th style="width:38%">Description</th><th style="width:8%">Label</th><th style="width:8%">Status</th><th style="width:37%">Proof</th></tr></thead><tbody>';
+
+    for (var ri = 0; ri < f.rules.length; ri++) {
+      var r = f.rules[ri];
+      var isStructural = r.status === 'CHECK';
+      h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
+      h += '<td class="rid">' + esc(r.id) + '</td>';
+      h += '<td class="rdesc">' + esc(r.description) + '</td>';
+      h += '<td class="' + labelCls(r.label) + '">' + esc(r.label) + '</td>';
+      h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
+
+      if (r.proof) {
+        var ploc = r.proof.id;
+        if (r.proof.test_file) ploc += ' \u00b7 ' + r.proof.test_file;
+        if (r.proof.test_name) ploc += '::' + r.proof.test_name;
+        h += '<td class="rprf">' + esc(ploc) + '</td>';
+      } else if (isStructural) {
+        h += '<td class="rprf">structural check</td>';
+      } else {
+        h += '<td class="rprf">&mdash;</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</tbody></table>';
+
+    /* Audit findings */
+    if (f.audit && f.audit.findings && f.audit.findings.length) {
+      h += '<div class="dst">Audit Findings</div>';
+      var a = f.audit;
+      var scoreCls = a.integrity >= 80 ? 'ascore ascore-hi' : a.integrity >= 50 ? 'ascore ascore-mid' : 'ascore ascore-lo';
+      h += '<div class="asummary"><span class="' + scoreCls + '">' + a.integrity + '%</span>';
+      h += '<div class="abd">';
+      h += '<span><span class="adot adot-s"></span> ' + a.strong + ' strong</span>';
+      h += '<span><span class="adot adot-w"></span> ' + a.weak + ' weak</span>';
+      h += '<span><span class="adot adot-h"></span> ' + a.hollow + ' hollow</span>';
+      h += '</div></div>';
+
+      /* Group by priority */
+      var grouped = {};
+      for (var fi2 = 0; fi2 < a.findings.length; fi2++) {
+        var fd = a.findings[fi2];
+        var p = fd.priority || 'LOW';
+        if (!grouped[p]) grouped[p] = [];
+        grouped[p].push(fd);
+      }
+      var prios = ['CRITICAL','HIGH','MEDIUM','LOW'];
+      for (var pi = 0; pi < prios.length; pi++) {
+        var pr = prios[pi];
+        if (!grouped[pr]) continue;
+        h += '<div class="' + findingGroupCls(pr) + '">' + pr + '</div>';
+        for (var gi = 0; gi < grouped[pr].length; gi++) {
+          var fd2 = grouped[pr][gi];
+          h += '<div class="' + findingCls(pr) + '">';
+          h += '<span class="fid">' + esc(fd2.proof_id) + '</span>';
+          h += '<span>' + esc(fd2.criterion) + '</span>';
+          if (fd2.fix) h += '<div class="ffix">' + esc(fd2.fix) + '</div>';
+          h += '</div>';
+        }
+      }
+    } else if (f.audit && f.audit.integrity != null) {
+      h += '<div class="dst">Audit</div>';
+      var a2 = f.audit;
+      var scoreCls2 = a2.integrity >= 80 ? 'ascore ascore-hi' : a2.integrity >= 50 ? 'ascore ascore-mid' : 'ascore ascore-lo';
+      h += '<div class="asummary"><span class="' + scoreCls2 + '">' + a2.integrity + '%</span>';
+      h += '<div class="abd">';
+      h += '<span><span class="adot adot-s"></span> ' + a2.strong + ' strong</span>';
+      h += '<span><span class="adot adot-w"></span> ' + a2.weak + ' weak</span>';
+      h += '<span><span class="adot adot-h"></span> ' + a2.hollow + ' hollow</span>';
+      h += '</div></div>';
+    }
+
+    h += '</div></td></tr>';
+    return h;
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

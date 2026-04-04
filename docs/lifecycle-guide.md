@@ -57,6 +57,24 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 | MANUAL PROOF STALE | Manual stamp exists but code changed since |
 | MANUAL PROOF NEEDED | Manual proof declared but not stamped |
 
+### Coverage at a glance
+
+`sync_status` starts with a summary table showing every feature's coverage:
+
+```
+┌───────────────────┬──────────┬─────────┐
+│ Feature           │ Coverage │ Status  │
+├───────────────────┼──────────┼─────────┤
+│ checkout          │      3/5 │ partial │
+│ login             │      5/5 │   READY │
+└───────────────────┴──────────┴─────────┘
+1/2 features READY | Integrity: 85% (last purlin:audit: 2 hours ago)
+```
+
+Detailed per-rule coverage follows below. Features needing attention (FAIL, partial) sort to the top.
+
+The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules. Run `purlin:audit` after significant test changes to refresh the score.
+
 ### Verification Receipts
 
 `purlin:verify` runs all tests and issues a receipt: `verify: [Complete:all] features=3 vhash=f7a2b9c1`. The `vhash` proves these rules had these test outcomes. CI `--audit` re-runs everything independently.
@@ -92,6 +110,7 @@ That's the daily loop. Everything below is detail for when you want more control
 | Add a rule to a spec | `add a rule to login: passwords must expire after 90 days` |
 | Update a spec after code changed | `update the spec for login to reflect the recent changes` |
 | Stamp a manual proof | `/purlin:verify --manual login PROOF-3` |
+| Open the dashboard | Open `purlin-report.html` in a browser |
 
 ### Turning ideas into specs
 
@@ -266,6 +285,7 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 | See coverage | `/purlin:status` |
 | Check proof quality | `purlin:audit login` |
 | Ship it | `/purlin:verify` |
+| Open the dashboard | Open `purlin-report.html` in a browser |
 
 ### The build/test loop
 
@@ -322,6 +342,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 | Verify and ship | `/purlin:verify` |
 | Stamp a manual proof | `/purlin:verify --manual checkout PROOF-4` |
 | Write a test for an unproved rule | `write a test for login RULE-3` |
+| Open the dashboard | Open `purlin-report.html` in a browser |
 
 ### Manual proof verification
 
@@ -431,7 +452,7 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-`sync_status` flags features with structural-only proofs: `READY (structural only)`. The audit (Pass 0) caps these at WEAK — they count as 0 toward the integrity score. This means the document's sections exist but no test verifies the system actually follows the instructions. Add E2E proofs in `specs/integration/` to get real coverage.
+`sync_status` classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are reported separately and excluded from coverage. A feature is READY only when all its rules have passing behavioral proofs. Add E2E proofs in `specs/integration/` to get real coverage.
 
 ---
 

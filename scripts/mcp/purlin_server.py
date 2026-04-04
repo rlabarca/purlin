@@ -11,6 +11,7 @@ The server reads JSON-RPC requests from stdin and writes responses to stdout.
 It is started automatically by Claude Code when the plugin is enabled.
 """
 
+import datetime
 import glob
 import hashlib
 import json
@@ -56,6 +57,7 @@ _BEHAVIORAL_PROOF_RE = re.compile(
     re.IGNORECASE,
 )
 _GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
+_SOURCE_RE = re.compile(r'^>\s*Source:\s*(.+)', re.MULTILINE)
 _VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
 _VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
 
@@ -123,6 +125,7 @@ def _scan_specs(project_root):
         # Parse manual proof stamps and collect proof descriptions from ## Proof section
         manual_proofs = {}
         proof_descriptions = []
+        proof_desc_by_rule = {}
         proof_section = _extract_section(content, '## Proof')
         if proof_section:
             for line in proof_section.strip().splitlines():
@@ -136,6 +139,8 @@ def _scan_specs(project_root):
                 proof_descriptions.append(proof_desc)
                 # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
                 rule_ids = [r.strip() for r in rule_ids_raw.split(',')]
+                for rule_id in rule_ids:
+                    proof_desc_by_rule.setdefault(rule_id, []).append(proof_desc)
                 stamp = _MANUAL_STAMPED_RE.search(line)
                 for rule_id in rule_ids:
                     if stamp:
@@ -152,6 +157,10 @@ def _scan_specs(project_root):
                             'stamped': False,
                         }
 
+        # Extract source URL for externally-referenced anchors
+        source_match = _SOURCE_RE.search(content)
+        source_url = source_match.group(1).strip() if source_match else None
+
         # Extract visual reference and hash for staleness detection
         visual_ref_match = _VISUAL_REF_RE.search(content)
         visual_hash_match = _VISUAL_HASH_RE.search(content)
@@ -167,10 +176,12 @@ def _scan_specs(project_root):
             'scope': scope,
             'is_anchor': is_anchor,
             'is_global': is_global,
+            'source_url': source_url,
             'unnumbered_lines': unnumbered,
             'has_rules_section': rules_section is not None,
             'manual_proofs': manual_proofs,
             'proof_descriptions': proof_descriptions,
+            'proof_desc_by_rule': proof_desc_by_rule,
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
         }
@@ -300,6 +311,177 @@ def _is_structural_only(proof_descriptions):
     return True
 
 
+def _is_structural_proof_desc(desc):
+    """Return True if a single proof description is structural (grep/existence check)."""
+    return bool(_STRUCTURAL_PROOF_RE.search(desc)) and not bool(_BEHAVIORAL_PROOF_RE.search(desc))
+
+
+def _get_rule_proof_descs(key, label, src_feature, info, all_features):
+    """Get proof descriptions for a rule from its source spec."""
+    if label == 'own':
+        return info.get('proof_desc_by_rule', {}).get(key, [])
+    bare_rule = key.split('/', 1)[1] if '/' in key else key
+    src_info = all_features.get(src_feature, {})
+    return src_info.get('proof_desc_by_rule', {}).get(bare_rule, [])
+
+
+def _classify_structural_rules(active_entries, info, all_features):
+    """Return set of rule keys whose proof descriptions are all structural."""
+    structural = set()
+    for key, label, src in active_entries:
+        descs = _get_rule_proof_descs(key, label, src, info, all_features)
+        if descs and all(_is_structural_proof_desc(d) for d in descs):
+            structural.add(key)
+    return structural
+
+
+def _relative_time(iso_timestamp):
+    """Return human-readable relative time string from an ISO 8601 timestamp."""
+    if not iso_timestamp:
+        return None
+    try:
+        then = datetime.datetime.fromisoformat(iso_timestamp.replace('Z', '+00:00'))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    now = datetime.datetime.now(datetime.timezone.utc)
+    delta = now - then
+    secs = delta.total_seconds()
+    if secs < 60:
+        return "just now"
+    if secs < 3600:
+        mins = int(secs / 60)
+        return f"{mins} minute{'s' if mins != 1 else ''} ago"
+    if secs < 86400:
+        hours = int(secs / 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    days = delta.days
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _read_audit_summary(project_root):
+    """Read audit cache and compute project-wide integrity summary.
+
+    Returns dict with integrity stats or None if no cache exists.
+    """
+    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
+    if not os.path.isfile(cache_path):
+        return None
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return None
+    if not isinstance(cache, dict) or not cache:
+        return None
+
+    strong = 0
+    weak = 0
+    hollow = 0
+    manual = 0
+    latest_ts = None
+
+    for _key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        assessment = entry.get('assessment', '').upper()
+        if assessment == 'STRONG':
+            strong += 1
+        elif assessment == 'WEAK':
+            weak += 1
+        elif assessment == 'HOLLOW':
+            hollow += 1
+        elif assessment == 'MANUAL':
+            manual += 1
+
+        ts = entry.get('cached_at')
+        if ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+    behavioral_total = strong + weak + hollow + manual
+    if behavioral_total == 0:
+        return None
+
+    integrity = round((strong + manual) / behavioral_total * 100)
+    stale = False
+    if latest_ts:
+        try:
+            then = datetime.datetime.fromisoformat(latest_ts.replace('Z', '+00:00'))
+            delta = datetime.datetime.now(datetime.timezone.utc) - then
+            stale = delta.total_seconds() > 86400
+        except (ValueError, TypeError):
+            pass
+
+    return {
+        'integrity': integrity,
+        'strong': strong,
+        'weak': weak,
+        'hollow': hollow,
+        'manual': manual,
+        'behavioral_total': behavioral_total,
+        'last_audit': latest_ts,
+        'last_audit_relative': _relative_time(latest_ts) if latest_ts else None,
+        'stale': stale,
+    }
+
+
+def _build_summary_table(summary_rows, audit_summary=None):
+    """Build a coverage summary table with Unicode box-drawing characters."""
+    if not summary_rows:
+        return []
+
+    # Sort: FAIL first, then partial (ascending coverage), then READY, then —
+    def _sort_key(row):
+        _name, proved, total, status = row
+        priority = {"FAIL": 0, "partial": 1, "READY": 2}.get(status, 3)
+        ratio = proved / total if total else 0
+        return (priority, ratio, _name)
+
+    summary_rows = sorted(summary_rows, key=_sort_key)
+
+    # Calculate column widths
+    name_width = max(len(r[0]) for r in summary_rows)
+    name_width = max(name_width, len("Feature"))
+
+    lines = []
+    lines.append(f"\u250c\u2500{'─' * name_width}\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510")
+    lines.append(f"\u2502 {'Feature':<{name_width}} \u2502 Coverage \u2502 Status  \u2502")
+    lines.append(f"\u251c\u2500{'─' * name_width}\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524")
+
+    for name, proved, total, status in summary_rows:
+        coverage = f"{proved}/{total}"
+        if status == "READY":
+            symbol = "READY"
+        elif status == "FAIL":
+            symbol = "FAIL"
+        elif status == "partial":
+            symbol = "partial"
+        else:
+            symbol = "\u2014"
+        lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>7} \u2502")
+
+    lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518")
+
+    # Summary line with optional integrity
+    ready_count = sum(1 for _, _, _, s in summary_rows if s == "READY")
+    total_features = len(summary_rows)
+    summary_line = f"{ready_count}/{total_features} features READY"
+
+    if audit_summary:
+        pct = audit_summary['integrity']
+        rel = audit_summary.get('last_audit_relative', '')
+        if audit_summary.get('stale'):
+            summary_line += f" | Integrity: {pct}% (last purlin:audit: {rel} \u2014 consider re-auditing)"
+        else:
+            summary_line += f" | Integrity: {pct}% (last purlin:audit: {rel})"
+    else:
+        summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
+
+    lines.append(summary_line)
+    lines.append("")  # blank line before detail
+
+    return lines
+
+
 def _read_receipt(project_root, feature_name):
     """Read a receipt JSON for a feature, or return None if not found."""
     spec_dir = os.path.join(project_root, 'specs')
@@ -314,6 +496,32 @@ def _read_receipt(project_root, feature_name):
     return None
 
 
+def _check_uncommitted_specs(project_root):
+    """Check for uncommitted changes to spec/proof files in specs/.
+
+    Returns a list of status lines (e.g. ' M specs/auth/login.md') or
+    an empty list if everything is clean or git is unavailable.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain', '--', 'specs/'],
+            capture_output=True, text=True, cwd=project_root
+        )
+        if result.returncode != 0:
+            return []
+    except (FileNotFoundError, OSError):
+        return []
+
+    uncommitted = []
+    for line in result.stdout.splitlines():
+        if not line or len(line) < 4:
+            continue
+        filepath = line[3:]
+        if filepath.endswith('.md') or '.proofs-' in filepath:
+            uncommitted.append(line)
+    return uncommitted
+
+
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     features = _scan_specs(project_root)
@@ -322,7 +530,17 @@ def sync_status(project_root, role=None):
     if not features:
         return "No specs found in specs/. Run purlin:init to set up, or create specs manually."
 
-    lines = []
+    preamble = []
+
+    # Check for uncommitted spec/proof changes
+    uncommitted = _check_uncommitted_specs(project_root)
+    if uncommitted:
+        preamble.append('\u26a0 Uncommitted spec/proof changes detected:')
+        for entry in uncommitted:
+            preamble.append(f'  {entry}')
+        preamble.append('Drift detection, staleness checks, and verification use committed state.')
+        preamble.append('\u2192 Commit these files before running purlin:drift or purlin:verify')
+        preamble.append('')
 
     # Separate anchors from regular features
     anchors = {k: v for k, v in features.items() if v['is_anchor']}
@@ -331,28 +549,106 @@ def sync_status(project_root, role=None):
     # Identify global anchors (auto-applied to all features)
     global_anchors = {k: v for k, v in anchors.items() if v.get('is_global')}
 
+    summary_rows = []
+    detail = []
+
     # Process regular features
     for name in sorted(regular.keys()):
         info = regular[name]
         feature_lines = _report_feature(
             name, info, features, all_proofs, project_root, role, global_anchors
         )
-        lines.extend(feature_lines)
-        lines.append('')
+        detail.extend(feature_lines)
+        detail.append('')
+
+        # Collect summary data (must match _report_feature's counting logic)
+        rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
+        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        active_total = len(active_entries)
+        structural_rules = _classify_structural_rules(active_entries, info, features)
+        behavioral_proved = sum(1 for key, _, _ in active_entries
+                                if key not in structural_rules
+                                and proof_by_rule.get(key, {}).get('status') == 'pass')
+        has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
+                       for key, _, _ in active_entries
+                       if key not in structural_rules)
+
+        if has_fail:
+            status = "FAIL"
+        elif behavioral_proved == active_total and active_total > 0:
+            status = "READY"
+        elif behavioral_proved == 0:
+            status = "\u2014"
+        else:
+            status = "partial"
+
+        summary_rows.append((name, behavioral_proved, active_total, status))
 
     # Process anchors
     for name in sorted(anchors.keys()):
         info = anchors[name]
         rule_count = len(info['rules'])
         if info.get('is_global'):
-            lines.append(f"{name}: {rule_count} rules (global — auto-applied to all features)")
+            detail.append(f"{name}: {rule_count} rules (global \u2014 auto-applied to all features)")
         else:
-            lines.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name})")
+            detail.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name})")
         for rule_id, desc in sorted(info['rules'].items()):
-            lines.append(f"  {rule_id}: {desc}")
-        lines.append('')
+            detail.append(f"  {rule_id}: {desc}")
+        detail.append('')
 
-    return '\n'.join(lines).strip()
+        # Include anchor in summary if it has behavioral proofs
+        anchor_proofs = all_proofs.get(name, [])
+        if anchor_proofs and not _is_structural_only(info.get('proof_descriptions', [])):
+            deferred = info.get('deferred_rules', set())
+            active_rules = set(info['rules'].keys()) - deferred
+            active_total = len(active_rules)
+            passed_rules = set()
+            has_fail = False
+            for p in anchor_proofs:
+                rule = p.get('rule', '')
+                if rule in active_rules:
+                    if p.get('status') == 'pass':
+                        passed_rules.add(rule)
+                    elif p.get('status') == 'fail':
+                        has_fail = True
+            proved = len(passed_rules)
+
+            if has_fail:
+                a_status = "FAIL"
+            elif proved >= active_total and active_total > 0:
+                a_status = "READY"
+            elif proved == 0:
+                a_status = "\u2014"
+            else:
+                a_status = "partial"
+
+            summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
+
+    # Read audit cache for integrity summary
+    audit_summary = _read_audit_summary(project_root)
+
+    # Build summary table and combine output
+    table_lines = _build_summary_table(summary_rows, audit_summary)
+
+    # Report data generation (side effect)
+    config = resolve_config(project_root)
+    report_line = []
+    if config.get('report'):
+        data_path = _write_report_data(
+            project_root, features, all_proofs, config, global_anchors,
+            audit_summary,
+        )
+        if data_path:
+            html_path = os.path.join(project_root, 'purlin-report.html')
+            if os.path.isfile(html_path):
+                abs_html = os.path.abspath(html_path)
+                report_line.append('')
+                report_line.append(
+                    f'\u2192 Dashboard: file://{abs_html}'
+                )
+
+    return '\n'.join(preamble + table_lines + detail + report_line).strip()
 
 
 def _scopes_overlap(scope_a, scope_b):
@@ -460,6 +756,15 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     proved = sum(1 for key, _, _ in active_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
 
+    # Classify each active rule as structural or behavioral
+    structural_rules = _classify_structural_rules(active_entries, info, all_features)
+    behavioral_proved = sum(1 for key, _, _ in active_entries
+                           if key not in structural_rules
+                           and proof_by_rule.get(key, {}).get('status') == 'pass')
+    structural_passing = sum(1 for key, _, _ in active_entries
+                            if key in structural_rules
+                            and proof_by_rule.get(key, {}).get('status') == 'pass')
+
     # Count assumed rules (own only)
     assumed_count = len(info.get('assumed_rules', set()))
 
@@ -496,16 +801,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Header — all active rules proved (no structural warnings)
-    if proved == active_total and not warnings:
-        structural_only = _is_structural_only(info.get('proof_descriptions', []))
+    # Header — all active rules have behavioral proofs (READY)
+    if behavioral_proved == active_total and not warnings:
         if visual_hash_changed:
             lines.append(f"{name}: READY but visual reference changed")
-        elif structural_only:
-            lines.append(f"{name}: READY (structural only)")
         else:
             lines.append(f"{name}: READY")
-        lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
+        lines.append(f"  {behavioral_proved}/{active_total} rules proved \u2713{deferred_suffix}")
         all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         lines.append(f"  vhash={vhash}")
@@ -539,9 +841,6 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         if visual_hash_changed:
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
-        elif structural_only:
-            lines.append(f"  \u2192 Note: all {active_total} proofs are grep/existence checks. No behavioral tests verify the agent follows these instructions.")
-            lines.append("  \u2192 Consider: create E2E proofs in specs/integration/ that test actual behavior")
         else:
             lines.append("  \u2192 No action needed.")
         if assumed_count:
@@ -553,7 +852,9 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         _append_scope_suggestions(lines, name, info, all_features, global_anchors)
         return lines
 
-    lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
+    lines.append(f"{name}: {behavioral_proved}/{active_total} rules proved{deferred_suffix}")
+    if structural_passing:
+        lines.append(f"  {structural_passing} structural checks passing (not counted as proofs)")
     lines.extend(warnings)
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
@@ -584,7 +885,10 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
                     break
 
         if proof and proof.get('status') == 'pass':
-            lines.append(f"  {key}: PASS ({label})")
+            if key in structural_rules:
+                lines.append(f"  {key}: CHECK ({label}) \u2014 structural, not counted")
+            else:
+                lines.append(f"  {key}: PASS ({label})")
         elif proof and proof.get('status') == 'fail':
             test_name = proof.get('test_name', '?')
             lines.append(f"  {key}: FAIL ({label})")
@@ -618,6 +922,14 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             if src_info.get('is_anchor'):
                 lines.append(f"  Note: read specs/_anchors/{src_feature}.md for exact assertion values before writing tests")
             lines.append(f"  \u2192 Run: purlin:unit-test")
+
+    # Structural-only guidance
+    if structural_passing and behavioral_proved == 0:
+        lines.append("  \u2192 Structural checks verify document content, not system behavior")
+        lines.append("  \u2192 Add behavioral rules with E2E proofs for real coverage")
+    elif structural_passing:
+        needs_behavioral = active_total - behavioral_proved
+        lines.append(f"  \u2192 {needs_behavioral} rules need behavioral proofs")
 
     # If no proof files at all
     feature_proofs = all_proofs.get(name, [])
@@ -663,6 +975,316 @@ def _append_scope_suggestions(lines, name, info, all_features, global_anchors):
             overlap_str = ', '.join(overlap_parts) if overlap_parts else ', '.join(anchor_scope)
             lines.append(f"  \u26a0 Anchor {anchor_name} has overlapping scope ({overlap_str}) but is not required")
             lines.append(f"  \u2192 Consider: add > Requires: {anchor_name}")
+
+
+# ---------------------------------------------------------------------------
+# report data generation (dashboard side-effect)
+# ---------------------------------------------------------------------------
+
+def _get_plugin_docs_url():
+    """Derive documentation URL from the Purlin plugin's git remote."""
+    plugin_root = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+    try:
+        r = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            capture_output=True, text=True, cwd=plugin_root, timeout=5,
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return None
+        remote_url = r.stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+    # SSH: git@host:user/repo.git
+    ssh_m = re.match(r'git@([^:]+):(.+?)(?:\.git)?$', remote_url)
+    if ssh_m:
+        host, path = ssh_m.group(1), ssh_m.group(2)
+        if 'github' in host:
+            return f'https://{host}/{path}/blob/main/docs/index.md'
+        if 'bitbucket' in host:
+            return f'https://{host}/{path}/src/main/docs/index.md'
+        return f'https://{host}/{path}/docs/index.md'
+
+    # HTTPS: https://host/user/repo.git
+    https_m = re.match(r'https?://([^/]+)/(.+?)(?:\.git)?$', remote_url)
+    if https_m:
+        host, path = https_m.group(1), https_m.group(2)
+        if 'github' in host:
+            return f'https://{host}/{path}/blob/main/docs/index.md'
+        if 'bitbucket' in host:
+            return f'https://{host}/{path}/src/main/docs/index.md'
+        return f'https://{host}/{path}/docs/index.md'
+
+    return None
+
+
+def _read_audit_cache_by_feature(project_root):
+    """Read audit cache and group entries by feature name.
+
+    Returns dict of feature_name -> list of {assessment, criterion, fix, proof_id, rule_id, priority}.
+    Uses the 'feature' field that the audit skill stores in cache entries.
+    Falls back to returning an empty dict if the cache doesn't exist or has no feature info.
+    """
+    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
+    if not os.path.isfile(cache_path):
+        return {}
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return {}
+    if not isinstance(cache, dict):
+        return {}
+
+    by_feature = {}
+    for _key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        feat = entry.get('feature')
+        if not feat:
+            continue
+        by_feature.setdefault(feat, []).append(entry)
+    return by_feature
+
+
+def _build_feature_audit(entries):
+    """Build per-feature audit data from cache entries."""
+    strong = 0
+    weak = 0
+    hollow = 0
+    manual = 0
+    findings = []
+
+    for e in entries:
+        assessment = e.get('assessment', '').upper()
+        if assessment == 'STRONG':
+            strong += 1
+        elif assessment == 'WEAK':
+            weak += 1
+            findings.append({
+                'proof_id': e.get('proof_id', ''),
+                'rule_id': e.get('rule_id', ''),
+                'level': 'WEAK',
+                'priority': e.get('priority', 'HIGH'),
+                'criterion': e.get('criterion', ''),
+                'fix': e.get('fix', ''),
+            })
+        elif assessment == 'HOLLOW':
+            hollow += 1
+            findings.append({
+                'proof_id': e.get('proof_id', ''),
+                'rule_id': e.get('rule_id', ''),
+                'level': 'HOLLOW',
+                'priority': e.get('priority', 'CRITICAL'),
+                'criterion': e.get('criterion', ''),
+                'fix': e.get('fix', ''),
+            })
+        elif assessment == 'MANUAL':
+            manual += 1
+
+    behavioral_total = strong + weak + hollow + manual
+    if behavioral_total == 0:
+        return None
+
+    integrity = round((strong + manual) / behavioral_total * 100)
+
+    # Sort findings by priority
+    prio_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
+    findings.sort(key=lambda f: prio_order.get(f.get('priority', ''), 4))
+
+    return {
+        'integrity': integrity,
+        'strong': strong,
+        'weak': weak,
+        'hollow': hollow,
+        'manual': manual,
+        'findings': findings,
+    }
+
+
+def _build_report_data(project_root, features, all_proofs, config, global_anchors,
+                       audit_summary=None):
+    """Build the structured PURLIN_DATA dict for the dashboard."""
+    audit_by_feature = _read_audit_cache_by_feature(project_root)
+    feature_list = []
+    summary = {'total_features': 0, 'ready': 0, 'partial': 0, 'failing': 0, 'no_proofs': 0}
+    anchors_total = 0
+    anchors_with_source = 0
+    anchors_global = 0
+
+    for name in sorted(features.keys()):
+        info = features[name]
+        is_anchor = info.get('is_anchor', False)
+
+        if is_anchor:
+            anchors_total += 1
+            if info.get('source_url'):
+                anchors_with_source += 1
+            if info.get('is_global'):
+                anchors_global += 1
+
+        # Build combined rule set
+        ga = global_anchors if not is_anchor else {}
+        rule_entries, _ = _build_coverage_rules(name, info, features, ga)
+        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+        all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
+
+        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        deferred_count = sum(1 for _, _, _, d in rule_entries if d)
+        active_total = len(active_entries)
+
+        structural_rules = _classify_structural_rules(active_entries, info, features)
+        behavioral_proved = sum(
+            1 for key, _, _ in active_entries
+            if key not in structural_rules
+            and proof_by_rule.get(key, {}).get('status') == 'pass'
+        )
+        structural_passing = sum(
+            1 for key, _, _ in active_entries
+            if key in structural_rules
+            and proof_by_rule.get(key, {}).get('status') == 'pass'
+        )
+        has_fail = any(
+            proof_by_rule.get(key, {}).get('status') == 'fail'
+            for key, _, _ in active_entries if key not in structural_rules
+        )
+
+        # Determine status
+        if active_total == 0:
+            status = 'no_proofs'
+        elif has_fail:
+            status = 'FAIL'
+        elif behavioral_proved == active_total:
+            status = 'READY'
+        elif behavioral_proved > 0:
+            status = 'partial'
+        else:
+            status = 'no_proofs'
+
+        # Update summary for non-anchor features
+        if not is_anchor:
+            summary['total_features'] += 1
+            if status == 'READY':
+                summary['ready'] += 1
+            elif status == 'partial':
+                summary['partial'] += 1
+            elif status == 'FAIL':
+                summary['failing'] += 1
+            else:
+                summary['no_proofs'] += 1
+
+        # Compute vhash when READY
+        vhash = None
+        if status == 'READY':
+            all_rules_dict = {key: True for key, _, _ in active_entries}
+            vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
+
+        # Read receipt
+        receipt_data = None
+        receipt = _read_receipt(project_root, name)
+        if receipt:
+            receipt_data = {
+                'commit': receipt.get('commit', ''),
+                'timestamp': receipt.get('timestamp', ''),
+                'stale': receipt.get('vhash') != vhash if vhash else True,
+            }
+
+        # Build per-rule list
+        rules_list = []
+        for key, label, src_feature, is_deferred in rule_entries:
+            if label == 'own':
+                rule_desc = info['rules'].get(key, '')
+            else:
+                bare_rule = key.split('/', 1)[1] if '/' in key else key
+                src_info = features.get(src_feature, {})
+                rule_desc = src_info.get('rules', {}).get(bare_rule, '')
+
+            proof = proof_by_rule.get(key)
+            proof_data = None
+            if proof:
+                proof_data = {
+                    'id': proof.get('id', ''),
+                    'test_file': proof.get('test_file', ''),
+                    'test_name': proof.get('test_name', ''),
+                    'tier': proof.get('tier', 'unit'),
+                    'status': proof.get('status', ''),
+                }
+
+            if is_deferred:
+                rule_status = 'DEFERRED'
+            elif key in structural_rules and proof and proof.get('status') == 'pass':
+                rule_status = 'CHECK'
+            elif proof and proof.get('status') == 'pass':
+                rule_status = 'PASS'
+            elif proof and proof.get('status') == 'fail':
+                rule_status = 'FAIL'
+            else:
+                rule_status = 'NO_PROOF'
+
+            rules_list.append({
+                'id': key,
+                'description': rule_desc,
+                'label': label,
+                'source': src_feature if label != 'own' else None,
+                'is_deferred': is_deferred,
+                'is_assumed': label == 'own' and key in info.get('assumed_rules', set()),
+                'status': rule_status,
+                'proof': proof_data,
+            })
+
+        feature_list.append({
+            'name': name,
+            'type': 'anchor' if is_anchor else 'feature',
+            'is_global': info.get('is_global', False),
+            'source_url': info.get('source_url'),
+            'proved': behavioral_proved,
+            'total': active_total,
+            'deferred': deferred_count,
+            'status': status,
+            'structural_checks': structural_passing,
+            'vhash': vhash,
+            'receipt': receipt_data,
+            'rules': rules_list,
+            'audit': _build_feature_audit(audit_by_feature.get(name, [])),
+        })
+
+    return {
+        'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        'project': os.path.basename(os.path.abspath(project_root)),
+        'version': config.get('version', ''),
+        'docs_url': _get_plugin_docs_url(),
+        'summary': summary,
+        'features': feature_list,
+        'anchors_summary': {
+            'total': anchors_total,
+            'with_source': anchors_with_source,
+            'global': anchors_global,
+        },
+        'audit_summary': audit_summary,
+        'drift': None,
+    }
+
+
+def _write_report_data(project_root, features, all_proofs, config, global_anchors,
+                       audit_summary=None):
+    """Write .purlin/report-data.js for the dashboard. Returns the file path or None."""
+    purlin_dir = os.path.join(project_root, '.purlin')
+    if not os.path.isdir(purlin_dir):
+        return None
+
+    data = _build_report_data(
+        project_root, features, all_proofs, config, global_anchors, audit_summary
+    )
+    data_path = os.path.join(purlin_dir, 'report-data.js')
+
+    try:
+        with open(data_path, 'w') as f:
+            f.write('const PURLIN_DATA = ')
+            json.dump(data, f, separators=(',', ':'))
+            f.write(';\n')
+        return data_path
+    except (IOError, OSError):
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -948,18 +1570,21 @@ def changelog(project_root, since=None, role=None):
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
         failing = [key for key, _, _ in active_entries
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
-        status = 'READY' if proved == active_total else 'FAILING' if failing else 'partial'
-        structural_only = (
-            status == 'READY'
-            and _is_structural_only(info.get('proof_descriptions', []))
-        )
+        structural_rules = _classify_structural_rules(active_entries, info, features)
+        behavioral_proved = sum(1 for key, _, _ in active_entries
+                               if key not in structural_rules
+                               and proof_by_rule.get(key, {}).get('status') == 'pass')
+        structural_checks = sum(1 for key, _, _ in active_entries
+                               if key in structural_rules
+                               and proof_by_rule.get(key, {}).get('status') == 'pass')
+        status = 'READY' if behavioral_proved == active_total else 'FAILING' if failing else 'partial'
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
-            'proved': proved,
+            'proved': behavioral_proved,
             'total': active_total,
             'status': status,
             'failing_rules': failing,
-            'structural_only': structural_only,
+            'structural_checks': structural_checks,
         }
         if deferred_count:
             entry['deferred'] = deferred_count
@@ -967,26 +1592,26 @@ def changelog(project_root, since=None, role=None):
             entry['assumed'] = assumed_count
         proof_status[name] = entry
 
-    # Annotate file entries with structural drift flags
+    # Annotate file entries with behavioral gap flags
     for entry in file_entries:
         spec_name = entry.get('spec')
         if spec_name and entry['category'] == 'CHANGED_BEHAVIOR':
             ps = proof_status.get(spec_name, {})
-            if ps.get('structural_only'):
-                entry['structural_drift'] = True
+            if ps.get('structural_checks', 0) > 0 and ps.get('proved', 0) == 0:
+                entry['behavioral_gap'] = True
 
     # Build drift_flags summary (deduplicated by spec name)
     seen_drift = set()
     drift_flags = []
     for entry in file_entries:
-        if entry.get('structural_drift') and entry['spec'] not in seen_drift:
+        if entry.get('behavioral_gap') and entry['spec'] not in seen_drift:
             seen_drift.add(entry['spec'])
             drift_flags.append({
                 'spec': entry['spec'],
-                'reason': 'structural_only_with_code_change',
+                'reason': 'behavioral_gap_with_code_change',
                 'files': [e['path'] for e in file_entries
                           if e.get('spec') == entry['spec']
-                          and e.get('structural_drift')],
+                          and e.get('behavioral_gap')],
             })
 
     # Detect broken scopes — spec scope paths that no longer exist on disk

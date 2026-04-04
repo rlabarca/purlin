@@ -1,4 +1,18 @@
-# Installation Guide
+# Installation and Quick Start
+
+## Quick Start
+
+Already installed? Here's the whole workflow:
+
+```
+write a spec for login                    ← describe what the feature must do
+build login                               ← code + tests, iterates until READY
+/purlin:verify                            ← verification receipt committed
+```
+
+Three messages. Spec → code → ship. Everything else is detail.
+
+---
 
 ## Prerequisites
 
@@ -92,6 +106,8 @@ Default config:
   "spec_dir": "specs"
 }
 ```
+
+Add `"report": true` to enable the HTML dashboard. When enabled, `sync_status` writes `.purlin/report-data.js` on every call, and `purlin:init` generates `purlin-report.html` at the project root. Open it in a browser to see live coverage. See the [Dashboard Guide](dashboard-guide.md) for details.
 
 Read or update config with the `purlin_config` MCP tool, or edit the files directly.
 
