@@ -90,6 +90,33 @@
       "test_name": "test_deleting_cache_reverts_to_no_audit_state",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "e2e_audit_cache_pipeline",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_penalizes_own_no_proof_rules",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_audit_cache_pipeline",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_excludes_required_anchor_rules_from_no_proof_penalty",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_audit_cache_pipeline",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_global_integrity_includes_no_proof_from_all_features",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

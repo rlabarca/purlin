@@ -96,9 +96,9 @@ These rules apply when writing or reviewing any proof-marked test. Violating the
 
 ## Scoring
 
-Integrity score = (STRONG count + MANUAL count) / behavioral rules × 100%
+Integrity score = (STRONG count + MANUAL count) / (audited proofs + NO_PROOF rules) × 100%
 
-The denominator is the total number of **behavioral rules** (not just rules with proofs). Rules with NO_PROOF count in the denominator but contribute 0 to the numerator — missing proofs reduce the score. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+The denominator is the sum of audited behavioral proofs (STRONG + WEAK + HOLLOW + MANUAL) plus the count of own behavioral rules that have no proof at all. Missing proofs reduce the score — a rule with NO_PROOF counts in the denominator but contributes 0 to the numerator. Required anchor rules are excluded from the NO_PROOF penalty (they're proved by the anchor, not the requiring feature). Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
 ## Finding Priority
 

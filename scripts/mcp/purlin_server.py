@@ -363,11 +363,11 @@ def _relative_time(iso_timestamp):
     return f"{days} day{'s' if days != 1 else ''} ago"
 
 
-def _read_audit_summary(project_root, total_behavioral_rules=None):
+def _read_audit_summary(project_root, total_no_proof_count=0):
     """Read audit cache and compute project-wide integrity summary.
 
-    If total_behavioral_rules is provided, rules with NO_PROOF reduce the
-    integrity score (they count in the denominator but contribute 0).
+    total_no_proof_count: total own behavioral rules with no proof across all
+    features. These inflate the denominator to penalize missing proofs.
     Returns dict with integrity stats or None if no cache exists.
     """
     cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
@@ -408,7 +408,7 @@ def _read_audit_summary(project_root, total_behavioral_rules=None):
     if behavioral_total == 0:
         return None
 
-    denominator = max(behavioral_total, total_behavioral_rules or 0)
+    denominator = behavioral_total + total_no_proof_count
     integrity = round((strong + manual) / denominator * 100)
     stale = False
     if latest_ts:
@@ -559,7 +559,7 @@ def sync_status(project_root, role=None):
 
     summary_rows = []
     detail = []
-    total_behavioral_rules = 0
+    total_no_proof_count = 0
 
     # Process regular features
     for name in sorted(regular.keys()):
@@ -576,9 +576,12 @@ def sync_status(project_root, role=None):
         active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
         active_total = len(active_entries)
         structural_rules = _classify_structural_rules(active_entries, info, features)
-        feature_behavioral = sum(1 for key, _, _ in active_entries
-                                 if key not in structural_rules)
-        total_behavioral_rules += feature_behavioral
+        total_no_proof_count += sum(
+            1 for key, label, _ in active_entries
+            if label == 'own'
+            and key not in structural_rules
+            and not proof_by_rule.get(key)
+        )
         behavioral_proved = sum(1 for key, _, _ in active_entries
                                 if key not in structural_rules
                                 and proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -638,7 +641,7 @@ def sync_status(project_root, role=None):
             summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
 
     # Read audit cache for integrity summary
-    audit_summary = _read_audit_summary(project_root, total_behavioral_rules)
+    audit_summary = _read_audit_summary(project_root, total_no_proof_count)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary)
@@ -1068,11 +1071,12 @@ def _read_audit_cache_by_feature(project_root):
     return by_feature
 
 
-def _build_feature_audit(entries, behavioral_rule_count=None):
+def _build_feature_audit(entries, no_proof_count=0):
     """Build per-feature audit data from cache entries.
 
-    If behavioral_rule_count is provided, rules with NO_PROOF reduce the
-    integrity score (they count in the denominator but contribute 0).
+    no_proof_count: number of own behavioral rules with no proof at all.
+    These inflate the denominator (penalizing missing proofs) without
+    affecting the numerator.
     """
     strong = 0
     weak = 0
@@ -1108,10 +1112,10 @@ def _build_feature_audit(entries, behavioral_rule_count=None):
             manual += 1
 
     behavioral_total = strong + weak + hollow + manual
-    if behavioral_total == 0:
+    if behavioral_total == 0 and no_proof_count == 0:
         return None
 
-    denominator = max(behavioral_total, behavioral_rule_count or 0)
+    denominator = behavioral_total + no_proof_count
     if denominator == 0:
         return None
 
@@ -1302,8 +1306,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'rules': rules_list,
             'audit': _build_feature_audit(
                 audit_by_feature.get(name, []),
-                behavioral_rule_count=sum(
-                    1 for key, _, _ in active_entries if key not in structural_rules
+                no_proof_count=sum(
+                    1 for key, label, _ in active_entries
+                    if label == 'own'
+                    and key not in structural_rules
+                    and not proof_by_rule.get(key)
                 ),
             ),
         })

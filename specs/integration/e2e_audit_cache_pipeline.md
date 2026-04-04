@@ -19,6 +19,9 @@ End-to-end test of the audit → cache → status → dashboard pipeline. Verifi
 - RULE-8: report-data.js per-feature audit data is populated from cache entries matching the feature name, with correct integrity calculation and findings
 - RULE-9: Cache entries without a feature field are excluded from per-feature audit data but still counted in the project-wide summary
 - RULE-10: Deleting the cache file causes sync_status and report-data.js to revert to the no-audit state
+- RULE-11: Per-feature integrity penalizes own behavioral rules with NO_PROOF — they count in the denominator but contribute 0 to the numerator
+- RULE-12: Per-feature integrity does NOT penalize required anchor rules — only own rules with NO_PROOF affect the denominator
+- RULE-13: Global integrity (project-wide) includes NO_PROOF penalties from all features combined
 
 ## Proof
 
@@ -32,3 +35,6 @@ End-to-end test of the audit → cache → status → dashboard pipeline. Verifi
 - PROOF-8 (RULE-8): Write audit cache with 2 STRONG entries for feature "login" and 1 WEAK for feature "login"; run _build_report_data; find the "login" feature; verify audit.integrity==67, audit.strong==2, audit.weak==1, audit.findings has 1 entry with level "WEAK" @e2e
 - PROOF-9 (RULE-9): Write audit cache with one entry having feature="login" and one entry missing the feature field; run _build_report_data; verify "login" feature has audit with 1 proof; verify _read_audit_summary counts both entries in the project-wide summary @e2e
 - PROOF-10 (RULE-10): Create project with audit cache; run sync_status; verify integrity line present; delete the cache file; run sync_status again; verify "No audit data" and report-data.js audit_summary is null @e2e
+- PROOF-11 (RULE-11): Create feature with 5 behavioral rules; write audit cache for only 3 (2 STRONG, 1 WEAK); run _build_report_data; verify per-feature integrity = 2/(3+2) = 40% where 2 is the NO_PROOF count @e2e
+- PROOF-12 (RULE-12): Create feature requiring an anchor with 3 rules; feature has 2 own rules with 2 STRONG proofs; anchor rules have no proofs under the feature; verify integrity = 2/2 = 100% (anchor rules excluded from NO_PROOF penalty) @e2e
+- PROOF-13 (RULE-13): Create two features: A with 1 NO_PROOF rule, B with 1 NO_PROOF rule; write cache with 2 STRONG for each; run sync_status; verify global integrity = 4/(4+2) = 67% @e2e

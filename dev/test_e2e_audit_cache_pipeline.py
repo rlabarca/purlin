@@ -388,3 +388,310 @@ class TestAuditCachePipeline:
         assert data.get('audit_summary') is None, (
             f"Expected audit_summary null after deleting cache, got: {data.get('audit_summary')}"
         )
+
+    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-11", "RULE-11", tier="e2e")
+    def test_integrity_penalizes_own_no_proof_rules(self):
+        """RULE-11: Own behavioral rules with NO_PROOF inflate the denominator.
+
+        Setup: Feature 'payments' has 5 behavioral rules (RULE-1..5).
+        Proofs exist for RULE-1, RULE-2, RULE-3 only. RULE-4 and RULE-5 have NO_PROOF.
+        Audit cache: PROOF-1 STRONG, PROOF-2 STRONG, PROOF-3 WEAK.
+        Expected: integrity = 2 STRONG / (3 audited + 2 no_proof) = 2/5 = 40%
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        # Overwrite the default login spec with a 5-rule feature
+        spec_dir = os.path.join(self.tmp_dir, 'specs', 'billing')
+        os.makedirs(spec_dir, exist_ok=True)
+        with open(os.path.join(spec_dir, 'payments.md'), 'w') as f:
+            f.write("""# Feature: payments
+
+> Scope: src/billing/payments.py
+
+## What it does
+Process payments.
+
+## Rules
+- RULE-1: Charges the correct amount
+- RULE-2: Returns a receipt ID
+- RULE-3: Validates card number format
+- RULE-4: Sends confirmation email
+- RULE-5: Logs transaction to audit trail
+
+## Proof
+- PROOF-1 (RULE-1): Charge $10, verify amount
+- PROOF-2 (RULE-2): Process payment, verify receipt ID returned
+- PROOF-3 (RULE-3): Submit invalid card, verify rejection
+- PROOF-4 (RULE-4): Process payment, verify email sent
+- PROOF-5 (RULE-5): Process payment, verify audit log entry
+""")
+
+        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NO_PROOF
+        with open(os.path.join(spec_dir, 'payments.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "payments", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_pay.py", "test_name": "test_charge",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "payments", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_pay.py", "test_name": "test_receipt",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "payments", "id": "PROOF-3", "rule": "RULE-3",
+                 "test_file": "tests/test_pay.py", "test_name": "test_card",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Audit cache: 2 STRONG, 1 WEAK for the 3 proofs that exist
+        cache = _make_cache_entries(feature='payments', strong=2, weak=1, minutes_ago=5)
+        write_audit_cache(self.tmp_dir, cache)
+
+        # Rebuild git index
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add payments'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        features = _scan_specs(self.tmp_dir)
+        all_proofs = _read_proofs(self.tmp_dir)
+        config = resolve_config(self.tmp_dir)
+        global_anchors = {k: v for k, v in features.items()
+                         if v.get('is_anchor') and v.get('is_global')}
+        audit_summary = _read_audit_summary(self.tmp_dir)
+
+        report_data = _build_report_data(
+            self.tmp_dir, features, all_proofs, config, global_anchors, audit_summary
+        )
+
+        payments = next(
+            (f for f in report_data['features'] if f['name'] == 'payments'), None
+        )
+        assert payments is not None, "payments feature not found"
+        audit = payments.get('audit')
+        assert audit is not None, "payments audit should not be null"
+
+        # 2 STRONG / (2 STRONG + 1 WEAK + 0 HOLLOW + 2 NO_PROOF) = 2/5 = 40%
+        assert audit['integrity'] == 40, (
+            f"Expected integrity=40% (2 STRONG / 5 denominator), got {audit['integrity']}%\n"
+            f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}"
+        )
+        assert audit['strong'] == 2
+        assert audit['weak'] == 1
+
+    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-12", "RULE-12", tier="e2e")
+    def test_integrity_excludes_required_anchor_rules_from_no_proof_penalty(self):
+        """RULE-12: Required anchor rules don't inflate the NO_PROOF denominator.
+
+        Setup: Feature 'checkout' has 2 own behavioral rules (both proved, both STRONG).
+        It requires anchor 'tax_rules' with 3 rules (no proofs under 'checkout').
+        Expected: integrity = 2/2 = 100% (anchor rules excluded from NO_PROOF count)
+        NOT: 2/5 = 40% (which would happen if anchor rules were in the denominator)
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        # Remove default login spec
+        login_spec = os.path.join(self.tmp_dir, 'specs', 'auth', 'login.md')
+        login_proof = os.path.join(self.tmp_dir, 'specs', 'auth', 'login.proofs-unit.json')
+        if os.path.exists(login_spec):
+            os.remove(login_spec)
+        if os.path.exists(login_proof):
+            os.remove(login_proof)
+
+        # Create anchor with 3 rules
+        anchor_dir = os.path.join(self.tmp_dir, 'specs', 'schema')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'tax_rules.md'), 'w') as f:
+            f.write("""# Anchor: tax_rules
+
+## What it does
+Tax calculation rules.
+
+## Rules
+- RULE-1: Calculate state tax
+- RULE-2: Calculate federal tax
+- RULE-3: Apply exemptions
+
+## Proof
+- PROOF-1 (RULE-1): Verify state tax
+- PROOF-2 (RULE-2): Verify federal tax
+- PROOF-3 (RULE-3): Verify exemptions
+""")
+
+        # Create feature requiring the anchor, with 2 own rules
+        feat_dir = os.path.join(self.tmp_dir, 'specs', 'cart')
+        os.makedirs(feat_dir, exist_ok=True)
+        with open(os.path.join(feat_dir, 'checkout.md'), 'w') as f:
+            f.write("""# Feature: checkout
+
+> Requires: tax_rules
+> Scope: src/cart/checkout.py
+
+## What it does
+Checkout flow.
+
+## Rules
+- RULE-1: Calculates total with tax
+- RULE-2: Creates order record
+
+## Proof
+- PROOF-1 (RULE-1): Add items, verify total includes tax
+- PROOF-2 (RULE-2): Complete checkout, verify order created
+""")
+
+        # Proofs for both own rules
+        with open(os.path.join(feat_dir, 'checkout.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "checkout", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_checkout.py", "test_name": "test_total",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "checkout", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_checkout.py", "test_name": "test_order",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Audit cache: 2 STRONG for checkout's own proofs
+        cache = _make_cache_entries(feature='checkout', strong=2, weak=0, minutes_ago=5)
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add checkout + anchor'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        features = _scan_specs(self.tmp_dir)
+        all_proofs = _read_proofs(self.tmp_dir)
+        config = resolve_config(self.tmp_dir)
+        global_anchors = {k: v for k, v in features.items()
+                         if v.get('is_anchor') and v.get('is_global')}
+        audit_summary = _read_audit_summary(self.tmp_dir)
+
+        report_data = _build_report_data(
+            self.tmp_dir, features, all_proofs, config, global_anchors, audit_summary
+        )
+
+        checkout = next(
+            (f for f in report_data['features'] if f['name'] == 'checkout'), None
+        )
+        assert checkout is not None, "checkout feature not found"
+
+        # Verify the feature does require the anchor (5 total rules: 2 own + 3 required)
+        assert checkout['total'] == 5, (
+            f"Expected 5 total rules (2 own + 3 required), got {checkout['total']}"
+        )
+
+        audit = checkout.get('audit')
+        assert audit is not None, "checkout audit should not be null"
+
+        # Integrity should be 2/2 = 100% (only own rules in denominator)
+        # NOT 2/5 = 40% (which would happen if anchor rules inflated it)
+        assert audit['integrity'] == 100, (
+            f"Expected integrity=100% (2 STRONG / 2 own rules), got {audit['integrity']}%\n"
+            f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}\n"
+            f"  If this is 40%, anchor rules are incorrectly inflating the denominator"
+        )
+
+    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-13", "RULE-13", tier="e2e")
+    def test_global_integrity_includes_no_proof_from_all_features(self):
+        """RULE-13: Global integrity sums NO_PROOF penalties across all features.
+
+        Setup: Two features, each with 3 behavioral rules.
+        Feature A: 2 STRONG proofs, 1 NO_PROOF rule.
+        Feature B: 2 STRONG proofs, 1 NO_PROOF rule.
+        Cache: 4 STRONG total.
+        Global: 4 STRONG / (4 audited + 2 NO_PROOF) = 4/6 = 67%
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        # Remove default login spec
+        login_spec = os.path.join(self.tmp_dir, 'specs', 'auth', 'login.md')
+        login_proof = os.path.join(self.tmp_dir, 'specs', 'auth', 'login.proofs-unit.json')
+        if os.path.exists(login_spec):
+            os.remove(login_spec)
+        if os.path.exists(login_proof):
+            os.remove(login_proof)
+
+        # Feature A: 3 rules, 2 with proofs
+        dir_a = os.path.join(self.tmp_dir, 'specs', 'feat_a')
+        os.makedirs(dir_a, exist_ok=True)
+        with open(os.path.join(dir_a, 'alpha.md'), 'w') as f:
+            f.write("""# Feature: alpha
+
+> Scope: src/alpha.py
+
+## What it does
+Alpha feature.
+
+## Rules
+- RULE-1: Does A
+- RULE-2: Does B
+- RULE-3: Does C
+
+## Proof
+- PROOF-1 (RULE-1): Test A
+- PROOF-2 (RULE-2): Test B
+- PROOF-3 (RULE-3): Test C
+""")
+        with open(os.path.join(dir_a, 'alpha.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "alpha", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_a.py", "test_name": "test_a1",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "alpha", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_a.py", "test_name": "test_a2",
+                 "status": "pass", "tier": "unit"},
+                # RULE-3 has NO proof — intentionally missing
+            ]}, f)
+
+        # Feature B: 3 rules, 2 with proofs
+        dir_b = os.path.join(self.tmp_dir, 'specs', 'feat_b')
+        os.makedirs(dir_b, exist_ok=True)
+        with open(os.path.join(dir_b, 'beta.md'), 'w') as f:
+            f.write("""# Feature: beta
+
+> Scope: src/beta.py
+
+## What it does
+Beta feature.
+
+## Rules
+- RULE-1: Does X
+- RULE-2: Does Y
+- RULE-3: Does Z
+
+## Proof
+- PROOF-1 (RULE-1): Test X
+- PROOF-2 (RULE-2): Test Y
+- PROOF-3 (RULE-3): Test Z
+""")
+        with open(os.path.join(dir_b, 'beta.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "beta", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_b.py", "test_name": "test_b1",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "beta", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_b.py", "test_name": "test_b2",
+                 "status": "pass", "tier": "unit"},
+                # RULE-3 has NO proof — intentionally missing
+            ]}, f)
+
+        # Audit cache: 2 STRONG for alpha, 2 STRONG for beta
+        ts = (datetime.datetime.now(datetime.timezone.utc)
+              - datetime.timedelta(minutes=5)).isoformat()
+        cache = {}
+        for feat, idx_start in [('alpha', 1), ('beta', 5)]:
+            for i in range(2):
+                cache[f'hash_{feat}_{i}'] = {
+                    'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                    'why': 'test exercises rule correctly', 'fix': 'none',
+                    'feature': feat, 'proof_id': f'PROOF-{i+1}',
+                    'rule_id': f'RULE-{i+1}', 'priority': 'LOW', 'cached_at': ts,
+                }
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add alpha + beta'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        output = sync_status(self.tmp_dir)
+
+        # Global: 4 STRONG / (4 audited + 2 NO_PROOF) = 4/6 = 67%
+        assert 'Integrity: 67%' in output, (
+            f"Expected global 'Integrity: 67%' (4 STRONG / 6 denominator), "
+            f"got:\n{output}"
+        )
