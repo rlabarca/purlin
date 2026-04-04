@@ -410,11 +410,11 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     /* Integrity card */
     if (A && A.integrity != null) {
       var icls = A.integrity >= 80 ? '' : A.integrity >= 50 ? ' int-mid' : ' int-lo';
-      h += '<div class="summary-card sc-integrity' + icls + '"><div class="summary-card-number">' + A.integrity + '%</div><div class="summary-card-label">Integrity</div>';
+      h += '<div class="summary-card sc-integrity' + icls + '"><div class="summary-card-number">' + A.integrity + '%</div><div class="summary-card-label">Proof Integrity</div>';
       h += '<div class="summary-card-sub">' + A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H</div>';
       h += '</div>';
     } else {
-      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Integrity</div>';
+      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Proof Integrity</div>';
       h += '<div class="summary-card-sub">run purlin:audit</div>';
       h += '</div>';
     }
