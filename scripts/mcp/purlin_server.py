@@ -638,7 +638,6 @@ def sync_status(project_root, role=None):
 
     # Report data generation (side effect)
     config = resolve_config(project_root)
-    report_line = []
     if config.get('report'):
         data_path = _write_report_data(
             project_root, features, all_proofs, config, global_anchors,
@@ -648,12 +647,12 @@ def sync_status(project_root, role=None):
             html_path = os.path.join(project_root, 'purlin-report.html')
             if os.path.isfile(html_path):
                 abs_html = os.path.abspath(html_path)
-                report_line.append('')
-                report_line.append(
+                preamble.append(
                     f'\u2192 Dashboard: file://{abs_html}'
                 )
+                preamble.append('')
 
-    return '\n'.join(preamble + table_lines + detail + report_line).strip()
+    return '\n'.join(preamble + table_lines + detail).strip()
 
 
 def _scopes_overlap(scope_a, scope_b):
