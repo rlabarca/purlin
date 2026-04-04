@@ -1323,6 +1323,44 @@ class TestCategorySections:
             f"Expected _anchors displayed as 'anchors', got '{anchors['label']}'"
         )
 
+        # Verify category coverage bar fills are visible (have a background color)
+        bar_fills = page.evaluate("""() => {
+            const fills = document.querySelectorAll('.cat-cov-fill');
+            return Array.from(fills).map(el => ({
+                width: el.style.width,
+                bg: getComputedStyle(el).backgroundColor
+            }));
+        }""")
+        for fill in bar_fills:
+            assert fill["bg"] != "rgba(0, 0, 0, 0)", (
+                f"Category coverage bar fill has no background color (width={fill['width']})"
+            )
+
+        # Verify specific bar widths match expected percentages
+        cat_bar_widths = page.evaluate("""() => {
+            const headers = document.querySelectorAll('.cat-header');
+            const results = {};
+            headers.forEach(h => {
+                const cat = h.getAttribute('data-cat');
+                const bar = h.querySelector('.cat-cov-bar');
+                const fill = h.querySelector('.cat-cov-fill');
+                if (bar && fill) {
+                    const barW = bar.getBoundingClientRect().width;
+                    const fillW = fill.getBoundingClientRect().width;
+                    results[cat] = barW > 0 ? Math.round(fillW / barW * 100) : 0;
+                }
+            });
+            return results;
+        }""")
+        # skills: 10/10 = 100%
+        assert cat_bar_widths.get("skills", 0) == 100, (
+            f"Expected skills bar 100%, got {cat_bar_widths.get('skills')}%"
+        )
+        # mcp: 34/38 = 89%
+        assert 86 <= cat_bar_widths.get("mcp", 0) <= 92, (
+            f"Expected mcp bar ~89%, got {cat_bar_widths.get('mcp')}%"
+        )
+
         # Expand all categories (re-query after each click since render rebuilds DOM)
         for i in range(3):
             headers = page.query_selector_all(".cat-header:not(.expanded)")
