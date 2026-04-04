@@ -1,5 +1,6 @@
 # Feature: purlin_report
 
+> Requires: dashboard_visual
 > Scope: scripts/report/purlin-report.html
 > Stack: html/css/javascript
 
