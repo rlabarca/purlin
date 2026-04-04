@@ -1,0 +1,149 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "report_data",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_report_written_when_enabled",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_no_report_written_when_disabled",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_dashboard_url_in_output_when_html_exists",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_report_file_is_valid_js_with_json",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_summary_counts_sum_to_total",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_feature_has_required_fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_ready_features_have_vhash_others_do_not",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_receipt_fields_present_when_receipt_file_exists",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_rule_entry_has_required_fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_all_rule_statuses_are_valid",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_all_rule_labels_are_valid",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_docs_url_derived_from_git_remote",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_anchor_with_source_includes_source_url",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_anchors_summary_total_matches_anchor_count",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_audit_summary_fields_present_and_null_when_no_cache",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_audit_populated_from_cache",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}
