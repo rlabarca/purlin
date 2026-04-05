@@ -72,10 +72,10 @@ PROOF1_CHECK=$(echo "$OUTPUT_A" | python3 -c "import json,sys; d=json.load(sys.s
 PROOF2_STATUS=$(echo "$OUTPUT_A" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-2',{}).get('status','missing'))")
 
 if [[ "$PROOF1_STATUS" == "fail" && "$PROOF1_CHECK" == "assert_true" && "$PROOF2_STATUS" == "pass" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-1" "RULE-1" pass "assert True detected as HOLLOW, valid test passes"
+  purlin_proof "static_checks" "PROOF-17" "RULE-1" pass "assert True detected as HOLLOW, valid test passes"
   echo "    PASS: assert True → fail/assert_true, valid test → pass"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-1" "RULE-1" fail "Expected PROOF-1=fail/assert_true, PROOF-2=pass; got $PROOF1_STATUS/$PROOF1_CHECK, $PROOF2_STATUS"
+  purlin_proof "static_checks" "PROOF-17" "RULE-1" fail "Expected PROOF-1=fail/assert_true, PROOF-2=pass; got $PROOF1_STATUS/$PROOF1_CHECK, $PROOF2_STATUS"
   echo "    FAIL: got PROOF-1=$PROOF1_STATUS/$PROOF1_CHECK, PROOF-2=$PROOF2_STATUS"
 fi
 
@@ -99,10 +99,10 @@ PROOF1_STATUS_B=$(echo "$OUTPUT_B" | python3 -c "import json,sys; d=json.load(sy
 PROOF1_CHECK_B=$(echo "$OUTPUT_B" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('check','none'))")
 
 if [[ "$PROOF1_STATUS_B" == "fail" && "$PROOF1_CHECK_B" == "no_assertions" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-2" "RULE-2" pass "no_assertions detected"
+  purlin_proof "static_checks" "PROOF-18" "RULE-2" pass "no_assertions detected"
   echo "    PASS: no assertions detected"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-2" "RULE-2" fail "Expected fail/no_assertions; got $PROOF1_STATUS_B/$PROOF1_CHECK_B"
+  purlin_proof "static_checks" "PROOF-18" "RULE-2" fail "Expected fail/no_assertions; got $PROOF1_STATUS_B/$PROOF1_CHECK_B"
   echo "    FAIL: got $PROOF1_STATUS_B/$PROOF1_CHECK_B"
 fi
 
@@ -128,10 +128,10 @@ PROOF3_STATUS_C=$(echo "$OUTPUT_C" | python3 -c "import json,sys; d=json.load(sy
 PROOF3_CHECK_C=$(echo "$OUTPUT_C" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-3',{}).get('check','none'))")
 
 if [[ "$PROOF3_STATUS_C" == "fail" && "$PROOF3_CHECK_C" == "logic_mirroring" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-3" "RULE-3" pass "logic mirroring detected"
+  purlin_proof "static_checks" "PROOF-19" "RULE-4" pass "logic mirroring detected"
   echo "    PASS: logic mirroring detected"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-3" "RULE-3" fail "Expected fail/logic_mirroring; got $PROOF3_STATUS_C/$PROOF3_CHECK_C"
+  purlin_proof "static_checks" "PROOF-19" "RULE-4" fail "Expected fail/logic_mirroring; got $PROOF3_STATUS_C/$PROOF3_CHECK_C"
   echo "    FAIL: got $PROOF3_STATUS_C/$PROOF3_CHECK_C"
 fi
 
@@ -157,10 +157,10 @@ EXIT_D=$?
 PROOF2_STATUS_D=$(echo "$OUTPUT_D" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-2',{}).get('status','missing'))")
 
 if [[ "$PROOF2_STATUS_D" == "pass" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-4" "RULE-4" pass "structurally valid test passes Pass 1"
+  purlin_proof "static_checks" "PROOF-20" "RULE-7" pass "structurally valid test passes Pass 1"
   echo "    PASS: structurally valid test passes static checks (exit $EXIT_D)"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-4" "RULE-4" fail "Expected pass; got $PROOF2_STATUS_D"
+  purlin_proof "static_checks" "PROOF-20" "RULE-7" fail "Expected pass; got $PROOF2_STATUS_D"
   echo "    FAIL: expected pass, got $PROOF2_STATUS_D"
 fi
 
@@ -198,10 +198,10 @@ ALL_PASS_E=$(echo "$OUTPUT_E" | python3 -c "import json,sys; d=json.load(sys.std
 PROOF_COUNT_E=$(echo "$OUTPUT_E" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d['proofs']))")
 
 if [[ "$ALL_PASS_E" == "true" && "$EXIT_E" == "0" && "$PROOF_COUNT_E" == "3" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-5" "RULE-5" pass "all 3 strong tests pass structural checks with exit 0"
+  purlin_proof "static_checks" "PROOF-21" "RULE-7" pass "all 3 strong tests pass structural checks with exit 0"
   echo "    PASS: 3/3 proofs pass structural checks, exit 0"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-5" "RULE-5" fail "Expected all pass exit 0 count 3; got $ALL_PASS_E exit $EXIT_E count $PROOF_COUNT_E"
+  purlin_proof "static_checks" "PROOF-21" "RULE-7" fail "Expected all pass exit 0 count 3; got $ALL_PASS_E exit $EXIT_E count $PROOF_COUNT_E"
   echo "    FAIL: all_pass=$ALL_PASS_E exit=$EXIT_E count=$PROOF_COUNT_E"
 fi
 
@@ -223,10 +223,10 @@ print('true' if ok else 'false')
 ")
 
 if [[ "$HAS_FIELDS" == "true" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-6" "RULE-6" pass "JSON output has all required fields"
+  purlin_proof "static_checks" "PROOF-22" "RULE-6" pass "JSON output has all required fields"
   echo "    PASS: JSON has proofs array with required fields"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-6" "RULE-6" fail "Missing required fields in JSON output"
+  purlin_proof "static_checks" "PROOF-22" "RULE-6" fail "Missing required fields in JSON output"
   echo "    FAIL: missing required fields"
 fi
 
@@ -242,10 +242,10 @@ DEFECTS_OUTPUT=$(python3 "$STATIC_CHECKS" "$TMPDIR_A/test_login.py" "login" --sp
 HAS_FAIL=$(echo "$DEFECTS_OUTPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if any(p['status']=='fail' for p in d['proofs']) else 'false')")
 
 if [[ "$EXIT_CLEAN" == "0" && "$EXIT_DEFECTS" == "0" && "$HAS_FAIL" == "true" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" pass "exit 0 on clean and on failures; defects reported via JSON status=fail"
+  purlin_proof "static_checks" "PROOF-23" "RULE-7" pass "exit 0 on clean and on failures; defects reported via JSON status=fail"
   echo "    PASS: exit 0 (clean), exit 0 (failures with status=fail in JSON)"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-7" "RULE-7" fail "Expected exit 0/0 with JSON fail; got exit_clean=$EXIT_CLEAN exit_defects=$EXIT_DEFECTS has_fail=$HAS_FAIL"
+  purlin_proof "static_checks" "PROOF-23" "RULE-7" fail "Expected exit 0/0 with JSON fail; got exit_clean=$EXIT_CLEAN exit_defects=$EXIT_DEFECTS has_fail=$HAS_FAIL"
   echo "    FAIL: got exit_clean=$EXIT_CLEAN exit_defects=$EXIT_DEFECTS has_fail=$HAS_FAIL"
 fi
 
@@ -272,10 +272,10 @@ PROOF3_STATUS_H=$(echo "$OUTPUT_H" | python3 -c "import json,sys; d=json.load(sy
 PROOF3_CHECK_H=$(echo "$OUTPUT_H" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-3',{}).get('check','none'))")
 
 if [[ "$PROOF3_STATUS_H" == "fail" && "$PROOF3_CHECK_H" == "mock_target_match" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-8" "RULE-8" pass "mock_target_match detected"
+  purlin_proof "static_checks" "PROOF-24" "RULE-5" pass "mock_target_match detected"
   echo "    PASS: mock target match detected"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-8" "RULE-8" fail "Expected fail/mock_target_match; got $PROOF3_STATUS_H/$PROOF3_CHECK_H"
+  purlin_proof "static_checks" "PROOF-24" "RULE-5" fail "Expected fail/mock_target_match; got $PROOF3_STATUS_H/$PROOF3_CHECK_H"
   echo "    FAIL: got $PROOF3_STATUS_H/$PROOF3_CHECK_H"
 fi
 
@@ -302,10 +302,10 @@ PROOF1_STATUS_I=$(echo "$OUTPUT_I" | python3 -c "import json,sys; d=json.load(sy
 PROOF1_CHECK_I=$(echo "$OUTPUT_I" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('check','none'))")
 
 if [[ "$PROOF1_STATUS_I" == "fail" && "$PROOF1_CHECK_I" == "bare_except" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-9" "RULE-9" pass "bare except detected"
+  purlin_proof "static_checks" "PROOF-25" "RULE-3" pass "bare except detected"
   echo "    PASS: bare except detected"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-9" "RULE-9" fail "Expected fail/bare_except; got $PROOF1_STATUS_I/$PROOF1_CHECK_I"
+  purlin_proof "static_checks" "PROOF-25" "RULE-3" fail "Expected fail/bare_except; got $PROOF1_STATUS_I/$PROOF1_CHECK_I"
   echo "    FAIL: got $PROOF1_STATUS_I/$PROOF1_CHECK_I"
 fi
 
@@ -366,10 +366,10 @@ OUTPUT_J_BEHAV=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TM
 BEHAV_ONLY=$(echo "$OUTPUT_J_BEHAV" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
 
 if [[ "$STRUCT_ONLY" == "True" && "$BEHAV_ONLY" == "False" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-10" "RULE-10" pass "Pass 0 correctly identifies structural-only and behavioral specs"
+  purlin_proof "static_checks" "PROOF-26" "RULE-8" pass "Pass 0 correctly identifies structural-only and behavioral specs"
   echo "    PASS: structural_only=True for grep spec, False for behavioral spec"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-10" "RULE-10" fail "Expected structural=True/behavioral=False; got $STRUCT_ONLY/$BEHAV_ONLY"
+  purlin_proof "static_checks" "PROOF-26" "RULE-8" fail "Expected structural=True/behavioral=False; got $STRUCT_ONLY/$BEHAV_ONLY"
   echo "    FAIL: structural=$STRUCT_ONLY behavioral=$BEHAV_ONLY"
 fi
 
@@ -407,10 +407,10 @@ BARE_STATUS=$(echo "$OUTPUT_K2" | python3 -c "import json,sys; d=json.load(sys.s
 BARE_CHECK=$(echo "$OUTPUT_K2" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-1',{}).get('check','none'))")
 
 if [[ "$PROOF1_STATUS_K" == "pass" && "$BARE_STATUS" == "fail" && "$BARE_CHECK" == "assert_true" ]]; then
-  purlin_proof "e2e_hybrid_audit" "PROOF-11" "RULE-11" pass "if/else pair passes, bare hardcoded pass still caught"
+  purlin_proof "static_checks" "PROOF-27" "RULE-13" pass "if/else pair passes, bare hardcoded pass still caught"
   echo "    PASS: if/else pair → pass, bare pass → fail/assert_true"
 else
-  purlin_proof "e2e_hybrid_audit" "PROOF-11" "RULE-11" fail "Expected pair=pass, bare=fail/assert_true; got pair=$PROOF1_STATUS_K, bare=$BARE_STATUS/$BARE_CHECK"
+  purlin_proof "static_checks" "PROOF-27" "RULE-13" fail "Expected pair=pass, bare=fail/assert_true; got pair=$PROOF1_STATUS_K, bare=$BARE_STATUS/$BARE_CHECK"
   echo "    FAIL: pair=$PROOF1_STATUS_K, bare=$BARE_STATUS/$BARE_CHECK"
 fi
 

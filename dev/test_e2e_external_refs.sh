@@ -220,11 +220,11 @@ else:
 
 if [[ "$p1_result" == "pass" ]]; then
   echo "  PASS: pinned and source_path extracted"
-  purlin_proof "e2e_external_refs" "PROOF-1" "RULE-1" pass "Pinned/Path extraction correct"
+  purlin_proof "sync_status" "PROOF-34" "RULE-1" pass "Pinned/Path extraction correct"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p1_result"
-  purlin_proof "e2e_external_refs" "PROOF-1" "RULE-1" fail "Pinned/Path extraction: $p1_result"
+  purlin_proof "sync_status" "PROOF-34" "RULE-1" fail "Pinned/Path extraction: $p1_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -246,11 +246,11 @@ echo "$output2" | grep -q "Pinned: abc1234" && p2_pinned=true
 
 if $p2_source && $p2_path && $p2_pinned; then
   echo "  PASS: Source/Path/Pinned in sync_status"
-  purlin_proof "e2e_external_refs" "PROOF-2" "RULE-2" pass "sync_status shows pinned info"
+  purlin_proof "sync_status" "PROOF-35" "RULE-22" pass "sync_status shows pinned info"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: source=$p2_source path=$p2_path pinned=$p2_pinned"
-  purlin_proof "e2e_external_refs" "PROOF-2" "RULE-2" fail "sync_status pinned display"
+  purlin_proof "sync_status" "PROOF-35" "RULE-22" fail "sync_status pinned display"
   FAIL=$((FAIL + 1))
 fi
 
@@ -266,12 +266,12 @@ create_anchor "$TMP3" "loose_ref" "git@github.com:acme/loose.git" "" ""
 output3=$(run_sync_status "$TMP3")
 if echo "$output3" | grep -qi "unpinned"; then
   echo "  PASS: unpinned warning shown"
-  purlin_proof "e2e_external_refs" "PROOF-3" "RULE-3" pass "unpinned warning present"
+  purlin_proof "sync_status" "PROOF-36" "RULE-23" pass "unpinned warning present"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: no unpinned warning"
   echo "  Output: $output3"
-  purlin_proof "e2e_external_refs" "PROOF-3" "RULE-3" fail "no unpinned warning"
+  purlin_proof "sync_status" "PROOF-36" "RULE-23" fail "no unpinned warning"
   FAIL=$((FAIL + 1))
 fi
 
@@ -303,11 +303,11 @@ else:
 
 if [[ "$p4_result" == "pass" ]]; then
   echo "  PASS: report-data.js has pinned/source_path"
-  purlin_proof "e2e_external_refs" "PROOF-4" "RULE-4" pass "report-data.js includes pinned fields"
+  purlin_proof "sync_status" "PROOF-37" "RULE-24" pass "report-data.js includes pinned fields"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p4_result"
-  purlin_proof "e2e_external_refs" "PROOF-4" "RULE-4" fail "report-data.js: $p4_result"
+  purlin_proof "sync_status" "PROOF-37" "RULE-24" fail "report-data.js: $p4_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -330,12 +330,12 @@ output5=$(run_sync_status "$TMP5")
 # Feature should have 3 rules: 1 own + 2 from anchor
 if echo "$output5" | grep -q "0/3"; then
   echo "  PASS: coverage 0/3 (1 own + 2 anchor)"
-  purlin_proof "e2e_external_refs" "PROOF-5" "RULE-5" pass "coverage includes anchor rules"
+  purlin_proof "sync_status" "PROOF-38" "RULE-4" pass "coverage includes anchor rules"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected 0/3 in output"
   echo "  Output: $output5"
-  purlin_proof "e2e_external_refs" "PROOF-5" "RULE-5" fail "coverage count wrong"
+  purlin_proof "sync_status" "PROOF-38" "RULE-4" fail "coverage count wrong"
   FAIL=$((FAIL + 1))
 fi
 
@@ -383,12 +383,12 @@ output6=$(run_sync_status "$TMP6")
 # 2 own + 2 anchor_a + 1 anchor_b = 5
 if echo "$output6" | grep -q "0/5"; then
   echo "  PASS: coverage 0/5 (2 own + 2 + 1)"
-  purlin_proof "e2e_external_refs" "PROOF-6" "RULE-6" pass "2 external anchors counted"
+  purlin_proof "sync_status" "PROOF-39" "RULE-4" pass "2 external anchors counted"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected 0/5"
   echo "  Output: $output6"
-  purlin_proof "e2e_external_refs" "PROOF-6" "RULE-6" fail "2 anchor coverage wrong"
+  purlin_proof "sync_status" "PROOF-39" "RULE-4" fail "2 anchor coverage wrong"
   FAIL=$((FAIL + 1))
 fi
 
@@ -426,12 +426,12 @@ output7=$(run_sync_status "$TMP7")
 # 1 own + 2 ext_anchor + 1 local_anchor = 4
 if echo "$output7" | grep -q "0/4"; then
   echo "  PASS: coverage 0/4 (1 own + 2 ext + 1 local)"
-  purlin_proof "e2e_external_refs" "PROOF-7" "RULE-7" pass "external + local anchor counted"
+  purlin_proof "sync_status" "PROOF-40" "RULE-4" pass "external + local anchor counted"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected 0/4"
   echo "  Output: $output7"
-  purlin_proof "e2e_external_refs" "PROOF-7" "RULE-7" fail "hybrid anchor coverage wrong"
+  purlin_proof "sync_status" "PROOF-40" "RULE-4" fail "hybrid anchor coverage wrong"
   FAIL=$((FAIL + 1))
 fi
 
@@ -457,12 +457,12 @@ echo "$output8" | grep -A5 "feature_b" | grep -q "0/3" && p8_b=true
 
 if $p8_a && $p8_b; then
   echo "  PASS: global anchor auto-applied to both features"
-  purlin_proof "e2e_external_refs" "PROOF-8" "RULE-8" pass "global external anchor auto-applies"
+  purlin_proof "sync_status" "PROOF-41" "RULE-9" pass "global external anchor auto-applies"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: a=$p8_a b=$p8_b"
   echo "  Output: $output8"
-  purlin_proof "e2e_external_refs" "PROOF-8" "RULE-8" fail "global anchor not auto-applied"
+  purlin_proof "sync_status" "PROOF-41" "RULE-9" fail "global anchor not auto-applied"
   FAIL=$((FAIL + 1))
 fi
 
@@ -496,11 +496,11 @@ print('fail')
 
 if [[ "$p9_result" == "pass" ]]; then
   echo "  PASS: drift detects staleness with remote SHA"
-  purlin_proof "e2e_external_refs" "PROOF-9" "RULE-9" pass "drift detects stale anchor"
+  purlin_proof "drift" "PROOF-17" "RULE-12" pass "drift detects stale anchor"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: no stale entry in drift output"
-  purlin_proof "e2e_external_refs" "PROOF-9" "RULE-9" fail "drift staleness detection failed"
+  purlin_proof "drift" "PROOF-17" "RULE-12" fail "drift staleness detection failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -519,12 +519,12 @@ create_anchor "$TMP10" "unpinned_anchor" "$BARE10" "" "spec.md"
 drift10=$(run_drift "$TMP10")
 if echo "$drift10" | grep -q '"status": "unpinned"'; then
   echo "  PASS: drift detects unpinned"
-  purlin_proof "e2e_external_refs" "PROOF-10" "RULE-10" pass "drift detects unpinned anchor"
+  purlin_proof "drift" "PROOF-18" "RULE-15" pass "drift detects unpinned anchor"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: no unpinned status in drift"
   echo "  Drift: $drift10"
-  purlin_proof "e2e_external_refs" "PROOF-10" "RULE-10" fail "drift unpinned detection failed"
+  purlin_proof "drift" "PROOF-18" "RULE-15" fail "drift unpinned detection failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -565,11 +565,11 @@ echo "$out11c" | grep -q "PASSING" && phase_c=true
 
 if $phase_a && $phase_b && $phase_c; then
   echo "  PASS: UNTESTED → PARTIAL → PASSING"
-  purlin_proof "e2e_external_refs" "PROOF-11" "RULE-11" pass "coverage progression correct"
+  purlin_proof "sync_status" "PROOF-42" "RULE-2" pass "coverage progression correct"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: a=$phase_a b=$phase_b c=$phase_c"
-  purlin_proof "e2e_external_refs" "PROOF-11" "RULE-11" fail "coverage progression (a=$phase_a b=$phase_b c=$phase_c)"
+  purlin_proof "sync_status" "PROOF-42" "RULE-2" fail "coverage progression (a=$phase_a b=$phase_b c=$phase_c)"
   FAIL=$((FAIL + 1))
 fi
 
@@ -600,12 +600,12 @@ output12=$(run_hook "$TMP12" 2>&1) || ec12=$?
 
 if [[ $ec12 -eq 1 ]] && echo "$output12" | grep -q "PUSH BLOCKED"; then
   echo "  PASS: pre-push blocks on failing anchor proof"
-  purlin_proof "e2e_external_refs" "PROOF-12" "RULE-12" pass "pre-push blocks on anchor fail"
+  purlin_proof "pre_push_hook" "PROOF-17" "RULE-1" pass "pre-push blocks on anchor fail"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: exit=$ec12"
   echo "  Output: $output12"
-  purlin_proof "e2e_external_refs" "PROOF-12" "RULE-12" fail "pre-push did not block"
+  purlin_proof "pre_push_hook" "PROOF-17" "RULE-1" fail "pre-push did not block"
   FAIL=$((FAIL + 1))
 fi
 

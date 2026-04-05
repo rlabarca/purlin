@@ -152,9 +152,9 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "e2e_strict_required" "PROOF-1" "RULE-1" pass "strict blocks when required rules lack proofs"
+  purlin_proof "pre_push_hook" "PROOF-15" "RULE-8" pass "strict blocks when required rules lack proofs"
 else
-  purlin_proof "e2e_strict_required" "PROOF-1" "RULE-1" fail "strict blocks when required rules lack proofs"
+  purlin_proof "pre_push_hook" "PROOF-15" "RULE-8" fail "strict blocks when required rules lack proofs"
 fi
 
 # ==========================================================================
@@ -183,9 +183,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_strict_required" "PROOF-2" "RULE-2" pass "strict allows when all rules (own+required) proved"
+  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" pass "strict allows when all rules (own+required) proved"
 else
-  purlin_proof "e2e_strict_required" "PROOF-2" "RULE-2" fail "strict allows when all rules (own+required) proved"
+  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" fail "strict allows when all rules (own+required) proved"
 fi
 
 # --- Emit proof files ---

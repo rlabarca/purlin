@@ -277,7 +277,7 @@ class TestPlainDescription:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-1", "RULE-1", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-19", "RULE-10", tier="e2e")
     def test_sequential_rule_numbering(self):
         """RULE-1: Sequential RULE-N from 1 with no gaps."""
         rules = _extract_rules(PLAIN_DESCRIPTION_SPEC)
@@ -285,7 +285,7 @@ class TestPlainDescription:
         assert numbers == list(range(1, len(numbers) + 1)), \
             f"Rule numbers not sequential: {numbers}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-2", "RULE-2", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-20", "RULE-11", tier="e2e")
     def test_every_rule_has_proof(self):
         """RULE-2: Every RULE-N has at least one PROOF referencing it."""
         rules = set(_extract_rules(PLAIN_DESCRIPTION_SPEC))
@@ -296,7 +296,7 @@ class TestPlainDescription:
         uncovered = rules - proved_rules
         assert not uncovered, f"Rules without proofs: {uncovered}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-3", "RULE-3", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-21", "RULE-12", tier="e2e")
     def test_no_assumed_tags_on_explicit_values(self):
         """RULE-3: No (assumed) tags when all values were explicit."""
         matches = ASSUMED_RE.findall(PLAIN_DESCRIPTION_SPEC)
@@ -320,21 +320,21 @@ class TestPRD:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-4", "RULE-4", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-22", "RULE-13", tier="e2e")
     def test_prd_extracts_at_least_5_rules(self):
         """RULE-4: PRD with 6 constraints produces at least 5 rules."""
         rules = _extract_rules(PRD_SPEC)
         assert len(rules) >= 5, \
             f"PRD spec should have >= 5 rules, got {len(rules)}: {rules}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-5", "RULE-5", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
     def test_prd_metadata_present(self):
         """RULE-5: PRD spec has Description, Scope, and Stack metadata."""
         for field in ('description', 'scope', 'stack'):
             assert METADATA_RE[field].search(PRD_SPEC), \
                 f"Missing > {field.title()}: in PRD spec"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-6", "RULE-6", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-15", tier="e2e")
     def test_requires_anchor_in_coverage(self):
         """RULE-6: sync_status includes required anchor rules in coverage."""
         result = sync_status(self.tmp_dir)
@@ -360,7 +360,7 @@ class TestVagueDescription:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-7", "RULE-7", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
     def test_assumed_tags_present(self):
         """RULE-7: Vague input produces (assumed — <context>) tags."""
         matches = ASSUMED_RE.findall(VAGUE_DESCRIPTION_SPEC)
@@ -370,7 +370,7 @@ class TestVagueDescription:
         for tag in matches:
             assert '—' in tag, f"(assumed) tag missing context: {tag}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-8", "RULE-8", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
     def test_assumed_rules_parseable_by_sync_status(self):
         """RULE-8: sync_status parses assumed-tagged rules without errors."""
         result = sync_status(self.tmp_dir)
@@ -400,7 +400,7 @@ class TestCustomerFeedback:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-9", "RULE-9", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-27", "RULE-18", tier="e2e")
     def test_feedback_translated_to_specific_rules(self):
         """RULE-9: Complaints become rules with specific thresholds."""
         # "slow search" → under 500ms threshold
@@ -442,7 +442,7 @@ class TestCrossScenario:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-10", "RULE-10", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")
     def test_all_proofs_have_tier_tags(self):
         """RULE-10: Every proof line has an appropriate tier tag or is implicit unit."""
         for name, content in self.ALL_SPECS.items():
@@ -458,7 +458,7 @@ class TestCrossScenario:
                     assert has_tier, \
                         f"Malformed tier tag in {name} spec proof: {line}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-11", "RULE-11", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-20", tier="e2e")
     def test_sync_status_parses_all_scenarios(self):
         """RULE-11: sync_status parses all four specs, reports UNTESTED."""
         result = sync_status(self.tmp_dir)
@@ -470,7 +470,7 @@ class TestCrossScenario:
         assert 'UNTESTED' in result, \
             f"Expected UNTESTED status without proof files: {result}"
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-12", "RULE-12", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-21", tier="e2e")
     def test_all_specs_have_rules_and_proof_sections(self):
         """RULE-12: ## Rules and ## Proof sections exist in all four specs."""
         for name, content in self.ALL_SPECS.items():
@@ -486,7 +486,7 @@ class TestCrossScenario:
 
 class TestAssumedCorrection:
 
-    @pytest.mark.proof("e2e_spec_from_input", "PROOF-13", "RULE-13", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-22", tier="e2e")
     def test_corrected_assumed_rule_is_valid(self):
         """RULE-13: Replacing (assumed) with explicit value produces valid spec."""
         # Original has (assumed) tags

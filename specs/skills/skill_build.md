@@ -13,6 +13,7 @@
 - RULE-5: Skill requires calling `sync_status` after tests and states it is not optional
 - RULE-6: Skill includes test failure diagnosis guidance requiring root cause analysis before fixing
 - RULE-7: Skill includes mandatory tier tag review for proof descriptions
+- RULE-8: Build skill documents proof fixer mode with instructions to fix proofs based on audit feedback and report back
 
 ## Proof
 
@@ -23,3 +24,4 @@
 - PROOF-5 (RULE-5): Grep `skills/build/SKILL.md` for `sync_status` and `not optional`; verify both present
 - PROOF-6 (RULE-6): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both present
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
+- PROOF-8 (RULE-8): e2e: Grep skills/build/SKILL.md for proof fixer mode; verify fix proofs and report instructions @e2e

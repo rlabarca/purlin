@@ -18,6 +18,10 @@
 - RULE-9: Returns a `drift_flags` array summarizing features with zero proved rules (coverage gap) that have changed files
 - RULE-10: Detects broken scope paths — files referenced in `> Scope:` that no longer exist on disk — and returns them in a `broken_scopes` array
 - RULE-11: Returns a spec-from-code recommendation when no verification anchor exists and >= 30 commits have been made since Purlin initialization
+- RULE-12: When an externally-referenced anchor has both external and local rules, drift detects staleness when the external source advances — returning an external_anchor_drift entry with status stale and the remote SHA
+- RULE-13: When the external source advances AND the local anchor file is modified, drift surfaces both: an external_anchor_drift entry with status stale AND a spec_changes entry showing the new rule
+- RULE-14: drift returns the anchor name in external_anchor_drift matching the anchor's spec name, not the external repo name or path
+- RULE-15: Detects unpinned state when an anchor has `> Source:` but no `> Pinned:`, returning an external_anchor_drift entry with status `unpinned`
 
 ## Proof
 
@@ -32,3 +36,10 @@
 - PROOF-9 (RULE-9): Same setup; verify drift_flags array entry with reason behavioral_gap_with_code_change @integration
 - PROOF-10 (RULE-10): Create spec with non-existent scope path; verify broken_scopes entry @integration
 - PROOF-11 (RULE-11): Create a temp repo with 50+ commits, no verify or tags; call drift; verify spec-from-code recommendation. Create repo with <30 commits; verify normal drift @integration
+- PROOF-12 (RULE-12): e2e: Create bare git repo; create mixed anchor pinned to initial SHA; advance repo; run drift; verify external_anchor_drift entry with status=stale @e2e
+- PROOF-13 (RULE-2): e2e: Modify local anchor file (add rule); commit; run drift; verify anchor classified as CHANGED_SPECS @e2e
+- PROOF-14 (RULE-13): e2e: Advance external AND modify local anchor; run drift; verify both external_anchor_drift stale AND spec_changes with new_rules @e2e
+- PROOF-15 (RULE-5): e2e: Create feature requiring stale anchor; add all proofs; verify proof_status total=4 proved=4 despite staleness @e2e
+- PROOF-16 (RULE-14): e2e: Create anchor named local_security; advance repo; verify drift returns anchor=local_security @e2e
+- PROOF-17 (RULE-12): e2e: Create external anchor pinned to initial SHA; advance repo; run drift; verify stale entry with remote SHA @e2e
+- PROOF-18 (RULE-15): e2e: Create anchor with Source but no Pinned; run drift; verify unpinned status @e2e

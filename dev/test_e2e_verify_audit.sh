@@ -200,9 +200,9 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-1" "RULE-1" pass "receipt written with correct vhash, commit, rules, proofs"
+  purlin_proof "sync_status" "PROOF-29" "RULE-6" pass "receipt written with correct vhash, commit, rules, proofs"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-1" "RULE-1" fail "receipt written with correct vhash, commit, rules, proofs"
+  purlin_proof "sync_status" "PROOF-29" "RULE-6" fail "receipt written with correct vhash, commit, rules, proofs"
 fi
 
 # ==========================================================================
@@ -222,9 +222,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-2" "RULE-2" pass "audit matches when rules+proofs unchanged"
+  purlin_proof "sync_status" "PROOF-30" "RULE-6" pass "audit matches when rules+proofs unchanged"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-2" "RULE-2" fail "audit matches when rules+proofs unchanged"
+  purlin_proof "sync_status" "PROOF-30" "RULE-6" fail "audit matches when rules+proofs unchanged"
 fi
 
 # ==========================================================================
@@ -259,9 +259,9 @@ else
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-3" "RULE-3" pass "audit detects mismatch when rule added but receipt stale"
+  purlin_proof "sync_status" "PROOF-31" "RULE-15" pass "audit detects mismatch when rule added but receipt stale"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-3" "RULE-3" fail "audit detects mismatch when rule added but receipt stale"
+  purlin_proof "sync_status" "PROOF-31" "RULE-15" fail "audit detects mismatch when rule added but receipt stale"
 fi
 
 # ==========================================================================
@@ -303,9 +303,9 @@ else
 fi
 
 if $phase_d_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-4" "RULE-4" pass "re-verify produces different vhash, audit matches after update"
+  purlin_proof "sync_status" "PROOF-32" "RULE-6" pass "re-verify produces different vhash, audit matches after update"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-4" "RULE-4" fail "re-verify produces different vhash, audit matches after update"
+  purlin_proof "sync_status" "PROOF-32" "RULE-6" fail "re-verify produces different vhash, audit matches after update"
 fi
 
 # ==========================================================================
@@ -409,9 +409,9 @@ else
 fi
 
 if $phase_e_ok; then
-  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" pass "both specs PASSING, structural classification correct"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" pass "both specs PASSING, structural classification correct"
 else
-  purlin_proof "e2e_verify_audit" "PROOF-5" "RULE-5" fail "structural classification not working correctly"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" fail "structural classification not working correctly"
 fi
 
 # --- Emit proof files ---

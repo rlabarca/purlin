@@ -17,6 +17,7 @@
 - RULE-5: Each proof entry contains all 7 required fields: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`
 - RULE-6: `status` is `"pass"` when the test passes and `"fail"` when it fails — no other values
 - RULE-7: If no proof markers are collected during a test run, no proof files are written (no-op)
+- RULE-29: When a test is removed from a re-run, the old proof entry is purged and not carried over from the previous proof file
 
 ### pytest-specific
 
@@ -74,6 +75,9 @@
 - PROOF-5 (RULE-5): Run a proof plugin and read the output JSON; verify each entry in `proofs` array contains all 7 fields: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier` @integration
 - PROOF-6 (RULE-6): Run a passing test and a failing test with proof markers; verify the passing test has `status: "pass"` and the failing test has `status: "fail"` @integration
 - PROOF-7 (RULE-7): Run a test suite with no proof markers; verify no `*.proofs-*.json` files are created @integration
+- PROOF-30 (RULE-4): e2e: Create 2 specs; write proofs for each separately; verify both PASSING and no cross-contamination @e2e
+- PROOF-31 (RULE-4): e2e: Overwrite one feature's proofs via shell harness; verify target feature updated, other feature untouched @e2e
+- PROOF-32 (RULE-29): e2e: Write proof file with only 1 of 2 proofs (test deletion); verify coverage shows 1/2 not 2/2 @e2e
 
 ### pytest-specific
 

@@ -128,9 +128,9 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "e2e_manual_staleness" "PROOF-1" "RULE-1" pass "stamped manual proof shows PASS with verified date"
+  purlin_proof "sync_status" "PROOF-26" "RULE-5" pass "stamped manual proof shows PASS with verified date"
 else
-  purlin_proof "e2e_manual_staleness" "PROOF-1" "RULE-1" fail "stamped manual proof shows PASS with verified date"
+  purlin_proof "sync_status" "PROOF-26" "RULE-5" fail "stamped manual proof shows PASS with verified date"
 fi
 
 # ==========================================================================
@@ -161,9 +161,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_manual_staleness" "PROOF-2" "RULE-2" pass "scope file change makes manual proof STALE with directive"
+  purlin_proof "sync_status" "PROOF-27" "RULE-5" pass "scope file change makes manual proof STALE with directive"
 else
-  purlin_proof "e2e_manual_staleness" "PROOF-2" "RULE-2" fail "scope file change makes manual proof STALE with directive"
+  purlin_proof "sync_status" "PROOF-27" "RULE-5" fail "scope file change makes manual proof STALE with directive"
 fi
 
 # ==========================================================================
@@ -215,9 +215,9 @@ else
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_manual_staleness" "PROOF-3" "RULE-3" pass "re-stamp clears stale state, shows PASS"
+  purlin_proof "sync_status" "PROOF-28" "RULE-5" pass "re-stamp clears stale state, shows PASS"
 else
-  purlin_proof "e2e_manual_staleness" "PROOF-3" "RULE-3" fail "re-stamp clears stale state, shows PASS"
+  purlin_proof "sync_status" "PROOF-28" "RULE-5" fail "re-stamp clears stale state, shows PASS"
 fi
 
 # --- Emit proof files ---

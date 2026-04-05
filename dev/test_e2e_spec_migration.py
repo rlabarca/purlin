@@ -202,7 +202,7 @@ Users can view and edit their profile, including uploading an avatar image.
 # Tests
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-1", "RULE-1", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-10", "RULE-5", tier="e2e")
 def test_legacy_given_when_then_converted_to_rules(tmp_path):
     """Legacy Given/When/Then scenarios become numbered RULE-N lines."""
     _make_project(tmp_path, features={
@@ -225,7 +225,7 @@ def test_legacy_given_when_then_converted_to_rules(tmp_path):
     )
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-2", "RULE-2", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-11", "RULE-6", tier="e2e")
 def test_unnumbered_rules_get_renumbered(tmp_path):
     """Specs with unnumbered rules should be detected as non-compliant."""
     _make_project(tmp_path, specs={
@@ -250,7 +250,7 @@ def test_unnumbered_rules_get_renumbered(tmp_path):
     assert len(unnumbered) == 4, f"Expected 4 unnumbered rules, got {len(unnumbered)}"
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-3", "RULE-3", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-12", "RULE-6", tier="e2e")
 def test_missing_description_detected(tmp_path):
     """Specs missing > Description: are flagged as non-compliant."""
     _make_project(tmp_path, specs={
@@ -271,7 +271,7 @@ def test_missing_description_detected(tmp_path):
     assert len(rules) == 3, f"Expected 3 numbered rules, got {len(rules)}"
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-4", "RULE-4", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-13", "RULE-6", tier="e2e")
 def test_missing_proof_section_detected(tmp_path):
     """Specs with Rules but no Proof section are flagged as non-compliant."""
     _make_project(tmp_path, specs={
@@ -290,7 +290,7 @@ def test_missing_proof_section_detected(tmp_path):
     assert len(proofs) == 0, "Should have 0 proofs before migration"
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-5", "RULE-5", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-14", "RULE-7", tier="e2e")
 def test_compliant_spec_passes_sync_status(tmp_path):
     """A fully compliant spec should pass sync_status with zero warnings."""
     _make_project(tmp_path, specs={
@@ -306,7 +306,7 @@ def test_compliant_spec_passes_sync_status(tmp_path):
     )
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-6", "RULE-6", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-15", "RULE-7", tier="e2e")
 def test_compliant_spec_left_untouched(tmp_path):
     """A fully compliant spec should not be modified by migration."""
     _make_project(tmp_path, specs={
@@ -326,7 +326,7 @@ def test_compliant_spec_left_untouched(tmp_path):
     # (verified by checking the compliance criteria in SKILL.md)
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-7", "RULE-7", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-16", "RULE-8", tier="e2e")
 def test_existing_metadata_preserved(tmp_path):
     """Existing Scope, Stack, and Requires metadata should survive migration."""
     _make_project(tmp_path, specs={
@@ -343,7 +343,7 @@ def test_existing_metadata_preserved(tmp_path):
     # (the migration logic reads and re-emits existing metadata)
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-8", "RULE-8", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-17", "RULE-5", tier="e2e")
 def test_legacy_feature_name_and_category_preserved(tmp_path):
     """Legacy features/auth/login.md should produce specs/auth/login.md."""
     _make_project(tmp_path, features={
@@ -364,7 +364,7 @@ def test_legacy_feature_name_and_category_preserved(tmp_path):
     assert expected_output == 'specs/auth/login.md'
 
 
-@pytest.mark.proof("e2e_spec_migration", "PROOF-9", "RULE-9", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-18", "RULE-8", tier="e2e")
 def test_llm_evaluates_migration_fidelity(tmp_path):
     """LLM evaluator rates migration fidelity as HIGH for each scenario.
 

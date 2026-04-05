@@ -228,11 +228,11 @@ print('fail: ' + json.dumps(drift_entries))
 
 if [[ "$p1_result" == "pass" ]]; then
   echo "  PASS: mixed anchor detected as stale"
-  purlin_proof "e2e_anchor_authority" "PROOF-1" "RULE-1" pass "mixed anchor staleness detected"
+  purlin_proof "drift" "PROOF-12" "RULE-12" pass "mixed anchor staleness detected"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p1_result"
-  purlin_proof "e2e_anchor_authority" "PROOF-1" "RULE-1" fail "mixed anchor staleness: $p1_result"
+  purlin_proof "drift" "PROOF-12" "RULE-12" fail "mixed anchor staleness: $p1_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -275,11 +275,11 @@ print('fail: ' + json.dumps([f for f in files if 'api_contract' in f.get('path',
 
 if [[ "$p2_result" == "pass" ]]; then
   echo "  PASS: anchor file classified as CHANGED_SPECS"
-  purlin_proof "e2e_anchor_authority" "PROOF-2" "RULE-2" pass "local anchor mod → CHANGED_SPECS"
+  purlin_proof "drift" "PROOF-13" "RULE-2" pass "local anchor mod → CHANGED_SPECS"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p2_result"
-  purlin_proof "e2e_anchor_authority" "PROOF-2" "RULE-2" fail "anchor classification: $p2_result"
+  purlin_proof "drift" "PROOF-13" "RULE-2" fail "anchor classification: $p2_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -335,11 +335,11 @@ else:
 
 if [[ "$p3_result" == "pass" ]]; then
   echo "  PASS: both external staleness and local spec change surfaced"
-  purlin_proof "e2e_anchor_authority" "PROOF-3" "RULE-3" pass "dual detection: stale + spec change"
+  purlin_proof "drift" "PROOF-14" "RULE-13" pass "dual detection: stale + spec change"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p3_result"
-  purlin_proof "e2e_anchor_authority" "PROOF-3" "RULE-3" fail "dual detection: $p3_result"
+  purlin_proof "drift" "PROOF-14" "RULE-13" fail "dual detection: $p3_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -393,11 +393,11 @@ else:
 
 if [[ "$p4_result" == "pass" ]]; then
   echo "  PASS: proof_status 4/4 despite stale anchor"
-  purlin_proof "e2e_anchor_authority" "PROOF-4" "RULE-4" pass "proof_status correct during staleness"
+  purlin_proof "drift" "PROOF-15" "RULE-5" pass "proof_status correct during staleness"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p4_result"
-  purlin_proof "e2e_anchor_authority" "PROOF-4" "RULE-4" fail "proof_status: $p4_result"
+  purlin_proof "drift" "PROOF-15" "RULE-5" fail "proof_status: $p4_result"
   FAIL=$((FAIL + 1))
 fi
 
@@ -431,11 +431,11 @@ print('fail: ' + json.dumps(data.get('external_anchor_drift', [])))
 
 if [[ "$p5_result" == "pass" ]]; then
   echo "  PASS: anchor field is 'local_security' (spec name)"
-  purlin_proof "e2e_anchor_authority" "PROOF-5" "RULE-5" pass "anchor name matches spec name"
+  purlin_proof "drift" "PROOF-16" "RULE-14" pass "anchor name matches spec name"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: $p5_result"
-  purlin_proof "e2e_anchor_authority" "PROOF-5" "RULE-5" fail "anchor name: $p5_result"
+  purlin_proof "drift" "PROOF-16" "RULE-14" fail "anchor name: $p5_result"
   FAIL=$((FAIL + 1))
 fi
 

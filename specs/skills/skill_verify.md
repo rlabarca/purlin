@@ -11,6 +11,7 @@
 - RULE-3: The `name` field in frontmatter is `verify`, matching the directory name
 - RULE-4: Skill includes commit instructions or git operations for file modifications
 - RULE-5: Skill prohibits modifying code or test files during verification
+- RULE-6: Verify skill Step 4e documents independent audit that reports the final integrity score
 
 ## Proof
 
@@ -19,3 +20,4 @@
 - PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `verify`
 - PROOF-4 (RULE-4): Grep `skills/verify/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
 - PROOF-5 (RULE-5): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
+- PROOF-6 (RULE-6): e2e: Grep skills/verify/SKILL.md for independent audit; verify integrity score and purlin-auditor reference @e2e

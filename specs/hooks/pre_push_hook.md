@@ -33,3 +33,6 @@
 - PROOF-12 (RULE-4): Create spec with rule description containing "FAIL" (e.g. "RULE-1: FAIL status badge is solid red pill"); create all-pass proofs; run hook; verify exit 0 and no "PUSH BLOCKED" — description text must not false-positive trigger blocking @integration
 - PROOF-13 (RULE-7): Create spec with one failing proof; run hook; verify recovery message contains `/purlin:unit-test test_feature`, `/purlin:status`, and `/purlin:build` @integration
 - PROOF-14 (RULE-8): Set strict mode; create partial proofs (no FAIL); run hook; verify exit 1 and output contains `RECOVERY STEPS`, `/purlin:unit-test`, and `/purlin:verify` @integration
+- PROOF-15 (RULE-8): e2e: Strict mode with own rules proved but required rules unproved; verify exit 1 with strict mode block @e2e
+- PROOF-16 (RULE-8): e2e: Strict mode with all (own + required) rules proved; verify exit 0 @e2e
+- PROOF-17 (RULE-1): e2e: Create external anchor; create feature requiring it; set anchor proof to FAIL; run pre-push; verify exit 1 blocked @e2e

@@ -173,9 +173,9 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-1" "RULE-1" pass "sync_status counts required+global rules in total"
+  purlin_proof "sync_status" "PROOF-22" "RULE-4" pass "sync_status counts required+global rules in total"
 else
-  purlin_proof "e2e_required_rules" "PROOF-1" "RULE-1" fail "sync_status counts required+global rules in total"
+  purlin_proof "sync_status" "PROOF-22" "RULE-4" fail "sync_status counts required+global rules in total"
 fi
 
 # ==========================================================================
@@ -203,9 +203,9 @@ else
 fi
 
 if $phase_a2_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-2" "RULE-2" pass "sync_status labels rules as own/required/global"
+  purlin_proof "sync_status" "PROOF-23" "RULE-10" pass "sync_status labels rules as own/required/global"
 else
-  purlin_proof "e2e_required_rules" "PROOF-2" "RULE-2" fail "sync_status labels rules as own/required/global"
+  purlin_proof "sync_status" "PROOF-23" "RULE-10" fail "sync_status labels rules as own/required/global"
 fi
 
 # ==========================================================================
@@ -238,9 +238,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" pass "partial proofs show 2/5 and not VERIFIED"
+  purlin_proof "sync_status" "PROOF-24" "RULE-21" pass "partial proofs show 2/5 and not VERIFIED"
 else
-  purlin_proof "e2e_required_rules" "PROOF-3" "RULE-3" fail "partial proofs show 2/5 and not VERIFIED"
+  purlin_proof "sync_status" "PROOF-24" "RULE-21" fail "partial proofs show 2/5 and not VERIFIED"
 fi
 
 # ==========================================================================
@@ -279,9 +279,9 @@ else
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" pass "full proofs show 5/5 and PASSING"
+  purlin_proof "sync_status" "PROOF-25" "RULE-2" pass "full proofs show 5/5 and PASSING"
 else
-  purlin_proof "e2e_required_rules" "PROOF-4" "RULE-4" fail "full proofs show 5/5 and PASSING"
+  purlin_proof "sync_status" "PROOF-25" "RULE-2" fail "full proofs show 5/5 and PASSING"
 fi
 
 # --- Emit proof files ---

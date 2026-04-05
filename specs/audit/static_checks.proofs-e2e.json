@@ -1,0 +1,41 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "static_checks",
+      "id": "PROOF-28",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_creates_file",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-29",
+      "rule": "RULE-17",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cache_entry_required_fields",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-30",
+      "rule": "RULE-11",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_read_side_dedup_keeps_latest_entry",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-31",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_side_pruning_removes_stale_duplicates",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

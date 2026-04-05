@@ -21,6 +21,7 @@
 - RULE-14: Python assert_true results include a literal field (true for assert True/assertTrue(True), false for heuristic patterns like assert x is not None)
 - RULE-15: Proof ID collisions within a feature are detected — same PROOF-N targeting different RULE-N values in a proof JSON file
 - RULE-16: Proof entries referencing non-existent rules in the spec are flagged as orphans
+- RULE-17: Each audit cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
 
 ## Proof
 
@@ -40,3 +41,18 @@
 - PROOF-14 (RULE-14): Run static_checks on file with assert True; verify literal=true. Run on file with assert x is not None; verify literal=false
 - PROOF-15 (RULE-15): Create proof JSON with two entries sharing PROOF-1 but targeting RULE-1 and RULE-2; call check_proof_file; verify result contains check='proof_id_collision' with both rules listed. Test with proof JSON from multiple language contexts (Python pytest, JavaScript Jest, Shell, C, PHP, SQL, TypeScript) to verify language-agnostic detection
 - PROOF-16 (RULE-16): Create proof JSON with entry targeting RULE-99 on a spec with only RULE-1 through RULE-3; call check_proof_file with spec_path; verify result contains check='proof_rule_orphan'. Test with proof JSON from multiple language contexts to verify language-agnostic detection
+- PROOF-17 (RULE-1): e2e: Create test with assert True and a valid test; verify assert_true detected on first, pass on second @e2e
+- PROOF-18 (RULE-2): e2e: Create test with no assertions; verify no_assertions detected @e2e
+- PROOF-19 (RULE-4): e2e: Create test with logic mirroring (expected from same function as SUT); verify logic_mirroring detected @e2e
+- PROOF-20 (RULE-7): e2e: Create structurally valid but semantically weak test; verify passes structural checks @e2e
+- PROOF-21 (RULE-7): e2e: Create 3 strong tests; verify all pass structural checks with exit 0 @e2e
+- PROOF-22 (RULE-6): e2e: Parse JSON output; verify proofs array has proof_id, rule_id, test_name, status, reason fields @e2e
+- PROOF-23 (RULE-7): e2e: Run on clean and flawed files; verify exit 0 for both; verify flawed has status=fail in JSON @e2e
+- PROOF-24 (RULE-5): e2e: Create test mocking bcrypt on rule about bcrypt; verify mock_target_match detected @e2e
+- PROOF-25 (RULE-3): e2e: Create test with bare except:pass; verify bare_except detected @e2e
+- PROOF-26 (RULE-8): e2e: Create structural-only and behavioral specs; verify structural_only_spec=true/false classification @e2e
+- PROOF-27 (RULE-13): e2e: Create shell test with if/else purlin_proof pair; verify pass; verify bare hardcoded pass still caught @e2e
+- PROOF-28 (RULE-12): e2e: Call write_audit_cache with 3 entries; verify audit_cache.json created with 3 keys @e2e
+- PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
+- PROOF-30 (RULE-11): e2e: Write cache with 3 entries for same (feature, proof_id); call _read_audit_cache_by_feature; verify dedup to 1 entry @e2e
+- PROOF-31 (RULE-12): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer; verify only STRONG entry kept @e2e

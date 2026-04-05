@@ -168,9 +168,9 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-1" "RULE-1" pass "separate proof files don't interfere"
+  purlin_proof "proof_plugins" "PROOF-30" "RULE-4" pass "separate proof files don't interfere"
 else
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-1" "RULE-1" fail "separate proof files don't interfere"
+  purlin_proof "proof_plugins" "PROOF-30" "RULE-4" fail "separate proof files don't interfere"
 fi
 
 # ==========================================================================
@@ -209,9 +209,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-2" "RULE-2" pass "overwrite replaces only target feature, others intact"
+  purlin_proof "proof_plugins" "PROOF-31" "RULE-4" pass "overwrite replaces only target feature, others intact"
 else
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-2" "RULE-2" fail "overwrite replaces only target feature, others intact"
+  purlin_proof "proof_plugins" "PROOF-31" "RULE-4" fail "overwrite replaces only target feature, others intact"
 fi
 
 # ==========================================================================
@@ -244,9 +244,9 @@ else
 fi
 
 if $phase_c_ok; then
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-3" "RULE-3" pass "removed test proof is purged, not carried over"
+  purlin_proof "proof_plugins" "PROOF-32" "RULE-29" pass "removed test proof is purged, not carried over"
 else
-  purlin_proof "e2e_feature_scoped_overwrite" "PROOF-3" "RULE-3" fail "removed test proof is purged, not carried over"
+  purlin_proof "proof_plugins" "PROOF-32" "RULE-29" fail "removed test proof is purged, not carried over"
 fi
 
 # --- Emit proof files ---

@@ -3,127 +3,19 @@
   "proofs": [
     {
       "feature": "pre_push_hook",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "FAIL proof blocks push with exit 1 and PUSH BLOCKED message",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "NO PROOF allows push with exit 0 and partial coverage warning",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "no specs directory allows push silently with exit 0",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "all proofs pass allows push with exit 0",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "detects test framework from config (pytest and jest)",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "hook runs only unit-tier tests (pytest -m not integration)",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "output shows failing features, PUSH BLOCKED, and recovery steps",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-9",
+      "id": "PROOF-15",
       "rule": "RULE-8",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "strict mode blocks push when features are not PASSING",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict blocks when required rules lack proofs",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "pre_push_hook",
-      "id": "PROOF-10",
+      "id": "PROOF-16",
       "rule": "RULE-8",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "strict mode allows push when all features PASSING",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-8",
-      "rule": "RULE-1",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "full lifecycle: FAIL\u2192blocks, fix\u2192warns, complete\u2192allows",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-11",
-      "rule": "RULE-9",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "init installs executable pre-push hook that blocks on FAIL",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-12",
-      "rule": "RULE-4",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "rule description containing FAIL does not false-positive block push",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-13",
-      "rule": "RULE-7",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
-      "id": "PROOF-14",
-      "rule": "RULE-8",
-      "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict allows when all rules (own+required) proved",
       "status": "pass",
       "tier": "unit"
     }

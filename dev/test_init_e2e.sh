@@ -208,11 +208,11 @@ init_project "$TMP1" "shell" "warn" "true"
 if [[ -d "$TMP1/.purlin" ]] && [[ -d "$TMP1/.purlin/plugins" ]] && \
    [[ -d "$TMP1/specs" ]] && [[ -d "$TMP1/specs/_anchors" ]]; then
   echo "  PASS: all directories exist"
-  purlin_proof "init_e2e" "PROOF-1" "RULE-1" pass "all init directories exist"
+  purlin_proof "skill_init" "PROOF-8" "RULE-8" pass "all init directories exist"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: missing directories"
-  purlin_proof "init_e2e" "PROOF-1" "RULE-1" fail "missing directories"
+  purlin_proof "skill_init" "PROOF-8" "RULE-8" fail "missing directories"
   FAIL=$((FAIL + 1))
 fi
 
@@ -233,11 +233,11 @@ if missing:
     sys.exit(1)
 " 2>/dev/null; then
   echo "  PASS: all 5 required fields present"
-  purlin_proof "init_e2e" "PROOF-2" "RULE-2" pass "config.json has all required fields"
+  purlin_proof "skill_init" "PROOF-9" "RULE-9" pass "config.json has all required fields"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: missing fields in config.json"
-  purlin_proof "init_e2e" "PROOF-2" "RULE-2" fail "missing fields in config.json"
+  purlin_proof "skill_init" "PROOF-9" "RULE-9" fail "missing fields in config.json"
   FAIL=$((FAIL + 1))
 fi
 
@@ -253,11 +253,11 @@ CONFIG_VERSION=$(python3 -c "import json; print(json.load(open('$TMP3/.purlin/co
 
 if [[ "$FILE_VERSION" == "$CONFIG_VERSION" ]]; then
   echo "  PASS: version=$FILE_VERSION matches"
-  purlin_proof "init_e2e" "PROOF-3" "RULE-3" pass "config version matches VERSION file"
+  purlin_proof "skill_init" "PROOF-10" "RULE-10" pass "config version matches VERSION file"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: VERSION=$FILE_VERSION config=$CONFIG_VERSION"
-  purlin_proof "init_e2e" "PROOF-3" "RULE-3" fail "config version mismatch"
+  purlin_proof "skill_init" "PROOF-10" "RULE-10" fail "config version mismatch"
   FAIL=$((FAIL + 1))
 fi
 
@@ -277,11 +277,11 @@ assert d['pre_push'] == 'warn', f'pre_push={d[\"pre_push\"]}'
 assert d['report'] == True, f'report={d[\"report\"]}'
 " 2>/dev/null; then
   echo "  PASS: defaults correct"
-  purlin_proof "init_e2e" "PROOF-4" "RULE-4" pass "default config values correct"
+  purlin_proof "skill_init" "PROOF-11" "RULE-11" pass "default config values correct"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: incorrect defaults"
-  purlin_proof "init_e2e" "PROOF-4" "RULE-4" fail "incorrect defaults"
+  purlin_proof "skill_init" "PROOF-11" "RULE-11" fail "incorrect defaults"
   FAIL=$((FAIL + 1))
 fi
 
@@ -299,12 +299,12 @@ create_proof_file "$TMP5" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|
 output5=$(run_hook "$TMP5" 2>&1) || true
 if echo "$output5" | grep -q "(pytest)"; then
   echo "  PASS: auto-detection selects pytest"
-  purlin_proof "init_e2e" "PROOF-5" "RULE-5" pass "conftest.py triggers pytest detection"
+  purlin_proof "skill_init" "PROOF-12" "RULE-12" pass "conftest.py triggers pytest detection"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected (pytest) in output"
   echo "  Output: $output5"
-  purlin_proof "init_e2e" "PROOF-5" "RULE-5" fail "conftest.py did not trigger pytest"
+  purlin_proof "skill_init" "PROOF-12" "RULE-12" fail "conftest.py did not trigger pytest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -322,12 +322,12 @@ create_proof_file "$TMP6" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|
 output6=$(run_hook "$TMP6" 2>&1) || true
 if echo "$output6" | grep -q "(pytest)"; then
   echo "  PASS: pyproject.toml triggers pytest"
-  purlin_proof "init_e2e" "PROOF-6" "RULE-6" pass "pyproject.toml [tool.pytest] triggers pytest"
+  purlin_proof "skill_init" "PROOF-13" "RULE-13" pass "pyproject.toml [tool.pytest] triggers pytest"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected (pytest) in output"
   echo "  Output: $output6"
-  purlin_proof "init_e2e" "PROOF-6" "RULE-6" fail "pyproject.toml did not trigger pytest"
+  purlin_proof "skill_init" "PROOF-13" "RULE-13" fail "pyproject.toml did not trigger pytest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -345,12 +345,12 @@ create_proof_file "$TMP7" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|
 output7=$(run_hook "$TMP7" 2>&1) || true
 if echo "$output7" | grep -q "(jest)"; then
   echo "  PASS: package.json jest triggers jest"
-  purlin_proof "init_e2e" "PROOF-7" "RULE-7" pass "package.json jest triggers jest detection"
+  purlin_proof "skill_init" "PROOF-14" "RULE-14" pass "package.json jest triggers jest detection"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected (jest) in output"
   echo "  Output: $output7"
-  purlin_proof "init_e2e" "PROOF-7" "RULE-7" fail "package.json jest did not trigger jest"
+  purlin_proof "skill_init" "PROOF-14" "RULE-14" fail "package.json jest did not trigger jest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -364,11 +364,11 @@ init_project "$TMP8" "jest" "warn" "true"
 
 if [[ -f "$TMP8/.purlin/plugins/jest_purlin.js" ]]; then
   echo "  PASS: vitest project gets jest_purlin.js"
-  purlin_proof "init_e2e" "PROOF-8" "RULE-8" pass "vitest maps to jest plugin"
+  purlin_proof "skill_init" "PROOF-15" "RULE-15" pass "vitest maps to jest plugin"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: jest_purlin.js not scaffolded"
-  purlin_proof "init_e2e" "PROOF-8" "RULE-8" fail "jest_purlin.js not scaffolded for vitest"
+  purlin_proof "skill_init" "PROOF-15" "RULE-15" fail "jest_purlin.js not scaffolded for vitest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -389,11 +389,11 @@ cfg_fw=$(python3 -c "import json; print(json.load(open('$TMP9/.purlin/config.jso
 
 if $p9_pytest && $p9_jest && $p9_config; then
   echo "  PASS: both plugins scaffolded, config=pytest,jest"
-  purlin_proof "init_e2e" "PROOF-9" "RULE-9" pass "multi-framework scaffolding correct"
+  purlin_proof "skill_init" "PROOF-16" "RULE-16" pass "multi-framework scaffolding correct"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: pytest=$p9_pytest jest=$p9_jest config=$cfg_fw"
-  purlin_proof "init_e2e" "PROOF-9" "RULE-9" fail "multi-framework scaffolding failed"
+  purlin_proof "skill_init" "PROOF-16" "RULE-16" fail "multi-framework scaffolding failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -406,11 +406,11 @@ init_project "$TMP10" "shell" "warn" "true"
 
 if [[ -f "$TMP10/.purlin/plugins/purlin-proof.sh" ]]; then
   echo "  PASS: shell plugin scaffolded"
-  purlin_proof "init_e2e" "PROOF-10" "RULE-10" pass "shell fallback scaffolds purlin-proof.sh"
+  purlin_proof "skill_init" "PROOF-17" "RULE-17" pass "shell fallback scaffolds purlin-proof.sh"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: purlin-proof.sh not found"
-  purlin_proof "init_e2e" "PROOF-10" "RULE-10" fail "shell fallback missing"
+  purlin_proof "skill_init" "PROOF-17" "RULE-17" fail "shell fallback missing"
   FAIL=$((FAIL + 1))
 fi
 
@@ -423,11 +423,11 @@ init_project "$TMP11" "pytest" "warn" "true"
 
 if diff -q "$TMP11/.purlin/plugins/pytest_purlin.py" "$PYTEST_PLUGIN_SRC" >/dev/null 2>&1; then
   echo "  PASS: pytest_purlin.py identical to source"
-  purlin_proof "init_e2e" "PROOF-11" "RULE-11" pass "pytest plugin byte-identical"
+  purlin_proof "skill_init" "PROOF-18" "RULE-18" pass "pytest plugin byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: pytest_purlin.py differs from source"
-  purlin_proof "init_e2e" "PROOF-11" "RULE-11" fail "pytest plugin differs"
+  purlin_proof "skill_init" "PROOF-18" "RULE-18" fail "pytest plugin differs"
   FAIL=$((FAIL + 1))
 fi
 
@@ -440,11 +440,11 @@ init_project "$TMP12" "jest" "warn" "true"
 
 if diff -q "$TMP12/.purlin/plugins/jest_purlin.js" "$JEST_REPORTER_SRC" >/dev/null 2>&1; then
   echo "  PASS: jest_purlin.js identical to source"
-  purlin_proof "init_e2e" "PROOF-12" "RULE-12" pass "jest reporter byte-identical"
+  purlin_proof "skill_init" "PROOF-19" "RULE-19" pass "jest reporter byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: jest_purlin.js differs from source"
-  purlin_proof "init_e2e" "PROOF-12" "RULE-12" fail "jest reporter differs"
+  purlin_proof "skill_init" "PROOF-19" "RULE-19" fail "jest reporter differs"
   FAIL=$((FAIL + 1))
 fi
 
@@ -457,11 +457,11 @@ init_project "$TMP13" "shell" "warn" "true"
 
 if diff -q "$TMP13/.purlin/plugins/purlin-proof.sh" "$SHELL_HARNESS_SRC" >/dev/null 2>&1; then
   echo "  PASS: purlin-proof.sh identical to source"
-  purlin_proof "init_e2e" "PROOF-13" "RULE-13" pass "shell harness byte-identical"
+  purlin_proof "skill_init" "PROOF-20" "RULE-20" pass "shell harness byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: purlin-proof.sh differs from source"
-  purlin_proof "init_e2e" "PROOF-13" "RULE-13" fail "shell harness differs"
+  purlin_proof "skill_init" "PROOF-20" "RULE-20" fail "shell harness differs"
   FAIL=$((FAIL + 1))
 fi
 
@@ -500,11 +500,11 @@ fi
 
 if [[ "$p14_result" == "pass" ]]; then
   echo "  PASS: pytest plugin emitted 2 passing proofs"
-  purlin_proof "init_e2e" "PROOF-14" "RULE-14" pass "scaffolded pytest plugin produces valid proofs"
+  purlin_proof "skill_init" "PROOF-21" "RULE-21" pass "scaffolded pytest plugin produces valid proofs"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: pytest plugin did not produce expected proofs"
-  purlin_proof "init_e2e" "PROOF-14" "RULE-14" fail "pytest plugin proof emission failed"
+  purlin_proof "skill_init" "PROOF-21" "RULE-21" fail "pytest plugin proof emission failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -568,16 +568,16 @@ if (proof.proofs[0].feature !== 'weather' || proof.proofs[0].status !== 'pass') 
 
   if [[ "$p15_result" == "pass" ]]; then
     echo "  PASS: jest reporter emitted valid proof"
-    purlin_proof "init_e2e" "PROOF-15" "RULE-15" pass "scaffolded jest reporter produces valid proofs"
+    purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "scaffolded jest reporter produces valid proofs"
     PASS=$((PASS + 1))
   else
     echo "  FAIL: jest reporter did not produce expected proof"
-    purlin_proof "init_e2e" "PROOF-15" "RULE-15" fail "jest reporter proof emission failed"
+    purlin_proof "skill_init" "PROOF-22" "RULE-22" fail "jest reporter proof emission failed"
     FAIL=$((FAIL + 1))
   fi
 else
   echo "  SKIP: node not available"
-  purlin_proof "init_e2e" "PROOF-15" "RULE-15" pass "jest reporter (skipped — node not available)"
+  purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "jest reporter (skipped — node not available)"
   PASS=$((PASS + 1))
 fi
 
@@ -607,11 +607,11 @@ fi
 
 if [[ "$p16_result" == "pass" ]]; then
   echo "  PASS: shell harness emitted 2 passing proofs"
-  purlin_proof "init_e2e" "PROOF-16" "RULE-16" pass "scaffolded shell harness produces valid proofs"
+  purlin_proof "skill_init" "PROOF-23" "RULE-23" pass "scaffolded shell harness produces valid proofs"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: shell harness did not produce expected proofs"
-  purlin_proof "init_e2e" "PROOF-16" "RULE-16" fail "shell harness proof emission failed"
+  purlin_proof "skill_init" "PROOF-23" "RULE-23" fail "shell harness proof emission failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -625,12 +625,12 @@ init_project "$TMP17" "shell" "warn" "true"
 output17=$(run_sync_status "$TMP17")
 if echo "$output17" | grep -qi "No specs found"; then
   echo "  PASS: empty specs returns 'No specs found'"
-  purlin_proof "init_e2e" "PROOF-17" "RULE-17" pass "empty specs returns No specs found"
+  purlin_proof "skill_init" "PROOF-24" "RULE-24" pass "empty specs returns No specs found"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected 'No specs found'"
   echo "  Output: $output17"
-  purlin_proof "init_e2e" "PROOF-17" "RULE-17" fail "empty specs did not return No specs found"
+  purlin_proof "skill_init" "PROOF-24" "RULE-24" fail "empty specs did not return No specs found"
   FAIL=$((FAIL + 1))
 fi
 
@@ -681,10 +681,10 @@ else
 fi
 
 if $phase_a && $phase_b && $phase_c; then
-  purlin_proof "init_e2e" "PROOF-18" "RULE-18" pass "status progression UNTESTED→PASSING→FAILING"
+  purlin_proof "skill_init" "PROOF-25" "RULE-25" pass "status progression UNTESTED→PASSING→FAILING"
   PASS=$((PASS + 1))
 else
-  purlin_proof "init_e2e" "PROOF-18" "RULE-18" fail "status progression failed (a=$phase_a b=$phase_b c=$phase_c)"
+  purlin_proof "skill_init" "PROOF-25" "RULE-25" fail "status progression failed (a=$phase_a b=$phase_b c=$phase_c)"
   FAIL=$((FAIL + 1))
 fi
 
@@ -701,11 +701,11 @@ create_proof_file "$TMP19" "metrics" "core" "PROOF-1|RULE-1|pass"
 run_sync_status "$TMP19" >/dev/null
 if [[ -f "$TMP19/.purlin/report-data.js" ]] && head -1 "$TMP19/.purlin/report-data.js" | grep -q "const PURLIN_DATA"; then
   echo "  PASS: report-data.js generated with PURLIN_DATA"
-  purlin_proof "init_e2e" "PROOF-19" "RULE-19" pass "report-data.js generated correctly"
+  purlin_proof "skill_init" "PROOF-26" "RULE-26" pass "report-data.js generated correctly"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: report-data.js missing or invalid"
-  purlin_proof "init_e2e" "PROOF-19" "RULE-19" fail "report-data.js not generated"
+  purlin_proof "skill_init" "PROOF-26" "RULE-26" fail "report-data.js not generated"
   FAIL=$((FAIL + 1))
 fi
 
@@ -726,11 +726,11 @@ done
 
 if $p20_ok; then
   echo "  PASS: all 5 gitignore entries present"
-  purlin_proof "init_e2e" "PROOF-20" "RULE-20" pass "all gitignore entries present"
+  purlin_proof "skill_init" "PROOF-27" "RULE-27" pass "all gitignore entries present"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: missing gitignore entries"
-  purlin_proof "init_e2e" "PROOF-20" "RULE-20" fail "missing gitignore entries"
+  purlin_proof "skill_init" "PROOF-27" "RULE-27" fail "missing gitignore entries"
   FAIL=$((FAIL + 1))
 fi
 
@@ -746,11 +746,11 @@ init_project "$TMP21" "shell" "warn" "true"
 count=$(grep -cF ".purlin/runtime/" "$TMP21/.gitignore" 2>/dev/null || echo "0")
 if [[ "$count" == "1" ]]; then
   echo "  PASS: exactly 1 occurrence of .purlin/runtime/"
-  purlin_proof "init_e2e" "PROOF-21" "RULE-21" pass "no duplicate gitignore entries"
+  purlin_proof "skill_init" "PROOF-28" "RULE-28" pass "no duplicate gitignore entries"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: found $count occurrences"
-  purlin_proof "init_e2e" "PROOF-21" "RULE-21" fail "duplicate gitignore entries ($count)"
+  purlin_proof "skill_init" "PROOF-28" "RULE-28" fail "duplicate gitignore entries ($count)"
   FAIL=$((FAIL + 1))
 fi
 
@@ -769,11 +769,11 @@ grep -q "purlin" "$TMP22/.git/hooks/pre-push" 2>/dev/null && p22_content=true
 
 if $p22_exists && $p22_exec && $p22_content; then
   echo "  PASS: hook exists, executable, contains purlin"
-  purlin_proof "init_e2e" "PROOF-22" "RULE-22" pass "pre-push hook installed correctly"
+  purlin_proof "skill_init" "PROOF-29" "RULE-29" pass "pre-push hook installed correctly"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: exists=$p22_exists exec=$p22_exec content=$p22_content"
-  purlin_proof "init_e2e" "PROOF-22" "RULE-22" fail "pre-push hook installation failed"
+  purlin_proof "skill_init" "PROOF-29" "RULE-29" fail "pre-push hook installation failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -791,11 +791,11 @@ init_project "$TMP23" "shell" "warn" "true"
 
 if grep -q "echo custom-hook" "$TMP23/.git/hooks/pre-push" 2>/dev/null; then
   echo "  PASS: existing hook content preserved"
-  purlin_proof "init_e2e" "PROOF-23" "RULE-23" pass "non-purlin hook preserved"
+  purlin_proof "skill_init" "PROOF-30" "RULE-30" pass "non-purlin hook preserved"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: existing hook was overwritten"
-  purlin_proof "init_e2e" "PROOF-23" "RULE-23" fail "existing hook overwritten"
+  purlin_proof "skill_init" "PROOF-30" "RULE-30" fail "existing hook overwritten"
   FAIL=$((FAIL + 1))
 fi
 
@@ -815,11 +815,11 @@ p24_on=false; p24_off=false
 
 if $p24_on && $p24_off; then
   echo "  PASS: report=true creates file, report=false does not"
-  purlin_proof "init_e2e" "PROOF-24" "RULE-24" pass "dashboard report on/off correct"
+  purlin_proof "skill_init" "PROOF-31" "RULE-31" pass "dashboard report on/off correct"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: on=$p24_on off=$p24_off"
-  purlin_proof "init_e2e" "PROOF-24" "RULE-24" fail "dashboard report toggle failed"
+  purlin_proof "skill_init" "PROOF-31" "RULE-31" fail "dashboard report toggle failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -870,11 +870,11 @@ run_hook "$TMP25" >/dev/null 2>&1 || ec25=$?
 
 if $p25_pytest && $p25_status && $p25_hook; then
   echo "  PASS: full Python lifecycle works"
-  purlin_proof "init_e2e" "PROOF-25" "RULE-25" pass "Python lifecycle: init→spec→pytest→proofs→PASSING→hook-ok"
+  purlin_proof "skill_init" "PROOF-32" "RULE-32" pass "Python lifecycle: init→spec→pytest→proofs→PASSING→hook-ok"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: pytest=$p25_pytest status=$p25_status hook=$p25_hook"
-  purlin_proof "init_e2e" "PROOF-25" "RULE-25" fail "Python lifecycle failed"
+  purlin_proof "skill_init" "PROOF-32" "RULE-32" fail "Python lifecycle failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -912,11 +912,11 @@ echo "$output26" | grep -q "PASSING" && p26_status=true
 
 if $p26_proofs && $p26_status; then
   echo "  PASS: full Shell lifecycle works"
-  purlin_proof "init_e2e" "PROOF-26" "RULE-25" pass "Shell lifecycle: init→spec→shell-proof→PASSING"
+  purlin_proof "skill_init" "PROOF-33" "RULE-32" pass "Shell lifecycle: init→spec→shell-proof→PASSING"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: proofs=$p26_proofs status=$p26_status"
-  purlin_proof "init_e2e" "PROOF-26" "RULE-25" fail "Shell lifecycle failed"
+  purlin_proof "skill_init" "PROOF-33" "RULE-32" fail "Shell lifecycle failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -985,16 +985,16 @@ r.onRunComplete();
 
   if $p27_proofs && $p27_status; then
     echo "  PASS: full Jest lifecycle works"
-    purlin_proof "init_e2e" "PROOF-27" "RULE-25" pass "Jest lifecycle: init→spec→reporter→PASSING"
+    purlin_proof "skill_init" "PROOF-34" "RULE-32" pass "Jest lifecycle: init→spec→reporter→PASSING"
     PASS=$((PASS + 1))
   else
     echo "  FAIL: proofs=$p27_proofs status=$p27_status"
-    purlin_proof "init_e2e" "PROOF-27" "RULE-25" fail "Jest lifecycle failed"
+    purlin_proof "skill_init" "PROOF-34" "RULE-32" fail "Jest lifecycle failed"
     FAIL=$((FAIL + 1))
   fi
 else
   echo "  SKIP: node not available"
-  purlin_proof "init_e2e" "PROOF-27" "RULE-25" pass "Jest lifecycle (skipped — node not available)"
+  purlin_proof "skill_init" "PROOF-34" "RULE-32" pass "Jest lifecycle (skipped — node not available)"
   PASS=$((PASS + 1))
 fi
 

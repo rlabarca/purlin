@@ -41,9 +41,9 @@ fi
 
 if $proof1_ok; then
   echo "    PASS: Audit independent auditor mode documents criteria and assessment levels"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-1" "RULE-1" pass "audit independent auditor mode documents criteria reading and STRONG/WEAK/HOLLOW assessment"
+  purlin_proof "skill_audit" "PROOF-4" "RULE-4" pass "audit independent auditor mode documents criteria reading and STRONG/WEAK/HOLLOW assessment"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-1" "RULE-1" fail "audit independent auditor mode missing criteria or assessment documentation"
+  purlin_proof "skill_audit" "PROOF-4" "RULE-4" fail "audit independent auditor mode missing criteria or assessment documentation"
 fi
 
 # ==========================================================================
@@ -66,9 +66,9 @@ fi
 
 if $proof2_ok; then
   echo "    PASS: Audit independent auditor mode instructs spawning a builder"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-2" "RULE-2" pass "audit independent auditor mode instructs spawning purlin-builder with findings"
+  purlin_proof "skill_audit" "PROOF-5" "RULE-5" pass "audit independent auditor mode instructs spawning purlin-builder with findings"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-2" "RULE-2" fail "audit independent auditor mode missing builder spawning protocol"
+  purlin_proof "skill_audit" "PROOF-5" "RULE-5" fail "audit independent auditor mode missing builder spawning protocol"
 fi
 
 # ==========================================================================
@@ -101,9 +101,9 @@ fi
 
 if $proof3_ok; then
   echo "    PASS: Build proof fixer mode documents fix-and-report protocol"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-3" "RULE-3" pass "build proof fixer mode fixes proofs and reports back"
+  purlin_proof "skill_build" "PROOF-8" "RULE-8" pass "build proof fixer mode fixes proofs and reports back"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-3" "RULE-3" fail "build proof fixer mode missing fix or report protocol"
+  purlin_proof "skill_build" "PROOF-8" "RULE-8" fail "build proof fixer mode missing fix or report protocol"
 fi
 
 # ==========================================================================
@@ -120,9 +120,9 @@ fi
 
 if $proof4_ok; then
   echo "    PASS: Audit independent auditor mode documents re-audit loop"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-4" "RULE-4" pass "audit independent auditor mode re-audits fixed proofs"
+  purlin_proof "skill_audit" "PROOF-6" "RULE-6" pass "audit independent auditor mode re-audits fixed proofs"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-4" "RULE-4" fail "audit independent auditor mode missing re-audit documentation"
+  purlin_proof "skill_audit" "PROOF-6" "RULE-6" fail "audit independent auditor mode missing re-audit documentation"
 fi
 
 # ==========================================================================
@@ -139,9 +139,9 @@ fi
 
 if $proof5_ok; then
   echo "    PASS: Audit independent auditor mode has 3-round termination"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-5" "RULE-5" pass "audit independent auditor mode terminates after 3 rounds on any single proof"
+  purlin_proof "skill_audit" "PROOF-7" "RULE-7" pass "audit independent auditor mode terminates after 3 rounds on any single proof"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-5" "RULE-5" fail "audit independent auditor mode missing termination condition"
+  purlin_proof "skill_audit" "PROOF-7" "RULE-7" fail "audit independent auditor mode missing termination condition"
 fi
 
 # ==========================================================================
@@ -165,9 +165,9 @@ fi
 
 if $proof6_ok; then
   echo "    PASS: Verify Step 4e documents independent audit"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-6" "RULE-6" pass "verify Step 4e documents independent audit with integrity score and purlin-auditor"
+  purlin_proof "skill_verify" "PROOF-6" "RULE-6" pass "verify Step 4e documents independent audit with integrity score and purlin-auditor"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-6" "RULE-6" fail "verify skill missing independent audit documentation"
+  purlin_proof "skill_verify" "PROOF-6" "RULE-6" fail "verify skill missing independent audit documentation"
 fi
 
 # ==========================================================================
@@ -194,9 +194,9 @@ fi
 
 if $proof7_ok; then
   echo "    PASS: Audit anchor rule handling documented correctly"
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-7" "RULE-7" pass "audit anchor rule handling reports to lead for ambiguous anchor rules"
+  purlin_proof "skill_audit" "PROOF-8" "RULE-8" pass "audit anchor rule handling reports to lead for ambiguous anchor rules"
 else
-  purlin_proof "e2e_teammate_audit_loop" "PROOF-7" "RULE-7" fail "audit missing anchor rule handling"
+  purlin_proof "skill_audit" "PROOF-8" "RULE-8" fail "audit missing anchor rule handling"
 fi
 
 # --- Emit proof files ---

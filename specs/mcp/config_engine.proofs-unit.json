@@ -84,6 +84,33 @@
     },
     {
       "feature": "config_engine",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_local_only_keys_included",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_empty_local_returns_shared",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_local_without_shared",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_config_engine.py",
@@ -106,6 +133,42 @@
       "rule": "RULE-10",
       "test_file": "dev/test_config_engine.py",
       "test_name": "test_atomic_replacement",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_update_creates_local_if_missing",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_update_overwrites_existing_key",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_cli_dump",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_cli_key",
       "status": "pass",
       "tier": "unit"
     }

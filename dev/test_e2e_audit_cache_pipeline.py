@@ -136,7 +136,7 @@ class TestAuditCachePipeline:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-1", "RULE-1", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-28", "RULE-12", tier="e2e")
     def test_write_cache_creates_file(self):
         """RULE-1: write_audit_cache writes audit_cache.json with entries keyed by proof hash."""
         _make_project(self.tmp_dir, with_git=False)
@@ -150,7 +150,7 @@ class TestAuditCachePipeline:
             data = json.load(f)
         assert len(data) == 3, f"Expected 3 cache entries, got {len(data)}"
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-2", "RULE-2", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-29", "RULE-17", tier="e2e")
     def test_cache_entry_required_fields(self):
         """RULE-2: Each cache entry contains all required fields including valid ISO 8601 cached_at."""
         _make_project(self.tmp_dir, with_git=False)
@@ -171,7 +171,7 @@ class TestAuditCachePipeline:
             parsed = datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
             assert parsed is not None, f"cached_at '{ts}' is not valid ISO 8601"
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-3", "RULE-3", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-43", "RULE-19", tier="e2e")
     def test_sync_status_shows_integrity_line(self):
         """RULE-3: sync_status reads audit cache and shows integrity percentage and relative time."""
         _make_project(self.tmp_dir, with_git=True)
@@ -191,7 +191,7 @@ class TestAuditCachePipeline:
             f"Expected 'minutes ago' in output, got:\n{output}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-4", "RULE-4", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-44", "RULE-19", tier="e2e")
     def test_sync_status_no_cache_shows_no_audit_data(self):
         """RULE-4: sync_status shows 'No audit data' when cache does not exist."""
         _make_project(self.tmp_dir, with_git=True)
@@ -208,7 +208,7 @@ class TestAuditCachePipeline:
             f"Expected 'purlin:audit' in output, got:\n{output}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-5", "RULE-5", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-45", "RULE-25", tier="e2e")
     def test_sync_status_stale_cache_warns(self):
         """RULE-5: sync_status shows 'consider re-auditing' when cache is older than 24 hours."""
         _make_project(self.tmp_dir, with_git=True)
@@ -222,7 +222,7 @@ class TestAuditCachePipeline:
             f"Expected 'consider re-auditing' in output, got:\n{output}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-6", "RULE-6", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-46", "RULE-26", tier="e2e")
     def test_report_data_audit_summary_fields(self):
         """RULE-6: report-data.js includes audit_summary with required fields when cache exists."""
         _make_project(self.tmp_dir, with_git=True, with_report=True)
@@ -258,7 +258,7 @@ class TestAuditCachePipeline:
         )
         assert audit_summary['last_audit'] is not None, "last_audit should not be null"
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-7", "RULE-7", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-47", "RULE-26", tier="e2e")
     def test_report_data_audit_summary_null_when_no_cache(self):
         """RULE-7: report-data.js audit_summary is null when no cache exists."""
         _make_project(self.tmp_dir, with_git=True, with_report=True)
@@ -279,7 +279,7 @@ class TestAuditCachePipeline:
             f"Expected audit_summary to be null, got: {data.get('audit_summary')}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-8", "RULE-8", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-48", "RULE-27", tier="e2e")
     def test_report_data_per_feature_audit_data(self):
         """RULE-8: report-data.js per-feature audit data populated from cache with correct integrity."""
         _make_project(self.tmp_dir, with_git=True)
@@ -314,7 +314,7 @@ class TestAuditCachePipeline:
             f"Expected finding level WEAK, got {findings[0]['level']}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-9", "RULE-9", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="e2e")
     def test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally(self):
         """RULE-9: Entries missing 'feature' field excluded from per-feature but in project summary."""
         _make_project(self.tmp_dir, with_git=True)
@@ -353,7 +353,7 @@ class TestAuditCachePipeline:
             f"Expected behavioral_total=2 globally, got {summary['behavioral_total']}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-10", "RULE-10", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-50", "RULE-19", tier="e2e")
     def test_deleting_cache_reverts_to_no_audit_state(self):
         """RULE-10: Deleting cache causes sync_status and report-data.js to revert to no-audit state."""
         _make_project(self.tmp_dir, with_git=True, with_report=True)
@@ -389,7 +389,7 @@ class TestAuditCachePipeline:
             f"Expected audit_summary null after deleting cache, got: {data.get('audit_summary')}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-11", "RULE-11", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-51", "RULE-29", tier="e2e")
     def test_integrity_penalizes_own_no_proof_rules(self):
         """RULE-11: Own behavioral rules with NO_PROOF inflate the denominator.
 
@@ -475,7 +475,7 @@ Process payments.
         assert audit['strong'] == 2
         assert audit['weak'] == 1
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-12", "RULE-12", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-52", "RULE-30", tier="e2e")
     def test_integrity_excludes_required_anchor_rules_from_no_proof_penalty(self):
         """RULE-12: Required anchor rules don't inflate the NO_PROOF denominator.
 
@@ -586,7 +586,7 @@ Checkout flow.
             f"  If this is 40%, anchor rules are incorrectly inflating the denominator"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-13", "RULE-13", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-53", "RULE-31", tier="e2e")
     def test_global_integrity_includes_no_proof_from_all_features(self):
         """RULE-13: Global integrity sums NO_PROOF penalties across all features.
 
@@ -696,7 +696,7 @@ Beta feature.
             f"got:\n{output}"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-14", "RULE-14", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-30", "RULE-11", tier="e2e")
     def test_read_side_dedup_keeps_latest_entry(self):
         """RULE-14: Read-side dedup keeps only latest per (feature, proof_id).
 
@@ -766,7 +766,7 @@ Beta feature.
             f"Expected integrity=100% (1 STRONG / 1 total), got {audit['integrity']}%"
         )
 
-    @pytest.mark.proof("e2e_audit_cache_pipeline", "PROOF-15", "RULE-15", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-31", "RULE-12", tier="e2e")
     def test_write_side_pruning_removes_stale_duplicates(self):
         """RULE-15: write_audit_cache prunes duplicate (feature, proof_id) entries.
 
