@@ -237,9 +237,8 @@ def test_unnumbered_rules_get_renumbered(tmp_path):
 
     # Verify sync_status flags the unnumbered rules
     assert 'cart' in result, "cart feature not found in sync_status output"
-    assert 'not numbered' in result.lower() or 'unnumbered' in result.lower() or 'RULE-' not in UNNUMBERED_RULES_SPEC, (
-        "sync_status should flag unnumbered rules or the spec should lack RULE-N format"
-    )
+    assert 'WARNING' in result, "sync_status should emit a WARNING for unnumbered rules"
+    assert 'not numbered' in result.lower(), "WARNING should mention 'not numbered'"
 
     # Verify the spec has unnumbered rules (migration input)
     rules = _parse_rules(UNNUMBERED_RULES_SPEC)
@@ -301,9 +300,9 @@ def test_compliant_spec_passes_sync_status(tmp_path):
     result = sync_status(str(tmp_path))
 
     assert 'profile' in result, "profile feature not found in sync_status output"
-    # A compliant spec with no proofs yet should show as UNTESTED, not as WARNING
-    assert 'WARNING' not in result or 'profile' not in result.split('WARNING')[0], (
-        "Compliant spec should not trigger format warnings"
+    # Single-feature project — any WARNING means the compliant spec was flagged
+    assert 'WARNING' not in result, (
+        f"Compliant spec should not trigger format warnings, got:\n{result}"
     )
 
 

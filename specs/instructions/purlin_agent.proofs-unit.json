@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_skills_table_fourteen_entries",
+      "test_name": "test_skills_table_twelve_entries",
       "status": "pass",
       "tier": "unit"
     },

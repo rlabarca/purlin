@@ -111,6 +111,66 @@ purlin_proof "feature_name" "PROOF-2" "RULE-2" fail "test description"
 purlin_proof_finish  # writes proof files
 ```
 
+### C
+
+```c
+#include "c_purlin.h"
+
+int main(void) {
+    int result = add(2, 3);
+    purlin_proof("feature_name", "PROOF-1", "RULE-1",
+                 result == 5, "test_addition", __FILE__, "unit");
+    purlin_proof_finish();  /* prints JSON to stdout */
+    return 0;
+}
+```
+
+Compile and pipe: `gcc -o test test.c && ./test | python3 scripts/proof/c_purlin_emit.py`
+
+Header: `scripts/proof/c_purlin.h`. Emitter: `scripts/proof/c_purlin_emit.py`.
+
+### PHP
+
+```php
+<?php
+/** @purlin feature_name PROOF-1 RULE-1 unit */
+function testValidLogin() {
+    $result = login("alice", "secret");
+    if ($result !== 200) throw new Exception("Expected 200");
+}
+```
+
+Runner: `php scripts/proof/phpunit_purlin.php tests/AuthTest.php`
+
+Plugin: `scripts/proof/phpunit_purlin.php`.
+
+### SQL (sqlite3)
+
+```sql
+-- @purlin feature_name PROOF-1 RULE-1 unit
+-- Test: unique constraint enforced
+INSERT INTO users (name, email) VALUES ('Alice', 'a@test.com');
+INSERT OR IGNORE INTO users (name, email) VALUES ('Bob', 'a@test.com');
+SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='a@test.com') = 1
+       THEN 'PASS' ELSE 'FAIL' END;
+```
+
+Runner: `bash scripts/proof/sql_purlin.sh tests/test_constraints.sql test.db`
+
+Plugin: `scripts/proof/sql_purlin.sh`.
+
+### Vitest (TypeScript-native)
+
+Same marker syntax as Jest. Use the TypeScript reporter for type-safe integration:
+
+```typescript
+it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
+  expect(login("alice", "secret")).toBe(200);
+});
+```
+
+Reporter: `scripts/proof/vitest_purlin.ts`.
+
 ## Manual Proofs
 
 For rules that cannot be tested automatically, proofs are stamped directly in the spec's `## Proof` section:

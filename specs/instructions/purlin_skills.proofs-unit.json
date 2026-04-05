@@ -15,7 +15,7 @@
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_exactly_fourteen_skill_files",
+      "test_name": "test_exactly_twelve_skill_files",
       "status": "pass",
       "tier": "unit"
     },

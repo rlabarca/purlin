@@ -1,8 +1,9 @@
-"""Tests for static_checks.py — 12 rules.
+"""Tests for static_checks.py — 16 rules.
 
 Covers all five Python AST checks (assert_true, no_assertions, bare_except,
 logic_mirroring, mock_target_match), JSON output format, exit codes,
-spec coverage checks (Pass 0), and audit cache helpers.
+spec coverage checks (Pass 0), audit cache helpers, and language-agnostic
+proof-file structural checks (proof_id_collision, proof_rule_orphan).
 """
 
 import json
@@ -15,6 +16,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
 from static_checks import (
+    check_proof_file,
     check_python,
     check_shell,
     check_spec_coverage,
@@ -603,3 +605,245 @@ def test_bad():
             assert results[0]['literal'] is False
         finally:
             os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# Proof-file structural checks (Pass 0.5 — language-agnostic)
+#
+# These tests verify that check_proof_file works regardless of which language
+# produced the proof JSON. Each test creates proof files as if emitted by
+# different language test runners (Python/pytest, JavaScript/Jest, Shell,
+# C/CUnit, PHP/PHPUnit, SQL/pgTAP, TypeScript/Vitest).
+# ---------------------------------------------------------------------------
+
+def _write_proof_json(tmp_path, feature, tier, proofs):
+    """Write a proof JSON file and return its path."""
+    path = tmp_path / f"{feature}.proofs-{tier}.json"
+    path.write_text(json.dumps({"tier": tier, "proofs": proofs}, indent=2))
+    return str(path)
+
+
+def _write_spec_file(tmp_path, feature, rules):
+    """Write a minimal spec file and return its path."""
+    content = f"# Feature: {feature}\n\n## Rules\n"
+    for rid, desc in rules.items():
+        content += f"- {rid}: {desc}\n"
+    content += "\n## Proof\n"
+    for rid in rules:
+        pid = rid.replace("RULE", "PROOF")
+        content += f"- {pid} ({rid}): test\n"
+    path = tmp_path / f"{feature}.md"
+    path.write_text(content)
+    return str(path)
+
+
+# Language-specific proof entry factories — each simulates the output
+# of a real test framework's proof plugin.
+
+def _python_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "tests/test_login.py",
+        "test_name": "test_validates_credentials",
+        "status": status, "tier": "unit",
+    }
+
+
+def _jest_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "src/__tests__/login.test.ts",
+        "test_name": "validates credentials [proof:login:PROOF-1:RULE-1:unit]",
+        "status": status, "tier": "unit",
+    }
+
+
+def _shell_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "tests/test_login.sh",
+        "test_name": "purlin_proof login PROOF-1 RULE-1 pass",
+        "status": status, "tier": "e2e",
+    }
+
+
+def _c_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "tests/test_auth.c",
+        "test_name": "test_validates_credentials",
+        "status": status, "tier": "unit",
+    }
+
+
+def _php_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "tests/AuthTest.php",
+        "test_name": "testValidatesCredentials",
+        "status": status, "tier": "unit",
+    }
+
+
+def _sql_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "tests/test_constraints.sql",
+        "test_name": "check_foreign_key_enforced",
+        "status": status, "tier": "integration",
+    }
+
+
+def _typescript_proof(feature, proof_id, rule_id, status="pass"):
+    return {
+        "feature": feature, "id": proof_id, "rule": rule_id,
+        "test_file": "src/__tests__/auth.spec.ts",
+        "test_name": "should validate credentials",
+        "status": status, "tier": "unit",
+    }
+
+
+# Map language name to factory for parametrized tests
+_LANGUAGE_FACTORIES = {
+    "python": _python_proof,
+    "javascript": _jest_proof,
+    "shell": _shell_proof,
+    "c": _c_proof,
+    "php": _php_proof,
+    "sql": _sql_proof,
+    "typescript": _typescript_proof,
+}
+
+
+class TestProofIdCollision:
+    """Proof ID collision detection across all supported language contexts."""
+
+    @pytest.mark.parametrize("lang,factory", list(_LANGUAGE_FACTORIES.items()))
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    def test_detects_collision_per_language(self, tmp_path, lang, factory):
+        """Same PROOF-1 targeting RULE-1 and RULE-2 — detected regardless of source language."""
+        proofs = [
+            factory("login", "PROOF-1", "RULE-1"),
+            factory("login", "PROOF-1", "RULE-2"),
+            factory("login", "PROOF-2", "RULE-3"),  # no collision
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path)
+        collisions = [f for f in findings if f['check'] == 'proof_id_collision']
+        assert len(collisions) == 1, f"Expected 1 collision for {lang}, got {len(collisions)}"
+        assert collisions[0]['proof_id'] == 'PROOF-1'
+        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}
+
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    def test_no_collision_when_ids_unique(self, tmp_path):
+        """Distinct PROOF-IDs should produce zero findings."""
+        proofs = [
+            _python_proof("login", "PROOF-1", "RULE-1"),
+            _python_proof("login", "PROOF-2", "RULE-2"),
+            _jest_proof("login", "PROOF-3", "RULE-3"),
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path)
+        assert len(findings) == 0, f"Expected no findings, got {findings}"
+
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    def test_collision_with_mixed_languages(self, tmp_path):
+        """Collision across language boundaries — Python and TypeScript both claim PROOF-1."""
+        proofs = [
+            _python_proof("auth", "PROOF-1", "RULE-1"),
+            _typescript_proof("auth", "PROOF-1", "RULE-3"),
+            _c_proof("auth", "PROOF-2", "RULE-2"),
+        ]
+        proof_path = _write_proof_json(tmp_path, "auth", "unit", proofs)
+        findings = check_proof_file(proof_path)
+        collisions = [f for f in findings if f['check'] == 'proof_id_collision']
+        assert len(collisions) == 1
+        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-3'}
+
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    def test_multiple_collisions_detected(self, tmp_path):
+        """Two separate collisions in one file — both detected."""
+        proofs = [
+            _php_proof("cart", "PROOF-1", "RULE-1"),
+            _php_proof("cart", "PROOF-1", "RULE-2"),
+            _sql_proof("cart", "PROOF-3", "RULE-3"),
+            _sql_proof("cart", "PROOF-3", "RULE-4"),
+        ]
+        proof_path = _write_proof_json(tmp_path, "cart", "unit", proofs)
+        findings = check_proof_file(proof_path)
+        collisions = [f for f in findings if f['check'] == 'proof_id_collision']
+        assert len(collisions) == 2
+        collision_ids = {c['proof_id'] for c in collisions}
+        assert collision_ids == {'PROOF-1', 'PROOF-3'}
+
+
+class TestProofRuleOrphan:
+    """Orphan rule detection across all supported language contexts."""
+
+    @pytest.mark.parametrize("lang,factory", list(_LANGUAGE_FACTORIES.items()))
+    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    def test_detects_orphan_per_language(self, tmp_path, lang, factory):
+        """Proof targeting RULE-99 which doesn't exist — detected regardless of language."""
+        spec_path = _write_spec_file(tmp_path, "login", {
+            "RULE-1": "Validates credentials",
+            "RULE-2": "Returns JWT on success",
+            "RULE-3": "Rejects expired tokens",
+        })
+        proofs = [
+            factory("login", "PROOF-1", "RULE-1"),
+            factory("login", "PROOF-99", "RULE-99"),  # orphan
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path, spec_path=spec_path)
+        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
+        assert len(orphans) == 1, f"Expected 1 orphan for {lang}, got {len(orphans)}"
+        assert orphans[0]['rule'] == 'RULE-99'
+
+    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    def test_no_orphan_when_all_rules_exist(self, tmp_path):
+        """All proofs target existing rules — zero orphans."""
+        spec_path = _write_spec_file(tmp_path, "login", {
+            "RULE-1": "Validates credentials",
+            "RULE-2": "Returns JWT on success",
+        })
+        proofs = [
+            _python_proof("login", "PROOF-1", "RULE-1"),
+            _shell_proof("login", "PROOF-2", "RULE-2"),
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path, spec_path=spec_path)
+        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
+        assert len(orphans) == 0, f"Expected no orphans, got {orphans}"
+
+    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    def test_required_anchor_rules_not_flagged(self, tmp_path):
+        """Rules with '/' (from required anchors) should NOT be flagged as orphans."""
+        spec_path = _write_spec_file(tmp_path, "login", {
+            "RULE-1": "Validates credentials",
+        })
+        proofs = [
+            _python_proof("login", "PROOF-1", "RULE-1"),
+            # This targets an anchor rule — should not be flagged
+            {
+                "feature": "login", "id": "PROOF-10", "rule": "security_policy/RULE-1",
+                "test_file": "tests/test_security.py",
+                "test_name": "test_no_eval",
+                "status": "pass", "tier": "unit",
+            },
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path, spec_path=spec_path)
+        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
+        assert len(orphans) == 0, f"Anchor rules should not be flagged as orphans: {orphans}"
+
+    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    def test_no_orphan_check_without_spec(self, tmp_path):
+        """Without spec_path, orphan check is skipped — only collision check runs."""
+        proofs = [
+            _c_proof("login", "PROOF-1", "RULE-1"),
+            _c_proof("login", "PROOF-99", "RULE-99"),
+        ]
+        proof_path = _write_proof_json(tmp_path, "login", "unit", proofs)
+        findings = check_proof_file(proof_path)  # no spec_path
+        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
+        assert len(orphans) == 0, "Should not check orphans without spec_path"

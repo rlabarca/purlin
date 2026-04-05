@@ -270,6 +270,276 @@
       "test_name": "test_heuristic_assert_has_literal_false",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[python-_python_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[javascript-_jest_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[shell-_shell_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[c-_c_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[php-_php_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[sql-_sql_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[typescript-_typescript_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_collision_when_ids_unique",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_collision_with_mixed_languages",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_multiple_collisions_detected",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[python-_python_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[javascript-_jest_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[shell-_shell_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[c-_c_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[php-_php_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[sql-_sql_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[typescript-_typescript_proof]",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_orphan_when_all_rules_exist",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_required_anchor_rules_not_flagged",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_orphan_check_without_spec",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_proof_plugin_real_compilation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_typescript_proof_plugin_real_compilation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_typescript_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_python_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_collision_detected_in_c_output",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

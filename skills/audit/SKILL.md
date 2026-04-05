@@ -109,6 +109,20 @@ N structural checks excluded from audit
 
 Specs with at least one behavioral rule proceed to Pass 1 normally.
 
+### Proof-File Structural Checks (Pass 0.5 — language-agnostic, no source reading)
+
+Before reading any source code, run structural checks on the proof JSON files. These operate on JSON regardless of what language produced the proofs:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-proof-file --proof-path <proof_json> --spec-path <spec_path>
+```
+
+Checks:
+- **Proof ID collision** — same PROOF-N targeting different RULE-N values. Severity: MEDIUM.
+- **Proof rule orphan** — proof targets a RULE-N not in the spec. Severity: LOW.
+
+Report findings inline with the feature's audit output. Proof ID collisions indicate confused proof tracking; orphans indicate stale markers.
+
 ### Static Analysis: Structural Defect Detection (Pass 1 — deterministic, no LLM)
 
 For specs that passed Pass 0 (have behavioral rules), run the deterministic static checker:
@@ -157,6 +171,9 @@ For each proof, answer ONLY these questions:
 1. Does the test set up a scenario that exercises the rule's constraint?
 2. Does the test check the specific outcome the proof description claims?
 3. Is anything described in the proof missing from the test?
+4. Does the assertion contain a tautological escape hatch (OR branch that always passes)?
+5. Does the assertion validate test setup data instead of code-under-test output?
+6. Does the test function name contradict the actual assertion values?
 
 Rate each: STRONG (test matches rule intent) or WEAK (test partially matches — something is missing or too loose).
 Do NOT check for structural issues — those were already handled.

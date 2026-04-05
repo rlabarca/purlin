@@ -1,4 +1,4 @@
-> Criteria-Version: 12
+> Criteria-Version: 13
 
 # Proof Audit Criteria
 
@@ -47,6 +47,13 @@ These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM i
 - **`expect(true).toBe(true)`** — tautological, same as `assert True`
 - **No `expect()` calls** — test function body contains no assertions
 
+### Proof-file structural checks (Pass 0.5 — language-agnostic)
+
+These checks operate on proof JSON files, not source code. They work for any language that emits proof files.
+
+- **Proof ID collision** — the same PROOF-N identifier appears in the proof file targeting different RULE-N values. This confuses proof tracking: one test's coverage may shadow another's, and the proof system cannot distinguish which test proves which rule. The test with the colliding ID must be reassigned a unique proof ID, or the extra marker must be removed
+- **Proof rule orphan** — a proof entry targets a RULE-N that does not exist in the spec file. This typically means the rule was removed or renumbered, but the test's proof marker was not updated. The proof claims to cover a non-existent rule
+
 ## Pass 2 — Semantic Alignment (LLM)
 
 The LLM evaluates whether the test semantically matches the rule. It does NOT check structural issues — those are handled by Pass 1. The LLM can only return STRONG or WEAK.
@@ -64,6 +71,10 @@ The LLM evaluates whether the test semantically matches the rule. It does NOT ch
 - **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
 - **String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
 - **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
+- **Tautological escape hatch** — the assertion contains an OR/||/or branch that always evaluates to True, typically a comparison between test constants, fixture data, or literal values that makes the assertion pass regardless of what the code under test returns. Examples: Python `assert func() > 0 or CONSTANT not in OTHER_CONSTANT`, JavaScript `expect(result > 0 || FIXTURE === FIXTURE).toBe(true)`, Go `if result > 0 || expectedConst != "" { t.Log("ok") }`. The escape hatch may not be obvious — look for OR branches where both operands are defined in test setup rather than derived from code-under-test output
+- **Assertion validates test data, not code output** — the test's primary assertions check properties of the test's own setup data (constants, fixtures, mock return values) rather than output from the system under test. The test proves the test is correctly set up, not that the code works
+- **Name/value drift** — the test function name makes a numeric or behavioral claim (e.g. "fourteen_entries", "rejects_invalid") that contradicts the actual assertion values or logic (asserts 12, or doesn't test rejection). This suggests the code changed and the test was patched to pass without updating the name
+- **Fragile string parsing in assertions** — the assertion uses string splitting, slicing, or indexing to extract a value for comparison where a simpler direct check would be more robust. Example: `result.split('WARNING')[0]` to isolate a feature's output — this breaks with multiple features or reordered output
 
 ### STRONG (LLM judgment)
 

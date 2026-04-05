@@ -35,7 +35,7 @@ class TestPurlinSkills:
             assert 'description:' in fm, f"Missing description: in {path}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-2", "RULE-2")
-    def test_exactly_fourteen_skill_files(self):
+    def test_exactly_twelve_skill_files(self):
         files = _skill_files()
         assert len(files) == 12, f"Expected 12 skills, found {len(files)}: {[os.path.basename(os.path.dirname(f)) for f in files]}"
 

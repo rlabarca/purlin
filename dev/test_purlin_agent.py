@@ -113,7 +113,7 @@ class TestPurlinAgent:
                 f"Missing routing source for: {keyword} (must appear before → arrow)"
 
     @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
-    def test_skills_table_fourteen_entries(self):
+    def test_skills_table_twelve_entries(self):
         content = _read()
         assert '## Skills' in content
         skills_match = re.search(r'## Skills.*?\n(.*?)(?=^## |\Z)', content,

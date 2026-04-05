@@ -832,7 +832,6 @@ def make_integrity_feature(name, integrity):
 class TestRulePadding:
     """Test that rule ID and description columns have visible spacing for all rule types."""
 
-    @pytest.mark.proof("purlin_report", "PROOF-18", "RULE-6")
     def test_rule_id_padding_with_long_anchor_ids(self, page, dashboard):
         """Rule IDs from required anchors (e.g. security_policy/RULE-1) must have
         visible gap before the description column at both narrow and wide viewports."""

@@ -55,6 +55,9 @@ Read `references/supported_frameworks.md` for the framework list and detection l
 1. `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` → **pytest** (Python)
 2. `package.json` contains `vitest` → **Jest** (TypeScript/JavaScript — Vitest-compatible)
 3. `package.json` contains `jest` → **Jest** (TypeScript/JavaScript)
+4. `Makefile` or `CMakeLists.txt` at root → **C** (gcc)
+5. `composer.json` or `phpunit.xml` at root → **PHP** (PHPUnit)
+6. `.sql` files in `tests/` directory → **SQL** (sqlite3)
 
 Display ALL detected frameworks:
 ```
@@ -73,7 +76,7 @@ Scaffolding: .purlin/plugins/pytest_purlin.py
 If no framework is detected, do NOT silently default to shell. Ask the user:
 ```
 No test framework detected.
-Which framework(s)? [pytest (Python) / jest (JS/TS) / shell (Bash) / other]
+Which framework(s)? [pytest (Python) / jest (JS/TS) / c (C/gcc) / php (PHP) / sql (sqlite3) / shell (Bash) / other]
 You can select multiple, e.g.: pytest, jest
 ```
 
@@ -89,6 +92,10 @@ Copy ALL detected proof plugins from `scripts/proof/` to `.purlin/plugins/`:
 |-----------|--------|-------------|
 | pytest | `scripts/proof/pytest_purlin.py` | `.purlin/plugins/pytest_purlin.py` |
 | jest | `scripts/proof/jest_purlin.js` | `.purlin/plugins/jest_purlin.js` |
+| vitest (TS) | `scripts/proof/vitest_purlin.ts` | `.purlin/plugins/vitest_purlin.ts` |
+| c | `scripts/proof/c_purlin.h` + `c_purlin_emit.py` | `.purlin/plugins/c_purlin.h` + `c_purlin_emit.py` |
+| php | `scripts/proof/phpunit_purlin.php` | `.purlin/plugins/phpunit_purlin.php` |
+| sql | `scripts/proof/sql_purlin.sh` | `.purlin/plugins/sql_purlin.sh` |
 | shell | `scripts/proof/shell_purlin.sh` | `.purlin/plugins/purlin-proof.sh` |
 
 If multiple frameworks were detected or selected, scaffold ALL of them. A project with both Python and TypeScript gets both `pytest_purlin.py` and `jest_purlin.js`.
@@ -313,6 +320,9 @@ Source can be:
    |----------|-------------|
    | Python (`.py`) | `proofs` and `json` |
    | JavaScript (`.js`) | `proofs` and `JSON` |
+   | TypeScript (`.ts`) | `proofs` and `JSON` |
+   | C header (`.h`) | `purlin_proof` function |
+   | PHP (`.php`) | `proofs` and `json_encode` |
    | Shell (`.sh`) | `purlin_proof` function |
    | Java (`.java`) | `proofs` and `Proof` |
 
@@ -345,6 +355,10 @@ List all files in `.purlin/plugins/`:
 Installed proof plugins:
   .purlin/plugins/pytest_purlin.py (Python/pytest)
   .purlin/plugins/jest_purlin.js (JavaScript/Jest)
+  .purlin/plugins/vitest_purlin.ts (TypeScript/Vitest)
+  .purlin/plugins/c_purlin.h (C/gcc)
+  .purlin/plugins/phpunit_purlin.php (PHP/PHPUnit)
+  .purlin/plugins/sql_purlin.sh (SQL/sqlite3)
   .purlin/plugins/purlin-proof.sh (Bash/shell)
   .purlin/plugins/my_go_plugin.py (custom)
 ```
@@ -355,6 +369,11 @@ For built-in plugins, show the framework name:
 |----------|-------|
 | `pytest_purlin.py` | Python/pytest |
 | `jest_purlin.js` | JavaScript/Jest |
+| `vitest_purlin.ts` | TypeScript/Vitest |
+| `c_purlin.h` | C/gcc |
+| `c_purlin_emit.py` | C/gcc (emitter) |
+| `phpunit_purlin.php` | PHP/PHPUnit |
+| `sql_purlin.sh` | SQL/sqlite3 |
 | `purlin-proof.sh` | Bash/shell |
 | Anything else | custom |
 

@@ -1,7 +1,7 @@
 # Feature: static_checks
 
 > Scope: scripts/audit/static_checks.py
-> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests and regex for Shell/Jest tests. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
+> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests, regex for Shell/Jest tests, and language-agnostic proof-file checks (proof ID collisions, orphan rules) that operate on JSON regardless of source language. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
 
 ## Rules
 
@@ -19,6 +19,8 @@
 - RULE-12: write_audit_cache writes atomically via tmp + os.replace
 - RULE-13: Shell if/else proof pairs (same proof_id and rule_id with one pass and one fail branch) are recognized as a single conditional proof where the if-condition is the assertion, not flagged as hardcoded pass
 - RULE-14: Python assert_true results include a literal field (true for assert True/assertTrue(True), false for heuristic patterns like assert x is not None)
+- RULE-15: Proof ID collisions within a feature are detected — same PROOF-N targeting different RULE-N values in a proof JSON file
+- RULE-16: Proof entries referencing non-existent rules in the spec are flagged as orphans
 
 ## Proof
 
@@ -36,3 +38,5 @@
 - PROOF-12 (RULE-12): Call write_audit_cache, then read the file back and verify contents match the written dict
 - PROOF-13 (RULE-13): Create shell test with if/else purlin_proof pair; run static_checks; verify status=pass (not flagged). Also verify a bare hardcoded pass without if/else is still caught
 - PROOF-14 (RULE-14): Run static_checks on file with assert True; verify literal=true. Run on file with assert x is not None; verify literal=false
+- PROOF-15 (RULE-15): Create proof JSON with two entries sharing PROOF-1 but targeting RULE-1 and RULE-2; call check_proof_file; verify result contains check='proof_id_collision' with both rules listed. Test with proof JSON from multiple language contexts (Python pytest, JavaScript Jest, Shell, C, PHP, SQL, TypeScript) to verify language-agnostic detection
+- PROOF-16 (RULE-16): Create proof JSON with entry targeting RULE-99 on a spec with only RULE-1 through RULE-3; call check_proof_file with spec_path; verify result contains check='proof_rule_orphan'. Test with proof JSON from multiple language contexts to verify language-agnostic detection

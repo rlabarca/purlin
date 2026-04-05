@@ -87,12 +87,38 @@ def _has_assertion(node):
     return False
 
 
+def _is_always_true(node):
+    """Check if an AST node is a constant True or a comparison of two constants."""
+    # Literal True / False-y
+    if isinstance(node, ast.Constant) and node.value is True:
+        return True
+    # Comparison where both sides are constants or UPPER_CASE names (module-level)
+    if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
+        left = node.left
+        right = node.comparators[0]
+        def _is_constant_or_uppername(n):
+            if isinstance(n, ast.Constant):
+                return True
+            if isinstance(n, ast.Name) and n.id.isupper():
+                return True
+            return False
+        if _is_constant_or_uppername(left) and _is_constant_or_uppername(right):
+            return True
+    # `not False` or `not 0`
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        if isinstance(node.operand, ast.Constant) and not node.operand.value:
+            return True
+    return False
+
+
 def _check_assert_true(node, source):
-    """Detect tautological assertions: assert True, assert x is not None, assert len(x) >= 0.
+    """Detect tautological assertions: assert True, assert x is not None, assert len(x) >= 0,
+    and assert X or True / assert X or CONST_COMPARE (tautological escape hatch).
 
     Returns None if no tautological assertion found, or a dict with:
-      'literal': True  — for assert True, assertTrue(True)
-      'literal': False — for assert x is not None, assert len(x) >= 0
+      'literal': True  — for assert True, assertTrue(True), assert X or True
+      'literal': False — for assert x is not None, assert len(x) >= 0,
+                         assert X or CONST_COMPARE (heuristic)
     """
     for child in ast.walk(node):
         if isinstance(child, ast.Assert):
@@ -100,6 +126,13 @@ def _check_assert_true(node, source):
             # assert True
             if isinstance(test, ast.Constant) and test.value is True:
                 return {'literal': True}
+            # assert X or True / assert X or CONST_COMPARE (tautological escape hatch)
+            if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.Or):
+                for operand in test.values:
+                    if _is_always_true(operand):
+                        # `or True` is literal; `or CONST not in CONST` is heuristic
+                        literal = isinstance(operand, ast.Constant) and operand.value is True
+                        return {'literal': literal}
             # assert result is not None
             if isinstance(test, ast.Compare):
                 if len(test.ops) == 1 and isinstance(test.ops[0], ast.IsNot):
@@ -465,6 +498,65 @@ def check_spec_coverage(spec_path):
     }
 
 # ---------------------------------------------------------------------------
+# Proof-file structural checks (Pass 0.5 — language-agnostic, JSON-only)
+# ---------------------------------------------------------------------------
+
+def check_proof_file(proof_json_path, spec_path=None):
+    """Check proof JSON for structural issues — works for any language.
+
+    Operates on proof JSON + spec data only. No source code reading.
+    Returns list of finding dicts with check, severity, and details.
+    """
+    if not os.path.isfile(proof_json_path):
+        return []
+
+    with open(proof_json_path) as f:
+        data = json.load(f)
+
+    proofs = data.get('proofs', [])
+    if not proofs:
+        return []
+
+    findings = []
+
+    # Check 1: proof_id_collision — same PROOF-N targeting different RULE-N values
+    id_to_rules = {}
+    for entry in proofs:
+        pid = entry.get('id', '')
+        rid = entry.get('rule', '')
+        if pid:
+            id_to_rules.setdefault(pid, set()).add(rid)
+
+    for pid, rules in id_to_rules.items():
+        if len(rules) > 1:
+            findings.append({
+                'check': 'proof_id_collision',
+                'severity': 'MEDIUM',
+                'proof_id': pid,
+                'rules': sorted(rules),
+                'reason': f'{pid} targets multiple rules: {", ".join(sorted(rules))}',
+            })
+
+    # Check 2: proof_rule_orphan — proof targets a rule not in the spec
+    if spec_path and os.path.isfile(spec_path):
+        spec_rules = set(_read_rule_descriptions(spec_path).keys())
+        if spec_rules:
+            for entry in proofs:
+                rid = entry.get('rule', '')
+                # Only check own rules (no "/" prefix — required rules come from anchors)
+                if rid and '/' not in rid and rid not in spec_rules:
+                    findings.append({
+                        'check': 'proof_rule_orphan',
+                        'severity': 'LOW',
+                        'proof_id': entry.get('id', ''),
+                        'rule': rid,
+                        'reason': f'{rid} not found in spec (rule may have been removed)',
+                    })
+
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Audit cache helpers
 # ---------------------------------------------------------------------------
 
@@ -555,6 +647,25 @@ def main():
         print(json.dumps(cache, indent=2))
         sys.exit(0)
 
+    # --check-proof-file mode: run proof-file structural checks (language-agnostic)
+    if '--check-proof-file' in sys.argv:
+        proof_path = None
+        spec_path = None
+        if '--proof-path' in sys.argv:
+            idx = sys.argv.index('--proof-path')
+            if idx + 1 < len(sys.argv):
+                proof_path = sys.argv[idx + 1]
+        if '--spec-path' in sys.argv:
+            idx = sys.argv.index('--spec-path')
+            if idx + 1 < len(sys.argv):
+                spec_path = sys.argv[idx + 1]
+        if not proof_path or not os.path.isfile(proof_path):
+            print(json.dumps({'error': '--check-proof-file requires --proof-path <path>'}))
+            sys.exit(2)
+        findings = check_proof_file(proof_path, spec_path=spec_path)
+        print(json.dumps({'findings': findings}, indent=2))
+        sys.exit(0)
+
     # --check-spec-coverage mode: only check spec rules, no test file needed
     if '--check-spec-coverage' in sys.argv:
         spec_path = None
@@ -571,6 +682,7 @@ def main():
 
     if len(sys.argv) < 3:
         print(f"Usage: {sys.argv[0]} <test_file> <feature_name> [--spec-path <path>]", file=sys.stderr)
+        print(f"       {sys.argv[0]} --check-proof-file --proof-path <path> [--spec-path <path>]", file=sys.stderr)
         print(f"       {sys.argv[0]} --check-spec-coverage --spec-path <path>", file=sys.stderr)
         print(f"       {sys.argv[0]} --compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>", file=sys.stderr)
         print(f"       {sys.argv[0]} --read-cache [--project-root <path>]", file=sys.stderr)
