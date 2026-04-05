@@ -11,6 +11,7 @@ An anchor is a regular spec that defines rules other features must follow. Anyon
 ```markdown
 # Anchor: api_rest_conventions
 
+> Description: REST API conventions for all endpoints.
 > Scope: src/api/
 > Stack: node/express, REST/JSON
 
@@ -35,6 +36,7 @@ Feature specs reference anchors in `> Requires:`:
 ```markdown
 # Feature: user_api
 
+> Description: CRUD operations for user accounts.
 > Requires: api_rest_conventions
 > Scope: src/api/users.js
 ```
@@ -65,6 +67,7 @@ Some rules define what code must **never** do. These are "FORBIDDEN patterns" --
 ```markdown
 # Anchor: security_input_handling
 
+> Description: Input handling security standards. Prevents common injection attacks.
 > Scope: src/
 
 ## What it does
@@ -134,6 +137,7 @@ Same 3-section format as regular anchors, plus source metadata:
 ```markdown
 # Anchor: design_brand
 
+> Description: Color tokens from the design system.
 > Type: design
 > Source: git@github.com:acme/design-system.git
 > Path: tokens/colors.md
@@ -228,6 +232,7 @@ Figma design anchors are thin -- one rule per viewport saying "match the design,
 ```markdown
 # Anchor: design_feedback_modal
 
+> Description: Visual design constraints for the feedback modal, sourced from Figma.
 > Type: design
 > Source: figma.com/design/ABC123/Feedback-Modal
 > Visual-Reference: figma://ABC123/0-1
@@ -266,6 +271,7 @@ Global anchors are for project-wide constraints that should apply everywhere -- 
 ```markdown
 # Anchor: security_no_eval
 
+> Description: Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
 > Type: security
 > Source: git@github.com:acme/security-policies.git
 > Path: standards/no-eval.md
@@ -319,6 +325,7 @@ Anchors are referenced in `> Requires:`:
 ```markdown
 # Feature: color_picker
 
+> Description: Color selection component with palette and custom input.
 > Requires: design_brand, design_component_library
 > Scope: src/components/ColorPicker.js
 ```

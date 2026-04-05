@@ -5,7 +5,7 @@
 ## When to Use
 
 - **New to Purlin.** You have a codebase and want to start tracking rule coverage.
-- **Upgrading from an older Purlin version.** After deleting old `features/` and running `purlin:init`.
+- **Upgrading from an older Purlin version.** Keep your old `features/` directory in place — `spec-from-code` reads it and migrates your existing specs to the new format, preserving the rules and scenarios you already wrote.
 - **Starting fresh.** After a major refactor where old specs no longer reflect the code.
 
 ## The Simplest Way
@@ -56,6 +56,7 @@ For each approved category (processed in dependency order — fewer anchor depen
 ```markdown
 # Feature: login
 
+> Description: Authenticates users via email and password, issues JWT tokens.
 > Requires: security_auth_standards
 > Scope: src/auth/login.js, src/auth/middleware.js
 > Stack: node/express, bcrypt, jsonwebtoken
@@ -96,6 +97,19 @@ purlin:spec-from-code --resume
 ```
 
 Completed categories are skipped. Questions already answered are not re-asked.
+
+## Migrating from features/ (Pre-0.9.0)
+
+If you have old specs in `features/`, **don't delete them**. Just run:
+
+```
+purlin:init
+purlin:spec-from-code
+```
+
+The skill automatically detects `features/`, reads your old specs (scenarios, descriptions, companion `.impl.md` files), and uses them as the primary input for generating new-format specs. During taxonomy review, migrated features are annotated `(migrating)` so you can see what's being preserved vs. discovered fresh from code.
+
+After migration, Phase 4 offers to remove the old `features/` directory. If you decline, you can remove it manually later: `rm -rf features/`.
 
 ## After Generation
 

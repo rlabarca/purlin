@@ -23,6 +23,7 @@ That's it. No tracking system, no ledger, no state files. The filesystem is the 
 ```markdown
 # Feature: login
 
+> Description: User authentication with email and password.
 > Requires: security_policy
 > Scope: src/auth/login.js, src/auth/session.js
 > Stack: node/express, bcrypt, jsonwebtoken
@@ -403,6 +404,7 @@ Spec the structure of instructions — verify sections exist, required content i
 ```markdown
 # Feature: purlin_references
 
+> Description: Structural integrity of Purlin reference documentation.
 > Scope: references/spec_quality_guide.md, references/formats/*.md
 
 ## Rules
@@ -423,6 +425,7 @@ The real proof that instructions work is: **does the agent produce correct outpu
 ```markdown
 # Feature: e2e_purlin_lifecycle
 
+> Description: End-to-end validation of the full Purlin spec-build-verify lifecycle.
 > Scope: agents/purlin.md, skills/*/SKILL.md, references/**
 > Requires: schema_spec_format, schema_proof_file
 

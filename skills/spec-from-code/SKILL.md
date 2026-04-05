@@ -37,7 +37,16 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 }
 ```
 
-3. Launch up to 3 Explore sub-agents in parallel (Agent tool, subagent_type: `Explore`):
+3. **Legacy spec detection:** Check if a `features/` directory exists at the project root. If found:
+   - Read all `.md` files in `features/` recursively (excluding any `.impl.md` companion files for now — just the main spec files)
+   - For each old-format spec, extract: feature name, category (subdirectory), description, scenarios (Given/When/Then blocks), and any behavioral constraints
+   - Print: `Found N legacy specs in features/. These will be used as migration context — old rules and scenarios will inform the new-format specs.`
+   - Save the extracted legacy spec data to `.purlin/cache/sfc_legacy.md` with per-feature entries (name, category, original content summary)
+   - If `.impl.md` companion files exist, note them — they contain implementation context that may be useful for `## Implementation Notes` in generated specs
+
+   If `features/` does not exist, skip this step.
+
+4. Launch up to 3 Explore sub-agents in parallel (Agent tool, subagent_type: `Explore`):
 
    - **Agent A (Structure):** "Scan the following directories for: directory tree structure, entry points (main/index files), route definitions, CLI entry points, config files, and file types present. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary."
 
@@ -45,17 +54,18 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    - **Agent C (Comments):** "Scan the following directories for: significant code comments (TODO, FIXME, HACK, architectural decision comments), module-level docstrings, and inline documentation. Directories: `<include>`. Exclude: `<exclude>`. Return a structured summary with file locations."
 
-4. Synthesize all sub-agent results into `.purlin/cache/sfc_inventory.md`:
+5. Synthesize all sub-agent results into `.purlin/cache/sfc_inventory.md`:
    - Directory map with annotations
    - Detected tech stack summary
    - Preliminary feature candidates (module-level granularity)
    - Cross-cutting concerns detected (auth, logging, error handling, config patterns)
    - Code comments index (significant comments with file locations)
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
+   - **Legacy spec summary** (if `features/` was detected): list of old feature names, categories, and scenario counts — cross-referenced with code modules discovered by the exploration agents
 
-5. Update state: `phase: 1, status: "complete"`.
+6. Update state: `phase: 1, status: "complete"`.
 
-6. Commit per `references/commit_conventions.md`: `chore(sfc): codebase survey complete (Phase 1)`
+7. Commit per `references/commit_conventions.md`: `chore(sfc): codebase survey complete (Phase 1)`
 
 ---
 
@@ -64,6 +74,8 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 1. Read `.purlin/cache/sfc_inventory.md`.
 
 2. **Check for existing specs:** If specs already exist (glob `specs/**/*.md`), read them to extract existing category names and naming conventions. The proposed taxonomy MUST reuse existing category names where applicable. Only propose new categories when no existing one fits.
+
+   **Check for legacy specs:** If `.purlin/cache/sfc_legacy.md` exists (created in Phase 1), read it. Legacy specs from `features/` are the primary seed for the taxonomy — use their category names and feature names as starting points. When presenting the taxonomy, annotate each feature as either `(migrating)` if it has a legacy spec or `(new)` if discovered only from code. This lets the user see what's being preserved vs. what's net-new.
 
 3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
    - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
@@ -173,6 +185,7 @@ For each approved anchor from the taxonomy:
 ```markdown
 # Anchor: <prefix_name>
 
+> Description: <What cross-cutting concern this anchor defines>
 > Scope: <file patterns this anchor governs>
 
 ## What it does
@@ -214,12 +227,24 @@ For each category:
    ```
    Global anchors (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
 
-3. For each feature in the category, write `specs/<category>/<name>.md`:
+3. **Legacy spec migration (per feature):** Before generating a spec, check if this feature has a legacy spec in `.purlin/cache/sfc_legacy.md` (matched by name, or by file scope overlap if names differ). If a legacy spec exists:
+   - Read the original `features/<category>/<name>.md` file in full
+   - Read any companion `.impl.md` file if present
+   - Extract the old scenarios (Given/When/Then), descriptions, and any behavioral constraints
+   - Use the old spec as the **primary input** for generating the new-format spec — the old scenarios become RULE-N candidates, the old descriptions inform `## What it does`
+   - Compare the old spec's claims against the current code (from the deep code reading in step 1). If the code has diverged from what the old spec described, flag the discrepancy for the user in the review step
+   - Mark the generated spec: `<!-- Migrated from features/<category>/<name>.md. Review and refine. -->` instead of the standard generated header
+   - If a companion `.impl.md` exists, extract architecturally significant details for `## Implementation Notes`
+
+   If no legacy spec exists, generate from code alone (standard behavior).
+
+4. For each feature in the category, write `specs/<category>/<name>.md`:
 
 ```markdown
 <!-- Generated by purlin:spec-from-code. Review and refine. -->
 # Feature: <name>
 
+> Description: <One-line summary of what this feature does>
 > Requires: <anchor_name> (if applicable)
 > Scope: <source files>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
@@ -256,7 +281,7 @@ Examples:
 - `> Stack: node/express, axios, redis (cache), JWT auth`
 - `> Stack: shell/bash, jq, curl`
 
-4. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
+5. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
    - Does the proof shell out to git, subprocess, or call an external service? → append `@integration`
    - Does the proof need a browser or full app stack? → append `@e2e`
    - Does the proof need human judgment (visual, UX, brand)? → append `@manual`
@@ -264,7 +289,7 @@ Examples:
 
    Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@integration`.
 
-5. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+6. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
@@ -276,7 +301,7 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-6. Present the generated specs for this category and ask for approval:
+7. Present the generated specs for this category and ask for approval:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -292,11 +317,11 @@ Examples:
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-7. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
+8. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
-8. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
+9. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
-9. Update state: add category name to `completed_categories`.
+10. Update state: add category name to `completed_categories`.
 
 ---
 
@@ -304,11 +329,18 @@ Examples:
 
 1. Call `sync_status` to show the initial coverage state.
 
-2. Summarize results:
+2. **Legacy cleanup (if applicable):** If `features/` was detected and specs were migrated:
+   - Present the migration summary: `Migrated N specs from features/. M additional specs discovered from code.`
+   - Ask the user via `AskUserQuestion`: `Migration complete. Remove old features/ directory? The old specs have been migrated to specs/. [y/n]`
+   - If approved: delete `features/` and any companion files (`.impl.md`). Also delete old artifacts if present: `pl-*` symlinks, `*.sh` scripts at root.
+   - If declined: leave `features/` in place. Print: `Keeping features/ — you can remove it manually when ready: rm -rf features/`
+
+3. Summarize results:
 
 ```
 Generated N specs in M categories.
 Anchor specs: K
+Migrated from legacy: L       ← (only if features/ was detected)
 Features with implementation notes: J
 
 Next:
@@ -317,12 +349,13 @@ Next:
   purlin:spec <name> — refine a generated spec
 ```
 
-3. Delete temporary files:
+4. Delete temporary files:
    - `.purlin/cache/sfc_state.json`
    - `.purlin/cache/sfc_inventory.md`
    - `.purlin/cache/sfc_taxonomy.md`
+   - `.purlin/cache/sfc_legacy.md` (if created)
 
-4. Commit cleanup per `references/commit_conventions.md`: `chore(sfc): finalize spec-from-code (Phase 4)`
+5. Commit cleanup per `references/commit_conventions.md`: `chore(sfc): finalize spec-from-code (Phase 4)`
 
 ---
 
@@ -337,6 +370,6 @@ Additional spec-from-code-specific guidelines:
 - **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
-- **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top.
+- **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated from features/<category>/<name>.md. Review and refine. -->` instead.
 - **Implementation Notes capture architecture, not just TODOs.** Include whenever the source reveals decisions a rebuilding agent would need to replicate: design patterns, caching strategies, concurrency models, data flow, key tradeoffs. Omit only if the feature has trivially simple implementation.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.

@@ -35,6 +35,7 @@ Found: specs/auth/login.md
 
 # Feature: login
 
+> Description: Authenticates users via email and password.
 > Requires: security_auth
 > Scope: src/auth/login.js, src/auth/login.test.js
 

@@ -121,6 +121,7 @@ Anchors are the strongest mechanism for Level 3 enforcement. When anyone writes 
 ```markdown
 # Anchor: prodbrief_checkout
 
+> Description: Checkout flow requirements from product brief.
 > Type: prodbrief
 > Source: git@bitbucket.org:acme/product-briefs.git
 > Path: briefs/checkout-v2.md

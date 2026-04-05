@@ -71,4 +71,4 @@ Complete redesign. Purlin v0.9.0 replaces the v1 system (35 skills, 5 agents, 8 
 
 ### Migration
 
-v0.9.0 is a clean break from v1. There is no automated migration path. Start fresh with `purlin:init`.
+Keep your old `features/` directory — `purlin:spec-from-code` detects it and migrates your existing specs to the new 3-section format. Old scenarios and rules are used as primary input for generating new-format specs, so you don't lose the work you've already done. Remove only the non-spec artifacts (`rm -rf .purlin/ pl-* *.sh`), then run `purlin:init` followed by `purlin:spec-from-code`.

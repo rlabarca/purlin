@@ -108,6 +108,7 @@ Anchors with external references are the strongest enforcement mechanism for Lev
 ```markdown
 # Anchor: prodbrief_checkout
 
+> Description: Checkout flow requirements from product brief.
 > Type: prodbrief
 > Source: git@bitbucket.org:acme/product-briefs.git
 > Pinned: a1b2c3d4
@@ -127,6 +128,7 @@ Anchors with external references are the strongest enforcement mechanism for Lev
 ```markdown
 # Anchor: security_session_policy
 
+> Description: Session management and token security requirements.
 > Type: security
 > Source: git@bitbucket.org:acme/security-policies.git
 > Pinned: b2c3d4e5

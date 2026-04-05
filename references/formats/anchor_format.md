@@ -19,6 +19,7 @@ Users name anchors freely. No enforced prefixes.
 ```markdown
 # Anchor: <name>
 
+> Description: <What cross-cutting concern this anchor defines>
 > Scope: <file patterns this anchor governs>
 > Type: <optional: design, api, security, brand, platform, schema, legal, prodbrief>
 
@@ -42,6 +43,7 @@ Users name anchors freely. No enforced prefixes.
 ```markdown
 # Anchor: <name>
 
+> Description: <What this anchor defines>
 > Source: git@github.com:org/repo.git
 > Path: docs/spec.md
 > Pinned: abc1234def5678
@@ -67,6 +69,7 @@ Users name anchors freely. No enforced prefixes.
 ```markdown
 # Anchor: <name>
 
+> Description: Visual design constraints sourced from Figma.
 > Source: https://www.figma.com/design/ABC123/Design-System
 > Pinned: 2026-03-31T12:00:00Z
 > Visual-Reference: figma://ABC123/1:234
@@ -91,6 +94,7 @@ These fields are available on ANY spec (features, anchors). None are enforced by
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `> Description:` | No | Plain-language description. Displayed in the Purlin dashboard. Supports multi-line via `>` continuation lines. |
 | `> Scope:` | No | File patterns this spec governs. Used for manual proof staleness detection. |
 | `> Stack:` | No | Language/framework. |
 | `> Requires:` | No | Comma-separated list of anchor names whose rules also apply. |

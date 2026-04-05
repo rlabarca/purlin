@@ -22,6 +22,7 @@ A Figma design anchor is thin — one rule per viewport, one screenshot comparis
 ```markdown
 # Anchor: design_feedback_modal
 
+> Description: Visual design constraints for the feedback modal, sourced from Figma.
 > Type: design
 > Source: figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test
 > Visual-Reference: figma://TEZI0T6lObCJrC9mkmZT8v/0-1
@@ -61,6 +62,7 @@ The annotations are listed for reference but do NOT become rules in the anchor. 
 ```markdown
 # Feature: feedback_modal
 
+> Description: Feedback modal with file upload and form submission.
 > Requires: design_feedback_modal
 > Scope: src/components/FeedbackModal.jsx
 > Stack: react/tailwind

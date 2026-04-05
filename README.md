@@ -79,18 +79,20 @@ This creates `.purlin/`, `specs/`, detects your test framework, and scaffolds th
 
 ### Upgrading from an older version of Purlin
 
-If you have a pre-0.9.0 Purlin installation, remove the old artifacts first:
+If you have a pre-0.9.0 Purlin installation, keep your `features/` directory — `spec-from-code` migrates your old specs to the new format. Remove only the non-spec artifacts:
 
 ```bash
-rm -rf features/ .purlin/ pl-* *.sh
+rm -rf .purlin/ pl-* *.sh
 ```
 
-Then run `purlin:init` and regenerate your specs:
+Then initialize and migrate:
 
 ```
 purlin:init
 purlin:spec-from-code
 ```
+
+Your old scenarios and rules are preserved as input for the new-format specs. See the [Installation Guide](docs/installation-guide.md#upgrading-from-an-older-version-of-purlin) for details.
 
 ## Write a Spec
 
@@ -103,6 +105,7 @@ Specs use a 3-section format:
 ```markdown
 # Feature: auth_login
 
+> Description: Handles user authentication via username/password and SSO.
 > Scope: src/auth/login.js
 
 ## What it does

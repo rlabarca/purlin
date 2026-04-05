@@ -21,6 +21,7 @@ specs/_anchors/weather_design.md
 ```markdown
 # Anchor: weather_design
 
+> Description: Visual design constraints for the weather app, sourced from Figma.
 > Type: design
 > Source: figma.com/design/abc123/Weather-App-Design
 > Visual-Reference: figma://abc123/0-1
@@ -49,6 +50,7 @@ Claude writes the spec. Behavioral requirements come from the PM, not the Figma 
 ```markdown
 # Feature: current_weather
 
+> Description: Displays current weather for a city using the OpenWeatherMap API.
 > Requires: weather_design
 > Scope: src/components/WeatherDisplay.jsx, src/api/weather.js, src/utils/cache.js
 > Stack: react/tailwind, axios, openweathermap-api
