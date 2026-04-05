@@ -80,7 +80,7 @@ The annotations are listed for reference but do NOT become rules in the anchor. 
 - PROOF-4 (RULE-4): Upload valid file; verify filename displayed @e2e
 ```
 
-The feature spec has `> Requires: design_feedback_modal` — so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
+The feature spec has `> Requires: design_feedback_modal` — so `purlin:status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
 ## Responsive Designs
 
