@@ -63,9 +63,11 @@ for (feature, tier), new_entries in entries.items():
         with open(path) as f:
             existing = json.load(f).get('proofs', [])
     kept = [e for e in existing if e.get('feature') != feature]
-    with open(path, 'w') as f:
+    tmp_path = path + '.tmp'
+    with open(tmp_path, 'w') as f:
         json.dump({'tier': tier, 'proofs': kept + new_entries}, f, indent=2)
         f.write('\n')
+    os.replace(tmp_path, path)
 " <<< "$_PURLIN_PROOFS"
 
   _PURLIN_PROOFS=""

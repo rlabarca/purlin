@@ -86,11 +86,14 @@ class PurlinProofReporter {
       // Purge this feature's old entries, keep others
       const kept = existing.filter((e) => e.feature !== feature);
 
+      // Atomic write: tmp + rename
+      const tmpPath = filePath + ".tmp";
       fs.writeFileSync(
-        filePath,
+        tmpPath,
         JSON.stringify({ tier, proofs: [...kept, ...newEntries] }, null, 2) +
           "\n"
       );
+      fs.renameSync(tmpPath, filePath);
     }
   }
 }
