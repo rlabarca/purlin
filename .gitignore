@@ -23,6 +23,9 @@ venv/
 # MCP server config (machine-specific)
 .mcp.json
 
+# External reference repos (local dog-food)
+dev/external-refs/
+
 # Purlin Tool Logs & Artifacts
 *.log
 *.pid

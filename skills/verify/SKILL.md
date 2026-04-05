@@ -35,6 +35,17 @@ Read the coverage output from `purlin:unit-test --all` (which includes sync_stat
 - **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
 - **FAILING** (any proof has status FAIL): report failures. No receipt.
 
+### External reference check (non-blocking)
+
+Before issuing receipts, check if any required anchor has `> Source:` with a stale or missing `> Pinned:`. If so, warn:
+
+```
+⚠ Anchor <name> may be stale — external reference has not been synced recently.
+  Verification proceeds, but consider running: purlin:anchor sync <name>
+```
+
+This is informational — it does not block receipt issuance.
+
 ### Step 3 — Issue Receipts
 
 For each feature with PASSING status:

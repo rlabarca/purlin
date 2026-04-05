@@ -55,6 +55,14 @@ design_tokens: 5 rules (global — auto-applied to all features)
   RULE-1: Font sizes use rem units
   RULE-2: Colors reference design token variables
   ...
+
+api_contract: 3 rules (apply to features with > Requires: api_contract)
+  Source: git@github.com:acme/api-spec.git
+  Path: docs/contract.md
+  Pinned: abc1234
+  RULE-1: All responses include Content-Type
+  RULE-2: Error responses use RFC 7807 format
+  RULE-3: Rate limits return Retry-After header
 ```
 
 ## Step 3 — Summary

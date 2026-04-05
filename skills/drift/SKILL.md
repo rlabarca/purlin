@@ -126,6 +126,20 @@ Spec: login
 
 ### Anchor External Reference Drift
 
+Check the `external_anchor_drift` array in the MCP tool output. Each entry has:
+- `anchor` — the anchor name
+- `source_url` — the external reference URL
+- `pinned` — the stored SHA or timestamp
+- `status` — one of: `stale` (pinned behind remote HEAD), `unpinned` (no Pinned field), `error` (source unreachable)
+- `remote_sha` — the current remote HEAD (when available)
+- `error` — error message (when status is error)
+
+For each entry, format as:
+
+- **stale:** `⚠ Anchor <name> is stale — pinned at <pinned[:7]> but remote is at <remote_sha>. Run: purlin:anchor sync <name>`
+- **unpinned:** `⚠ Anchor <name> has > Source: but no > Pinned: value. Run: purlin:anchor sync <name> to pin`
+- **error:** `✗ Anchor <name> — source unreachable: <error>. Verify URL in specs/_anchors/<name>.md`
+
 When an anchor with `> Source:` has been synced (Pinned changed) and also has local rules, flag as a PM action item:
 - "**<anchor_name>**: external reference updated — N local rules may conflict. Review and update or confirm."
 
