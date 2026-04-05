@@ -57,8 +57,8 @@ class TestPurlinAgent:
         # Find template inside a fenced code block (``` block)
         code_blocks = re.findall(r'```[^\n]*\n(.*?)```', section, re.DOTALL)
         template_text = '\n'.join(code_blocks)
-        assert '## What it does' in template_text, \
-            "'## What it does' not found inside a code block template"
+        assert '> Description:' in template_text, \
+            "'> Description:' not found inside a code block template"
         assert '## Rules' in template_text, \
             "'## Rules' not found inside a code block template"
         assert '## Proof' in template_text, \

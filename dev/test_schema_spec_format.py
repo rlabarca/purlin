@@ -22,7 +22,7 @@ import purlin_server
 class TestSpecFormatReference:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-1", "RULE-1")
-    def test_format_documents_three_sections(self):
+    def test_format_documents_two_sections(self):
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats', 'spec_format.md')) as f:
             content = f.read()
         # Find the Required Sections area specifically
@@ -32,8 +32,6 @@ class TestSpecFormatReference:
         )
         assert req_match, "No '## Required Sections' heading in spec_format.md"
         req_section = req_match.group(1)
-        assert '## What it does' in req_section, \
-            "'## What it does' not listed in Required Sections"
         assert '## Rules' in req_section, \
             "'## Rules' not listed in Required Sections"
         assert '## Proof' in req_section, \

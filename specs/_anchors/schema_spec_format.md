@@ -15,7 +15,7 @@
 - RULE-5: `> Requires:` metadata, when present, is a comma-separated list of anchor names whose rules also apply to this feature
 - RULE-6: `> Scope:` metadata, when present, is a comma-separated list of source file paths the feature touches
 - RULE-7: Feature specs use heading `# Feature: <name>`, anchor specs use `# Anchor: <name>`
-- RULE-8: `> Description:` metadata, when present, is extracted as the `description` field in report data and displayed in the dashboard; supports multi-line via `>` continuation lines
+- RULE-8: `> Description:` metadata, when present, is a plain-language summary of the spec; supports multi-line via `>` continuation lines that do not match a metadata field pattern (`> FieldName:`)
 
 ## Proof
 
@@ -26,4 +26,4 @@
 - PROOF-5 (RULE-5): Create a spec with `> Requires: base_anchor`; run sync_status; verify the report includes `base_anchor/RULE-1` in the coverage output @integration
 - PROOF-6 (RULE-6): Create a spec with `> Scope: scripts/mcp/purlin_server.py`; verify sync_status parses and displays the scope files @integration
 - PROOF-7 (RULE-7): Grep `specs/**/*.md` for first-level headings; verify each starts with `# Feature:` or `# Anchor:`
-- PROOF-8 (RULE-8): Create a spec with `> Description: Handles auth.`; scan specs; verify description field equals "Handles auth."; build report data; verify description appears in feature entry
+- PROOF-8 (RULE-8): Create a spec with `> Description: First line\n>   second line\n> Scope: src/`; parse description; verify it equals "First line second line" (continuation joined, Scope not included)

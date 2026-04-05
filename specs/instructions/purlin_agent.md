@@ -10,7 +10,7 @@
 
 - RULE-1: The agent definition contains a YAML frontmatter with `name`, `description`, and `model` fields
 - RULE-2: The `## Core Loop` section defines exactly 4 numbered steps: do the work, call sync_status, follow directives, ship with verify
-- RULE-3: The `## Specs` section includes the 3-section format template with `## What it does`, `## Rules`, `## Proof`
+- RULE-3: The `## Specs` section includes the 2-section format template with `> Description:`, `## Rules`, `## Proof`
 - RULE-4: The `## Proof Markers` section documents marker syntax for all 3 frameworks: pytest, Jest, and shell
 - RULE-5: The `## Hard Gates` section defines exactly 1 gate: proof coverage
 - RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, drift → purlin:drift, spec → purlin:spec, verify → purlin:verify with independent audit, engineer items → drift + build/unit-test, QA items → drift + verify)
@@ -21,7 +21,7 @@
 
 - PROOF-1 (RULE-1): Grep `agents/purlin.md` for YAML frontmatter delimiters (`---`); verify `name:`, `description:`, and `model:` fields exist between them
 - PROOF-2 (RULE-2): Grep `agents/purlin.md` for `## Core Loop`; verify it contains exactly 4 numbered items and the keywords "Do the work", "sync_status", "Follow", and "Ship"
-- PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `## What it does`, `## Rules`, `## Proof` within the template
+- PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `> Description:`, `## Rules`, `## Proof` within the template
 - PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `**pytest:`, `**Jest:`, and `**Shell:` framework subsections
 - PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it lists "Proof coverage" and contains exactly 1 gate
 - PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "drift", "spec", "verify", "engineer", and "QA"

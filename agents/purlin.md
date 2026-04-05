@@ -23,11 +23,9 @@ Specs live in `specs/<category>/<name>.md`. Each has 3 required sections:
 ```markdown
 # Feature: feature_name
 
+> Description: What this feature does and why it exists.
 > Requires: other_spec, anchor_name
 > Scope: src/file1.js, src/file2.js
-
-## What it does
-One paragraph: what and why.
 
 ## Rules
 - RULE-1: Testable constraint

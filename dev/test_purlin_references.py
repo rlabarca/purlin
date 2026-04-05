@@ -29,9 +29,10 @@ class TestPurlinReferences:
                        re.MULTILINE | re.DOTALL)
         assert m, "Missing '## Required Sections' heading in spec_format.md"
         section = m.group(1)
-        assert '## What it does' in section
         assert '## Rules' in section
         assert '## Proof' in section
+        # Description is now a metadata field, not a required section
+        assert '> Description:' in content
         assert re.search(r'RULE-\d+', content)
 
     @pytest.mark.proof("purlin_references", "PROOF-2", "RULE-2")
