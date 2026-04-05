@@ -2,40 +2,21 @@ M .purlin/cache/feature_status.json
  M .purlin/cache/git_status_snapshot.txt
  M .purlin/cache/status.json
  M .purlin/cache/status_commit_cache.json
- M .purlin/config.json
- M README.md
- M RELEASE_NOTES.md
- M dev/test_e2e_hybrid_audit.sh
- M dev/test_e2e_verify_audit.sh
  M dev/test_mcp_server.py
- M dev/test_purlin_skills.py
- M dev/test_static_checks.py
- M docs/installation-guide.md
- M docs/regulated-environments.md
- M docs/testing-workflow-guide.md
- M references/audit_criteria.md
- M references/commit_conventions.md
- M references/drift_criteria.md
- M scripts/audit/static_checks.py
- M scripts/mcp/manifest.json
+ M dev/test_purlin_report.py
+ M dev/test_report_data.py
  M scripts/mcp/purlin_server.py
+ M scripts/proof/jest_purlin.js
+ M scripts/proof/pytest_purlin.py
+ M scripts/proof/shell_purlin.sh
  M scripts/report/purlin-report.html
- M skills/anchor/SKILL.md
- M skills/build/SKILL.md
- M skills/drift/SKILL.md
- M skills/init/SKILL.md
- M skills/spec/SKILL.md
- M skills/unit-test/SKILL.md
- M skills/verify/SKILL.md
- M specs/audit/static_checks.md
- M specs/audit/static_checks.proofs-unit.json
  M specs/dashboard/purlin_report.proofs-unit.json
- M specs/instructions/purlin_skills.md
- M specs/integration/e2e_hybrid_audit.md
- M specs/integration/e2e_verify_audit.md
- M specs/mcp/config_engine.proofs-unit.json
-RM specs/mcp/changelog.md -> specs/mcp/drift.md
-RM specs/mcp/changelog.proofs-unit.json -> specs/mcp/drift.proofs-unit.json
- M specs/mcp/mcp_transport.md
+ M specs/mcp/drift.md
+ M specs/mcp/drift.proofs-unit.json
  M specs/mcp/report_data.md
+ M specs/mcp/report_data.proofs-unit.json
+ M specs/mcp/sync_status.md
  M specs/mcp/sync_status.proofs-unit.json
+?? dev/test_init_e2e.sh
+?? specs/integration/init_e2e.md
+?? specs/integration/init_e2e.proofs-unit.json
