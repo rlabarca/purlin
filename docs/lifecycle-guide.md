@@ -88,7 +88,7 @@ The integrity score comes from the last `purlin:audit` run. It shows what percen
 
 ### Verification Receipts
 
-`purlin:verify` runs all tests and issues a receipt: `verify: [Complete:all] features=3 vhash=f7a2b9c1`. The `vhash` proves these rules had these test outcomes. CI `--audit` re-runs everything independently.
+`purlin:verify` runs all tests and issues a receipt: `verify: [Complete:all] features=3 vhash=f7a2b9c1`. The `vhash` proves these rules had these test outcomes.
 
 ---
 
@@ -469,9 +469,9 @@ The structural specs are the smoke detector. The E2E is the fire drill.
 
 ## Enforcement
 
-Proofs keep specs and code in sync — but only if they're actually run. Purlin ships a pre-push hook; you add CI and deploy gates:
+Proofs keep specs and code in sync — but only if they're actually run. Purlin ships a pre-push hook; CI and deploy gates are your responsibility:
 
-### Layer 1: Pre-push hook (automatic)
+### Layer 1: Pre-push hook (provided by Purlin)
 
 `purlin:init` installs a git pre-push hook. Every time you push, unit-tier tests run automatically. Two modes:
 
@@ -480,10 +480,10 @@ Proofs keep specs and code in sync — but only if they're actually run. Purlin 
 
 Set during `purlin:init` or via `"pre_push": "strict"` in `.purlin/config.json`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.
 
-### Layer 2: CI pipeline (you configure)
+### Layer 2: CI pipeline (not provided by Purlin)
 
 Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for GitHub Actions and Bitbucket Pipelines examples.
 
-### Layer 3: Deploy gate (you configure)
+### Layer 3: CI verification gate (not provided by Purlin)
 
-`purlin:verify --audit` is a clean-room re-execution before deploy. Deletes all proof files, re-runs every test, recomputes the vhash, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-3-deploy-gate) for setup.
+A clean-room re-execution step you configure in your CI pipeline before deploy. Re-runs tests, recomputes vhashes, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-3-deploy-gate) for setup.
