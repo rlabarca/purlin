@@ -1,5 +1,15 @@
 # Purlin in Regulated Environments
 
+## What You Need to Know
+
+Purlin is a development tool, not a compliance system. It produces structured artifacts (specs, proof results, receipts) that can **feed into** your QMS or compliance pipeline — but it does not replace them.
+
+**What Purlin provides:** machine-readable evidence that specific rules were proved by specific tests at a specific commit. **What Purlin does NOT provide:** legally binding signatures, tamper-proof audit trails, or document control workflows.
+
+If you're in a regulated environment, read below for how to bridge Purlin artifacts into your compliance infrastructure.
+
+---
+
 **Purlin is a development productivity tool, not a compliance system.** It does not replace a Quality Management System (QMS), does not provide legally binding electronic signatures, and does not produce audit trails that satisfy FDA 21 CFR Part 11, HIPAA, SOC2, or similar regulatory frameworks on its own.
 
 What Purlin does provide: **structured, machine-readable artifacts** (specs with rules, proof results, verification receipts) that can feed into an external compliance pipeline. The rule-proof-receipt model gives your compliance infrastructure something concrete to validate — not just "tests passed" but "these specific rules were proved by these specific tests at this specific point in time."
@@ -91,10 +101,10 @@ The `vhash` in verification receipts is a deterministic hash of rule IDs + proof
 ### Human Approval Workflow
 
 When `@manual` stamps are required, the compliant flow is:
-1. Purlin flags the rule as needing manual verification (`sync_status` shows "MANUAL PROOF NEEDED")
+1. Purlin flags the rule as needing manual verification (`purlin:status` shows "MANUAL PROOF NEEDED")
 2. The human performs the verification
 3. Instead of `purlin:verify --manual` (which only writes a markdown stamp), the human approves through the QMS — which authenticates via MFA, records intent, and issues a signed approval token
-4. The QMS (or CI pipeline) injects the cryptographically signed approval token into the spec file or a locked artifact, which Purlin reads to satisfy the local `sync_status` check — stopping the `→ MANUAL PROOF NEEDED` directives
+4. The QMS (or CI pipeline) injects the cryptographically signed approval token into the spec file or a locked artifact, which Purlin reads to satisfy the coverage check — stopping the `→ MANUAL PROOF NEEDED` directives
 5. CI verifies the QMS approval token before accepting the manual proof
 
 ### Proof Quality Auditing

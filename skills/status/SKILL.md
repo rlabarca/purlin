@@ -1,9 +1,9 @@
 ---
 name: status
-description: Show rule coverage and actionable directives via sync_status
+description: Show rule coverage dashboard with feature table
 ---
 
-Call the `sync_status` MCP tool and display its output. The directives tell you exactly what to do next.
+Show rule coverage across all features. Always outputs a consistent table followed by a summary line and dashboard link.
 
 ## Usage
 
@@ -18,84 +18,54 @@ purlin:status --role <role>     Filter by role (pm, dev, qa)
 sync_status(role: <from argument, optional>)
 ```
 
-## Step 2 — Display Output
+## Step 2 — Feature Table (mandatory)
 
-The MCP tool returns a per-feature coverage report with `→` directives. Display it directly.
-
-Example output from `sync_status`:
+**Always** display a table with three columns: Feature, Coverage, and Status. Every feature and anchor must appear in this table, sorted by status (PARTIAL first, then PASSING, then VERIFIED). Anchors are labeled with `(anchor)` after the name.
 
 ```
-auth_login: VERIFIED
-  3/3 rules proved
-  vhash=a1b2c3d4
-  → No action needed.
-
-user_profile: PARTIAL (1/2 rules proved)
-  RULE-1: PASS (PROOF-1 in tests/test_profile.py)
-  RULE-2: NO PROOF
-  → Fix: write a test with @pytest.mark.proof("user_profile", "PROOF-2", "RULE-2")
-  → Run: purlin:unit-test
-  → PARTIAL means more tests needed to reach PASSING.
-
-webhook_delivery: FAILING (2/3 rules proved)
-  RULE-1: PASS (PROOF-1 in tests/test_webhook.py)
-  RULE-2: PASS (PROOF-2 in tests/test_webhook.py)
-  RULE-3: FAIL (PROOF-3 — test_retry_logic failed)
-  → Fix: test_retry_logic is failing. Check the test or fix the code.
-  → Run: purlin:unit-test
-
-cart_checkout: PASSING (3/3 rules proved)
-  → All rules proved. Run purlin:verify to issue a receipt.
-
-notification_system: UNTESTED
-  WARNING: No ## Rules section found.
-  → Run: purlin:spec notification_system
-
-design_tokens: 5 rules (global — auto-applied to all features)
-  RULE-1: Font sizes use rem units
-  RULE-2: Colors reference design token variables
-  ...
-
-api_contract: 3 rules (apply to features with > Requires: api_contract)
-  Source: git@github.com:acme/api-spec.git
-  Path: docs/contract.md
-  Pinned: abc1234
-  RULE-1: All responses include Content-Type
-  RULE-2: Error responses use RFC 7807 format
-  RULE-3: Rate limits return Retry-After header
+  Feature                              Coverage   Status
+  ─────────────────────────────────────────────────────────
+  purlin_report                           12/41   PARTIAL
+  schema_spec_format (anchor)              7/8    PARTIAL
+  sync_status                             38/41   PARTIAL
+  config_engine                           15/15   PASSING
+  dashboard_visual (anchor)               11/11   PASSING
+  e2e_audit_cache_pipeline                15/15   PASSING
+  skill_find                               4/4    VERIFIED
+  skill_build                              7/7    VERIFIED
+  security_no_dangerous_patterns (anchor)  5/5    VERIFIED
 ```
 
-## Step 3 — Summary
+Coverage format is `proved/total` rules. The table must include **every** feature and anchor — never omit rows or collapse them into a summary.
 
-After the detailed output, show a one-line summary:
+Do NOT print the per-feature detail breakdown (individual RULE/PROOF lines and `→` directives) in the table output. The table is a dashboard overview. If the user wants detail on a specific feature, they can use `purlin:find <name>`.
+
+## Step 3 — Summary Line
+
+After the table, print a one-line summary:
 
 ```
-Summary: 5 features | 1 VERIFIED | 1 PASSING | 1 PARTIAL | 1 FAILING | 1 UNTESTED
+Summary: 42 features | 10 VERIFIED | 20 PASSING | 6 PARTIAL | 3 FAILING | 3 UNTESTED
 ```
 
-### Status Hierarchy
+## Step 4 — Dashboard Link
 
-| Status | Color | Meaning |
-|--------|-------|---------|
-| VERIFIED | green | ALL behavioral rules proved + receipt matches |
-| PASSING | green | ALL behavioral rules proved + no receipt yet |
-| PARTIAL | amber | Some rules proved, none failing — more tests needed to reach PASSING |
-| FAILING | red | Any proof has status FAIL |
-| UNTESTED | gray | No behavioral proofs at all |
+If `purlin-report.html` exists at the project root, print the clickable link:
 
-The progression is: UNTESTED → PARTIAL → PASSING → VERIFIED. PARTIAL means the feature has some coverage but needs more tests before it can reach PASSING. PASSING means all rules are proved and the feature is ready for `purlin:verify` to issue a receipt.
+```
+Dashboard: file://<absolute-path-to-project>/purlin-report.html
+```
 
-## The Directives
+Check for the file with a glob or ls before printing. If the file does not exist, skip this line.
 
-The `→` lines are the key output. They tell the agent (or user) exactly what action to take:
+## Status Definitions
 
-| Directive | Meaning |
-|-----------|---------|
-| `→ No action needed.` | Feature is fully proved |
-| `→ Run: purlin:spec <name>` | Spec needs rules written |
-| `→ Fix: rewrite as "- RULE-1: ..."` | Rules exist but aren't numbered |
-| `→ Fix: write a test with @pytest.mark.proof(...)` | Rule has no proof |
-| `→ Fix: <test_name> is failing` | Proof exists but test fails |
-| `→ Run: purlin:unit-test` | Tests need to be run |
-| `→ Re-verify and run: purlin:verify --manual ...` | Manual stamp is stale |
-| `→ Verify manually, then run: purlin:verify --manual ...` | Manual proof needs stamping |
+| Status | Meaning |
+|--------|---------|
+| VERIFIED | All rules proved + verification receipt matches |
+| PASSING | All rules proved, no receipt yet |
+| PARTIAL | Some rules proved, none failing — more tests needed |
+| FAILING | Any proof has status FAIL |
+| UNTESTED | No proofs at all |
+
+The progression is: UNTESTED → PARTIAL → PASSING → VERIFIED.

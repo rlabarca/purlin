@@ -1,6 +1,17 @@
 # Collaboration
 
-Two ways to collaborate with Purlin: **external anchors** (influence a project from outside it) and **branch handoff** (pass a project back and forth via git).
+## What You Need to Know
+
+Two ways to collaborate:
+
+- **External anchors** — designers, API teams, security teams publish specs to git repos or Figma. Your project creates an anchor pointing to it. Their rules become part of your coverage.
+- **Branch handoff** — push specs, proof files, and receipts on a branch. The next person pulls and sees exactly what's proved and what isn't.
+
+```
+purlin:anchor create <name> --source <url>    — link to an external spec
+purlin:anchor sync <name>                     — pull latest from source
+purlin:init --pre-push                        — set warn mode for branch collaboration
+```
 
 ---
 
@@ -71,14 +82,11 @@ The pre-push hook runs before every push. If it's set to **strict** mode, ALL fe
 
 **For branch collaboration, use warn mode:**
 
-```json
-// .purlin/config.json
-{
-  "pre_push": "warn"
-}
+```
+purlin:init --pre-push
 ```
 
-In **warn** mode, the hook blocks only on FAILING proofs. Partial coverage (rules without tests yet) is allowed with a warning. This lets you push incomplete work for someone else to continue.
+Select **warn** — the hook blocks only on FAILING proofs. Partial coverage (rules without tests yet) is allowed with a warning. This lets you push incomplete work for someone else to continue.
 
 **Use strict mode for protected branches** (main, release) where everything should be verified before merging.
 
@@ -91,7 +99,7 @@ In **warn** mode, the hook blocks only on FAILING proofs. Partial coverage (rule
 | `specs/**/*.receipt.json` | Verification receipts — certified completeness |
 | `.purlin/config.json` | Team settings (test framework, pre-push mode) |
 
-The next person runs `/purlin:status` to see the current state, `/purlin:drift` to see what changed, and picks up where you left off.
+The next person runs `purlin:status` to see the current state, `purlin:drift` to see what changed, and picks up where you left off.
 
 ### Merge conflicts in proof files
 

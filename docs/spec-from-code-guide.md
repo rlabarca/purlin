@@ -1,11 +1,21 @@
 # Generating Specs from Code
 
-`purlin:spec-from-code` scans an existing codebase and generates specs in the 3-section format. Use it to onboard a project that already has code but no specs.
+## What You Need to Know
+
+```
+purlin:spec-from-code
+```
+
+One command scans your codebase, detects existing specs in any format, and generates or migrates them to the current compliant format. It handles everything: `features/` directories from older Purlin versions, specs with unnumbered rules, missing metadata, or outdated formatting.
+
+You review and approve at each step. Existing rules and descriptions are preserved.
+
+---
 
 ## When to Use
 
-- **New to Purlin.** You have a codebase and want to start tracking rule coverage.
-- **Upgrading from an older Purlin version.** Keep your old `features/` directory in place — `spec-from-code` reads it and migrates your existing specs to the new format, preserving the rules and scenarios you already wrote.
+- **New to Purlin.** You have code but no specs.
+- **Migrating existing specs.** You have specs in `features/` (pre-0.9.0) or in `specs/` that are missing required fields, unnumbered rules, or outdated formatting. The skill reads them and produces compliant specs with minimal loss of fidelity.
 - **Starting fresh.** After a major refactor where old specs no longer reflect the code.
 
 ## The Simplest Way
@@ -14,7 +24,7 @@
 purlin:spec-from-code
 ```
 
-Claude scans the codebase, proposes a feature taxonomy, generates specs, and commits them. You review and refine.
+Claude scans the codebase, detects existing specs, proposes a feature taxonomy, generates or migrates specs, and commits them. You review and refine at each step.
 
 ## What It Does (4 phases)
 
@@ -26,71 +36,49 @@ The skill launches up to 3 parallel exploration agents:
 - **Domain agent** — frameworks, module boundaries, public APIs, tech stack
 - **Comments agent** — TODOs, FIXMEs, architectural decisions, inline docs
 
-Results are synthesized into `.purlin/cache/sfc_inventory.md` — a complete map of the codebase.
+It also scans for **existing specs to migrate**:
+- `features/` directory (pre-0.9.0 Given/When/Then format)
+- Non-compliant specs in `specs/` (missing `> Description:`, unnumbered rules, missing sections)
+- Compliant specs are left untouched
+
+Results are synthesized into a complete inventory of the codebase and any migration candidates.
 
 ### Phase 2: Taxonomy Review
 
-The skill proposes feature categories based on the survey. It presents them in batches for your review:
+The skill proposes feature categories. Existing specs seed the taxonomy — their category names and feature names are reused. Each feature is annotated:
 
 ```
 Proposed category: auth/ (3 features)
-  login — email/password authentication
-  session — session management and refresh tokens
-  rate_limit — brute force protection
+  login (migrating) — email/password authentication
+  session (migrating) — session management and refresh tokens
+  rate_limit (new) — brute force protection
 
 Approve? Rename? Merge with another category?
 ```
 
-You confirm, rename, merge, or split categories. The validated taxonomy is saved to `.purlin/cache/sfc_taxonomy.md`.
-
-The skill also identifies **cross-cutting concerns** (error handling, logging, config patterns) and proposes them as anchor specs with type prefixes (`api_`, `security_`, `design_`, etc.).
+You confirm, rename, merge, or split categories. The skill also identifies cross-cutting concerns and proposes them as anchors.
 
 ### Phase 3: Spec Generation
 
-For each approved category (processed in dependency order — fewer anchor dependencies first):
+For each approved category:
 
-1. Reads the source files (uses exploration agents for categories with 5+ files)
-2. Extracts behavioral constraints — what the code does, not how
-3. Writes a spec in the 3-section format:
+1. Reads the source files
+2. If a migration candidate exists for a feature, uses it as the **primary input** — preserving the original rules, descriptions, and intent. Compares against current code and flags any discrepancies.
+3. Writes or overwrites the spec in the current compliant format
+4. Asks you to confirm each category before proceeding
 
-```markdown
-# Feature: login
-
-> Description: Authenticates users via email and password, issues JWT tokens.
-> Requires: security_auth_standards
-> Scope: src/auth/login.js, src/auth/middleware.js
-> Stack: node/express, bcrypt, jsonwebtoken
-
-## What it does
-Authenticates users via email and password, issues JWT tokens.
-
-## Rules
-- RULE-1: Returns 200 with JWT token on valid credentials
-- RULE-2: Returns 401 on invalid credentials
-- RULE-3: Passwords are compared using bcrypt, never plaintext
-
-## Proof
-- PROOF-1 (RULE-1): POST valid credentials; verify 200 and JWT in response @integration
-- PROOF-2 (RULE-2): POST invalid password; verify 401 @integration
-- PROOF-3 (RULE-3): Store password; verify bcrypt hash in database @integration
-
-## Implementation Notes
-<!-- TODO from src/auth/login.js:42 — add OAuth2 support -->
-<!-- FIXME from src/auth/middleware.js:15 — rate limit not applied to /api/v2 -->
-```
-
-4. Asks you to confirm each category before proceeding to the next
-5. Commits each category batch separately
+Specs migrated from `features/` are written to `specs/`. Non-compliant specs in `specs/` are updated in place.
 
 ### Phase 4: Finalize
 
-- Cleans up temporary files (`.purlin/cache/sfc_*.md`, `.purlin/cache/sfc_state.json`)
-- Runs `sync_status` to show the initial coverage state (all 0% — no proofs yet)
+- Offers to remove old `features/` directory (if migration was from there)
+- Runs `purlin:status` to show the initial coverage state
+- Cleans up temporary files
 - Prints next steps
 
 ## Resuming an Interrupted Run
 
-If a run is interrupted (context limit, network error), state is preserved in `.purlin/cache/sfc_state.json`. Resume with:
+State is preserved in `.purlin/cache/sfc_state.json`. Resume with:
 
 ```
 purlin:spec-from-code --resume
@@ -98,39 +86,12 @@ purlin:spec-from-code --resume
 
 Completed categories are skipped. Questions already answered are not re-asked.
 
-## Migrating from features/ (Pre-0.9.0)
-
-If you have old specs in `features/`, **don't delete them**. Just run:
-
-```
-purlin:init
-purlin:spec-from-code
-```
-
-The skill automatically detects `features/`, reads your old specs (scenarios, descriptions, companion `.impl.md` files), and uses them as the primary input for generating new-format specs. During taxonomy review, migrated features are annotated `(migrating)` so you can see what's being preserved vs. discovered fresh from code.
-
-After migration, Phase 4 offers to remove the old `features/` directory. If you decline, you can remove it manually later: `rm -rf features/`.
-
 ## After Generation
 
-Generated specs are a starting point, not a final product. Use the [Spec Quality Guide](../references/spec_quality_guide.md) as your review checklist. Key questions:
-
-- **Are the rules correct?** Do they describe what the code actually does?
-- **Are the proof descriptions observable?** Can you write a test that asserts the described outcome?
-- **Are cross-cutting concerns captured as anchors?** Should any feature require them?
-- **Is the `> Scope:` accurate?** Does it list the right source files?
-
-Then start the build/test loop:
+Generated specs are a starting point. Review them, then start the build/test loop:
 
 ```
 purlin:status          — see what needs tests
 test <feature_name>    — write tests and iterate until VERIFIED
 purlin:verify          — lock in verification receipts
 ```
-
-## Guidelines
-
-- **Extract behavior, not implementation.** "Returns 401 on invalid credentials" not "calls `bcrypt.compare()` in the auth middleware."
-- **One feature per module boundary.** Don't spec internal helpers — spec the public interface.
-- **2-5 rules per feature to start.** You can always add more via `purlin:spec`.
-- **Proof descriptions should be observable assertions.** "POST invalid password; verify 401" not "test the auth module."

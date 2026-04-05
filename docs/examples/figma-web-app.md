@@ -75,7 +75,7 @@ the design system.
 - PROOF-5 (RULE-5): Call fetchWeather("Austin") twice in 10 min; verify 1 API call
 ```
 
-The spec requires `weather_design` -- so `sync_status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
+The spec requires `weather_design` -- so `purlin:status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
 ## Step 3: Build It
 
@@ -152,7 +152,7 @@ In 5 messages:
 4. `run the tests` -- proof files emitted, coverage reported
 5. `verify and ship` -- verification receipt committed
 
-The design anchor ensures every feature that requires it proves the visual match via screenshot comparison. Behavioral requirements live in the feature spec. If a designer updates the Figma file, run `purlin:anchor sync` -- `sync_status` shows which proofs are stale.
+The design anchor ensures every feature that requires it proves the visual match via screenshot comparison. Behavioral requirements live in the feature spec. If a designer updates the Figma file, run `purlin:anchor sync` -- `purlin:status` shows which proofs are stale.
 
 ## Later: Checking a Deployed Version
 

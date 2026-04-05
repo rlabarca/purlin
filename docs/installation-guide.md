@@ -108,7 +108,7 @@ Default config:
 }
 ```
 
-The HTML dashboard is enabled by default (`"report": true`). When enabled, `sync_status` writes `.purlin/report-data.js` on every call, and `purlin:init` generates `purlin-report.html` at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
+The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` creates a `purlin-report.html` symlink at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
 Read or update config with the `purlin_config` MCP tool, or edit the files directly.
 
@@ -131,37 +131,21 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 
 | What you want | How |
 |---------------|-----|
-| Switch pre-push mode (warn/strict) | Edit `.purlin/config.json`: `"pre_push": "strict"` |
+| Switch pre-push mode (warn/strict) | `purlin:init --pre-push` |
 | Toggle HTML dashboard | `purlin:init --report` |
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
 | Change audit LLM (experimental) | `purlin:init --audit-llm` |
-| Change test framework | Edit `.purlin/config.json`: `"test_framework": "jest"` |
 | Re-run full setup | `purlin:init --force` |
-
-You can also edit `.purlin/config.json` directly:
-
-```json
-{
-  "version": "0.9.0",
-  "test_framework": "pytest,jest",
-  "spec_dir": "specs",
-  "pre_push": "strict",
-  "audit_llm": "gemini -m pro -p \"{prompt}\"",
-  "audit_llm_name": "Gemini Pro"
-}
-```
-
-(`audit_llm` and `audit_llm_name` only present if external LLM configured via `purlin:init --audit-llm`)
 
 ## Scaling
 
-Purlin uses the filesystem as its state — specs are Markdown files, proofs are JSON files next to specs, `sync_status` scans both on every call. This is intentional: zero infrastructure, zero dependencies, works offline, nothing to configure.
+Purlin uses the filesystem as its state — specs are Markdown files, proofs are JSON files next to specs. `purlin:status` scans both on every call. This is intentional: zero infrastructure, zero dependencies, works offline, nothing to configure.
 
 **What this means for project size:**
 
-| Project size | Specs | sync_status scan time | Experience |
+| Project size | Specs | Scan time | Experience |
 |---|---|---|---|
 | Small (startup, side project) | 5-20 | <100ms | Instant |
 | Medium (team product) | 20-50 | <500ms | Fast |
@@ -173,7 +157,7 @@ Purlin is designed for projects with up to ~100 feature specs. If your project g
 - **Split by domain:** create separate `specs/` directories per team or service, each with its own Purlin workspace
 - **Use git worktrees:** each worktree has independent proof files, reducing merge conflicts
 
-If `sync_status` becomes noticeably slow, the project has likely outgrown a single spec directory.
+If `purlin:status` becomes noticeably slow, the project has likely outgrown a single spec directory.
 
 ## Updating Purlin
 
@@ -215,13 +199,13 @@ purlin:init
 purlin:spec-from-code
 ```
 
-`purlin:spec-from-code` detects `features/`, reads your old specs, compares them against the current code, and generates updated specs in the new 3-section format (What it does, Rules, Proof). Features with legacy specs are annotated as `(migrating)` in the taxonomy review so you can see exactly what's being preserved. After migration, the skill offers to clean up the old `features/` directory.
+`purlin:spec-from-code` detects existing specs in any format — `features/` (pre-0.9.0) or non-compliant specs already in `specs/` — and migrates them to the current format. Your existing rules and descriptions are preserved as the primary input. Migration candidates are annotated `(migrating)` in the taxonomy review. After migration from `features/`, the skill offers to clean up the old directory.
 
 ## Adding More Proof Plugins
 
 Purlin ships with proof plugins for Python (pytest), JavaScript (Jest), and Bash (shell). If your project uses another language or framework, you can add a community or custom proof plugin.
 
-Proof plugins read proof markers from your tests and write the JSON files that `sync_status` reads. See the [Testing Workflow Guide](testing-workflow-guide.md#proof-plugins) for details on what they are and how they work.
+Proof plugins read proof markers from your tests and write the JSON files that Purlin reads for coverage reporting. See the [Testing Workflow Guide](testing-workflow-guide.md#proof-plugins) for details on what they are and how they work.
 
 ```
 purlin:init --add-plugin ./my-go-plugin.py

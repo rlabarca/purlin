@@ -1,15 +1,41 @@
-# Anchors and External References
+# Anchors Guide
 
-Anchors are specs whose rules apply to other features. They define cross-cutting constraints -- standards that multiple features must follow. Optionally, an anchor can reference an external source (a git repo, Figma file, or compliance document) to stay in sync with standards defined outside your project.
+## What You Need to Know
 
-## Anchors
+Anchors are shared rules that apply to multiple features. Put a spec in `specs/_anchors/` and it becomes an anchor. Features reference it with `> Requires:`, and its rules become part of their coverage.
 
-An anchor is a regular spec that defines rules other features must follow. Anyone on the team can create and edit them.
+```
+purlin:anchor create <name>                     # Create a local anchor
+purlin:anchor add-figma <figma-url>             # Create from Figma design
+purlin:anchor sync <name>                       # Pull latest from external source
+```
+
+**Key concepts:**
+- Any spec in `specs/_anchors/` is an anchor — the directory is what makes it one
+- Features must prove anchor rules to reach PASSING status
+- Global anchors (`> Global: true`) auto-apply to all features
+- Anchors can sync from external sources (git repos, Figma files)
+
+---
+
+## What Is an Anchor
+
+An anchor is a regular spec that lives in `specs/_anchors/`. The directory is what makes it an anchor, not the file name. Anyone on the team can create and edit them.
+
+```
+specs/_anchors/
+  rest_conventions.md
+  input_handling.md
+  brand_colors.md
+  feedback_modal.md
+```
+
+Name anchors whatever makes sense for your team. The optional `> Type:` metadata field (`design`, `api`, `security`, etc.) categorizes them in the dashboard, but it's not enforced.
 
 ### Example
 
 ```markdown
-# Anchor: api_rest_conventions
+# Anchor: rest_conventions
 
 > Description: REST API conventions for all endpoints.
 > Scope: src/api/
@@ -29,7 +55,7 @@ REST API conventions for all endpoints.
 - PROOF-3 (RULE-3): GET /users?cursor=abc returns next page with meta.next_cursor
 ```
 
-### Using anchors
+### Using anchors in features
 
 Feature specs reference anchors in `> Requires:`:
 
@@ -37,35 +63,22 @@ Feature specs reference anchors in `> Requires:`:
 # Feature: user_api
 
 > Description: CRUD operations for user accounts.
-> Requires: api_rest_conventions
+> Requires: rest_conventions
 > Scope: src/api/users.js
 ```
 
-`sync_status` includes the anchor's rules in the feature's coverage report. Tests for `user_api` must prove both its own rules and `api_rest_conventions` rules.
-
-### Anchor type prefixes
-
-| Prefix | Domain | Example |
-|--------|--------|---------|
-| `api_` | API contracts, REST conventions | `api_rest_conventions.md` |
-| `security_` | Auth, access control, secrets | `security_auth_standards.md` |
-| `design_` | Visual standards, layout | `design_component_library.md` |
-| `brand_` | Voice, naming, identity | `brand_copy_standards.md` |
-| `platform_` | Platform constraints, browser support | `platform_accessibility.md` |
-| `schema_` | Data models, validation | `schema_user_model.md` |
-| `legal_` | Privacy, data handling, compliance | `legal_data_retention.md` |
-| `prodbrief_` | User stories, UX requirements | `prodbrief_checkout_flow.md` |
+`purlin:status` includes the anchor's rules in the feature's coverage report. Tests for `user_api` must prove both its own rules and `rest_conventions` rules.
 
 ---
 
-## Forbidden Patterns (negative rules)
+## Forbidden Patterns
 
-Some rules define what code must **never** do. These are "FORBIDDEN patterns" -- and they're just rules with negative proofs.
+Some rules define what code must **never** do. These are just rules with negative proofs -- there is no special FORBIDDEN mechanism in Purlin.
 
-### Example: security anchor with FORBIDDEN patterns
+### Example
 
 ```markdown
-# Anchor: security_input_handling
+# Anchor: input_handling
 
 > Description: Input handling security standards. Prevents common injection attacks.
 > Scope: src/
@@ -84,12 +97,12 @@ Input handling security standards. Prevents common injection attacks.
 - PROOF-3 (RULE-3): Render user input containing <script>alert(1)</script>; verify it appears escaped in output
 ```
 
-### How to write FORBIDDEN proofs
+### Writing FORBIDDEN proofs
 
-A FORBIDDEN pattern is a rule that says "X must not exist." The proof is a negative assertion -- verify the thing is absent:
+A FORBIDDEN pattern is a rule that says "X must not exist." The proof asserts absence:
 
 ```python
-@pytest.mark.proof("security_input_handling", "PROOF-1", "RULE-1")
+@pytest.mark.proof("input_handling", "PROOF-1", "RULE-1")
 def test_no_eval_in_source():
     """FORBIDDEN: no eval() in user-facing code"""
     import subprocess
@@ -101,7 +114,7 @@ def test_no_eval_in_source():
 ```
 
 ```python
-@pytest.mark.proof("security_input_handling", "PROOF-3", "RULE-3")
+@pytest.mark.proof("input_handling", "PROOF-3", "RULE-3")
 def test_xss_prevention():
     """FORBIDDEN: unescaped user input in HTML"""
     response = render_template("profile", name="<script>alert(1)</script>")
@@ -109,33 +122,94 @@ def test_xss_prevention():
     assert "&lt;script&gt;" in response
 ```
 
-The key insight: **there is no special FORBIDDEN mechanism in Purlin.** A FORBIDDEN pattern is just a rule with a proof that asserts absence. The proof system handles it identically to any other rule -- if the proof passes, the pattern is absent. If it fails, the violation is visible in `sync_status`.
-
-For more on writing effective rules, proofs, and anchors, see the [Spec Quality Guide](../references/spec_quality_guide.md).
+If the proof passes, the pattern is absent. If it fails, the violation is visible in `purlin:status`. For more on writing effective rules and proofs, see the [Spec Quality Guide](../references/spec_quality_guide.md).
 
 ---
 
-## Anchors with External References
+## Anchor Scope: Required vs Global
 
-An anchor can optionally reference an external source. When it does, Purlin can sync the anchor's content from that source. The anchor file remains locally editable -- but if local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as PM action items (drift).
+Anchors apply to features in two ways:
 
-### Where they live
+### Required anchors (opt-in)
 
-Anchors with external references live in `specs/_anchors/`:
+Features explicitly reference the anchor via `> Requires:`. Only features that opt in must prove the anchor's rules.
+
+```markdown
+# Feature: user_api
+
+> Description: CRUD operations for user accounts.
+> Requires: rest_conventions
+> Scope: src/api/users.js
+```
+
+In `purlin:status`, required anchor rules appear with a `(required)` label:
 
 ```
-specs/_anchors/
-  design_brand.md          # Design system tokens
-  api_v3_contract.md       # API contract from another team
-  security_owasp.md        # Security requirements
+user_api: 3/5 rules proved
+  RULE-1: PASS (own)
+  RULE-2: NO PROOF (own)
+  rest_conventions/RULE-1: PASS (required)
+  rest_conventions/RULE-2: PASS (required)
+  rest_conventions/RULE-3: NO PROOF (required)
 ```
+
+### Global anchors (automatic)
+
+Add `> Global: true` to make an anchor's rules apply to **every** non-anchor feature spec -- without needing `> Requires:`. Use this for project-wide constraints that no feature should opt out of: security baselines, coding standards, compliance requirements.
+
+```markdown
+# Anchor: no_eval
+
+> Description: Prohibits eval() and dynamic code execution across the entire codebase.
+> Type: security
+> Global: true
+
+## What it does
+Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
+
+## Rules
+- RULE-1: No eval() calls in source code
+- RULE-2: No new Function() constructor with string arguments
+
+## Proof
+- PROOF-1 (RULE-1): Grep src/ for eval(); verify zero matches
+- PROOF-2 (RULE-2): Grep src/ for new Function(; verify zero matches outside test files
+```
+
+In `purlin:status`, global anchor rules appear with a `(global)` label:
+
+```
+login: 5/7 rules proved
+  RULE-1: PASS (own)
+  RULE-2: PASS (own)
+  RULE-3: NO PROOF (own)
+  no_eval/RULE-1: PASS (global)
+  no_eval/RULE-2: PASS (global)
+```
+
+### Writing proofs for anchor rules
+
+Use the **anchor's name** in the proof marker, not the feature name:
+
+```python
+@pytest.mark.proof("no_eval", "PROOF-1", "RULE-1")
+def test_no_eval_in_source():
+    result = subprocess.run(["grep", "-rn", "eval(", "src/"], capture_output=True, text=True)
+    assert result.stdout == "", f"Found eval() in:\n{result.stdout}"
+```
+
+---
+
+## External References
+
+An anchor can optionally reference an external source (git repo, Figma file, compliance document). Purlin can sync the anchor's content from that source. The anchor file remains locally editable -- if local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as drift.
 
 ### Format
 
 Same 3-section format as regular anchors, plus source metadata:
 
 ```markdown
-# Anchor: design_brand
+# Anchor: brand_colors
 
 > Description: Color tokens from the design system.
 > Type: design
@@ -156,22 +230,22 @@ Color tokens from the design system.
 ```
 
 - **`> Source:`** -- git repo URL or Figma URL
-- **`> Path:`** -- file path within the source repo
+- **`> Path:`** -- file path within the source repo (git only)
 - **`> Pinned:`** -- commit SHA (git) or lastModified timestamp (Figma)
 
 Full format: [references/formats/anchor_format.md](../references/formats/anchor_format.md)
 
-### Syncing from external sources
+### Syncing
 
-**Git-sourced (all types):**
+**Git-sourced:**
 
 ```
-purlin:anchor sync api_v3_contract
+purlin:anchor sync brand_colors
 ```
 
-Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file and updates the SHA. If local rules conflict with the external source, the sync flags the conflicts as drift -- PM action items to resolve.
+Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file and updates the SHA.
 
-**Figma-sourced (design type):**
+**Figma-sourced:**
 
 ```
 purlin:anchor sync figma figma.com/design/abc123/Brand-System
@@ -187,33 +261,12 @@ purlin:anchor sync --check-only
 
 Compares all anchors' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`.
 
-### Sync reliability
+### Conflict resolution
 
-External sources can be unavailable (network failures, expired credentials, deleted repos). Handle this in CI:
-
-```yaml
-# GitHub Actions example
-- name: Check anchor staleness
-  run: |
-    purlin:anchor sync --check-only || {
-      echo "WARNING: anchor sync check failed -- external source may be unavailable"
-      # Decide: fail the build, or warn and continue
-      exit 1
-    }
-```
-
-**Error handling guidance:**
-- **Network failure** -- retry with backoff, then fail. Do not silently skip.
-- **Expired credentials** -- fail with a clear message pointing to credential setup.
-- **Deleted source repo** -- fail. The anchor's `> Source:` needs to be updated by a PM.
-- **Source file moved** -- fail. Update the anchor's `> Path:` field.
-
-### Local rules vs external reference conflicts
-
-When you run `purlin:anchor sync`, the external source may have changed. If local rules conflict with the updated external content, the sync does not silently overwrite your local rules. Instead, it flags the conflicts as drift items:
+When `purlin:anchor sync` detects that the external source has changed and local rules conflict, it flags the conflicts as drift items instead of silently overwriting:
 
 ```
-purlin:anchor sync design_brand
+purlin:anchor sync brand_colors
 
 Sync complete. 2 conflicts detected:
 
@@ -223,14 +276,32 @@ Sync complete. 2 conflicts detected:
 These are PM action items. Run: purlin:drift pm
 ```
 
-The PM reviews the drift report and decides whether to accept the external changes, keep the local rules, or merge them. This keeps the PM in control while ensuring external updates are never silently lost.
+The PM reviews and decides whether to accept the external changes, keep local rules, or merge.
 
-### The thin anchor model
+### Sync reliability
 
-Figma design anchors are thin -- one rule per viewport saying "match the design," one screenshot comparison proof per rule:
+External sources can be unavailable. Handle this in CI:
+
+```yaml
+- name: Check anchor staleness
+  run: |
+    purlin:anchor sync --check-only || {
+      echo "WARNING: anchor sync check failed -- external source may be unavailable"
+      exit 1
+    }
+```
+
+- **Network failure** -- retry with backoff, then fail. Do not silently skip.
+- **Expired credentials** -- fail with a clear message pointing to credential setup.
+- **Deleted source repo** -- fail. The anchor's `> Source:` needs to be updated.
+- **Source file moved** -- fail. Update the anchor's `> Path:` field.
+
+### Figma anchors
+
+Figma design anchors are thin -- one rule per viewport, one screenshot comparison proof:
 
 ```markdown
-# Anchor: design_feedback_modal
+# Anchor: feedback_modal
 
 > Description: Visual design constraints for the feedback modal, sourced from Figma.
 > Type: design
@@ -248,86 +319,6 @@ Visual design constraints for the feedback modal, sourced from Figma.
 - PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
-The anchor doesn't extract granular CSS values. The LLM reads Figma directly during build for full fidelity. The screenshot comparison proof catches drift.
+The anchor doesn't extract granular CSS values. During `purlin:build`, the agent reads Figma directly via MCP for full visual context -- the visual reference IS the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
 
 Behavioral annotations from the Figma design (interactions, validation, state changes) are documented in the anchor's "What it does" section but become rules in the feature spec that requires the anchor.
-
-### Build time vs test time (Figma)
-
-During `purlin:build`, the agent reads Figma directly via MCP for full visual context -- the visual reference IS the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
-
----
-
-## Global Anchors
-
-A global anchor is an anchor with `> Global: true` metadata. Its rules automatically apply to **every** non-anchor feature spec -- without needing `> Requires:`.
-
-### When to use global anchors
-
-Global anchors are for project-wide constraints that should apply everywhere -- security baselines, coding standards, or compliance requirements that no feature should be able to opt out of.
-
-### Example
-
-```markdown
-# Anchor: security_no_eval
-
-> Description: Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
-> Type: security
-> Source: git@github.com:acme/security-policies.git
-> Path: standards/no-eval.md
-> Pinned: a1b2c3d4
-> Global: true
-
-## What it does
-Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
-
-## Rules
-- RULE-1: No eval() calls in source code
-- RULE-2: No new Function() constructor with string arguments
-
-## Proof
-- PROOF-1 (RULE-1): Grep src/ for eval(); verify zero matches
-- PROOF-2 (RULE-2): Grep src/ for new Function(; verify zero matches outside test files
-```
-
-### How global anchors appear in sync_status
-
-Global anchor rules are included in every feature's coverage with a `(global)` label:
-
-```
-login: 5/7 rules proved
-  RULE-1: PASS (own)
-  RULE-2: PASS (own)
-  RULE-3: NO PROOF (own)
-  security_no_eval/RULE-1: PASS (global)
-  security_no_eval/RULE-2: PASS (global)
-```
-
-Features do NOT need `> Requires:` for global anchors -- they apply automatically. If a feature explicitly lists a global anchor in `> Requires:`, its rules appear as `(required)` instead of `(global)` -- the coverage is the same either way.
-
-### Writing proofs for global anchor rules
-
-Use the **anchor's feature name** in the proof marker, not your own feature name:
-
-```python
-@pytest.mark.proof("security_no_eval", "PROOF-1", "RULE-1")
-def test_no_eval_in_source():
-    result = subprocess.run(["grep", "-rn", "eval(", "src/"], capture_output=True, text=True)
-    assert result.stdout == "", f"Found eval() in:\n{result.stdout}"
-```
-
----
-
-## Using Anchors in Features
-
-Anchors are referenced in `> Requires:`:
-
-```markdown
-# Feature: color_picker
-
-> Description: Color selection component with palette and custom input.
-> Requires: design_brand, design_component_library
-> Scope: src/components/ColorPicker.js
-```
-
-`sync_status` includes all required rules in the feature's coverage report. Tests must prove both the feature's own rules and all required anchor rules.

@@ -1,6 +1,21 @@
 # The Purlin Lifecycle
 
-How PM, Engineer, and QA collaborate through specs, code, and proofs.
+## What You Need to Know
+
+Purlin connects three roles through a simple loop: **write specs → build code → prove it works**.
+
+```
+purlin:spec <topic>     — define what the feature must do (rules + proof descriptions)
+build <feature>         — implement code that satisfies the rules
+test <feature>          — write tests, iterate until all rules pass
+purlin:verify           — lock in verification receipts
+```
+
+**The progression:** UNTESTED → PARTIAL → PASSING → VERIFIED. Every rule needs a passing proof. Anchor rules count too.
+
+**Anyone can do any job.** PMs write rules, engineers write code, QA writes tests — but nothing stops an engineer from writing rules or a PM from writing proofs. The roles below describe the typical flow, not restrictions.
+
+---
 
 ## The Big Picture
 
@@ -13,7 +28,7 @@ Every role can do every job. The arrows show the typical flow, not restrictions.
 1. **Specs define rules.** A PM (or engineer, or anyone) writes `RULE-1: passwords must be hashed with bcrypt`. Rules are the constraints — what must be true.
 2. **Specs define proofs.** Each rule gets a proof blueprint: `PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database`. Proofs describe how to verify the rule holds. An agent or engineer writes both rules and proofs together — they're two sides of the same spec.
 3. **Tests implement proofs.** An engineer (or agent) writes a test marked `@pytest.mark.proof("login", "PROOF-1", "RULE-1")` that actually runs the assertion described in the proof blueprint.
-4. **`sync_status` shows the gaps.** 3/5 rules proved means 2 rules still need tests.
+4. **`purlin:status` shows the gaps.** 3/5 rules proved means 2 rules still need tests.
 5. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash.
 
 That's it. No tracking system, no ledger, no state files. The filesystem is the state.
@@ -40,7 +55,7 @@ User authentication with email and password.
 - PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429 @integration
 ```
 
-**`## Rules`** — what must be true. Each rule is a testable constraint tracked by `sync_status`.
+**`## Rules`** — what must be true. Each rule is a testable constraint tracked by `purlin:status`.
 **`## Proof`** — how to verify each rule. Proof descriptions guide whoever writes the test (human or agent).
 **`> Requires:`** — anchors or other specs whose rules also apply to this feature.
 **`> Scope:`** — which files this feature touches.
@@ -102,7 +117,7 @@ That's the daily loop. Everything below is detail for when you want more control
 
 ---
 
-**The PM defines what the software must do.** They own the rules — the testable constraints that the code must satisfy. Purlin helps PMs transform raw ideas (PRDs, customer feedback, Slack threads) into structured specs with numbered rules and proof descriptions. When engineers build and test, the PM sees exactly which rules are proved and which aren't via `sync_status`. No more "is this feature done?" — the coverage number answers it.
+**The PM defines what the software must do.** They own the rules — the testable constraints that the code must satisfy. Purlin helps PMs transform raw ideas (PRDs, customer feedback, Slack threads) into structured specs with numbered rules and proof descriptions. When engineers build and test, the PM sees exactly which rules are proved and which aren't via `purlin:status`. No more "is this feature done?" — the coverage number answers it.
 
 ![PM Workflow](../assets/lifecycle-pm-workflow.svg)
 
@@ -276,7 +291,7 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 
 ---
 
-**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `sync_status` shows PASSING (all rules proved). Then `purlin:verify` issues a receipt, moving the feature to VERIFIED. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
+**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `purlin:status` shows PASSING (all rules proved). Then `purlin:verify` issues a receipt, moving the feature to VERIFIED. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
 
 ![Engineer Workflow](../assets/lifecycle-eng-workflow.svg)
 
@@ -303,7 +318,7 @@ This is the most common workflow. You say `test login` and Claude:
 3. Writes tests with proof markers
 4. Runs `purlin:unit-test`
 5. If tests fail, fixes and retries
-6. Repeats until `sync_status` shows VERIFIED
+6. Repeats until `purlin:status` shows VERIFIED
 
 You can also say `build login` to just write code (Claude injects the spec rules into context), then `test login` separately.
 
@@ -359,7 +374,7 @@ Some rules can't be automated ("brand voice must be playful", "checkout flow is 
 2. Perform the check
 3. Stamp it: `/purlin:verify --manual login PROOF-3`
 4. The stamp auto-captures your email, today's date, and the current commit SHA
-5. If code changes later, `sync_status` flags the stamp as stale
+5. If code changes later, `purlin:status` flags the stamp as stale
 
 ### QA can also
 
@@ -440,7 +455,7 @@ The real proof that instructions work is: **does the agent produce correct outpu
 - PROOF-1 (RULE-1): Run purlin:init on empty project; verify directories exist @e2e
 - PROOF-2 (RULE-2): Run purlin:spec-from-code; verify generated specs have RULE-N and PROOF-N lines @e2e
 - PROOF-3 (RULE-3): Run tests with proof markers; verify .proofs-*.json files appear next to specs @e2e
-- PROOF-4 (RULE-4): Run sync_status; verify output contains → directives @e2e
+- PROOF-4 (RULE-4): Run purlin:status; verify output contains feature table with Coverage and Status columns @e2e
 - PROOF-5 (RULE-5): Run purlin:verify; verify receipt.json with vhash @e2e
 ```
 
@@ -461,7 +476,7 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-`sync_status` classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are reported separately and excluded from coverage. A feature reaches PASSING only when ALL behavioral rules have passing proofs, and VERIFIED once a receipt is issued. Features with some but not all rules proved are PARTIAL. Add E2E proofs in `specs/integration/` to get real coverage.
+Purlin classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are reported separately and excluded from coverage. A feature reaches PASSING only when ALL behavioral rules have passing proofs, and VERIFIED once a receipt is issued. Features with some but not all rules proved are PARTIAL. Add E2E proofs in `specs/integration/` to get real coverage.
 
 ---
 
@@ -476,7 +491,7 @@ Proofs keep specs and code in sync — but only if they're actually run. Purlin 
 - **Warn mode** (default) — blocks on FAILING proofs, warns on PARTIAL and UNTESTED coverage. For incremental development.
 - **Strict mode** — blocks unless ALL features are VERIFIED. For teams that want hard enforcement.
 
-Set during `purlin:init` or via `"pre_push": "strict"` in `.purlin/config.json`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.
+Set during `purlin:init` or changed later with `purlin:init --pre-push`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.
 
 ### Layer 2: CI pipeline (not provided by Purlin)
 

@@ -37,14 +37,29 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 }
 ```
 
-3. **Legacy spec detection:** Check if a `features/` directory exists at the project root. If found:
-   - Read all `.md` files in `features/` recursively (excluding any `.impl.md` companion files for now — just the main spec files)
-   - For each old-format spec, extract: feature name, category (subdirectory), description, scenarios (Given/When/Then blocks), and any behavioral constraints
-   - Print: `Found N legacy specs in features/. These will be used as migration context — old rules and scenarios will inform the new-format specs.`
-   - Save the extracted legacy spec data to `.purlin/cache/sfc_legacy.md` with per-feature entries (name, category, original content summary)
-   - If `.impl.md` companion files exist, note them — they contain implementation context that may be useful for `## Implementation Notes` in generated specs
+3. **Existing spec detection:** Scan for specs that can be used as migration context. Check two locations:
 
-   If `features/` does not exist, skip this step.
+   **a) Legacy `features/` directory:** If `features/` exists at the project root:
+   - Read all `.md` files recursively (excluding `.impl.md` companion files)
+   - For each spec, extract: feature name, category (subdirectory), description, scenarios (Given/When/Then blocks), and any behavioral constraints
+   - If `.impl.md` companion files exist, note them for `## Implementation Notes`
+
+   **b) Non-compliant specs in `specs/`:** Glob `specs/**/*.md` and read each file. A spec is non-compliant if any of the following are true:
+   - Missing `## Rules` section
+   - Rules are not numbered (`RULE-N:` format)
+   - Missing `## Proof` section
+   - Missing `> Description:` metadata
+   - Uses an outdated format (e.g., Given/When/Then scenarios instead of Rules/Proof)
+
+   For each non-compliant spec, extract: feature name, category, existing rules (even if unnumbered), existing proofs, description, and any metadata fields already present.
+
+   **Compliant specs** (with numbered rules, proofs, and proper sections) are left untouched — they are not migration candidates.
+
+   Save all migration candidates to `.purlin/cache/sfc_existing.md` with per-feature entries: name, source location (`features/` or `specs/`), original content summary, and list of compliance issues.
+
+   Print summary:
+   - `Found N specs to migrate: X from features/, Y non-compliant in specs/.`
+   - If nothing found: `No existing specs found. Generating from code.`
 
 4. Launch up to 3 Explore sub-agents in parallel (Agent tool, subagent_type: `Explore`):
 
@@ -61,7 +76,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Cross-cutting concerns detected (auth, logging, error handling, config patterns)
    - Code comments index (significant comments with file locations)
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
-   - **Legacy spec summary** (if `features/` was detected): list of old feature names, categories, and scenario counts — cross-referenced with code modules discovered by the exploration agents
+   - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts — cross-referenced with code modules discovered by the exploration agents
 
 6. Update state: `phase: 1, status: "complete"`.
 
@@ -75,7 +90,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 2. **Check for existing specs:** If specs already exist (glob `specs/**/*.md`), read them to extract existing category names and naming conventions. The proposed taxonomy MUST reuse existing category names where applicable. Only propose new categories when no existing one fits.
 
-   **Check for legacy specs:** If `.purlin/cache/sfc_legacy.md` exists (created in Phase 1), read it. Legacy specs from `features/` are the primary seed for the taxonomy — use their category names and feature names as starting points. When presenting the taxonomy, annotate each feature as either `(migrating)` if it has a legacy spec or `(new)` if discovered only from code. This lets the user see what's being preserved vs. what's net-new.
+   **Check for migration candidates:** If `.purlin/cache/sfc_existing.md` exists (created in Phase 1), read it. Existing specs (from `features/` or non-compliant `specs/`) are the primary seed for the taxonomy — use their category names and feature names as starting points. When presenting the taxonomy, annotate each feature as `(migrating)` if it has an existing spec to migrate, or `(new)` if discovered only from code. This lets the user see what's being preserved vs. what's net-new.
 
 3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
    - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
@@ -219,7 +234,7 @@ For each category:
 
    **Requires validation (blocking):** Before writing `> Requires:`, glob `specs/**/<name>.md` for EACH reference. A reference is valid only if it (a) already exists on disk from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), DO NOT write the spec with the broken reference — remove it from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
-   **Scope overlap suggestions:** After validating references, scan all existing anchors (specs with `design_`, `api_`, `security_`, `brand_`, `platform_`, `schema_`, `legal_`, or `prodbrief_` prefix). If an anchor's `> Scope:` patterns overlap with this feature's scope but the anchor is not in `> Requires:`, suggest it:
+   **Scope overlap suggestions:** After validating references, scan all existing anchors (all specs in `specs/_anchors/`). If an anchor's `> Scope:` patterns overlap with this feature's scope but the anchor is not in `> Requires:`, suggest it:
    ```
    Suggested > Requires: based on file overlap:
      api_rest_conventions — Scope overlaps with src/api/
@@ -227,16 +242,27 @@ For each category:
    ```
    Global anchors (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
 
-3. **Legacy spec migration (per feature):** Before generating a spec, check if this feature has a legacy spec in `.purlin/cache/sfc_legacy.md` (matched by name, or by file scope overlap if names differ). If a legacy spec exists:
+3. **Existing spec migration (per feature):** Before generating a spec, check if this feature has a migration candidate in `.purlin/cache/sfc_existing.md` (matched by name, or by file scope overlap if names differ). If one exists:
+
+   **From `features/` (legacy format):**
    - Read the original `features/<category>/<name>.md` file in full
    - Read any companion `.impl.md` file if present
-   - Extract the old scenarios (Given/When/Then), descriptions, and any behavioral constraints
-   - Use the old spec as the **primary input** for generating the new-format spec — the old scenarios become RULE-N candidates, the old descriptions inform `## What it does`
-   - Compare the old spec's claims against the current code (from the deep code reading in step 1). If the code has diverged from what the old spec described, flag the discrepancy for the user in the review step
-   - Mark the generated spec: `<!-- Migrated from features/<category>/<name>.md. Review and refine. -->` instead of the standard generated header
+   - Extract scenarios (Given/When/Then), descriptions, and behavioral constraints
+   - Old scenarios become RULE-N candidates; old descriptions inform `## What it does`
    - If a companion `.impl.md` exists, extract architecturally significant details for `## Implementation Notes`
 
-   If no legacy spec exists, generate from code alone (standard behavior).
+   **From `specs/` (non-compliant format):**
+   - Read the existing `specs/<category>/<name>.md` file in full
+   - Preserve all content that is already correct: existing rules (renumber if needed), existing proofs, existing metadata (`> Scope:`, `> Stack:`, `> Requires:`)
+   - Fix compliance issues: add missing `> Description:`, number unnumbered rules, add missing `## Proof` section, convert any Given/When/Then scenarios to Rules/Proof format
+   - The existing spec is overwritten in place with the compliant version
+
+   **For both sources:**
+   - Use the old spec as the **primary input** — preserve the author's intent, rules, and descriptions with minimal loss
+   - Compare the old spec's claims against the current code (from the deep code reading in step 1). If the code has diverged, flag the discrepancy for the user in the review step
+   - Mark the generated spec: `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead of the standard generated header
+
+   If no migration candidate exists, generate from code alone (standard behavior).
 
 4. For each feature in the category, write `specs/<category>/<name>.md`:
 
@@ -329,18 +355,21 @@ Examples:
 
 1. Call `sync_status` to show the initial coverage state.
 
-2. **Legacy cleanup (if applicable):** If `features/` was detected and specs were migrated:
-   - Present the migration summary: `Migrated N specs from features/. M additional specs discovered from code.`
+2. **Migration cleanup (if applicable):**
+
+   If `features/` was detected and specs were migrated from it:
    - Ask the user via `AskUserQuestion`: `Migration complete. Remove old features/ directory? The old specs have been migrated to specs/. [y/n]`
-   - If approved: delete `features/` and any companion files (`.impl.md`). Also delete old artifacts if present: `pl-*` symlinks, `*.sh` scripts at root.
+   - If approved: delete `features/` and any companion files. Also delete old artifacts if present: `pl-*` symlinks, `*.sh` scripts at root.
    - If declined: leave `features/` in place. Print: `Keeping features/ — you can remove it manually when ready: rm -rf features/`
+
+   Non-compliant specs in `specs/` are overwritten in place — no cleanup needed.
 
 3. Summarize results:
 
 ```
 Generated N specs in M categories.
 Anchor specs: K
-Migrated from legacy: L       ← (only if features/ was detected)
+Migrated: L (X from features/, Y updated in specs/)
 Features with implementation notes: J
 
 Next:
@@ -353,7 +382,7 @@ Next:
    - `.purlin/cache/sfc_state.json`
    - `.purlin/cache/sfc_inventory.md`
    - `.purlin/cache/sfc_taxonomy.md`
-   - `.purlin/cache/sfc_legacy.md` (if created)
+   - `.purlin/cache/sfc_existing.md` (if created)
 
 5. Commit cleanup per `references/commit_conventions.md`: `chore(sfc): finalize spec-from-code (Phase 4)`
 
@@ -370,6 +399,6 @@ Additional spec-from-code-specific guidelines:
 - **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
-- **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated from features/<category>/<name>.md. Review and refine. -->` instead.
+- **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead.
 - **Implementation Notes capture architecture, not just TODOs.** Include whenever the source reveals decisions a rebuilding agent would need to replicate: design patterns, caching strategies, concurrency models, data flow, key tradeoffs. Omit only if the feature has trivially simple implementation.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.

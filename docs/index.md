@@ -48,7 +48,7 @@ specs/
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| MCP server | `scripts/mcp/purlin_server.py` | Provides `sync_status` and `purlin_config` tools |
+| MCP server | `scripts/mcp/purlin_server.py` | Powers `purlin:status`, `purlin:drift`, and config tools |
 | Proof plugins | `scripts/proof/` | pytest, Jest, and shell proof collectors |
 
 ## Skills Reference
@@ -69,7 +69,7 @@ Key skills:
 - `purlin:verify` -- run all tests, issue verification receipts
 - `purlin:unit-test` -- run tests and emit proof files
 - `purlin:audit` -- evaluate proof quality (STRONG/WEAK/HOLLOW)
-- `purlin:status` -- show rule coverage via `sync_status`
+- `purlin:status` -- show rule coverage dashboard
 - `purlin:drift` -- drift detection and change summary
 - `purlin:spec-from-code` -- reverse-engineer specs from existing code
 - `purlin:find` -- search specs by name
