@@ -75,6 +75,7 @@ def _proof_entry(feature, proof_id, rule_id, status="pass", tier="unit",
 class TestMultiFeatureMerge:
     """Multiple features coexisting in the same proof file via feature-scoped overwrite."""
 
+    @pytest.mark.proof("proof_plugins", "PROOF-4", "RULE-4")
     def test_three_features_share_one_proof_file(self, tmp_path):
         """Three features written sequentially to the same proof file — all preserved."""
         spec_dir = tmp_path / "specs" / "api"
@@ -111,6 +112,7 @@ class TestMultiFeatureMerge:
         assert features == {"login", "signup", "logout"}, f"Expected 3 features, got {features}"
         assert len(data["proofs"]) == 3
 
+    @pytest.mark.proof("proof_plugins", "PROOF-4", "RULE-4")
     def test_overwrite_replaces_only_own_feature(self, tmp_path):
         """Re-running feature A replaces A's proofs but leaves B untouched."""
         spec_dir = tmp_path / "specs" / "api"
@@ -149,6 +151,7 @@ class TestMultiFeatureMerge:
 class TestMultiTierAggregation:
     """sync_status merges proofs from unit + e2e tiers into one coverage picture."""
 
+    @pytest.mark.proof("sync_status", "PROOF-14", "RULE-14")
     def test_unit_and_e2e_proofs_merged(self, tmp_path):
         """Feature has RULE-1 proved by unit and RULE-2 proved by e2e — both count."""
         spec_dir = tmp_path / "specs" / "auth"
@@ -179,6 +182,7 @@ class TestMultiTierAggregation:
         assert "RULE-1" in lookup, "RULE-1 from unit tier should be found"
         assert "RULE-2" in lookup, "RULE-2 from e2e tier should be found"
 
+    @pytest.mark.proof("sync_status", "PROOF-2", "RULE-2")
     def test_fail_in_e2e_overrides_pass_in_unit(self, tmp_path):
         """Same rule proved pass in unit but fail in e2e — fail wins."""
         spec_dir = tmp_path / "specs" / "auth"
@@ -200,6 +204,7 @@ class TestMultiTierAggregation:
             "fail from e2e should override pass from unit"
         )
 
+    @pytest.mark.proof("sync_status", "PROOF-2", "RULE-2")
     def test_pass_does_not_override_earlier_fail(self, tmp_path):
         """If fail is seen first, a later pass doesn't overwrite it."""
         spec_dir = tmp_path / "specs" / "auth"
@@ -229,6 +234,7 @@ class TestMultiLanguageSameFile:
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-1", "RULE-1")
     def test_c_and_sql_proofs_coexist(self, tmp_path):
         """C proves RULE-1 of feature_a, SQL proves RULE-1 of feature_b — same dir."""
         spec_dir = tmp_path / "specs" / "core"
@@ -291,6 +297,7 @@ SELECT CASE WHEN (SELECT count(*) FROM t) = 1 THEN 'PASS' ELSE 'FAIL' END;
 class TestTautologicalEscapeHatch:
     """Tests with OR branches that always evaluate True, making assertions no-ops."""
 
+    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
     def test_static_checks_detects_assert_true_in_or(self, tmp_path):
         """Python test with `assert func() or True` — should be caught as assert_true."""
         test_file = tmp_path / "test_cheat.py"
@@ -308,6 +315,7 @@ def test_tautological_or():
         assert results[0]["check"] == "assert_true"
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
     def test_c_tautological_proof_detected_by_proof_file_check(self, tmp_path):
         """C test where assertion is always true (1 == 1) — proof file records pass,
         but the test proves nothing. check_proof_file won't catch this (it's semantic),
@@ -354,6 +362,7 @@ int main(void) {
 class TestAssertionOnFixture:
     """Tests that assert properties of their own setup data, not code output."""
 
+    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
     def test_python_asserts_constant_not_output(self, tmp_path):
         """Test asserts MODULE_CONSTANT == expected — proves setup, not behavior.
         Static checks won't catch this (it has a real assertion), but the test
@@ -379,6 +388,7 @@ def test_list_users_returns_three():
         )
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27")
     def test_sql_asserts_setup_not_query_result(self, tmp_path):
         """SQL test that validates its own INSERT, not a constraint."""
         spec_dir = tmp_path / "specs" / "db"
@@ -422,6 +432,7 @@ class TestMisleadingPassingProofs:
     """Tests that produce legitimate-looking proof JSON but don't test what they claim."""
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
     def test_php_tests_wrong_function(self, tmp_path):
         """PHP test claims to prove password hashing but tests string length instead."""
         spec_dir = tmp_path / "specs" / "auth"
@@ -461,6 +472,7 @@ function test_password_hashed_with_bcrypt() {
         assert proof_data["proofs"][0]["test_name"] == "test_password_hashed_with_bcrypt"
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
     def test_typescript_happy_path_only(self, tmp_path):
         """TypeScript test claims to prove input validation but only tests valid input."""
         spec_dir = tmp_path / "specs" / "api"
@@ -521,6 +533,7 @@ class TestConflictingMultiTierProofs:
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("sync_status", "PROOF-2", "RULE-2")
     def test_c_passes_but_sql_e2e_fails_same_rule(self, tmp_path):
         """C unit test says RULE-1 passes, SQL e2e test says it fails.
         The fail must win in _build_proof_lookup."""
@@ -594,6 +607,7 @@ class TestCollisionWithRealPluginOutput:
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
     def test_php_and_sql_both_claim_proof_1(self, tmp_path):
         """PHP and SQL both emit PROOF-1 for different rules into the same proof file.
         check_proof_file must detect the collision."""
@@ -644,6 +658,7 @@ function test_validates_format() {
 class TestSophisticatedCheats:
     """The hardest-to-detect cheating patterns — tests that look perfect at a glance."""
 
+    @pytest.mark.proof("static_checks", "PROOF-4", "RULE-4")
     def test_logic_mirroring_across_function_boundary(self, tmp_path):
         """Test computes expected by calling the SAME function it's testing.
         If the function has a bug, the test confirms the bug."""
@@ -673,6 +688,7 @@ def test_hash_matches():
         assert results[0]["status"] == "fail"
         assert results[0]["check"] == "logic_mirroring"
 
+    @pytest.mark.proof("static_checks", "PROOF-5", "RULE-5")
     def test_mock_replaces_the_thing_being_tested(self, tmp_path):
         """Test mocks bcrypt.checkpw on a rule about bcrypt. The mock makes
         the test pass regardless of whether bcrypt is actually used."""
@@ -699,6 +715,7 @@ def test_password_verified(mock_checkpw):
         assert results[0]["status"] == "fail"
         assert results[0]["check"] == "mock_target_match"
 
+    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")
     def test_no_assertions_disguised_as_thorough_test(self, tmp_path):
         """Test has lots of setup code but zero assertions — runs code but checks nothing."""
         test_file = tmp_path / "test_no_assert.py"
@@ -722,6 +739,7 @@ def test_api_returns_valid_json():
         assert results[0]["check"] == "no_assertions"
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
+    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6")
     def test_c_test_name_contradicts_behavior(self, tmp_path):
         """C test named 'test_rejects_negative' but actually accepts negative.
         Name/value drift — the test was patched to pass after a bug was introduced."""

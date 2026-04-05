@@ -2,9 +2,9 @@
 # Feature: proof_plugins
 
 > Requires: schema_proof_format, security_no_dangerous_patterns
-> Scope: scripts/proof/pytest_purlin.py, scripts/proof/jest_purlin.js, scripts/proof/shell_purlin.sh, skills/init/SKILL.md
-> Stack: python/stdlib (pytest plugin), node/jest (reporter), shell/bash (harness with inline python3)
-> Description: Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files. All three implement the same core behavior with framework-specific syntax and are scaffolded into consumer projects by `purlin:init`.
+> Scope: scripts/proof/pytest_purlin.py, scripts/proof/jest_purlin.js, scripts/proof/shell_purlin.sh, scripts/proof/c_purlin.h, scripts/proof/c_purlin_emit.py, scripts/proof/phpunit_purlin.php, scripts/proof/sql_purlin.sh, scripts/proof/vitest_purlin.ts, skills/init/SKILL.md
+> Stack: python/stdlib (pytest plugin), node/jest (reporter), shell/bash (harness with inline python3), c/gcc (header-only + python emitter), php (standalone runner), sql/sqlite3 (shell + python), typescript/vitest (reporter)
+> Description: Seven proof collection plugins — pytest, Jest, shell, C, PHP, SQL, and Vitest/TypeScript — that parse framework-specific proof markers from test code and emit standardized JSON proof files. All implement the same core behavior with framework-specific syntax and are scaffolded into consumer projects by `purlin:init`.
 
 ## Rules
 
@@ -38,6 +38,25 @@
 - RULE-17: `test_file` is recorded from `BASH_SOURCE[1]` (the caller's file)
 - RULE-18: `purlin_proof_finish` must be called to write proof files — entries are accumulated in memory until then
 - RULE-19: After `purlin_proof_finish`, the accumulated entries are cleared (reset for next batch)
+
+### C-specific
+
+- RULE-22: The C marker is `purlin_proof("feature", "PROOF-N", "RULE-N", passed_bool, "test_name", __FILE__, "tier")` called from C source code
+- RULE-23: `purlin_proof_finish()` prints accumulated proofs as JSON to stdout; `c_purlin_emit.py` reads stdin and performs feature-scoped overwrite to proof files
+
+### PHP-specific
+
+- RULE-24: The PHP marker is a `/** @purlin feature PROOF-N RULE-N [tier] */` docblock annotation before the test function
+- RULE-25: The PHP plugin runs each annotated function individually; an unhandled exception maps to `status: "fail"`, no exception maps to `status: "pass"`
+
+### SQL-specific
+
+- RULE-26: The SQL marker is `-- @purlin feature PROOF-N RULE-N [tier]` as a comment line preceding the test block
+- RULE-27: Each SQL test block must produce output starting with `PASS` or `FAIL` when executed against sqlite3; any other output or error maps to `status: "fail"`
+
+### Vitest/TypeScript-specific
+
+- RULE-28: The TypeScript Vitest reporter uses the same `[proof:feature:PROOF-N:RULE-N:tier]` marker syntax in test titles as the Jest reporter
 
 ### Installation and discovery
 
@@ -76,6 +95,28 @@
 - PROOF-17 (RULE-17): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @integration
 - PROOF-18 (RULE-18): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @integration
 - PROOF-19 (RULE-19): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @integration
+
+### Installation and discovery
+
+### C-specific
+
+- PROOF-22 (RULE-22): Compile a C test with `purlin_proof()` calls using gcc; run the binary; verify stdout JSON contains all 7 required fields @integration
+- PROOF-23 (RULE-23): Compile and run a C test; pipe stdout to `c_purlin_emit.py`; verify proof file is written to spec directory with correct entries @integration
+- PROOF-24 (RULE-6): Compile a C test where the assertion is false; run and pipe to emitter; verify `status: "fail"` in proof file @integration
+
+### PHP-specific
+
+- PROOF-25 (RULE-24): Create a PHP test with `@purlin` docblock; run `phpunit_purlin.php`; verify proof entry has correct feature, id, rule from the docblock @integration
+- PROOF-26 (RULE-25): Create a PHP test that throws an exception; run plugin; verify `status: "fail"`. Create one that doesn't throw; verify `status: "pass"` @integration
+
+### SQL-specific
+
+- PROOF-27 (RULE-26): Create a SQL file with `-- @purlin` markers; run `sql_purlin.sh`; verify proof entries match the marker fields @integration
+- PROOF-28 (RULE-27): Create a SQL test block that outputs `PASS`; verify `status: "pass"`. Create one that outputs `FAIL`; verify `status: "fail"` @integration
+
+### Vitest/TypeScript-specific
+
+- PROOF-29 (RULE-28): Compile a TypeScript test with `[proof:feature:PROOF-1:RULE-1:unit]` marker using tsc; run with node; verify proof JSON has correct fields @integration
 
 ### Installation and discovery
 

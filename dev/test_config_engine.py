@@ -144,6 +144,7 @@ class TestResolveConfig:
         assert result["report"] is False, "local override must win"
         assert result["version"] == "0.9.0", "unrelated shared key preserved"
 
+    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_local_only_keys_included(self):
         """Keys in local that aren't in shared are still in the merge."""
         self._write_shared({"version": "0.9.0"})
@@ -151,6 +152,7 @@ class TestResolveConfig:
         result = resolve_config(self.project_root)
         assert result == {"version": "0.9.0", "custom_setting": 42}
 
+    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_empty_local_returns_shared(self):
         """Empty local override file means all shared keys visible."""
         self._write_shared({"version": "0.9.0", "report": True})
@@ -158,6 +160,7 @@ class TestResolveConfig:
         result = resolve_config(self.project_root)
         assert result == {"version": "0.9.0", "report": True}
 
+    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
     def test_local_without_shared(self):
         """local exists but shared doesn't — local is the full config."""
         self._write_local({"standalone": True})
@@ -215,6 +218,7 @@ class TestUpdateConfig:
         source = inspect.getsource(update_config)
         assert 'os.replace' in source
 
+    @pytest.mark.proof("config_engine", "PROOF-8", "RULE-8")
     def test_update_creates_local_if_missing(self):
         """update_config creates config.local.json if it doesn't exist."""
         local_path = os.path.join(self.purlin_dir, 'config.local.json')
@@ -224,6 +228,7 @@ class TestUpdateConfig:
         with open(local_path) as f:
             assert json.load(f) == {"new": True}
 
+    @pytest.mark.proof("config_engine", "PROOF-9", "RULE-9")
     def test_update_overwrites_existing_key(self):
         """update_config replaces an existing key's value."""
         local_path = os.path.join(self.purlin_dir, 'config.local.json')
@@ -244,6 +249,7 @@ class TestCLI:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
+    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_cli_dump(self):
         with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
             json.dump({"team": "default"}, f)
@@ -263,6 +269,7 @@ class TestCLI:
         assert data["team"] == "default"
         assert data["local"] is True
 
+    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
     def test_cli_key(self):
         with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
             json.dump({"version": "0.9.0"}, f)

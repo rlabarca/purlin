@@ -51,7 +51,7 @@ def _assert_proof_json(proof_json_path, expected_proofs):
 @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
 class TestCProofPlugin:
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
     def test_c_proof_plugin_real_compilation(self, tmp_path):
         """Compile and run a real C test, verify proof JSON emission."""
         # Create a minimal spec so the emitter can resolve the directory
@@ -126,7 +126,7 @@ int main(void) {
             {'feature': 'math_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6")
     def test_c_proof_plugin_failing_test(self, tmp_path):
         """C test that fails — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'math'
@@ -173,7 +173,7 @@ int main(void) {
 @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
 class TestPHPProofPlugin:
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
     def test_php_proof_plugin_real_execution(self, tmp_path):
         """Execute real PHP test code and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -238,7 +238,7 @@ function test_empty_cart_zero_total() {
             {'feature': 'cart_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25")
     def test_php_proof_plugin_failing_test(self, tmp_path):
         """PHP test that throws — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -276,7 +276,7 @@ function test_deliberate_failure() {
 @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
 class TestSQLProofPlugin:
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26")
     def test_sql_proof_plugin_real_execution(self, tmp_path):
         """Execute real SQL against sqlite3 and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -335,7 +335,7 @@ SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='null@test.com') = 0
             {'feature': 'data_integrity', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27")
     def test_sql_proof_plugin_failing_test(self, tmp_path):
         """SQL test that produces FAIL result."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -383,7 +383,7 @@ SELECT CASE WHEN (SELECT count(*) FROM items) = 99
 )
 class TestTypeScriptProofPlugin:
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
     def test_typescript_proof_plugin_real_compilation(self, tmp_path):
         """Compile real TypeScript, run with Node, verify proof JSON."""
         spec_dir = tmp_path / 'specs' / 'string'
@@ -488,7 +488,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
             {'feature': 'string_utils', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
     def test_typescript_proof_plugin_failing_test(self, tmp_path):
         """TypeScript test that fails — verify status='fail'."""
         spec_dir = tmp_path / 'specs' / 'string'
@@ -546,7 +546,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
 
 class TestPythonProofPlugin:
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("proof_plugins", "PROOF-5", "RULE-5")
     def test_python_proof_plugin_real_execution(self, tmp_path):
         """Run real pytest tests with proof markers and verify JSON emission."""
         spec_dir = tmp_path / 'specs' / 'calc'
