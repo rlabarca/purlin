@@ -6,7 +6,7 @@
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_schema_spec_format.py",
-      "test_name": "test_format_documents_three_sections",
+      "test_name": "test_format_documents_two_sections",
       "status": "pass",
       "tier": "unit"
     },
