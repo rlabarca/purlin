@@ -2,10 +2,7 @@
 # Anchor: schema_proof_format
 
 > Scope: specs/**/*.proofs-*.json, scripts/proof/
-
-## What it does
-
-Defines the JSON schema for proof files emitted by test runners and how plugins merge results when re-running tests (feature-scoped overwrite). The `sync_status` tool reads these files to compute rule coverage.
+> Description: Defines the JSON schema for proof files emitted by test runners and how plugins merge results when re-running tests (feature-scoped overwrite). The `sync_status` tool reads these files to compute rule coverage.
 
 ## Rules
 

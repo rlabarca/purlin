@@ -2,10 +2,7 @@
 
 > Scope: .claude/agents/purlin-auditor.md, .claude/agents/purlin-builder.md, .claude/agents/purlin-reviewer.md
 > Stack: markdown (agent definitions)
-
-## What it does
-
-Defines three Claude Code agent roles for the Purlin verify-audit-build loop: an auditor that evaluates proof quality, a builder that fixes code/tests based on audit feedback, and a reviewer that validates specs and detects spec drift. These definitions live in `.claude/agents/` where Claude Code discovers them as available agent roles.
+> Description: Defines three Claude Code agent roles for the Purlin verify-audit-build loop: an auditor that evaluates proof quality, a builder that fixes code/tests based on audit feedback, and a reviewer that validates specs and detects spec drift. These definitions live in `.claude/agents/` where Claude Code discovers them as available agent roles.
 
 ## Rules
 

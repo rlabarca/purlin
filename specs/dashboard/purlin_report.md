@@ -3,10 +3,7 @@
 > Requires: dashboard_visual
 > Scope: scripts/report/purlin-report.html
 > Stack: html/css/javascript
-
-## What it does
-
-Static HTML dashboard that renders Purlin coverage data from `.purlin/report-data.js`. Opens via `file://` in any browser with no server or build step.
+> Description: Static HTML dashboard that renders Purlin coverage data from `.purlin/report-data.js`. Opens via `file://` in any browser with no server or build step.
 
 ## Rules
 
@@ -39,7 +36,7 @@ Static HTML dashboard that renders Purlin coverage data from `.purlin/report-dat
 - RULE-27: External link icon tooltip includes Source URL, Path (if present), and Pinned value (truncated)
 - RULE-28: Anchors with `ext_status` of "stale" or "unpinned" display an amber outline "STALE" badge next to the external link icon, with tooltip "Run purlin:anchor sync to update"; anchors with "current" or null ext_status show no badge
 - RULE-29: When `uncommitted` array in PURLIN_DATA is non-empty, an expandable "uncommitted work" section appears between the summary strip and the feature table, showing the file count when collapsed and the file list when expanded; when the array is empty or absent, no section appears
-- RULE-30: Expanded detail view shows the spec's `## What it does` content as a description block (`.desc-block`) using the full width of the detail container, positioned between the external reference block (or action banner if no external reference) and the "Rules & Proofs" header; the block is only rendered when the feature has a non-null, non-empty description
+- RULE-30: Expanded detail view shows the spec's `> Description:` content as a description block (`.desc-block`) using the full width of the detail container, positioned between the external reference block (or action banner if no external reference) and the "Rules & Proofs" header; the block is only rendered when the feature has a non-null, non-empty description
 
 ## Proof
 

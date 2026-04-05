@@ -4,14 +4,11 @@
 > Requires: schema_spec_format, schema_proof_format
 > Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
 > Stack: markdown (reference documentation)
-
-## What it does
-
-Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
+> Description: Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 
-- RULE-1: `spec_format.md` documents the 3 required sections (`## What it does`, `## Rules`, `## Proof`) and the RULE-N/PROOF-N numbering convention
+- RULE-1: `spec_format.md` documents the 2 required sections (`## Rules`, `## Proof`), the `> Description:` metadata field, and the RULE-N/PROOF-N numbering convention
 - RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields and the feature-scoped overwrite merge behavior
 - RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
@@ -26,7 +23,7 @@ Eight reference documents that define Purlin's formats, conventions, and quality
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## What it does`, `## Rules`, `## Proof`; verify all three appear as required sections. Grep for `RULE-N` pattern documentation
+- PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## Rules`, `## Proof`; verify both appear as required sections. Grep for `> Description:` in the metadata fields table. Grep for `RULE-N` pattern documentation
 - PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear. Grep for "feature-scoped overwrite"
 - PROOF-3 (RULE-3): Grep `references/formats/proofs_format.md` for `### pytest`, `### Jest`, `### Shell`; verify all 3 framework subsections exist
 - PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear

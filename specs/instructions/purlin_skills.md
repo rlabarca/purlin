@@ -3,10 +3,7 @@
 
 > Scope: skills/anchor/SKILL.md, skills/audit/SKILL.md, skills/build/SKILL.md, skills/drift/SKILL.md, skills/find/SKILL.md, skills/init/SKILL.md, skills/rename/SKILL.md, skills/spec/SKILL.md, skills/spec-from-code/SKILL.md, skills/status/SKILL.md, skills/unit-test/SKILL.md, skills/verify/SKILL.md
 > Stack: markdown (skill definitions)
-
-## What it does
-
-Twelve skill definition files that define user-facing Purlin commands. Each skill is a SKILL.md with YAML frontmatter and structured instructions that Claude Code executes when invoked. These are the primary user interface to Purlin — they define what each command does, its usage syntax, and step-by-step workflow.
+> Description: Twelve skill definition files that define user-facing Purlin commands. Each skill is a SKILL.md with YAML frontmatter and structured instructions that Claude Code executes when invoked. These are the primary user interface to Purlin — they define what each command does, its usage syntax, and step-by-step workflow.
 
 ## Rules
 

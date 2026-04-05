@@ -2,10 +2,7 @@
 
 > Scope: skills/build/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:build` skill reads a spec, loads all its rules (including `> Requires:` dependencies), and implements the feature. It handles test execution, failure diagnosis, and proof generation.
+> Description: The `purlin:build` skill reads a spec, loads all its rules (including `> Requires:` dependencies), and implements the feature. It handles test execution, failure diagnosis, and proof generation.
 
 ## Rules
 

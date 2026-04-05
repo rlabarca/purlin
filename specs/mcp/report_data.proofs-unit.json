@@ -186,7 +186,7 @@
       "id": "PROOF-21",
       "rule": "RULE-21",
       "test_file": "dev/test_report_data.py",
-      "test_name": "test_description_from_what_it_does",
+      "test_name": "test_description_from_metadata_field",
       "status": "pass",
       "tier": "unit"
     },
@@ -195,7 +195,16 @@
       "id": "PROOF-21",
       "rule": "RULE-21",
       "test_file": "dev/test_report_data.py",
-      "test_name": "test_description_null_when_empty",
+      "test_name": "test_description_multiline",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_null_when_absent",
       "status": "pass",
       "tier": "unit"
     }

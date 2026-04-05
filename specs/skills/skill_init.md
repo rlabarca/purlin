@@ -2,10 +2,7 @@
 
 > Scope: skills/init/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:init` skill initializes a project for spec-driven development. It creates `.purlin/`, `specs/`, detects the test framework, scaffolds the proof plugin, and manages plugin configuration.
+> Description: The `purlin:init` skill initializes a project for spec-driven development. It creates `.purlin/`, `specs/`, detects the test framework, scaffolds the proof plugin, and manages plugin configuration.
 
 ## Rules
 

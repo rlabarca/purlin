@@ -3,10 +3,7 @@
 > Requires: schema_spec_format, security_no_dangerous_patterns
 > Scope: scripts/mcp/purlin_server.py, references/drift_criteria.md
 > Stack: python/stdlib, json, subprocess (list-only), hashlib
-
-## What it does
-
-Structured change summary tool for the purlin:drift skill. Resolves a "since" anchor, classifies changed files, detects spec drift, and returns machine-readable JSON for the drift skill to interpret and format.
+> Description: Structured change summary tool for the purlin:drift skill. Resolves a "since" anchor, classifies changed files, detects spec drift, and returns machine-readable JSON for the drift skill to interpret and format.
 
 ## Rules
 

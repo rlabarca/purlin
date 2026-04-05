@@ -1,10 +1,7 @@
 # Feature: purlin_version
 
 > Scope: VERSION, templates/config.json, scripts/mcp/purlin_server.py
-
-## What it does
-
-Ensures the Purlin version string is defined in exactly one place (the VERSION file) and all references to it read from that file or match its value. Prevents version drift when releasing new versions.
+> Description: Ensures the Purlin version string is defined in exactly one place (the VERSION file) and all references to it read from that file or match its value. Prevents version drift when releasing new versions.
 
 ## Rules
 

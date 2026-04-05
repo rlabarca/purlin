@@ -2,10 +2,7 @@
 
 > Scope: skills/audit/SKILL.md, skills/build/SKILL.md, skills/verify/SKILL.md, .claude/agents/purlin-auditor.md, .claude/agents/purlin-builder.md
 > Stack: markdown (skill definitions, agent definitions)
-
-## What it does
-
-Defines the automatic verify-audit-build loop. The verify skill spawns a purlin-auditor that assesses proof quality, coordinates with a purlin-builder for HOLLOW/WEAK findings, and loops until proofs are fixed. This spec covers the auditor/builder communication protocol and termination conditions.
+> Description: Defines the automatic verify-audit-build loop. The verify skill spawns a purlin-auditor that assesses proof quality, coordinates with a purlin-builder for HOLLOW/WEAK findings, and loops until proofs are fixed. This spec covers the auditor/builder communication protocol and termination conditions.
 
 ## Rules
 

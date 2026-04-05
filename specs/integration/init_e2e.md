@@ -2,10 +2,7 @@
 
 > Scope: skills/init/SKILL.md, templates/config.json, scripts/proof/, scripts/hooks/pre-push.sh, scripts/mcp/purlin_server.py
 > Stack: shell/bash, python3 (sync_status, config_engine), node (jest reporter)
-
-## What it does
-
-End-to-end verification that the project structure produced by `purlin:init` works correctly with ALL downstream Purlin tools. Tests the full contract between init's output and `sync_status`, proof plugins (pytest, jest, shell), the pre-push hook, and the dashboard report, across different project configurations (Python, JavaScript, multi-framework, shell-only, re-init).
+> Description: End-to-end verification that the project structure produced by `purlin:init` works correctly with ALL downstream Purlin tools. Tests the full contract between init's output and `sync_status`, proof plugins (pytest, jest, shell), the pre-push hook, and the dashboard report, across different project configurations (Python, JavaScript, multi-framework, shell-only, re-init).
 
 ## Rules
 

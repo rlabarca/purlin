@@ -2,10 +2,7 @@
 
 > Scope: scripts/mcp/purlin_server.py, scripts/report/purlin-report.html, scripts/hooks/pre-push.sh
 > Stack: shell/bash, python3 (sync_status, drift), git (bare repos as external sources)
-
-## What it does
-
-End-to-end integration test verifying that anchors with external git sources are correctly pinned, tracked for staleness, rendered in reports, and enforced in pre-push hooks. Tests use local bare git repos as mock external sources.
+> Description: End-to-end integration test verifying that anchors with external git sources are correctly pinned, tracked for staleness, rendered in reports, and enforced in pre-push hooks. Tests use local bare git repos as mock external sources.
 
 ## Rules
 

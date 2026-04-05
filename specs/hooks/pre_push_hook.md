@@ -3,10 +3,7 @@
 > Requires: security_no_dangerous_patterns
 > Scope: scripts/hooks/pre-push.sh
 > Stack: shell/bash, python3 (sync_status invocation, config parsing)
-
-## What it does
-
-Pre-push git hook that blocks pushes when tests are failing. Runs unit-tier tests and checks sync_status for proof coverage. Supports two modes: warn (default) blocks only on FAILING, while strict blocks anything not VERIFIED.
+> Description: Pre-push git hook that blocks pushes when tests are failing. Runs unit-tier tests and checks sync_status for proof coverage. Supports two modes: warn (default) blocks only on FAILING, while strict blocks anything not VERIFIED.
 
 ## Rules
 

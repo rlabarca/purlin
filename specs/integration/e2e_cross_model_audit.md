@@ -2,10 +2,7 @@
 
 > Scope: skills/audit/SKILL.md, references/audit_criteria.md
 > Stack: shell/bash, gemini CLI (external LLM)
-
-## What it does
-
-End-to-end test of cross-model auditing with a real external LLM (Gemini). Verifies that an external LLM can detect hollow tests, approve strong tests, and that the structured response can be parsed into PROOF-ID, ASSESSMENT, CRITERION, WHY, and FIX fields.
+> Description: End-to-end test of cross-model auditing with a real external LLM (Gemini). Verifies that an external LLM can detect hollow tests, approve strong tests, and that the structured response can be parsed into PROOF-ID, ASSESSMENT, CRITERION, WHY, and FIX fields.
 
 ## Rules
 

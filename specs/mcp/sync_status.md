@@ -3,10 +3,7 @@
 > Requires: schema_spec_format, schema_proof_format, security_no_dangerous_patterns
 > Scope: scripts/mcp/purlin_server.py
 > Stack: python/stdlib, json, glob, re, hashlib
-
-## What it does
-
-Rule coverage reporting tool. Scans specs and proof files, computes per-feature coverage including own, required, and global anchor rules. Reports actionable directives and computes verification hashes.
+> Description: Rule coverage reporting tool. Scans specs and proof files, computes per-feature coverage including own, required, and global anchor rules. Reports actionable directives and computes verification hashes.
 
 ## Rules
 

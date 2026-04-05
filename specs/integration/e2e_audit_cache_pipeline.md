@@ -2,10 +2,7 @@
 
 > Scope: scripts/audit/static_checks.py, scripts/mcp/purlin_server.py, .claude/agents/purlin-auditor.md
 > Stack: shell/bash, python3
-
-## What it does
-
-End-to-end integration test verifying that audit results flow correctly through the cache, are read by sync_status and the dashboard, and that stale cache entries are properly invalidated.
+> Description: End-to-end integration test verifying that audit results flow correctly through the cache, are read by sync_status and the dashboard, and that stale cache entries are properly invalidated.
 
 ## Rules
 

@@ -2,10 +2,7 @@
 
 > Scope: skills/anchor/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:anchor` skill creates, syncs, and manages anchor specs — cross-cutting constraints with optional external references. Anchors define shared rules that other features reference via `> Requires:`.
+> Description: The `purlin:anchor` skill creates, syncs, and manages anchor specs — cross-cutting constraints with optional external references. Anchors define shared rules that other features reference via `> Requires:`.
 
 ## Rules
 

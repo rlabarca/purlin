@@ -2,10 +2,7 @@
 
 > Scope: skills/audit/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:audit` skill evaluates proof quality with STRONG/WEAK/HOLLOW assessments. It is read-only — it never modifies code or test files.
+> Description: The `purlin:audit` skill evaluates proof quality with STRONG/WEAK/HOLLOW assessments. It is read-only — it never modifies code or test files.
 
 ## Rules
 

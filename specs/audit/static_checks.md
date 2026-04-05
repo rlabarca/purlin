@@ -1,10 +1,7 @@
 # Feature: static_checks
 
 > Scope: scripts/audit/static_checks.py
-
-## What it does
-
-Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests and regex for Shell/Jest tests. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
+> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests and regex for Shell/Jest tests. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
 
 ## Rules
 

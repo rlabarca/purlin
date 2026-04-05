@@ -2,10 +2,7 @@
 
 > Scope: scripts/proof/shell_purlin.sh, scripts/proof/pytest_purlin.py
 > Stack: shell/bash, python3 (proof plugin feature-scoped overwrite logic)
-
-## What it does
-
-End-to-end test of the proof plugin's feature-scoped overwrite behavior. When proof files are written for one feature, entries for other features in separate proof files must not be affected. Verifies that re-running tests for a single feature replaces only that feature's entries, and that removing a test correctly purges the old proof.
+> Description: End-to-end test of the proof plugin's feature-scoped overwrite behavior. When proof files are written for one feature, entries for other features in separate proof files must not be affected. Verifies that re-running tests for a single feature replaces only that feature's entries, and that removing a test correctly purges the old proof.
 
 ## Rules
 

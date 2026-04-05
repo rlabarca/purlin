@@ -3,10 +3,7 @@
 > Requires: security_no_dangerous_patterns
 > Scope: scripts/mcp/purlin_server.py, scripts/mcp/manifest.json
 > Stack: python/stdlib, json
-
-## What it does
-
-JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdin, dispatches to tool handlers, writes responses to stdout. Implements MCP protocol initialization and error handling.
+> Description: JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdin, dispatches to tool handlers, writes responses to stdout. Implements MCP protocol initialization and error handling.
 
 ## Rules
 

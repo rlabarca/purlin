@@ -49,6 +49,35 @@ _PINNED_RE = re.compile(r'^>\s*Pinned:\s*(.+)', re.MULTILINE)
 _PATH_RE = re.compile(r'^>\s*Path:\s*(.+)', re.MULTILINE)
 _VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
 _VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
+_DESCRIPTION_RE = re.compile(r'^>\s*Description:\s*(.+)', re.MULTILINE)
+_META_FIELD_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
+
+
+def _parse_description(content):
+    """Parse > Description: field with multi-line continuation.
+
+    Continuation lines start with > followed by whitespace but do not
+    match a known metadata field pattern (> FieldName:).
+    """
+    m = _DESCRIPTION_RE.search(content)
+    if not m:
+        return None
+    lines = [m.group(1).strip()]
+    # Collect continuation lines after the match
+    rest = content[m.end():]
+    for line in rest.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith('>') and not _META_FIELD_RE.match(stripped):
+            # Continuation line — strip leading > and whitespace
+            text = stripped[1:].strip()
+            if text:
+                lines.append(text)
+        else:
+            break
+    result = ' '.join(lines)
+    return result if result else None
 
 
 def _scan_specs(project_root):
@@ -76,9 +105,8 @@ def _scan_specs(project_root):
         # Detect global anchors (> Global: true)
         is_global = is_anchor and bool(_GLOBAL_RE.search(content))
 
-        # Extract description from ## What it does section
-        description_section = _extract_section(content, '## What it does')
-        description = description_section.strip() if description_section else None
+        # Extract description from > Description: metadata field
+        description = _parse_description(content)
 
         # Extract rules from ## Rules section
         rules = {}

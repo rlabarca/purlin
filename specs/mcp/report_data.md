@@ -2,10 +2,7 @@
 
 > Scope: scripts/mcp/purlin_server.py
 > Stack: python/stdlib, json
-
-## What it does
-
-When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS data file (`.purlin/report-data.js`) containing structured coverage, rule, and verification data for the HTML dashboard.
+> Description: When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS data file (`.purlin/report-data.js`) containing structured coverage, rule, and verification data for the HTML dashboard.
 
 ## Rules
 
@@ -29,7 +26,7 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - RULE-18: Features with partial behavioral coverage have status "PARTIAL" in report data, not "PASSING", even if all existing proofs pass — PASSING requires every behavioral rule to have a passing proof
 - RULE-19: Every feature entry includes a `category` field derived from the spec's parent directory under `specs/` (e.g., `specs/skills/skill_build.md` has category `skills`)
 - RULE-20: Coverage invariant — for every feature in report data, status PASSING or VERIFIED implies proved == total (100% coverage fraction). No feature may show PASSING or VERIFIED with proved < total
-- RULE-21: Every feature entry includes a `description` field containing the trimmed text of the spec's `## What it does` section, or null if the section is empty or absent
+- RULE-21: Every feature entry includes a `description` field containing the text of the spec's `> Description:` metadata field (with multi-line continuations joined), or null if the field is absent
 
 ## Proof
 
@@ -52,4 +49,4 @@ When `"report": true` is set in `.purlin/config.json`, `sync_status` writes a JS
 - PROOF-16 (RULE-16): Create an audit cache with entries for a specific feature, regenerate report, verify that feature's audit field is populated with correct integrity and findings @integration
 - PROOF-18 (RULE-18): Create a feature with 3 behavioral rules; write passing proofs for only 2 of them; build report data; verify feature status is "PARTIAL" not "PASSING" @integration
 - PROOF-20 (RULE-20): Create multiple features — one PASSING (behavioral-only), one PASSING (mixed behavioral+structural), one VERIFIED with receipt, one PARTIAL; build report data; assert every PASSING/VERIFIED feature has proved == total and every PARTIAL feature has proved < total @integration
-- PROOF-21 (RULE-21): Create a spec with `## What it does` containing "Handles user login."; build report data; verify feature description equals "Handles user login."; create a spec with empty `## What it does`; verify description is null
+- PROOF-21 (RULE-21): Create a spec with `> Description: Handles user login.`; build report data; verify feature description equals "Handles user login."; create a spec with no `> Description:` field; verify description is null

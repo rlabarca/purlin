@@ -2,10 +2,7 @@
 
 > Scope: skills/unit-test/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:unit-test` skill runs tests (unit tier unless `--all`), emits proof files via feature-scoped overwrite, and reports coverage per feature.
+> Description: The `purlin:unit-test` skill runs tests (unit tier unless `--all`), emits proof files via feature-scoped overwrite, and reports coverage per feature.
 
 ## Rules
 

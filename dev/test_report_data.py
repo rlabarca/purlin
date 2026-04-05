@@ -80,7 +80,7 @@ def _read_report(tmp_dir):
 def _minimal_spec_content(name='feature'):
     return (
         f'# Feature: {name}\n\n'
-        '## What it does\nDoes stuff.\n\n'
+        '> Description: Does stuff.\n\n'
         '## Rules\n'
         '- RULE-1: Returns correct output\n\n'
         '## Proof\n'
@@ -840,11 +840,11 @@ class TestReportDataStructure:
         )
 
     @pytest.mark.proof("report_data", "PROOF-21", "RULE-21")
-    def test_description_from_what_it_does(self):
-        """Feature entry includes description from ## What it does."""
+    def test_description_from_metadata_field(self):
+        """Feature entry includes description from > Description: metadata."""
         _write_spec(self.tmp, 'alpha',
                     '# Feature: alpha\n\n'
-                    '## What it does\n\nHandles user authentication.\n\n'
+                    '> Description: Handles user authentication.\n\n'
                     '## Rules\n- RULE-1: Returns 200\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
         _write_proofs(self.tmp, 'alpha', _minimal_proofs('alpha'))
@@ -859,11 +859,31 @@ class TestReportDataStructure:
         )
 
     @pytest.mark.proof("report_data", "PROOF-21", "RULE-21")
-    def test_description_null_when_empty(self):
-        """Description is null when ## What it does is empty."""
+    def test_description_multiline(self):
+        """Description supports multi-line via > continuation."""
+        _write_spec(self.tmp, 'gamma',
+                    '# Feature: gamma\n\n'
+                    '> Description: First line\n'
+                    '>   second line\n'
+                    '> Scope: src/\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
+        _write_proofs(self.tmp, 'gamma', _minimal_proofs('gamma'))
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'gamma')
+        assert feat['description'] == 'First line second line', (
+            f"Expected multi-line description joined, got '{feat['description']}'"
+        )
+
+    @pytest.mark.proof("report_data", "PROOF-21", "RULE-21")
+    def test_description_null_when_absent(self):
+        """Description is null when no > Description: field exists."""
         _write_spec(self.tmp, 'beta',
                     '# Feature: beta\n\n'
-                    '## What it does\n\n'
                     '## Rules\n- RULE-1: Returns 200\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
         _write_proofs(self.tmp, 'beta', _minimal_proofs('beta'))
@@ -874,5 +894,5 @@ class TestReportDataStructure:
 
         feat = next(f for f in data['features'] if f['name'] == 'beta')
         assert feat['description'] is None, (
-            f"Expected description=None for empty What it does, got '{feat['description']}'"
+            f"Expected description=None when absent, got '{feat['description']}'"
         )

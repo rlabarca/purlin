@@ -2,10 +2,7 @@
 
 > Scope: skills/find/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:find` skill searches specs by name and displays rule coverage from `sync_status`.
+> Description: The `purlin:find` skill searches specs by name and displays rule coverage from `sync_status`.
 
 ## Rules
 

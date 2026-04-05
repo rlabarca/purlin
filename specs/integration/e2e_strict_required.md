@@ -2,10 +2,7 @@
 
 > Scope: scripts/hooks/pre-push.sh, scripts/mcp/purlin_server.py
 > Stack: shell/bash, python3 (pre-push hook, sync_status with required rules)
-
-## What it does
-
-End-to-end test that strict mode in the pre-push hook correctly accounts for required rules when deciding whether to block. A feature is not VERIFIED until both its own rules and all required rules have passing proofs.
+> Description: End-to-end test that strict mode in the pre-push hook correctly accounts for required rules when deciding whether to block. A feature is not VERIFIED until both its own rules and all required rules have passing proofs.
 
 ## Rules
 

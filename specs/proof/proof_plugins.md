@@ -4,10 +4,7 @@
 > Requires: schema_proof_format, security_no_dangerous_patterns
 > Scope: scripts/proof/pytest_purlin.py, scripts/proof/jest_purlin.js, scripts/proof/shell_purlin.sh, skills/init/SKILL.md
 > Stack: python/stdlib (pytest plugin), node/jest (reporter), shell/bash (harness with inline python3)
-
-## What it does
-
-Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files. All three implement the same core behavior with framework-specific syntax and are scaffolded into consumer projects by `purlin:init`.
+> Description: Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files. All three implement the same core behavior with framework-specific syntax and are scaffolded into consumer projects by `purlin:init`.
 
 ## Rules
 

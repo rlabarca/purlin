@@ -2,10 +2,7 @@
 
 > Scope: skills/status/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:status` skill calls the `sync_status` MCP tool and displays per-feature rule coverage with actionable directives.
+> Description: The `purlin:status` skill calls the `sync_status` MCP tool and displays per-feature rule coverage with actionable directives.
 
 ## Rules
 

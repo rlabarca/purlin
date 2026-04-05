@@ -2,10 +2,7 @@
 
 > Scope: skills/drift/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:drift` skill detects spec drift by calling the `drift` MCP tool and summarizing changes since last verification, cross-referenced with specs. It produces PM/QA/eng-readable reports.
+> Description: The `purlin:drift` skill detects spec drift by calling the `drift` MCP tool and summarizing changes since last verification, cross-referenced with specs. It produces PM/QA/eng-readable reports.
 
 ## Rules
 

@@ -3,10 +3,7 @@
 > Requires: security_no_dangerous_patterns
 > Scope: scripts/mcp/purlin_server.py
 > Stack: python/stdlib, json
-
-## What it does
-
-MCP tool for reading and writing Purlin configuration. Reads the full config or a single key, and writes single keys atomically.
+> Description: MCP tool for reading and writing Purlin configuration. Reads the full config or a single key, and writes single keys atomically.
 
 ## Rules
 

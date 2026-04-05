@@ -2,10 +2,7 @@
 
 > Scope: scripts/report/purlin-report.html
 > Type: design
-
-## What it does
-
-Defines the visual constants — colors, typography, status indicators, and spacing — for the Purlin dashboard. When required by other specs, it ensures the design system is enforced in one place.
+> Description: Defines the visual constants — colors, typography, status indicators, and spacing — for the Purlin dashboard. When required by other specs, it ensures the design system is enforced in one place.
 
 ## Rules
 

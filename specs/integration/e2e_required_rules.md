@@ -2,10 +2,7 @@
 
 > Scope: scripts/mcp/purlin_server.py
 > Stack: shell/bash, python3 (sync_status, _build_coverage_rules)
-
-## What it does
-
-End-to-end test that sync_status correctly merges required rules (via `> Requires:`) and global anchor rules into a feature's coverage totals, and that coverage progresses correctly from 0/N through PARTIAL to full PASSING.
+> Description: End-to-end test that sync_status correctly merges required rules (via `> Requires:`) and global anchor rules into a feature's coverage totals, and that coverage progresses correctly from 0/N through PARTIAL to full PASSING.
 
 ## Rules
 

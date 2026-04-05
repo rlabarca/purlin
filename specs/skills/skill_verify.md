@@ -2,10 +2,7 @@
 
 > Scope: skills/verify/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:verify` skill runs the full test suite across all tiers, then issues verification receipts for every feature with complete rule coverage.
+> Description: The `purlin:verify` skill runs the full test suite across all tiers, then issues verification receipts for every feature with complete rule coverage.
 
 ## Rules
 

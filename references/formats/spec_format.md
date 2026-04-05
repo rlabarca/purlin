@@ -1,8 +1,8 @@
-> Format-Version: 6
+> Format-Version: 7
 
 # Spec Format
 
-The canonical 3-section format for specs. Specs use either `# Feature:` or `# Anchor:` as the top-level heading.
+The canonical 2-section format for specs. Specs use either `# Feature:` or `# Anchor:` as the top-level heading.
 
 ## Location
 
@@ -15,13 +15,11 @@ specs/<category>/<name>.md
 ```markdown
 # Feature: <name>
 
+> Description: Plain-language summary of what this feature does
+>   and why it exists. Can span multiple continuation lines.
 > Requires: <comma-separated spec names or anchor names>
 > Scope: <comma-separated file paths this feature touches>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
-
-## What it does
-
-<One paragraph: what this feature is and why it exists.>
 
 ## Rules
 
@@ -36,21 +34,32 @@ specs/<category>/<name>.md
 
 ## Required Sections
 
-Every spec MUST have these 3 sections (case-insensitive heading match):
+Every spec MUST have these 2 sections (case-insensitive heading match):
 
-1. `## What it does` — prose description of the feature. This content is extracted and displayed as the feature description in the Purlin dashboard.
-2. `## Rules` — numbered constraints (`RULE-N: description`)
-3. `## Proof` — numbered proof blueprints (`PROOF-N (RULE-N): description`)
+1. `## Rules` — numbered constraints (`RULE-N: description`)
+2. `## Proof` — numbered proof blueprints (`PROOF-N (RULE-N): description`)
 
 ## Metadata Fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `> Description:` | No | Plain-language description of the spec. Supports multi-line via `>` continuation lines. Displayed in the Purlin dashboard. |
 | `> Type:` | No | Optional type hint for any spec. Suggested values: `design`, `security`, `api`, `schema`, `platform`, `brand`, `prodbrief`, `legal`. Primarily useful on anchors to indicate their category. |
 | `> Requires:` | No | Comma-separated list of other spec names or anchor names whose rules also apply |
 | `> Scope:` | No | Comma-separated file paths this feature touches (used for manual proof staleness) |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` (helps rebuild from spec) |
 | `> Visual-Reference:` | No | Visual source for build-time reference. Figma: `figma://fileKey/nodeId`. Image: `./designs/modal.png`. HTML: `./designs/modal.html`. URL: `https://staging.app.com/modal`. See anchor format for full syntax. |
+
+### Multi-line Description
+
+The `> Description:` field supports continuation lines. Any line starting with `>` that does not match a metadata field pattern (`> FieldName:`) is treated as a continuation of the previous field:
+
+```markdown
+> Description: Two-file configuration system that separates shared
+>   team defaults from per-user overrides. Resolution merges both
+>   files so framework updates remain visible.
+> Scope: scripts/mcp/config_engine.py
+```
 
 ## Rules Format
 

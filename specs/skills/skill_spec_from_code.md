@@ -2,10 +2,7 @@
 
 > Scope: skills/spec-from-code/SKILL.md
 > Stack: markdown (skill definition)
-
-## What it does
-
-The `purlin:spec-from-code` skill reverse-engineers 3-section specs from existing code, helping teams document current behavior as testable constraints.
+> Description: The `purlin:spec-from-code` skill reverse-engineers 3-section specs from existing code, helping teams document current behavior as testable constraints.
 
 ## Rules
 

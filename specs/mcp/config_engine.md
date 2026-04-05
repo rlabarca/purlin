@@ -3,10 +3,7 @@
 > Requires: security_no_dangerous_patterns
 > Scope: scripts/mcp/config_engine.py
 > Stack: python/stdlib, json
-
-## What it does
-
-Two-file configuration system that separates shared team defaults (`config.json`, committed) from per-user overrides (`config.local.json`, gitignored). Resolution merges both files so framework updates remain visible while respecting local preferences.
+> Description: Two-file configuration system that separates shared team defaults (`config.json`, committed) from per-user overrides (`config.local.json`, gitignored). Resolution merges both files so framework updates remain visible while respecting local preferences.
 
 ## Rules
 

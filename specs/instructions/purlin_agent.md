@@ -4,10 +4,7 @@
 > Requires: schema_spec_format
 > Scope: agents/purlin.md
 > Stack: markdown (agent definition)
-
-## What it does
-
-Defines the Purlin Agent persona and behavior for Claude Code — the primary instruction document that shapes how Claude operates in spec-driven mode. Covers the core development loop, proof marker syntax, coverage gates, and routing between skills.
+> Description: Defines the Purlin Agent persona and behavior for Claude Code — the primary instruction document that shapes how Claude operates in spec-driven mode. Covers the core development loop, proof marker syntax, coverage gates, and routing between skills.
 
 ## Rules
 

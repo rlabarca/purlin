@@ -2,10 +2,7 @@
 
 > Scope: scripts/mcp/purlin_server.py
 > Stack: shell/bash, python3 (sync_status, vhash computation)
-
-## What it does
-
-End-to-end integration test verifying the verify-receipt-audit roundtrip: verification hashes track spec/proof consistency, receipts detect drift when specs change, and structural vs. behavioral specs are distinguished.
+> Description: End-to-end integration test verifying the verify-receipt-audit roundtrip: verification hashes track spec/proof consistency, receipts detect drift when specs change, and structural vs. behavioral specs are distinguished.
 
 ## Rules
 

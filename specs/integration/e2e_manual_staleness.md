@@ -2,10 +2,7 @@
 
 > Scope: scripts/mcp/purlin_server.py
 > Stack: shell/bash, python3 (sync_status, _check_manual_staleness)
-
-## What it does
-
-End-to-end test of the manual proof staleness lifecycle. Exercises stamping a manual proof with email/date/commit SHA, detecting staleness when scope files change after the stamp, and re-stamping to clear the stale state.
+> Description: End-to-end test of the manual proof staleness lifecycle. Exercises stamping a manual proof with email/date/commit SHA, detecting staleness when scope files change after the stamp, and re-stamping to clear the stale state.
 
 ## Rules
 

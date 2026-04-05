@@ -5,10 +5,7 @@
 > Path: security_policy.md
 > Pinned: e18cecd9932191ea24361f2c472bb2818307e4d6
 > Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js
-
-## What it does
-
-Enforces the absence of dangerous code patterns across all executable Purlin framework code. The codebase is currently clean — this anchor exists to prove and maintain that state. Any feature requiring this anchor inherits these constraints.
+> Description: Enforces the absence of dangerous code patterns across all executable Purlin framework code. The codebase is currently clean — this anchor exists to prove and maintain that state. Any feature requiring this anchor inherits these constraints.
 
 ## Rules
 

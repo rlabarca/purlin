@@ -1,10 +1,7 @@
 # Feature: e2e_hybrid_audit
 
 > Scope: scripts/audit/static_checks.py, skills/audit/SKILL.md
-
-## What it does
-
-End-to-end integration test verifying the three-pass audit pipeline: static checks catch structural defects deterministically, valid tests flow to semantic checking, and structural-only specs are identified correctly.
+> Description: End-to-end integration test verifying the three-pass audit pipeline: static checks catch structural defects deterministically, valid tests flow to semantic checking, and structural-only specs are identified correctly.
 
 ## Rules
 
