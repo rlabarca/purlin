@@ -150,7 +150,7 @@
       "id": "PROOF-17",
       "rule": "RULE-17",
       "test_file": "dev/test_report_data.py",
-      "test_name": "test_proved_count_excludes_structural_checks",
+      "test_name": "test_all_proofs_count_equally",
       "status": "pass",
       "tier": "unit"
     },
@@ -165,10 +165,37 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_passing_verified_always_100pct_coverage",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_feature_category_derived_from_spec_directory",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_from_what_it_does",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_null_when_empty",
       "status": "pass",
       "tier": "unit"
     }

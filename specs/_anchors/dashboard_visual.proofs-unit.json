@@ -78,7 +78,7 @@
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_no_proofs_badge_opacity",
+      "test_name": "test_untested_badge_and_no_proofs_opacity",
       "status": "pass",
       "tier": "unit"
     },

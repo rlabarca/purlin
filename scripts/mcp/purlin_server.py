@@ -42,22 +42,11 @@ _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)', re.MULTILINE
 )
-_STRUCTURAL_PROOF_RE = re.compile(
-    r'\bgrep\b'
-    r'|(?:file|directory|folder)\s+exists'
-    r'|(?:section|field|heading|key|entry)\s+(?:exists|is\s+present)'
-    r'|contains?\s+(?:string|line|entry|section|field|heading)'
-    r'|verify\s+(?:file|section|field|heading|key)\s+(?:exists|present|appears)',
-    re.IGNORECASE,
-)
-_BEHAVIORAL_PROOF_RE = re.compile(
-    r'\brun\b|\bcall\b|\bPOST\b|\bGET\b|assert\s.*response'
-    r'|assert\s.*status|assert\s.*return|exit\s+code'
-    r'|verify\s.*output|\bexecute\b',
-    re.IGNORECASE,
-)
+
 _GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
 _SOURCE_RE = re.compile(r'^>\s*Source:\s*(.+)', re.MULTILINE)
+_PINNED_RE = re.compile(r'^>\s*Pinned:\s*(.+)', re.MULTILINE)
+_PATH_RE = re.compile(r'^>\s*Path:\s*(.+)', re.MULTILINE)
 _VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
 _VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
 
@@ -86,6 +75,10 @@ def _scan_specs(project_root):
 
         # Detect global anchors (> Global: true)
         is_global = is_anchor and bool(_GLOBAL_RE.search(content))
+
+        # Extract description from ## What it does section
+        description_section = _extract_section(content, '## What it does')
+        description = description_section.strip() if description_section else None
 
         # Extract rules from ## Rules section
         rules = {}
@@ -165,6 +158,12 @@ def _scan_specs(project_root):
         source_match = _SOURCE_RE.search(content)
         source_url = source_match.group(1).strip() if source_match else None
 
+        # Extract pinned version and path for externally-referenced anchors
+        pinned_match = _PINNED_RE.search(content)
+        path_match = _PATH_RE.search(content)
+        pinned = pinned_match.group(1).strip() if pinned_match else None
+        source_path = path_match.group(1).strip() if path_match else None
+
         # Extract visual reference and hash for staleness detection
         visual_ref_match = _VISUAL_REF_RE.search(content)
         visual_hash_match = _VISUAL_HASH_RE.search(content)
@@ -187,6 +186,8 @@ def _scan_specs(project_root):
             'is_anchor': is_anchor,
             'is_global': is_global,
             'source_url': source_url,
+            'pinned': pinned,
+            'source_path': source_path,
             'unnumbered_lines': unnumbered,
             'has_rules_section': rules_section is not None,
             'manual_proofs': manual_proofs,
@@ -195,6 +196,7 @@ def _scan_specs(project_root):
             'proof_desc_by_id': proof_desc_by_id,
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
+            'description': description,
         }
 
     return features
@@ -310,23 +312,6 @@ def _compute_vhash(rules, proofs):
     return hashlib.sha256(payload.encode()).hexdigest()[:8]
 
 
-def _is_structural_only(proof_descriptions):
-    """Return True if ALL proof descriptions are grep/existence checks with no behavioral tests."""
-    if not proof_descriptions:
-        return False
-    for desc in proof_descriptions:
-        if not _STRUCTURAL_PROOF_RE.search(desc):
-            return False
-        if _BEHAVIORAL_PROOF_RE.search(desc):
-            return False
-    return True
-
-
-def _is_structural_proof_desc(desc):
-    """Return True if a single proof description is structural (grep/existence check)."""
-    return bool(_STRUCTURAL_PROOF_RE.search(desc)) and not bool(_BEHAVIORAL_PROOF_RE.search(desc))
-
-
 def _get_rule_proof_descs(key, label, src_feature, info, all_features):
     """Get proof descriptions for a rule from its source spec."""
     if label == 'own':
@@ -334,16 +319,6 @@ def _get_rule_proof_descs(key, label, src_feature, info, all_features):
     bare_rule = key.split('/', 1)[1] if '/' in key else key
     src_info = all_features.get(src_feature, {})
     return src_info.get('proof_desc_by_rule', {}).get(bare_rule, [])
-
-
-def _classify_structural_rules(active_entries, info, all_features):
-    """Return set of rule keys whose proof descriptions are all structural."""
-    structural = set()
-    for key, label, src in active_entries:
-        descs = _get_rule_proof_descs(key, label, src, info, all_features)
-        if descs and all(_is_structural_proof_desc(d) for d in descs):
-            structural.add(key)
-    return structural
 
 
 def _relative_time(iso_timestamp):
@@ -591,33 +566,17 @@ def sync_status(project_root, role=None):
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
         active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
         active_total = len(active_entries)
-        structural_rules = _classify_structural_rules(active_entries, info, features)
         total_no_proof_count += sum(
             1 for key, label, _ in active_entries
             if label == 'own'
-            and key not in structural_rules
             and not proof_by_rule.get(key)
         )
         proved = sum(1 for key, _, _ in active_entries
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
-        behavioral_proved = sum(1 for key, _, _ in active_entries
-                                if key not in structural_rules
-                                and proof_by_rule.get(key, {}).get('status') == 'pass')
-        behavioral_total = sum(1 for key, _, _ in active_entries
-                               if key not in structural_rules)
         has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
                        for key, _, _ in active_entries)
 
-        # all_proved_passing gates vhash (ALL proofs including structural must pass)
-        all_proved_passing = (
-            sum(1 for key, _, _ in active_entries
-                if proof_by_rule.get(key, {}).get('status') == 'pass') == active_total
-            and active_total > 0
-        )
-        # full_behavioral_coverage gates PASSING/VERIFIED (all behavioral rules proved)
-        full_behavioral_coverage = (
-            behavioral_total > 0 and behavioral_proved == behavioral_total
-        )
+        all_proved_passing = (proved == active_total and active_total > 0)
         receipt = _read_receipt(project_root, name)
         has_current_receipt = False
         if all_proved_passing and receipt:
@@ -631,14 +590,11 @@ def sync_status(project_root, role=None):
 
         if has_fail:
             status = "FAILING"
-        elif full_behavioral_coverage and has_current_receipt:
+        elif all_proved_passing and has_current_receipt:
             status = "VERIFIED"
-        elif full_behavioral_coverage:
+        elif all_proved_passing:
             status = "PASSING"
-        elif behavioral_total == 0 and all_proved_passing:
-            # Structural-only feature with all checks passing
-            status = "VERIFIED" if has_current_receipt else "PASSING"
-        elif behavioral_proved == 0:
+        elif proved == 0:
             status = "UNTESTED"
         else:
             status = "PARTIAL"
@@ -653,20 +609,34 @@ def sync_status(project_root, role=None):
             detail.append(f"{name}: {rule_count} rules (global \u2014 auto-applied to all features)")
         else:
             detail.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name})")
+        # Show external reference info with staleness check
+        if info.get('source_url'):
+            detail.append(f"  Source: {info['source_url']}")
+            if info.get('source_path'):
+                detail.append(f"  Path: {info['source_path']}")
+            if info.get('pinned'):
+                pinned_val = info['pinned']
+                pinned_display = pinned_val[:7] if len(pinned_val) > 10 else pinned_val
+                staleness = _check_git_staleness(info['source_url'], pinned_val, project_root)
+                if staleness and staleness['status'] == 'stale':
+                    remote_short = staleness['remote_sha'][:7] if staleness.get('remote_sha') else '?'
+                    detail.append(f"  Pinned: {pinned_display} \u26a0 STALE \u2014 remote is {remote_short}. Run: purlin:anchor sync {name}")
+                elif staleness and staleness['status'] == 'error':
+                    detail.append(f"  Pinned: {pinned_display} (source unreachable)")
+                else:
+                    detail.append(f"  Pinned: {pinned_display} (current)")
+            else:
+                detail.append(f"  \u26a0 Unpinned \u2014 run: purlin:anchor sync {name}")
         for rule_id, desc in sorted(info['rules'].items()):
             detail.append(f"  {rule_id}: {desc}")
         detail.append('')
 
-        # Include anchor in summary if it has behavioral proofs
+        # Include anchor in summary if it has proofs
         anchor_proofs = all_proofs.get(name, [])
-        if anchor_proofs and not _is_structural_only(info.get('proof_descriptions', [])):
+        if anchor_proofs:
             deferred = info.get('deferred_rules', set())
             active_rules = set(info['rules'].keys()) - deferred
             active_total = len(active_rules)
-
-            # Classify anchor rules as structural vs behavioral
-            anchor_active_entries = [(r, 'own', name) for r in sorted(active_rules)]
-            anchor_structural = _classify_structural_rules(anchor_active_entries, info, features)
 
             passed_rules = set()
             has_fail = False
@@ -679,15 +649,6 @@ def sync_status(project_root, role=None):
                         has_fail = True
             proved = len(passed_rules)
 
-            # Behavioral coverage for PASSING/VERIFIED
-            behavioral_rules = active_rules - anchor_structural
-            a_behavioral_total = len(behavioral_rules)
-            a_behavioral_proved = len(passed_rules & behavioral_rules)
-            a_full_behavioral_coverage = (
-                a_behavioral_total > 0 and a_behavioral_proved == a_behavioral_total
-            )
-
-            # all_proved_passing gates vhash (ALL proofs including structural)
             a_all_proved_passing = (proved >= active_total and active_total > 0)
             a_receipt = _read_receipt(project_root, name)
             a_has_receipt = False
@@ -699,13 +660,11 @@ def sync_status(project_root, role=None):
 
             if has_fail:
                 a_status = "FAILING"
-            elif a_full_behavioral_coverage and a_has_receipt:
+            elif a_all_proved_passing and a_has_receipt:
                 a_status = "VERIFIED"
-            elif a_full_behavioral_coverage:
+            elif a_all_proved_passing:
                 a_status = "PASSING"
-            elif a_behavioral_total == 0 and a_all_proved_passing:
-                a_status = "VERIFIED" if a_has_receipt else "PASSING"
-            elif a_behavioral_proved == 0:
+            elif proved == 0:
                 a_status = "UNTESTED"
             else:
                 a_status = "PARTIAL"
@@ -865,19 +824,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     proved = sum(1 for key, _, _ in active_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
 
-    # Classify each active rule as structural or behavioral
-    structural_rules = _classify_structural_rules(active_entries, info, all_features)
-    behavioral_total = sum(1 for key, _, _ in active_entries
-                          if key not in structural_rules)
-    behavioral_proved = sum(1 for key, _, _ in active_entries
-                           if key not in structural_rules
-                           and proof_by_rule.get(key, {}).get('status') == 'pass')
-    structural_passing = sum(1 for key, _, _ in active_entries
-                            if key in structural_rules
-                            and proof_by_rule.get(key, {}).get('status') == 'pass')
-    full_behavioral_coverage = (
-        behavioral_total > 0 and behavioral_proved == behavioral_total
-    )
+    all_proved_passing = (proved == active_total and active_total > 0)
 
     # Count assumed rules (own only)
     assumed_count = len(info.get('assumed_rules', set()))
@@ -915,18 +862,11 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Structural-only features with all proofs passing also earn PASSING/VERIFIED
-    all_proved_passing_report = (proved == active_total and active_total > 0)
-    structural_only_passing = (
-        behavioral_total == 0 and all_proved_passing_report
-    )
-
-    # Header — all behavioral rules proved (or structural-only with all passing)
-    if (full_behavioral_coverage or structural_only_passing) and not warnings:
+    # Header — all rules proved
+    if all_proved_passing and not warnings:
         all_rules_dict = {key: True for key, _, _ in active_entries}
         vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
         receipt = _read_receipt(project_root, name)
-        # VERIFIED requires vhash match (which needs ALL proofs including structural)
         has_current_receipt = (
             proved == active_total
             and receipt is not None
@@ -1241,6 +1181,25 @@ def _build_feature_audit(entries, no_proof_count=0):
     }
 
 
+def _check_uncommitted_all(project_root):
+    """Return list of all uncommitted (non-ignored) files in the project."""
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain'],
+            capture_output=True, text=True, cwd=project_root
+        )
+        if result.returncode != 0:
+            return []
+    except (FileNotFoundError, OSError):
+        return []
+    files = []
+    for line in result.stdout.splitlines():
+        if not line or len(line) < 4:
+            continue
+        files.append(line.strip())
+    return files
+
+
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None):
     """Build the structured PURLIN_DATA dict for the dashboard."""
@@ -1280,41 +1239,21 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         deferred_count = sum(1 for _, _, _, d in rule_entries if d)
         active_total = len(active_entries)
 
-        structural_rules = _classify_structural_rules(active_entries, info, features)
-        behavioral_total = sum(
-            1 for key, _, _ in active_entries
-            if key not in structural_rules
-        )
-        behavioral_proved = sum(
-            1 for key, _, _ in active_entries
-            if key not in structural_rules
-            and proof_by_rule.get(key, {}).get('status') == 'pass'
-        )
-        structural_passing = sum(
-            1 for key, _, _ in active_entries
-            if key in structural_rules
-            and proof_by_rule.get(key, {}).get('status') == 'pass'
-        )
         has_fail = any(
             proof_by_rule.get(key, {}).get('status') == 'fail'
             for key, _, _ in active_entries
         )
 
-        # Compute vhash when ALL proofs pass (structural + behavioral)
-        all_proved = sum(
+        # Compute vhash when ALL proofs pass
+        proved = sum(
             1 for key, _, _ in active_entries
             if proof_by_rule.get(key, {}).get('status') == 'pass'
         )
         vhash = None
-        all_proved_passing = (all_proved == active_total and active_total > 0)
+        all_proved_passing = (proved == active_total and active_total > 0)
         if all_proved_passing:
             all_rules_dict = {key: True for key, _, _ in active_entries}
             vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
-
-        # Full behavioral coverage for PASSING/VERIFIED
-        full_behavioral_coverage = (
-            behavioral_total > 0 and behavioral_proved == behavioral_total
-        )
 
         # Read receipt
         receipt_data = None
@@ -1328,22 +1267,15 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
         # Determine status
         has_current_receipt = (receipt_data is not None and not receipt_data['stale'])
-        structural_only_passing = (
-            behavioral_total == 0 and all_proved_passing and active_total > 0
-        )
         if active_total == 0:
             status = 'UNTESTED'
         elif has_fail:
             status = 'FAILING'
-        elif full_behavioral_coverage and has_current_receipt:
+        elif all_proved_passing and has_current_receipt:
             status = 'VERIFIED'
-        elif full_behavioral_coverage:
+        elif all_proved_passing:
             status = 'PASSING'
-        elif structural_only_passing and has_current_receipt:
-            status = 'VERIFIED'
-        elif structural_only_passing:
-            status = 'PASSING'
-        elif behavioral_proved > 0:
+        elif proved > 0:
             status = 'PARTIAL'
         else:
             status = 'UNTESTED'
@@ -1402,10 +1334,6 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
             if is_deferred:
                 rule_status = 'DEFERRED'
-            elif key in structural_rules and best_proof and best_proof.get('status') == 'pass':
-                rule_status = 'CHECK'
-            elif key in structural_rules and best_proof and best_proof.get('status') == 'fail':
-                rule_status = 'CHECK_FAIL'
             elif best_proof and best_proof.get('status') == 'pass':
                 rule_status = 'PASS'
             elif best_proof and best_proof.get('status') == 'fail':
@@ -1424,17 +1352,29 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'proofs': proofs_data,
             })
 
+        # Check external anchor staleness for report data
+        ext_status = None
+        if is_anchor and info.get('source_url'):
+            staleness = _check_git_staleness(
+                info['source_url'], info.get('pinned'), project_root
+            )
+            if staleness:
+                ext_status = staleness.get('status')
+
         feature_list.append({
             'name': name,
             'category': info.get('category', ''),
             'type': 'anchor' if is_anchor else 'feature',
             'is_global': info.get('is_global', False),
             'source_url': info.get('source_url'),
-            'proved': behavioral_proved,
+            'pinned': info.get('pinned'),
+            'description': info.get('description'),
+            'source_path': info.get('source_path'),
+            'ext_status': ext_status,
+            'proved': proved,
             'total': active_total,
             'deferred': deferred_count,
             'status': status,
-            'structural_checks': structural_passing,
             'vhash': vhash,
             'receipt': receipt_data,
             'rules': rules_list,
@@ -1443,11 +1383,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 no_proof_count=sum(
                     1 for key, label, _ in active_entries
                     if label == 'own'
-                    and key not in structural_rules
                     and not proof_by_rule.get(key)
                 ),
             ),
         })
+
+    uncommitted_files = _check_uncommitted_all(project_root)
 
     return {
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -1463,6 +1404,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         },
         'audit_summary': audit_summary,
         'drift': None,
+        'uncommitted': uncommitted_files,
     }
 
 
@@ -1478,13 +1420,17 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
     )
     data_path = os.path.join(purlin_dir, 'report-data.js')
 
+    tmp_path = data_path + '.tmp'
     try:
-        with open(data_path, 'w') as f:
+        with open(tmp_path, 'w') as f:
             f.write('const PURLIN_DATA = ')
             json.dump(data, f, separators=(',', ':'))
             f.write(';\n')
+        os.replace(tmp_path, data_path)
         return data_path
     except (IOError, OSError):
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
         return None
 
 
@@ -1632,6 +1578,44 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
     return changes
 
 
+def _check_git_staleness(source_url, pinned, project_root=None):
+    """Compare pinned SHA to remote HEAD for git-sourced anchors.
+
+    Returns None for non-git URLs. Otherwise returns a dict:
+      {'status': 'current'|'stale'|'unpinned'|'error', 'remote_sha': str|None}
+    """
+    if not source_url:
+        return None
+    is_git = (source_url.startswith('git@') or source_url.endswith('.git')
+              or 'github.com' in source_url or 'gitlab.com' in source_url
+              or source_url.startswith('/') or source_url.startswith('.'))
+    if not is_git:
+        return None
+    if not pinned:
+        return {'status': 'unpinned', 'remote_sha': None}
+    try:
+        result = subprocess.run(
+            ['git', 'ls-remote', source_url, 'HEAD'],
+            capture_output=True, text=True, timeout=10,
+            cwd=project_root or '.',
+        )
+        if result.returncode != 0:
+            return {'status': 'error', 'remote_sha': None,
+                    'error': result.stderr.strip()[:200]}
+        lines = result.stdout.strip().splitlines()
+        if not lines:
+            return {'status': 'error', 'remote_sha': None,
+                    'error': 'No HEAD ref returned'}
+        remote_sha = lines[0].split('\t')[0]
+        if remote_sha.startswith(pinned) or pinned.startswith(remote_sha):
+            return {'status': 'current', 'remote_sha': remote_sha}
+        return {'status': 'stale', 'remote_sha': remote_sha}
+    except subprocess.TimeoutExpired:
+        return {'status': 'error', 'remote_sha': None, 'error': 'Timeout reaching remote'}
+    except (subprocess.SubprocessError, OSError) as e:
+        return {'status': 'error', 'remote_sha': None, 'error': str(e)[:200]}
+
+
 def drift(project_root, since=None, role=None):
     """Generate structured drift data as JSON."""
     since_ref, since_desc = _resolve_since_anchor(project_root, since)
@@ -1771,19 +1755,7 @@ def drift(project_root, since=None, role=None):
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
         failing = [key for key, _, _ in active_entries
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
-        structural_rules = _classify_structural_rules(active_entries, info, features)
-        behavioral_total = sum(1 for key, _, _ in active_entries
-                               if key not in structural_rules)
-        behavioral_proved = sum(1 for key, _, _ in active_entries
-                               if key not in structural_rules
-                               and proof_by_rule.get(key, {}).get('status') == 'pass')
-        structural_checks = sum(1 for key, _, _ in active_entries
-                               if key in structural_rules
-                               and proof_by_rule.get(key, {}).get('status') == 'pass')
-        all_pass = (proved == active_total)
-        full_behavioral_coverage = (
-            behavioral_total > 0 and behavioral_proved == behavioral_total
-        )
+        all_pass = (proved == active_total and active_total > 0)
         d_receipt = _read_receipt(project_root, name)
         d_has_receipt = False
         if all_pass and d_receipt:
@@ -1792,20 +1764,13 @@ def drift(project_root, since=None, role=None):
                 _collect_relevant_proofs(name, rule_entries, all_proofs),
             )
             d_has_receipt = (d_receipt.get('vhash') == d_vhash)
-        structural_only_passing = (
-            behavioral_total == 0 and all_pass and active_total > 0
-        )
         if failing:
             status = 'FAILING'
-        elif full_behavioral_coverage and d_has_receipt:
+        elif all_pass and d_has_receipt:
             status = 'VERIFIED'
-        elif full_behavioral_coverage:
+        elif all_pass:
             status = 'PASSING'
-        elif structural_only_passing and d_has_receipt:
-            status = 'VERIFIED'
-        elif structural_only_passing:
-            status = 'PASSING'
-        elif behavioral_proved == 0:
+        elif proved == 0:
             status = 'UNTESTED'
         else:
             status = 'PARTIAL'
@@ -1815,7 +1780,6 @@ def drift(project_root, since=None, role=None):
             'total': active_total,
             'status': status,
             'failing_rules': failing,
-            'structural_checks': structural_checks,
         }
         if deferred_count:
             entry['deferred'] = deferred_count
@@ -1823,13 +1787,12 @@ def drift(project_root, since=None, role=None):
             entry['assumed'] = assumed_count
         proof_status[name] = entry
 
-    # Annotate file entries with behavioral gap flags
+    # Annotate file entries with coverage gap flags
     for entry in file_entries:
         spec_name = entry.get('spec')
         if spec_name and entry['category'] == 'CHANGED_BEHAVIOR':
             ps = proof_status.get(spec_name, {})
-            sc = ps.get('structural_checks', 0)
-            if sc > 0 and sc == ps.get('proved', 0):
+            if ps.get('proved', 0) == 0 and ps.get('total', 0) > 0:
                 entry['behavioral_gap'] = True
 
     # Build drift_flags summary (deduplicated by spec name)
@@ -1868,6 +1831,30 @@ def drift(project_root, since=None, role=None):
                 'existing_paths': existing_paths,
             })
 
+    # Detect external anchor drift — compare Pinned to remote HEAD
+    external_anchor_drift = []
+    for name, info in features.items():
+        if not info.get('is_anchor') or not info.get('source_url'):
+            continue
+        staleness = _check_git_staleness(
+            info['source_url'], info.get('pinned'), project_root
+        )
+        if staleness is None:
+            continue
+        if staleness['status'] == 'current':
+            continue
+        entry = {
+            'anchor': name,
+            'source_url': info['source_url'],
+            'pinned': info.get('pinned'),
+            'status': staleness['status'],
+        }
+        if staleness.get('remote_sha'):
+            entry['remote_sha'] = staleness['remote_sha'][:7]
+        if staleness.get('error'):
+            entry['error'] = staleness['error']
+        external_anchor_drift.append(entry)
+
     result = {
         'since': since_desc,
         'commits': commits,
@@ -1876,6 +1863,7 @@ def drift(project_root, since=None, role=None):
         'proof_status': proof_status,
         'drift_flags': drift_flags,
         'broken_scopes': broken_scopes,
+        'external_anchor_drift': external_anchor_drift,
     }
 
     return json.dumps(result, indent=2)

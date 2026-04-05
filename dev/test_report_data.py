@@ -263,7 +263,7 @@ class TestReportDataStructure:
         """Every feature entry has all required fields."""
         required_fields = {
             'name', 'type', 'is_global', 'proved', 'total', 'deferred',
-            'status', 'structural_checks', 'vhash', 'receipt', 'rules', 'audit',
+            'status', 'vhash', 'receipt', 'rules', 'audit',
         }
         data = self._build()
         for feat in data['features']:
@@ -340,8 +340,8 @@ class TestReportDataStructure:
 
     @pytest.mark.proof("report_data", "PROOF-9", "RULE-9")
     def test_all_rule_statuses_are_valid(self):
-        """All rule statuses are one of: PASS, FAIL, NO_PROOF, CHECK, or DEFERRED."""
-        valid_statuses = {'PASS', 'FAIL', 'NO_PROOF', 'CHECK', 'DEFERRED'}
+        """All rule statuses are one of: PASS, FAIL, NO_PROOF, or DEFERRED."""
+        valid_statuses = {'PASS', 'FAIL', 'NO_PROOF', 'DEFERRED'}
         # Build with both passing and no-proof rules
         _write_spec(self.tmp, 'feature', _minimal_spec_content())
         _write_proofs(self.tmp, 'feature', _minimal_proofs())
@@ -581,17 +581,15 @@ class TestReportDataStructure:
         assert finding['fix'] == 'Add assert on return value'
 
     @pytest.mark.proof("report_data", "PROOF-17", "RULE-17")
-    def test_proved_count_excludes_structural_checks(self):
-        """RULE-17: Feature proved count excludes structural checks.
+    def test_all_proofs_count_equally(self):
+        """RULE-17: All proofs count equally — grep-based and behavioral alike.
 
-        Setup: Feature with 3 rules — 2 behavioral, 1 structural (grep-based).
-        All 3 have passing proofs. The structural proof should count as a
-        structural_check but NOT toward the proved count.
-        Expected: proved==2, structural_checks==1, total==3
+        Setup: Feature with 3 rules — 2 behavioral, 1 grep-based.
+        All 3 have passing proofs. All count toward proved/total.
+        Expected: proved==3, total==3, status==PASSING
         """
         _make_project(self.tmp)
 
-        # Create a feature with mixed behavioral + structural rules
         _write_spec(self.tmp, 'mixed', (
             '# Feature: mixed\n\n'
             '> Scope: src/mixed.py\n\n'
@@ -606,7 +604,6 @@ class TestReportDataStructure:
             '- PROOF-3 (RULE-3): Grep config.yaml for required_section; verify present\n'
         ))
 
-        # All 3 proofs pass
         _write_proofs(self.tmp, 'mixed', [
             {"feature": "mixed", "id": "PROOF-1", "rule": "RULE-1",
              "test_file": "tests/test_mixed.py", "test_name": "test_valid",
@@ -625,16 +622,16 @@ class TestReportDataStructure:
 
         mixed = next(f for f in data['features'] if f['name'] == 'mixed')
 
-        # proved should count only behavioral proofs (2), not structural (1)
-        assert mixed['proved'] == 2, (
-            f"Expected proved=2 (behavioral only), got {mixed['proved']}. "
-            f"Structural checks should NOT inflate the proved count."
-        )
-        assert mixed['structural_checks'] == 1, (
-            f"Expected structural_checks=1, got {mixed['structural_checks']}"
+        # All 3 proofs count equally
+        assert mixed['proved'] == 3, (
+            f"Expected proved=3 (all proofs count), got {mixed['proved']}"
         )
         assert mixed['total'] == 3, (
-            f"Expected total=3 (all rules), got {mixed['total']}"
+            f"Expected total=3, got {mixed['total']}"
+        )
+        assert mixed['status'] == 'PASSING', (
+            f"Expected status='PASSING' for 3/3 rules proved, "
+            f"got '{mixed['status']}'"
         )
 
     @pytest.mark.proof("report_data", "PROOF-18", "RULE-18")
@@ -671,6 +668,147 @@ class TestReportDataStructure:
         assert login['proved'] == 2, f"Expected proved=2, got {login['proved']}"
         assert login['total'] == 3, f"Expected total=3, got {login['total']}"
 
+    @pytest.mark.proof("report_data", "PROOF-20", "RULE-20")
+    def test_passing_verified_always_100pct_coverage(self):
+        """RULE-20: PASSING/VERIFIED features always have proved == total.
+
+        Setup: 4 features covering the key scenarios:
+        - 'pure_behavioral': 2 behavioral rules, all proved → PASSING, proved==total
+        - 'mixed': 2 behavioral + 1 grep-based, all proved → PASSING, proved==total
+        - 'verified_feat': 2 behavioral, all proved + receipt → VERIFIED, proved==total
+        - 'partial': 3 behavioral, only 2 proved → PARTIAL, proved < total
+
+        Invariant: no feature with status PASSING or VERIFIED may have proved < total.
+        """
+        _make_project(self.tmp)
+
+        # Feature 1: pure behavioral, all proved
+        _write_spec(self.tmp, 'pure_behavioral', (
+            '# Feature: pure_behavioral\n\n'
+            '## What it does\nPure behavioral.\n\n'
+            '## Rules\n'
+            '- RULE-1: Validates input correctly\n'
+            '- RULE-2: Returns expected output\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Test valid input\n'
+            '- PROOF-2 (RULE-2): Test output\n'
+        ))
+        _write_proofs(self.tmp, 'pure_behavioral', [
+            {"feature": "pure_behavioral", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/t.py", "test_name": "test_1",
+             "status": "pass", "tier": "unit"},
+            {"feature": "pure_behavioral", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/t.py", "test_name": "test_2",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # Feature 2: mixed behavioral + grep-based, all proved
+        _write_spec(self.tmp, 'mixed', (
+            '# Feature: mixed\n\n'
+            '> Scope: src/mixed.py\n\n'
+            '## What it does\nMixed.\n\n'
+            '## Rules\n'
+            '- RULE-1: Processes data correctly\n'
+            '- RULE-2: Handles errors gracefully\n'
+            '- RULE-3: Config file has required key\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Call process, assert result\n'
+            '- PROOF-2 (RULE-2): Call with bad data, assert error\n'
+            '- PROOF-3 (RULE-3): Grep config for key; verify present\n'
+        ))
+        _write_proofs(self.tmp, 'mixed', [
+            {"feature": "mixed", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/t.py", "test_name": "test_process",
+             "status": "pass", "tier": "unit"},
+            {"feature": "mixed", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/t.py", "test_name": "test_error",
+             "status": "pass", "tier": "unit"},
+            {"feature": "mixed", "id": "PROOF-3", "rule": "RULE-3",
+             "test_file": "tests/t.py", "test_name": "test_config",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # Feature 3: for VERIFIED — 2 behavioral, all proved, will add receipt
+        _write_spec(self.tmp, 'verified_feat', (
+            '# Feature: verified_feat\n\n'
+            '## What it does\nVerified feature.\n\n'
+            '## Rules\n'
+            '- RULE-1: Works correctly\n'
+            '- RULE-2: Logs output\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Test it works\n'
+            '- PROOF-2 (RULE-2): Test logging\n'
+        ))
+        _write_proofs(self.tmp, 'verified_feat', [
+            {"feature": "verified_feat", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/t.py", "test_name": "test_works",
+             "status": "pass", "tier": "unit"},
+            {"feature": "verified_feat", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/t.py", "test_name": "test_log",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # Feature 4: partial — 3 behavioral, only 2 proved
+        _write_spec(self.tmp, 'partial', (
+            '# Feature: partial\n\n'
+            '## What it does\nPartial feature.\n\n'
+            '## Rules\n'
+            '- RULE-1: First thing\n'
+            '- RULE-2: Second thing\n'
+            '- RULE-3: Third thing\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Test first\n'
+            '- PROOF-2 (RULE-2): Test second\n'
+            '- PROOF-3 (RULE-3): Test third\n'
+        ))
+        _write_proofs(self.tmp, 'partial', [
+            {"feature": "partial", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/t.py", "test_name": "test_first",
+             "status": "pass", "tier": "unit"},
+            {"feature": "partial", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "tests/t.py", "test_name": "test_second",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        # First build to get vhash for verified_feat
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+        vf = next(f for f in data['features'] if f['name'] == 'verified_feat')
+        assert vf['vhash'] is not None, "verified_feat should have vhash"
+
+        # Write receipt with matching vhash, then rebuild
+        _write_receipt(self.tmp, 'verified_feat',
+                       commit='abc1234',
+                       timestamp='2024-01-01T00:00:00+00:00',
+                       vhash=vf['vhash'])
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        # Assert the invariant across all features
+        for feat in data['features']:
+            if feat['status'] in ('PASSING', 'VERIFIED'):
+                assert feat['proved'] == feat['total'], (
+                    f"INVARIANT VIOLATION: {feat['name']} has status "
+                    f"'{feat['status']}' but proved={feat['proved']} != "
+                    f"total={feat['total']}. PASSING/VERIFIED must always "
+                    f"show 100% coverage (proved == total)."
+                )
+            elif feat['status'] == 'PARTIAL':
+                assert feat['proved'] < feat['total'], (
+                    f"INVARIANT VIOLATION: {feat['name']} has status "
+                    f"'PARTIAL' but proved={feat['proved']} == "
+                    f"total={feat['total']}. PARTIAL must have proved < total."
+                )
+
+        # Verify specific statuses
+        by_name = {f['name']: f for f in data['features']}
+        assert by_name['pure_behavioral']['status'] == 'PASSING'
+        assert by_name['mixed']['status'] == 'PASSING'
+        assert by_name['verified_feat']['status'] == 'VERIFIED'
+        assert by_name['partial']['status'] == 'PARTIAL'
+
     @pytest.mark.proof("report_data", "PROOF-19", "RULE-19")
     def test_feature_category_derived_from_spec_directory(self):
         """RULE-19: Every feature has a category field from the spec's parent dir."""
@@ -699,4 +837,42 @@ class TestReportDataStructure:
         )
         assert cart['category'] == 'commerce', (
             f"Expected cart category='commerce', got '{cart['category']}'"
+        )
+
+    @pytest.mark.proof("report_data", "PROOF-21", "RULE-21")
+    def test_description_from_what_it_does(self):
+        """Feature entry includes description from ## What it does."""
+        _write_spec(self.tmp, 'alpha',
+                    '# Feature: alpha\n\n'
+                    '## What it does\n\nHandles user authentication.\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
+        _write_proofs(self.tmp, 'alpha', _minimal_proofs('alpha'))
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'alpha')
+        assert feat['description'] == 'Handles user authentication.', (
+            f"Expected description='Handles user authentication.', got '{feat['description']}'"
+        )
+
+    @pytest.mark.proof("report_data", "PROOF-21", "RULE-21")
+    def test_description_null_when_empty(self):
+        """Description is null when ## What it does is empty."""
+        _write_spec(self.tmp, 'beta',
+                    '# Feature: beta\n\n'
+                    '## What it does\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
+        _write_proofs(self.tmp, 'beta', _minimal_proofs('beta'))
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'beta')
+        assert feat['description'] is None, (
+            f"Expected description=None for empty What it does, got '{feat['description']}'"
         )

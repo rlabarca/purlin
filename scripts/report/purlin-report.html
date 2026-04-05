@@ -62,8 +62,8 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 /* ===== HEADER ===== */
 .header{display:flex;align-items:center;justify-content:space-between;height:56px;border-bottom:1px solid var(--border);margin-bottom:20px}
 .header-left{display:flex;align-items:center;gap:14px}
-.header-logo svg{height:26px;width:auto;display:block}
-.header-project{font-size:15px;font-weight:600}
+.header-logo svg{height:50px;width:auto;display:block}
+.header-project{font-size:24px;font-weight:700}
 .header-right{display:flex;align-items:center;gap:20px}
 
 /* Staleness — informational only (data updates when sync_status runs, not on page refresh) */
@@ -128,6 +128,27 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .ext-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;color:var(--teal);flex-shrink:0;opacity:.7}
 .ext-icon svg{width:12px;height:12px}
 .ext-icon:hover{opacity:1}
+.ext-ref-block{margin-bottom:12px}
+.ext-ref-table{width:auto;border-collapse:collapse}
+.ext-ref-table td{padding:2px 12px 2px 0;font-size:13px;color:var(--text-secondary)}
+.ext-ref-label{font-weight:600;color:var(--text-primary);white-space:nowrap;width:60px}
+.ext-ref-warn{color:var(--amber)}
+.ext-ref-table code{font-family:var(--font-mono);font-size:12px;background:var(--bg-card);padding:1px 4px;border-radius:3px}
+.ext-ref-table a{color:var(--teal);text-decoration:none}
+.ext-ref-table a:hover{text-decoration:underline}
+.ext-stale{display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-left:6px;color:var(--amber);border:1.5px solid var(--amber);background:transparent;vertical-align:middle;cursor:default}
+
+/* Uncommitted work section */
+.uw-section{margin:0 0 12px}
+.uw-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;transition:background .2s}
+.uw-header:hover{background:var(--bg-hover)}
+.uw-chv{font-size:10px;color:var(--text-dim);transition:transform .2s}
+.uw-header.expanded .uw-chv{transform:rotate(90deg)}
+.uw-count{font-size:13px;color:var(--amber);font-weight:600}
+.uw-label{font-size:12px;color:var(--text-secondary)}
+.uw-files{display:none;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);columns:2 400px;column-gap:24px}
+.uw-files .uw-f{display:block;padding:2px 0;break-inside:avoid}
+.uw-header.expanded + .uw-files{display:block}
 
 /* Coverage */
 .cov{display:flex;align-items:center;gap:10px;white-space:nowrap}
@@ -143,6 +164,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .sb-passing{background:transparent;color:var(--green);border:1.5px solid var(--green)}
 .sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
 .sb-fail,.sb-failing{background:var(--red);color:#fff}
+.sb-untested{background:var(--gray-badge);color:var(--amber);border:1.5px solid var(--gray-badge)}
 .sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
 
 /* Integrity */
@@ -166,7 +188,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .cat-summary{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-secondary)}
 .cat-stat{display:flex;align-items:center;gap:3px;white-space:nowrap}
 .cat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-.cat-dot-v{background:var(--green)}.cat-dot-pa{background:var(--green);opacity:.6}.cat-dot-pt{background:var(--amber)}.cat-dot-f{background:var(--red)}.cat-dot-u{background:var(--gray-badge);opacity:.5}
+.cat-dot-v{background:var(--green)}.cat-dot-pa{background:var(--green);opacity:.6}.cat-dot-pt{background:var(--amber)}.cat-dot-f{background:var(--red)}.cat-dot-u{background:var(--amber);opacity:.5}
 .cat-cov{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
 .cat-cov-bar{width:48px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
 .cat-cov-fill{height:100%;border-radius:2px;display:block}
@@ -181,6 +203,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
 .dst:first-child{margin-top:0}
 
+/* Description block */
+.desc-block{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;padding:10px 14px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border);white-space:pre-line}
+
 /* Rules sub-table */
 .rt{width:100%;border-collapse:collapse;margin-bottom:4px}
 .rt th{padding:5px 12px;font-size:9px;cursor:default}
@@ -193,11 +218,11 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--green)}.rst-chk-fail{color:var(--red)}.rst-def{color:var(--text-dim);font-style:italic}
 .rprf{font-size:12px;color:var(--text-primary)}
 .rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px}
+.rprf-sep{height:8px;border-top:1px solid var(--border-light);margin-top:8px;padding-top:0}
 .atag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
 .atag-s{background:var(--green-dim);color:var(--green)}
 .atag-w{background:var(--amber-dim);color:var(--amber)}
 .atag-h{background:var(--red-dim);color:var(--red)}
-.structural td{}
 
 /* Action banners */
 .ab{padding:10px 14px;border-left:4px solid;border-radius:0 6px 6px 0;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -313,6 +338,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'PASSING') return 'cov-verified';
     if (status === 'PARTIAL') return 'cov-partial';
     if (status === 'FAILING') return 'cov-fail';
+    if (status === 'UNTESTED') return 'cov-partial';
     return 'cov-none';
   }
 
@@ -321,6 +347,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (status === 'PASSING') return 'sb sb-passing';
     if (status === 'PARTIAL') return 'sb sb-partial';
     if (status === 'FAILING') return 'sb sb-failing';
+    if (status === 'UNTESTED') return 'sb sb-untested';
     return 'sb sb-none';
   }
 
@@ -343,8 +370,6 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
   function ruleStatusCls(s) {
     if (s === 'PASS') return 'rst rst-pass';
     if (s === 'FAIL') return 'rst rst-fail';
-    if (s === 'CHECK') return 'rst rst-chk';
-    if (s === 'CHECK_FAIL') return 'rst rst-chk-fail';
     if (s === 'DEFERRED') return 'rst rst-def';
     return 'rst rst-np';
   }
@@ -502,7 +527,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Header */
     h += '<header class="header"><div class="header-left">';
-    h += '<div class="header-logo"><svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg" height="28">';
+    h += '<div class="header-logo"><svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg" height="50">';
     h += '<g stroke-width="2" fill="none" style="stroke:var(--logo-guide)"><line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/><line x1="500" y1="145" x2="170" y2="409"/><line x1="500" y1="145" x2="830" y2="409"/><line x1="400" y1="210" x2="400" y2="255"/><line x1="600" y1="210" x2="600" y2="255"/></g>';
     h += '<polyline points="400,280 500,390 600,280" fill="none" stroke-width="14" stroke-linejoin="miter" style="stroke:var(--logo-fill)"/>';
     h += '<path d="M500 160L190 408 190 440 810 440 810 408ZM500 200L262.5 390 737.5 390Z" fill-rule="evenodd" style="fill:var(--logo-fill)"/>';
@@ -512,9 +537,10 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</div><div class="header-right">';
     h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
     /* Last audit time */
-    if (A && A.last_audit_relative) {
+    if (A && A.last_audit) {
+      var auditRel = relTime(A.last_audit);
       var acls = A.stale ? 'audit-time stale' : 'audit-time';
-      var atxt = '/audit ' + A.last_audit_relative;
+      var atxt = '/audit ' + (auditRel || 'unknown');
       if (A.stale) atxt += ' — run purlin:audit to refresh';
       h += '<span class="' + acls + '">' + esc(atxt) + '</span>';
     }
@@ -531,10 +557,13 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</div>';
     h += '<div class="summary-card sc-verified"><div class="summary-card-number">' + S.verified + '</div><div class="summary-card-label">Verified</div></div>';
     h += '<div class="summary-card sc-passing"><div class="summary-card-number">' + (S.passing || 0) + '</div><div class="summary-card-label">Passing</div></div>';
-    h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + S.partial + '</div><div class="summary-card-label">Partial</div></div>';
-    h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div>';
-    if (S.untested) h += '<div class="summary-card-sub">' + S.untested + ' untested</div>';
+    var incompleteCount = (S.partial || 0) + (S.untested || 0);
+    h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + incompleteCount + '</div><div class="summary-card-label">Incomplete</div>';
+    if (S.partial && S.untested) h += '<div class="summary-card-sub">' + S.partial + ' partial, ' + S.untested + ' untested</div>';
+    else if (S.untested) h += '<div class="summary-card-sub">' + S.untested + ' untested</div>';
+    else if (S.partial) h += '<div class="summary-card-sub">' + S.partial + ' partial</div>';
     h += '</div>';
+    h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
     /* Integrity card */
     if (A && A.integrity != null) {
       var icls = A.integrity >= 80 ? '' : A.integrity >= 50 ? ' int-mid' : ' int-lo';
@@ -547,6 +576,21 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '</div>';
     }
     h += '</div>';
+
+    /* Uncommitted work section */
+    var uw = D.uncommitted || [];
+    if (uw.length > 0) {
+      h += '<div class="uw-section"><div class="uw-header" id="uw-toggle">';
+      h += '<span class="uw-chv">&#9654;</span>';
+      h += '<span class="uw-count">' + uw.length + '</span>';
+      h += '<span class="uw-label">uncommitted file' + (uw.length !== 1 ? 's' : '') + '</span>';
+      h += '</div>';
+      h += '<div class="uw-files" id="uw-files">';
+      for (var ui = 0; ui < uw.length; ui++) {
+        h += '<span class="uw-f">' + esc(uw[ui]) + '</span>';
+      }
+      h += '</div></div>';
+    }
 
     /* Feature table */
     var cols = [
@@ -575,7 +619,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       var cs = catSummary(catFeatures);
       var catOpen = categorySet[cat] === true; /* collapsed by default */
       var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
-      var catCovCls = cs.failing > 0 ? 'cov-fail' : cs.partial > 0 ? 'cov-partial' : 'cov-verified';
+      var catCovCls = cs.failing > 0 ? 'cov-fail' : (cs.partial > 0 || cs.untested > 0 || cs.proved < cs.rules) ? 'cov-partial' : 'cov-verified';
 
       /* Category header row */
       h += '<tr class="cat-header' + (catOpen ? ' expanded' : '') + '" data-cat="' + esc(cat) + '">';
@@ -615,7 +659,13 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
             }
           }
           if (f.source_url) {
-            h += '<span class="ext-icon" title="Source: ' + esc(f.source_url) + '">' + extIconSvg + '</span>';
+            var extTitle = 'Source: ' + f.source_url;
+            if (f.source_path) extTitle += '\nPath: ' + f.source_path;
+            if (f.pinned) extTitle += '\nPinned: ' + (f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned);
+            h += '<span class="ext-icon" title="' + esc(extTitle) + '">' + extIconSvg + '</span>';
+            if (f.ext_status === 'stale' || f.ext_status === 'unpinned') {
+              h += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
+            }
           }
           h += '</div></td>';
 
@@ -661,6 +711,13 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
 
+    var uwToggle = document.getElementById('uw-toggle');
+    if (uwToggle) {
+      uwToggle.addEventListener('click', function() {
+        this.classList.toggle('expanded');
+      });
+    }
+
     var ths = app.querySelectorAll('th[data-col]');
     for (var ti = 0; ti < ths.length; ti++) {
       ths[ti].addEventListener('click', function(e) {
@@ -697,39 +754,51 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     /* Action banner */
     h += actionBanner(f);
 
+    /* External reference info block */
+    if (f.source_url) {
+      h += '<div class="ext-ref-block"><div class="dst">External Reference</div>';
+      h += '<table class="ext-ref-table"><tbody>';
+      h += '<tr><td class="ext-ref-label">Source</td><td><a href="' + esc(f.source_url) + '" target="_blank" rel="noopener">' + esc(f.source_url) + '</a></td></tr>';
+      if (f.source_path) {
+        h += '<tr><td class="ext-ref-label">Path</td><td><code>' + esc(f.source_path) + '</code></td></tr>';
+      }
+      if (f.pinned) {
+        var pd = f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned;
+        h += '<tr><td class="ext-ref-label">Pinned</td><td><code>' + esc(pd) + '</code></td></tr>';
+      } else {
+        h += '<tr><td class="ext-ref-label">Pinned</td><td class="ext-ref-warn">Unpinned</td></tr>';
+      }
+      h += '</tbody></table></div>';
+    }
+
+    /* Description */
+    if (f.description) {
+      h += '<div class="desc-block">' + esc(f.description) + '</div>';
+    }
+
     /* Rules table */
     h += '<div class="dst">Rules &amp; Proofs</div>';
     h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Source</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
 
     for (var ri = 0; ri < f.rules.length; ri++) {
       var r = f.rules[ri];
-      var isStructural = r.status === 'CHECK' || r.status === 'CHECK_FAIL';
       /* Support both old (r.proof) and new (r.proofs) data contract */
       var proofs = r.proofs || (r.proof ? [r.proof] : []);
-      var rowspan = Math.max(proofs.length, 1);
 
-      var rowCls = isStructural ? 'structural' : r.status === 'NO_PROOF' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
+      var rowCls = r.status === 'NO_PROOF' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
       h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
-      h += '<td class="rid"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.id) + '</td>';
-      h += '<td class="rdesc"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
-      var displayStatus = isStructural ? 'STRUCTURAL' : r.status;
-      h += '<td class="' + ruleStatusCls(r.status) + '"' + (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(displayStatus) + '</td>';
+      h += '<td class="rid">' + esc(r.id) + '</td>';
+      h += '<td class="rdesc">' + esc(r.description) + '</td>';
+      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
+      h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
 
       if (proofs.length > 0) {
-        h += '<td class="rprf">' + proofCell(proofs[0]) + '</td>';
-      } else if (isStructural) {
-        h += '<td class="rprf" style="color:var(--text-dim)">structural check</td>';
+        var proofHtml = proofs.map(function(p) { return proofCell(p); }).join('<div class="rprf-sep"></div>');
+        h += '<td class="rprf">' + proofHtml + '</td>';
       } else {
         h += '<td class="rprf">&mdash;</td>';
       }
       h += '</tr>';
-      /* Additional proof rows (same rule, no rule/desc/source/status columns) */
-      for (var pi = 1; pi < proofs.length; pi++) {
-        h += '<tr' + (isStructural ? ' class="structural"' : '') + '>';
-        h += '<td class="rprf">' + proofCell(proofs[pi]) + '</td>';
-        h += '</tr>';
-      }
     }
     h += '</tbody></table>';
 

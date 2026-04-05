@@ -41,7 +41,7 @@ def make_data(overrides=None):
             "verified": 1,
             "partial": 1,
             "failing": 0,
-            "no_proofs": 1,
+            "untested": 1,
         },
         "features": [
             {
@@ -49,12 +49,13 @@ def make_data(overrides=None):
                 "category": "auth",
                 "type": "feature",
                 "is_global": False,
+                "description": "Handles user login with session tokens and secure cookies.",
                 "source_url": None,
                 "proved": 3,
                 "total": 3,
                 "deferred": 0,
                 "status": "VERIFIED",
-                "structural_checks": 0,
+
                 "vhash": "a1b2c3d4",
                 "receipt": {"commit": "abc123", "timestamp": now, "stale": False},
                 "rules": [
@@ -66,14 +67,24 @@ def make_data(overrides=None):
                         "is_deferred": False,
                         "is_assumed": False,
                         "status": "PASS",
-                        "proofs": [{
-                            "id": "PROOF-1",
-                            "description": "POST valid creds returns 200 + session token",
-                            "test_file": "tests/test_login.py",
-                            "test_name": "test_valid",
-                            "tier": "unit",
-                            "status": "pass",
-                        }],
+                        "proofs": [
+                            {
+                                "id": "PROOF-1",
+                                "description": "POST valid creds returns 200 + session token",
+                                "test_file": "tests/test_login.py",
+                                "test_name": "test_valid",
+                                "tier": "unit",
+                                "status": "pass",
+                            },
+                            {
+                                "id": "PROOF-4",
+                                "description": "POST valid creds sets session cookie with httponly flag",
+                                "test_file": "tests/test_login.py",
+                                "test_name": "test_cookie",
+                                "tier": "unit",
+                                "status": "pass",
+                            },
+                        ],
                     },
                     {
                         "id": "RULE-2",
@@ -133,12 +144,13 @@ def make_data(overrides=None):
                 "category": "commerce",
                 "type": "feature",
                 "is_global": False,
+                "description": None,
                 "source_url": None,
                 "proved": 1,
                 "total": 2,
                 "deferred": 0,
                 "status": "PARTIAL",
-                "structural_checks": 0,
+
                 "vhash": None,
                 "receipt": None,
                 "rules": [
@@ -177,12 +189,13 @@ def make_data(overrides=None):
                 "category": "_anchors",
                 "type": "anchor",
                 "is_global": True,
+                "description": "Enforces the absence of dangerous code patterns across all scripts.",
                 "source_url": "git@github.com:acme/policies.git",
                 "proved": 2,
                 "total": 2,
                 "deferred": 0,
                 "status": "VERIFIED",
-                "structural_checks": 0,
+
                 "vhash": "e5f6a7b8",
                 "receipt": {"commit": "def456", "timestamp": now, "stale": False},
                 "rules": [
@@ -339,14 +352,15 @@ class TestPurlinReport:
 
     @pytest.mark.proof("purlin_report", "PROOF-3", "RULE-3")
     def test_summary_strip_counts(self, page, dashboard):
-        """PROOF-3: Summary strip shows correct counts from PURLIN_DATA.summary."""
+        """PROOF-3: Summary strip shows Incomplete card combining partial + untested."""
         data = make_data({
             "summary": {
                 "total_features": 10,
-                "verified": 5,
-                "partial": 3,
+                "verified": 4,
+                "passing": 2,
+                "partial": 2,
                 "failing": 1,
-                "no_proofs": 1,
+                "untested": 1,
             }
         })
         load_dashboard(page, dashboard, data=data)
@@ -355,9 +369,15 @@ class TestPurlinReport:
         assert len(cards) == 6, f"Expected 6 summary cards (incl. integrity), got {len(cards)}"
         strip_text = page.inner_text(".summary-strip")
         assert "10" in strip_text, "Expected total_features=10 in summary strip"
-        assert "5" in strip_text, "Expected ready=5 in summary strip"
-        assert "3" in strip_text, "Expected partial=3 in summary strip"
-        assert "1" in strip_text, "Expected failing=1 in summary strip"
+        assert "4" in strip_text, "Expected verified=4 in summary strip"
+        # Incomplete card: 2 partial + 1 untested = 3
+        incomplete_card = page.query_selector(".sc-partial")
+        assert incomplete_card is not None, "Incomplete card (.sc-partial) not found"
+        incomplete_text = incomplete_card.inner_text()
+        assert "3" in incomplete_text, "Expected incomplete count=3 (2 partial + 1 untested)"
+        assert "incomplete" in incomplete_text.lower(), "Expected label 'Incomplete'"
+        assert "2 partial" in incomplete_text, "Expected subtitle '2 partial'"
+        assert "1 untested" in incomplete_text, "Expected subtitle '1 untested'"
 
     @pytest.mark.proof("purlin_report", "PROOF-4", "RULE-4")
     def test_feature_table_row_count(self, page, dashboard):
@@ -375,7 +395,7 @@ class TestPurlinReport:
                 "total": total,
                 "deferred": 0,
                 "status": status,
-                "structural_checks": 0,
+
                 "vhash": None,
                 "receipt": None,
                 "rules": [],
@@ -394,7 +414,7 @@ class TestPurlinReport:
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 8, "verified": 4, "partial": 4, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 8, "verified": 4, "partial": 4, "failing": 0, "untested": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
         })
         load_dashboard(page, dashboard, data=data)
@@ -423,9 +443,9 @@ class TestPurlinReport:
         assert rules_table is not None, "Expected a rules table (.rt) inside the expanded detail row"
 
     @pytest.mark.proof("purlin_report", "PROOF-6", "RULE-6")
-    def test_expanded_rule_sources_and_proof_descriptions(self, page, dashboard):
+    def test_expanded_rule_sources_and_multi_proof_stacking(self, page, dashboard):
         """PROOF-6: Own rules show empty Source; global rules show 'global';
-        proof cells show description as primary text and file path as secondary."""
+        rules with multiple proofs stack them in a single td with .rprf-sep dividers."""
         load_dashboard(page, dashboard, data=make_data())
         page.click("tr.fr[data-name='auth_login']")
         page.wait_for_timeout(300)
@@ -443,32 +463,27 @@ class TestPurlinReport:
         assert "" in texts, "Expected empty source cell for own rules"
         assert "global" in texts, f"Expected 'global' in source cells, got {texts}"
 
-        # Verify proof descriptions render — check for .rprf-loc elements (file paths)
-        loc_count = page.evaluate("""() => {
+        # Verify multi-proof stacking: RULE-1 has 2 proofs in a single td
+        multi_proof = page.evaluate("""() => {
             const row = document.querySelector("tr.fr[data-name='auth_login']");
             const detail = row ? row.nextElementSibling : null;
-            if (!detail) return 0;
-            return detail.querySelectorAll('.rprf-loc').length;
-        }""")
-        assert loc_count >= 2, f"Expected >=2 proof file path elements (.rprf-loc), got {loc_count}"
-
-        # Verify proof description text renders separately from file path
-        desc_count = page.evaluate("""() => {
-            const row = document.querySelector("tr.fr[data-name='auth_login']");
-            const detail = row ? row.nextElementSibling : null;
-            if (!detail) return 0;
-            // Description is a direct child div of td.rprf (not .rprf-loc)
+            if (!detail) return { seps: 0, proofIds: [], cellCount: 0 };
+            // Find the first .rprf cell (RULE-1's proof cell)
             const cells = detail.querySelectorAll('td.rprf');
-            let count = 0;
-            for (const cell of cells) {
-                const children = cell.children;
-                // Cell should have 2 children: description div + .rprf-loc div
-                if (children.length >= 2) count++;
-            }
-            return count;
+            const firstCell = cells[0];
+            const seps = firstCell ? firstCell.querySelectorAll('.rprf-sep').length : 0;
+            const proofIds = firstCell
+                ? Array.from(firstCell.querySelectorAll('.fid')).map(e => e.textContent.trim())
+                : [];
+            return { seps: seps, proofIds: proofIds, cellCount: cells.length };
         }""")
-        assert desc_count >= 2, \
-            f"Expected >=2 proof cells with description + file path, got {desc_count}"
+        assert multi_proof["seps"] >= 1, \
+            f"Expected >=1 .rprf-sep divider in multi-proof cell, got {multi_proof['seps']}"
+        assert len(multi_proof["proofIds"]) >= 2, \
+            f"Expected >=2 proof IDs in stacked cell, got {multi_proof['proofIds']}"
+        # Verify table rows match rule count (no extra rowspan rows)
+        assert multi_proof["cellCount"] == 3, \
+            f"Expected 3 proof cells (one per rule), got {multi_proof['cellCount']}"
 
     @pytest.mark.proof("purlin_report", "PROOF-7", "RULE-7")
     def test_theme_toggle_persists(self, page, dashboard):
@@ -550,7 +565,7 @@ class TestPurlinReport:
             "total": 1,
             "deferred": 0,
             "status": "VERIFIED",
-            "structural_checks": 0,
+
             "vhash": None,
             "receipt": None,
             "rules": [],
@@ -593,17 +608,17 @@ class TestPurlinReport:
             {
                 "name": "alpha", "category": "test", "type": "feature", "is_global": False, "source_url": None,
                 "proved": 0, "total": 3, "deferred": 0, "status": "VERIFIED",
-                "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
+                "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
             {
                 "name": "beta", "category": "test", "type": "feature", "is_global": False, "source_url": None,
                 "proved": 3, "total": 3, "deferred": 0, "status": "PARTIAL",
-                "structural_checks": 0, "vhash": None, "receipt": None, "rules": [], "audit": None,
+                "vhash": None, "receipt": None, "rules": [], "audit": None,
             },
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 2, "verified": 1, "partial": 1, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 2, "verified": 1, "partial": 1, "failing": 0, "untested": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -779,7 +794,7 @@ def make_fail_feature(name):
         "total": 1,
         "deferred": 0,
         "status": "FAILING",
-        "structural_checks": 0,
+
         "vhash": None,
         "receipt": None,
         "rules": [],
@@ -799,7 +814,7 @@ def make_integrity_feature(name, integrity):
         "total": 2,
         "deferred": 0,
         "status": "VERIFIED",
-        "structural_checks": 0,
+
         "vhash": None,
         "receipt": None,
         "rules": [],
@@ -826,7 +841,7 @@ class TestRulePadding:
             "features": [{
                 "name": "config_engine", "category": "mcp", "type": "feature", "is_global": False,
                 "source_url": None, "proved": 2, "total": 4, "deferred": 0,
-                "status": "PARTIAL", "structural_checks": 2, "vhash": None,
+                "status": "PARTIAL", "vhash": None,
                 "receipt": None,
                 "rules": [
                     {"id": "RULE-1", "description": "Reads config files", "label": "own",
@@ -838,12 +853,12 @@ class TestRulePadding:
                      "description": "FORBIDDEN — No eval() or exec() calls",
                      "label": "required", "source": "security_no_dangerous_patterns",
                      "is_deferred": False, "is_assumed": False,
-                     "status": "CHECK", "proofs": []},
+                     "status": "PASS", "proofs": []},
                     {"id": "security_no_dangerous_patterns/RULE-2",
                      "description": "FORBIDDEN — No subprocess calls with shell=True",
                      "label": "required", "source": "security_no_dangerous_patterns",
                      "is_deferred": False, "is_assumed": False,
-                     "status": "CHECK", "proofs": []},
+                     "status": "PASS", "proofs": []},
                     {"id": "security_no_dangerous_patterns/RULE-3",
                      "description": "FORBIDDEN — No os.system() calls",
                      "label": "required", "source": "security_no_dangerous_patterns",
@@ -854,7 +869,7 @@ class TestRulePadding:
                 ],
                 "audit": None,
             }],
-            "summary": {"total_features": 1, "verified": 0, "partial": 1, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 1, "verified": 0, "partial": 1, "failing": 0, "untested": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": None,
         })
@@ -1020,7 +1035,7 @@ class TestDashboardVisual:
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         data = make_data({
             "features": [make_fail_feature("broken_feature")],
-            "summary": {"total_features": 1, "verified": 0, "partial": 0, "failing": 1, "no_proofs": 0},
+            "summary": {"total_features": 1, "verified": 0, "partial": 0, "failing": 1, "untested": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -1037,32 +1052,45 @@ class TestDashboardVisual:
         )
 
     @pytest.mark.proof("dashboard_visual", "PROOF-9", "RULE-9")
-    def test_no_proofs_badge_opacity(self, page, dashboard):
-        """PROOF-9: .sb-none has reduced opacity (< 1)."""
-        # The default make_data() has a 'checkout' feature with status 'PARTIAL',
-        # which doesn't give us .sb-none. We need a feature with no proofs.
-        # Status 'no_proofs' doesn't exist in badgeClass — unrecognized status
-        # falls through to sb-none. Use a custom status value.
+    def test_untested_badge_and_no_proofs_opacity(self, page, dashboard):
+        """PROOF-9: UNTESTED badge is gray pill with amber text (.sb-untested);
+        generic .sb-none has reduced opacity."""
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        no_proof_feature = {
-            "name": "unproved_feature",
-            "category": "test",
-            "type": "feature",
-            "is_global": False,
-            "source_url": None,
-            "proved": 0,
-            "total": 1,
-            "deferred": 0,
-            "status": "no_proofs",
-            "structural_checks": 0,
-            "vhash": None,
-            "receipt": None,
-            "rules": [],
-            "audit": None,
-        }
+        features = [
+            {
+                "name": "untested_feature",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 0,
+                "total": 1,
+                "deferred": 0,
+                "status": "UNTESTED",
+                "vhash": None,
+                "receipt": None,
+                "rules": [],
+                "audit": None,
+            },
+            {
+                "name": "unknown_status_feature",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 0,
+                "total": 1,
+                "deferred": 0,
+                "status": "some_unknown",
+                "vhash": None,
+                "receipt": None,
+                "rules": [],
+                "audit": None,
+            },
+        ]
         data = make_data({
-            "features": [no_proof_feature],
-            "summary": {"total_features": 1, "verified": 0, "partial": 0, "failing": 0, "no_proofs": 1},
+            "features": features,
+            "summary": {"total_features": 2, "verified": 0, "partial": 0, "failing": 0, "untested": 2},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": None, "strong": 0, "weak": 0, "hollow": 0, "manual": 0,
@@ -1071,6 +1099,20 @@ class TestDashboardVisual:
         })
         load_dashboard(page, dashboard, data=data)
 
+        # Verify UNTESTED badge has .sb-untested class with amber text
+        untested_badge = page.query_selector(".sb-untested")
+        assert untested_badge is not None, "Expected .sb-untested badge for UNTESTED feature"
+        untested_color = page.evaluate(
+            "() => getComputedStyle(document.querySelector('.sb-untested')).color"
+        )
+        # Amber is #f59e0b = rgb(245, 158, 11)
+        assert "245" in untested_color and "158" in untested_color, (
+            f"Expected .sb-untested to have amber text color, got {untested_color!r}"
+        )
+
+        # Verify generic .sb-none (unknown status) has reduced opacity
+        none_badge = page.query_selector(".sb-none")
+        assert none_badge is not None, "Expected .sb-none badge for unknown status"
         opacity = page.evaluate(
             "() => getComputedStyle(document.querySelector('.sb-none')).opacity"
         )
@@ -1088,7 +1130,7 @@ class TestDashboardVisual:
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 3, "verified": 3, "partial": 0, "failing": 0, "no_proofs": 0},
+            "summary": {"total_features": 3, "verified": 3, "partial": 0, "failing": 0, "untested": 0},
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
             "audit_summary": {
                 "integrity": 60, "strong": 3, "weak": 0, "hollow": 0, "manual": 0,
@@ -1162,7 +1204,7 @@ class TestDashboardVisual:
                 "total": 6,
                 "deferred": 0,
                 "status": "PARTIAL",
-                "structural_checks": 0,
+
                 "vhash": None,
                 "receipt": None,
                 "rules": [],
@@ -1178,7 +1220,7 @@ class TestDashboardVisual:
                 "total": 5,
                 "deferred": 0,
                 "status": "PASSING",
-                "structural_checks": 0,
+
                 "vhash": "abcd1234",
                 "receipt": None,
                 "rules": [],
@@ -1188,7 +1230,7 @@ class TestDashboardVisual:
         data = make_data({
             "features": features,
             "summary": {"total_features": 2, "verified": 0, "passing": 1,
-                        "partial": 1, "failing": 0, "no_proofs": 0},
+                        "partial": 1, "failing": 0, "untested": 0},
         })
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof18_coverage_bars.png"))
@@ -1239,7 +1281,7 @@ def make_categorized_data():
             "total": total,
             "deferred": 0,
             "status": status,
-            "structural_checks": 0,
+
             "vhash": vhash,
             "receipt": receipt,
             "rules": [],
@@ -1253,6 +1295,7 @@ def make_categorized_data():
         feat("config_engine", "mcp", "PARTIAL", 11, 15),
         feat("drift", "mcp", "VERIFIED", 23, 23,
              vhash="abc3", receipt={"commit": "y", "timestamp": now, "stale": False}),
+        feat("transport", "mcp", "UNTESTED", 0, 4),
         feat("dashboard_visual", "_anchors", "PASSING", 11, 11, vhash="abc4"),
     ]
     return {
@@ -1261,12 +1304,12 @@ def make_categorized_data():
         "version": "0.9.0",
         "docs_url": None,
         "summary": {
-            "total_features": 4,
+            "total_features": 5,
             "verified": 2,
             "passing": 1,
             "partial": 1,
             "failing": 0,
-            "no_proofs": 0,
+            "untested": 1,
         },
         "features": features,
         "anchors_summary": {"total": 1, "with_source": 0, "global": 0},
@@ -1279,7 +1322,8 @@ class TestCategorySections:
 
     @pytest.mark.proof("purlin_report", "PROOF-19", "RULE-19")
     def test_category_headers_with_rolled_up_summaries(self, page, dashboard):
-        """PROOF-19: Category headers show correct rolled-up counts and breakdowns."""
+        """PROOF-19: Category headers show correct rolled-up counts and breakdowns;
+        categories with untested features show amber coverage bar."""
         data = make_categorized_data()
         load_dashboard(page, dashboard, data=data, expand_categories=False)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_collapsed.png"))
@@ -1299,23 +1343,32 @@ class TestCategorySections:
                 count: h.querySelector('.cat-count')?.textContent,
                 cov: h.querySelector('.cat-cov')?.textContent?.trim(),
                 summary: h.querySelector('.cat-summary')?.textContent?.trim(),
+                barClass: h.querySelector('.cat-cov-fill')?.className || '',
             }));
         }""")
 
-        # Verify skills category: 2 features, 10/10 coverage
+        # Verify skills category: 2 features, 10/10 coverage, green bar
         skills = next(c for c in cat_data if c["cat"] == "skills")
         assert skills["count"] == "(2)", f"Skills count: {skills['count']}"
         assert "10/10" in skills["cov"], f"Skills coverage: {skills['cov']}"
         assert "verified" in skills["summary"].lower()
         assert "passing" in skills["summary"].lower()
+        assert "cov-verified" in skills["barClass"], (
+            f"Expected skills bar green (cov-verified), got {skills['barClass']}"
+        )
 
-        # Verify mcp category: 2 features, 34/38 coverage
+        # Verify mcp category: 3 features (1 PARTIAL + 1 VERIFIED + 1 UNTESTED),
+        # 34/42 coverage, amber bar (untested makes it incomplete)
         mcp = next(c for c in cat_data if c["cat"] == "mcp")
-        assert mcp["count"] == "(2)", f"MCP count: {mcp['count']}"
-        assert "34/38" in mcp["cov"], f"MCP coverage: {mcp['cov']}"
+        assert mcp["count"] == "(3)", f"MCP count: {mcp['count']}"
+        assert "34/42" in mcp["cov"], f"MCP coverage: {mcp['cov']}"
         assert "partial" in mcp["summary"].lower()
+        assert "untested" in mcp["summary"].lower()
+        assert "cov-partial" in mcp["barClass"], (
+            f"Expected mcp bar amber (cov-partial) due to untested feature, got {mcp['barClass']}"
+        )
 
-        # Verify _anchors category: 1 feature, 11/11
+        # Verify _anchors category: 1 feature, 11/11, green bar
         anchors = next(c for c in cat_data if c["cat"] == "_anchors")
         assert anchors["count"] == "(1)", f"Anchors count: {anchors['count']}"
         assert "11/11" in anchors["cov"], f"Anchors coverage: {anchors['cov']}"
@@ -1356,9 +1409,9 @@ class TestCategorySections:
         assert cat_bar_widths.get("skills", 0) == 100, (
             f"Expected skills bar 100%, got {cat_bar_widths.get('skills')}%"
         )
-        # mcp: 34/38 = 89%
-        assert 86 <= cat_bar_widths.get("mcp", 0) <= 92, (
-            f"Expected mcp bar ~89%, got {cat_bar_widths.get('mcp')}%"
+        # mcp: 34/42 = 81%
+        assert 78 <= cat_bar_widths.get("mcp", 0) <= 84, (
+            f"Expected mcp bar ~81%, got {cat_bar_widths.get('mcp')}%"
         )
 
         # Expand all categories (re-query after each click since render rebuilds DOM)
@@ -1476,7 +1529,7 @@ def make_audit_data(audit_summary=None):
         "project": "test-project",
         "version": "0.9.0",
         "docs_url": None,
-        "summary": {"total_features": 1, "verified": 1, "partial": 0, "failing": 0, "no_proofs": 0},
+        "summary": {"total_features": 1, "verified": 1, "partial": 0, "failing": 0, "untested": 0},
         "features": [{
             "name": "auth_login",
             "category": "auth",
@@ -1487,7 +1540,7 @@ def make_audit_data(audit_summary=None):
             "total": 2,
             "deferred": 0,
             "status": "VERIFIED",
-            "structural_checks": 0,
+
             "vhash": "a1b2c3d4",
             "receipt": {"commit": "abc", "timestamp": now, "stale": False},
             "rules": [
@@ -1569,3 +1622,605 @@ class TestAuditTagVisibility:
             f"Expected 0 audit tags when audit_summary is null, "
             f"got {len(tags_without)}: {page.evaluate('''() => Array.from(document.querySelectorAll('.atag')).map(e => e.textContent)''')}"
         )
+
+
+# ---------------------------------------------------------------------------
+# TestActionBanners — status-colored action banners in expanded detail
+# ---------------------------------------------------------------------------
+
+def make_action_banner_data():
+    """Generate data with features in all five statuses for action banner testing."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return {
+        "timestamp": now,
+        "project": "test-project",
+        "version": "0.9.0",
+        "docs_url": None,
+        "summary": {
+            "total_features": 5, "verified": 1, "passing": 1,
+            "partial": 1, "failing": 1, "untested": 1,
+        },
+        "features": [
+            {
+                "name": "feat_partial",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 1,
+                "total": 3,
+                "deferred": 0,
+                "status": "PARTIAL",
+
+                "vhash": None,
+                "receipt": None,
+                "rules": [
+                    {
+                        "id": "RULE-1", "description": "Does thing A",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "PASS",
+                        "proofs": [{"id": "PROOF-1", "description": "Test A",
+                                    "test_file": "t.py", "test_name": "test_a",
+                                    "tier": "unit", "status": "pass"}],
+                    },
+                    {
+                        "id": "RULE-2", "description": "Does thing B",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                    },
+                    {
+                        "id": "RULE-3", "description": "Does thing C",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                    },
+                ],
+                "audit": None,
+            },
+            {
+                "name": "feat_failing",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 0,
+                "total": 2,
+                "deferred": 0,
+                "status": "FAILING",
+
+                "vhash": None,
+                "receipt": None,
+                "rules": [
+                    {
+                        "id": "RULE-1", "description": "Returns 200",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "FAIL",
+                        "proofs": [{"id": "PROOF-1", "description": "Test 200",
+                                    "test_file": "t.py", "test_name": "test_ok",
+                                    "tier": "unit", "status": "fail"}],
+                    },
+                    {
+                        "id": "RULE-2", "description": "Logs request",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "PASS",
+                        "proofs": [{"id": "PROOF-2", "description": "Test log",
+                                    "test_file": "t.py", "test_name": "test_log",
+                                    "tier": "unit", "status": "pass"}],
+                    },
+                ],
+                "audit": None,
+            },
+            {
+                "name": "feat_passing",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 2,
+                "total": 2,
+                "deferred": 0,
+                "status": "PASSING",
+
+                "vhash": "abcd1234",
+                "receipt": None,
+                "rules": [
+                    {
+                        "id": "RULE-1", "description": "Works",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "PASS",
+                        "proofs": [{"id": "PROOF-1", "description": "Test works",
+                                    "test_file": "t.py", "test_name": "test_w",
+                                    "tier": "unit", "status": "pass"}],
+                    },
+                    {
+                        "id": "RULE-2", "description": "Also works",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "PASS",
+                        "proofs": [{"id": "PROOF-2", "description": "Test also",
+                                    "test_file": "t.py", "test_name": "test_a",
+                                    "tier": "unit", "status": "pass"}],
+                    },
+                ],
+                "audit": None,
+            },
+            {
+                "name": "feat_untested",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 0,
+                "total": 1,
+                "deferred": 0,
+                "status": "UNTESTED",
+
+                "vhash": None,
+                "receipt": None,
+                "rules": [
+                    {
+                        "id": "RULE-1", "description": "Something",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                    },
+                ],
+                "audit": None,
+            },
+            {
+                "name": "feat_verified",
+                "category": "test",
+                "type": "feature",
+                "is_global": False,
+                "source_url": None,
+                "proved": 1,
+                "total": 1,
+                "deferred": 0,
+                "status": "VERIFIED",
+
+                "vhash": "ef567890",
+                "receipt": {"commit": "abc", "timestamp": now, "stale": False},
+                "rules": [
+                    {
+                        "id": "RULE-1", "description": "Verified thing",
+                        "label": "own", "source": None, "is_deferred": False,
+                        "is_assumed": False, "status": "PASS",
+                        "proofs": [{"id": "PROOF-1", "description": "Test verified",
+                                    "test_file": "t.py", "test_name": "test_v",
+                                    "tier": "unit", "status": "pass"}],
+                    },
+                ],
+                "audit": None,
+            },
+        ],
+        "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        "audit_summary": None,
+        "drift": None,
+    }
+
+
+class TestActionBanners:
+
+    @pytest.mark.proof("purlin_report", "PROOF-23", "RULE-23")
+    def test_action_banners_per_status(self, page, dashboard):
+        """PROOF-23: Each status shows the correct action banner with guidance text."""
+        data = make_action_banner_data()
+        load_dashboard(page, dashboard, data=data)
+
+        # --- PARTIAL: should say "2 rules need proofs" ---
+        page.click("tr.fr[data-name='feat_partial']")
+        page.wait_for_timeout(300)
+        banner = page.query_selector("tr.dr .ab-partial")
+        assert banner, "Expected .ab-partial banner for PARTIAL feature"
+        text = banner.inner_text()
+        assert "2 rules need proofs" in text, (
+            f"PARTIAL banner should mention '2 rules need proofs', got: {text}"
+        )
+        assert "PASSING" in text, (
+            f"PARTIAL banner should mention reaching PASSING, got: {text}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_partial.png"))
+
+        # Collapse and re-render for next feature
+        page.click("tr.fr[data-name='feat_partial']")
+        page.wait_for_timeout(200)
+
+        # --- FAILING: should say "1 test failing" ---
+        page.click("tr.fr[data-name='feat_failing']")
+        page.wait_for_timeout(300)
+        banner = page.query_selector("tr.dr .ab-failing")
+        assert banner, "Expected .ab-failing banner for FAILING feature"
+        text = banner.inner_text()
+        assert "1 test" in text and "failing" in text, (
+            f"FAILING banner should mention '1 test failing', got: {text}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_failing.png"))
+
+        page.click("tr.fr[data-name='feat_failing']")
+        page.wait_for_timeout(200)
+
+        # --- PASSING: should mention purlin:verify ---
+        page.click("tr.fr[data-name='feat_passing']")
+        page.wait_for_timeout(300)
+        banner = page.query_selector("tr.dr .ab-passing")
+        assert banner, "Expected .ab-passing banner for PASSING feature"
+        text = banner.inner_text()
+        assert "purlin:verify" in text, (
+            f"PASSING banner should mention 'purlin:verify', got: {text}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_passing.png"))
+
+        page.click("tr.fr[data-name='feat_passing']")
+        page.wait_for_timeout(200)
+
+        # --- UNTESTED: should say "write tests" ---
+        page.click("tr.fr[data-name='feat_untested']")
+        page.wait_for_timeout(300)
+        banner = page.query_selector("tr.dr .ab-untested")
+        assert banner, "Expected .ab-untested banner for UNTESTED feature"
+        text = banner.inner_text()
+        assert "write tests" in text.lower(), (
+            f"UNTESTED banner should mention 'write tests', got: {text}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_untested.png"))
+
+        page.click("tr.fr[data-name='feat_untested']")
+        page.wait_for_timeout(200)
+
+        # --- VERIFIED: should have NO banner ---
+        page.click("tr.fr[data-name='feat_verified']")
+        page.wait_for_timeout(300)
+        banner = page.query_selector("tr.dr .ab")
+        assert banner is None, (
+            "VERIFIED feature should have no action banner (.ab element)"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_verified.png"))
+
+
+class TestRuleRowHighlights:
+
+    @pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24")
+    def test_no_proof_rules_have_amber_border(self, page, dashboard):
+        """PROOF-24: NO_PROOF rules have class rule-np and amber left border."""
+        data = make_action_banner_data()
+        load_dashboard(page, dashboard, data=data)
+
+        # Expand the PARTIAL feature (has 2 NO_PROOF rules)
+        page.click("tr.fr[data-name='feat_partial']")
+        page.wait_for_timeout(300)
+
+        np_rows = page.query_selector_all("tr.rule-np")
+        assert len(np_rows) == 2, (
+            f"Expected 2 rule-np rows for PARTIAL feature, got {len(np_rows)}"
+        )
+
+        # Verify amber border on the first td
+        border_color = page.evaluate("""() => {
+            var row = document.querySelector('tr.rule-np');
+            var td = row.querySelector('td');
+            return getComputedStyle(td).borderLeftColor;
+        }""")
+        hex_color = rgb_to_hex(border_color)
+        assert hex_color == "#f59e0b", (
+            f"Expected amber (#f59e0b) border-left on NO_PROOF rule td, got {hex_color}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof24_no_proof_border.png"))
+
+    @pytest.mark.proof("purlin_report", "PROOF-25", "RULE-25")
+    def test_fail_rules_have_red_border(self, page, dashboard):
+        """PROOF-25: FAIL rules have class rule-fail and red left border."""
+        data = make_action_banner_data()
+        load_dashboard(page, dashboard, data=data)
+
+        # Expand the FAILING feature (has 1 FAIL rule)
+        page.click("tr.fr[data-name='feat_failing']")
+        page.wait_for_timeout(300)
+
+        fail_rows = page.query_selector_all("tr.rule-fail")
+        assert len(fail_rows) == 1, (
+            f"Expected 1 rule-fail row for FAILING feature, got {len(fail_rows)}"
+        )
+
+        # Verify red border on the first td
+        border_color = page.evaluate("""() => {
+            var row = document.querySelector('tr.rule-fail');
+            var td = row.querySelector('td');
+            return getComputedStyle(td).borderLeftColor;
+        }""")
+        hex_color = rgb_to_hex(border_color)
+        assert hex_color == "#ef4444", (
+            f"Expected red (#ef4444) border-left on FAIL rule td, got {hex_color}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof25_fail_border.png"))
+
+
+class TestExternalReferenceBlock:
+
+    @pytest.mark.proof("purlin_report", "PROOF-26", "RULE-26")
+    def test_external_reference_block(self, page, dashboard):
+        """PROOF-26: Expanded anchor with source_url shows External Reference block
+        with Source link, Path, and Pinned (truncated); unpinned shows amber."""
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        features = [
+            {
+                "name": "pinned_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "git@github.com:acme/api-spec.git",
+                "pinned": "abc1234def5678901234567890abcdef12345678",
+                "source_path": "docs/contract.md",
+                "proved": 2,
+                "total": 2,
+                "deferred": 0,
+                "status": "PASSING",
+                "vhash": "aabb1122",
+                "receipt": None,
+                "rules": [
+                    {"id": "RULE-1", "description": "All responses include Content-Type",
+                     "label": "own", "source": None, "is_deferred": False,
+                     "is_assumed": False, "status": "PASS", "proofs": []},
+                ],
+                "audit": None,
+            },
+            {
+                "name": "unpinned_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "git@github.com:acme/loose.git",
+                "pinned": None,
+                "source_path": None,
+                "proved": 0,
+                "total": 1,
+                "deferred": 0,
+                "status": "UNTESTED",
+                "vhash": None,
+                "receipt": None,
+                "rules": [
+                    {"id": "RULE-1", "description": "Some constraint",
+                     "label": "own", "source": None, "is_deferred": False,
+                     "is_assumed": False, "status": "NO_PROOF", "proofs": []},
+                ],
+                "audit": None,
+            },
+        ]
+        data = make_data({
+            "features": features,
+            "summary": {"total_features": 0, "verified": 0, "passing": 1,
+                        "partial": 0, "failing": 0, "untested": 1},
+            "anchors_summary": {"total": 2, "with_source": 2, "global": 0},
+        })
+        load_dashboard(page, dashboard, data=data)
+
+        # Expand pinned anchor
+        page.click("tr.fr[data-name='pinned_anchor']")
+        page.wait_for_timeout(300)
+
+        # Verify .ext-ref-block exists
+        block = page.query_selector(".ext-ref-block")
+        assert block is not None, "Expected .ext-ref-block for anchor with source_url"
+
+        # Verify Source link
+        source_link = page.evaluate("""() => {
+            var block = document.querySelector('.ext-ref-block');
+            var link = block ? block.querySelector('a') : null;
+            return link ? link.href : null;
+        }""")
+        assert source_link and "acme/api-spec" in source_link, (
+            f"Expected Source link containing acme/api-spec, got {source_link}"
+        )
+
+        # Verify Path in code element
+        path_code = page.evaluate("""() => {
+            var block = document.querySelector('.ext-ref-block');
+            var codes = block ? block.querySelectorAll('code') : [];
+            for (var c of codes) {
+                if (c.textContent.includes('contract.md')) return c.textContent;
+            }
+            return null;
+        }""")
+        assert path_code and "contract.md" in path_code, (
+            f"Expected Path code containing contract.md, got {path_code}"
+        )
+
+        # Verify Pinned truncated to 7 chars
+        pinned_code = page.evaluate("""() => {
+            var block = document.querySelector('.ext-ref-block');
+            var codes = block ? block.querySelectorAll('code') : [];
+            for (var c of codes) {
+                if (c.textContent.match(/^[a-f0-9]{7}$/)) return c.textContent;
+            }
+            return null;
+        }""")
+        assert pinned_code == "abc1234", (
+            f"Expected pinned 'abc1234' (7 chars), got {pinned_code}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof26_ext_ref_pinned.png"))
+
+        # Now expand unpinned anchor — verify amber Unpinned text
+        page.click("tr.fr[data-name='pinned_anchor']")  # collapse
+        page.wait_for_timeout(200)
+        page.click("tr.fr[data-name='unpinned_anchor']")
+        page.wait_for_timeout(300)
+
+        unpinned_text = page.evaluate("""() => {
+            var warns = document.querySelectorAll('.ext-ref-warn');
+            for (var w of warns) {
+                if (w.textContent.includes('Unpinned')) return w.textContent;
+            }
+            return null;
+        }""")
+        assert unpinned_text and "Unpinned" in unpinned_text, (
+            f"Expected 'Unpinned' in amber, got {unpinned_text}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof26_ext_ref_unpinned.png"))
+
+    @pytest.mark.proof("purlin_report", "PROOF-27", "RULE-27")
+    def test_ext_icon_tooltip_includes_pinned(self, page, dashboard):
+        """PROOF-27: ext-icon tooltip includes Source, Path, and Pinned."""
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        features = [
+            {
+                "name": "tooltip_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "git@github.com:acme/policies.git",
+                "pinned": "deadbeef12345678",
+                "source_path": "security/policy.md",
+                "proved": 1,
+                "total": 1,
+                "deferred": 0,
+                "status": "PASSING",
+                "vhash": "1234abcd",
+                "receipt": None,
+                "rules": [],
+                "audit": None,
+            },
+        ]
+        data = make_data({
+            "features": features,
+            "summary": {"total_features": 0, "verified": 0, "passing": 0,
+                        "partial": 0, "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 1, "with_source": 1, "global": 0},
+        })
+        load_dashboard(page, dashboard, data=data)
+
+        title = page.evaluate("""() => {
+            var icon = document.querySelector('.ext-icon');
+            return icon ? icon.getAttribute('title') : null;
+        }""")
+        assert title is not None, "Expected .ext-icon with title attribute"
+        assert "acme/policies" in title, f"Expected source URL in tooltip, got {title}"
+        assert "security/policy.md" in title, f"Expected path in tooltip, got {title}"
+        assert "deadbee" in title, f"Expected pinned SHA in tooltip, got {title}"
+
+    @pytest.mark.proof("purlin_report", "PROOF-28", "RULE-28")
+    def test_stale_badge_on_stale_anchor(self, page, dashboard):
+        """PROOF-28: Stale anchor shows amber STALE badge; current anchor does not."""
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        features = [
+            {
+                "name": "stale_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "git@github.com:acme/stale.git",
+                "pinned": "oldsha1234567",
+                "source_path": "spec.md",
+                "ext_status": "stale",
+                "proved": 1, "total": 1, "deferred": 0,
+                "status": "PASSING",
+                "vhash": "aabb", "receipt": None, "rules": [], "audit": None,
+            },
+            {
+                "name": "current_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "git@github.com:acme/current.git",
+                "pinned": "currentsha789",
+                "source_path": "spec.md",
+                "ext_status": "current",
+                "proved": 1, "total": 1, "deferred": 0,
+                "status": "PASSING",
+                "vhash": "ccdd", "receipt": None, "rules": [], "audit": None,
+            },
+        ]
+        data = make_data({
+            "features": features,
+            "summary": {"total_features": 0, "verified": 0, "passing": 0,
+                        "partial": 0, "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 2, "with_source": 2, "global": 0},
+        })
+        load_dashboard(page, dashboard, data=data)
+
+        # Stale anchor should have .ext-stale badge
+        stale_badge = page.evaluate("""() => {
+            var row = document.querySelector('tr.fr[data-name="stale_anchor"]');
+            var badge = row ? row.querySelector('.ext-stale') : null;
+            return badge ? { text: badge.textContent, title: badge.getAttribute('title') } : null;
+        }""")
+        assert stale_badge is not None, "Expected .ext-stale badge on stale anchor"
+        assert "STALE" in stale_badge["text"].upper(), f"Expected 'STALE' text, got {stale_badge['text']}"
+        assert "sync" in stale_badge["title"].lower(), f"Expected sync in tooltip, got {stale_badge['title']}"
+
+        # Current anchor should NOT have .ext-stale badge
+        current_badge = page.evaluate("""() => {
+            var row = document.querySelector('tr.fr[data-name="current_anchor"]');
+            return row ? row.querySelector('.ext-stale') : 'no_row';
+        }""")
+        assert current_badge is None, f"Expected no .ext-stale on current anchor, got {current_badge}"
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof28_stale_badge.png"))
+
+
+class TestUncommittedWork:
+
+    @pytest.mark.proof("purlin_report", "PROOF-29", "RULE-29")
+    def test_uncommitted_section(self, page, dashboard):
+        """PROOF-29: Uncommitted section shows count collapsed, files expanded; hidden when empty."""
+        # With uncommitted files
+        data = make_data({
+            "uncommitted": ["M specs/auth/login.md", "?? dev/scratch.py", "M scripts/server.py"],
+        })
+        load_dashboard(page, dashboard, data=data)
+
+        # Verify section exists with count
+        uw_section = page.query_selector(".uw-section")
+        assert uw_section is not None, "Expected .uw-section when uncommitted files exist"
+
+        count_text = page.inner_text(".uw-count")
+        assert "3" in count_text, f"Expected count '3', got {count_text}"
+
+        # Files should be hidden initially
+        files_visible = page.evaluate("""() => {
+            var el = document.getElementById('uw-files');
+            return el ? getComputedStyle(el).display !== 'none' : false;
+        }""")
+        assert not files_visible, "Expected files hidden when collapsed"
+
+        # Click to expand
+        page.click("#uw-toggle")
+        page.wait_for_timeout(200)
+
+        files_visible_after = page.evaluate("""() => {
+            var el = document.getElementById('uw-files');
+            return el ? getComputedStyle(el).display !== 'none' : false;
+        }""")
+        assert files_visible_after, "Expected files visible after clicking"
+
+        files_text = page.inner_text("#uw-files")
+        assert "login.md" in files_text, f"Expected file list content, got {files_text}"
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof29_uncommitted.png"))
+
+        # Without uncommitted files — section should not exist
+        data_clean = make_data({"uncommitted": []})
+        load_dashboard(page, dashboard, data=data_clean)
+        uw_section_clean = page.query_selector(".uw-section")
+        assert uw_section_clean is None, "Expected no .uw-section when uncommitted is empty"
+
+
+@pytest.mark.proof("purlin_report", "PROOF-30", "RULE-30")
+def test_description_block_rendering(dashboard, page):
+    """Description block renders above rules when present, absent when null."""
+    data = make_data()
+    load_dashboard(page, dashboard, data=data)
+
+    # Click the auth_login feature row (categories already expanded by load_dashboard)
+    page.click("tr.fr[data-name='auth_login']")
+    page.wait_for_timeout(300)
+
+    # Should show .desc-block with the description text
+    desc_block = page.query_selector("tr.fr[data-name='auth_login'] + tr.dr .desc-block")
+    assert desc_block is not None, "Expected .desc-block when feature has description"
+    desc_text = desc_block.inner_text()
+    assert "Handles user login" in desc_text, (
+        f"Expected description text, got: {desc_text}"
+    )
+    page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof30_description.png"))
+
+    # Expand checkout (which has description=None)
+    page.click("tr.fr[data-name='checkout']")
+    page.wait_for_timeout(300)
+
+    # The detail row for checkout should not have a .desc-block
+    detail = page.query_selector("tr.fr[data-name='checkout'] + tr.dr .desc-block")
+    assert detail is None, "Expected no .desc-block when description is null"
