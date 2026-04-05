@@ -10,10 +10,11 @@ Every role can do every job. The arrows show the typical flow, not restrictions.
 
 ## How It Works
 
-1. **Specs define rules.** A PM (or engineer, or anyone) writes `RULE-1: passwords must be hashed with bcrypt`.
-2. **Tests prove rules.** An engineer writes a test marked `@pytest.mark.proof("login", "PROOF-1", "RULE-1")`.
-3. **`sync_status` shows the gaps.** 3/5 rules proved means 2 rules need tests.
-4. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash.
+1. **Specs define rules.** A PM (or engineer, or anyone) writes `RULE-1: passwords must be hashed with bcrypt`. Rules are the constraints — what must be true.
+2. **Specs define proofs.** Each rule gets a proof blueprint: `PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database`. Proofs describe how to verify the rule holds. An agent or engineer writes both rules and proofs together — they're two sides of the same spec.
+3. **Tests implement proofs.** An engineer (or agent) writes a test marked `@pytest.mark.proof("login", "PROOF-1", "RULE-1")` that actually runs the assertion described in the proof blueprint.
+4. **`sync_status` shows the gaps.** 3/5 rules proved means 2 rules still need tests.
+5. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash.
 
 That's it. No tracking system, no ledger, no state files. The filesystem is the state.
 
@@ -38,10 +39,10 @@ User authentication with email and password.
 - PROOF-2 (RULE-2): Submit 6 invalid passwords; verify the 6th returns 429 @integration
 ```
 
-**`## Rules`** — parsed by `sync_status`. Must use `RULE-N:` format.
-**`## Proof`** — NOT parsed (except `@manual` stamps). Blueprint for the agent writing tests.
-**`> Requires:`** — other specs/anchors whose rules also apply.
-**`> Scope:`** — files this feature covers. Documentation only.
+**`## Rules`** — what must be true. Each rule is a testable constraint tracked by `sync_status`.
+**`## Proof`** — how to verify each rule. Proof descriptions guide whoever writes the test (human or agent).
+**`> Requires:`** — anchors or other specs whose rules also apply to this feature.
+**`> Scope:`** — which files this feature touches.
 
 Full format: [references/formats/spec_format.md](../references/formats/spec_format.md)
 Quality guide: [references/spec_quality_guide.md](../references/spec_quality_guide.md) — how to write good rules, proofs, and anchors
@@ -50,13 +51,13 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 **Feature-level statuses** (progression: UNTESTED → PARTIAL → PASSING → VERIFIED):
 
-| Status | Color | Meaning |
-|--------|-------|---------|
-| VERIFIED | green | ALL behavioral rules proved + receipt matches |
-| PASSING | green | ALL behavioral rules proved + no receipt yet |
-| PARTIAL | amber | Some rules proved, none failing — more tests needed to reach PASSING |
-| FAILING | red | Any proof has status FAIL |
-| UNTESTED | gray | No behavioral proofs at all |
+| Status | Meaning |
+|--------|---------|
+| VERIFIED | ALL behavioral rules proved + receipt matches |
+| PASSING | ALL behavioral rules proved, no receipt yet |
+| PARTIAL | Some rules proved, none failing — more tests needed |
+| FAILING | Any proof has status FAIL |
+| UNTESTED | No behavioral proofs at all |
 
 **Rule-level statuses** (shown per-rule in detailed output):
 
@@ -70,19 +71,13 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 ### Coverage at a glance
 
-`sync_status` starts with a summary table showing every feature's coverage:
+`purlin:status` shows a summary of all features with their coverage:
 
 ```
-┌───────────────────┬──────────┬─────────┐
-│ Feature           │ Coverage │ Status  │
-├───────────────────┼──────────┼─────────┤
-│ checkout          │      3/5 │ PARTIAL │
-│ login             │      5/5 │VERIFIED │
-└───────────────────┴──────────┴─────────┘
-1/2 features VERIFIED | Integrity: 85% (last purlin:audit: 2 hours ago)
+Summary: 42 features | 22 VERIFIED | 13 PASSING | 6 PARTIAL | 0 FAILING | 1 UNTESTED
 ```
 
-Detailed per-rule coverage follows below. Features needing attention (FAIL, PARTIAL) sort to the top.
+Each feature gets detailed per-rule coverage. Features needing attention (FAILING, PARTIAL) sort to the top. Uncommitted spec/proof changes are flagged so you know the report may not reflect the latest state.
 
 The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules. Run `purlin:audit` after significant test changes to refresh the score.
 
