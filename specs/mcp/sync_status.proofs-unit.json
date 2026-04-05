@@ -141,16 +141,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_structural_regex_rejects_behavioral_descriptions",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_structural_regex_accepts_grep_descriptions",
+      "test_name": "test_all_proof_types_count_equally",
       "status": "pass",
       "tier": "unit"
     },

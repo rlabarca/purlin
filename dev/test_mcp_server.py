@@ -453,27 +453,9 @@ class TestSyncStatus:
         assert 'Manual proof without > Scope:' not in result
 
     @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
-    def test_structural_regex_rejects_behavioral_descriptions(self):
-        """Behavioral descriptions must NOT be classified as structural."""
-        # "Verify the API endpoint exists and returns 200" is behavioral
-        self._write_spec('api', (
-            '# Feature: api\n\n'
-            '## What it does\nAPI.\n\n'
-            '## Rules\n- RULE-1: Endpoint returns 200\n\n'
-            '## Proof\n- PROOF-1 (RULE-1): Verify the API endpoint exists and returns 200\n'
-        ))
-        self._write_proofs('api', [
-            {"feature": "api", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "tests/test.py", "test_name": "test_api",
-             "status": "pass", "tier": "unit"},
-        ])
-        result = purlin_server.sync_status(self.project_root)
-        # Should be VERIFIED since it's behavioral
-        assert 'api: PASSING' in result
-
-    @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
-    def test_structural_regex_accepts_grep_descriptions(self):
-        """Pure grep/existence checks should be classified as structural."""
+    def test_all_proof_types_count_equally(self):
+        """RULE-7: Grep-based and behavioral proofs both earn PASSING equally."""
+        # Grep-based proof description
         self._write_spec('refs', (
             '# Feature: refs\n\n'
             '## What it does\nReference docs.\n\n'
@@ -486,7 +468,7 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        # Structural proofs count toward VERIFIED
+        # All proofs count equally — grep-based proofs earn PASSING
         assert 'refs: PASSING' in result
 
     @pytest.mark.proof("sync_status", "PROOF-16", "RULE-16")
@@ -793,8 +775,8 @@ class TestDrift:
         result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         assert 'refs' in data['proof_status']
-        assert data['proof_status']['refs']['structural_checks'] == 1
         assert data['proof_status']['refs']['proved'] == 1
+        assert data['proof_status']['refs']['total'] == 1
 
 
     @pytest.mark.proof("drift", "PROOF-5", "RULE-5")
@@ -920,21 +902,14 @@ class TestDriftDetection:
         assert spec_map.get('src/api/login.js') == 'login'
 
     @pytest.mark.proof("drift", "PROOF-8", "RULE-8")
-    def test_structural_drift_flag(self):
-        """CHANGED_BEHAVIOR file gets behavioral_gap when spec has no behavioral proofs."""
-        # Create a structural-only spec with scope and passing proof
+    def test_coverage_gap_drift_flag(self):
+        """CHANGED_BEHAVIOR file gets behavioral_gap when spec has zero proved rules."""
+        # Create a spec with rules but NO proof file
         with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
             f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
                     '## What it does\nLogin.\n\n'
                     '## Rules\n- RULE-1: Verify config contains auth section\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): Grep config for auth section; verify present\n')
-        with open(os.path.join(self.project_root, 'specs', 'auth',
-                               'login.proofs-unit.json'), 'w') as f:
-            json.dump({"tier": "unit", "proofs": [
-                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
-                 "test_file": "test.py", "test_name": "test_grep",
-                 "status": "pass", "tier": "unit"},
-            ]}, f)
         # Create the scope file
         os.makedirs(os.path.join(self.project_root, 'src'), exist_ok=True)
         with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
@@ -961,20 +936,13 @@ class TestDriftDetection:
 
     @pytest.mark.proof("drift", "PROOF-9", "RULE-9")
     def test_drift_flags_array(self):
-        """drift_flags array contains features with behavioral gap and changed files."""
-        # Same setup as structural_drift test
+        """drift_flags array contains features with coverage gap and changed files."""
+        # Create spec with rules but NO proof file
         with open(os.path.join(self.project_root, 'specs', 'auth', 'login.md'), 'w') as f:
             f.write('# Feature: login\n\n> Scope: src/login.py\n\n'
                     '## What it does\nLogin.\n\n'
                     '## Rules\n- RULE-1: Verify config contains auth section\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): Grep config for auth section; verify present\n')
-        with open(os.path.join(self.project_root, 'specs', 'auth',
-                               'login.proofs-unit.json'), 'w') as f:
-            json.dump({"tier": "unit", "proofs": [
-                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
-                 "test_file": "test.py", "test_name": "test_grep",
-                 "status": "pass", "tier": "unit"},
-            ]}, f)
         os.makedirs(os.path.join(self.project_root, 'src'), exist_ok=True)
         with open(os.path.join(self.project_root, 'src', 'login.py'), 'w') as f:
             f.write('pass\n')

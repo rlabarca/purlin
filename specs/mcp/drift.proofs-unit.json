@@ -78,7 +78,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_structural_drift_flag",
+      "test_name": "test_coverage_gap_drift_flag",
       "status": "pass",
       "tier": "unit"
     },

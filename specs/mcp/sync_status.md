@@ -11,12 +11,12 @@ Rule coverage reporting tool. Scans specs and proof files, computes per-feature 
 ## Rules
 
 - RULE-1: Scans `specs/**/*.md` for RULE-N lines, reads `*.proofs-*.json`, and reports per-feature coverage including own rules, required rules (from `> Requires:`), and global anchor rules, with actionable directives
-- RULE-2: Status is determined by behavioral proof coverage: VERIFIED (all behavioral rules proved + passing + non-stale receipt exists), PASSING (all behavioral rules proved + passing + no current receipt), PARTIAL (some but not all behavioral rules proved, none failing), FAILING (any proof has status FAIL), UNTESTED (zero behavioral proofs). Partial coverage never earns PASSING — every behavioral rule must have a passing proof. Features with only structural checks get no vhash
+- RULE-2: Status is determined by proof coverage: VERIFIED (all rules proved + passing + non-stale receipt exists), PASSING (all rules proved + passing + no current receipt), PARTIAL (some but not all rules proved, none failing), FAILING (any proof has status FAIL), UNTESTED (zero proofs). Partial coverage never earns PASSING — every rule must have a passing proof
 - RULE-3: Warns about unnumbered lines under `## Rules` and missing `## Rules` sections
 - RULE-4: Required rules from `> Requires:` specs count toward a feature's coverage total (X/total) with `(required)` label; proofs are looked up under the source spec's feature name
 - RULE-5: Detects manual proof staleness by checking if scope files have commits newer than the stamp's commit SHA
 - RULE-6: `vhash` is computed as `sha256(sorted rule IDs including prefixed required/global keys + "|" + sorted proof ID:status pairs for all relevant proofs)[:8]`
-- RULE-7: Classifies proofs as structural (grep/existence checks) or behavioral (observable outcomes). Structural proofs are reported as "checks" and excluded from the proved/total count and VERIFIED determination. Only behavioral proofs count toward coverage
+- RULE-7: All proofs count equally toward coverage regardless of proof type (grep-based, behavioral, etc.). Proof quality (STRONG/WEAK/HOLLOW) is assessed by the auditor, not the coverage system
 - RULE-8: Detects `> Global: true` metadata on anchor specs and sets the `is_global` flag
 - RULE-9: Global anchor rules auto-apply to all non-anchor feature specs without needing `> Requires:`; they appear in coverage with `(global)` label
 - RULE-10: Displays rule labels: `(own)` for the feature's own rules, `(required)` for `> Requires:` rules, `(global)` for global anchor rules
@@ -26,11 +26,11 @@ Rule coverage reporting tool. Scans specs and proof files, computes per-feature 
 - RULE-14: Prefers proof files adjacent to their spec over proof files in the specs/ root directory
 - RULE-15: Explains receipt staleness cause: distinguishes own rule changes from required/global anchor rule changes
 - RULE-16: Warns when `specs/` contains uncommitted changes to `.md` or `.proofs-*.json` files, listing the affected files and recommending a commit before drift or verify
-- RULE-17: Displays structural checks separately from behavioral proofs, with a note that they are not counted toward coverage
+- RULE-17: All proofs are displayed uniformly — grep-based and behavioral proofs both show PASS/FAIL status with no visual distinction in coverage reporting
 - RULE-18: sync_status output begins with a summary table showing feature name, coverage fraction, and status (VERIFIED/PASSING/FAILING/PARTIAL/UNTESTED) for all features, sorted by status priority (FAILING, PARTIAL, PASSING, VERIFIED, UNTESTED)
 - RULE-19: sync_status appends an integrity summary after the features VERIFIED line showing the integrity percentage and relative time since last purlin:audit, sourced from the audit cache; when no cache exists, shows a prompt to run purlin:audit
 - RULE-20: Reports UNTESTED when a feature has zero behavioral proofs — this replaces the em-dash display for features with no proofs
-- RULE-21: Reports PARTIAL (not PASSING) when a feature has some behavioral rules proved and passing but not all behavioral rules are covered — partial coverage never earns PASSING status
+- RULE-21: Reports PARTIAL (not PASSING) when a feature has some rules proved and passing but not all rules are covered — partial coverage never earns PASSING status
 
 ## Proof
 
