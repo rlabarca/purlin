@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Tests for pre_push_hook — 8 proofs covering 7 rules.
+# Tests for pre_push_hook — 12 proofs covering 9 rules.
 # Most tests are @integration (Level 2) — they create temp directories and run the hook.
-# PROOF-8 is @e2e (Level 3) — full lifecycle across proof states.
+# PROOF-8, PROOF-11 are @e2e (Level 3) — full lifecycle and init verification.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -329,21 +329,21 @@ output7=""
 ec7=0
 output7=$(run_hook "$TMPDIR7") || ec7=$?
 
-has_partial=false
 has_blocked=false
 has_fail_detail=false
+has_recovery=false
 
-echo "$output7" | grep -q "partial coverage" && has_partial=true
 echo "$output7" | grep -q "PUSH BLOCKED" && has_blocked=true
-echo "$output7" | grep -q "FAIL" && has_fail_detail=true
+echo "$output7" | grep -q "FAILING\|Failing" && has_fail_detail=true
+echo "$output7" | grep -q "RECOVERY STEPS" && has_recovery=true
 
-if $has_partial && $has_blocked && $has_fail_detail; then
-  echo "  PASS: output contains FAIL detail + partial coverage + PUSH BLOCKED sections"
-  purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" pass "output shows partial coverage and PUSH BLOCKED sections"
+if $has_blocked && $has_fail_detail && $has_recovery; then
+  echo "  PASS: output contains FAIL detail + PUSH BLOCKED + RECOVERY STEPS"
+  purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" pass "output shows failing features, PUSH BLOCKED, and recovery steps"
 else
-  echo "  FAIL: expected fail+partial+blocked sections, got fail=$has_fail_detail partial=$has_partial blocked=$has_blocked"
+  echo "  FAIL: expected fail+blocked+recovery sections, got fail=$has_fail_detail blocked=$has_blocked recovery=$has_recovery"
   echo "  Output: $output7"
-  purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" fail "output shows partial coverage and PUSH BLOCKED sections"
+  purlin_proof "pre_push_hook" "PROOF-7" "RULE-7" fail "output shows failing features, PUSH BLOCKED, and recovery steps"
 fi
 
 # ==========================================================================
@@ -519,10 +519,125 @@ else
   purlin_proof "pre_push_hook" "PROOF-11" "RULE-9" fail "init installs executable pre-push hook that blocks on FAIL"
 fi
 
+# ==========================================================================
+# PROOF-12 (RULE-4): False positive prevention — rule description containing
+#   "FAIL" must NOT trigger a block when the feature is PASSING.
+#   This catches the bug where the old parser matched ": FAIL " in rule
+#   descriptions like "RULE-8: FAIL status badge is solid red pill..."
+# ==========================================================================
+TMPDIR12=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR12"
+create_test_project "$TMPDIR12" 0  # 0 rules — we'll write our own spec
+
+# Write a spec whose rule description contains "FAIL"
+cat > "$TMPDIR12/specs/hooks/test_feature.md" << 'SPECEOF'
+# Feature: test_feature
+
+## Rules
+
+- RULE-1: FAIL status badge is solid red pill with white text
+- RULE-2: PASSING badge is green pill
+
+## Proof
+
+- PROOF-1 (RULE-1): Verify FAIL badge renders correctly
+- PROOF-2 (RULE-2): Verify PASSING badge renders correctly
+SPECEOF
+
+create_proof_file "$TMPDIR12" "test_feature" \
+  "PROOF-1|RULE-1|pass" \
+  "PROOF-2|RULE-2|pass"
+(cd "$TMPDIR12" && git add -A && git commit -q -m "spec with FAIL in description")
+
+output12=""
+ec12=0
+output12=$(run_hook "$TMPDIR12") || ec12=$?
+
+if [[ $ec12 -eq 0 ]] && ! echo "$output12" | grep -q "PUSH BLOCKED"; then
+  echo "  PASS: rule description containing 'FAIL' does not false-positive block"
+  purlin_proof "pre_push_hook" "PROOF-12" "RULE-4" pass "rule description containing FAIL does not false-positive block push"
+else
+  echo "  FAIL: false positive — description text triggered block (exit=$ec12)"
+  echo "  Output: $output12"
+  purlin_proof "pre_push_hook" "PROOF-12" "RULE-4" fail "rule description containing FAIL does not false-positive block push"
+fi
+
+# ==========================================================================
+# PROOF-13 (RULE-7): Recovery message lists feature-specific
+#   /purlin:unit-test commands for each failing feature.
+# ==========================================================================
+TMPDIR13=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR13"
+create_test_project "$TMPDIR13" 2
+create_proof_file "$TMPDIR13" "test_feature" \
+  "PROOF-1|RULE-1|fail" \
+  "PROOF-2|RULE-2|pass"
+(cd "$TMPDIR13" && git add -A && git commit -q -m "one failing proof")
+
+output13=""
+ec13=0
+output13=$(run_hook "$TMPDIR13") || ec13=$?
+
+has_unit_test_cmd=false
+has_status_cmd=false
+has_build_cmd=false
+
+echo "$output13" | grep -q "/purlin:unit-test test_feature" && has_unit_test_cmd=true
+echo "$output13" | grep -q "/purlin:status" && has_status_cmd=true
+echo "$output13" | grep -q "/purlin:build" && has_build_cmd=true
+
+if $has_unit_test_cmd && $has_status_cmd && $has_build_cmd; then
+  echo "  PASS: recovery message lists feature-specific skill commands"
+  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" pass "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build"
+else
+  echo "  FAIL: expected unit-test=$has_unit_test_cmd status=$has_status_cmd build=$has_build_cmd"
+  echo "  Output: $output13"
+  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" fail "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build"
+fi
+
+# ==========================================================================
+# PROOF-14 (RULE-8): Strict mode block message includes /purlin:verify
+#   recovery step and feature-specific /purlin:unit-test command.
+# ==========================================================================
+TMPDIR14=$(mktemp -d)
+ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR14"
+create_test_project "$TMPDIR14" 3
+python3 -c "
+import json
+cfg = json.load(open('$TMPDIR14/.purlin/config.json'))
+cfg['pre_push'] = 'strict'
+json.dump(cfg, open('$TMPDIR14/.purlin/config.json', 'w'))
+"
+create_proof_file "$TMPDIR14" "test_feature" \
+  "PROOF-1|RULE-1|pass" \
+  "PROOF-2|RULE-2|pass"
+(cd "$TMPDIR14" && git add -A && git commit -q -m "partial proofs strict mode")
+
+output14=""
+ec14=0
+output14=$(run_hook "$TMPDIR14") || ec14=$?
+
+has_verify_cmd=false
+has_unit_test_cmd14=false
+has_recovery14=false
+
+echo "$output14" | grep -q "/purlin:verify" && has_verify_cmd=true
+echo "$output14" | grep -q "/purlin:unit-test" && has_unit_test_cmd14=true
+echo "$output14" | grep -q "RECOVERY STEPS" && has_recovery14=true
+
+if [[ $ec14 -eq 1 ]] && $has_verify_cmd && $has_unit_test_cmd14 && $has_recovery14; then
+  echo "  PASS: strict mode block includes recovery steps with /purlin:verify"
+  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" pass "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps"
+else
+  echo "  FAIL: exit=$ec14 verify=$has_verify_cmd unit-test=$has_unit_test_cmd14 recovery=$has_recovery14"
+  echo "  Output: $output14"
+  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" fail "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps"
+fi
+
 # --- Emit proof files ---
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "pre_push_hook: 9 proofs recorded"
+echo "pre_push_hook: 12 proofs recorded"

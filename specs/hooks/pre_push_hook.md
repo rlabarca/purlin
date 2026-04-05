@@ -30,3 +30,6 @@
 - PROOF-9 (RULE-8): Set strict mode in config; create proofs for 2 of 3 behavioral rules (PARTIAL — no FAIL, but not fully covered); run hook; verify exit 1 and output contains "strict mode" @integration
 - PROOF-10 (RULE-8): Set strict mode in config; create proofs for all behavioral rules (PASSING — full coverage, no receipt); run hook; verify exit 1 and output contains "strict mode" (PASSING blocked in strict, only VERIFIED allowed) @integration
 - PROOF-11 (RULE-9): Run purlin:init on a fresh git repo; verify .git/hooks/pre-push exists, is executable, and a git push with failing proofs is intercepted and blocked @e2e
+- PROOF-12 (RULE-4): Create spec with rule description containing "FAIL" (e.g. "RULE-1: FAIL status badge is solid red pill"); create all-pass proofs; run hook; verify exit 0 and no "PUSH BLOCKED" — description text must not false-positive trigger blocking @integration
+- PROOF-13 (RULE-7): Create spec with one failing proof; run hook; verify recovery message contains `/purlin:unit-test test_feature`, `/purlin:status`, and `/purlin:build` @integration
+- PROOF-14 (RULE-8): Set strict mode; create partial proofs (no FAIL); run hook; verify exit 1 and output contains `RECOVERY STEPS`, `/purlin:unit-test`, and `/purlin:verify` @integration

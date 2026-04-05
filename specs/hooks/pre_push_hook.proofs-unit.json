@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_pre_push_hook.sh",
-      "test_name": "output shows partial coverage and PUSH BLOCKED sections",
+      "test_name": "output shows failing features, PUSH BLOCKED, and recovery steps",
       "status": "pass",
       "tier": "unit"
     },
@@ -97,6 +97,33 @@
       "rule": "RULE-9",
       "test_file": "dev/test_pre_push_hook.sh",
       "test_name": "init installs executable pre-push hook that blocks on FAIL",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-12",
+      "rule": "RULE-4",
+      "test_file": "dev/test_pre_push_hook.sh",
+      "test_name": "rule description containing FAIL does not false-positive block push",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-13",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_push_hook.sh",
+      "test_name": "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-14",
+      "rule": "RULE-8",
+      "test_file": "dev/test_pre_push_hook.sh",
+      "test_name": "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps",
       "status": "pass",
       "tier": "unit"
     }

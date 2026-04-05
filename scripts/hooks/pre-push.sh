@@ -67,33 +67,46 @@ from purlin_server import sync_status
 print(sync_status('$ROOT'))
 " 2>/dev/null) || { echo "purlin: could not run sync_status, allowing push"; exit 0; }
 
-# --- Parse results ---
+# --- Parse summary table ---
+# The summary table uses │-delimited rows: │ name │ N/M │ STATUS │
+# Parsing the table avoids false positives from rule descriptions that
+# contain status keywords (e.g. "RULE-8: FAIL status badge...").
 FAILS=""
-WARNINGS=""
+FAIL_FEATURES=""
 PASSES=""
 NON_READY=""
 while IFS= read -r line; do
-  if [[ "$line" =~ ^[a-zA-Z_] ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
-    CURRENT_FEATURE="$line"
-  fi
-  if [[ "$line" == *": FAIL "* ]]; then
-    RULE=$(echo "$line" | sed 's/^[[:space:]]*//')
-    FAILS="${FAILS}  ${CURRENT_FEATURE%%:*} → ${RULE}\n"
-  fi
-  if [[ "$line" == *": NO PROOF "* ]] || [[ "$line" == *"MANUAL PROOF NEEDED"* ]] || [[ "$line" == *"MANUAL PROOF STALE"* ]]; then
-    RULE=$(echo "$line" | sed 's/^[[:space:]]*//')
-    WARNINGS="${WARNINGS}  ${CURRENT_FEATURE%%:*} → ${RULE}\n"
-  fi
-  if [[ "$line" =~ ": VERIFIED" ]]; then
-    PASSES="${PASSES}  ${line%%:*}\n"
-  fi
-  if [[ "$line" =~ ": PARTIAL" ]]; then
-    PASSES="${PASSES}  ${line%%:*}\n"
-    # PARTIAL = some proofs pass but incomplete coverage — blocked in strict mode
-    NON_READY="${NON_READY}  ${line} (needs purlin:verify)\n"
-  fi
-  if [[ "$line" =~ "rules proved" ]] && [[ ! "$line" =~ VERIFIED ]] && [[ ! "$line" =~ PARTIAL ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
-    NON_READY="${NON_READY}  ${line}\n"
+  # Match summary table rows: │ feature_name │ N/M │ STATUS │
+  if [[ "$line" == *"│"* ]]; then
+    # Extract fields by splitting on │
+    FEAT=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+    STAT=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
+    COVERAGE=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+    # Skip header/border rows
+    [[ -z "$FEAT" || "$FEAT" == "Feature" || "$FEAT" == *"─"* ]] && continue
+    # Strip "(anchor)" suffix for feature name
+    FEAT_NAME=$(echo "$FEAT" | sed 's/ *(anchor)$//')
+    case "$STAT" in
+      FAILING)
+        FAILS="${FAILS}  ${FEAT_NAME} (${COVERAGE})\n"
+        if [[ "$FAIL_FEATURES" != *"$FEAT_NAME"* ]]; then
+          FAIL_FEATURES="${FAIL_FEATURES} ${FEAT_NAME}"
+        fi
+        ;;
+      VERIFIED)
+        PASSES="${PASSES}  ${FEAT_NAME}\n"
+        ;;
+      PASSING)
+        PASSES="${PASSES}  ${FEAT_NAME}\n"
+        ;;
+      PARTIAL)
+        PASSES="${PASSES}  ${FEAT_NAME}\n"
+        NON_READY="${NON_READY}  ${FEAT_NAME} (${COVERAGE}, needs purlin:verify)\n"
+        ;;
+      UNTESTED)
+        NON_READY="${NON_READY}  ${FEAT_NAME} (${COVERAGE}, untested)\n"
+        ;;
+    esac
   fi
 done <<< "$STATUS"
 
@@ -103,39 +116,72 @@ if [[ -n "$PASSES" ]]; then
   echo -e "$PASSES"
 fi
 
-if [[ -n "$WARNINGS" ]]; then
-  echo "purlin: partial coverage:"
-  echo -e "$WARNINGS"
+if [[ -n "$NON_READY" ]] && [[ "$MODE" != "strict" ]]; then
+  echo "purlin: partial coverage (not blocking in warn mode):"
+  echo -e "$NON_READY"
 fi
 
 # Always block on FAIL (both modes)
 if [[ -n "$FAILS" ]]; then
+  FAIL_FEATURES="$(echo "$FAIL_FEATURES" | xargs)"  # trim whitespace
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "⚠ PUSH BLOCKED — failing proofs detected"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "PUSH BLOCKED — failing proofs detected"
   echo ""
+  echo "Failing rules:"
   echo -e "$FAILS"
-  echo "Fix failing proofs, then push again:"
-  echo "  → Run: test <feature>"
-  echo "  → Run: purlin:status"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "RECOVERY STEPS"
+  echo ""
+  echo "Proofs may be stale (tests pass but proof files still record a"
+  echo "prior failure). Re-emitting proofs will fix this. If the tests"
+  echo "themselves are broken, fix the code first."
+  echo ""
+  echo "1. Re-run tests to re-emit proofs for each failing feature:"
+  for feat in $FAIL_FEATURES; do
+    echo "     /purlin:unit-test ${feat}"
+  done
+  echo ""
+  echo "2. Confirm all rules pass:"
+  echo "     /purlin:status"
+  echo ""
+  echo "3. If any rules still show FAIL, the test is genuinely broken."
+  echo "   Fix with /purlin:build <feature>, then repeat from step 1."
+  echo ""
+  echo "4. Once status shows PASSING (no FAILs), retry the push."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   exit 1
 fi
 
 # In strict mode, also block on non-VERIFIED
 if [[ "$MODE" == "strict" ]] && [[ -n "$NON_READY" ]]; then
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "⚠ PUSH BLOCKED (strict mode) — features not verified"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "PUSH BLOCKED (strict mode) — features not verified"
   echo ""
   echo -e "$NON_READY"
   echo ""
-  echo "All features must be VERIFIED before push in strict mode."
-  echo "  → Run: test <feature> for PARTIAL features"
-  echo "  → Run: purlin:verify when all rules pass"
+  echo "RECOVERY STEPS"
   echo ""
-  echo "To switch to warn mode: set \"pre_push\": \"warn\" in .purlin/config.json"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Strict mode requires all features to be VERIFIED (all rules"
+  echo "proved with a current verification receipt)."
+  echo ""
+  echo "1. Run tests for features showing PARTIAL coverage:"
+  echo "     /purlin:unit-test <feature>"
+  echo ""
+  echo "2. Check status to confirm all rules pass:"
+  echo "     /purlin:status"
+  echo ""
+  echo "3. If any rules show FAIL, fix with /purlin:build <feature>,"
+  echo "   then re-run /purlin:unit-test <feature>."
+  echo ""
+  echo "4. Once all features show PASSING, issue verification receipts:"
+  echo "     /purlin:verify"
+  echo ""
+  echo "5. Retry the push."
+  echo ""
+  echo "To switch to warn mode (allows PARTIAL/UNTESTED):"
+  echo "  Set \"pre_push\": \"warn\" in .purlin/config.json"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   exit 1
 fi
 
