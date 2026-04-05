@@ -315,7 +315,9 @@ Examples:
 
    Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@integration`.
 
-6. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+6. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
+
+7. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
@@ -327,7 +329,7 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-7. Present the generated specs for this category and ask for approval:
+8. Present the generated specs for this category and ask for approval:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -343,7 +345,7 @@ Examples:
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-8. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
+9. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
 9. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 

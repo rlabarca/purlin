@@ -165,19 +165,30 @@ Present the enhanced spec with metadata added and ask "anything to adjust?"
 
 ### Structural-Only Proof Check
 
-After drafting the rules and proofs, if the spec covers files in `references/`, `skills/`, or `agents/` (instruction files), check: are ALL proofs grep-based or existence checks? If yes, suggest:
+After drafting the rules and proofs, if the spec covers files in `references/`, `skills/`, or `agents/` (instruction files), check: are ALL proofs grep-based or existence checks? If yes, suggest adding behavioral rules to **this same spec** — not a separate spec:
 
 ```
 All proofs for this spec are structural (grep/existence checks). This catches
 deletions and drift but doesn't prove the instructions work.
 
-Want me to also create an E2E spec in specs/integration/ that tests actual
-behavior? For example:
-  RULE-1: Agent follows the core loop when given "build X" @e2e
-  RULE-2: Agent uses purlin:spec when asked to "update the spec" @e2e
+Consider adding behavioral rules to this spec. For example:
+  RULE-N: Agent follows the core loop when given "build X" @e2e
+  RULE-N+1: Agent uses purlin:spec when asked to "update the spec" @e2e
 ```
 
-Only suggest — do not create the E2E spec unless the user confirms.
+### NEVER Create Test-Only Specs
+
+**Tests must prove rules in the feature they validate — not in a separate spec.**
+
+Do NOT create specs whose sole purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If a test validates that proof plugins preserve other features during overwrite, that test proves `proof_plugins` RULE-4 — wire it there.
+
+When the user asks for "an e2e spec" or "integration tests for X":
+1. Identify which existing feature spec the behavior belongs to
+2. Add rules to THAT spec if they don't already exist
+3. Write proof descriptions under THAT spec's `## Proof` section
+4. Never create a parallel spec just because the tests are e2e tier
+
+If the rule already exists in the target spec, the test just needs a proof marker pointing to it — no new rule or spec needed.
 
 ### Validate Before Commit
 
