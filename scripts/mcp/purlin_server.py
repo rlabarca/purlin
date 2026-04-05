@@ -1590,13 +1590,17 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
         new_rules = []
         removed_rules = []
         for line in diff_text.splitlines():
-            m = _RULE_RE.search(line)
-            if m:
-                rule_id = m.group(1)
-                if line.startswith('+') and not line.startswith('+++'):
-                    new_rules.append(rule_id)
-                elif line.startswith('-') and not line.startswith('---'):
-                    removed_rules.append(rule_id)
+            if line.startswith('+++') or line.startswith('---'):
+                continue
+            if line.startswith('+') or line.startswith('-'):
+                content = line[1:]
+                m = _RULE_RE.search(content)
+                if m:
+                    rule_id = m.group(1)
+                    if line.startswith('+'):
+                        new_rules.append(rule_id)
+                    else:
+                        removed_rules.append(rule_id)
 
         changes.append({
             'spec': feature_name,

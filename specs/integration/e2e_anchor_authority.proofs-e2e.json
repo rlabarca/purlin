@@ -1,0 +1,50 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "e2e_anchor_authority",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_anchor_authority.sh",
+      "test_name": "mixed anchor staleness detected",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_anchor_authority",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_anchor_authority.sh",
+      "test_name": "local anchor mod \u2192 CHANGED_SPECS",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_anchor_authority",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_e2e_anchor_authority.sh",
+      "test_name": "dual detection: stale + spec change",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_anchor_authority",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_anchor_authority.sh",
+      "test_name": "proof_status correct during staleness",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_anchor_authority",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_anchor_authority.sh",
+      "test_name": "anchor name matches spec name",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

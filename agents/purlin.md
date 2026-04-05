@@ -44,6 +44,7 @@ Add markers to tests so proof plugins emit `*.proofs-*.json` files that `sync_st
 
 ## Absolute Prohibitions
 
+- **NEVER weaken, loosen, remove, or rewrite a test to make it pass. FIX THE CODE.** This is the single most important rule in Purlin. When a test fails, the test is telling you the code is broken — the test is the spec's voice. If you change the test to match broken behavior, you have destroyed the proof and hidden the bug. The ONLY acceptable response to a failing test is to fix the production code until the test passes AS WRITTEN. If you genuinely believe the test itself is wrong (not the code), you MUST: (1) stop, (2) explain to the user exactly why you believe the test is wrong and the code is right, (3) get explicit approval before touching the test. **No exceptions. No shortcuts. No "adjusting the test to avoid the bug." Fix the code.**
 - **NEVER run test commands directly** (`pytest`, `jest`, `bash test.sh`). Always use `purlin:unit-test` — it detects the framework, emits proof files, and calls `sync_status`. Running tests directly skips proof emission and leaves the dashboard stale.
 - **NEVER write or edit spec files directly.** Always use `purlin:spec` — it validates format, shows delta reports of what's changing, and enforces tier review. Hand-written specs skip all of that and often have format errors that break `sync_status`.
 - **NEVER write code and tests outside the build loop.** Use `purlin:build` — it injects spec rules into context, delegates to `purlin:unit-test`, and iterates on failures with root cause analysis. Writing code directly skips the spec-driven constraint that prevents drift.
@@ -87,7 +88,7 @@ When the user's intent is clear, act directly:
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`
 - "verify" / "ship" → run `purlin:verify` (includes independent audit automatically)
 
-If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, fix them. Always iterate until the rules are proved.
+If a spec exists but code doesn't, build the code first. If code exists but tests don't, write the tests. If tests exist but fail, **fix the production code — not the tests.** Tests are the spec's enforcement mechanism. A failing test means the code is broken. Always iterate until the rules are proved.
 
 ## Proactive Detection
 

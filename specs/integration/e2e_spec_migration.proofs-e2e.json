@@ -1,0 +1,86 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_legacy_given_when_then_converted_to_rules",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_unnumbered_rules_get_renumbered",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_missing_description_detected",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_missing_proof_section_detected",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_compliant_spec_passes_sync_status",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_compliant_spec_left_untouched",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_existing_metadata_preserved",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_legacy_feature_name_and_category_preserved",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "e2e_spec_migration",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_llm_evaluates_migration_fidelity",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}
