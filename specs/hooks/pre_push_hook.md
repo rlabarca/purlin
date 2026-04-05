@@ -6,7 +6,7 @@
 
 ## What it does
 
-Layer 1 enforcement hook that runs before `git push`. Executes unit-tier tests and checks sync_status for proof coverage. Two modes: warn (default) blocks on FAILING only, allows PASSING, PARTIAL, and VERIFIED; strict blocks on anything not VERIFIED (requires verification receipt and full behavioral rule coverage). Allows silently when no specs exist.
+Pre-push git hook that blocks pushes when tests are failing. Runs unit-tier tests and checks sync_status for proof coverage. Supports two modes: warn (default) blocks only on FAILING, while strict blocks anything not VERIFIED.
 
 ## Rules
 

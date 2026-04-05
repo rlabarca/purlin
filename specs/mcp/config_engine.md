@@ -6,7 +6,7 @@
 
 ## What it does
 
-Two-file configuration system for Purlin projects. `config.json` holds team defaults (committed to git). `config.local.json` holds per-user overrides (gitignored). Resolution merges both: config.json is the base, config.local.json keys overlay on top. New keys added to config.json by framework updates are always visible, even when config.local.json already exists.
+Two-file configuration system that separates shared team defaults (`config.json`, committed) from per-user overrides (`config.local.json`, gitignored). Resolution merges both files so framework updates remain visible while respecting local preferences.
 
 ## Rules
 

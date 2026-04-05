@@ -7,7 +7,7 @@
 
 ## What it does
 
-Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files next to spec files. All three implement the same core behavior (marker parsing, spec directory resolution, feature-scoped overwrite) with framework-specific syntax. These plugins are scaffolded into consumer projects by `purlin:init`. Custom or community plugins can be installed via `purlin:init --add-plugin` and work automatically — no registration needed.
+Three proof collection plugins — pytest, Jest, and shell — that parse framework-specific proof markers from test code and emit standardized JSON proof files. All three implement the same core behavior with framework-specific syntax and are scaffolded into consumer projects by `purlin:init`.
 
 ## Rules
 

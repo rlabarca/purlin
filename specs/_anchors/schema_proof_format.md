@@ -5,7 +5,7 @@
 
 ## What it does
 
-Defines the JSON schema for proof files emitted by test runners and the merge behavior (feature-scoped overwrite) all proof plugins must implement. The `sync_status` tool reads these files to compute rule coverage. All three proof plugins (pytest, Jest, shell) and any future plugins must conform to this schema and merge strategy.
+Defines the JSON schema for proof files emitted by test runners and how plugins merge results when re-running tests (feature-scoped overwrite). The `sync_status` tool reads these files to compute rule coverage.
 
 ## Rules
 

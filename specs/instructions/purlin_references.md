@@ -7,7 +7,7 @@
 
 ## What it does
 
-Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source for spec format, proof file schema, anchor format and types, commit conventions, hard gates, command reference, spec writing quality guidance, and drift detection criteria. Skills and agents reference these documents — they must stay structurally complete and consistent.
+Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 

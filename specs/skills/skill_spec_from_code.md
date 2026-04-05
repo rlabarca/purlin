@@ -5,7 +5,7 @@
 
 ## What it does
 
-The `purlin:spec-from-code` skill reverse-engineers 3-section specs from existing code. It uses parallel exploration, interactive taxonomy review, and dependency-ordered generation.
+The `purlin:spec-from-code` skill reverse-engineers 3-section specs from existing code, helping teams document current behavior as testable constraints.
 
 ## Rules
 

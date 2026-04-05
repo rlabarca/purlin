@@ -5,7 +5,7 @@
 
 ## What it does
 
-Defines the canonical 3-section format that every Purlin spec must follow. The `sync_status` MCP tool parses specs against this format — violations produce warnings or missing coverage. All skills that create or edit specs (purlin:spec, purlin:build, purlin:spec-from-code) must emit files conforming to this format.
+Defines the canonical 3-section format for all Purlin specs: What it does, Rules, and Proof. The `sync_status` tool parses specs against this format and reports violations as warnings or missing coverage.
 
 ## Rules
 
@@ -16,6 +16,7 @@ Defines the canonical 3-section format that every Purlin spec must follow. The `
 - RULE-5: `> Requires:` metadata, when present, is a comma-separated list of anchor names whose rules also apply to this feature
 - RULE-6: `> Scope:` metadata, when present, is a comma-separated list of source file paths the feature touches
 - RULE-7: Feature specs use heading `# Feature: <name>`, anchor specs use `# Anchor: <name>`
+- RULE-8: The `## What it does` section content is extracted as the `description` field in report data and displayed in the dashboard
 
 ## Proof
 
@@ -26,3 +27,4 @@ Defines the canonical 3-section format that every Purlin spec must follow. The `
 - PROOF-5 (RULE-5): Create a spec with `> Requires: base_anchor`; run sync_status; verify the report includes `base_anchor/RULE-1` in the coverage output @integration
 - PROOF-6 (RULE-6): Create a spec with `> Scope: scripts/mcp/purlin_server.py`; verify sync_status parses and displays the scope files @integration
 - PROOF-7 (RULE-7): Grep `specs/**/*.md` for first-level headings; verify each starts with `# Feature:` or `# Anchor:`
+- PROOF-8 (RULE-8): Create a spec with `## What it does` containing "Handles auth."; scan specs; verify description field equals "Handles auth."; build report data; verify description appears in feature entry

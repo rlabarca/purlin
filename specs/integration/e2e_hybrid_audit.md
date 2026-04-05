@@ -4,7 +4,7 @@
 
 ## What it does
 
-End-to-end test for the three-pass hybrid audit architecture. Creates temp projects with deliberately flawed and valid Python tests, runs the deterministic static checker, and verifies that structural defects are caught without any LLM, that structurally valid tests pass through to the semantic pass, and that structural-only specs are correctly identified by Pass 0.
+End-to-end integration test verifying the three-pass audit pipeline: static checks catch structural defects deterministically, valid tests flow to semantic checking, and structural-only specs are identified correctly.
 
 ## Rules
 

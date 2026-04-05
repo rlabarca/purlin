@@ -7,7 +7,7 @@
 
 ## What it does
 
-Defines the Purlin Agent persona and behavior for Claude Code. Specifies the core development loop (do work → sync_status → follow directives → verify), the spec format reference, proof marker syntax for all three frameworks, the proof coverage gate, implicit routing rules, and the skill/reference tables. This is the primary instruction document that shapes how Claude operates as the Purlin Agent.
+Defines the Purlin Agent persona and behavior for Claude Code — the primary instruction document that shapes how Claude operates in spec-driven mode. Covers the core development loop, proof marker syntax, coverage gates, and routing between skills.
 
 ## Rules
 

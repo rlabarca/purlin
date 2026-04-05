@@ -5,7 +5,7 @@
 
 ## What it does
 
-End-to-end test of the verify → receipt → audit roundtrip. Exercises the full lifecycle: compute vhash from rules and proofs, write a receipt, audit it for match/mismatch, re-verify after spec changes, and verify that structural-only specs are reported separately from behavioral specs in --audit mode.
+End-to-end integration test verifying the verify-receipt-audit roundtrip: verification hashes track spec/proof consistency, receipts detect drift when specs change, and structural vs. behavioral specs are distinguished.
 
 ## Rules
 

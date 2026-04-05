@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Spec Format
 
@@ -38,7 +38,7 @@ specs/<category>/<name>.md
 
 Every spec MUST have these 3 sections (case-insensitive heading match):
 
-1. `## What it does` — prose description of the feature
+1. `## What it does` — prose description of the feature. This content is extracted and displayed as the feature description in the Purlin dashboard.
 2. `## Rules` — numbered constraints (`RULE-N: description`)
 3. `## Proof` — numbered proof blueprints (`PROOF-N (RULE-N): description`)
 

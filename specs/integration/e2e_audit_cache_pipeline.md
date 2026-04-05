@@ -5,7 +5,7 @@
 
 ## What it does
 
-End-to-end test of the audit → cache → status → dashboard pipeline. Verifies that audit results are written to the cache with all required fields, that sync_status reads the cache to produce the integrity summary line, that the dashboard report-data.js includes audit_summary and per-feature audit data, and that the cache correctly invalidates stale entries.
+End-to-end integration test verifying that audit results flow correctly through the cache, are read by sync_status and the dashboard, and that stale cache entries are properly invalidated.
 
 ## Rules
 
