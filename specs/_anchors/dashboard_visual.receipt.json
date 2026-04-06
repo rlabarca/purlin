@@ -1,11 +1,12 @@
 {
-  "feature": "config_engine",
-  "vhash": "d2d806cb",
+  "feature": "dashboard_visual",
+  "vhash": "2b240c30",
   "commit": "4aa2a2e5db4c6232f1bf92169401ac2f3d68409f",
   "timestamp": "2026-04-06T17:45:20.297645+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
+    "RULE-11",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -28,12 +29,7 @@
     },
     {
       "id": "PROOF-11",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-12",
-      "rule": "RULE-8",
+      "rule": "RULE-11",
       "status": "pass"
     },
     {
@@ -49,31 +45,6 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
       "status": "pass"
     },
     {
@@ -94,16 +65,6 @@
     {
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
       "status": "pass"
     },
     {

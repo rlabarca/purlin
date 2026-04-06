@@ -1,0 +1,16 @@
+{
+  "feature": "purlin_config",
+  "vhash": "10303c0b",
+  "commit": "4aa2a2e5db4c6232f1bf92169401ac2f3d68409f",
+  "timestamp": "2026-04-06T17:45:20.297645+00:00",
+  "rules": [
+    "RULE-1"
+  ],
+  "proofs": [
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    }
+  ]
+}
