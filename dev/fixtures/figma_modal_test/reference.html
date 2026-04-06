@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figma Reference: Modal-feedback (7:81)</title>
+<!--
+  This HTML is rendered from Figma MCP get_design_context output.
+  File: TEZI0T6lObCJrC9mkmZT8v  Node: 7:81  Frame: 428x541
+  Source: https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#f5f5f5;
+         display:flex; align-items:center; justify-content:center;
+         min-height:100vh; }
+  .modal { background:#fff; border-radius:16px; width:428px;
+           box-shadow:0 4px 24px rgba(0,0,0,.12); overflow:hidden; }
+
+  /* Modal/Top */
+  .modal-top { display:flex; align-items:center; justify-content:space-between;
+               padding:16px 24px; border-bottom:1px solid #dadada;
+               border-radius:16px 16px 0 0; }
+  .modal-top h2 { font-size:16px; font-weight:600; color:#121212;
+                   letter-spacing:-0.16px; line-height:1.25; }
+  .close-btn { width:16px; height:16px; background:none; border:none;
+               cursor:pointer; font-size:14px; color:#666;
+               display:flex; align-items:center; justify-content:center; }
+
+  /* Content */
+  .content-wrapper { padding-top:24px; }
+  .main-content { padding:0 24px; display:flex; flex-direction:column; gap:16px; }
+
+  /* Section labels */
+  .section { display:flex; flex-direction:column; gap:8px; }
+  .section label { font-size:14px; font-weight:500; color:#121212;
+                   line-height:1.25; }
+
+  /* Combobox */
+  .combobox { width:380px; max-width:400px; height:36px; padding:8px 16px;
+              background:#fff; border:1px solid #dadada; border-radius:8px;
+              box-shadow:0 1px 2px rgba(0,0,0,.1); display:flex;
+              align-items:center; justify-content:space-between;
+              font-size:14px; font-weight:500; color:#121212; }
+  .combobox .chevron { font-size:10px; color:#666; }
+
+  /* Textarea */
+  .input-field { width:100%; height:65px; padding:8px 12px;
+                 background:#fff; border:1px solid #dadada; border-radius:8px;
+                 box-shadow:0 4px 8px rgba(0,0,0,.1); font-size:14px;
+                 font-family:'Inter',sans-serif; color:#3b3b3b;
+                 resize:vertical; line-height:1.5; letter-spacing:-0.14px; }
+
+  /* Attachment area */
+  .attachment-area { width:380px; height:110px; background:#eee;
+                     border:1px dashed #a3a3a3; border-radius:12px;
+                     display:flex; flex-direction:column;
+                     align-items:center; justify-content:center;
+                     gap:4px; padding:24px; }
+  .attachment-area span { font-size:12px; color:#3b3b3b; line-height:20px; }
+  .upload-btn { height:32px; padding:8px 24px; background:#fff;
+                border:1px solid #1e1e1e; border-radius:8px;
+                font-size:14px; font-weight:500; color:#121212;
+                cursor:pointer; display:flex; align-items:center; gap:4px;
+                font-family:'Inter',sans-serif; }
+
+  /* Modal/Bottom */
+  .modal-bottom { background:#eee; padding:16px 24px;
+                  border-radius:0 0 16px 16px; display:flex;
+                  flex-direction:column; gap:16px; align-items:flex-end; }
+  .info-text { font-size:12px; color:#3b3b3b; line-height:16px; width:100%; }
+  .button-wrapper { display:flex; gap:16px; }
+  .btn-cancel { height:40px; padding:8px 24px; background:#fff;
+                border:1px solid #681f95; border-radius:8px;
+                font-size:14px; font-weight:500; color:#121212;
+                cursor:pointer; font-family:'Inter',sans-serif; }
+  .btn-submit { height:40px; padding:8px 24px; background:#f59e0b;
+                border:none; border-radius:8px; font-size:14px;
+                font-weight:500; color:#f9f9f9; cursor:pointer;
+                font-family:'Inter',sans-serif; }
+</style>
+</head>
+<body>
+<div class="modal">
+  <div class="modal-top">
+    <h2>Send feedback</h2>
+    <button class="close-btn" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="content-wrapper">
+    <div class="main-content">
+      <div class="section">
+        <label>What type of issue do you wish to report?</label>
+        <div class="combobox">
+          <span>Select...</span>
+          <span class="chevron">&#9662;</span>
+        </div>
+      </div>
+      <div class="section">
+        <label>Please provide details: (optional)</label>
+        <textarea class="input-field" placeholder="Add any details here ..."></textarea>
+      </div>
+      <div class="section">
+        <label>Attachments:</label>
+        <div class="attachment-area">
+          <span>Max file size: 5MB</span>
+          <button class="upload-btn">&#8613; Upload file</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-bottom">
+      <div class="info-text">We'll include your name and current session details with this submission.</div>
+      <div class="button-wrapper">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-submit">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

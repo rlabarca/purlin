@@ -1,0 +1,41 @@
+{
+  "file_key": "TEZI0T6lObCJrC9mkmZT8v",
+  "node_id": "7:81",
+  "node_name": "Modal-feedback",
+  "frame_width": 428,
+  "frame_height": 541,
+  "figma_url": "https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81",
+  "mcp_tool": "get_design_context",
+  "styles": {
+    "title": {"family": "Inter", "weight": 600, "size": 16, "lineHeight": 1.25, "letterSpacing": -1},
+    "label": {"family": "Inter", "weight": 500, "size": 14, "lineHeight": 1.25},
+    "paragraph": {"family": "Inter", "weight": 400, "size": 14, "lineHeight": 1.5, "letterSpacing": -1},
+    "caption": {"family": "Inter", "weight": 400, "size": 12, "lineHeight": 16}
+  },
+  "colors": {
+    "bg_white": "#ffffff",
+    "bg_elevated": "#ffffff",
+    "bg_neutral_100": "#eeeeee",
+    "border_primary": "#dadada",
+    "border_neutral_300": "#a3a3a3",
+    "border_neutral_800": "#1e1e1e",
+    "text_primary": "#121212",
+    "text_secondary": "#3b3b3b",
+    "text_white": "#f9f9f9",
+    "purple_500": "#681f95",
+    "amber_500": "#f59e0b"
+  },
+  "spacing": {
+    "unit_4": 4, "unit_8": 8, "unit_12": 12, "unit_16": 16, "unit_24": 24
+  },
+  "components": [
+    {"name": "Modal/Top", "id": "7:82", "content": "Send feedback + Close icon"},
+    {"name": "Combobox", "id": "7:87", "content": "Select... dropdown"},
+    {"name": "Input-field", "id": "7:90", "content": "Add any details here ... textarea"},
+    {"name": "Attachment-area", "id": "7:93", "content": "Max file size: 5MB + Upload file button"},
+    {"name": "Modal/Bottom", "id": "7:96", "content": "Info text + Cancel + Submit buttons"}
+  ],
+  "behavioral_annotations": [
+    {"node_id": "7:95", "annotation": "Opens devices' native file picker, allowing the user to select a file to upload as an attachment."}
+  ]
+}

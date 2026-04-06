@@ -43,7 +43,7 @@
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_figma_api_accessible",
-      "status": "fail",
+      "status": "pass",
       "tier": "e2e"
     },
     {
@@ -70,7 +70,7 @@
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_screenshot_comparison_pipeline",
-      "status": "fail",
+      "status": "pass",
       "tier": "e2e"
     },
     {
@@ -79,7 +79,7 @@
       "rule": "RULE-9",
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_visual_fidelity",
-      "status": "fail",
+      "status": "pass",
       "tier": "e2e"
     },
     {

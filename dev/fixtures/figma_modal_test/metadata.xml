@@ -1,0 +1,23 @@
+<frame id="7:81" name="Modal-feedback" x="-442" y="-1" width="428" height="541">
+  <instance id="7:82" name="Modal/Top" x="0" y="0" width="428" height="52" />
+  <frame id="7:83" name="Content-wrapper" x="0" y="52" width="428" height="489">
+    <frame id="7:84" name="Main-content" x="0" y="24" width="428" height="321">
+      <frame id="7:85" name="Section-wrapper" x="24" y="0" width="380" height="62">
+        <instance id="7:86" name="Text-wrapper" x="0" y="0" width="380" height="18" />
+        <instance id="7:87" name="Combobox" x="0" y="26" width="380" height="36" />
+      </frame>
+      <frame id="7:88" name="Section-wrapper" x="24" y="78" width="380" height="91">
+        <instance id="7:89" name="Text-wrapper" x="0" y="0" width="380" height="18" />
+        <instance id="7:90" name="Input-field" x="0" y="26" width="380" height="65" />
+      </frame>
+      <frame id="7:91" name="Section-wrapper" x="24" y="185" width="380" height="136">
+        <instance id="7:92" name="Text-wrapper" x="0" y="0" width="380" height="18" />
+        <frame id="7:93" name="Attachment-area" x="0" y="26" width="380" height="110">
+          <text id="7:94" name="Max file size: 5MB" x="138.5" y="27" width="103" height="20" />
+          <instance id="7:95" name="Button" x="120" y="51" width="140" height="32" />
+        </frame>
+      </frame>
+    </frame>
+    <symbol id="7:96" name="Modal/Bottom" x="0" y="369" width="428" height="120" />
+  </frame>
+</frame>

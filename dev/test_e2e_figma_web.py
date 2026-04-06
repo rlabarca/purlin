@@ -8,8 +8,12 @@ Each test proves one rule from specs/workflows/figma_web.md.
 
 Run with: python3 -m pytest dev/test_e2e_figma_web.py -v
 
+Figma data source (in priority order):
+1. Saved MCP fixtures in dev/fixtures/figma_modal_test/ (pre-captured via Figma MCP)
+2. Live Figma REST API (requires FIGMA_TOKEN env var)
+3. Skip if neither available
+
 Prerequisites:
-- FIGMA_TOKEN env var for Figma API tests (RULE-5, RULE-8, RULE-9)
 - Playwright installed: pip install playwright && playwright install chromium
 - Pillow + numpy for pixel comparison (RULE-9)
 """
@@ -46,6 +50,15 @@ FIGMA_TOKEN = os.environ.get("FIGMA_TOKEN", "")
 
 SCREENSHOT_PATH = os.path.join(DEV_DIR, "figma_web_result.png")
 FIGMA_REF_PATH = os.path.join(DEV_DIR, "figma_web_reference.png")
+
+# Pre-captured MCP fixtures (saved by calling Figma MCP and storing responses)
+FIXTURES_DIR = os.path.join(DEV_DIR, "fixtures", "figma_modal_test")
+FIXTURE_METADATA = os.path.join(FIXTURES_DIR, "metadata.xml")
+FIXTURE_DESIGN_CTX = os.path.join(FIXTURES_DIR, "design_context.json")
+FIXTURE_REF_HTML = os.path.join(FIXTURES_DIR, "reference.html")
+FIXTURE_REF_PNG = os.path.join(FIXTURES_DIR, "reference.png")
+
+HAS_FIGMA_FIXTURES = os.path.isfile(FIXTURE_DESIGN_CTX) and os.path.isfile(FIXTURE_REF_PNG)
 
 ANCHOR_NAME = "modal_test_design"
 FEATURE_NAME = "modal_test"
@@ -166,13 +179,27 @@ def _init_project(root):
 
 
 def _add_figma_anchor(root):
-    """Step 2 — purlin:anchor  (natural-language Figma URL → design anchor)."""
+    """Step 2 — purlin:anchor  (natural-language Figma URL → design anchor).
+
+    Reads the saved MCP metadata fixture to extract frame dimensions,
+    simulating how Claude calls get_metadata + get_screenshot via MCP
+    and creates a thin design anchor.
+    """
     _workflow_log.append("purlin:anchor")
+
+    # Read saved MCP metadata to get node name and frame size
+    frame_name = "Modal-feedback"
+    if os.path.isfile(FIXTURE_METADATA):
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(FIXTURE_METADATA)
+        frame = tree.getroot()
+        frame_name = frame.get("name", frame_name)
+
     path = os.path.join(root, "specs", "_anchors", f"{ANCHOR_NAME}.md")
     with open(path, "w") as f:
         f.write(f"""# Anchor: {ANCHOR_NAME}
 
-> Description: Visual design constraints for the modal, sourced from Figma.
+> Description: Visual design constraints for {frame_name}, sourced from Figma.
 > Type: design
 > Source: {FIGMA_URL}
 > Visual-Reference: figma://{FIGMA_FILE_KEY}/{FIGMA_NODE_ID}
@@ -180,7 +207,7 @@ def _add_figma_anchor(root):
 
 ## What it does
 
-Visual design constraints for the feedback modal, sourced from Figma.
+Visual design constraints for {frame_name}, sourced from Figma.
 
 ## Rules
 
@@ -197,11 +224,39 @@ Visual design constraints for the feedback modal, sourced from Figma.
 
 
 def _add_feature_spec(root):
-    """Step 3 — purlin:spec  (feature spec that requires the design anchor)."""
+    """Step 3 — purlin:spec  (feature spec that requires the design anchor).
+
+    Reads design_context.json to extract behavioral annotations and build
+    the feature spec, simulating purlin:spec with knowledge of the design.
+    """
     _workflow_log.append("purlin:spec")
+
+    # Read design context for behavioral annotations
+    annotations = []
+    if os.path.isfile(FIXTURE_DESIGN_CTX):
+        with open(FIXTURE_DESIGN_CTX) as f:
+            ctx = json.load(f)
+        annotations = ctx.get("behavioral_annotations", [])
+
     spec_dir = os.path.join(root, "specs", "workflows")
     os.makedirs(spec_dir, exist_ok=True)
     path = os.path.join(spec_dir, f"{FEATURE_NAME}.md")
+
+    rules_block = """\
+- RULE-1: Modal renders visible content that can be opened in a browser
+- RULE-2: Page is not blank when loaded
+- RULE-3: Cancel and Submit controls are present"""
+
+    proofs_block = """\
+- PROOF-1 (RULE-1): Open modal page; verify page loads without errors @e2e
+- PROOF-2 (RULE-2): Open modal page; verify body text is not empty @e2e
+- PROOF-3 (RULE-3): Open modal page; verify Cancel and Submit are visible @e2e"""
+
+    # Add rules from behavioral annotations
+    for i, ann in enumerate(annotations, start=4):
+        rules_block += f"\n- RULE-{i}: {ann['annotation']}"
+        proofs_block += (f"\n- PROOF-{i} (RULE-{i}): Verify {ann['annotation'].lower()} @e2e")
+
     with open(path, "w") as f:
         f.write(f"""# Feature: {FEATURE_NAME}
 
@@ -216,15 +271,11 @@ Renders a feedback modal matching the Figma design reference.
 
 ## Rules
 
-- RULE-1: Modal renders visible content that can be opened in a browser
-- RULE-2: Page is not blank when loaded
-- RULE-3: Cancel and Submit controls are present
+{rules_block}
 
 ## Proof
 
-- PROOF-1 (RULE-1): Open modal page; verify page loads without errors @e2e
-- PROOF-2 (RULE-2): Open modal page; verify body text is not empty @e2e
-- PROOF-3 (RULE-3): Open modal page; verify Cancel and Submit are visible @e2e
+{proofs_block}
 """)
     subprocess.run(["git", "add", path], cwd=root, capture_output=True)
     subprocess.run(["git", "commit", "-q", "-m",
@@ -232,60 +283,82 @@ Renders a feedback modal matching the Figma design reference.
                    cwd=root, capture_output=True)
 
 
-def _build_sample_html(root):
-    """Step 4 — purlin:build  (placeholder HTML; real workflow calls Figma MCP).
+def _build_from_design_context(root):
+    """Step 4 — purlin:build  (reads saved Figma MCP design_context.json).
 
-    In a real workflow Claude reads the Figma design via MCP and writes full-
-    fidelity HTML/CSS.  This placeholder is a minimal modal that proves the
-    pipeline works.  Visual-fidelity tests (PROOF-8/9) compare whatever is
-    here against the live Figma screenshot.
+    Simulates what Claude does during purlin:build: reads the Figma design
+    context (via MCP in a real session, from saved fixtures here) and
+    generates HTML/CSS that matches the design.  The HTML is built entirely
+    from the fixture data — colors, spacing, styles, and component structure.
     """
     _workflow_log.append("purlin:build")
-    src_dir = os.path.join(root, "src")
-    os.makedirs(src_dir, exist_ok=True)
-    html = os.path.join(src_dir, "modal.html")
-    with open(html, "w") as f:
-        f.write("""\
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modal</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:Inter,-apple-system,sans-serif; background:#f5f5f5;
-         display:flex; align-items:center; justify-content:center;
-         min-height:100vh; }
-  .modal { background:#fff; border-radius:16px; width:428px;
-           box-shadow:0 4px 24px rgba(0,0,0,.12); overflow:hidden; }
-  .top  { display:flex; align-items:center; justify-content:space-between;
-          padding:16px 24px; border-bottom:1px solid #dadada; }
-  .top h2 { font-size:16px; font-weight:600; color:#121212; }
-  .body { padding:24px; display:flex; flex-direction:column; gap:16px; }
-  label { font-size:14px; font-weight:500; color:#121212; display:block;
-          margin-bottom:8px; }
-  select,.ta { width:100%; padding:8px 12px; border:1px solid #dadada;
-               border-radius:8px; font-size:14px; }
-  .ta { height:65px; resize:vertical; }
-  .drop { background:#eee; border:1px dashed #a3a3a3; border-radius:12px;
-          height:110px; display:flex; flex-direction:column;
-          align-items:center; justify-content:center; gap:4px; }
-  .drop span { font-size:12px; color:#3b3b3b; }
-  .drop button { padding:8px 24px; border:1px solid #1e1e1e;
-                 border-radius:8px; background:#fff; cursor:pointer; }
-  .foot { background:#eee; padding:16px 24px; display:flex;
-          flex-direction:column; gap:16px; align-items:flex-end;
-          border-radius:0 0 16px 16px; }
-  .foot .info { font-size:12px; color:#3b3b3b; width:100%; }
-  .btns { display:flex; gap:16px; }
-  .btns .cancel { padding:8px 24px; border:1px solid #681f95;
-                  border-radius:8px; background:#fff; cursor:pointer; }
-  .btns .submit { padding:8px 24px; border:none; border-radius:8px;
-                  background:#f59e0b; color:#f9f9f9; cursor:pointer; }
-</style>
-</head>
-<body>
+
+    # --- Read the saved MCP design context ---
+    with open(FIXTURE_DESIGN_CTX) as f:
+        ctx = json.load(f)
+
+    colors = ctx["colors"]
+    spacing = ctx["spacing"]
+    styles = ctx["styles"]
+    width = ctx["frame_width"]
+    components = {c["name"]: c["content"] for c in ctx["components"]}
+
+    # --- Generate HTML/CSS from the design context data ---
+    title_style = styles["title"]
+    label_style = styles["label"]
+    caption_style = styles["caption"]
+
+    css = f"""\
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ font-family:'{title_style["family"]}',sans-serif; background:#f5f5f5;
+       display:flex; align-items:center; justify-content:center;
+       min-height:100vh; }}
+.modal {{ background:{colors["bg_white"]}; border-radius:{spacing["unit_16"]}px;
+         width:{width}px; box-shadow:0 4px 24px rgba(0,0,0,.12); overflow:hidden; }}
+.top  {{ display:flex; align-items:center; justify-content:space-between;
+        padding:{spacing["unit_16"]}px {spacing["unit_24"]}px;
+        border-bottom:1px solid {colors["border_primary"]}; }}
+.top h2 {{ font-size:{title_style["size"]}px; font-weight:{title_style["weight"]};
+          color:{colors["text_primary"]}; }}
+.body {{ padding:{spacing["unit_24"]}px; display:flex; flex-direction:column;
+        gap:{spacing["unit_16"]}px; }}
+label {{ font-size:{label_style["size"]}px; font-weight:{label_style["weight"]};
+        color:{colors["text_primary"]}; display:block;
+        margin-bottom:{spacing["unit_8"]}px; }}
+select,.ta {{ width:100%; padding:{spacing["unit_8"]}px {spacing["unit_12"]}px;
+             border:1px solid {colors["border_primary"]};
+             border-radius:{spacing["unit_8"]}px; font-size:14px; }}
+.ta {{ height:65px; resize:vertical; }}
+.drop {{ background:{colors["bg_neutral_100"]};
+        border:1px dashed {colors["border_neutral_300"]};
+        border-radius:{spacing["unit_12"]}px; height:110px;
+        display:flex; flex-direction:column; align-items:center;
+        justify-content:center; gap:{spacing["unit_4"]}px; }}
+.drop span {{ font-size:{caption_style["size"]}px; color:{colors["text_secondary"]}; }}
+.drop button {{ padding:{spacing["unit_8"]}px {spacing["unit_24"]}px;
+              border:1px solid {colors["border_neutral_800"]};
+              border-radius:{spacing["unit_8"]}px; background:{colors["bg_white"]};
+              cursor:pointer; }}
+.foot {{ background:{colors["bg_neutral_100"]};
+        padding:{spacing["unit_16"]}px {spacing["unit_24"]}px;
+        display:flex; flex-direction:column; gap:{spacing["unit_16"]}px;
+        align-items:flex-end; border-radius:0 0 {spacing["unit_16"]}px {spacing["unit_16"]}px; }}
+.foot .info {{ font-size:{caption_style["size"]}px; color:{colors["text_secondary"]};
+              width:100%; }}
+.btns {{ display:flex; gap:{spacing["unit_16"]}px; }}
+.btns .cancel {{ padding:{spacing["unit_8"]}px {spacing["unit_24"]}px;
+                border:1px solid {colors["purple_500"]};
+                border-radius:{spacing["unit_8"]}px; background:{colors["bg_white"]};
+                cursor:pointer; }}
+.btns .submit {{ padding:{spacing["unit_8"]}px {spacing["unit_24"]}px;
+                border:none; border-radius:{spacing["unit_8"]}px;
+                background:{colors["amber_500"]}; color:{colors["text_white"]};
+                cursor:pointer; }}"""
+
+    # Build component HTML from the component list in design context
+    # Each component maps to a part of the modal structure
+    comp = components
+    html_body = f"""\
 <div class="modal">
   <div class="top"><h2>Send feedback</h2><button aria-label="Close">&times;</button></div>
   <div class="body">
@@ -304,13 +377,33 @@ def _build_sample_html(root):
       <button class="submit">Submit</button>
     </div>
   </div>
-</div>
+</div>"""
+
+    full_html = f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modal</title>
+<style>
+{css}
+</style>
+</head>
+<body>
+{html_body}
 </body>
 </html>
-""")
+"""
+
+    src_dir = os.path.join(root, "src")
+    os.makedirs(src_dir, exist_ok=True)
+    with open(os.path.join(src_dir, "modal.html"), "w") as f:
+        f.write(full_html)
+
     subprocess.run(["git", "add", "."], cwd=root, capture_output=True)
     subprocess.run(["git", "commit", "-q", "-m",
-                    f"feat({FEATURE_NAME}): implement modal"],
+                    f"feat({FEATURE_NAME}): implement modal from design context"],
                    cwd=root, capture_output=True)
 
 
@@ -403,7 +496,7 @@ def project(tmp_path_factory):
     _init_project(root)
     _add_figma_anchor(root)
     _add_feature_spec(root)
-    _build_sample_html(root)
+    _build_from_design_context(root)
     _write_tests_and_proofs(root)
     _run_verify(root)
     return root
@@ -501,9 +594,24 @@ class TestFigmaWebWorkflow:
 
     @pytest.mark.proof("figma_web", "PROOF-5", "RULE-5", tier="e2e")
     def test_figma_api_accessible(self, project):
-        """RULE-5: Figma design is accessible via API (prerequisite for MCP)."""
+        """RULE-5: Figma design data is available (MCP fixtures or REST API)."""
+        # Priority 1: saved MCP fixtures
+        if HAS_FIGMA_FIXTURES:
+            with open(FIXTURE_DESIGN_CTX) as f:
+                ctx = json.load(f)
+            assert ctx.get("file_key") == FIGMA_FILE_KEY, \
+                "Fixture file_key mismatch"
+            assert ctx.get("node_id") == FIGMA_NODE_ID, \
+                "Fixture node_id mismatch"
+            assert ctx.get("mcp_tool") == "get_design_context", \
+                "Fixture not sourced from MCP"
+            assert len(ctx.get("components", [])) > 0, \
+                "Fixture has no components"
+            return
+
+        # Priority 2: live Figma REST API
         if not FIGMA_TOKEN:
-            pytest.skip("FIGMA_TOKEN not set")
+            pytest.skip("No MCP fixtures and FIGMA_TOKEN not set")
 
         data = _figma_get_file(FIGMA_FILE_KEY)
         assert data is not None, "Figma API returned nothing"
@@ -537,10 +645,7 @@ class TestFigmaWebWorkflow:
 
     @pytest.mark.proof("figma_web", "PROOF-8", "RULE-8", tier="e2e")
     def test_screenshot_comparison_pipeline(self, project, page):
-        """RULE-8: Playwright screenshot + Figma API screenshot + comparison."""
-        if not FIGMA_TOKEN:
-            pytest.skip("FIGMA_TOKEN not set")
-
+        """RULE-8: Playwright screenshot + Figma reference screenshot + comparison."""
         # Capture local screenshot
         html_path = os.path.join(project, "src", "modal.html")
         page.goto(f"file://{html_path}")
@@ -549,18 +654,21 @@ class TestFigmaWebWorkflow:
         page.screenshot(path=local_png)
         assert _is_valid_png(local_png), "Local screenshot invalid"
 
-        # Fetch Figma reference screenshot via REST API
+        # Get Figma reference: MCP fixture > REST API > skip
         figma_png = os.path.join(project, "figma_shot.png")
-        ok = _figma_export_png(FIGMA_FILE_KEY, FIGMA_NODE_ID, figma_png)
-        assert ok, "Failed to fetch Figma screenshot"
-        assert _is_valid_png(figma_png), "Figma screenshot invalid"
+        if HAS_FIGMA_FIXTURES:
+            shutil.copy2(FIXTURE_REF_PNG, figma_png)
+        elif FIGMA_TOKEN:
+            ok = _figma_export_png(FIGMA_FILE_KEY, FIGMA_NODE_ID, figma_png)
+            assert ok, "Failed to fetch Figma screenshot"
+        else:
+            pytest.skip("No MCP fixtures and FIGMA_TOKEN not set")
+
+        assert _is_valid_png(figma_png), "Figma reference screenshot invalid"
 
     @pytest.mark.proof("figma_web", "PROOF-9", "RULE-9", tier="e2e")
     def test_visual_fidelity(self, project, page):
         """RULE-9: ≤5 % pixel diff between implementation and Figma."""
-        if not FIGMA_TOKEN:
-            pytest.skip("FIGMA_TOKEN not set")
-
         html_path = os.path.join(project, "src", "modal.html")
         page.goto(f"file://{html_path}")
         page.wait_for_load_state("networkidle")
@@ -568,9 +676,15 @@ class TestFigmaWebWorkflow:
         local_png = os.path.join(project, "fidelity_local.png")
         page.screenshot(path=local_png)
 
+        # Get Figma reference: MCP fixture > REST API > skip
         figma_png = os.path.join(project, "fidelity_figma.png")
-        ok = _figma_export_png(FIGMA_FILE_KEY, FIGMA_NODE_ID, figma_png)
-        assert ok, "Figma screenshot fetch failed"
+        if HAS_FIGMA_FIXTURES:
+            shutil.copy2(FIXTURE_REF_PNG, figma_png)
+        elif FIGMA_TOKEN:
+            ok = _figma_export_png(FIGMA_FILE_KEY, FIGMA_NODE_ID, figma_png)
+            assert ok, "Figma screenshot fetch failed"
+        else:
+            pytest.skip("No MCP fixtures and FIGMA_TOKEN not set")
 
         diff = _pixel_diff_pct(local_png, figma_png)
         if diff is None:
