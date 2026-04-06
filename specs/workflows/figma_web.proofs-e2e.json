@@ -6,7 +6,7 @@
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_init_creates_valid_config",
+      "test_name": "test_init_config",
       "status": "pass",
       "tier": "e2e"
     },
@@ -15,7 +15,7 @@
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_anchor_has_figma_metadata",
+      "test_name": "test_anchor_metadata",
       "status": "pass",
       "tier": "e2e"
     },
@@ -24,7 +24,7 @@
       "id": "PROOF-3",
       "rule": "RULE-3",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_anchor_one_visual_rule",
+      "test_name": "test_anchor_visual_rule",
       "status": "pass",
       "tier": "e2e"
     },
@@ -33,7 +33,7 @@
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_feature_spec_requires_anchor",
+      "test_name": "test_spec_requires_anchor",
       "status": "pass",
       "tier": "e2e"
     },
@@ -42,7 +42,7 @@
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_figma_api_accessible",
+      "test_name": "test_figma_mcp_used",
       "status": "pass",
       "tier": "e2e"
     },
@@ -51,7 +51,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_built_ui_renders",
+      "test_name": "test_ui_renders",
       "status": "pass",
       "tier": "e2e"
     },
@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_proof_markers_exist",
+      "test_name": "test_proof_markers",
       "status": "pass",
       "tier": "e2e"
     },
@@ -69,7 +69,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_screenshot_comparison_pipeline",
+      "test_name": "test_screenshot_pipeline",
       "status": "pass",
       "tier": "e2e"
     },
@@ -87,7 +87,7 @@
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_only_documented_commands",
+      "test_name": "test_documented_steps_only",
       "status": "pass",
       "tier": "e2e"
     },
@@ -96,7 +96,7 @@
       "id": "PROOF-11",
       "rule": "RULE-11",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_no_framework_modifications",
+      "test_name": "test_no_framework_mods",
       "status": "pass",
       "tier": "e2e"
     },
@@ -114,7 +114,7 @@
       "id": "PROOF-13",
       "rule": "RULE-13",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_audit_classifies_anchor",
+      "test_name": "test_audit_classification",
       "status": "pass",
       "tier": "e2e"
     },
@@ -123,7 +123,7 @@
       "id": "PROOF-14",
       "rule": "RULE-14",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_screenshot_saved_to_dev",
+      "test_name": "test_screenshot_saved",
       "status": "pass",
       "tier": "e2e"
     },
@@ -132,7 +132,7 @@
       "id": "PROOF-15",
       "rule": "RULE-15",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_verify_all_rules_proved",
+      "test_name": "test_verify_succeeds",
       "status": "pass",
       "tier": "e2e"
     }
