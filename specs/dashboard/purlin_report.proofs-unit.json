@@ -48,6 +48,15 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_expanded_rule_sources_and_multi_proof_stacking",
+      "status": "fail",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_purlin_report.py",
