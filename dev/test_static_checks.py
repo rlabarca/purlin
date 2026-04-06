@@ -25,6 +25,7 @@ from static_checks import (
     read_audit_cache,
     write_audit_cache,
     _read_rule_descriptions,
+    _classify_description,
     load_criteria,
 )
 
@@ -520,6 +521,218 @@ class TestProofDescClassification:
             assert result['proof_desc_count'] == 0
             assert result['structural_proof_desc_count'] == 0
             assert result['behavioral_proof_desc_count'] == 0
+        finally:
+            os.unlink(path)
+
+
+# ── _classify_description: backtick stripping ─────────────────────────
+
+class TestClassifyDescriptionBackticks:
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_backtick_behavioral_verb_ignored(self):
+        """Behavioral verb inside backticks must not trigger behavioral classification."""
+        desc = "Grep `skills/anchor/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_backtick_multiple_behavioral_verbs(self):
+        """Multiple behavioral verbs inside backticks are all stripped."""
+        desc = "Verify `creates` and `updates` patterns exist in the handler file"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_behavioral_outside_backticks_still_works(self):
+        """Real behavioral verb outside backticks still classifies as behavioral."""
+        desc = "Returns the `config` object after parsing"
+        assert _classify_description(desc) == 'behavioral'
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_mixed_backtick_and_real_behavioral(self):
+        """Backtick content stripped, real behavioral verb outside wins."""
+        desc = "Returns `grep` results from the API"
+        assert _classify_description(desc) == 'behavioral'
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_empty_backticks(self):
+        """Empty backtick content does not affect classification."""
+        desc = "Grep `` for section heading"
+        assert _classify_description(desc) == 'structural'
+
+
+# ── _classify_description: structural-first priority ──────────────────
+
+class TestClassifyDescriptionPriority:
+
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
+    def test_structural_checked_first(self):
+        """When both structural and behavioral match, structural wins."""
+        desc = "Grep for patterns that trigger failures"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
+    def test_clear_behavioral_still_works(self):
+        """Pure behavioral description without structural indicators."""
+        desc = "Returns 200 with JWT on valid credentials"
+        assert _classify_description(desc) == 'behavioral'
+
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
+    def test_default_is_behavioral(self):
+        """Description matching neither regex defaults to behavioral."""
+        desc = "System processes the input correctly"
+        assert _classify_description(desc) == 'behavioral'
+
+
+# ── _classify_description: expanded structural patterns ───────────────
+
+class TestClassifyDescriptionExpandedPatterns:
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_has_frontmatter(self):
+        desc = "Skill file has YAML frontmatter with `name` and `description` fields"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_contains_section_with_gap(self):
+        """contains...section with intervening words (was broken: required adjacency)."""
+        desc = "Skill file contains a `## Usage` section documenting command syntax"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_extract_verify(self):
+        desc = "Extract `name:` from frontmatter; verify it equals `anchor`"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_includes_instruction(self):
+        desc = "Skill includes commit instructions or git operations for file modifications"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_verify_exist(self):
+        desc = "Verify `name:` and `description:` fields exist"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_field_in_frontmatter(self):
+        desc = "The `name` field in frontmatter is `anchor`, matching the directory name"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_has_delimiter(self):
+        desc = "Skill file has YAML frontmatter delimiters (`---`)"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_verify_present(self):
+        desc = "Grep config.json for required key; verify present"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_verify_appears(self):
+        desc = "Verify config field appears in output"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_contains_field(self):
+        desc = "Config file contains required field for database connection"
+        assert _classify_description(desc) == 'structural'
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_behavioral_not_false_positive(self):
+        """Behavioral descriptions must not match expanded structural patterns."""
+        behavioral = [
+            "Returns 401 on invalid credentials",
+            "Rejects invalid password with 403",
+            "Logs warning when rate limit exceeded",
+            "Creates a new user record in the database",
+            "Deletes expired sessions on cleanup",
+            "POST valid creds to /login; verify 200 response",
+            "Sends email notification after registration",
+            "Validates input schema before processing",
+            "Prevents duplicate entries in the index",
+            "Renders the dashboard component with props",
+        ]
+        for desc in behavioral:
+            assert _classify_description(desc) == 'behavioral', \
+                f"Expected behavioral for: {desc}"
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
+    def test_e2e_behavioral_not_structural(self):
+        """e2e proof descriptions with verify...contain must stay behavioral."""
+        desc = ("e2e: Create anchor with only Part 1 fields; call _scan_specs; "
+                "verify source_url is None. Run sync_status; verify output does "
+                "NOT contain 'Source:' for that anchor @e2e")
+        assert _classify_description(desc) == 'behavioral'
+
+
+# ── check_spec_coverage: per-proof ID mapping ─────────────────────────
+
+class TestPerProofIdMapping:
+
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
+    def test_structural_proof_ids_returned(self):
+        """All-structural spec returns all PROOF-Ns in structural_proof_ids."""
+        path = _write_tmp(
+            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
+            "- RULE-1: Grep file for section heading\n"
+            "- RULE-2: Verify config field exists\n"
+            "\n## Proof\n"
+            "- PROOF-1 (RULE-1): Grep config for section; verify present\n"
+            "- PROOF-2 (RULE-2): Verify config field appears in output\n",
+            suffix='.md'
+        )
+        try:
+            result = check_spec_coverage(path)
+            assert result['structural_proof_ids'] == ['PROOF-1', 'PROOF-2']
+            assert result['behavioral_proof_ids'] == []
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
+    def test_mixed_proof_ids(self):
+        """Mixed spec returns correct PROOF-Ns in each list."""
+        path = _write_tmp(
+            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
+            "- RULE-1: Verify config field exists\n"
+            "- RULE-2: Returns 401 on invalid credentials\n"
+            "\n## Proof\n"
+            "- PROOF-1 (RULE-1): Grep config for auth section; verify present\n"
+            "- PROOF-2 (RULE-2): POST wrong password; verify 401 response\n",
+            suffix='.md'
+        )
+        try:
+            result = check_spec_coverage(path)
+            assert result['structural_proof_ids'] == ['PROOF-1']
+            assert result['behavioral_proof_ids'] == ['PROOF-2']
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
+    def test_skill_anchor_regression(self):
+        """Exact skill_anchor PROOF-1 through PROOF-4 are all structural."""
+        result = check_spec_coverage(
+            os.path.join(os.path.dirname(__file__), '..', 'specs', 'skills', 'skill_anchor.md')
+        )
+        for pid in ['PROOF-1', 'PROOF-2', 'PROOF-3', 'PROOF-4']:
+            assert pid in result['structural_proof_ids'], \
+                f"{pid} should be structural but is in behavioral_proof_ids"
+        for pid in ['PROOF-5', 'PROOF-6', 'PROOF-7']:
+            assert pid in result['behavioral_proof_ids'], \
+                f"{pid} should be behavioral but is in structural_proof_ids"
+
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
+    def test_empty_proof_section(self):
+        """No proof section returns empty ID lists."""
+        path = _write_tmp(
+            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
+            "- RULE-1: Returns 200\n",
+            suffix='.md'
+        )
+        try:
+            result = check_spec_coverage(path)
+            assert result['structural_proof_ids'] == []
+            assert result['behavioral_proof_ids'] == []
         finally:
             os.unlink(path)
 

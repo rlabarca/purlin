@@ -442,17 +442,36 @@ def check_js(filepath, feature_name):
 
 _RULE_LINE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 
+_BACKTICK_RE = re.compile(r'`[^`]*`')
+
+
+def _strip_backticks(text):
+    """Remove backtick-enclosed content before regex classification.
+
+    Prevents code patterns like `create.*commit` from triggering behavioral
+    verb detection (e.g. creates? matching 'create' inside backticks).
+    """
+    return _BACKTICK_RE.sub('', text)
+
+
 _STRUCTURAL_RULE_RE = re.compile(
-    r'grep|verify\s.*exist|verify\s.*present|verify\s.*section'
-    r'|verify\s.*field|verify\s.*appear|verify\s.*contain'
-    r'|file\s+exists|contains?\s+section|contains?\s+field',
+    r'\bgrep\b'
+    r'|verify\s.*\b(?:exist|present|appear)'
+    r'|file\s+exists'
+    r'|contains?\s+.*\b(?:section|field)'
+    r'|has\s+.*\b(?:frontmatter|delimiter)'
+    r'|includes?\s+.*\binstruction'
+    r'|extract\b.*\bverify\b'
+    r'|\bfield\s+in\s+frontmatter\b',
     re.IGNORECASE,
 )
 
 _BEHAVIORAL_RULE_RE = re.compile(
     r'returns?|rejects?|blocks?|logs?|sends?|creates?|deletes?'
     r'|updates?|computes?|detects?|emits?|produces?|triggers?'
-    r'|fails?|raises?|validates?|enforces?|prevents?',
+    r'|fails?|raises?|validates?|enforces?|prevents?'
+    r'|renders?|redirects?|responds?'
+    r'|\bPOST\b|\bGET\b|\bPUT\b|\bDELETE\b|\bPATCH\b',
     re.IGNORECASE,
 )
 
@@ -467,7 +486,7 @@ def _read_rule_descriptions(spec_path):
 
 
 _PROOF_DESC_RE = re.compile(
-    r'^-\s+PROOF-\d+\s*\((?:RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)',
+    r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)',
     re.MULTILINE,
 )
 
@@ -475,7 +494,10 @@ _TIER_TAG_RE = re.compile(r'\s*@\w+(?:\([^)]*\))?\s*$')
 
 
 def _read_proof_descriptions(spec_path):
-    """Read proof descriptions from a spec file's ## Proof section."""
+    """Read proof descriptions from a spec file's ## Proof section.
+
+    Returns list of dicts with proof_id, rule_ids, and description.
+    """
     if not spec_path or not os.path.isfile(spec_path):
         return []
     with open(spec_path) as f:
@@ -487,24 +509,31 @@ def _read_proof_descriptions(spec_path):
     if not proof_section_match:
         return []
     proof_section = proof_section_match.group(1)
-    descs = []
+    results = []
     for m in _PROOF_DESC_RE.finditer(proof_section):
-        desc = _TIER_TAG_RE.sub('', m.group(1)).strip()
-        descs.append(desc)
-    return descs
+        desc = _TIER_TAG_RE.sub('', m.group(3)).strip()
+        results.append({
+            'proof_id': m.group(1),
+            'rule_ids': m.group(2),
+            'description': desc,
+        })
+    return results
 
 
 def _classify_description(desc):
     """Classify a single description as 'behavioral' or 'structural'.
 
-    Uses _BEHAVIORAL_RULE_RE and _STRUCTURAL_RULE_RE (single source for both
-    rule and proof description classification).
+    Strips backtick-enclosed content before matching to prevent code
+    examples (e.g. `create.*commit`) from triggering behavioral patterns.
+    Checks structural first — structural false positives (exclusion) are
+    safer than behavioral false positives (score inflation).
     """
-    if _BEHAVIORAL_RULE_RE.search(desc):
-        return 'behavioral'
-    if _STRUCTURAL_RULE_RE.search(desc):
+    cleaned = _strip_backticks(desc)
+    if _STRUCTURAL_RULE_RE.search(cleaned):
         return 'structural'
-    return 'behavioral'  # default assumption
+    if _BEHAVIORAL_RULE_RE.search(cleaned):
+        return 'behavioral'
+    return 'behavioral'  # unknown defaults to audited (safer)
 
 
 def check_spec_coverage(spec_path):
@@ -517,7 +546,8 @@ def check_spec_coverage(spec_path):
     if not rules:
         return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0,
                 'structural_proofs': [], 'behavioral_proofs': [], 'structural_count': 0, 'behavioral_count': 0,
-                'proof_desc_count': 0, 'structural_proof_desc_count': 0, 'behavioral_proof_desc_count': 0}
+                'proof_desc_count': 0, 'structural_proof_desc_count': 0, 'behavioral_proof_desc_count': 0,
+                'structural_proof_ids': [], 'behavioral_proof_ids': []}
 
     structural_proofs = []
     behavioral_proofs = []
@@ -528,14 +558,18 @@ def check_spec_coverage(spec_path):
             structural_proofs.append(rule_id)
 
     # Classify proof descriptions (per audit_criteria.md Pass 0)
-    proof_descs = _read_proof_descriptions(spec_path)
+    proof_entries = _read_proof_descriptions(spec_path)
     structural_proof_descs = []
     behavioral_proof_descs = []
-    for desc in proof_descs:
-        if _classify_description(desc) == 'structural':
-            structural_proof_descs.append(desc)
+    structural_proof_ids = []
+    behavioral_proof_ids = []
+    for entry in proof_entries:
+        if _classify_description(entry['description']) == 'structural':
+            structural_proof_descs.append(entry['description'])
+            structural_proof_ids.append(entry['proof_id'])
         else:
-            behavioral_proof_descs.append(desc)
+            behavioral_proof_descs.append(entry['description'])
+            behavioral_proof_ids.append(entry['proof_id'])
 
     return {
         'structural_only_spec': len(behavioral_proofs) == 0,
@@ -545,9 +579,11 @@ def check_spec_coverage(spec_path):
         'behavioral_proofs': sorted(behavioral_proofs),
         'structural_count': len(structural_proofs),
         'behavioral_count': len(behavioral_proofs),
-        'proof_desc_count': len(proof_descs),
+        'proof_desc_count': len(proof_entries),
         'structural_proof_desc_count': len(structural_proof_descs),
         'behavioral_proof_desc_count': len(behavioral_proof_descs),
+        'structural_proof_ids': sorted(structural_proof_ids),
+        'behavioral_proof_ids': sorted(behavioral_proof_ids),
     }
 
 # ---------------------------------------------------------------------------

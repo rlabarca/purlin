@@ -29,6 +29,10 @@
 - RULE-22: prune_audit_cache removes all cache entries whose hash key is not in the provided live_keys set, preserving entries whose key IS in live_keys with all fields intact
 - RULE-23: prune_audit_cache with an empty live_keys set on a non-empty cache produces an empty cache (full sweep), and with all keys live produces an identical cache (no false pruning)
 - RULE-24: write_audit_cache merges new entries into the existing cache on disk — entries from prior writes for different features are preserved, not overwritten. Entries for the same (feature, proof_id) are deduplicated by keeping the latest cached_at
+- RULE-25: `_classify_description` strips backtick-enclosed content before regex matching so that code patterns like `create.*commit` do not trigger behavioral verb detection
+- RULE-26: `_classify_description` checks structural patterns before behavioral patterns and defaults to behavioral when neither matches — structural false positives (exclusion) are safer than behavioral false positives (score inflation)
+- RULE-27: `check_spec_coverage` returns `structural_proof_ids` and `behavioral_proof_ids` mapping each PROOF-N to its classification, enabling per-proof filtering in mixed specs
+- RULE-28: `_classify_description` correctly classifies expanded structural patterns including "has...frontmatter", "contains a...section" (with intervening words), "extract...verify", "includes...instruction", and "field in frontmatter"
 
 ## Proof
 
@@ -71,3 +75,7 @@
 - PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
 - PROOF-38 (RULE-22): e2e: Write 5 cache entries via write_audit_cache; write 3 live keys to a temp file; call --prune-cache --live-keys-file; verify JSON output shows pruned=2, kept=3; read cache back and confirm exactly 3 entries remain @e2e
 - PROOF-39 (RULE-24): Write 3 entries for feature_a via write_audit_cache; then write 2 entries for feature_b via a second call; read cache back; verify all 5 entries are present. Then write 1 updated entry for feature_a (same proof_id, newer assessment); read back; verify feature_b entries are untouched and feature_a has the updated entry
+- PROOF-40 (RULE-25): Create description with behavioral verb inside backticks (`create.*commit` in grep context); call _classify_description; verify returns 'structural'. Create description with behavioral verb outside backticks; verify returns 'behavioral'
+- PROOF-41 (RULE-26): Call _classify_description on description matching both structural and behavioral patterns (e.g. "Grep for patterns that trigger failures"); verify returns 'structural'. Call on description matching neither; verify returns 'behavioral'
+- PROOF-42 (RULE-27): Create mixed spec with structural + behavioral proofs; call check_spec_coverage; verify structural_proof_ids contains structural PROOF-Ns and behavioral_proof_ids contains behavioral PROOF-Ns. Verify with exact skill_anchor spec as regression test
+- PROOF-43 (RULE-28): Call _classify_description on each expanded pattern variant ("has YAML frontmatter", "contains a...section", "Extract...verify", "includes...instruction", "field in frontmatter"); verify all return 'structural'. Verify 10+ behavioral descriptions return 'behavioral' (no false positives)

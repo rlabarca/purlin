@@ -1,4 +1,4 @@
-> Criteria-Version: 13
+> Criteria-Version: 14
 
 # Proof Audit Criteria
 
@@ -22,6 +22,12 @@ Before evaluating individual proofs, classify each proof description as structur
 **Behavioral** — proof describes observable outcomes: returns, rejects, blocks, sends, creates, renders, computes, detects. These verify the system does what the rule claims.
 
 Structural proofs are **excluded from the audit**. They are not assessed, not scored, and not included in the integrity score. They still run as checks in the test suite, but they are not proofs.
+
+Classification uses `_classify_description` in `static_checks.py`: backtick-enclosed content is stripped before matching (to prevent code patterns like `create.*commit` from triggering behavioral verbs), structural patterns are checked before behavioral patterns, and unmatched descriptions default to behavioral (safer to audit than to exclude).
+
+### Per-proof filtering in mixed specs
+
+When a spec has both structural and behavioral proofs, `check_spec_coverage` returns `structural_proof_ids` listing which specific PROOF-N identifiers are structural. The auditor uses this list to exclude individual proofs rather than only excluding entire structural-only specs. This ensures mixed specs have their structural proofs excluded while behavioral proofs are still audited.
 
 Only behavioral proofs proceed to Pass 1 (static analysis) and Pass 2 (LLM evaluation).
 
@@ -56,7 +62,11 @@ These checks operate on proof JSON files, not source code. They work for any lan
 
 ## Pass 2 — Semantic Alignment (LLM)
 
-The LLM evaluates whether the test semantically matches the rule. It does NOT check structural issues — those are handled by Pass 1. The LLM can only return STRONG or WEAK.
+The LLM evaluates whether the test semantically matches the rule. It does NOT check structural issues — those are handled by Pass 1. The LLM can only return STRONG or WEAK (or EXCLUDED for the structural guard below).
+
+### Structural proof guard (LLM backup)
+
+If a proof reaches Pass 2 despite Pass 0 filtering and describes file/string presence checks rather than system behavior (e.g. reads a file and checks for string patterns, section headings, field existence — without exercising any production code), respond with `ASSESSMENT: EXCLUDED` and `CRITERION: structural presence check — not a behavioral proof`. This catches proofs that slipped past Pass 0's regex classification. The pipeline excludes these from the integrity score rather than marking them STRONG.
 
 ### WEAK (LLM judgment)
 
@@ -101,7 +111,7 @@ For test writing guidelines (assert behavior not implementation, realistic data,
 
 Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) × 100%
 
-The denominator includes only proofs that have been audited (STRONG + WEAK + HOLLOW + MANUAL). Rules with no proof at all (NO_PROOF) are excluded from both numerator and denominator — integrity measures proof quality only, while coverage (proved/total rules) is reported separately by purlin:status. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+The denominator includes only proofs that have been audited (STRONG + WEAK + HOLLOW + MANUAL). Rules with no proof at all (NONE) are excluded from both numerator and denominator — integrity measures proof quality only, while coverage (proved/total rules) is reported separately by purlin:status. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
 ## Finding Priority
 

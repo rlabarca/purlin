@@ -61,9 +61,9 @@ After the audit completes, write all new assessments to the cache (both cached h
 
 After loading the cache, run Pass 0 (`--check-spec-coverage`) for every feature to categorize them:
 
-- **Skip entirely:** structural-only specs — report structural checks as excluded, no subagent needed
-- **Cache-only:** non-structural specs where every proof hash exists in the cache. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed.
-- **Needs LLM:** at least one proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
+- **Skip entirely:** structural-only specs (all proofs in `structural_proof_ids`) — report structural checks as excluded, no subagent needed
+- **Cache-only:** specs where every behavioral proof (those in `behavioral_proof_ids`) has a cache hit. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all behavioral proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed. Structural proofs from `structural_proof_ids` are always excluded regardless.
+- **Needs LLM:** at least one behavioral proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
 
 For features in the "Needs LLM" category, launch up to 3 parallel evaluations using the Agent tool:
 
@@ -92,19 +92,21 @@ Before evaluating individual proofs, classify each proof as structural or behavi
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-spec-coverage --spec-path <spec_path>
 ```
 
-**Structural proofs** (grep, file exists, section present — matches structural pattern, no behavioral indicators):
+The output includes `structural_proof_ids` and `behavioral_proof_ids` listing which specific PROOF-N identifiers are structural vs behavioral.
+
+**Structural proofs** (those in `structural_proof_ids`):
 - Skip entirely — do not send to Pass 1 or Pass 2
 - Do not include in the audit total
 - Report once per feature: "N structural checks excluded from audit"
 
-**Behavioral proofs** proceed to Pass 1 and Pass 2 as normal.
+**Behavioral proofs** (those in `behavioral_proof_ids`) proceed to Pass 1 and Pass 2 as normal.
 
-If a feature has ONLY structural proofs:
+If a feature has ONLY structural proofs (`structural_only_spec: true`):
 - Report: "All proofs are structural checks — excluded from audit. Add behavioral proofs for audit coverage."
 - Do not include the feature in the integrity score
 
 If a feature has a mix:
-- Structural proofs excluded, behavioral proofs audited normally
+- Structural proofs in `structural_proof_ids` excluded, behavioral proofs audited normally
 
 Report:
 
@@ -173,7 +175,13 @@ For each feature being audited:
 You are evaluating semantic alignment between spec rules and test code.
 Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
 
-For each proof, answer ONLY these questions:
+STRUCTURAL GUARD (check first):
+If a proof describes file/string presence checks (grep for pattern, file exists, section
+present, field present, read file and check content) rather than testing system behavior,
+classify it as EXCLUDED rather than STRONG or WEAK. Structural proofs verify document
+content, not code behavior — they should have been filtered by Pass 0.
+
+For each behavioral proof, answer ONLY these questions:
 1. Does the test set up a scenario that exercises the rule's constraint?
 2. Does the test check the specific outcome the proof description claims?
 3. Is anything described in the proof missing from the test?
@@ -181,7 +189,7 @@ For each proof, answer ONLY these questions:
 5. Does the assertion validate test setup data instead of code-under-test output?
 6. Does the test function name contradict the actual assertion values?
 
-Rate each: STRONG (test matches rule intent) or WEAK (test partially matches — something is missing or too loose).
+Rate each: STRONG (test matches rule intent), WEAK (test partially matches — something is missing or too loose), or EXCLUDED (structural presence check, not behavioral).
 Do NOT check for structural issues — those were already handled.
 ```
 
@@ -194,14 +202,14 @@ For each proof, respond in EXACTLY this format:
 
 PROOF-ID: PROOF-N
 RULE-ID: RULE-N
-ASSESSMENT: STRONG|WEAK
-CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>
-WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>
-FIX: <specific change to align test with rule, or "none" if STRONG>
+ASSESSMENT: STRONG|WEAK|EXCLUDED
+CRITERION: <what semantic aspect is missing, "matches rule intent" if STRONG, or "structural presence check" if EXCLUDED>
+WHY: <what behavior would slip through, "test exercises the rule correctly" if STRONG, or "test verifies document content, not system behavior" if EXCLUDED>
+FIX: <specific change to align test with rule, "none" if STRONG, or "none — exclude from audit" if EXCLUDED>
 ---
 ```
 
-Note: the LLM can ONLY return STRONG or WEAK in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). This prevents the LLM from disagreeing with the static checker.
+Note: the LLM can return STRONG, WEAK, or EXCLUDED in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). EXCLUDED is a backup for structural proofs that slipped past Pass 0 — the pipeline treats them as excluded from scoring.
 
 ## Step 3 — Report
 
