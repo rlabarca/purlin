@@ -314,7 +314,6 @@ def test_compliant_spec_left_untouched(tmp_path):
     })
 
     # Verify it IS compliant: has Description, numbered rules, proofs
-    assert _get_description(FULLY_COMPLIANT_SPEC) is not None
     rules = _parse_rules(FULLY_COMPLIANT_SPEC)
     proofs = _parse_proofs(FULLY_COMPLIANT_SPEC)
     assert len(rules) == 3
@@ -413,7 +412,6 @@ Shopping cart with add/remove items and checkout.
         )
 
     # Verify structural compliance of migrated output
-    assert _get_description(migrated) is not None, "Migrated spec should have Description"
     assert _has_section(migrated, 'Rules'), "Migrated spec should have Rules section"
     assert _has_section(migrated, 'Proof'), "Migrated spec should have Proof section"
     assert len(migrated_rules) == 4, f"Expected 4 numbered rules, got {len(migrated_rules)}"

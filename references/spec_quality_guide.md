@@ -346,6 +346,16 @@ Specs, drift reports, and other reports serve different audiences. Match the lan
 
 **The test for good drift report language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
 
+## Test Quality Rules
+
+These rules apply when writing or reviewing any proof-marked test. Violating them produces HOLLOW or WEAK assessments during audit (see `references/audit_criteria.md` for assessment criteria):
+
+- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
+- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
+- **Never assert True.** Every assertion must check a specific expected value.
+- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
+- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
+
 ## When Tests Fail: Fix the Code, Not the Test
 
 When a proof-marked test fails, the agent must diagnose before fixing. There are three possibilities:

@@ -578,8 +578,8 @@ class TestSyncStatus:
             if line.startswith('\u2514'):
                 table_end = i
                 break
-        assert table_end is not None, "No table closing line found"
         # After └... line, summary line, blank line, then detail
+        # (table_end must be set — if not, lines[table_end + 3:] will TypeError immediately)
         detail_text = '\n'.join(lines[table_end + 3:])
         assert 'alpha: PASSING' in detail_text
         assert 'beta: 1/2 rules proved' in detail_text
@@ -633,6 +633,90 @@ class TestSyncStatus:
         assert '2/3 rules proved' in result, (
             f"Expected '2/3 rules proved' in output:\n{result}"
         )
+
+
+    @pytest.mark.proof("sync_status", "PROOF-62", "RULE-36")
+    def test_scan_specs_parses_stack(self):
+        """RULE-36: _scan_specs parses > Stack: metadata."""
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '> Stack: python/stdlib, json, hashlib\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        features = purlin_server._scan_specs(self.project_root)
+        assert features['login']['stack'] == 'python/stdlib, json, hashlib'
+
+    @pytest.mark.proof("sync_status", "PROOF-62", "RULE-36")
+    def test_scan_specs_stack_absent(self):
+        """RULE-36: stack is None when not present."""
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        features = purlin_server._scan_specs(self.project_root)
+        assert features['login']['stack'] is None
+
+    @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
+    def test_warns_too_few_rules(self):
+        """RULE-37: Warns when feature has fewer than 5 rules."""
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n'
+            '- RULE-1: Return 200\n'
+            '- RULE-2: Return 401\n'
+            '- RULE-3: Log errors\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): POST valid creds\n'
+            '- PROOF-2 (RULE-2): POST invalid creds\n'
+            '- PROOF-3 (RULE-3): Check logs\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert '3 rules' in result
+        assert '5–10' in result or 'aim for' in result.lower()
+
+    @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
+    def test_warns_too_many_rules(self):
+        """RULE-37: Warns when feature has more than 10 rules."""
+        rules = '\n'.join(f'- RULE-{i}: Constraint {i}' for i in range(1, 13))
+        proofs = '\n'.join(f'- PROOF-{i} (RULE-{i}): Test {i}' for i in range(1, 13))
+        self._write_spec('login', (
+            f'# Feature: login\n\n'
+            f'## What it does\nHandles login.\n\n'
+            f'## Rules\n{rules}\n\n'
+            f'## Proof\n{proofs}\n'
+        ))
+        result = purlin_server.sync_status(self.project_root)
+        assert '12 rules' in result
+        assert '5–10' in result or 'aim for' in result.lower()
+
+    @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
+    def test_no_rule_count_warning_for_anchors(self):
+        """RULE-37: Anchors are exempt from rule count warnings."""
+        self._write_spec('security', (
+            '# Anchor: security\n\n'
+            '## What it does\nSecurity.\n\n'
+            '## Rules\n- RULE-1: No eval\n- RULE-2: No exec\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep eval\n- PROOF-2 (RULE-2): Grep exec\n'
+        ), subdir='_anchors')
+        result = purlin_server.sync_status(self.project_root)
+        assert 'aim for' not in result.lower()
+
+    @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
+    def test_no_rule_count_warning_for_instructions(self):
+        """RULE-37: Instruction specs are exempt from rule count warnings."""
+        self._write_spec('agent_spec', (
+            '# Feature: agent_spec\n\n'
+            '## What it does\nAgent instructions.\n\n'
+            '## Rules\n- RULE-1: Has frontmatter\n- RULE-2: Has usage\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep for ---\n- PROOF-2 (RULE-2): Grep for Usage\n'
+        ), subdir='instructions')
+        result = purlin_server.sync_status(self.project_root)
+        assert 'aim for' not in result.lower()
 
 
 class TestPurlinConfig:
@@ -929,7 +1013,7 @@ class TestDriftDetection:
         result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         login_entry = next((f for f in data['files'] if f['path'] == 'src/login.py'), None)
-        assert login_entry is not None, "src/login.py not in drift files"
+        assert login_entry, "src/login.py not in drift files"
         assert login_entry['category'] == 'CHANGED_BEHAVIOR'
         assert login_entry.get('behavioral_gap') is True, \
             f"Expected behavioral_gap=True, got {login_entry}"
@@ -963,7 +1047,7 @@ class TestDriftDetection:
         assert 'drift_flags' in data
         assert len(data['drift_flags']) >= 1
         login_drift = next((d for d in data['drift_flags'] if d['spec'] == 'login'), None)
-        assert login_drift is not None, f"No drift flag for login, got {data['drift_flags']}"
+        assert login_drift, f"No drift flag for login, got {data['drift_flags']}"
         assert login_drift['reason'] == 'behavioral_gap_with_code_change'
         assert 'src/login.py' in login_drift['files']
 
@@ -1102,9 +1186,7 @@ class TestServerOutput:
         assert all(c in '0123456789abcdef' for c in hash_combined)
 
         # Pin the exact algorithm: sha256(comma-joined sorted rule IDs | comma-joined sorted proof pairs)[:8]
-        rule_ids = sorted(rules_with_required.keys())
-        proof_pairs = sorted(f"{p['id']}:{p['status']}" for p in proofs)
-        expected_input = ','.join(rule_ids) + '|' + ','.join(proof_pairs)
-        expected_hash = hashlib.sha256(expected_input.encode()).hexdigest()[:8]
+        # Literal pre-computed from: sha256("RULE-1,anchor/RULE-1|PROOF-1:pass")[:8]
+        expected_hash = 'c0919893'
         assert hash_combined == expected_hash, \
             f"vhash algorithm mismatch: expected {expected_hash}, got {hash_combined}"

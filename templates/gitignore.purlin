@@ -1,5 +1,8 @@
 # Purlin runtime (generated, not committed)
 .purlin/runtime/
 
+# Purlin cache (audit results, additional criteria)
+.purlin/cache/
+
 # Purlin plugin cache
 .purlin/plugins/__pycache__/

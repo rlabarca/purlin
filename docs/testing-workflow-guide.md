@@ -240,14 +240,14 @@ pipelines:
 
 `purlin:audit` checks whether tests actually prove what they claim. Three passes:
 
-**Pass 0 — Behavioral filter** (deterministic). Structural proofs (grep, file exists) are excluded from audit and integrity scoring.
+**Pass 0 — Behavioral filter** (deterministic). Structural proofs (grep, file exists) are excluded from audit and integrity scoring. In the dashboard, structural proofs display a green "Structural" tag next to the proof ID so they are visually distinguished from audited proofs.
 
 **Pass 1 — Structural soundness** (deterministic). Catches: `assert True`, no assertions, logic mirroring, mocking the thing being tested, bare `except: pass`. Any failure here is **HOLLOW** — no override possible.
 
 **Pass 2 — Semantic alignment** (LLM). Checks if assertions match the rule's intent. Returns **STRONG** or **WEAK**.
 
 ```
-Integrity score = (STRONG + MANUAL) / total proofs x 100%
+Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%
 ```
 
 Results are cached in `.purlin/cache/audit_cache.json`. The cache self-invalidates when rule text, proof descriptions, or test code changes.

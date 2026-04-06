@@ -148,8 +148,8 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `test_framework` | `purlin:init` (Step 3) | `purlin:unit-test` (Step 1) | `"auto"` |
 | `spec_dir` | `purlin:init` | `sync_status` MCP tool | `"specs"` |
 | `pre_push` | `purlin:init` | pre-push hook | `"warn"` |
-| `audit_criteria` | `purlin:init --sync-audit-criteria` | `purlin:audit` (Step 1) | not set (uses built-in) |
-| `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `purlin:audit` (Step 1) | not set |
+| `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
+| `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |
 | `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
 | `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |

@@ -70,7 +70,7 @@ This does 5 things:
 2. **Creates `specs/`** -- directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
 3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, or shell) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files.
 4. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are VERIFIED).
-5. **Configures audit criteria** — built-in criteria by default, or point to an external criteria file owned by your compliance team. See [references/audit_criteria.md](../references/audit_criteria.md).
+5. **Configures audit criteria** — built-in criteria always apply. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
 
 ### Proof Plugin Setup by Framework
 

@@ -50,6 +50,7 @@ _PATH_RE = re.compile(r'^>\s*Path:\s*(.+)', re.MULTILINE)
 _VISUAL_REF_RE = re.compile(r'^>\s*Visual-Reference:\s*(.+)', re.MULTILINE)
 _VISUAL_HASH_RE = re.compile(r'^>\s*Visual-Hash:\s*sha256:([a-f0-9]+)', re.MULTILINE)
 _DESCRIPTION_RE = re.compile(r'^>\s*Description:\s*(.+)', re.MULTILINE)
+_STACK_RE = re.compile(r'^>\s*Stack:\s*(.+)', re.MULTILINE)
 _META_FIELD_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
 
 
@@ -198,6 +199,10 @@ def _scan_specs(project_root):
         visual_ref = visual_ref_match.group(1).strip() if visual_ref_match else None
         visual_hash = visual_hash_match.group(1).strip() if visual_hash_match else None
 
+        # Extract > Stack: metadata
+        stack_match = _STACK_RE.search(content)
+        stack = stack_match.group(1).strip() if stack_match else None
+
         # Derive category from the spec's parent directory under specs/
         # e.g. specs/skills/skill_anchor.md -> "skills", specs/_anchors/foo.md -> "_anchors"
         _parts = rel_path.split(os.sep)
@@ -225,6 +230,7 @@ def _scan_specs(project_root):
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
             'description': description,
+            'stack': stack,
         }
 
     return features
@@ -372,11 +378,42 @@ def _relative_time(iso_timestamp):
     return f"{days} day{'s' if days != 1 else ''} ago"
 
 
-def _read_audit_summary(project_root, total_no_proof_count=0):
+def _compute_integrity(strong, weak, hollow, manual):
+    """Compute integrity percentage from assessment counts.
+
+    Integrity = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) × 100.
+    Measures proof quality only — NO_PROOF rules are excluded.
+    Returns rounded integer percentage, or None if no behavioral proofs.
+    """
+    behavioral_total = strong + weak + hollow + manual
+    if behavioral_total == 0:
+        return None, 0
+    return round((strong + manual) / behavioral_total * 100), behavioral_total
+
+
+def _determine_status(proved, active_total, has_fail, has_current_receipt):
+    """Determine feature status from coverage and receipt state.
+
+    Returns one of: VERIFIED, PASSING, FAILING, PARTIAL, UNTESTED.
+    """
+    if active_total == 0:
+        return 'UNTESTED'
+    if has_fail:
+        return 'FAILING'
+    if proved == active_total and has_current_receipt:
+        return 'VERIFIED'
+    if proved == active_total:
+        return 'PASSING'
+    if proved > 0:
+        return 'PARTIAL'
+    return 'UNTESTED'
+
+
+def _read_audit_summary(project_root):
     """Read audit cache and compute project-wide integrity summary.
 
-    total_no_proof_count: total own behavioral rules with no proof across all
-    features. These inflate the denominator to penalize missing proofs.
+    Integrity = (STRONG + MANUAL) / behavioral_total — measures proof quality
+    only. Coverage (proved/total rules) is a separate metric.
     Returns dict with integrity stats or None if no cache exists.
     """
     cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
@@ -421,12 +458,10 @@ def _read_audit_summary(project_root, total_no_proof_count=0):
         if ts and (latest_ts is None or ts > latest_ts):
             latest_ts = ts
 
-    behavioral_total = strong + weak + hollow + manual
-    if behavioral_total == 0:
+    integrity, behavioral_total = _compute_integrity(strong, weak, hollow, manual)
+    if integrity is None:
         return None
 
-    denominator = behavioral_total + total_no_proof_count
-    integrity = round((strong + manual) / denominator * 100)
     stale = False
     if latest_ts:
         try:
@@ -578,7 +613,6 @@ def sync_status(project_root, role=None):
 
     summary_rows = []
     detail = []
-    total_no_proof_count = 0
 
     # Process regular features
     for name in sorted(regular.keys()):
@@ -594,11 +628,6 @@ def sync_status(project_root, role=None):
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
         active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
         active_total = len(active_entries)
-        total_no_proof_count += sum(
-            1 for key, label, _ in active_entries
-            if label == 'own'
-            and not proof_by_rule.get(key)
-        )
         proved = sum(1 for key, _, _ in active_entries
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
         has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
@@ -616,16 +645,7 @@ def sync_status(project_root, role=None):
             )
             has_current_receipt = (receipt.get('vhash') == cli_vhash)
 
-        if has_fail:
-            status = "FAILING"
-        elif all_proved_passing and has_current_receipt:
-            status = "VERIFIED"
-        elif all_proved_passing:
-            status = "PASSING"
-        elif proved == 0:
-            status = "UNTESTED"
-        else:
-            status = "PARTIAL"
+        status = _determine_status(proved, active_total, has_fail, has_current_receipt)
 
         summary_rows.append((name, proved, active_total, status))
 
@@ -686,21 +706,12 @@ def sync_status(project_root, role=None):
                 )
                 a_has_receipt = (a_receipt.get('vhash') == a_vhash)
 
-            if has_fail:
-                a_status = "FAILING"
-            elif a_all_proved_passing and a_has_receipt:
-                a_status = "VERIFIED"
-            elif a_all_proved_passing:
-                a_status = "PASSING"
-            elif proved == 0:
-                a_status = "UNTESTED"
-            else:
-                a_status = "PARTIAL"
+            a_status = _determine_status(proved, active_total, has_fail, a_has_receipt)
 
             summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
 
     # Read audit cache for integrity summary
-    audit_summary = _read_audit_summary(project_root, total_no_proof_count)
+    audit_summary = _read_audit_summary(project_root)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary)
@@ -867,6 +878,16 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
 
+    # Advisory: rule count outside 5-10 range (non-anchor, non-instruction specs only)
+    # These are soft advisories — they don't block PASSING/VERIFIED status
+    advisories = []
+    if not info.get('is_anchor') and info.get('category') not in ('instructions', '_anchors'):
+        own_rule_count = len(info.get('rules', {}))
+        if info['has_rules_section'] and 0 < own_rule_count < 5:
+            advisories.append(f"  ⚠ Only {own_rule_count} rules — aim for 5–10 per feature for rebuild detail")
+        elif own_rule_count > 10:
+            advisories.append(f"  ⚠ {own_rule_count} rules — consider splitting into sub-features (aim for 5–10)")
+
     # Check visual reference staleness (computed once, used in multiple paths)
     visual_ref = info.get('visual_ref')
     visual_hash = info.get('visual_hash')
@@ -879,6 +900,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     if total == 0:
         lines.append(f"{name}: no rules defined")
         lines.extend(warnings)
+        lines.extend(advisories)
         for missing_name in unresolved_requires:
             lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
         if visual_hash_changed:
@@ -952,10 +974,12 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         if manual_proofs and not info.get('scope'):
             lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected. Add > Scope: to enable stale detection.")
         _append_scope_suggestions(lines, name, info, all_features, global_anchors)
+        lines.extend(advisories)
         return lines
 
     lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
+    lines.extend(advisories)
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -1145,12 +1169,11 @@ def _read_audit_cache_by_feature(project_root):
     return by_feature
 
 
-def _build_feature_audit(entries, no_proof_count=0):
+def _build_feature_audit(entries):
     """Build per-feature audit data from cache entries.
 
-    no_proof_count: number of own behavioral rules with no proof at all.
-    These inflate the denominator (penalizing missing proofs) without
-    affecting the numerator.
+    Integrity = (STRONG + MANUAL) / behavioral_total — measures proof quality
+    only. Coverage (proved/total rules) is a separate metric.
     """
     strong = 0
     weak = 0
@@ -1185,15 +1208,9 @@ def _build_feature_audit(entries, no_proof_count=0):
         elif assessment == 'MANUAL':
             manual += 1
 
-    behavioral_total = strong + weak + hollow + manual
-    if behavioral_total == 0 and no_proof_count == 0:
+    integrity, behavioral_total = _compute_integrity(strong, weak, hollow, manual)
+    if integrity is None:
         return None
-
-    denominator = behavioral_total + no_proof_count
-    if denominator == 0:
-        return None
-
-    integrity = round((strong + manual) / denominator * 100)
 
     # Sort findings by priority
     prio_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
@@ -1295,18 +1312,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
         # Determine status
         has_current_receipt = (receipt_data is not None and not receipt_data['stale'])
-        if active_total == 0:
-            status = 'UNTESTED'
-        elif has_fail:
-            status = 'FAILING'
-        elif all_proved_passing and has_current_receipt:
-            status = 'VERIFIED'
-        elif all_proved_passing:
-            status = 'PASSING'
-        elif proved > 0:
-            status = 'PARTIAL'
-        else:
-            status = 'UNTESTED'
+        status = _determine_status(proved, active_total, has_fail, has_current_receipt)
 
         # Update summary for non-anchor features
         if not is_anchor:
@@ -1398,6 +1404,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'pinned': info.get('pinned'),
             'description': info.get('description'),
             'source_path': info.get('source_path'),
+            'stack': info.get('stack'),
             'ext_status': ext_status,
             'proved': proved,
             'total': active_total,
@@ -1406,14 +1413,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'vhash': vhash,
             'receipt': receipt_data,
             'rules': rules_list,
-            'audit': _build_feature_audit(
-                audit_by_feature.get(name, []),
-                no_proof_count=sum(
-                    1 for key, label, _ in active_entries
-                    if label == 'own'
-                    and not proof_by_rule.get(key)
-                ),
-            ),
+            'audit': _build_feature_audit(audit_by_feature.get(name, [])),
         })
 
     uncommitted_files = _check_uncommitted_all(project_root)
@@ -1796,16 +1796,8 @@ def drift(project_root, since=None, role=None):
                 _collect_relevant_proofs(name, rule_entries, all_proofs),
             )
             d_has_receipt = (d_receipt.get('vhash') == d_vhash)
-        if failing:
-            status = 'FAILING'
-        elif all_pass and d_has_receipt:
-            status = 'VERIFIED'
-        elif all_pass:
-            status = 'PASSING'
-        elif proved == 0:
-            status = 'UNTESTED'
-        else:
-            status = 'PARTIAL'
+        has_fail = len(failing) > 0
+        status = _determine_status(proved, active_total, has_fail, d_has_receipt)
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,

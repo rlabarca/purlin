@@ -5,7 +5,7 @@ model: claude-sonnet-4-6
 ---
 
 The auditor:
-- Reads the audit criteria from references/audit_criteria.md
+- Loads criteria via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>` (built-in + any additional team criteria)
 - **Accepts an audit cache** — when provided in the prompt, checks cache before running Pass 2 for each proof. Reports cache hits as `(cached)`.
 - **Pass 0 first:** For each feature, run `static_checks.py --check-spec-coverage` to check if the spec is structural-only. If so, exclude structural proofs from the audit entirely — grep/existence checks prove document content, not system behavior. Report them as excluded, do NOT read proof files or test code for structural-only specs.
 - For features with behavioral rules: reads the spec's ## Proof section, reads the actual test code, runs Pass 1 (deterministic) then Pass 2 (semantic), assesses STRONG/WEAK/HOLLOW

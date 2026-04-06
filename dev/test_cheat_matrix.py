@@ -161,6 +161,8 @@ int main(void) {
     return 0;
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "C tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
@@ -176,6 +178,8 @@ function test_validates_input() {
     if (true !== true) { throw new Exception("impossible"); }
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "PHP tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
@@ -187,6 +191,8 @@ function test_validates_input() {
 -- Test: validates input
 SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat', setup_sql='CREATE TABLE t (id INTEGER);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "SQL tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
@@ -205,6 +211,8 @@ const proofs = [{
 }];
 console.log(JSON.stringify({ proofs }, null, 2));
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS tautological cheat passes — needs LLM")
 
     @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
@@ -248,6 +256,8 @@ int main(void) {
     return 0;
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "C fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
@@ -263,6 +273,8 @@ function test_returns_sorted() {
     if (count($expected) !== 3) throw new Exception("wrong count");
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "PHP fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
@@ -274,6 +286,8 @@ function test_returns_sorted() {
 -- Test: unique constraint enforced
 SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat', setup_sql='CREATE TABLE users (email TEXT UNIQUE);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "SQL fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
@@ -292,6 +306,8 @@ const proofs = [{
 }];
 console.log(JSON.stringify({ proofs }, null, 2));
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS fixture-only cheat passes — needs LLM")
 
     @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
@@ -334,6 +350,8 @@ int main(void) {
     return 0;
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "C happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
@@ -349,6 +367,8 @@ function test_rejects_empty_email() {
     if (!$r) throw new Exception("should accept valid email");
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "PHP happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
@@ -362,6 +382,8 @@ INSERT INTO users (email) VALUES ('unique@test.com');
 SELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat', setup_sql='CREATE TABLE users (email TEXT UNIQUE);')
         # CHEAT: only inserts one unique row — never tests the duplicate rejection
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "SQL happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
@@ -379,6 +401,8 @@ const proofs = [{
 }];
 console.log(JSON.stringify({ proofs }, null, 2));
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS happy-path cheat passes — needs LLM")
 
     @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
@@ -423,6 +447,8 @@ int main(void) {
     return 0;
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "C name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
@@ -439,6 +465,8 @@ function test_rejects_invalid_token() {
     if ($r !== true) throw new Exception("Expected true");
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "PHP name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
@@ -454,6 +482,8 @@ SELECT CASE WHEN (SELECT count(*) FROM access_log WHERE user_id = 999) = 1
        THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat',
             setup_sql='CREATE TABLE access_log (user_id INTEGER, action TEXT);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "SQL name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
@@ -472,6 +502,8 @@ const proofs = [{
 }];
 console.log(JSON.stringify({ proofs }, null, 2));
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS name-drift cheat passes — needs LLM")
 
     @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
@@ -517,6 +549,8 @@ int main(void) {
     return 0;
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "C no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
@@ -532,6 +566,8 @@ function test_sends_notification() {
     // No throw = pass. But $result is never inspected.
 }
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "PHP no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
@@ -549,6 +585,8 @@ SELECT 'PASS';
                       'CREATE TABLE children (id INTEGER, parent_id INTEGER);\n'
                       'INSERT INTO parents VALUES (1);\n'
                       'INSERT INTO children VALUES (1, 1);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "SQL no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
@@ -569,6 +607,8 @@ const proofs = [{
 }];
 console.log(JSON.stringify({ proofs }, null, 2));
 ''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS no-assertion cheat passes — needs LLM")
 
     @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")

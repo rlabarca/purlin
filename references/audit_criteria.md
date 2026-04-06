@@ -95,21 +95,13 @@ A proof is STRONG when ALL of these are true:
 - Test exercises exactly one code path per assertion
 - Test name describes the scenario, not the implementation
 
-### Test Quality Rules (quick reference)
-
-These rules apply when writing or reviewing any proof-marked test. Violating them produces HOLLOW or WEAK assessments:
-
-- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
-- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
-- **Never assert True.** Every assertion must check a specific expected value.
-- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
-- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
+For test writing guidelines (assert behavior not implementation, realistic data, no self-mocking), see `references/spec_quality_guide.md` § Test Quality Rules.
 
 ## Scoring
 
-Integrity score = (STRONG count + MANUAL count) / (audited proofs + NO_PROOF rules) × 100%
+Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) × 100%
 
-The denominator is the sum of audited behavioral proofs (STRONG + WEAK + HOLLOW + MANUAL) plus the count of own behavioral rules that have no proof at all. Missing proofs reduce the score — a rule with NO_PROOF counts in the denominator but contributes 0 to the numerator. Required anchor rules are excluded from the NO_PROOF penalty (they're proved by the anchor, not the requiring feature). Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+The denominator includes only proofs that have been audited (STRONG + WEAK + HOLLOW + MANUAL). Rules with no proof at all (NO_PROOF) are excluded from both numerator and denominator — integrity measures proof quality only, while coverage (proved/total rules) is reported separately by purlin:status. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
 ## Finding Priority
 
@@ -201,9 +193,9 @@ This eliminates shared-model bias: the builder (Claude) and auditor (e.g., Gemin
 
 The audit criteria must be self-contained and unambiguous — the external LLM has no other context about Purlin. Every assessment level, every detection heuristic, and every quality check must be fully described in this document.
 
-## Custom Criteria
+## Additional Team Criteria
 
-Teams can override this file by pointing to an external version:
+Teams can add additional criteria that are **appended** to these built-in defaults. Built-in criteria always apply and cannot be weakened — additional criteria only add stricter checks.
 
 ```json
 // .purlin/config.json
@@ -213,6 +205,6 @@ Teams can override this file by pointing to an external version:
 }
 ```
 
-When `audit_criteria` is set, the audit skill fetches and uses the external file instead of this one. The `audit_criteria_pinned` SHA ensures reproducible audits — the criteria don't change unless explicitly updated.
+When `audit_criteria` is set, `purlin:init --sync-audit-criteria` caches the external file locally. The `load_criteria()` function in `scripts/audit/static_checks.py` assembles the combined criteria (built-in + additional) — this is the single source for criteria loading logic. The `audit_criteria_pinned` SHA ensures reproducible audits.
 
-To sync: `purlin:init --sync-audit-criteria` pulls the latest version and updates the pinned SHA.
+To sync: `purlin:init --sync-audit-criteria` pulls the latest version, saves to `.purlin/cache/additional_criteria.md`, and updates the pinned SHA.

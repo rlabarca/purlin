@@ -72,6 +72,11 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
 .staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
 
+/* Auto-refresh toggle */
+.auto-refresh{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none}
+.auto-refresh input{accent-color:var(--green);cursor:pointer;margin:0}
+.auto-refresh.active{color:var(--green)}
+
 /* Theme toggle */
 .theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
 .theme-toggle:hover{background:var(--bg-hover);color:var(--text-primary)}
@@ -104,7 +109,7 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .audit-time.stale{color:var(--amber)}
 
 /* ===== TABLE ===== */
-.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow-x:auto;margin-bottom:20px}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:10px 16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
 th:hover{color:var(--text-secondary)}
@@ -123,8 +128,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .fr.expanded .chv{transform:rotate(90deg)}
 .fnt{margin-right:8px}
 .tp{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
-.tp-anchor{background:var(--gray-badge);color:#fff;opacity:.6}
-.tp-global{background:rgba(45,212,191,.2);color:var(--teal)}
+.tp-anchor-scoped{background:rgba(139,149,165,.2);color:#8b95a5}
+.tp-anchor-global{background:rgba(168,181,199,.2);color:#a8b5c7}
 .ext-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;color:var(--teal);flex-shrink:0;opacity:.7}
 .ext-icon svg{width:12px;height:12px}
 .ext-icon:hover{opacity:1}
@@ -156,7 +161,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
 /* Coverage */
 .cov{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.cov-t{font-family:var(--font-mono);font-size:12px;min-width:42px;text-align:right}
+.cov-t{font-family:var(--font-mono);font-size:12px;width:62px;flex-shrink:0;text-align:right}
 .cov-bar{width:56px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
 .cov-fill{height:100%;border-radius:3px}
 .cov-verified{background:var(--green)}.cov-partial{background:var(--amber)}.cov-fail{background:var(--red)}.cov-none{background:var(--gray-badge)}
@@ -197,13 +202,18 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .cat-cov-bar{width:48px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
 .cat-cov-fill{height:100%;border-radius:2px;display:block}
 .cat-cov-fill.cov-verified{background:var(--green)}.cat-cov-fill.cov-partial{background:var(--amber)}.cat-cov-fill.cov-fail{background:var(--red)}
+.cat-info{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+/* Per-category column headers */
+.cat-colhead{border-left:3px solid var(--border)}
+.cat-colhead th{background:var(--bg-card-alt)}
+.cat-colhead th:first-child{padding-left:40px}
 /* Feature rows nested under a category */
 .cat-child td:first-child{padding-left:40px}
 .cat-child{border-left:3px solid var(--border)}
 
 /* ===== EXPANDED DETAIL ===== */
 .dr>td{padding:0!important;border-bottom:1px solid var(--border)!important}
-.dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border)}
+.dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border);overflow:hidden}
 .dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
 .dst:first-child{margin-top:0}
 
@@ -211,22 +221,23 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .desc-block{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;padding:10px 14px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border);white-space:pre-line}
 
 /* Rules sub-table */
-.rt{width:100%;border-collapse:collapse;margin-bottom:4px}
+.rt{width:100%;min-width:0;border-collapse:collapse;margin-bottom:4px;table-layout:fixed}
 .rt th{padding:5px 12px;font-size:9px;cursor:default}
-.rt td{padding:5px 12px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top}
+.rt td{padding:5px 12px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top;overflow-wrap:break-word;word-break:break-word}
 .rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:28px}
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
-.rlbl-global{color:var(--teal)}.rlbl-required{color:var(--blue)}
+.rlbl-scoped{color:#8b95a5}.rlbl-global{color:#a8b5c7}
 .rt td.rst{font-size:11px;font-weight:600;text-align:center}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--green)}.rst-chk-fail{color:var(--red)}.rst-def{color:var(--text-dim);font-style:italic}
-.rprf{font-size:12px;color:var(--text-primary)}
-.rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px}
+.rprf{font-size:12px;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word}
+.rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px;overflow-wrap:break-word;word-break:break-all}
 .rprf-sep{height:8px;border-top:1px solid var(--border-light);margin-top:8px;padding-top:0}
 .atag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
 .atag-s{background:var(--green-dim);color:var(--green)}
 .atag-w{background:var(--amber-dim);color:var(--amber)}
 .atag-h{background:var(--red-dim);color:var(--red)}
+.atag-st{background:var(--green);color:#fff}
 
 /* Action banners */
 .ab{padding:10px 14px;border-left:4px solid;border-radius:0 6px 6px 0;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -271,12 +282,22 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .footer a:hover{text-decoration:underline}
 
 /* ===== RESPONSIVE ===== */
+table{min-width:680px}
+@media (max-width:900px) {
+  th,td{padding:8px 10px;font-size:12px}
+  .cat-child td:first-child{padding-left:30px}
+  .cat-colhead th:first-child{padding-left:30px}
+  .cov-bar{width:40px}
+  .cat-cov-bar{width:36px}
+}
 @media (max-width:700px) {
   .summary-strip{grid-template-columns:repeat(3,1fr)}
+  .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
+  .header-right{flex-wrap:wrap;gap:10px}
 }
 @media (max-width:480px) {
   .summary-strip{grid-template-columns:repeat(2,1fr)}
-  .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
+  .dashboard{padding:0 8px}
 }
 </style>
 </head>
@@ -333,8 +354,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     if (!iso) return { cls: 'stale', text: '/status never run', warn: '' };
     var diff = (Date.now() - new Date(iso).getTime()) / 1000;
     if (diff < 3600) return { cls: 'fresh', text: '/status ' + relTime(iso), warn: '' };
-    if (diff < 86400) return { cls: 'warning', text: '/status ' + relTime(iso), warn: ' — run purlin:status to refresh' };
-    return { cls: 'stale', text: '/status ' + relTime(iso), warn: ' — run purlin:status to refresh' };
+    if (diff < 86400) return { cls: 'warning', text: '/status ' + relTime(iso), warn: ' \u2014 run purlin:status to refresh' };
+    return { cls: 'stale', text: '/status ' + relTime(iso), warn: ' \u2014 run purlin:status to refresh' };
   }
 
   function covClass(status) {
@@ -380,7 +401,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
   function labelCls(l) {
     if (l === 'global') return 'rlbl rlbl-global';
-    if (l === 'required') return 'rlbl rlbl-required';
+    if (l === 'required') return 'rlbl rlbl-scoped';
     return 'rlbl';
   }
 
@@ -402,13 +423,23 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     return 'fgt fgt-low';
   }
 
-  function auditTag(a) {
-    if (!a) return '';
-    var u = a.toUpperCase();
-    if (u === 'STRONG') return '<span class="atag atag-s">Strong</span>';
-    if (u === 'WEAK') return '<span class="atag atag-w">Weak</span>';
-    if (u === 'HOLLOW') return '<span class="atag atag-h">Hollow</span>';
-    if (u === 'MANUAL') return '<span class="atag atag-s">Manual</span>';
+  var _structRE = /grep|verify\s.*(?:exist|present|section|field|appear|contain)|file\s+exists|contains?\s+(?:section|field)/i;
+  var _behavRE = /returns?|rejects?|blocks?|logs?|sends?|creates?|deletes?|updates?|computes?|detects?|emits?|produces?|triggers?|fails?|raises?|validates?|enforces?|prevents?/i;
+  function isStructuralDesc(desc) {
+    if (!desc) return false;
+    if (_behavRE.test(desc)) return false;
+    return _structRE.test(desc);
+  }
+
+  function auditTag(a, desc) {
+    if (a) {
+      var u = a.toUpperCase();
+      if (u === 'STRONG') return '<span class="atag atag-s">Strong</span>';
+      if (u === 'WEAK') return '<span class="atag atag-w">Weak</span>';
+      if (u === 'HOLLOW') return '<span class="atag atag-h">Hollow</span>';
+      if (u === 'MANUAL') return '<span class="atag atag-s">Manual</span>';
+    }
+    if (isStructuralDesc(desc)) return '<span class="atag atag-st">Structural</span>';
     return '';
   }
 
@@ -437,7 +468,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
   function proofCell(p) {
     var h = '';
-    if (hasGlobalAudit && p.audit) h += auditTag(p.audit);
+    if (hasGlobalAudit) h += auditTag(p.audit, p.description);
     if (p.id) h += '<span class="fid">' + esc(p.id) + '</span> ';
     if (p.description) {
       h += '<span>' + esc(p.description) + '</span>';
@@ -539,13 +570,15 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     h += '</svg></div>';
     h += '<span class="header-project">' + esc(D.project) + '</span>';
     h += '</div><div class="header-right">';
-    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span></div>';
+    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
+    h += '<label class="auto-refresh" id="auto-refresh-label" title="Reload page every 15 minutes to pick up new purlin:status data"><input type="checkbox" id="auto-refresh-cb">auto</label>';
+    h += '</div>';
     /* Last audit time */
     if (A && A.last_audit) {
       var auditRel = relTime(A.last_audit);
       var acls = A.stale ? 'audit-time stale' : 'audit-time';
       var atxt = '/audit ' + (auditRel || 'unknown');
-      if (A.stale) atxt += ' — run purlin:audit to refresh';
+      if (A.stale) atxt += ' \u2014 run purlin:audit to refresh';
       h += '<span class="' + acls + '">' + esc(atxt) + '</span>';
     }
     h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
@@ -556,7 +589,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Summary strip */
     h += '<div class="summary-strip">';
-    h += '<div class="summary-card sc-total"><div class="summary-card-number">' + S.total_features + '</div><div class="summary-card-label">Features</div>';
+    h += '<div class="summary-card sc-total"><div class="summary-card-number">' + S.total_features + '</div><div class="summary-card-label">Specs</div>';
     if (D.anchors_summary.total) h += '<div class="summary-card-sub">+ ' + D.anchors_summary.total + ' anchors</div>';
     h += '</div>';
     h += '<div class="summary-card sc-verified"><div class="summary-card-number">' + S.verified + '</div><div class="summary-card-label">Verified</div></div>';
@@ -598,22 +631,36 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Shared table columns */
     var cols = [
-      {key:'name', label:'Feature', w:''},
+      {key:'name', label:'Spec', w:''},
       {key:'coverage', label:'Coverage', w:'140px'},
       {key:'status', label:'Status', w:'100px'},
       {key:'integrity', label:'Integrity', w:'100px'},
       {key:'verified', label:'Verified', w:'180px'}
     ];
 
-    function renderTableHead() {
+    function renderTableHead(nameLabel) {
       var th = '<thead><tr>';
       for (var ci = 0; ci < cols.length; ci++) {
         var c = cols[ci];
+        var lbl = (ci === 0 && nameLabel) ? nameLabel : c.label;
         var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
         var acls = (sortCol === c.key) ? ' active' : '';
-        th += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + c.label + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
+        th += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + lbl + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
       }
       th += '</tr></thead>';
+      return th;
+    }
+
+    function renderColHeaders(nameLabel) {
+      var th = '<tr class="cat-colhead">';
+      for (var ci = 0; ci < cols.length; ci++) {
+        var c = cols[ci];
+        var lbl = (ci === 0 && nameLabel) ? nameLabel : c.label;
+        var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
+        var acls = (sortCol === c.key) ? ' active' : '';
+        th += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + lbl + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
+      }
+      th += '</tr>';
       return th;
     }
 
@@ -627,7 +674,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       var anchorPct = acs.rules ? Math.round(acs.proved / acs.rules * 100) : 0;
       h += '<div class="section-label">Anchors <span class="section-count">' + acs.total + '</span></div>';
       h += '<div class="table-container"><table>';
-      h += renderTableHead();
+      h += renderTableHead('Anchor');
       h += '<tbody>';
       for (var ai = 0; ai < anchorFeatures.length; ai++) {
         var af = anchorFeatures[ai];
@@ -636,8 +683,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
         var aintVal = (af.audit && af.audit.integrity != null) ? af.audit.integrity : null;
         h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(af.name) + '">';
         h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(af.name) + '</span>';
-        if (af.is_global) { h += '<span class="tp tp-global">global</span>'; }
-        else { h += '<span class="tp tp-anchor">anchor</span>'; }
+        if (af.is_global) { h += '<span class="tp tp-anchor-global">GLOBAL</span>'; }
+        else { h += '<span class="tp tp-anchor-scoped">SCOPED</span>'; }
         if (af.source_url) {
           var extTitle = 'Source: ' + af.source_url;
           if (af.source_path) extTitle += '\nPath: ' + af.source_path;
@@ -664,9 +711,13 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
     }
 
     /* Feature table */
-    h += '<div class="section-label">Features</div>';
+    h += '<div class="section-label">Specs</div>';
     h += '<div class="table-container"><table>';
-    h += renderTableHead();
+    h += '<colgroup>';
+    for (var cgi = 0; cgi < cols.length; cgi++) {
+      h += '<col' + (cols[cgi].w ? ' style="width:' + cols[cgi].w + '"' : '') + '>';
+    }
+    h += '</colgroup>';
     h += '<tbody>';
 
     for (var gi = 0; gi < grouped.order.length; gi++) {
@@ -684,9 +735,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
       h += '<span class="cat-count">(' + cs.total + ')</span>';
       h += '</div></td>';
-      h += '<td><div class="cat-cov">' + cs.proved + '/' + cs.rules;
-      h += '<span class="cat-cov-bar"><span class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></span></span>';
-      h += '</div></td>';
+      h += '<td><div class="cov"><span class="cov-t">' + cs.proved + '/' + cs.rules + '</span>';
+      h += '<div class="cov-bar"><div class="cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
       h += '<td colspan="3"><div class="cat-summary">';
       if (cs.verified) h += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
       if (cs.passing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
@@ -698,6 +748,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
       /* Feature rows (only if category is open) */
       if (catOpen) {
+        h += renderColHeaders();
         for (var i = 0; i < catFeatures.length; i++) {
           var f = catFeatures[i];
           var isExpanded = expandedSet[f.name];
@@ -710,9 +761,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
           h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
           if (f.type === 'anchor') {
             if (f.is_global) {
-              h += '<span class="tp tp-global">global</span>';
+              h += '<span class="tp tp-anchor-global">GLOBAL</span>';
             } else {
-              h += '<span class="tp tp-anchor">anchor</span>';
+              h += '<span class="tp tp-anchor-scoped">SCOPED</span>';
             }
           }
           if (f.source_url) {
@@ -767,6 +818,64 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
+
+    /* Auto-refresh: reload the page every 15 min to pick up new report-data.js */
+    var arCb = document.getElementById('auto-refresh-cb');
+    var arLabel = document.getElementById('auto-refresh-label');
+    var arKey = 'purlin-auto-refresh';
+    var arLastReload = 'purlin-auto-refresh-ts';
+    var arTimer = null;
+    var AR_INTERVAL = 15 * 60 * 1000;
+    function setAutoRefresh(on) {
+      if (arTimer) { clearInterval(arTimer); arTimer = null; }
+      if (on) {
+        arTimer = setInterval(function() {
+          try { localStorage.setItem(arLastReload, String(Date.now())); } catch(e) {}
+          location.reload();
+        }, AR_INTERVAL);
+      }
+      arLabel.classList.toggle('active', on);
+      try { localStorage.setItem(arKey, on ? '1' : '0'); } catch(e) {}
+    }
+    var arSaved = false;
+    try { arSaved = localStorage.getItem(arKey) === '1'; } catch(e) {}
+    arCb.checked = arSaved;
+    setAutoRefresh(arSaved);
+    arCb.addEventListener('change', function() { setAutoRefresh(this.checked); });
+
+    /* Live staleness: update "X ago" text every 30s so it never goes stale between reloads */
+    setInterval(function() {
+      var dot = app.querySelector('.staleness-dot');
+      var txt = app.querySelector('.staleness-text');
+      if (dot && txt && D.timestamp) {
+        var st = staleness(D.timestamp);
+        dot.className = 'staleness-dot ' + st.cls;
+        txt.className = 'staleness-text' + (st.warn ? ' ' + st.cls : '');
+        txt.textContent = st.text + st.warn;
+      }
+      var auditEl = app.querySelector('.audit-time');
+      if (auditEl && D.audit_summary && D.audit_summary.last_audit) {
+        var ar = relTime(D.audit_summary.last_audit);
+        var atxt = '/audit ' + (ar || 'unknown');
+        if (D.audit_summary.stale) atxt += ' \u2014 run purlin:audit to refresh';
+        auditEl.textContent = atxt;
+      }
+    }, 30000);
+
+    /* Visibility-based reload: when tab is re-focused after the refresh interval, reload immediately.
+       This defeats browser background-tab throttling of setInterval. */
+    try { localStorage.setItem(arLastReload, localStorage.getItem(arLastReload) || String(Date.now())); } catch(e) {}
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState !== 'visible') return;
+      if (!arCb.checked) return;
+      try {
+        var last = parseInt(localStorage.getItem(arLastReload), 10) || 0;
+        if (Date.now() - last >= AR_INTERVAL) {
+          localStorage.setItem(arLastReload, String(Date.now()));
+          location.reload();
+        }
+      } catch(e) {}
+    });
 
     var uwToggle = document.getElementById('uw-toggle');
     if (uwToggle) {
@@ -835,7 +944,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
     /* Rules table */
     h += '<div class="dst">Rules &amp; Proofs</div>';
-    h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Source</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
+    h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Anchor</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
 
     for (var ri = 0; ri < f.rules.length; ri++) {
       var r = f.rules[ri];
@@ -846,7 +955,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
       h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
       h += '<td class="rid">' + esc(r.id) + '</td>';
       h += '<td class="rdesc">' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
+      h += '<td class="' + labelCls(r.label) + '" style="text-align:center">' + (r.label === 'own' ? '' : '&#10003;') + '</td>';
       h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
 
       if (proofs.length > 0) {

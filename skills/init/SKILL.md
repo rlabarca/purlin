@@ -218,13 +218,14 @@ Ask the user which audit criteria to use:
 
 ```
 Audit criteria:
-  [default] Use Purlin's built-in audit criteria
-  [custom]  Point to an external criteria file (git URL)
+  [default] Use Purlin's built-in audit criteria only
+  [additional] Add team-specific criteria from a git-hosted file
+               (appended to built-in — does not replace defaults)
 ```
 
-If **default**: no config change needed — `purlin:audit` reads `references/audit_criteria.md` automatically.
+If **default**: no config change needed — `purlin:audit` loads built-in criteria via `load_criteria()`.
 
-If **custom**: ask for the git URL and file path (e.g., `git@github.com:acme/quality-standards.git#audit_criteria.md`). Set `audit_criteria` and `audit_criteria_pinned` in `.purlin/config.json`:
+If **additional**: ask for the git URL and file path (e.g., `git@github.com:acme/quality-standards.git#audit_criteria.md`). Set `audit_criteria` and `audit_criteria_pinned` in `.purlin/config.json`:
 
 ```json
 {
@@ -233,7 +234,7 @@ If **custom**: ask for the git URL and file path (e.g., `git@github.com:acme/qua
 }
 ```
 
-Clone the repo to a temp directory, read the file at HEAD, record the commit SHA as `audit_criteria_pinned`, then clean up.
+Clone the repo to a temp directory, read the file at HEAD, **save to `.purlin/cache/additional_criteria.md`**, record the commit SHA as `audit_criteria_pinned`, then clean up. The `load_criteria()` function in `static_checks.py` reads this cached file and appends it to the built-in criteria.
 
 ## Step 7c — Audit LLM Configuration
 
@@ -387,7 +388,7 @@ If `.purlin/plugins/` doesn't exist or is empty: `No proof plugins installed. Ru
 purlin:init --sync-audit-criteria
 ```
 
-Syncs the external audit criteria file to the latest version.
+Syncs the additional team criteria file to the latest version.
 
 ### Steps
 
@@ -401,6 +402,6 @@ Syncs the external audit criteria file to the latest version.
 
 5. Compare to `audit_criteria_pinned` in config:
    - If same: `"Audit criteria up to date."` Clean up and stop.
-   - If different: read the file at HEAD, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
+   - If different: read the file at HEAD, **save to `.purlin/cache/additional_criteria.md`**, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
 
 6. Clean up: `rm -rf /tmp/purlin-audit-criteria-sync`

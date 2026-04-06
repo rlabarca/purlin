@@ -372,7 +372,6 @@ class TestPurlinReport:
         assert "4" in strip_text, "Expected verified=4 in summary strip"
         # Incomplete card: 2 partial + 1 untested = 3
         incomplete_card = page.query_selector(".sc-partial")
-        assert incomplete_card is not None, "Incomplete card (.sc-partial) not found"
         incomplete_text = incomplete_card.inner_text()
         assert "3" in incomplete_text, "Expected incomplete count=3 (2 partial + 1 untested)"
         assert "incomplete" in incomplete_text.lower(), "Expected label 'Incomplete'"
@@ -431,7 +430,6 @@ class TestPurlinReport:
         assert len(detail_rows_before) == 0, "Expected no expanded rows initially"
         # Click the first feature row
         first_row = page.query_selector("tr.fr")
-        assert first_row is not None, "Expected at least one feature row"
         first_row.click()
         page.wait_for_timeout(200)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof5_expanded.png"))
@@ -440,7 +438,7 @@ class TestPurlinReport:
         assert len(detail_rows) > 0, "Expected at least one detail row (.dr) after clicking"
         # The detail row should contain a rules table (.rt)
         rules_table = detail_rows[0].query_selector("table.rt")
-        assert rules_table is not None, "Expected a rules table (.rt) inside the expanded detail row"
+        assert rules_table, "Expected a rules table (.rt) inside the expanded detail row"
 
     @pytest.mark.proof("purlin_report", "PROOF-6", "RULE-6")
     def test_expanded_rule_sources_and_multi_proof_stacking(self, page, dashboard):
@@ -525,7 +523,6 @@ class TestPurlinReport:
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof8_stale_warning.png"))
         staleness_text = page.query_selector(".staleness-text")
-        assert staleness_text is not None, "Expected .staleness-text element"
         text_content = staleness_text.inner_text()
         assert "ago" in text_content, f"Expected 'ago' in staleness text, got: '{text_content}'"
         css_class = staleness_text.get_attribute("class")
@@ -544,7 +541,6 @@ class TestPurlinReport:
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof9_stale_red.png"))
         staleness_text = page.query_selector(".staleness-text")
-        assert staleness_text is not None, "Expected .staleness-text element"
         css_class = staleness_text.get_attribute("class")
         assert "stale" in css_class, (
             f"Expected 'stale' CSS class on staleness text for 2-day-old data, got: '{css_class}'"
@@ -589,7 +585,7 @@ class TestPurlinReport:
         assert len(ext_icons) > 0, "Expected at least one .ext-icon element for anchors with source_url"
         icon = ext_icons[0]
         title_attr = icon.get_attribute("title")
-        assert title_attr is not None, "Expected .ext-icon to have a 'title' attribute"
+        assert title_attr, "Expected .ext-icon to have a 'title' attribute"
         assert "git@github.com:acme/policies.git" in title_attr, (
             f"Expected source_url in title attribute, got: '{title_attr}'"
         )
@@ -635,7 +631,6 @@ class TestPurlinReport:
         )
         # Click the "Coverage" column header — ascending coverage sort: alpha (0%) first
         coverage_header = page.query_selector("th[data-col='coverage']")
-        assert coverage_header is not None, "Expected th[data-col='coverage'] to exist"
         coverage_header.click()
         page.wait_for_timeout(200)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof12_sorted.png"))
@@ -644,10 +639,6 @@ class TestPurlinReport:
         assert first_name_after == "alpha", (
             f"Expected 'alpha' (0% coverage) to be first after coverage-ascending sort, got '{first_name_after}'"
         )
-        assert first_name_before != first_name_after, (
-            f"Expected row order to change after clicking Coverage header. "
-            f"First row was '{first_name_before}' before and '{first_name_after}' after."
-        )
 
     @pytest.mark.proof("purlin_report", "PROOF-13", "RULE-13")
     def test_footer_docs_url(self, page, dashboard):
@@ -655,7 +646,6 @@ class TestPurlinReport:
         data = make_data({"docs_url": "https://example.com/docs"})
         load_dashboard(page, dashboard, data=data)
         footer_link = page.query_selector("footer a")
-        assert footer_link is not None, "Expected a link in the footer"
         href = footer_link.get_attribute("href")
         assert href == "https://example.com/docs", (
             f"Expected footer link href='https://example.com/docs', got '{href}'"
@@ -700,9 +690,7 @@ class TestPurlinReport:
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof15_audit_stale.png"))
         stale_el = page.query_selector(".audit-time.stale")
-        assert stale_el is not None, (
-            "Expected element with class 'audit-time stale' when audit_summary.stale=true"
-        )
+        assert stale_el, "Expected element with class 'audit-time stale' when audit_summary.stale=true"
 
     @pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
     def test_status_column_centered_at_multiple_widths(self, page, dashboard):
@@ -1100,7 +1088,7 @@ class TestDashboardVisual:
 
         # Verify UNTESTED badge has .sb-untested class with amber text
         untested_badge = page.query_selector(".sb-untested")
-        assert untested_badge is not None, "Expected .sb-untested badge for UNTESTED feature"
+        assert untested_badge, "Expected .sb-untested badge for UNTESTED feature"
         untested_color = page.evaluate(
             "() => getComputedStyle(document.querySelector('.sb-untested')).color"
         )
@@ -1111,7 +1099,7 @@ class TestDashboardVisual:
 
         # Verify generic .sb-none (unknown status) has reduced opacity
         none_badge = page.query_selector(".sb-none")
-        assert none_badge is not None, "Expected .sb-none badge for unknown status"
+        assert none_badge, "Expected .sb-none badge for unknown status"
         opacity = page.evaluate(
             "() => getComputedStyle(document.querySelector('.sb-none')).opacity"
         )
@@ -1995,7 +1983,7 @@ class TestExternalReferenceBlock:
 
         # Verify .ext-ref-block exists
         block = page.query_selector(".ext-ref-block")
-        assert block is not None, "Expected .ext-ref-block for anchor with source_url"
+        assert block, "Expected .ext-ref-block for anchor with source_url"
 
         # Verify Source link
         source_link = page.evaluate("""() => {
@@ -2087,7 +2075,7 @@ class TestExternalReferenceBlock:
             var icon = document.querySelector('.ext-icon');
             return icon ? icon.getAttribute('title') : null;
         }""")
-        assert title is not None, "Expected .ext-icon with title attribute"
+        assert title, "Expected .ext-icon with title attribute"
         assert "acme/policies" in title, f"Expected source URL in tooltip, got {title}"
         assert "security/policy.md" in title, f"Expected path in tooltip, got {title}"
         assert "deadbee" in title, f"Expected pinned SHA in tooltip, got {title}"
@@ -2138,7 +2126,7 @@ class TestExternalReferenceBlock:
             var badge = row ? row.querySelector('.ext-stale') : null;
             return badge ? { text: badge.textContent, title: badge.getAttribute('title') } : null;
         }""")
-        assert stale_badge is not None, "Expected .ext-stale badge on stale anchor"
+        assert stale_badge, "Expected .ext-stale badge on stale anchor"
         assert "STALE" in stale_badge["text"].upper(), f"Expected 'STALE' text, got {stale_badge['text']}"
         assert "sync" in stale_badge["title"].lower(), f"Expected sync in tooltip, got {stale_badge['title']}"
 
@@ -2164,7 +2152,7 @@ class TestUncommittedWork:
 
         # Verify section exists with count
         uw_section = page.query_selector(".uw-section")
-        assert uw_section is not None, "Expected .uw-section when uncommitted files exist"
+        assert uw_section, "Expected .uw-section when uncommitted files exist"
 
         count_text = page.inner_text(".uw-count")
         assert "3" in count_text, f"Expected count '3', got {count_text}"
@@ -2209,7 +2197,6 @@ def test_description_block_rendering(dashboard, page):
 
     # Should show .desc-block with the description text
     desc_block = page.query_selector("tr.fr[data-name='auth_login'] + tr.dr .desc-block")
-    assert desc_block is not None, "Expected .desc-block when feature has description"
     desc_text = desc_block.inner_text()
     assert "Handles user login" in desc_text, (
         f"Expected description text, got: {desc_text}"

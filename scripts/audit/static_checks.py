@@ -12,6 +12,7 @@ Output: JSON to stdout with per-proof results.
 """
 
 import ast
+import datetime
 import hashlib
 import json
 import os
@@ -465,27 +466,76 @@ def _read_rule_descriptions(spec_path):
     return {m.group(1): m.group(2).strip() for m in _RULE_LINE_RE.finditer(content)}
 
 
+_PROOF_DESC_RE = re.compile(
+    r'^-\s+PROOF-\d+\s*\((?:RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)',
+    re.MULTILINE,
+)
+
+_TIER_TAG_RE = re.compile(r'\s*@\w+(?:\([^)]*\))?\s*$')
+
+
+def _read_proof_descriptions(spec_path):
+    """Read proof descriptions from a spec file's ## Proof section."""
+    if not spec_path or not os.path.isfile(spec_path):
+        return []
+    with open(spec_path) as f:
+        content = f.read()
+    proof_section_match = re.search(
+        r'^## Proof\s*\n(.*?)(?=^## |\Z)',
+        content, re.MULTILINE | re.DOTALL,
+    )
+    if not proof_section_match:
+        return []
+    proof_section = proof_section_match.group(1)
+    descs = []
+    for m in _PROOF_DESC_RE.finditer(proof_section):
+        desc = _TIER_TAG_RE.sub('', m.group(1)).strip()
+        descs.append(desc)
+    return descs
+
+
+def _classify_description(desc):
+    """Classify a single description as 'behavioral' or 'structural'.
+
+    Uses _BEHAVIORAL_RULE_RE and _STRUCTURAL_RULE_RE (single source for both
+    rule and proof description classification).
+    """
+    if _BEHAVIORAL_RULE_RE.search(desc):
+        return 'behavioral'
+    if _STRUCTURAL_RULE_RE.search(desc):
+        return 'structural'
+    return 'behavioral'  # default assumption
+
+
 def check_spec_coverage(spec_path):
     """Check whether a spec's rules are behavioral or structural-only.
 
     Returns dict with structural_only_spec, rule_count, behavioral_rule_count,
-    plus per-rule structural/behavioral classification.
+    plus per-rule and per-proof-description structural/behavioral classification.
     """
     rules = _read_rule_descriptions(spec_path)
     if not rules:
         return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0,
-                'structural_proofs': [], 'behavioral_proofs': [], 'structural_count': 0, 'behavioral_count': 0}
+                'structural_proofs': [], 'behavioral_proofs': [], 'structural_count': 0, 'behavioral_count': 0,
+                'proof_desc_count': 0, 'structural_proof_desc_count': 0, 'behavioral_proof_desc_count': 0}
 
     structural_proofs = []
     behavioral_proofs = []
     for rule_id, desc in rules.items():
-        if _BEHAVIORAL_RULE_RE.search(desc):
+        if _classify_description(desc) == 'behavioral':
             behavioral_proofs.append(rule_id)
-        elif _STRUCTURAL_RULE_RE.search(desc):
-            structural_proofs.append(rule_id)
         else:
-            # If it doesn't match structural patterns either, assume behavioral
-            behavioral_proofs.append(rule_id)
+            structural_proofs.append(rule_id)
+
+    # Classify proof descriptions (per audit_criteria.md Pass 0)
+    proof_descs = _read_proof_descriptions(spec_path)
+    structural_proof_descs = []
+    behavioral_proof_descs = []
+    for desc in proof_descs:
+        if _classify_description(desc) == 'structural':
+            structural_proof_descs.append(desc)
+        else:
+            behavioral_proof_descs.append(desc)
 
     return {
         'structural_only_spec': len(behavioral_proofs) == 0,
@@ -495,6 +545,9 @@ def check_spec_coverage(spec_path):
         'behavioral_proofs': sorted(behavioral_proofs),
         'structural_count': len(structural_proofs),
         'behavioral_count': len(behavioral_proofs),
+        'proof_desc_count': len(proof_descs),
+        'structural_proof_desc_count': len(structural_proof_descs),
+        'behavioral_proof_desc_count': len(behavioral_proof_descs),
     }
 
 # ---------------------------------------------------------------------------
@@ -584,23 +637,59 @@ def read_audit_cache(project_root):
 
 
 def write_audit_cache(project_root, cache):
-    """Write audit cache atomically, pruning stale duplicates.
+    """Merge new entries into audit cache atomically, pruning stale duplicates.
 
-    When test code changes, the proof hash changes and a new entry is added
-    but the old entry stays. This prunes duplicates by (feature, proof_id),
-    keeping only the entry with the latest cached_at timestamp.
+    Reads the existing cache from disk first, merges the new entries on top,
+    then deduplicates by (feature, proof_id) keeping the latest cached_at.
+    This ensures concurrent or sequential writers for different features
+    don't overwrite each other's data.
+
+    Stamps every entry with the real current UTC time so the dashboard shows
+    accurate "last audit" regardless of what the caller passed.
     """
-    # Prune: keep only latest entry per (feature, proof_id)
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    # Read existing cache from disk
+    on_disk = read_audit_cache(project_root)
+
+    # Dedup in two phases: on-disk first, then new entries override.
+    # This ensures new entries always win over on-disk for same (feature, proof_id),
+    # while intra-batch dedup within each source uses timestamps.
     latest = {}  # (feature, proof_id) -> (hash_key, entry)
+
+    # Phase 1: seed with on-disk entries
+    for hash_key, entry in on_disk.items():
+        if not isinstance(entry, dict):
+            continue
+        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+        existing_entry = latest.get(dedup_key)
+        if existing_entry is None or entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
+            latest[dedup_key] = (hash_key, entry)
+
+    # Phase 2: new entries always override on-disk for same (feature, proof_id);
+    # intra-batch duplicates use timestamp
+    new_keys = set()
     for hash_key, entry in cache.items():
         if not isinstance(entry, dict):
             continue
         dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
-        existing = latest.get(dedup_key)
-        if existing is None or entry.get('cached_at', '') > existing[1].get('cached_at', ''):
+        existing_entry = latest.get(dedup_key)
+        if existing_entry is None:
+            latest[dedup_key] = (hash_key, entry)
+            new_keys.add(dedup_key)
+        elif dedup_key not in new_keys:
+            # First new entry for this (feature, proof_id) — always beats on-disk
+            latest[dedup_key] = (hash_key, entry)
+            new_keys.add(dedup_key)
+        elif entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
+            # Intra-batch duplicate — use timestamp
             latest[dedup_key] = (hash_key, entry)
 
-    pruned = {hk: ent for hk, ent in latest.values()}
+    # Stamp real write time so dashboard shows accurate "last audit"
+    pruned = {}
+    for hk, ent in latest.values():
+        ent['cached_at'] = now_iso
+        pruned[hk] = ent
 
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
@@ -611,11 +700,119 @@ def write_audit_cache(project_root, cache):
     os.replace(tmp_path, cache_path)
 
 
+def _find_plugin_root():
+    """Find the Purlin plugin root (project root containing references/)."""
+    env = os.environ.get('CLAUDE_PLUGIN_ROOT')
+    if env and os.path.isdir(env):
+        return env
+    # Walk up from this file: scripts/audit/static_checks.py -> project root
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.dirname(os.path.dirname(here))
+    if os.path.isdir(os.path.join(root, 'references')):
+        return root
+    return None
+
+
+def load_criteria(project_root, extra_path=None):
+    """Load built-in audit criteria + any configured additional criteria.
+
+    SINGLE SOURCE for criteria assembly. All skills call this function
+    via --load-criteria instead of implementing their own loading logic.
+
+    Returns the combined criteria text (built-in + optional additional + optional extra).
+    """
+    # 1. Always read built-in criteria
+    plugin_root = _find_plugin_root()
+    if not plugin_root:
+        return ''
+    builtin_path = os.path.join(plugin_root, 'references', 'audit_criteria.md')
+    if not os.path.isfile(builtin_path):
+        return ''
+    with open(builtin_path) as f:
+        criteria = f.read()
+
+    # 2. Check for cached additional criteria (saved by purlin:init --sync-audit-criteria)
+    cached_path = os.path.join(project_root, '.purlin', 'cache', 'additional_criteria.md')
+    if os.path.isfile(cached_path):
+        with open(cached_path) as f:
+            additional = f.read()
+        # Read source URL from config for the separator header
+        source = 'team criteria'
+        config_path = os.path.join(project_root, '.purlin', 'config.json')
+        if os.path.isfile(config_path):
+            try:
+                with open(config_path) as f:
+                    config = json.load(f)
+                source = config.get('audit_criteria', source)
+            except (json.JSONDecodeError, OSError):
+                pass
+        criteria += f"\n\n---\n\n## Additional Team Criteria (from {source})\n\n{additional}"
+
+    # 3. Append extra file if provided (--criteria flag)
+    if extra_path and os.path.isfile(extra_path):
+        with open(extra_path) as f:
+            extra = f.read()
+        criteria += f"\n\n---\n\n## Additional Criteria (from {extra_path})\n\n{extra}"
+
+    return criteria
+
+
+def clear_audit_cache(project_root):
+    """Atomically replace the audit cache with an empty dict."""
+    cache_dir = os.path.join(project_root, '.purlin', 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    tmp_path = cache_path + '.tmp'
+    with open(tmp_path, 'w') as f:
+        json.dump({}, f)
+    os.replace(tmp_path, cache_path)
+    return cache_path
+
+
+def prune_audit_cache(project_root, live_keys):
+    """Remove cache entries whose hash key is not in live_keys.
+
+    Called after a full audit to sweep orphaned entries from deleted or
+    renamed features.  Entries whose key IS in live_keys are preserved
+    with all fields intact.  An empty live_keys set produces an empty
+    cache (full sweep).
+    """
+    cache = read_audit_cache(project_root)
+    pruned = {k: v for k, v in cache.items() if k in live_keys}
+    removed = len(cache) - len(pruned)
+
+    # Write atomically
+    cache_dir = os.path.join(project_root, '.purlin', 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    tmp_path = cache_path + '.tmp'
+    with open(tmp_path, 'w') as f:
+        json.dump(pruned, f, indent=2)
+    os.replace(tmp_path, cache_path)
+
+    return {'pruned': removed, 'kept': len(pruned)}
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
+    # --load-criteria mode: output combined criteria (built-in + additional)
+    if '--load-criteria' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        extra_path = None
+        if '--extra' in sys.argv:
+            idx = sys.argv.index('--extra')
+            if idx + 1 < len(sys.argv):
+                extra_path = sys.argv[idx + 1]
+        print(load_criteria(project_root, extra_path=extra_path))
+        sys.exit(0)
+
     # --compute-proof-hash mode: hash inputs for cache key
     if '--compute-proof-hash' in sys.argv:
         rule_text = ''
@@ -645,6 +842,38 @@ def main():
                 project_root = sys.argv[idx + 1]
         cache = read_audit_cache(project_root)
         print(json.dumps(cache, indent=2))
+        sys.exit(0)
+
+    # --clear-cache mode: atomically replace cache with empty dict
+    if '--clear-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        path = clear_audit_cache(project_root)
+        print(json.dumps({'status': 'cleared', 'path': path}))
+        sys.exit(0)
+
+    # --prune-cache mode: remove entries not in live_keys set
+    if '--prune-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        live_keys_file = None
+        if '--live-keys-file' in sys.argv:
+            idx = sys.argv.index('--live-keys-file')
+            if idx + 1 < len(sys.argv):
+                live_keys_file = sys.argv[idx + 1]
+        if not live_keys_file or not os.path.isfile(live_keys_file):
+            print(json.dumps({'error': '--prune-cache requires --live-keys-file <path>'}))
+            sys.exit(2)
+        with open(live_keys_file) as f:
+            live_keys = set(line.strip() for line in f if line.strip())
+        result = prune_audit_cache(project_root, live_keys)
+        print(json.dumps(result))
         sys.exit(0)
 
     # --check-proof-file mode: run proof-file structural checks (language-agnostic)

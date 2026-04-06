@@ -109,7 +109,7 @@ When `@manual` stamps are required, the compliant flow is:
 
 ### Proof Quality Auditing
 
-Purlin's audit skill evaluates whether tests actually prove what they claim. For regulated teams, the audit criteria can be externalized to a compliance-controlled repository:
+Purlin's audit skill evaluates whether tests actually prove what they claim. For regulated teams, additional audit criteria can be appended from a compliance-controlled repository (built-in criteria always apply — additional criteria add stricter checks, never weaken defaults):
 
 ```json
 {
@@ -118,7 +118,7 @@ Purlin's audit skill evaluates whether tests actually prove what they claim. For
 }
 ```
 
-The compliance team owns and versions the criteria file. Developers cannot change the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
+The compliance team owns and versions the additional criteria file. Built-in Purlin criteria always apply as a baseline — the compliance file adds stricter checks on top. Developers cannot weaken the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
 
 This addresses the "test quality gate" concern: the audit pipeline (spec coverage → structural defects → semantic alignment) deterministically catches tautological tests and structural checks (excluded from audit) before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 

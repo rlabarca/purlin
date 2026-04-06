@@ -22,6 +22,13 @@
 - RULE-15: Proof ID collisions within a feature are detected — same PROOF-N targeting different RULE-N values in a proof JSON file
 - RULE-16: Proof entries referencing non-existent rules in the spec are flagged as orphans
 - RULE-17: Each audit cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
+- RULE-18: clear_audit_cache atomically replaces the cache file with an empty dict {}
+- RULE-19: write_audit_cache stamps every entry with the real current UTC time, overwriting any caller-provided cached_at
+- RULE-20: check_spec_coverage classifies proof descriptions as structural or behavioral using the same `_classify_description` function as rule classification, returning proof_desc_count, structural_proof_desc_count, behavioral_proof_desc_count
+- RULE-21: load_criteria returns built-in criteria always, appends cached additional criteria from `.purlin/cache/additional_criteria.md` if present, appends extra path if provided; no other function in static_checks.py assembles criteria text
+- RULE-22: prune_audit_cache removes all cache entries whose hash key is not in the provided live_keys set, preserving entries whose key IS in live_keys with all fields intact
+- RULE-23: prune_audit_cache with an empty live_keys set on a non-empty cache produces an empty cache (full sweep), and with all keys live produces an identical cache (no false pruning)
+- RULE-24: write_audit_cache merges new entries into the existing cache on disk — entries from prior writes for different features are preserved, not overwritten. Entries for the same (feature, proof_id) are deduplicated by keeping the latest cached_at
 
 ## Proof
 
@@ -56,3 +63,11 @@
 - PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
 - PROOF-30 (RULE-11): e2e: Write cache with 3 entries for same (feature, proof_id); call _read_audit_cache_by_feature; verify dedup to 1 entry @e2e
 - PROOF-31 (RULE-12): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer; verify only STRONG entry kept @e2e
+- PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
+- PROOF-33 (RULE-19): e2e: Write cache with stale cached_at (midnight UTC); read back; verify cached_at is within 5 seconds of real current time @e2e
+- PROOF-34 (RULE-20): Create spec with behavioral rule but structural proof description "Verify file exists"; verify structural_proof_desc_count=1. Create spec with behavioral proof "POST to /login; verify 401"; verify behavioral_proof_desc_count=1
+- PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
+- PROOF-36 (RULE-22): Write cache with 3 entries (keys "aaa", "bbb", "ccc"); call prune_audit_cache with live_keys={"aaa","ccc"}; read back; verify "bbb" removed, "aaa" and "ccc" preserved with all original fields intact
+- PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
+- PROOF-38 (RULE-22): e2e: Write 5 cache entries via write_audit_cache; write 3 live keys to a temp file; call --prune-cache --live-keys-file; verify JSON output shows pruned=2, kept=3; read cache back and confirm exactly 3 entries remain @e2e
+- PROOF-39 (RULE-24): Write 3 entries for feature_a via write_audit_cache; then write 2 entries for feature_b via a second call; read cache back; verify all 5 entries are present. Then write 1 updated entry for feature_a (same proof_id, newer assessment); read back; verify feature_b entries are untouched and feature_a has the updated entry

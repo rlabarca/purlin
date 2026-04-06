@@ -221,7 +221,7 @@ class TestReportDataStructure:
         path = purlin_server._write_report_data(
             self.tmp, features, proofs, config, global_anchors
         )
-        assert path is not None, 'Expected _write_report_data to return a path'
+        assert path, 'Expected _write_report_data to return a path'
 
         with open(path) as f:
             content = f.read()
@@ -288,7 +288,7 @@ class TestReportDataStructure:
 
         for feat in data['features']:
             if feat['status'] in ('VERIFIED', 'PASSING'):
-                assert feat['vhash'] is not None, \
+                assert feat['vhash'], \
                     f"Passing feature '{feat['name']}' should have non-null vhash"
             else:
                 assert feat['vhash'] is None, \
@@ -313,9 +313,9 @@ class TestReportDataStructure:
         feature_entry = next(
             (f for f in data['features'] if f['name'] == 'feature'), None
         )
-        assert feature_entry is not None, "Expected 'feature' in features list"
+        assert feature_entry, "Expected 'feature' in features list"
         receipt = feature_entry['receipt']
-        assert receipt is not None, "Expected receipt to be non-null"
+        assert receipt, "Expected receipt to be non-null"
         assert 'commit' in receipt, "receipt missing 'commit' field"
         assert 'timestamp' in receipt, "receipt missing 'timestamp' field"
         assert 'stale' in receipt, "receipt missing 'stale' field"
@@ -437,7 +437,7 @@ class TestReportDataStructure:
         anchor_feat = next(
             (f for f in data['features'] if f['name'] == 'ext_anchor'), None
         )
-        assert anchor_feat is not None, "Expected ext_anchor in features list"
+        assert anchor_feat, "Expected ext_anchor in features list"
         assert anchor_feat['type'] == 'anchor', \
             f"Expected type='anchor', got '{anchor_feat['type']}'"
         assert anchor_feat['source_url'] == 'https://example.com/anchor-spec.md', \
@@ -511,7 +511,7 @@ class TestReportDataStructure:
         )
 
         summary = data_with_cache['audit_summary']
-        assert summary is not None, "Expected non-null audit_summary when cache exists"
+        assert summary, "Expected non-null audit_summary when cache exists"
         required_fields = {'integrity', 'strong', 'weak', 'hollow', 'manual',
                            'last_audit', 'last_audit_relative', 'stale'}
         missing = required_fields - set(summary.keys())
@@ -558,10 +558,9 @@ class TestReportDataStructure:
         feature_entry = next(
             (f for f in data['features'] if f['name'] == 'feature'), None
         )
-        assert feature_entry is not None, "Expected 'feature' in features"
+        assert feature_entry, "Expected 'feature' in features"
         audit = feature_entry['audit']
-        assert audit is not None, \
-            "Expected feature audit to be non-null when cache entries exist"
+        assert audit, "Expected feature audit to be non-null when cache entries exist"
 
         # Should have integrity percentage
         assert 'integrity' in audit, "feature audit missing 'integrity'"
@@ -775,7 +774,7 @@ class TestReportDataStructure:
         proofs = purlin_server._read_proofs(self.tmp)
         data = self._build(features=features, proofs=proofs)
         vf = next(f for f in data['features'] if f['name'] == 'verified_feat')
-        assert vf['vhash'] is not None, "verified_feat should have vhash"
+        assert vf['vhash'], "verified_feat should have vhash"
 
         # Write receipt with matching vhash, then rebuild
         _write_receipt(self.tmp, 'verified_feat',

@@ -15,11 +15,17 @@ purlin:audit --criteria <path>      Use a specific criteria file
 
 ## Step 1 — Load Criteria
 
-1. Check `.purlin/config.json` for `audit_criteria` field.
-2. If set: fetch the external criteria file (clone repo, read file at pinned SHA). If pinned SHA doesn't match remote, warn: `"Audit criteria may be stale — run purlin:init --sync-audit-criteria"`
-3. If not set: read `references/audit_criteria.md` (the default).
-4. If `--criteria <path>` was passed, use that file instead (overrides both config and default).
-5. Display: `Using audit criteria: <source> (Criteria-Version: N)`
+Load combined criteria via the single-source function:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
+```
+
+If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
+
+This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.
+
+Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
 
 ## Step 1.5 — Load Audit Cache
 
@@ -228,7 +234,7 @@ STRONG (no action needed):
   PROOF-3 (RULE-3): STRONG ✓
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-INTEGRITY SCORE: <N>%
+AUDIT SUMMARY:
   CRITICAL: N   HIGH: N   MEDIUM: N   LOW: N   STRONG: N   MANUAL: N
   Audited: N proofs (M cached, K fresh) | J structural excluded
   Fix priority: N critical, then N high-value, then N medium
@@ -237,27 +243,7 @@ INTEGRITY SCORE: <N>%
 
 ### Finding Priority
 
-Group findings by value tier. Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
-
-**Value tier mapping** (authoritative source: `references/audit_criteria.md` § Finding Priority):
-
-CRITICAL — test proves nothing:
-  - HOLLOW: no_assertions, bare_except
-  - HOLLOW: assert_true when the assertion is literally `assert True`, `assertTrue(True)`, or `expect(true).toBe(true)`
-
-HIGH — real coverage gap:
-  - WEAK: missing assertions (proof says X AND Y, test only checks X)
-  - WEAK: only happy path (rule implies error handling, test has none)
-  - WEAK: missing negative test (constraint rule, no rejection test)
-  - WEAK: deep mocking on critical path
-
-MEDIUM — self-confirming test:
-  - HOLLOW: logic_mirroring
-  - HOLLOW: mock_target_match
-
-LOW — weak assertion form:
-  - HOLLOW: assert_true when heuristic (assert x is True, assert len >= 0)
-  - WEAK: assertion_farming, catch_all_assertions, string_containment
+Group findings by value tier (see `references/audit_criteria.md` § Finding Priority for the complete tier mapping). Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
 
 When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
 
@@ -305,7 +291,7 @@ This section only appears when anchor rules have clarity issues. It's advisory �
 
 When spawned by purlin:verify or another agent:
 
-- Read references/audit_criteria.md at startup
+- Load criteria via `--load-criteria` (see Step 1)
 - For each proof, assess as STRONG/WEAK/HOLLOW using the three-pass pipeline
 - After completing the audit, if HOLLOW or WEAK proofs are found:
   - Spawn a purlin-builder to fix the identified issues
@@ -325,7 +311,7 @@ When a HOLLOW or WEAK proof is for an anchor rule:
 
 When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Only proofs that pass structural checks go to the external LLM for Pass 2.
 
-1. Load criteria via Step 1 above (respects `--criteria`, external criteria config, and defaults).
+1. Load criteria via Step 1 above (`--load-criteria` — respects additional team criteria and `--extra`).
 2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.
 3. For proofs that passed Pass 1 and are not cache hits, **batch all proofs per feature** into a single shell-out. Construct the Pass 2 prompt:
 
@@ -385,15 +371,37 @@ When external LLM is configured, the lead relays findings:
 
 The builder never calls the external LLM. The lead relays.
 
-## Step 4 — Refresh Status
+## Step 3.5 — Prune Stale Cache Entries (full audit only)
 
-After the audit report is complete and the cache has been written, call `sync_status` to refresh the dashboard data:
+After writing all assessments to the cache, if this is a full audit (no specific feature argument), prune orphaned entries from deleted or renamed features. Collect all proof hashes that were computed during this audit (cache hits + fresh evaluations) into a temp file, one key per line:
+
+```bash
+# Write live keys to temp file
+echo "<hash1>" > /tmp/purlin_live_keys.txt
+echo "<hash2>" >> /tmp/purlin_live_keys.txt
+# ... one line per proof hash computed during this audit
+
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --live-keys-file /tmp/purlin_live_keys.txt
+```
+
+This removes cache entries for features that no longer exist while preserving all entries from the current audit. For single-feature audits, skip this step — they don't know which other features are live.
+
+## Step 4 — Refresh Status and Report Integrity
+
+After the audit report is complete and the cache has been written, call `sync_status` to compute the integrity score and refresh the dashboard:
 
 ```
 sync_status()
 ```
 
-This updates `.purlin/report-data.js` so the HTML dashboard reflects the new integrity score immediately. Without this step, the dashboard stays stale until the next `purlin:status` call.
+The `sync_status` output includes the integrity percentage (computed by `_compute_integrity()` in `purlin_server.py`). **Do not compute the integrity percentage yourself** — always read it from the `sync_status` output. This ensures the audit CLI and the dashboard always show the same value from the same computation.
+
+After `sync_status` completes, report the integrity score it returned:
+
+```
+INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
+  Formula: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — proof quality only.
+```
 
 ## Key Principles
 

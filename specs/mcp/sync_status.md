@@ -35,9 +35,15 @@
 - RULE-26: report-data.js includes audit_summary with integrity, assessment counts, last_audit, last_audit_relative, and stale fields when cache exists; audit_summary is null when no cache exists
 - RULE-27: report-data.js per-feature audit data is populated from cache entries matching the feature name
 - RULE-28: Cache entries without a feature field are excluded from per-feature audit data but counted in project-wide summary
-- RULE-29: Per-feature integrity penalizes own behavioral rules with NO_PROOF — they count in the denominator but contribute 0 to the numerator
-- RULE-30: Per-feature integrity does NOT penalize required anchor rules — only own rules with NO_PROOF affect the denominator
-- RULE-31: Global integrity (project-wide) includes NO_PROOF penalties from all features combined
+- RULE-29: Per-feature integrity = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — measures proof quality only; NO_PROOF rules do not affect the integrity denominator
+- RULE-30: Per-feature integrity counts only proofs cached under that feature name — required/global anchor proofs are counted under the anchor's own feature, not the consuming feature
+- RULE-31: Global integrity (project-wide) = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) across all features — NO_PROOF rules do not affect the denominator
+- RULE-32: sync_status CLI integrity percentage matches the audit_summary.integrity value in report-data.js
+- RULE-33: The integrity formula `(STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)` is consistent across `references/audit_criteria.md`, `skills/audit/SKILL.md`, and this spec; none of these files include NO_PROOF in the integrity formula denominator
+- RULE-34: Integrity is computed by exactly one function (`_compute_integrity`) — both `_read_audit_summary` and `_build_feature_audit` delegate to it; no other function in purlin_server.py contains the integrity formula
+- RULE-35: Feature status is determined by exactly one function (`_determine_status`) — all call sites in purlin_server.py delegate to it; no other function contains the status determination logic
+- RULE-36: `_scan_specs` parses `> Stack:` metadata from spec files and includes it in feature info; report-data.js includes `stack` field when present
+- RULE-37: Warns when a non-anchor, non-instruction feature has fewer than 5 or more than 10 own rules (advisory only — does not block PASSING/VERIFIED status)
 
 ## Proof
 
@@ -91,6 +97,16 @@
 - PROOF-48 (RULE-27): e2e: Write cache for feature login; verify per-feature audit data with correct integrity and findings @e2e
 - PROOF-49 (RULE-28): e2e: Write cache with/without feature field; verify per-feature excludes no-feature entries; verify project-wide counts both @e2e
 - PROOF-50 (RULE-19): e2e: Write cache then delete; verify sync_status reverts to no-audit state @e2e
-- PROOF-51 (RULE-29): e2e: Feature with 5 rules, 3 proved (2 STRONG, 1 WEAK); verify integrity = 2/5 = 40% @e2e
-- PROOF-52 (RULE-30): e2e: Feature with 2 own STRONG rules requiring anchor with 3 rules; verify integrity = 2/2 = 100% @e2e
-- PROOF-53 (RULE-31): e2e: Two features each with 1 NO_PROOF rule; write 2 STRONG each; verify global integrity = 4/6 = 67% @e2e
+- PROOF-51 (RULE-29): e2e: Feature with 5 rules, 3 proved (2 STRONG, 1 WEAK); verify integrity = 2/3 = 67% (quality only, NO_PROOF excluded) @e2e
+- PROOF-52 (RULE-30): e2e: Feature with 2 own STRONG rules requiring anchor with 3 rules; verify integrity = 2/2 = 100% (anchor proofs counted under anchor) @e2e
+- PROOF-53 (RULE-31): e2e: Two features each with 1 NO_PROOF rule; write 2 STRONG each; verify global integrity = 4/4 = 100% (NO_PROOF excluded) @e2e
+- PROOF-54 (RULE-29): e2e: Feature with 4 rules, 2 STRONG proofs + 2 NO_PROOF; verify integrity = 100% not 50% @e2e
+- PROOF-55 (RULE-32): e2e: Write cache; run sync_status with report=true; verify CLI integrity percentage matches report-data.js audit_summary.integrity @e2e
+- PROOF-56 (RULE-33): Grep `references/audit_criteria.md`, `skills/audit/SKILL.md`, and `specs/mcp/sync_status.md` for the integrity formula; verify all three contain `(STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)` and none include NO_PROOF in the integrity denominator
+- PROOF-57 (RULE-32): e2e: Create isolated project with 5-rule feature, 3 proved (1 STRONG, 1 WEAK, 1 HOLLOW) + 2 NO_PROOF; run sync_status with report=true; verify CLI, dashboard, and computed integrity all equal 33% (NO_PROOF excluded from denominator) @e2e
+- PROOF-58 (RULE-34): Grep purlin_server.py for the integrity computation pattern; verify `_compute_integrity` is the only function containing the formula and that both `_read_audit_summary` and `_build_feature_audit` call it
+- PROOF-59 (RULE-35): Grep purlin_server.py for the status determination pattern; verify `_determine_status` is the only function containing the if/elif chain and that all three call sites delegate to it
+- PROOF-60 (RULE-34): e2e: Create isolated project with 2 features, each with different audit mixes; run sync_status with report=true; verify per-feature and global integrity in CLI output match report-data.js per-feature audit.integrity and audit_summary.integrity @e2e
+- PROOF-61 (RULE-35): e2e: Create isolated project with features in every status (VERIFIED, PASSING, PARTIAL, FAILING, UNTESTED); verify CLI summary table status matches report-data.js per-feature status for all five @e2e
+- PROOF-62 (RULE-36): Create spec with `> Stack: python/stdlib, json`; run `_scan_specs`; verify features dict has `stack == "python/stdlib, json"`. Create spec without Stack; verify `stack is None` @integration
+- PROOF-63 (RULE-37): Create feature with 3 rules; verify warning. Create feature with 12 rules; verify warning. Create anchor with 2 rules; verify NO warning. Create instruction spec with 3 rules; verify NO warning @integration

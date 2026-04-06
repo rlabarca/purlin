@@ -19,6 +19,7 @@
 - RULE-11: Response parsing extracts all required fields (PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX) from external LLM output
 - RULE-12: Two-pass flow works end-to-end: static_checks catches HOLLOW in Pass 1, only surviving proofs go to external LLM in Pass 2
 - RULE-13: Custom audit LLM command in config responds to ping, config stores audit_llm and audit_llm_name, and the two-pass audit completes
+- RULE-14: Criteria are loaded via the single `load_criteria()` function (`--load-criteria` CLI); built-in criteria always apply, additional team criteria are appended — never replaced
 
 ## Proof
 
@@ -35,3 +36,4 @@
 - PROOF-11 (RULE-11): e2e: Parse external LLM response; verify ASSESSMENT, CRITERION, WHY, FIX fields extracted @e2e
 - PROOF-12 (RULE-12): e2e: Mixed-quality test file; static_checks catches assert True; valid test goes to external LLM @e2e
 - PROOF-13 (RULE-13): e2e: Write config with fake LLM command; verify ping, config fields, and two-pass audit @e2e
+- PROOF-14 (RULE-14): e2e: Create fake git repo with additional criteria; configure project; verify load_criteria returns built-in + additional with separator; verify Pass 1 still catches assert True; verify additional criteria reach fake LLM prompt @e2e

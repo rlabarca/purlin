@@ -78,7 +78,7 @@
       "id": "PROOF-51",
       "rule": "RULE-29",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_penalizes_own_no_proof_rules",
+      "test_name": "test_integrity_is_quality_only",
       "status": "pass",
       "tier": "e2e"
     },
@@ -87,7 +87,7 @@
       "id": "PROOF-52",
       "rule": "RULE-30",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_excludes_required_anchor_rules_from_no_proof_penalty",
+      "test_name": "test_integrity_counts_only_own_feature_proofs",
       "status": "pass",
       "tier": "e2e"
     },
@@ -96,7 +96,52 @@
       "id": "PROOF-53",
       "rule": "RULE-31",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_global_integrity_includes_no_proof_from_all_features",
+      "test_name": "test_global_integrity_quality_only",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-54",
+      "rule": "RULE-29",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_ignores_no_proof_rules_completely",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-55",
+      "rule": "RULE-32",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cli_integrity_matches_report_data",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-57",
+      "rule": "RULE-32",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_with_no_proof_rules_all_sources_match",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-60",
+      "rule": "RULE-34",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_multi_feature_integrity_cli_matches_dashboard",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-61",
+      "rule": "RULE-35",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_all_statuses_cli_matches_dashboard",
       "status": "pass",
       "tier": "e2e"
     }

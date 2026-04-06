@@ -36,6 +36,33 @@
       "test_name": "test_write_side_pruning_removes_stale_duplicates",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-32",
+      "rule": "RULE-18",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_clear_cache_produces_empty_dict",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-38",
+      "rule": "RULE-22",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_prune_cache_via_cli",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-33",
+      "rule": "RULE-19",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_stamps_real_utc_time",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

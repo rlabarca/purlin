@@ -26,11 +26,13 @@ from purlin_server import (
     _read_audit_summary,
     _read_audit_cache_by_feature,
     _build_feature_audit,
+    _compute_integrity,
+    _determine_status,
     _scan_specs,
     _read_proofs,
     _write_report_data,
 )
-from static_checks import write_audit_cache, read_audit_cache
+from static_checks import write_audit_cache, read_audit_cache, clear_audit_cache, prune_audit_cache
 from config_engine import resolve_config
 
 
@@ -167,9 +169,9 @@ class TestAuditCachePipeline:
             missing = required_fields - set(entry.keys())
             assert not missing, f"Entry {key} missing fields: {missing}"
             # Validate cached_at is parseable as ISO 8601
+            # (fromisoformat raises ValueError if invalid — that is the real assertion)
             ts = entry['cached_at']
-            parsed = datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
-            assert parsed is not None, f"cached_at '{ts}' is not valid ISO 8601"
+            datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
 
     @pytest.mark.proof("sync_status", "PROOF-43", "RULE-19", tier="e2e")
     def test_sync_status_shows_integrity_line(self):
@@ -187,8 +189,9 @@ class TestAuditCachePipeline:
         assert 'last purlin:audit:' in output, (
             f"Expected 'last purlin:audit:' in output, got:\n{output}"
         )
-        assert 'minutes ago' in output, (
-            f"Expected 'minutes ago' in output, got:\n{output}"
+        # write_audit_cache stamps real current time, so it shows "just now"
+        assert 'just now' in output, (
+            f"Expected 'just now' in output, got:\n{output}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-44", "RULE-19", tier="e2e")
@@ -212,9 +215,12 @@ class TestAuditCachePipeline:
     def test_sync_status_stale_cache_warns(self):
         """RULE-5: sync_status shows 'consider re-auditing' when cache is older than 24 hours."""
         _make_project(self.tmp_dir, with_git=True)
-        # 3 days = 4320 minutes
+        # Write cache file directly to simulate old timestamps (write_audit_cache
+        # would overwrite cached_at with current time per RULE-19)
         cache = _make_cache_entries(strong=2, weak=1, minutes_ago=4320)
-        write_audit_cache(self.tmp_dir, cache)
+        cache_path = os.path.join(self.tmp_dir, '.purlin', 'cache', 'audit_cache.json')
+        with open(cache_path, 'w') as f:
+            json.dump(cache, f)
 
         output = sync_status(self.tmp_dir)
 
@@ -256,7 +262,9 @@ class TestAuditCachePipeline:
         assert audit_summary['stale'] is False, (
             f"Expected stale=False, got {audit_summary['stale']}"
         )
-        assert audit_summary['last_audit'] is not None, "last_audit should not be null"
+        assert isinstance(audit_summary['last_audit'], str), (
+            f"Expected last_audit to be a non-null string, got {audit_summary['last_audit']!r}"
+        )
 
     @pytest.mark.proof("sync_status", "PROOF-47", "RULE-26", tier="e2e")
     def test_report_data_audit_summary_null_when_no_cache(self):
@@ -302,7 +310,6 @@ class TestAuditCachePipeline:
         )
         assert login_feature is not None, "login feature not found in report data"
         audit = login_feature.get('audit')
-        assert audit is not None, "login feature audit should not be null"
         assert audit['integrity'] == 67, (
             f"Expected login integrity=67, got {audit['integrity']}"
         )
@@ -346,7 +353,6 @@ class TestAuditCachePipeline:
 
         # Project-wide summary counts all entries (both the STRONG and the WEAK)
         summary = _read_audit_summary(self.tmp_dir)
-        assert summary is not None, "audit summary should not be None"
         assert summary['strong'] == 1, f"Expected strong=1 globally, got {summary['strong']}"
         assert summary['weak'] == 1, f"Expected weak=1 globally, got {summary['weak']}"
         assert summary['behavioral_total'] == 2, (
@@ -390,13 +396,13 @@ class TestAuditCachePipeline:
         )
 
     @pytest.mark.proof("sync_status", "PROOF-51", "RULE-29", tier="e2e")
-    def test_integrity_penalizes_own_no_proof_rules(self):
-        """RULE-11: Own behavioral rules with NO_PROOF inflate the denominator.
+    def test_integrity_is_quality_only(self):
+        """RULE-29: Integrity = (STRONG + MANUAL) / behavioral_total — quality only.
 
         Setup: Feature 'payments' has 5 behavioral rules (RULE-1..5).
         Proofs exist for RULE-1, RULE-2, RULE-3 only. RULE-4 and RULE-5 have NO_PROOF.
         Audit cache: PROOF-1 STRONG, PROOF-2 STRONG, PROOF-3 WEAK.
-        Expected: integrity = 2 STRONG / (3 audited + 2 no_proof) = 2/5 = 40%
+        Expected: integrity = 2 STRONG / 3 behavioral = 67% (NO_PROOF excluded)
         """
         _make_project(self.tmp_dir, with_git=True)
 
@@ -465,24 +471,22 @@ Process payments.
         )
         assert payments is not None, "payments feature not found"
         audit = payments.get('audit')
-        assert audit is not None, "payments audit should not be null"
 
-        # 2 STRONG / (2 STRONG + 1 WEAK + 0 HOLLOW + 2 NO_PROOF) = 2/5 = 40%
-        assert audit['integrity'] == 40, (
-            f"Expected integrity=40% (2 STRONG / 5 denominator), got {audit['integrity']}%\n"
+        # 2 STRONG / (2 STRONG + 1 WEAK + 0 HOLLOW) = 2/3 = 67% (NO_PROOF excluded)
+        assert audit['integrity'] == 67, (
+            f"Expected integrity=67% (2 STRONG / 3 behavioral), got {audit['integrity']}%\n"
             f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}"
         )
         assert audit['strong'] == 2
         assert audit['weak'] == 1
 
     @pytest.mark.proof("sync_status", "PROOF-52", "RULE-30", tier="e2e")
-    def test_integrity_excludes_required_anchor_rules_from_no_proof_penalty(self):
-        """RULE-12: Required anchor rules don't inflate the NO_PROOF denominator.
+    def test_integrity_counts_only_own_feature_proofs(self):
+        """RULE-30: Per-feature integrity counts only proofs cached under that feature.
 
         Setup: Feature 'checkout' has 2 own behavioral rules (both proved, both STRONG).
         It requires anchor 'tax_rules' with 3 rules (no proofs under 'checkout').
-        Expected: integrity = 2/2 = 100% (anchor rules excluded from NO_PROOF count)
-        NOT: 2/5 = 40% (which would happen if anchor rules were in the denominator)
+        Expected: integrity = 2/2 = 100% (quality of existing proofs only)
         """
         _make_project(self.tmp_dir, with_git=True)
 
@@ -576,7 +580,6 @@ Checkout flow.
         )
 
         audit = checkout.get('audit')
-        assert audit is not None, "checkout audit should not be null"
 
         # Integrity should be 2/2 = 100% (only own rules in denominator)
         # NOT 2/5 = 40% (which would happen if anchor rules inflated it)
@@ -587,14 +590,14 @@ Checkout flow.
         )
 
     @pytest.mark.proof("sync_status", "PROOF-53", "RULE-31", tier="e2e")
-    def test_global_integrity_includes_no_proof_from_all_features(self):
-        """RULE-13: Global integrity sums NO_PROOF penalties across all features.
+    def test_global_integrity_quality_only(self):
+        """RULE-31: Global integrity = (STRONG + MANUAL) / behavioral_total.
 
         Setup: Two features, each with 3 behavioral rules.
         Feature A: 2 STRONG proofs, 1 NO_PROOF rule.
         Feature B: 2 STRONG proofs, 1 NO_PROOF rule.
         Cache: 4 STRONG total.
-        Global: 4 STRONG / (4 audited + 2 NO_PROOF) = 4/6 = 67%
+        Global: 4 STRONG / 4 behavioral = 100% (NO_PROOF excluded)
         """
         _make_project(self.tmp_dir, with_git=True)
 
@@ -690,9 +693,9 @@ Beta feature.
 
         output = sync_status(self.tmp_dir)
 
-        # Global: 4 STRONG / (4 audited + 2 NO_PROOF) = 4/6 = 67%
-        assert 'Integrity: 67%' in output, (
-            f"Expected global 'Integrity: 67%' (4 STRONG / 6 denominator), "
+        # Global: 4 STRONG / 4 behavioral = 100% (NO_PROOF excluded)
+        assert 'Integrity: 100%' in output, (
+            f"Expected global 'Integrity: 100%' (4 STRONG / 4 behavioral), "
             f"got:\n{output}"
         )
 
@@ -825,3 +828,810 @@ Beta feature.
         assert 'other_hash_333' in data, (
             "Unrelated PROOF-2 entry should survive pruning"
         )
+
+    @pytest.mark.proof("static_checks", "PROOF-32", "RULE-18", tier="e2e")
+    def test_clear_cache_produces_empty_dict(self):
+        """RULE-18: clear_audit_cache replaces the cache with an empty dict.
+
+        Setup: Write cache with 3 entries. Call clear_audit_cache. Read back.
+        Expected: cache file exists, contents are {}.
+        """
+        _make_project(self.tmp_dir, with_git=False)
+
+        cache = _make_cache_entries(feature='login', strong=2, weak=1)
+        write_audit_cache(self.tmp_dir, cache)
+
+        # Verify non-empty before clearing
+        before = read_audit_cache(self.tmp_dir)
+        assert len(before) == 3, f"Expected 3 entries before clear, got {len(before)}"
+
+        # Clear and verify empty
+        path = clear_audit_cache(self.tmp_dir)
+        assert os.path.isfile(path), "Cache file should still exist after clearing"
+
+        after = read_audit_cache(self.tmp_dir)
+        assert after == {}, f"Expected empty dict after clear, got {len(after)} entries"
+
+    @pytest.mark.proof("static_checks", "PROOF-38", "RULE-22", tier="e2e")
+    def test_prune_cache_via_cli(self):
+        """RULE-22 e2e: Write 5 entries, prune to 3 via --prune-cache --live-keys-file.
+
+        Setup: Write cache with 5 entries (keys hash_s1..hash_s3 + hash_w4 + hash_w5).
+        Write 3 live keys (hash_s1, hash_s2, hash_s3) to a temp file.
+        Run --prune-cache --live-keys-file via subprocess.
+        Expected: JSON output shows pruned=2, kept=3. Cache has exactly 3 entries.
+        """
+        _make_project(self.tmp_dir, with_git=False)
+
+        cache = _make_cache_entries(feature='login', strong=3, weak=2)
+        write_audit_cache(self.tmp_dir, cache)
+
+        # Verify 5 entries before prune
+        before = read_audit_cache(self.tmp_dir)
+        assert len(before) == 5, f"Expected 5 entries before prune, got {len(before)}"
+
+        # Write live keys file — keep only the 3 STRONG entries
+        live_keys_path = os.path.join(self.tmp_dir, 'live_keys.txt')
+        with open(live_keys_path, 'w') as f:
+            for k in before:
+                if before[k]['assessment'] == 'STRONG':
+                    f.write(k + '\n')
+
+        # Run CLI
+        result = subprocess.run(
+            [sys.executable, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit', 'static_checks.py'),
+             '--prune-cache', '--live-keys-file', live_keys_path,
+             '--project-root', self.tmp_dir],
+            capture_output=True, text=True
+        )
+        assert result.returncode == 0, f"CLI failed: {result.stderr}"
+
+        output = json.loads(result.stdout)
+        assert output['pruned'] == 2, f"Expected pruned=2, got {output}"
+        assert output['kept'] == 3, f"Expected kept=3, got {output}"
+
+        # Verify cache on disk
+        after = read_audit_cache(self.tmp_dir)
+        assert len(after) == 3, f"Expected 3 entries after prune, got {len(after)}"
+        for entry in after.values():
+            assert entry['assessment'] == 'STRONG', "Only STRONG entries should remain"
+
+    @pytest.mark.proof("static_checks", "PROOF-33", "RULE-19", tier="e2e")
+    def test_write_cache_stamps_real_utc_time(self):
+        """RULE-19: write_audit_cache overwrites cached_at with the real current UTC time.
+
+        Setup: Write cache entries with stale cached_at (midnight UTC).
+        Expected: After write, every entry's cached_at is within 5 seconds of now.
+        """
+        _make_project(self.tmp_dir, with_git=False)
+
+        # Create entries with a known stale timestamp (midnight UTC today — independent oracle)
+        today_midnight = datetime.datetime.now(datetime.timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        stale_ts = today_midnight.isoformat()
+        cache = _make_cache_entries(feature='login', strong=2, weak=1)
+        for entry in cache.values():
+            entry['cached_at'] = stale_ts
+
+        write_audit_cache(self.tmp_dir, cache)
+
+        data = read_audit_cache(self.tmp_dir)
+        for key, entry in data.items():
+            actual_ts_str = entry['cached_at']
+            # The stale midnight value must have been overwritten
+            assert actual_ts_str != stale_ts, (
+                f"Entry {key}: write_audit_cache did not overwrite cached_at "
+                f"(still has stale value {stale_ts!r})"
+            )
+            # The new timestamp must be strictly later than midnight (the stale oracle)
+            actual_ts = datetime.datetime.fromisoformat(actual_ts_str.replace('Z', '+00:00'))
+            assert actual_ts > today_midnight, (
+                f"Entry {key}: cached_at {actual_ts_str!r} is not later than "
+                f"midnight oracle {stale_ts!r}"
+            )
+
+    @pytest.mark.proof("sync_status", "PROOF-54", "RULE-29", tier="e2e")
+    def test_integrity_ignores_no_proof_rules_completely(self):
+        """RULE-29: Integrity = quality only. NO_PROOF rules have zero effect.
+
+        Setup: Feature with 4 behavioral rules. Only 2 have proofs (both STRONG).
+        RULE-3 and RULE-4 have NO_PROOF.
+        Expected: integrity = 2/2 = 100% (not 2/4 = 50%).
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        spec_dir = os.path.join(self.tmp_dir, 'specs', 'core')
+        os.makedirs(spec_dir, exist_ok=True)
+        with open(os.path.join(spec_dir, 'engine.md'), 'w') as f:
+            f.write("""# Feature: engine
+
+> Scope: src/engine.py
+
+## What it does
+Core engine.
+
+## Rules
+- RULE-1: Starts the engine
+- RULE-2: Stops the engine
+- RULE-3: Handles errors gracefully
+- RULE-4: Logs all operations
+
+## Proof
+- PROOF-1 (RULE-1): Start engine, verify running
+- PROOF-2 (RULE-2): Stop engine, verify stopped
+- PROOF-3 (RULE-3): Trigger error, verify handled
+- PROOF-4 (RULE-4): Run operation, verify log entry
+""")
+        # Only 2 of 4 rules have proofs
+        with open(os.path.join(spec_dir, 'engine.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "engine", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_engine.py", "test_name": "test_start",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "engine", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_engine.py", "test_name": "test_stop",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Audit cache: 2 STRONG (no WEAK, no HOLLOW)
+        ts = (datetime.datetime.now(datetime.timezone.utc)
+              - datetime.timedelta(minutes=5)).isoformat()
+        cache = {
+            'h_engine_1': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'test exercises rule', 'fix': 'none',
+                'feature': 'engine', 'proof_id': 'PROOF-1',
+                'rule_id': 'RULE-1', 'priority': 'LOW', 'cached_at': ts,
+            },
+            'h_engine_2': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'test exercises rule', 'fix': 'none',
+                'feature': 'engine', 'proof_id': 'PROOF-2',
+                'rule_id': 'RULE-2', 'priority': 'LOW', 'cached_at': ts,
+            },
+        }
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add engine'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        features = _scan_specs(self.tmp_dir)
+        all_proofs = _read_proofs(self.tmp_dir)
+        config = resolve_config(self.tmp_dir)
+        global_anchors = {k: v for k, v in features.items()
+                         if v.get('is_anchor') and v.get('is_global')}
+        audit_summary = _read_audit_summary(self.tmp_dir)
+
+        report_data = _build_report_data(
+            self.tmp_dir, features, all_proofs, config, global_anchors, audit_summary
+        )
+
+        engine = next(
+            (f for f in report_data['features'] if f['name'] == 'engine'), None
+        )
+        assert engine is not None, "engine feature not found"
+        audit = engine.get('audit')
+
+        # 2 STRONG / 2 behavioral = 100% (NO_PROOF rules excluded from denominator)
+        assert audit['integrity'] == 100, (
+            f"Expected integrity=100% (2 STRONG / 2 behavioral), got {audit['integrity']}%\n"
+            f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}\n"
+            f"  NO_PROOF rules must NOT affect integrity"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-55", "RULE-32", tier="e2e")
+    def test_cli_integrity_matches_report_data(self):
+        """RULE-32: CLI integrity percentage matches report-data.js audit_summary.integrity.
+
+        Setup: Write cache with 2 STRONG + 1 WEAK. Run sync_status (writes report-data.js).
+        Expected: CLI shows 'Integrity: 67%'; report-data.js audit_summary.integrity == 67.
+        """
+        _make_project(self.tmp_dir, with_git=True, with_report=True)
+
+        # Create purlin-report.html so report-data.js gets written
+        html_path = os.path.join(self.tmp_dir, 'purlin-report.html')
+        with open(html_path, 'w') as f:
+            f.write('<html></html>')
+
+        cache = _make_cache_entries(feature='login', strong=2, weak=1, minutes_ago=5)
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'setup'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        cli_output = sync_status(self.tmp_dir)
+
+        # Parse CLI integrity
+        import re
+        match = re.search(r'Integrity:\s+(\d+)%', cli_output)
+        assert match, f"CLI output should contain 'Integrity: N%', got:\n{cli_output}"
+        cli_integrity = int(match.group(1))
+
+        # Parse report-data.js integrity
+        report_path = os.path.join(self.tmp_dir, '.purlin', 'report-data.js')
+        assert os.path.isfile(report_path), "report-data.js should exist"
+        with open(report_path) as f:
+            content = f.read()
+        # Strip "const PURLIN_DATA = " prefix and trailing ";"
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+        dashboard_integrity = data['audit_summary']['integrity']
+
+        assert cli_integrity == dashboard_integrity, (
+            f"CLI integrity ({cli_integrity}%) must match dashboard ({dashboard_integrity}%)"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-56", "RULE-33", tier="unit")
+    def test_integrity_formula_consistent_across_sources(self):
+        """RULE-33: Integrity formula is identical in audit_criteria, SKILL.md, and sync_status spec.
+
+        Structural check: all three files contain the canonical formula text and
+        none of them include NO_PROOF in the integrity formula denominator.
+        """
+        import re
+
+        project_root = os.path.join(os.path.dirname(__file__), '..')
+        files = {
+            'audit_criteria': os.path.join(project_root, 'references', 'audit_criteria.md'),
+            'SKILL.md': os.path.join(project_root, 'skills', 'audit', 'SKILL.md'),
+            'sync_status.md': os.path.join(project_root, 'specs', 'mcp', 'sync_status.md'),
+        }
+
+        canonical = '(STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)'
+
+        for label, path in files.items():
+            with open(path) as f:
+                content = f.read()
+            assert canonical in content, (
+                f"{label} must contain the canonical integrity formula:\n"
+                f"  Expected: {canonical}\n"
+                f"  File: {path}"
+            )
+
+        # Verify the integrity formula line itself does not include NO_PROOF
+        with open(files['audit_criteria']) as f:
+            content = f.read()
+        formula_match = re.search(r'^Integrity score = .*$', content, re.MULTILINE)
+        assert formula_match, "audit_criteria.md must have an 'Integrity score = ...' line"
+        formula_line = formula_match.group(0)
+        assert 'NO_PROOF' not in formula_line, (
+            f"audit_criteria.md integrity formula must not include NO_PROOF:\n"
+            f"  Found: {formula_line}"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-57", "RULE-32", tier="e2e")
+    def test_integrity_with_no_proof_rules_all_sources_match(self):
+        """RULE-32: CLI, dashboard, and computed integrity agree when NO_PROOF rules exist.
+
+        Setup: Isolated project with a 5-rule feature. 3 rules have proofs
+        (1 STRONG, 1 WEAK, 1 HOLLOW). RULE-4 and RULE-5 have NO_PROOF.
+        Expected: integrity = 1 STRONG / (1 S + 1 W + 1 H) = 1/3 = 33%.
+        NO_PROOF rules must NOT appear in the denominator (that would give 1/5 = 20%).
+        """
+        _make_project(self.tmp_dir, with_git=True, with_report=True)
+
+        # Create purlin-report.html so report-data.js gets written
+        html_path = os.path.join(self.tmp_dir, 'purlin-report.html')
+        with open(html_path, 'w') as f:
+            f.write('<html></html>')
+
+        # Overwrite default spec with a 5-rule feature (only 3 have proofs)
+        spec_dir = os.path.join(self.tmp_dir, 'specs', 'billing')
+        os.makedirs(spec_dir, exist_ok=True)
+        with open(os.path.join(spec_dir, 'invoices.md'), 'w') as f:
+            f.write("""# Feature: invoices
+
+> Scope: src/billing/invoices.py
+
+## What it does
+Invoice management.
+
+## Rules
+- RULE-1: Creates invoice with correct line items
+- RULE-2: Applies tax calculations
+- RULE-3: Validates billing address
+- RULE-4: Sends invoice email notification
+- RULE-5: Archives invoice after payment
+
+## Proof
+- PROOF-1 (RULE-1): Create invoice, verify line items
+- PROOF-2 (RULE-2): Create invoice, verify tax applied
+- PROOF-3 (RULE-3): Submit invalid address, verify rejection
+""")
+
+        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NO_PROOF
+        with open(os.path.join(spec_dir, 'invoices.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "invoices", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_invoices.py", "test_name": "test_line_items",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "invoices", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_invoices.py", "test_name": "test_tax",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "invoices", "id": "PROOF-3", "rule": "RULE-3",
+                 "test_file": "tests/test_invoices.py", "test_name": "test_address",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Audit cache: 1 STRONG, 1 WEAK, 1 HOLLOW for the 3 proved rules
+        ts = (datetime.datetime.now(datetime.timezone.utc)
+              - datetime.timedelta(minutes=5)).isoformat()
+        cache = {
+            'h_inv_1': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'real assertion on line items', 'fix': 'none',
+                'feature': 'invoices', 'proof_id': 'PROOF-1',
+                'rule_id': 'RULE-1', 'priority': 'LOW', 'cached_at': ts,
+            },
+            'h_inv_2': {
+                'assessment': 'WEAK', 'criterion': 'missing negative test',
+                'why': 'only happy path for tax', 'fix': 'add zero-tax case',
+                'feature': 'invoices', 'proof_id': 'PROOF-2',
+                'rule_id': 'RULE-2', 'priority': 'HIGH', 'cached_at': ts,
+            },
+            'h_inv_3': {
+                'assessment': 'HOLLOW', 'criterion': 'assert True',
+                'why': 'no real assertion on address validation',
+                'fix': 'add real assertion',
+                'feature': 'invoices', 'proof_id': 'PROOF-3',
+                'rule_id': 'RULE-3', 'priority': 'CRITICAL', 'cached_at': ts,
+            },
+        }
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add invoices'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        # Run sync_status (writes report-data.js)
+        cli_output = sync_status(self.tmp_dir)
+
+        # --- Source 1: Compute expected integrity ---
+        # 1 STRONG / (1 STRONG + 1 WEAK + 1 HOLLOW) = 1/3 = 33%
+        # NOT 1/5 = 20% (NO_PROOF excluded from denominator)
+        expected_integrity = round(1 / 3 * 100)  # 33
+
+        # --- Source 2: Parse CLI integrity ---
+        import re
+        match = re.search(r'Integrity:\s+(\d+)%', cli_output)
+        assert match, f"CLI output should contain 'Integrity: N%', got:\n{cli_output}"
+        cli_integrity = int(match.group(1))
+
+        # --- Source 3: Parse report-data.js integrity ---
+        report_path = os.path.join(self.tmp_dir, '.purlin', 'report-data.js')
+        assert os.path.isfile(report_path), "report-data.js should exist"
+        with open(report_path) as f:
+            content = f.read()
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+        dashboard_integrity = data['audit_summary']['integrity']
+
+        # --- All three must match ---
+        assert cli_integrity == expected_integrity, (
+            f"CLI integrity ({cli_integrity}%) != computed ({expected_integrity}%)\n"
+            f"  If CLI shows 20%, NO_PROOF rules are leaking into the denominator"
+        )
+        assert dashboard_integrity == expected_integrity, (
+            f"Dashboard integrity ({dashboard_integrity}%) != computed ({expected_integrity}%)\n"
+            f"  If dashboard shows 20%, NO_PROOF rules are leaking into the denominator"
+        )
+        assert cli_integrity == dashboard_integrity, (
+            f"CLI ({cli_integrity}%) != dashboard ({dashboard_integrity}%)"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-58", "RULE-34", tier="unit")
+    def test_compute_integrity_is_single_function(self):
+        """RULE-34: Integrity is computed by exactly one function.
+
+        Structural check: _compute_integrity is the only function in
+        purlin_server.py that contains the integrity formula. Both
+        _read_audit_summary and _build_feature_audit delegate to it.
+        """
+        import re
+        server_path = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts', 'mcp', 'purlin_server.py'
+        )
+        with open(server_path) as f:
+            content = f.read()
+
+        # Find all function definitions
+        func_defs = re.findall(r'^def (\w+)\(', content, re.MULTILINE)
+
+        # The formula pattern: (strong + manual) / behavioral_total * 100
+        # or equivalent inline computation
+        formula_pattern = re.compile(
+            r'\(strong\s*\+\s*manual\)\s*/\s*behavioral_total\s*\*\s*100'
+        )
+
+        # Find which functions contain the formula inline
+        functions_with_formula = []
+        for match in re.finditer(r'^def (\w+)\(.*?\n(?=^def |\Z)', content,
+                                 re.MULTILINE | re.DOTALL):
+            func_name = match.group(1)
+            func_body = match.group(0)
+            if formula_pattern.search(func_body):
+                functions_with_formula.append(func_name)
+
+        assert functions_with_formula == ['_compute_integrity'], (
+            f"Only _compute_integrity should contain the integrity formula.\n"
+            f"  Found in: {functions_with_formula}"
+        )
+
+        # Verify both callers delegate to _compute_integrity
+        for caller in ('_read_audit_summary', '_build_feature_audit'):
+            caller_match = re.search(
+                rf'^def {caller}\(.*?\n(?=^def |\Z)', content,
+                re.MULTILINE | re.DOTALL
+            )
+            assert caller_match, f"{caller} not found"
+            assert '_compute_integrity(' in caller_match.group(0), (
+                f"{caller} must call _compute_integrity()"
+            )
+
+    @pytest.mark.proof("sync_status", "PROOF-59", "RULE-35", tier="unit")
+    def test_determine_status_is_single_function(self):
+        """RULE-35: Status is determined by exactly one function.
+
+        Structural check: _determine_status is the only function that contains
+        the VERIFIED/PASSING/FAILING/PARTIAL/UNTESTED determination chain.
+        All call sites delegate to it.
+        """
+        import re
+        server_path = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts', 'mcp', 'purlin_server.py'
+        )
+        with open(server_path) as f:
+            content = f.read()
+
+        # The status pattern: function that contains the full status chain
+        # (all five values: VERIFIED, PASSING, FAILING, PARTIAL, UNTESTED).
+        # _determine_status uses return statements; callers should delegate.
+        all_five = {'VERIFIED', 'PASSING', 'FAILING', 'PARTIAL', 'UNTESTED'}
+        status_pattern = re.compile(r"['\"](?:VERIFIED|PASSING|FAILING|PARTIAL|UNTESTED)['\"]")
+
+        functions_with_full_chain = []
+        for match in re.finditer(r'^def (\w+)\(.*?\n(?=^def |\Z)', content,
+                                 re.MULTILINE | re.DOTALL):
+            func_name = match.group(1)
+            func_body = match.group(0)
+            found_statuses = set(status_pattern.findall(func_body))
+            # Normalize quotes
+            found_statuses = {s.strip("'\"") for s in found_statuses}
+            if all_five.issubset(found_statuses):
+                functions_with_full_chain.append(func_name)
+
+        assert '_determine_status' in functions_with_full_chain, (
+            "_determine_status must contain the full status determination chain"
+        )
+
+        # Only _determine_status and display-only functions (like
+        # _build_summary_table which maps status to display symbols, and
+        # _report_feature which uses header_status) should contain all five
+        allowed = {'_determine_status', '_build_summary_table', '_report_feature'}
+        unexpected = set(functions_with_full_chain) - allowed
+        assert not unexpected, (
+            f"Only _determine_status should contain the full status chain.\n"
+            f"  Unexpected functions: {unexpected}\n"
+            f"  These should delegate to _determine_status()"
+        )
+
+        # Verify the main call sites delegate to _determine_status
+        # sync_status and _build_report_data should both call it
+        callers_found = []
+        for caller in ('sync_status', '_build_report_data'):
+            caller_match = re.search(
+                rf'^def {caller}\(.*?\n(?=^def |\Z)', content,
+                re.MULTILINE | re.DOTALL
+            )
+            if caller_match and '_determine_status(' in caller_match.group(0):
+                callers_found.append(caller)
+
+        assert 'sync_status' in callers_found, (
+            "sync_status must call _determine_status()"
+        )
+        assert '_build_report_data' in callers_found, (
+            "_build_report_data must call _determine_status()"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-60", "RULE-34", tier="e2e")
+    def test_multi_feature_integrity_cli_matches_dashboard(self):
+        """RULE-34: Per-feature and global integrity match between CLI and dashboard.
+
+        Setup: Isolated project with 2 features, different audit mixes.
+        Feature 'auth': 2 STRONG, 1 WEAK → integrity = 67%.
+        Feature 'billing': 1 STRONG, 1 HOLLOW → integrity = 50%.
+        Global: 3 STRONG / (3 S + 1 W + 1 H) = 3/5 = 60%.
+        Verifies CLI and report-data.js agree on all values.
+        """
+        _make_project(self.tmp_dir, with_git=True, with_report=True)
+        html_path = os.path.join(self.tmp_dir, 'purlin-report.html')
+        with open(html_path, 'w') as f:
+            f.write('<html></html>')
+
+        # Create auth feature (3 rules, all proved)
+        auth_dir = os.path.join(self.tmp_dir, 'specs', 'auth')
+        os.makedirs(auth_dir, exist_ok=True)
+        with open(os.path.join(auth_dir, 'login.md'), 'w') as f:
+            f.write("""# Feature: login
+
+> Scope: src/auth/login.py
+
+## What it does
+Login.
+
+## Rules
+- RULE-1: Returns 200 on valid credentials
+- RULE-2: Returns 401 on invalid credentials
+- RULE-3: Rate limits after 5 failed attempts
+
+## Proof
+- PROOF-1 (RULE-1): POST valid creds returns 200
+- PROOF-2 (RULE-2): POST bad creds returns 401
+- PROOF-3 (RULE-3): Submit 6 bad passwords, verify 429
+""")
+        with open(os.path.join(auth_dir, 'login.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_login.py", "test_name": "test_valid",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "login", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_login.py", "test_name": "test_invalid",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "login", "id": "PROOF-3", "rule": "RULE-3",
+                 "test_file": "tests/test_login.py", "test_name": "test_ratelimit",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Create billing feature (2 rules, both proved)
+        billing_dir = os.path.join(self.tmp_dir, 'specs', 'billing')
+        os.makedirs(billing_dir, exist_ok=True)
+        with open(os.path.join(billing_dir, 'payments.md'), 'w') as f:
+            f.write("""# Feature: payments
+
+> Scope: src/billing/payments.py
+
+## What it does
+Payments.
+
+## Rules
+- RULE-1: Charges the correct amount
+- RULE-2: Refunds within 24 hours
+
+## Proof
+- PROOF-1 (RULE-1): Create charge, verify amount
+- PROOF-2 (RULE-2): Request refund, verify processed
+""")
+        with open(os.path.join(billing_dir, 'payments.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "payments", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test_payments.py", "test_name": "test_charge",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "payments", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test_payments.py", "test_name": "test_refund",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Audit cache: auth has 2S+1W, billing has 1S+1H
+        ts = (datetime.datetime.now(datetime.timezone.utc)
+              - datetime.timedelta(minutes=5)).isoformat()
+        cache = {
+            'h1': {'assessment': 'STRONG', 'criterion': 'ok', 'why': 'good',
+                   'fix': 'none', 'feature': 'login', 'proof_id': 'PROOF-1',
+                   'rule_id': 'RULE-1', 'priority': 'LOW', 'cached_at': ts},
+            'h2': {'assessment': 'STRONG', 'criterion': 'ok', 'why': 'good',
+                   'fix': 'none', 'feature': 'login', 'proof_id': 'PROOF-2',
+                   'rule_id': 'RULE-2', 'priority': 'LOW', 'cached_at': ts},
+            'h3': {'assessment': 'WEAK', 'criterion': 'missing edge case',
+                   'why': 'no test for concurrent requests', 'fix': 'add concurrency test',
+                   'feature': 'login', 'proof_id': 'PROOF-3',
+                   'rule_id': 'RULE-3', 'priority': 'HIGH', 'cached_at': ts},
+            'h4': {'assessment': 'STRONG', 'criterion': 'ok', 'why': 'good',
+                   'fix': 'none', 'feature': 'payments', 'proof_id': 'PROOF-1',
+                   'rule_id': 'RULE-1', 'priority': 'LOW', 'cached_at': ts},
+            'h5': {'assessment': 'HOLLOW', 'criterion': 'assert True',
+                   'why': 'no real assertion', 'fix': 'add amount check',
+                   'feature': 'payments', 'proof_id': 'PROOF-2',
+                   'rule_id': 'RULE-2', 'priority': 'CRITICAL', 'cached_at': ts},
+        }
+        write_audit_cache(self.tmp_dir, cache)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'setup'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        cli_output = sync_status(self.tmp_dir)
+
+        # Parse report-data.js
+        report_path = os.path.join(self.tmp_dir, '.purlin', 'report-data.js')
+        with open(report_path) as f:
+            content = f.read()
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+
+        # Verify global integrity: CLI vs dashboard
+        import re
+        match = re.search(r'Integrity:\s+(\d+)%', cli_output)
+        assert match, f"CLI should show 'Integrity: N%', got:\n{cli_output}"
+        cli_global = int(match.group(1))
+        dash_global = data['audit_summary']['integrity']
+        expected_global = round(3 / 5 * 100)  # 60%
+
+        assert cli_global == expected_global, (
+            f"CLI global integrity ({cli_global}%) != expected ({expected_global}%)"
+        )
+        assert dash_global == expected_global, (
+            f"Dashboard global integrity ({dash_global}%) != expected ({expected_global}%)"
+        )
+
+        # Verify per-feature integrity: dashboard
+        login_feat = next(f for f in data['features'] if f['name'] == 'login')
+        payments_feat = next(f for f in data['features'] if f['name'] == 'payments')
+
+        assert login_feat['audit']['integrity'] == round(2 / 3 * 100), (
+            f"login integrity should be 67%, got {login_feat['audit']['integrity']}%"
+        )
+        assert payments_feat['audit']['integrity'] == round(1 / 2 * 100), (
+            f"payments integrity should be 50%, got {payments_feat['audit']['integrity']}%"
+        )
+
+    @pytest.mark.proof("sync_status", "PROOF-61", "RULE-35", tier="e2e")
+    def test_all_statuses_cli_matches_dashboard(self):
+        """RULE-35: Feature status matches between CLI summary table and dashboard.
+
+        Setup: Isolated project with features in every status:
+        - verified_feat: all proved + receipt → VERIFIED
+        - passing_feat: all proved, no receipt → PASSING
+        - partial_feat: some proved → PARTIAL
+        - failing_feat: has a failing proof → FAILING
+        - untested_feat: zero proofs → UNTESTED
+        Verifies CLI table status matches report-data.js status for all five.
+        """
+        # Create project manually (not using _make_project to avoid default spec)
+        purlin_dir = os.path.join(self.tmp_dir, '.purlin')
+        os.makedirs(os.path.join(purlin_dir, 'cache'), exist_ok=True)
+        config = {"version": "0.9.0", "test_framework": "auto",
+                  "spec_dir": "specs", "report": True}
+        with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
+            json.dump(config, f)
+
+        html_path = os.path.join(self.tmp_dir, 'purlin-report.html')
+        with open(html_path, 'w') as f:
+            f.write('<html></html>')
+
+        specs_dir = os.path.join(self.tmp_dir, 'specs', 'test')
+        os.makedirs(specs_dir, exist_ok=True)
+
+        def _write_spec(name, rules_count):
+            rules = '\n'.join(f'- RULE-{i}: Rule {i} for {name}'
+                              for i in range(1, rules_count + 1))
+            with open(os.path.join(specs_dir, f'{name}.md'), 'w') as f:
+                f.write(f"""# Feature: {name}
+
+> Scope: src/{name}.py
+
+## What it does
+{name}.
+
+## Rules
+{rules}
+
+## Proof
+""")
+
+        def _write_proofs(name, proofs):
+            with open(os.path.join(specs_dir, f'{name}.proofs-unit.json'), 'w') as f:
+                json.dump({"tier": "unit", "proofs": proofs}, f)
+
+        def _write_receipt(name, vhash):
+            with open(os.path.join(specs_dir, f'{name}.receipt.json'), 'w') as f:
+                json.dump({
+                    "vhash": vhash,
+                    "commit": "abc123",
+                    "timestamp": datetime.datetime.now(
+                        datetime.timezone.utc).isoformat(),
+                    "rules": [f"RULE-{i}" for i in range(1, 3)],
+                    "proofs": ["PROOF-1", "PROOF-2"],
+                }, f)
+
+        # 1. verified_feat: 2 rules, all proved, receipt matches
+        _write_spec('verified_feat', 2)
+        _write_proofs('verified_feat', [
+            {"feature": "verified_feat", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "t.py", "test_name": "t1", "status": "pass", "tier": "unit"},
+            {"feature": "verified_feat", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "t.py", "test_name": "t2", "status": "pass", "tier": "unit"},
+        ])
+
+        # 2. passing_feat: 2 rules, all proved, no receipt
+        _write_spec('passing_feat', 2)
+        _write_proofs('passing_feat', [
+            {"feature": "passing_feat", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "t.py", "test_name": "t1", "status": "pass", "tier": "unit"},
+            {"feature": "passing_feat", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "t.py", "test_name": "t2", "status": "pass", "tier": "unit"},
+        ])
+
+        # 3. partial_feat: 2 rules, 1 proved
+        _write_spec('partial_feat', 2)
+        _write_proofs('partial_feat', [
+            {"feature": "partial_feat", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "t.py", "test_name": "t1", "status": "pass", "tier": "unit"},
+        ])
+
+        # 4. failing_feat: 2 rules, 1 failing
+        _write_spec('failing_feat', 2)
+        _write_proofs('failing_feat', [
+            {"feature": "failing_feat", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "t.py", "test_name": "t1", "status": "pass", "tier": "unit"},
+            {"feature": "failing_feat", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "t.py", "test_name": "t2", "status": "fail", "tier": "unit"},
+        ])
+
+        # 5. untested_feat: 2 rules, no proofs
+        _write_spec('untested_feat', 2)
+
+        # Initialize git and commit
+        subprocess.run(['git', 'init'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'init'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        # Compute vhash for verified_feat and write matching receipt
+        from purlin_server import _compute_vhash, _build_coverage_rules, \
+            _build_proof_lookup, _collect_relevant_proofs
+        features = _scan_specs(self.tmp_dir)
+        all_proofs = _read_proofs(self.tmp_dir)
+        vf_info = features['verified_feat']
+        vf_rules, _ = _build_coverage_rules('verified_feat', vf_info, features, {})
+        vf_active = [(k, l, s) for k, l, s, d in vf_rules if not d]
+        vf_all_proofs = _collect_relevant_proofs('verified_feat', vf_rules, all_proofs)
+        vf_vhash = _compute_vhash(
+            {k: True for k, _, _ in vf_active}, vf_all_proofs
+        )
+        _write_receipt('verified_feat', vf_vhash)
+
+        # Recommit with receipt
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'add receipt'],
+                       cwd=self.tmp_dir, capture_output=True)
+
+        # Run sync_status
+        cli_output = sync_status(self.tmp_dir)
+
+        # Parse report-data.js
+        report_path = os.path.join(self.tmp_dir, '.purlin', 'report-data.js')
+        with open(report_path) as f:
+            content = f.read()
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+
+        # Build expected status map
+        expected = {
+            'verified_feat': 'VERIFIED',
+            'passing_feat': 'PASSING',
+            'partial_feat': 'PARTIAL',
+            'failing_feat': 'FAILING',
+            'untested_feat': 'UNTESTED',
+        }
+
+        # Verify dashboard statuses
+        for feat in data['features']:
+            name = feat['name']
+            if name in expected:
+                assert feat['status'] == expected[name], (
+                    f"Dashboard: {name} should be {expected[name]}, "
+                    f"got {feat['status']}"
+                )
+
+        # Verify CLI statuses (parse summary table)
+        import re
+        for name, exp_status in expected.items():
+            # Match table row: │ name ... │ status │
+            pattern = rf'{re.escape(name)}\s+.*?\s+({exp_status})'
+            assert re.search(pattern, cli_output), (
+                f"CLI summary table should show {name} as {exp_status}\n"
+                f"CLI output:\n{cli_output}"
+            )
