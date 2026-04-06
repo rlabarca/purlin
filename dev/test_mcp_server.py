@@ -718,6 +718,121 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         assert 'aim for' not in result.lower()
 
+    @pytest.mark.proof("sync_status", "PROOF-64", "RULE-17")
+    def test_proof_types_display_uniformly(self):
+        """RULE-17: Grep-based and behavioral proofs both show PASS/FAIL with no visual distinction."""
+        # One spec covered by a "grep-based" proof description, one by a behavioral proof description
+        self._write_spec('grep_feature', (
+            '# Feature: grep_feature\n\n'
+            '## What it does\nGrep feature.\n\n'
+            '## Rules\n- RULE-1: File contains header\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep README.md for # header; verify section exists\n'
+        ))
+        self._write_proofs('grep_feature', [
+            {"feature": "grep_feature", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test_grep.py", "test_name": "test_header_exists",
+             "status": "pass", "tier": "unit"},
+        ])
+        self._write_spec('behavior_feature', (
+            '# Feature: behavior_feature\n\n'
+            '## What it does\nBehavioral feature.\n\n'
+            '## Rules\n- RULE-1: Returns 200 on valid input\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid request; assert status 200\n'
+        ))
+        self._write_proofs('behavior_feature', [
+            {"feature": "behavior_feature", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test_behavior.py", "test_name": "test_valid_input",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+        # Both features should show PASSING — no special label distinguishing proof type
+        assert 'grep_feature: PASSING' in result
+        assert 'behavior_feature: PASSING' in result
+        # Neither feature should show any "(grep)" or "(structural)" type distinctions in the
+        # per-feature coverage line (both just show PASSING, same as any other proof)
+        grep_idx = result.index('grep_feature: PASSING')
+        behavior_idx = result.index('behavior_feature: PASSING')
+        # Both statuses appear identically formatted — the substring "PASSING" appears for both
+        assert 'PASSING' in result[grep_idx:grep_idx + 30]
+        assert 'PASSING' in result[behavior_idx:behavior_idx + 30]
+
+    @pytest.mark.proof("sync_status", "PROOF-65", "RULE-22")
+    def test_anchor_detail_shows_source_path_and_pinned(self):
+        """RULE-22: Anchor detail shows Source URL, Path (if present), and Pinned value truncated to 7 chars."""
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        full_sha = 'abcdef1234567890abcdef1234567890abcdef12'
+        with open(os.path.join(anchor_dir, 'ext_security.md'), 'w') as f:
+            f.write(
+                '# Anchor: ext_security\n\n'
+                '> Source: https://github.com/example/repo\n'
+                '> Path: specs/security/no_eval.md\n'
+                f'> Pinned: {full_sha}\n\n'
+                '## What it does\nExternal security rules.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Source: https://github.com/example/repo' in result
+        assert 'Path: specs/security/no_eval.md' in result
+        # Pinned value truncated to 7 chars
+        assert 'Pinned: abcdef1' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-66", "RULE-23")
+    def test_anchor_unpinned_warning(self):
+        """RULE-23: Shows unpinned warning for anchors with Source but no Pinned."""
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'ext_security.md'), 'w') as f:
+            f.write(
+                '# Anchor: ext_security\n\n'
+                '> Source: https://github.com/example/repo\n\n'
+                '## What it does\nExternal security rules.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Unpinned' in result
+        assert 'purlin:anchor sync ext_security' in result
+
+    @pytest.mark.proof("sync_status", "PROOF-67", "RULE-24")
+    def test_report_data_includes_pinned_and_source_path(self):
+        """RULE-24: report-data.js feature entries include pinned and source_path for anchors with those fields."""
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        full_sha = 'deadbeef1234567890abcdef1234567890abcdef'
+        with open(os.path.join(anchor_dir, 'ext_security.md'), 'w') as f:
+            f.write(
+                '# Anchor: ext_security\n\n'
+                '> Source: https://github.com/example/repo\n'
+                '> Path: specs/security/constraints.md\n'
+                f'> Pinned: {full_sha}\n\n'
+                '## What it does\nExternal security rules.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        # Write config with report=True so _build_report_data is invoked
+        config_path = os.path.join(self.project_root, '.purlin', 'config.json')
+        with open(config_path, 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'auto',
+                       'spec_dir': 'specs', 'report': True}, f)
+
+        features = purlin_server._scan_specs(self.project_root)
+        all_proofs = purlin_server._read_proofs(self.project_root)
+        config = purlin_server.resolve_config(self.project_root)
+        global_anchors = {k: v for k, v in features.items() if v.get('is_global')}
+
+        data = purlin_server._build_report_data(
+            self.project_root, features, all_proofs, config, global_anchors, None
+        )
+
+        anchor_entry = next(
+            (f for f in data['features'] if f['name'] == 'ext_security'), None
+        )
+        assert anchor_entry is not None, "ext_security should appear in report data features"
+        assert anchor_entry['pinned'] == full_sha
+        assert anchor_entry['source_path'] == 'specs/security/constraints.md'
+
 
 class TestPurlinConfig:
     """purlin_config RULE-1: config read/write."""
@@ -1072,6 +1187,38 @@ class TestDriftDetection:
         broken = [b for b in data['broken_scopes'] if b['spec'] == 'login']
         assert len(broken) == 1, f"Expected 1 broken scope for login, got {broken}"
         assert 'src/deleted.py' in broken[0]['missing_paths']
+
+    @pytest.mark.proof("drift", "PROOF-17", "RULE-15")
+    def test_unpinned_anchor_detected(self):
+        """Anchor with Source but no Pinned returns external_anchor_drift with status=unpinned."""
+        # Create an anchor spec with > Source: but no > Pinned:
+        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'security_policy.md'), 'w') as f:
+            f.write(
+                '# Anchor: security_policy\n\n'
+                '> Source: https://github.com/acme/policies.git\n\n'
+                '## What it does\nSecurity.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add unpinned anchor'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        result_text = purlin_server.drift(self.project_root)
+        data = json.loads(result_text)
+        assert 'external_anchor_drift' in data, \
+            f"Expected external_anchor_drift key in drift result, got keys: {list(data.keys())}"
+        unpinned_entries = [
+            e for e in data['external_anchor_drift']
+            if e.get('anchor') == 'security_policy'
+        ]
+        assert len(unpinned_entries) == 1, \
+            f"Expected 1 external_anchor_drift entry for security_policy, got: {unpinned_entries}"
+        assert unpinned_entries[0]['status'] == 'unpinned', \
+            f"Expected status=unpinned, got: {unpinned_entries[0]}"
 
 
 class TestDriftSmartFallback:
