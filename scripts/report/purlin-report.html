@@ -20,6 +20,11 @@
   --blue-dim: rgba(59, 130, 246, 0.15);
   --teal: #2dd4bf;
   --gray-badge: #64748b;
+  /* Anchor type pill colors */
+  --tp-anchor-color: #8b95a5;
+  --tp-anchor-bg: rgba(139,149,165,.2);
+  --tp-global-color: #a8b5c7;
+  --tp-global-bg: rgba(168,181,199,.2);
 }
 
 /* ===== DARK THEME ===== */
@@ -128,8 +133,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .fr.expanded .chv{transform:rotate(90deg)}
 .fnt{margin-right:8px}
 .tp{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
-.tp-anchor-scoped{background:rgba(139,149,165,.2);color:#8b95a5}
-.tp-anchor-global{background:rgba(168,181,199,.2);color:#a8b5c7}
+.tp-anchor{background:var(--tp-anchor-bg);color:var(--tp-anchor-color)}
+.tp-global{background:var(--tp-global-bg);color:var(--tp-global-color)}
 .ext-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;color:var(--teal);flex-shrink:0;opacity:.7}
 .ext-icon svg{width:12px;height:12px}
 .ext-icon:hover{opacity:1}
@@ -227,7 +232,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:28px}
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
-.rlbl-scoped{color:#8b95a5}.rlbl-global{color:#a8b5c7}
+.rlbl-scoped{color:var(--tp-anchor-color)}.rlbl-global{color:var(--tp-global-color)}
 .rt td.rst{font-size:11px;font-weight:600;text-align:center}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--green)}.rst-chk-fail{color:var(--red)}.rst-def{color:var(--text-dim);font-style:italic}
 .rprf{font-size:12px;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word}
@@ -667,50 +672,7 @@ table{min-width:680px}
     /* Group features by category */
     var grouped = groupByCategory(features);
 
-    /* Anchors section (above features) */
-    if (grouped.cats['_anchors'] && grouped.cats['_anchors'].length > 0) {
-      var anchorFeatures = grouped.cats['_anchors'];
-      var acs = catSummary(anchorFeatures);
-      var anchorPct = acs.rules ? Math.round(acs.proved / acs.rules * 100) : 0;
-      h += '<div class="section-label">Anchors <span class="section-count">' + acs.total + '</span></div>';
-      h += '<div class="table-container"><table>';
-      h += renderTableHead('Anchor');
-      h += '<tbody>';
-      for (var ai = 0; ai < anchorFeatures.length; ai++) {
-        var af = anchorFeatures[ai];
-        var isExpanded = expandedSet[af.name];
-        var apct = af.total ? Math.round(af.proved / af.total * 100) : 0;
-        var aintVal = (af.audit && af.audit.integrity != null) ? af.audit.integrity : null;
-        h += '<tr class="fr' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(af.name) + '">';
-        h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(af.name) + '</span>';
-        if (af.is_global) { h += '<span class="tp tp-anchor-global">GLOBAL</span>'; }
-        else { h += '<span class="tp tp-anchor-scoped">SCOPED</span>'; }
-        if (af.source_url) {
-          var extTitle = 'Source: ' + af.source_url;
-          if (af.source_path) extTitle += '\nPath: ' + af.source_path;
-          if (af.pinned) extTitle += '\nPinned: ' + (af.pinned.length > 10 ? af.pinned.substring(0, 7) : af.pinned);
-          h += '<span class="ext-icon" title="' + esc(extTitle) + '">' + extIconSvg + '</span>';
-          if (af.ext_status === 'stale' || af.ext_status === 'unpinned') {
-            h += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
-          }
-        }
-        h += '</div></td>';
-        h += '<td><div class="cov"><span class="cov-t">' + af.proved + '/' + af.total + '</span>';
-        h += '<div class="cov-bar"><div class="cov-fill ' + covClass(af.status) + '" style="width:' + apct + '%"></div></div></div></td>';
-        h += '<td class="col-status"><span class="' + badgeClass(af.status) + '">' + badgeText(af.status) + '</span></td>';
-        h += '<td class="' + intClass(aintVal) + '">' + (aintVal != null ? aintVal + '%' : '&mdash;') + '</td>';
-        if (af.receipt && af.receipt.timestamp) {
-          var avt = relTime(af.receipt.timestamp);
-          var avcls = af.receipt.stale ? 'ver ver-stale' : 'ver';
-          h += '<td class="' + avcls + '">' + esc(avt) + '</td>';
-        } else { h += '<td class="ver">&mdash;</td>'; }
-        h += '</tr>';
-        if (isExpanded) { h += renderDetail(af); }
-      }
-      h += '</tbody></table></div>';
-    }
-
-    /* Feature table */
+    /* Feature table — all categories including _anchors */
     h += '<div class="section-label">Specs</div>';
     h += '<div class="table-container"><table>';
     h += '<colgroup>';
@@ -722,7 +684,6 @@ table{min-width:680px}
 
     for (var gi = 0; gi < grouped.order.length; gi++) {
       var cat = grouped.order[gi];
-      if (cat === '_anchors') continue; /* already rendered above */
       var catFeatures = grouped.cats[cat];
       var cs = catSummary(catFeatures);
       var catOpen = categorySet[cat] === true; /* collapsed by default */
@@ -735,8 +696,8 @@ table{min-width:680px}
       h += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
       h += '<span class="cat-count">(' + cs.total + ')</span>';
       h += '</div></td>';
-      h += '<td><div class="cov"><span class="cov-t">' + cs.proved + '/' + cs.rules + '</span>';
-      h += '<div class="cov-bar"><div class="cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
+      h += '<td><div class="cov"><span class="cat-cov">' + cs.proved + '/' + cs.rules + '</span>';
+      h += '<div class="cat-cov-bar"><div class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
       h += '<td colspan="3"><div class="cat-summary">';
       if (cs.verified) h += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
       if (cs.passing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
@@ -761,9 +722,9 @@ table{min-width:680px}
           h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
           if (f.type === 'anchor') {
             if (f.is_global) {
-              h += '<span class="tp tp-anchor-global">GLOBAL</span>';
+              h += '<span class="tp tp-global">global</span>';
             } else {
-              h += '<span class="tp tp-anchor-scoped">SCOPED</span>';
+              h += '<span class="tp tp-anchor">anchor</span>';
             }
           }
           if (f.source_url) {
@@ -955,7 +916,7 @@ table{min-width:680px}
       h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
       h += '<td class="rid">' + esc(r.id) + '</td>';
       h += '<td class="rdesc">' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '" style="text-align:center">' + (r.label === 'own' ? '' : '&#10003;') + '</td>';
+      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
       h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
 
       if (proofs.length > 0) {
