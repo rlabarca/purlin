@@ -3,10 +3,64 @@
   "proofs": [
     {
       "feature": "skill_build",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "test_file": "dev/test_e2e_teammate_audit_loop.sh",
-      "test_name": "build proof fixer mode fixes proofs and reports back",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_frontmatter",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_usage_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_name_matches_directory",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_commit_instructions",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_requires_sync_status_not_optional",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_failure_diagnosis_guidance",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_tier_review",
       "status": "pass",
       "tier": "unit"
     }

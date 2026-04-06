@@ -3,28 +3,334 @@
   "proofs": [
     {
       "feature": "proof_plugins",
-      "id": "PROOF-30",
-      "rule": "RULE-4",
-      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
-      "test_name": "separate proof files don't interfere",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_tautological",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-31",
-      "rule": "RULE-4",
-      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
-      "test_name": "overwrite replaces only target feature, others intact",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_php_tautological",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-32",
-      "rule": "RULE-29",
-      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
-      "test_name": "removed test proof is purged, not carried over",
+      "id": "PROOF-27",
+      "rule": "RULE-26",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_tautological",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_typescript_tautological",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_php_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-27",
+      "rule": "RULE-26",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_typescript_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-24",
+      "rule": "RULE-6",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-26",
+      "rule": "RULE-25",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_php_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-28",
+      "rule": "RULE-27",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_typescript_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_php_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-27",
+      "rule": "RULE-26",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_typescript_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-24",
+      "rule": "RULE-6",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_no_assertion",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-26",
+      "rule": "RULE-25",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_php_no_assertion",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-28",
+      "rule": "RULE-27",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_no_assertion",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_typescript_no_assertion",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_proof_plugin_real_compilation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-24",
+      "rule": "RULE-6",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-26",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-27",
+      "rule": "RULE-26",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-28",
+      "rule": "RULE-27",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_typescript_proof_plugin_real_compilation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_typescript_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_python_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_three_features_share_one_proof_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_overwrite_replaces_only_own_feature",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_and_sql_proofs_coexist",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_tautological_proof_detected_by_proof_file_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-28",
+      "rule": "RULE-27",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_sql_asserts_setup_not_query_result",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_php_tests_wrong_function",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_typescript_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-24",
+      "rule": "RULE-6",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_test_name_contradicts_behavior",
       "status": "pass",
       "tier": "unit"
     }

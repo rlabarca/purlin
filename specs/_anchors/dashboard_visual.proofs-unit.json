@@ -97,7 +97,7 @@
       "rule": "RULE-11",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_no_hardcoded_hex_outside_custom_properties",
-      "status": "pass",
+      "status": "fail",
       "tier": "unit"
     }
   ]
