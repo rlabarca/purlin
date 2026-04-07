@@ -1,54 +1,61 @@
 # Feature: figma_web
 
-> Description: End-to-end workflow proof that a web UI can be built from a Figma design
->   using only Purlin's documented skills, achieving ≥95% visual fidelity. Uses the
->   modal-test Figma design as the reference and a local anchor as the build instruction.
+> Description: End-to-end workflow proof that the exact 5-message sequence from
+>   docs/examples/figma-web-app.md produces a working web UI with high visual
+>   fidelity to the Figma design. Uses the modal-test Figma file as the design
+>   reference. Each step is a real `claude -p` invocation — nothing is faked.
 > Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md
 > Stack: python/pytest, playwright, shell/bash
 > Requires: skill_anchor
 
 ## What it does
 
-Proves that the complete Figma-to-web workflow documented in docs/examples/figma-web-app.md
-works end-to-end with high fidelity. Uses the modal-test Figma design
-(https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81) as the
-visual reference. Each step — from project initialization through verification — is
-exercised in a sample project using only the documented Purlin skills. No modifications to
-existing framework code, docs, or proofs are permitted. If the workflow cannot complete
-as documented, the test fails and reports what needs to change.
+Proves that running the exact 5-message workflow documented in
+docs/examples/figma-web-app.md against the modal-test Figma design
+(https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81)
+produces a working, visually faithful web UI. The test uses `claude -p` with
+`--resume` for session continuity — each message is sent exactly as documented.
+Prerequisites (purlin:init) are run before the 5-message sequence.
+
+The 5 documented messages (adapted for the modal-test design):
+1. "here's our design: https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81"
+2. "I need a feature for the feedback modal from this design"
+3. "build it"
+4. "run the tests"
+5. "verify and ship"
 
 ## Rules
 
-- RULE-1: purlin:init on a new empty directory creates a valid Purlin config file
-- RULE-2: Natural language input with the Figma URL creates a design anchor in specs/_anchors/ via purlin:anchor, with correct > Source:, > Visual-Reference:, > Pinned:, and > Type: design metadata
-- RULE-3: The created design anchor contains exactly one visual-match rule with an @e2e screenshot comparison proof description
-- RULE-4: purlin:spec creates a feature spec with > Requires: referencing the created figma design anchor
-- RULE-5: purlin:build reads the Figma design via real Figma MCP calls (get_design_context or get_screenshot) — not from cached or hardcoded data
-- RULE-6: Build produces a functioning web UI that renders the modal-test design and can be opened in a browser
-- RULE-7: Build writes tests with proof markers for both the feature spec rules and the design anchor visual-match rule
-- RULE-8: At least one proof captures a real browser screenshot of the implemented UI and compares it against a Figma MCP-sourced screenshot of the original design
-- RULE-9: The implemented UI achieves ≥95% visual fidelity match to the Figma design at the same viewport dimensions
-- RULE-10: The entire workflow completes using only the documented skill commands (purlin:init, purlin:anchor, purlin:spec, purlin:build, purlin:unit-test, purlin:verify) — no extra commands, manual fixes, or workarounds
+- RULE-1: Prerequisites — purlin:init creates a valid Purlin project before the workflow starts
+- RULE-2: Message 1 — sharing the Figma URL creates a design anchor in specs/_anchors/ with Source, Visual-Reference, Pinned, and Type: design metadata
+- RULE-3: The anchor contains at least one visual-match rule with an @e2e proof
+- RULE-4: Message 2 — describing the feature creates a spec with > Requires: referencing the anchor
+- RULE-5: The anchor contains the real Figma file key, proving Figma MCP was used
+- RULE-6: Message 3 — "build it" produces a functioning HTML file that renders in a browser
+- RULE-7: The build writes tests with proof markers referencing the feature and anchor
+- RULE-8: A Playwright screenshot of the built UI can be captured and compared against a reference
+- RULE-9: The built UI visually matches the Figma design within the fidelity threshold
+- RULE-10: All 5 documented steps produce their expected artifacts — no extra commands needed
 - RULE-11: FORBIDDEN — Modifying existing framework docs, proof files, skill definitions, or source code to make the workflow succeed
-- RULE-12: FORBIDDEN — Auto-fixing workflow failures; on any failure the LLM must stop execution and present suggested changes for the user to approve before continuing
-- RULE-13: purlin:audit on the figma design anchor reports an assessment classification (STRONG, WEAK, or HOLLOW) for the visual-match proof, and this classification is captured in the test output
-- RULE-14: Each test run saves screenshot image(s) to dev/figma_web_result*.png showing the final implemented UI, overwriting previous screenshots from prior runs
-- RULE-15: purlin:verify succeeds with all rules proved across both the feature spec and the design anchor
+- RULE-12: FORBIDDEN — Claude silently fixing errors; on failure it must report the issue
+- RULE-13: The audit static_checks pipeline returns a classification for anchor proofs
+- RULE-14: Each test run saves screenshot(s) to dev/figma_web_result.png showing the built UI
+- RULE-15: Message 4+5 — "run the tests" and "verify and ship" result in passing tests (pytest exit 0)
 
 ## Proof
 
-- PROOF-1 (RULE-1): Create a temp directory, run purlin:init, verify purlin.json exists with required fields (version, specs directory) @e2e
-- PROOF-2 (RULE-2): In the initialized sample project, provide "here's our design: https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81" as natural language input; verify a .md file is created in specs/_anchors/ containing > Source: with the Figma URL, > Visual-Reference: with figma://, > Pinned: with an ISO 8601 timestamp, and > Type: design @e2e
-- PROOF-3 (RULE-3): Read the created anchor .md file; verify ## Rules contains exactly one RULE-1 with "visually match" text and ## Proof contains exactly one PROOF-1 with @e2e tag and "screenshot" in the description @e2e
-- PROOF-4 (RULE-4): Run purlin:spec to create a feature spec for the modal UI; verify the output .md file contains > Requires: with the anchor name from PROOF-2 @e2e
-- PROOF-5 (RULE-5): During purlin:build, capture MCP tool call logs; verify at least one call to get_design_context or get_screenshot with file key TEZI0T6lObCJrC9mkmZT8v @e2e
-- PROOF-6 (RULE-6): After build completes, start a local dev server, navigate Playwright browser to the built page; verify the page loads (HTTP 200) and renders visible content (page is not blank) @e2e
-- PROOF-7 (RULE-7): After build completes, read the generated test files; verify proof markers exist referencing both the feature spec name and the anchor spec name @e2e
-- PROOF-8 (RULE-8): Run the visual comparison test; verify it fetches a screenshot from Figma MCP (get_screenshot call with the modal-test file key) AND captures a Playwright screenshot of the local implementation, then performs pixel comparison between the two @e2e
-- PROOF-9 (RULE-9): Capture Playwright screenshot of implementation at Figma frame viewport dimensions, fetch Figma reference screenshot at same dimensions, compute pixel diff percentage; verify diff is ≤5% @e2e
-- PROOF-10 (RULE-10): Record all skill invocations during the workflow; verify the only commands used are purlin:init, purlin:anchor (or natural language anchor creation), purlin:spec, purlin:build, purlin:unit-test, and purlin:verify — no other purlin: commands or manual shell commands were needed @e2e
-- PROOF-11 (RULE-11): Compute git status of the Purlin framework repo after the sample project workflow completes; verify zero new or modified files in docs/, skills/, scripts/, references/ @e2e
-- PROOF-12 (RULE-12): Introduce a deliberate failure condition (e.g., unreachable Figma URL); verify the LLM output contains a request for user approval (phrases like "approve", "confirm", or "would you like") rather than silently modifying files @e2e
-- PROOF-13 (RULE-13): Run purlin:audit targeting the created figma design anchor; verify output contains an assessment line with STRONG, WEAK, or HOLLOW for the RULE-1 visual-match proof; capture the classification text in the test output @e2e
-- PROOF-14 (RULE-14): After the full workflow completes, verify dev/figma_web_result.png exists, is a valid PNG (starts with PNG magic bytes), and has non-zero width and height @e2e
-- PROOF-15 (RULE-15): Run purlin:verify on the sample project; verify exit code 0 and output contains success indicator for both the feature spec and the design anchor showing all rules proved @e2e
+- PROOF-1 (RULE-1): Run purlin:init via claude -p in a temp dir; verify .purlin/config.json exists with required fields @e2e
+- PROOF-2 (RULE-2): Send message 1 (Figma URL) via claude -p --resume; verify anchor .md in specs/_anchors/ has > Source:, > Visual-Reference: figma://, > Pinned:, > Type: design @e2e
+- PROOF-3 (RULE-3): Read the anchor; verify it has a visual-match rule and an @e2e proof @e2e
+- PROOF-4 (RULE-4): Send message 2 via claude -p --resume; verify a feature spec exists with > Requires: referencing the anchor @e2e
+- PROOF-5 (RULE-5): Verify the anchor text contains the Figma file key TEZI0T6lObCJrC9mkmZT8v @e2e
+- PROOF-6 (RULE-6): Send message 3 via claude -p --resume; open the built HTML in Playwright; verify page renders visible content @e2e
+- PROOF-7 (RULE-7): Read test files; verify proof markers reference both feature and anchor names @e2e
+- PROOF-8 (RULE-8): Capture Playwright screenshot of built UI; verify it is a valid PNG alongside the MCP fixture reference @e2e
+- PROOF-9 (RULE-9): Compute pixel diff between built UI screenshot and MCP fixture reference; verify diff is within threshold @e2e
+- PROOF-10 (RULE-10): Verify all 5 steps produced artifacts: config, anchor, spec, HTML, tests @e2e
+- PROOF-11 (RULE-11): Check git diff of framework repo; verify no new changes to docs/, skills/, scripts/, references/ @e2e
+- PROOF-12 (RULE-12): Send a broken Figma URL via claude -p; verify Claude reports an error rather than silently succeeding @e2e
+- PROOF-13 (RULE-13): Run static_checks.py on the anchor test file; verify it returns proof classifications @e2e
+- PROOF-14 (RULE-14): Capture Playwright screenshot to dev/figma_web_result.png; verify valid PNG @e2e
+- PROOF-15 (RULE-15): Send messages 4+5 via claude -p --resume; run pytest in the built project; verify exit code 0 @e2e

@@ -87,7 +87,7 @@
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_documented_steps_only",
+      "test_name": "test_all_steps_produced_artifacts",
       "status": "pass",
       "tier": "e2e"
     },
@@ -105,7 +105,7 @@
       "id": "PROOF-12",
       "rule": "RULE-12",
       "test_file": "dev/test_e2e_figma_web.py",
-      "test_name": "test_failure_asks_user",
+      "test_name": "test_failure_reports_error",
       "status": "pass",
       "tier": "e2e"
     },
