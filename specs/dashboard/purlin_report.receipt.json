@@ -1,8 +1,8 @@
 {
   "feature": "purlin_report",
-  "vhash": "d7ded094",
-  "commit": "5f42a16ba84ca8b20a9185eabe1d7a8f73a84b72",
-  "timestamp": "2026-04-04T22:48:45.094616+00:00",
+  "vhash": "9e0db121",
+  "commit": "aeff32908d0e24d000b7951281b654cb7caeb2b0",
+  "timestamp": "2026-04-07T12:30:39.451427+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -18,24 +18,23 @@
     "RULE-2",
     "RULE-20",
     "RULE-21",
+    "RULE-22",
+    "RULE-23",
+    "RULE-24",
+    "RULE-25",
+    "RULE-26",
+    "RULE-27",
+    "RULE-28",
+    "RULE-29",
     "RULE-3",
+    "RULE-30",
+    "RULE-31",
     "RULE-4",
     "RULE-5",
     "RULE-6",
     "RULE-7",
     "RULE-8",
-    "RULE-9",
-    "dashboard_visual/RULE-1",
-    "dashboard_visual/RULE-10",
-    "dashboard_visual/RULE-11",
-    "dashboard_visual/RULE-2",
-    "dashboard_visual/RULE-3",
-    "dashboard_visual/RULE-4",
-    "dashboard_visual/RULE-5",
-    "dashboard_visual/RULE-6",
-    "dashboard_visual/RULE-7",
-    "dashboard_visual/RULE-8",
-    "dashboard_visual/RULE-9"
+    "RULE-9"
   ],
   "proofs": [
     {
@@ -44,23 +43,8 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-11",
-      "rule": "RULE-11",
       "status": "pass"
     },
     {
@@ -100,22 +84,12 @@
     },
     {
       "id": "PROOF-18",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-18",
       "rule": "RULE-18",
       "status": "pass"
     },
     {
       "id": "PROOF-19",
       "rule": "RULE-19",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
       "status": "pass"
     },
     {
@@ -134,8 +108,43 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-29",
+      "rule": "RULE-29",
       "status": "pass"
     },
     {
@@ -144,8 +153,13 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-31",
+      "rule": "RULE-31",
       "status": "pass"
     },
     {
@@ -159,16 +173,6 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
       "id": "PROOF-6",
       "rule": "RULE-6",
       "status": "pass"
@@ -179,23 +183,8 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass"
-    },
-    {
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
       "status": "pass"
     },
     {
