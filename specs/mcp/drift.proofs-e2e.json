@@ -3,19 +3,19 @@
   "proofs": [
     {
       "feature": "drift",
-      "id": "PROOF-17",
-      "rule": "RULE-12",
-      "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "drift detects stale anchor",
+      "id": "PROOF-14",
+      "rule": "RULE-13",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_external_advance_plus_local_modification_surfaces_both",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "drift",
-      "id": "PROOF-18",
-      "rule": "RULE-15",
-      "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "drift detects unpinned anchor",
+      "id": "PROOF-16",
+      "rule": "RULE-14",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_anchor_name_in_drift_matches_spec_name_not_repo_path",
       "status": "pass",
       "tier": "e2e"
     }
