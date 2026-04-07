@@ -3,10 +3,26 @@
 Structural verification of each skill definition file under skills/.
 """
 
+import json
 import os
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 
 import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
+from static_checks import (
+    check_python,
+    check_spec_coverage,
+    load_criteria,
+    read_audit_cache,
+    write_audit_cache,
+)
+import purlin_server
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
@@ -93,6 +109,223 @@ class TestSkillAudit:
         content = _read('audit')
         assert 'name:' in content, "audit SKILL.md must have a name: field"
         _assert_name_matches(content, 'audit')
+
+    @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4", tier="e2e")
+    def test_independent_auditor_reads_criteria_and_assesses(self):
+        content = _read('audit')
+        assert re.search(r'(?i)independent auditor', content), \
+            "audit SKILL.md missing 'independent auditor' section"
+        assert 'audit_criteria' in content, \
+            "audit SKILL.md missing audit_criteria reference in independent auditor mode"
+        assert 'STRONG' in content, "audit SKILL.md missing STRONG assessment level"
+        assert 'WEAK' in content, "audit SKILL.md missing WEAK assessment level"
+        assert 'HOLLOW' in content, "audit SKILL.md missing HOLLOW assessment level"
+
+    @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5", tier="e2e")
+    def test_independent_auditor_spawns_builder(self):
+        content = _read('audit')
+        assert re.search(r'(?i)(spawn|purlin-builder)', content), \
+            "audit SKILL.md missing purlin-builder spawn protocol"
+        assert re.search(r'(?i)(PROOF-ID|finding|fix)', content), \
+            "audit SKILL.md missing three-part finding structure for builder"
+
+    @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6", tier="e2e")
+    def test_independent_auditor_re_audits_after_builder(self):
+        content = _read('audit')
+        assert re.search(r'(?i)(re-audit|re.audit|after the builder responds)', content), \
+            "audit SKILL.md missing re-audit step after builder responds"
+
+    @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7", tier="e2e")
+    def test_independent_auditor_terminates_after_3_rounds(self):
+        content = _read('audit')
+        assert re.search(r'3 rounds', content), \
+            "audit SKILL.md missing '3 rounds' termination condition"
+        assert re.search(r'(?i)(rounds exhausted|move on|all findings addressed)', content), \
+            "audit SKILL.md missing termination language (findings addressed or rounds exhausted)"
+
+    @pytest.mark.proof("skill_audit", "PROOF-8", "RULE-8", tier="e2e")
+    def test_anchor_rule_handling_reports_to_lead(self):
+        content = _read('audit')
+        assert re.search(r'(?i)anchor rule', content), \
+            "audit SKILL.md missing Anchor Rule Handling section"
+        assert re.search(r'(?i)(message the lead|lead.*not the builder)', content), \
+            "audit SKILL.md missing 'message the lead' for ambiguous anchor rules"
+        assert re.search(r'(?i)(ambiguous|could be clearer)', content), \
+            "audit SKILL.md missing ambiguous rule guidance in anchor handling"
+
+    @pytest.mark.proof("skill_audit", "PROOF-9", "RULE-9", tier="e2e")
+    def test_static_checks_detects_hollow_test_as_non_strong(self):
+        """Pass 1 (static_checks) catches deliberately hollow tests — assert True is flagged as fail."""
+        hollow_code = (
+            'import pytest\n'
+            '\n'
+            '@pytest.mark.proof("myfeature", "PROOF-1", "RULE-1")\n'
+            'def test_hollow_assert_true():\n'
+            '    assert True\n'
+        )
+        path = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(hollow_code)
+                path = f.name
+            results = check_python(path, 'myfeature')
+            assert len(results) == 1, "Expected one proof result for hollow test"
+            assert results[0]['status'] == 'fail', \
+                "Hollow test (assert True) must not pass static checks"
+            assert results[0]['check'] == 'assert_true', \
+                f"Expected 'assert_true' check, got '{results[0]['check']}'"
+        finally:
+            if path:
+                os.unlink(path)
+
+    @pytest.mark.proof("skill_audit", "PROOF-10", "RULE-10", tier="e2e")
+    def test_static_checks_passes_well_structured_test(self):
+        """Pass 1 passes a well-structured test with real assertions — eligible for STRONG or WEAK via LLM."""
+        strong_code = (
+            'import pytest\n'
+            '\n'
+            '@pytest.mark.proof("myfeature", "PROOF-1", "RULE-1")\n'
+            'def test_well_structured():\n'
+            '    result = sorted([3, 1, 2])\n'
+            '    assert result == [1, 2, 3]\n'
+        )
+        path = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(strong_code)
+                path = f.name
+            results = check_python(path, 'myfeature')
+            assert len(results) == 1, "Expected one proof result for well-structured test"
+            assert results[0]['status'] == 'pass', \
+                "Well-structured test with real assertions must pass static checks"
+        finally:
+            if path:
+                os.unlink(path)
+
+    @pytest.mark.proof("skill_audit", "PROOF-11", "RULE-11", tier="e2e")
+    def test_skill_documents_external_llm_response_fields(self):
+        """The skill documents that parsing must extract all required fields from LLM output."""
+        content = _read('audit')
+        for field in ('PROOF-ID', 'ASSESSMENT', 'CRITERION', 'WHY', 'FIX'):
+            assert field in content, \
+                f"audit SKILL.md external LLM section missing required field: {field}"
+        assert re.search(r'(?i)(flexible|different LLMs|format slightly differently)', content), \
+            "audit SKILL.md missing flexible parsing note for external LLM responses"
+
+    @pytest.mark.proof("skill_audit", "PROOF-12", "RULE-12", tier="e2e")
+    def test_two_pass_flow_hollow_caught_in_pass1_valid_passes_through(self):
+        """Pass 1 flags assert True as HOLLOW; well-structured test survives and proceeds to Pass 2."""
+        mixed_code = (
+            'import pytest\n'
+            '\n'
+            '@pytest.mark.proof("myfeature", "PROOF-1", "RULE-1")\n'
+            'def test_hollow():\n'
+            '    assert True\n'
+            '\n'
+            '@pytest.mark.proof("myfeature", "PROOF-2", "RULE-2")\n'
+            'def test_valid():\n'
+            '    result = sorted([3, 1, 2])\n'
+            '    assert result == [1, 2, 3]\n'
+        )
+        path = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(mixed_code)
+                path = f.name
+            results = check_python(path, 'myfeature')
+            assert len(results) == 2, f"Expected 2 proof results, got {len(results)}"
+            by_proof = {r['proof_id']: r for r in results}
+            assert by_proof['PROOF-1']['status'] == 'fail', \
+                "PROOF-1 (assert True) must fail Pass 1 as HOLLOW"
+            assert by_proof['PROOF-1']['check'] == 'assert_true', \
+                "PROOF-1 must be flagged as assert_true"
+            assert by_proof['PROOF-2']['status'] == 'pass', \
+                "PROOF-2 (valid test) must pass Pass 1 and be eligible for Pass 2 (LLM)"
+        finally:
+            if path:
+                os.unlink(path)
+
+    @pytest.mark.proof("skill_audit", "PROOF-13", "RULE-13", tier="e2e")
+    def test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode(self):
+        """Config stores audit_llm and audit_llm_name; skill documents the external LLM two-pass flow."""
+        content = _read('audit')
+        assert 'audit_llm' in content, \
+            "audit SKILL.md missing audit_llm config field documentation"
+        assert re.search(r'(?i)(pass 1.*external|external.*pass 1|still runs pass 1)', content), \
+            "audit SKILL.md must document that Pass 1 runs before external LLM"
+        assert re.search(
+            r'(?i)(external llm.*independent audit|independent.*external llm)', content
+        ), "audit SKILL.md missing 'External LLM with Independent Audit' subsection"
+        # Verify config fields round-trip through JSON
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            purlin_dir = os.path.join(tmp_dir, '.purlin')
+            os.makedirs(purlin_dir)
+            config = {
+                "version": "0.9.0",
+                "audit_llm": "echo 'fake response'",
+                "audit_llm_name": "FakeLLM",
+            }
+            config_path = os.path.join(purlin_dir, 'config.json')
+            with open(config_path, 'w') as f:
+                json.dump(config, f)
+            with open(config_path) as f:
+                loaded = json.load(f)
+            assert loaded['audit_llm'] == "echo 'fake response'", \
+                "audit_llm field must round-trip through config JSON"
+            assert loaded['audit_llm_name'] == "FakeLLM", \
+                "audit_llm_name field must round-trip through config JSON"
+        finally:
+            shutil.rmtree(tmp_dir)
+
+    @pytest.mark.proof("skill_audit", "PROOF-14", "RULE-14", tier="e2e")
+    def test_load_criteria_assembles_builtin_plus_additional_and_pass1_still_works(self):
+        """load_criteria() appends additional criteria after built-in; Pass 1 still catches assert True."""
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            purlin_dir = os.path.join(tmp_dir, '.purlin')
+            cache_dir = os.path.join(purlin_dir, 'cache')
+            os.makedirs(cache_dir)
+            with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
+                json.dump({"version": "0.9.0", "audit_criteria": "team://custom-standards"}, f)
+            additional_criteria = "## Custom Rule\n\nAll tests must use fixtures.\n"
+            with open(os.path.join(cache_dir, 'additional_criteria.md'), 'w') as f:
+                f.write(additional_criteria)
+
+            combined = load_criteria(tmp_dir)
+
+            assert 'Criteria-Version' in combined, \
+                "load_criteria must include built-in criteria (Criteria-Version header)"
+            assert 'assert True' in combined or 'Tautological' in combined, \
+                "load_criteria must include built-in tautological assertion criterion"
+            assert 'Custom Rule' in combined, \
+                "load_criteria must append additional team criteria"
+            assert combined.index('Criteria-Version') < combined.index('Custom Rule'), \
+                "built-in criteria must appear before additional criteria (appended, not replaced)"
+
+            # Pass 1 catches assert True independently of criteria configuration
+            hollow_code = (
+                'import pytest\n'
+                '\n'
+                '@pytest.mark.proof("testfeat", "PROOF-1", "RULE-1")\n'
+                'def test_hollow():\n'
+                '    assert True\n'
+            )
+            path = None
+            try:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                    f.write(hollow_code)
+                    path = f.name
+                results = check_python(path, 'testfeat')
+                assert len(results) == 1
+                assert results[0]['status'] == 'fail', \
+                    "Pass 1 must still catch assert True with additional criteria configured"
+                assert results[0]['check'] == 'assert_true'
+            finally:
+                if path:
+                    os.unlink(path)
+        finally:
+            shutil.rmtree(tmp_dir)
 
 
 # ── skill_build ───────────────────────────────────────────────────────
@@ -287,6 +520,480 @@ class TestSkillInit:
             "init skill missing jest_purlin.js → JavaScript/Jest association"
         assert 'custom' in content, \
             "init skill missing 'custom' label for non-built-in plugins"
+
+    # ── RULE-8 through RULE-32 ────────────────────────────────────────
+
+    @pytest.mark.proof("skill_init", "PROOF-8", "RULE-8")
+    def test_documents_required_directory_structure(self):
+        content = _read('init')
+        for directory in ('.purlin/', '.purlin/plugins/', 'specs/', 'specs/_anchors/'):
+            assert directory in content, \
+                f"init SKILL.md missing required directory '{directory}'"
+
+    @pytest.mark.proof("skill_init", "PROOF-9", "RULE-9")
+    def test_config_template_has_five_required_fields(self):
+        config_path = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        for field in ('version', 'test_framework', 'spec_dir', 'pre_push', 'report'):
+            assert field in config, \
+                f"templates/config.json missing required field '{field}'"
+        assert len(config) == 5, \
+            f"templates/config.json should have exactly 5 fields, got {len(config)}: {list(config)}"
+
+    @pytest.mark.proof("skill_init", "PROOF-10", "RULE-10")
+    def test_config_version_matches_version_file(self):
+        config_path = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
+        version_path = os.path.join(PROJECT_ROOT, 'VERSION')
+        with open(config_path) as f:
+            config = json.load(f)
+        with open(version_path) as f:
+            version = f.read().strip()
+        assert config['version'] == version, \
+            f"templates/config.json version '{config['version']}' != VERSION file '{version}'"
+
+    @pytest.mark.proof("skill_init", "PROOF-11", "RULE-11")
+    def test_config_template_default_values(self):
+        config_path = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        assert config['test_framework'] == 'auto', \
+            f"Default test_framework should be 'auto', got '{config['test_framework']}'"
+        assert config['spec_dir'] == 'specs', \
+            f"Default spec_dir should be 'specs', got '{config['spec_dir']}'"
+        assert config['pre_push'] == 'warn', \
+            f"Default pre_push should be 'warn', got '{config['pre_push']}'"
+        assert config['report'] is True, \
+            f"Default report should be true, got '{config['report']}'"
+
+    @pytest.mark.proof("skill_init", "PROOF-12", "RULE-12")
+    def test_documents_conftest_py_detects_pytest(self):
+        content = _read('init')
+        assert 'conftest.py' in content, \
+            "init SKILL.md missing conftest.py detection indicator"
+        assert re.search(r'conftest\.py.*pytest|pytest.*conftest\.py', content), \
+            "init SKILL.md missing conftest.py -> pytest auto-detection mapping"
+
+    @pytest.mark.proof("skill_init", "PROOF-13", "RULE-13")
+    def test_documents_pyproject_toml_detects_pytest(self):
+        content = _read('init')
+        assert 'pyproject.toml' in content, \
+            "init SKILL.md missing pyproject.toml detection indicator"
+        assert re.search(r'\[tool\.pytest\]', content), \
+            "init SKILL.md missing [tool.pytest] detection entry"
+
+    @pytest.mark.proof("skill_init", "PROOF-14", "RULE-14")
+    def test_documents_package_json_jest_detects_jest(self):
+        content = _read('init')
+        assert 'package.json' in content, \
+            "init SKILL.md missing package.json detection indicator"
+        assert re.search(r'package\.json.*jest|jest.*package\.json', content), \
+            "init SKILL.md missing package.json jest -> jest detection mapping"
+
+    @pytest.mark.proof("skill_init", "PROOF-15", "RULE-15")
+    def test_documents_vitest_maps_to_jest_plugin(self):
+        content = _read('init')
+        assert 'vitest' in content, \
+            "init SKILL.md missing vitest framework reference"
+        assert re.search(r'vitest.*jest|jest.*vitest', content, re.IGNORECASE), \
+            "init SKILL.md missing vitest -> jest scaffolding mapping"
+
+    @pytest.mark.proof("skill_init", "PROOF-16", "RULE-16")
+    def test_documents_multi_framework_scaffolding(self):
+        content = _read('init')
+        # Must show the multi-detection display format
+        assert re.search(r'pytest,jest|pytest.*jest', content), \
+            "init SKILL.md missing pytest,jest combined config example"
+        # Must document scaffolding ALL detected plugins
+        assert re.search(r'(?i)scaffold.*both|both.*plugin|all.*plugin|all.*detected',
+                         content), \
+            "init SKILL.md missing documentation for scaffolding all detected plugins"
+
+    @pytest.mark.proof("skill_init", "PROOF-17", "RULE-17")
+    def test_documents_no_framework_asks_user_not_silent_shell(self):
+        content = _read('init')
+        # When no framework is detected, the skill must ask the user
+        assert re.search(r'(?i)no test framework detected', content), \
+            "init SKILL.md missing 'No test framework detected' user prompt"
+        # Must present a menu of options to the user
+        assert re.search(r'(?i)(which framework|which framework\(s\))', content), \
+            "init SKILL.md missing user prompt asking which framework"
+        # The skill must state it does NOT silently default to shell
+        assert re.search(r'(?i)do not silently default', content), \
+            "init SKILL.md missing 'do not silently default' guard"
+
+    @pytest.mark.proof("skill_init", "PROOF-18", "RULE-18")
+    def test_pytest_plugin_source_exists_and_is_copy_source(self):
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'pytest_purlin.py')
+        assert os.path.isfile(src), \
+            "scripts/proof/pytest_purlin.py does not exist — cannot be scaffolded"
+        content = _read('init')
+        assert 'pytest_purlin.py' in content, \
+            "init SKILL.md missing pytest_purlin.py scaffolding reference"
+        assert re.search(r'scripts/proof/pytest_purlin\.py', content), \
+            "init SKILL.md missing source path scripts/proof/pytest_purlin.py"
+
+    @pytest.mark.proof("skill_init", "PROOF-19", "RULE-19")
+    def test_jest_plugin_source_exists_and_is_copy_source(self):
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'jest_purlin.js')
+        assert os.path.isfile(src), \
+            "scripts/proof/jest_purlin.js does not exist — cannot be scaffolded"
+        content = _read('init')
+        assert 'jest_purlin.js' in content, \
+            "init SKILL.md missing jest_purlin.js scaffolding reference"
+        assert re.search(r'scripts/proof/jest_purlin\.js', content), \
+            "init SKILL.md missing source path scripts/proof/jest_purlin.js"
+
+    @pytest.mark.proof("skill_init", "PROOF-20", "RULE-20")
+    def test_shell_plugin_source_exists_and_is_copy_source(self):
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'shell_purlin.sh')
+        assert os.path.isfile(src), \
+            "scripts/proof/shell_purlin.sh does not exist — cannot be scaffolded"
+        content = _read('init')
+        assert 'purlin-proof.sh' in content, \
+            "init SKILL.md missing purlin-proof.sh destination reference"
+        assert re.search(r'shell_purlin\.sh', content), \
+            "init SKILL.md missing source path shell_purlin.sh"
+
+    @pytest.mark.proof("skill_init", "PROOF-21", "RULE-21", tier="e2e")
+    def test_pytest_plugin_emits_valid_proofs_json(self, tmp_path):
+        """Scaffold pytest plugin into a temp project and run it with a marker."""
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'pytest_purlin.py')
+        plugins_dir = tmp_path / '.purlin' / 'plugins'
+        plugins_dir.mkdir(parents=True)
+        shutil.copy(src, str(plugins_dir / 'pytest_purlin.py'))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): Assert 200\n"
+        )
+
+        # conftest.py registers the plugin so pytest loads it at session start
+        conftest = tmp_path / 'conftest.py'
+        conftest.write_text(
+            "import sys\n"
+            f"sys.path.insert(0, r'{str(plugins_dir)}')\n"
+            "from pytest_purlin import pytest_configure\n"
+        )
+
+        test_file = tmp_path / 'test_sample.py'
+        test_file.write_text(
+            "import pytest\n"
+            "@pytest.mark.proof('login', 'PROOF-1', 'RULE-1')\n"
+            "def test_valid_creds():\n"
+            "    assert 200 == 200\n"
+        )
+
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', str(test_file), '-v', '--tb=short'],
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, \
+            f"pytest plugin test failed:\n{result.stdout}\n{result.stderr}"
+
+        proof_files = list((tmp_path / 'specs').rglob('*.proofs-unit.json'))
+        assert proof_files, \
+            "pytest plugin did not emit any .proofs-unit.json files"
+
+        with open(str(proof_files[0])) as f:
+            data = json.load(f)
+        assert 'proofs' in data, "emitted proof file missing 'proofs' key"
+        assert data['proofs'], "emitted proof file has empty proofs list"
+        proof = data['proofs'][0]
+        assert proof['id'] == 'PROOF-1', \
+            f"expected PROOF-1, got {proof['id']}"
+        assert proof['status'] == 'pass', \
+            f"expected status pass, got {proof['status']}"
+
+    @pytest.mark.proof("skill_init", "PROOF-22", "RULE-22")
+    def test_jest_plugin_has_proof_emission_logic(self):
+        """Verify jest_purlin.js contains the JSON emission and [proof:...] parsing logic."""
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'jest_purlin.js')
+        with open(src) as f:
+            content = f.read()
+        assert 'proofs' in content, \
+            "jest_purlin.js missing 'proofs' key in output schema"
+        assert 'JSON' in content, \
+            "jest_purlin.js missing JSON serialization call"
+        assert re.search(r'proof:', content), \
+            "jest_purlin.js missing [proof:...] marker parsing"
+        assert re.search(r'\.proofs-', content), \
+            "jest_purlin.js missing .proofs-*.json file write logic"
+
+    @pytest.mark.proof("skill_init", "PROOF-23", "RULE-23", tier="e2e")
+    def test_shell_plugin_emits_valid_proofs_json(self, tmp_path):
+        """Scaffold purlin-proof.sh and call purlin_proof + purlin_proof_finish."""
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'shell_purlin.sh')
+        plugin_dst = tmp_path / 'purlin-proof.sh'
+        shutil.copy(src, str(plugin_dst))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): Assert 200\n"
+        )
+
+        test_script = tmp_path / 'run_proof.sh'
+        test_script.write_text(
+            "#!/usr/bin/env bash\n"
+            "set -euo pipefail\n"
+            f"source '{str(plugin_dst)}'\n"
+            "purlin_proof 'login' 'PROOF-1' 'RULE-1' pass 'returns 200'\n"
+            "purlin_proof_finish\n"
+        )
+        test_script.chmod(0o755)
+
+        result = subprocess.run(
+            ['bash', str(test_script)],
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, \
+            f"shell plugin test failed:\n{result.stdout}\n{result.stderr}"
+
+        proof_files = list((tmp_path / 'specs').rglob('*.proofs-unit.json'))
+        assert proof_files, \
+            "shell plugin did not emit any .proofs-unit.json files"
+
+        with open(str(proof_files[0])) as f:
+            data = json.load(f)
+        assert 'proofs' in data, "shell emitted proof file missing 'proofs' key"
+        assert data['proofs'], "shell emitted proof file has empty proofs list"
+        proof = data['proofs'][0]
+        assert proof['id'] == 'PROOF-1', \
+            f"expected PROOF-1, got {proof['id']}"
+        assert proof['status'] == 'pass', \
+            f"expected status pass, got {proof['status']}"
+
+    @pytest.mark.proof("skill_init", "PROOF-24", "RULE-24", tier="e2e")
+    def test_sync_status_returns_no_specs_found_for_empty_project(self, tmp_path):
+        """sync_status on empty specs/ returns 'No specs found' without errors."""
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0',
+            'test_framework': 'auto',
+            'spec_dir': 'specs',
+            'pre_push': 'warn',
+            'report': False,
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+        (tmp_path / 'specs').mkdir()
+
+        result = purlin_server.sync_status(str(tmp_path))
+        assert 'No specs found' in result, \
+            f"sync_status should return 'No specs found' for empty specs/, got:\n{result}"
+
+    @pytest.mark.proof("skill_init", "PROOF-25", "RULE-25", tier="e2e")
+    def test_status_progression_untested_passing_failing(self, tmp_path):
+        """Status: no proofs -> UNTESTED, all passing -> PASSING, one failing -> FAILING."""
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0',
+            'test_framework': 'auto',
+            'spec_dir': 'specs',
+            'pre_push': 'warn',
+            'report': False,
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        spec_file = spec_dir / 'login.md'
+        spec_file.write_text(
+            "# Feature: login\n\n> Scope: src/auth.py\n\n"
+            "## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): POST valid creds returns 200\n"
+        )
+
+        # Step 1: no proof file -> UNTESTED
+        result = purlin_server.sync_status(str(tmp_path))
+        assert 'UNTESTED' in result, \
+            f"Expected UNTESTED with no proof file, got:\n{result}"
+
+        # Step 2: passing proof -> PASSING
+        proof_data = {'tier': 'unit', 'proofs': [
+            {'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'tests/test_login.py', 'test_name': 'test_valid',
+             'status': 'pass', 'tier': 'unit'},
+        ]}
+        (spec_dir / 'login.proofs-unit.json').write_text(json.dumps(proof_data))
+        result = purlin_server.sync_status(str(tmp_path))
+        assert 'PASSING' in result, \
+            f"Expected PASSING with all passing proofs, got:\n{result}"
+
+        # Step 3: failing proof -> FAILING
+        proof_data['proofs'][0]['status'] = 'fail'
+        (spec_dir / 'login.proofs-unit.json').write_text(json.dumps(proof_data))
+        result = purlin_server.sync_status(str(tmp_path))
+        assert 'FAILING' in result, \
+            f"Expected FAILING with a failing proof, got:\n{result}"
+
+    @pytest.mark.proof("skill_init", "PROOF-26", "RULE-26", tier="e2e")
+    def test_sync_status_generates_report_data_js_when_report_true(self, tmp_path):
+        """When report:true, sync_status generates .purlin/report-data.js with PURLIN_DATA."""
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0',
+            'test_framework': 'auto',
+            'spec_dir': 'specs',
+            'pre_push': 'warn',
+            'report': True,
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n> Scope: src/auth.py\n\n"
+            "## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): POST valid creds returns 200\n"
+        )
+        proof_data = {'tier': 'unit', 'proofs': [
+            {'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'tests/test_login.py', 'test_name': 'test_valid',
+             'status': 'pass', 'tier': 'unit'},
+        ]}
+        (spec_dir / 'login.proofs-unit.json').write_text(json.dumps(proof_data))
+
+        purlin_server.sync_status(str(tmp_path))
+
+        report_data_path = purlin_dir / 'report-data.js'
+        assert report_data_path.exists(), \
+            ".purlin/report-data.js was not generated when report:true"
+        content = report_data_path.read_text()
+        assert 'PURLIN_DATA' in content, \
+            ".purlin/report-data.js does not contain PURLIN_DATA"
+
+    @pytest.mark.proof("skill_init", "PROOF-27", "RULE-27")
+    def test_documents_required_gitignore_entries(self):
+        content = _read('init')
+        required_entries = [
+            '.purlin/runtime/',
+            '.purlin/plugins/__pycache__/',
+            '.purlin/cache/',
+            '/purlin-report.html',
+            '.purlin/report-data.js',
+        ]
+        for entry in required_entries:
+            assert entry in content, \
+                f"init SKILL.md missing required .gitignore entry: '{entry}'"
+
+    @pytest.mark.proof("skill_init", "PROOF-28", "RULE-28")
+    def test_documents_reinit_does_not_duplicate_gitignore(self):
+        content = _read('init')
+        # Must use 'Ensure .gitignore contains' idempotent language (not blind append)
+        assert re.search(r'(?i)ensure.*\.gitignore|\.gitignore.*contain', content), \
+            "init SKILL.md missing 'Ensure .gitignore contains' idempotent language"
+        # Step 5 (gitignore step) must be present
+        assert 'Step 5' in content, \
+            "init SKILL.md missing Step 5 (Update .gitignore)"
+
+    @pytest.mark.proof("skill_init", "PROOF-29", "RULE-29")
+    def test_documents_pre_push_hook_installation(self):
+        content = _read('init')
+        assert '.git/hooks/pre-push' in content, \
+            "init SKILL.md missing .git/hooks/pre-push hook path"
+        assert re.search(r'chmod\s*\+x', content), \
+            "init SKILL.md missing chmod +x to make hook executable"
+        assert re.search(r'(?i)purlin.*hook|hook.*purlin|contains.*purlin', content), \
+            "init SKILL.md missing documentation that hook contains purlin"
+
+    @pytest.mark.proof("skill_init", "PROOF-30", "RULE-30")
+    def test_documents_existing_hook_preservation(self):
+        content = _read('init')
+        # Must document that an existing non-purlin hook is NOT overwritten
+        assert re.search(r'(?i)(existing|different).*hook|hook.*(existing|different)',
+                         content), \
+            "init SKILL.md missing documentation about existing non-purlin hook"
+        assert re.search(r'(?i)(skip|do not overwrite|warn.*skip|skipping)', content), \
+            "init SKILL.md missing skip/preserve instruction for existing non-purlin hooks"
+
+    @pytest.mark.proof("skill_init", "PROOF-31", "RULE-31")
+    def test_documents_report_html_toggle(self):
+        content = _read('init')
+        # report:true must create purlin-report.html
+        assert re.search(r'(?i)on.*purlin-report\.html|purlin-report\.html.*on|'
+                         r'report.*true.*purlin-report|purlin-report.*report.*true',
+                         content), \
+            "init SKILL.md missing report:on/true -> purlin-report.html documentation"
+        # report:false/off must document that the file is not created
+        assert re.search(r'(?i)(off|false).*do not|do not.*html', content), \
+            "init SKILL.md missing report:off/false -> do-not-copy documentation"
+
+    @pytest.mark.proof("skill_init", "PROOF-32", "RULE-32", tier="e2e")
+    def test_full_lifecycle_init_spec_proof_passing(self, tmp_path):
+        """Full lifecycle: init structure -> spec -> proof plugin -> sync_status PASSING."""
+        # 1. Create init-equivalent directory structure
+        purlin_dir = tmp_path / '.purlin'
+        (purlin_dir / 'plugins').mkdir(parents=True)
+        config = {
+            'version': '0.9.0',
+            'test_framework': 'pytest',
+            'spec_dir': 'specs',
+            'pre_push': 'warn',
+            'report': False,
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+        (tmp_path / 'specs' / '_anchors').mkdir(parents=True)
+
+        # 2. Scaffold pytest plugin (byte-identical copy from scripts/proof/)
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'pytest_purlin.py')
+        shutil.copy(src, str(purlin_dir / 'plugins' / 'pytest_purlin.py'))
+
+        # 3. Create a spec
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n> Scope: src/auth.py\n\n"
+            "## Rules\n- RULE-1: Returns 200 on valid credentials\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): POST valid creds returns 200\n"
+        )
+
+        # 4. Run proof plugin to emit proofs
+        plugins_dir = purlin_dir / 'plugins'
+
+        # conftest.py registers the plugin at pytest session start
+        conftest = tmp_path / 'conftest.py'
+        conftest.write_text(
+            "import sys\n"
+            f"sys.path.insert(0, r'{str(plugins_dir)}')\n"
+            "from pytest_purlin import pytest_configure\n"
+        )
+
+        test_file = tmp_path / 'test_login.py'
+        test_file.write_text(
+            "import pytest\n"
+            "@pytest.mark.proof('login', 'PROOF-1', 'RULE-1')\n"
+            "def test_valid_credentials():\n"
+            "    assert 200 == 200\n"
+        )
+
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', str(test_file), '-v', '--tb=short'],
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, \
+            f"pytest run failed:\n{result.stdout}\n{result.stderr}"
+
+        # 5. Verify proofs were emitted
+        proof_files = list((tmp_path / 'specs').rglob('*.proofs-unit.json'))
+        assert proof_files, "No proof files emitted after running pytest"
+
+        # 6. sync_status reports PASSING
+        status_output = purlin_server.sync_status(str(tmp_path))
+        assert 'PASSING' in status_output, \
+            f"Expected PASSING after full lifecycle run, got:\n{status_output}"
 
 
 # ── skill_rename ──────────────────────────────────────────────────────

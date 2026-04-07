@@ -1,0 +1,41 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_version_file_exists_and_is_valid_semver",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_purlin_server_uses_read_version_function",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_template_config_version_matches_version_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_no_hardcoded_version_strings_in_purlin_server",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

@@ -16,7 +16,7 @@
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_anchor_metadata",
-      "status": "pass",
+      "status": "fail",
       "tier": "e2e"
     },
     {

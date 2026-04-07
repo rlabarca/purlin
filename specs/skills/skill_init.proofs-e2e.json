@@ -1,0 +1,59 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "skill_init",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_pytest_plugin_emits_valid_proofs_json",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_shell_plugin_emits_valid_proofs_json",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_sync_status_returns_no_specs_found_for_empty_project",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_status_progression_untested_passing_failing",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_sync_status_generates_report_data_js_when_report_true",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-32",
+      "rule": "RULE-32",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_full_lifecycle_init_spec_proof_passing",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

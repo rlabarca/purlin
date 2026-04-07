@@ -1,0 +1,104 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_independent_auditor_reads_criteria_and_assesses",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_independent_auditor_spawns_builder",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_independent_auditor_re_audits_after_builder",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_independent_auditor_terminates_after_3_rounds",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_anchor_rule_handling_reports_to_lead",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_static_checks_detects_hollow_test_as_non_strong",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_static_checks_passes_well_structured_test",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_documents_external_llm_response_fields",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_two_pass_flow_hollow_caught_in_pass1_valid_passes_through",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_load_criteria_assembles_builtin_plus_additional_and_pass1_still_works",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

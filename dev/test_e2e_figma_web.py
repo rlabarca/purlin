@@ -273,8 +273,17 @@ class TestFigmaWebWorkflow:
         txt = _find_anchor(project)[0].read_text()
         rules = re.findall(r"-\s*RULE-\d+:.*", txt)
         assert any("match" in r.lower() for r in rules)
-        proofs = re.findall(r"-\s*PROOF-\d+.*", txt)
-        assert any("@e2e" in p for p in proofs)
+        # @e2e may appear on the same line as PROOF-N or on a continuation
+        # line — search the entire Proof section rather than per-line captures
+        # to avoid spurious failures when LLM wraps proof text across lines.
+        proof_section_match = re.search(
+            r"##\s*Proof\b(.+?)(?:^##\s|\Z)", txt,
+            re.DOTALL | re.MULTILINE,
+        )
+        proof_section = proof_section_match.group(1) if proof_section_match else txt
+        assert "@e2e" in proof_section, (
+            "Anchor Proof section does not contain @e2e tag"
+        )
 
     @pytest.mark.proof("figma_web", "PROOF-4", "RULE-4", tier="e2e")
     def test_spec_requires_anchor(self, project):

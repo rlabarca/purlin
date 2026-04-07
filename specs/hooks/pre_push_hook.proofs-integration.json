@@ -1,0 +1,113 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_partial_coverage_exits_0_with_warning",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_specs_dir_exits_0_silently",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_all_pass_exits_0",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-12",
+      "rule": "RULE-4",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_fail_keyword_in_rule_description_does_not_block",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_detects_framework_from_config_and_auto",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_unit_test_runs_integration_skipped",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_output_shows_blocked_and_recovery_on_fail",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-13",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_recovery_message_lists_feature_specific_commands",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-9",
+      "rule": "RULE-8",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_blocks_partial_coverage",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-10",
+      "rule": "RULE-8",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_allows_passing_blocks_partial",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-14",
+      "rule": "RULE-8",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_recovery_includes_verify_command",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-11",
+      "rule": "RULE-9",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_installed_hook_exists_is_executable_and_blocks",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
