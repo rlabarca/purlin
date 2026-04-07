@@ -1,8 +1,8 @@
 {
   "feature": "figma_web",
-  "vhash": "ca2c71fd",
-  "commit": "61d68a32f3a7dd53d3f138d713b74b061862898f",
-  "timestamp": "2026-04-07T13:45:06.336808+00:00",
+  "vhash": "0ef07382",
+  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
+  "timestamp": "2026-04-07T13:46:48.452182+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -18,9 +18,21 @@
     "RULE-6",
     "RULE-7",
     "RULE-8",
-    "RULE-9"
+    "RULE-9",
+    "skill_anchor/RULE-1",
+    "skill_anchor/RULE-2",
+    "skill_anchor/RULE-3",
+    "skill_anchor/RULE-4",
+    "skill_anchor/RULE-5",
+    "skill_anchor/RULE-6",
+    "skill_anchor/RULE-7"
   ],
   "proofs": [
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
     {
       "id": "PROOF-1",
       "rule": "RULE-1",
@@ -62,8 +74,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-3",
       "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
       "status": "pass"
     },
     {
@@ -77,8 +104,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-6",
       "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
       "status": "pass"
     },
     {

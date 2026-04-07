@@ -1,15 +1,45 @@
 {
   "feature": "purlin_config",
-  "vhash": "633f70f9",
-  "commit": "2c017cc1b10b2d73ec86c6dafcdf05efac4f1f8f",
-  "timestamp": "2026-04-07T13:26:48.686147+00:00",
+  "vhash": "ddd0d4e8",
+  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
+  "timestamp": "2026-04-07T13:46:48.452182+00:00",
   "rules": [
-    "RULE-1"
+    "RULE-1",
+    "security_no_dangerous_patterns/RULE-1",
+    "security_no_dangerous_patterns/RULE-2",
+    "security_no_dangerous_patterns/RULE-3",
+    "security_no_dangerous_patterns/RULE-4",
+    "security_no_dangerous_patterns/RULE-5"
   ],
   "proofs": [
     {
       "id": "PROOF-1",
       "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
       "status": "pass"
     }
   ]

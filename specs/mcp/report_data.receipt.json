@@ -1,8 +1,8 @@
 {
   "feature": "report_data",
-  "vhash": "b40a8621",
-  "commit": "2c017cc1b10b2d73ec86c6dafcdf05efac4f1f8f",
-  "timestamp": "2026-04-07T13:26:48.686147+00:00",
+  "vhash": "6247d060",
+  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
+  "timestamp": "2026-04-07T13:46:48.452182+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
