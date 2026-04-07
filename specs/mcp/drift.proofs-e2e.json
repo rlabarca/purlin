@@ -18,6 +18,24 @@
       "test_name": "test_anchor_name_in_drift_matches_spec_name_not_repo_path",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_mixed_anchor_stale_when_external_source_advances",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-17",
+      "rule": "RULE-12",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_stale_entry_includes_remote_sha",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

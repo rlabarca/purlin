@@ -1,4 +1,4 @@
-"""Tests for drift RULE-13 and RULE-14 — external anchor staleness with local modification."""
+"""Tests for drift RULE-12, RULE-13, and RULE-14 — external anchor staleness."""
 
 import json
 import os
@@ -214,3 +214,123 @@ class TestDriftExternalAndLocalModification:
             assert entry.get('anchor') != 'constraints.md', (
                 f"anchor field must not be the file path, got: {entry.get('anchor')}"
             )
+
+
+class TestDriftExternalAnchorStaleness:
+    """drift RULE-12: mixed anchor staleness — external source advances, drift detects it."""
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        self.bare_path = tempfile.mkdtemp()
+        shutil.rmtree(self.bare_path)  # _create_bare_repo expects path to not exist
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+        shutil.rmtree(self.bare_path, ignore_errors=True)
+        work1 = self.bare_path + '_work'
+        work2 = self.bare_path + '_work2'
+        shutil.rmtree(work1, ignore_errors=True)
+        shutil.rmtree(work2, ignore_errors=True)
+
+    @pytest.mark.proof("drift", "PROOF-12", "RULE-12", tier="e2e")
+    def test_mixed_anchor_stale_when_external_source_advances(self):
+        """Mixed anchor (both > Source:/> Pinned: tracking and local rules): when the
+        external source advances, drift returns an external_anchor_drift entry with
+        status=stale for the anchor."""
+        # Step 1: Create bare repo at a known SHA and project with a mixed anchor
+        # A mixed anchor has both external tracking fields (Source, Pinned) AND local rules
+        initial_sha = _create_bare_repo(self.bare_path, 'policy.md', '# policy v1')
+
+        # Build a mixed anchor: external tracking + its own local rules
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        os.makedirs(os.path.join(self.project_root, 'specs', '_anchors'))
+        anchor_path = os.path.join(
+            self.project_root, 'specs', '_anchors', 'mixed_policy.md'
+        )
+        with open(anchor_path, 'w') as f:
+            f.write(
+                '# Anchor: mixed_policy\n\n'
+                f'> Source: {self.bare_path}\n'
+                f'> Pinned: {initial_sha}\n\n'
+                '## What it does\n\n'
+                'Mixed anchor with both external tracking and local rules.\n\n'
+                '## Rules\n\n'
+                '- RULE-1: Locally defined constraint one\n'
+                '- RULE-2: Locally defined constraint two\n\n'
+                '## Proof\n\n'
+                '- PROOF-1 (RULE-1): Verify local constraint one\n'
+                '- PROOF-2 (RULE-2): Verify local constraint two\n'
+            )
+        _git(['init', '-q'], self.project_root)
+        _git(['config', 'user.email', 'test@test.com'], self.project_root)
+        _git(['config', 'user.name', 'Test'], self.project_root)
+        _git(['add', '-A'], self.project_root)
+        _git(['commit', '-m', 'verify: initial project with mixed anchor'], self.project_root)
+
+        # Step 2: Advance the external repo — the pinned SHA is now stale
+        _advance_bare_repo(self.bare_path, 'policy.md', '# policy v2 — new constraint added')
+
+        # Step 3: Make a local commit so drift has a range to compare
+        placeholder = os.path.join(self.project_root, 'placeholder.txt')
+        with open(placeholder, 'w') as f:
+            f.write('trigger drift range\n')
+        _git(['add', '-A'], self.project_root)
+        _git(['commit', '-m', 'feat: add placeholder'], self.project_root)
+
+        # Step 4: Run drift and verify external_anchor_drift has a stale entry
+        result_text = purlin_server.drift(self.project_root)
+        data = json.loads(result_text)
+
+        stale_entries = [
+            e for e in data.get('external_anchor_drift', [])
+            if e.get('anchor') == 'mixed_policy' and e.get('status') == 'stale'
+        ]
+        assert len(stale_entries) == 1, (
+            f"Expected 1 stale external_anchor_drift entry for mixed_policy, "
+            f"got: {data.get('external_anchor_drift', [])}"
+        )
+
+    @pytest.mark.proof("drift", "PROOF-17", "RULE-12", tier="e2e")
+    def test_stale_entry_includes_remote_sha(self):
+        """When the external source advances past the pinned SHA, drift returns an
+        external_anchor_drift entry with status=stale AND the remote_sha field populated
+        with the actual new HEAD of the remote."""
+        # Step 1: Create bare repo at initial SHA and project pinned to it
+        initial_sha = _create_bare_repo(self.bare_path, 'spec.md', '# spec v1')
+        _init_project(self.project_root, self.bare_path, 'external_anchor', initial_sha)
+
+        # Step 2: Advance the external repo — get the new HEAD SHA
+        new_sha = _advance_bare_repo(self.bare_path, 'spec.md', '# spec v2')
+
+        # Step 3: Make a local commit so drift has a range
+        placeholder = os.path.join(self.project_root, 'placeholder.txt')
+        with open(placeholder, 'w') as f:
+            f.write('trigger drift range\n')
+        _git(['add', '-A'], self.project_root)
+        _git(['commit', '-m', 'feat: add placeholder'], self.project_root)
+
+        # Step 4: Run drift and verify both status=stale and remote_sha is present
+        result_text = purlin_server.drift(self.project_root)
+        data = json.loads(result_text)
+
+        stale_entries = [
+            e for e in data.get('external_anchor_drift', [])
+            if e.get('anchor') == 'external_anchor' and e.get('status') == 'stale'
+        ]
+        assert len(stale_entries) == 1, (
+            f"Expected 1 stale external_anchor_drift entry for external_anchor, "
+            f"got: {data.get('external_anchor_drift', [])}"
+        )
+        entry = stale_entries[0]
+        assert 'remote_sha' in entry, (
+            f"Expected remote_sha field in stale entry, got: {entry}"
+        )
+        # remote_sha is truncated to 7 chars in purlin_server.py
+        assert len(entry['remote_sha']) == 7, (
+            f"Expected remote_sha to be 7 chars (truncated), got: {entry['remote_sha']!r}"
+        )
+        # Verify the remote_sha matches the beginning of the actual new commit SHA
+        assert new_sha.startswith(entry['remote_sha']), (
+            f"Expected remote_sha {entry['remote_sha']!r} to be prefix of actual new SHA "
+            f"{new_sha!r}"
+        )
