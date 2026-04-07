@@ -1,10 +1,17 @@
 {
   "feature": "schema_spec_format",
-  "vhash": "58e2d728",
-  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
-  "timestamp": "2026-04-07T13:46:48.452182+00:00",
+  "vhash": "45becb45",
+  "commit": "d460be568d744c38a89b9f8624a939a1d324c967",
+  "timestamp": "2026-04-07T13:47:29.481586+00:00",
   "rules": [
-    "RULE-1"
+    "RULE-1",
+    "RULE-2",
+    "RULE-3",
+    "RULE-4",
+    "RULE-5",
+    "RULE-6",
+    "RULE-7",
+    "RULE-8"
   ],
   "proofs": [
     {
