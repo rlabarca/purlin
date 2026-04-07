@@ -264,6 +264,276 @@
     },
     {
       "feature": "proof_plugins",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_proof_file_naming",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_fallback_to_specs_root_when_no_spec",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_no_markers_no_proof_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_signature_defaults_to_unit_tier",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_explicit_tier",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_two_args_skipped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_one_arg_skipped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_test_file_is_relative",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_configure_registers_proof_marker_and_plugin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_configure_marker_recognized_in_session",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_marker_parsed_from_title",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_marker_tier_defaults_to_unit",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_no_marker_ignored",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_test_file_is_relative_to_root_dir",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_passed_maps_to_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_failed_maps_to_fail",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_maps_to_fail",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_uses_purlin_proof_tier_env",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_defaults_tier_to_unit",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_test_file_reflects_caller_filename",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_not_written_before_finish",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_written_after_finish",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_entries_cleared_after_finish",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_custom_plugin_proof_files_discovered_by_sync_status",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_fallback_emits_warning_to_stderr",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_fallback_emits_warning_to_stderr",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_c_purlin_emit_writes_proof_file_from_stdin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_c_purlin_emit_feature_scoped_overwrite",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-32",
+      "rule": "RULE-29",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_on_rerun",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-32",
+      "rule": "RULE-29",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_in_shell_plugin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_proof_stress.py",

@@ -63,6 +63,177 @@
       "test_name": "test_list_plugins_labels_builtin_and_custom",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_required_directory_structure",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_config_template_has_five_required_fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_config_version_matches_version_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_config_template_default_values",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_conftest_py_detects_pytest",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_pyproject_toml_detects_pytest",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_package_json_jest_detects_jest",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_vitest_maps_to_jest_plugin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_multi_framework_scaffolding",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_no_framework_asks_user_not_silent_shell",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_pytest_plugin_source_exists_and_is_copy_source",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_jest_plugin_source_exists_and_is_copy_source",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_shell_plugin_source_exists_and_is_copy_source",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_jest_plugin_has_proof_emission_logic",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_required_gitignore_entries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_reinit_does_not_duplicate_gitignore",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_pre_push_hook_installation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_existing_hook_preservation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_report_html_toggle",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
