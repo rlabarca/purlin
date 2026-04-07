@@ -1,10 +1,24 @@
 {
-  "feature": "purlin_references",
-  "vhash": "6d75a7e5",
+  "feature": "drift",
+  "vhash": "a4366da9",
   "commit": "2c017cc1b10b2d73ec86c6dafcdf05efac4f1f8f",
   "timestamp": "2026-04-07T13:26:48.686147+00:00",
   "rules": [
-    "RULE-1"
+    "RULE-1",
+    "RULE-10",
+    "RULE-11",
+    "RULE-12",
+    "RULE-13",
+    "RULE-14",
+    "RULE-15",
+    "RULE-2",
+    "RULE-3",
+    "RULE-4",
+    "RULE-5",
+    "RULE-6",
+    "RULE-7",
+    "RULE-8",
+    "RULE-9"
   ],
   "proofs": [
     {
@@ -23,8 +37,33 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-12",
       "rule": "RULE-12",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-14",
+      "rule": "RULE-13",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-16",
+      "rule": "RULE-14",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-17",
+      "rule": "RULE-12",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-17",
+      "rule": "RULE-15",
       "status": "pass"
     },
     {
@@ -45,6 +84,11 @@
     {
       "id": "PROOF-5",
       "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
       "status": "pass"
     },
     {

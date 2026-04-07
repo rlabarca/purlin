@@ -1,17 +1,13 @@
 {
-  "feature": "skill_build",
-  "vhash": "27a90068",
+  "feature": "purlin_version",
+  "vhash": "6a55d950",
   "commit": "2c017cc1b10b2d73ec86c6dafcdf05efac4f1f8f",
   "timestamp": "2026-04-07T13:26:48.686147+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
-    "RULE-4",
-    "RULE-5",
-    "RULE-6",
-    "RULE-7",
-    "RULE-8"
+    "RULE-4"
   ],
   "proofs": [
     {
@@ -32,26 +28,6 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
       "status": "pass"
     }
   ]
