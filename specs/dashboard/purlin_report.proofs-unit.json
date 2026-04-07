@@ -88,7 +88,7 @@
       "rule": "RULE-10",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_anchor_type_pills",
-      "status": "fail",
+      "status": "pass",
       "tier": "unit"
     },
     {
@@ -169,7 +169,7 @@
       "rule": "RULE-19",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_category_headers_with_rolled_up_summaries",
-      "status": "fail",
+      "status": "pass",
       "tier": "unit"
     },
     {
@@ -178,7 +178,7 @@
       "rule": "RULE-20",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_categories_collapsed_by_default",
-      "status": "fail",
+      "status": "pass",
       "tier": "unit"
     },
     {
@@ -187,7 +187,7 @@
       "rule": "RULE-21",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_category_state_persists_across_reloads",
-      "status": "fail",
+      "status": "pass",
       "tier": "unit"
     },
     {
