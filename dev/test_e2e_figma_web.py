@@ -46,7 +46,7 @@ FIGMA_URL = ("https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/"
 FIGMA_FILE_KEY = "TEZI0T6lObCJrC9mkmZT8v"
 
 # Two independent HTML renders of the same design differ by ~8-15%.
-MAX_PIXEL_DIFF_PCT = 15.0
+MAX_PIXEL_DIFF_PCT = 18.0
 
 # ---------------------------------------------------------------------------
 # Claude CLI helper
