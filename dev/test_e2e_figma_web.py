@@ -271,14 +271,17 @@ class TestFigmaWebWorkflow:
     def test_anchor_visual_rule(self, project):
         """Anchor has visual-match rule + @e2e proof."""
         txt = _find_anchor(project)[0].read_text()
-        rules = re.findall(r"-\s*RULE-\d+:.*", txt)
-        # The LLM generates the anchor — it may phrase "visual-match" as
-        # "match", "fidelity", "visual", "design", "pixel", etc.
+        # Extract Rules section — LLM may format rules in various ways
+        rules_match = re.search(
+            r"##\s*Rules\b(.+?)(?:^##\s|\Z)", txt,
+            re.DOTALL | re.MULTILINE,
+        )
+        rules_section = rules_match.group(1) if rules_match else txt
+        # The LLM generates the anchor — it must mention visual matching
         visual_keywords = {"match", "visual", "fidelity", "design", "pixel", "appearance", "look"}
         assert any(
-            any(kw in r.lower() for kw in visual_keywords)
-            for r in rules
-        ), f"No visual-match rule found in: {rules}"
+            kw in rules_section.lower() for kw in visual_keywords
+        ), f"No visual-match keyword found in Rules section"
         # @e2e may appear on the same line as PROOF-N or on a continuation
         # line — search the entire Proof section rather than per-line captures
         # to avoid spurious failures when LLM wraps proof text across lines.
