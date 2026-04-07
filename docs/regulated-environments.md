@@ -34,7 +34,7 @@ Purlin generates structured artifacts that a real compliance system can consume:
 |----------|----------|-----------------|----------------------|
 | **Spec files** | `specs/<category>/<name>.md` | Numbered rules (`RULE-N`) defining required behavior | Input to requirements traceability matrix |
 | **Proof files** | `specs/<category>/<name>.proofs-*.json` | Test results linked to specific rules | Evidence of verification, consumed by QMS |
-| **Verification receipts** | Git commit messages (`verify: [Complete:all] vhash=...`) | Hash of rules + proof results | Snapshot for compliance ledger to ingest |
+| **Verification receipts** | `specs/<category>/<name>.receipt.json` + git commit messages (`verify: [Complete:all] vhash=...`) | JSON file with full rule/proof detail + commit message with hash summary | JSON files are the primary machine-readable artifact; commit messages provide an attestation timeline for compliance ledger |
 | **Manual proof stamps** | `@manual(email, date, sha)` in spec | Record of human verification | Starting point — QMS must re-authenticate and countersign |
 | **Anchor files** | `specs/_anchors/*.md` | External constraints with `> Pinned:` version | Source-of-truth tracking for external standards |
 

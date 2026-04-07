@@ -5,114 +5,6 @@
       "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "dev/test_cheat_matrix.py",
-      "test_name": "test_python_tautological",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_cheat_matrix.py",
-      "test_name": "test_python_fixture_only",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_cheat_matrix.py",
-      "test_name": "test_python_happy_path_only",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_cheat_matrix.py",
-      "test_name": "test_python_name_drift",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_cheat_matrix.py",
-      "test_name": "test_python_no_assertion",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-15",
-      "rule": "RULE-15",
-      "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_collision_detected_in_c_output",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_static_checks_detects_assert_true_in_or",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_python_asserts_constant_not_output",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-15",
-      "rule": "RULE-15",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_php_and_sql_both_claim_proof_1",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_logic_mirroring_across_function_boundary",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_mock_replaces_the_thing_being_tested",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_no_assertions_disguised_as_thorough_test",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
       "test_file": "dev/test_static_checks.py",
       "test_name": "test_detects_assert_true",
       "status": "pass",
@@ -231,7 +123,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_static_checks.py",
-      "test_name": "test_structural_only_spec",
+      "test_name": "test_spec_coverage_counts",
       "status": "pass",
       "tier": "unit"
     },
@@ -240,286 +132,16 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_static_checks.py",
-      "test_name": "test_structural_only_via_cli",
+      "test_name": "test_spec_coverage_via_cli",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "static_checks",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
       "test_file": "dev/test_static_checks.py",
-      "test_name": "test_behavioral_spec",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_mixed_spec_counts_as_behavioral",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-34",
-      "rule": "RULE-20",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_proof_desc_structural_classification",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-34",
-      "rule": "RULE-20",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_proof_desc_behavioral_classification",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-34",
-      "rule": "RULE-20",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_proof_desc_mixed",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-34",
-      "rule": "RULE-20",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_proof_desc_strips_tier_tags",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-34",
-      "rule": "RULE-20",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_proof_desc_empty_when_no_proof_section",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-40",
-      "rule": "RULE-25",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_backtick_behavioral_verb_ignored",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-40",
-      "rule": "RULE-25",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_backtick_multiple_behavioral_verbs",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-40",
-      "rule": "RULE-25",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_behavioral_outside_backticks_still_works",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-40",
-      "rule": "RULE-25",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_mixed_backtick_and_real_behavioral",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-40",
-      "rule": "RULE-25",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_empty_backticks",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-41",
-      "rule": "RULE-26",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_structural_checked_first",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-41",
-      "rule": "RULE-26",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_clear_behavioral_still_works",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-41",
-      "rule": "RULE-26",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_default_is_behavioral",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_has_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_contains_section_with_gap",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_extract_verify",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_includes_instruction",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_verify_exist",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_field_in_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_has_delimiter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_verify_present",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_verify_appears",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_contains_field",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_behavioral_not_false_positive",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_e2e_behavioral_not_structural",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-42",
-      "rule": "RULE-27",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_structural_proof_ids_returned",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-42",
-      "rule": "RULE-27",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_mixed_proof_ids",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-42",
-      "rule": "RULE-27",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_skill_anchor_regression",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-42",
-      "rule": "RULE-27",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_empty_proof_section",
+      "test_name": "test_spec_coverage_empty",
       "status": "pass",
       "tier": "unit"
     },
@@ -907,6 +529,42 @@
       "rule": "RULE-21",
       "test_file": "dev/test_static_checks.py",
       "test_name": "test_no_additional_without_cache_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-40",
+      "rule": "RULE-25",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_lock_file_created_alongside_cache",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-40",
+      "rule": "RULE-25",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_concurrent_writes_preserve_all_entries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-41",
+      "rule": "RULE-26",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_cli_merges_entries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-41",
+      "rule": "RULE-26",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_cli_merges_with_existing",
       "status": "pass",
       "tier": "unit"
     }

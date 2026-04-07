@@ -310,35 +310,14 @@ else
 fi
 
 # ==========================================================================
-# Phase J — Pass 0: spec coverage check (structural vs behavioral)
+# Phase J — spec coverage check (rule and proof counts)
 # ==========================================================================
-echo "  --- Phase J: Pass 0 spec coverage check ---"
+echo "  --- Phase J: spec coverage check ---"
 TMPDIR_J=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR_J"
 mkdir -p "$TMPDIR_J/specs/instructions"
 
-# Create a structural-only spec
-cat > "$TMPDIR_J/specs/instructions/agent_def.md" << 'SPECEOF'
-# Feature: agent_def
-
-## What it does
-
-Agent definition structural checks.
-
-## Rules
-
-- RULE-1: Verify agent.md contains ## Core Loop section
-- RULE-2: Grep skill files for ## Usage heading
-- RULE-3: Verify config field appears in output
-
-## Proof
-
-- PROOF-1 (RULE-1): Grep agent.md for heading
-- PROOF-2 (RULE-2): Grep skill files
-- PROOF-3 (RULE-3): Grep config output
-SPECEOF
-
-# Create a behavioral spec
+# Create a spec with rules and proofs
 cat > "$TMPDIR_J/specs/instructions/login.md" << 'SPECEOF'
 # Feature: login
 
@@ -357,20 +336,17 @@ Login feature.
 - PROOF-2 (RULE-2): POST invalid; verify 401
 SPECEOF
 
-# Check structural-only spec
-OUTPUT_J_STRUCT=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TMPDIR_J/specs/instructions/agent_def.md" 2>&1)
-STRUCT_ONLY=$(echo "$OUTPUT_J_STRUCT" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
+# Check spec coverage returns counts
+OUTPUT_J=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TMPDIR_J/specs/instructions/login.md" 2>&1)
+RULE_COUNT=$(echo "$OUTPUT_J" | python3 -c "import json,sys; print(json.load(sys.stdin)['rule_count'])")
+PROOF_COUNT=$(echo "$OUTPUT_J" | python3 -c "import json,sys; print(json.load(sys.stdin)['proof_count'])")
 
-# Check behavioral spec
-OUTPUT_J_BEHAV=$(python3 "$STATIC_CHECKS" --check-spec-coverage --spec-path "$TMPDIR_J/specs/instructions/login.md" 2>&1)
-BEHAV_ONLY=$(echo "$OUTPUT_J_BEHAV" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
-
-if [[ "$STRUCT_ONLY" == "True" && "$BEHAV_ONLY" == "False" ]]; then
-  purlin_proof "static_checks" "PROOF-26" "RULE-8" pass "Pass 0 correctly identifies structural-only and behavioral specs"
-  echo "    PASS: structural_only=True for grep spec, False for behavioral spec"
+if [[ "$RULE_COUNT" == "2" && "$PROOF_COUNT" == "2" ]]; then
+  purlin_proof "static_checks" "PROOF-26" "RULE-8" pass "check_spec_coverage returns correct rule_count and proof_count"
+  echo "    PASS: rule_count=2 proof_count=2"
 else
-  purlin_proof "static_checks" "PROOF-26" "RULE-8" fail "Expected structural=True/behavioral=False; got $STRUCT_ONLY/$BEHAV_ONLY"
-  echo "    FAIL: structural=$STRUCT_ONLY behavioral=$BEHAV_ONLY"
+  purlin_proof "static_checks" "PROOF-26" "RULE-8" fail "Expected rule_count=2/proof_count=2; got $RULE_COUNT/$PROOF_COUNT"
+  echo "    FAIL: rule_count=$RULE_COUNT proof_count=$PROOF_COUNT"
 fi
 
 # ==========================================================================

@@ -7,8 +7,7 @@ model: claude-sonnet-4-6
 The auditor:
 - Loads criteria via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>` (built-in + any additional team criteria)
 - **Accepts an audit cache** — when provided in the prompt, checks cache before running Pass 2 for each proof. Reports cache hits as `(cached)`.
-- **Pass 0 first:** For each feature, run `static_checks.py --check-spec-coverage` to classify proofs. Use `structural_proof_ids` from the output to exclude individual structural proofs — for structural-only specs, exclude entirely; for mixed specs, exclude only the structural proofs listed in `structural_proof_ids` and audit the remaining behavioral ones. Report excluded proofs: "N structural checks excluded from audit." Do NOT read proof files or test code for excluded proofs.
-- For behavioral proofs (those in `behavioral_proof_ids`): reads the spec's ## Proof section, reads the actual test code, runs Pass 1 (deterministic) then Pass 2 (semantic), assesses STRONG/WEAK/HOLLOW
+- Reads the spec's ## Proof section, reads the actual test code and fixture/setup code, runs Pass 1 (deterministic) then Pass 2 (LLM classification + semantic evaluation), assesses STRONG/WEAK/HOLLOW/EXCLUDED
 - **Batches Pass 2** — sends all proofs for a feature in a single LLM evaluation, not one-at-a-time
 - **Writes audit cache** — after completing all assessments, writes results to `.purlin/cache/audit_cache.json` using:
   ```bash

@@ -389,29 +389,29 @@ print(sync_status('$TMPDIR_E'))
 login_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "login: PASSING" || true)
 agent_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: PASSING" || true)
 
-# Also verify check_spec_coverage correctly classifies structural vs behavioral
+# Also verify check_spec_coverage returns counts
 COVERAGE_BEHAVIORAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/auth/login.md")
 COVERAGE_STRUCTURAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/instructions/agent_def.md")
 
-BEHAV_FLAG=$(echo "$COVERAGE_BEHAVIORAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
-STRUCT_FLAG=$(echo "$COVERAGE_STRUCTURAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['structural_only_spec'])")
+BEHAV_RULES=$(echo "$COVERAGE_BEHAVIORAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['rule_count'])")
+STRUCT_RULES=$(echo "$COVERAGE_STRUCTURAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['rule_count'])")
 
 phase_e_ok=false
 if [[ "$login_ready" -ge "1" ]] && \
    [[ "$agent_ready" -ge "1" ]] && \
-   [[ "$BEHAV_FLAG" == "False" ]] && \
-   [[ "$STRUCT_FLAG" == "True" ]]; then
-  echo "    Phase E PASS: behavioral spec=PASSING, structural spec=PASSING, coverage classification correct"
+   [[ "$BEHAV_RULES" -gt "0" ]] && \
+   [[ "$STRUCT_RULES" -gt "0" ]]; then
+  echo "    Phase E PASS: both specs PASSING, coverage counts correct"
   phase_e_ok=true
 else
   echo "    Phase E FAIL: login_ready=$login_ready agent_ready=$agent_ready"
-  echo "      check_spec_coverage: behavioral=$BEHAV_FLAG structural=$STRUCT_FLAG"
+  echo "      check_spec_coverage: behavioral_rules=$BEHAV_RULES structural_rules=$STRUCT_RULES"
 fi
 
 if $phase_e_ok; then
-  purlin_proof "sync_status" "PROOF-33" "RULE-2" pass "both specs PASSING, structural classification correct"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" pass "both specs PASSING, coverage counts correct"
 else
-  purlin_proof "sync_status" "PROOF-33" "RULE-2" fail "structural classification not working correctly"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" fail "coverage counts not working correctly"
 fi
 
 # --- Emit proof files ---

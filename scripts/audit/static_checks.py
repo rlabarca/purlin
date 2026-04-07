@@ -13,6 +13,7 @@ Output: JSON to stdout with per-proof results.
 
 import ast
 import datetime
+import fcntl
 import hashlib
 import json
 import os
@@ -442,40 +443,6 @@ def check_js(filepath, feature_name):
 
 _RULE_LINE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 
-_BACKTICK_RE = re.compile(r'`[^`]*`')
-
-
-def _strip_backticks(text):
-    """Remove backtick-enclosed content before regex classification.
-
-    Prevents code patterns like `create.*commit` from triggering behavioral
-    verb detection (e.g. creates? matching 'create' inside backticks).
-    """
-    return _BACKTICK_RE.sub('', text)
-
-
-_STRUCTURAL_RULE_RE = re.compile(
-    r'\bgrep\b'
-    r'|verify\s.*\b(?:exist|present|appear)'
-    r'|file\s+exists'
-    r'|contains?\s+.*\b(?:section|field)'
-    r'|has\s+.*\b(?:frontmatter|delimiter)'
-    r'|includes?\s+.*\binstruction'
-    r'|extract\b.*\bverify\b'
-    r'|\bfield\s+in\s+frontmatter\b',
-    re.IGNORECASE,
-)
-
-_BEHAVIORAL_RULE_RE = re.compile(
-    r'returns?|rejects?|blocks?|logs?|sends?|creates?|deletes?'
-    r'|updates?|computes?|detects?|emits?|produces?|triggers?'
-    r'|fails?|raises?|validates?|enforces?|prevents?'
-    r'|renders?|redirects?|responds?'
-    r'|\bPOST\b|\bGET\b|\bPUT\b|\bDELETE\b|\bPATCH\b',
-    re.IGNORECASE,
-)
-
-
 def _read_rule_descriptions(spec_path):
     """Read rule descriptions from a spec file."""
     if not spec_path or not os.path.isfile(spec_path):
@@ -520,70 +487,21 @@ def _read_proof_descriptions(spec_path):
     return results
 
 
-def _classify_description(desc):
-    """Classify a single description as 'behavioral' or 'structural'.
-
-    Strips backtick-enclosed content before matching to prevent code
-    examples (e.g. `create.*commit`) from triggering behavioral patterns.
-    Checks structural first — structural false positives (exclusion) are
-    safer than behavioral false positives (score inflation).
-    """
-    cleaned = _strip_backticks(desc)
-    if _STRUCTURAL_RULE_RE.search(cleaned):
-        return 'structural'
-    if _BEHAVIORAL_RULE_RE.search(cleaned):
-        return 'behavioral'
-    return 'behavioral'  # unknown defaults to audited (safer)
-
-
 def check_spec_coverage(spec_path):
-    """Check whether a spec's rules are behavioral or structural-only.
+    """Return rule and proof counts for a spec.
 
-    Returns dict with structural_only_spec, rule_count, behavioral_rule_count,
-    plus per-rule and per-proof-description structural/behavioral classification.
+    Structural vs behavioral classification is handled by the LLM in Pass 2,
+    not by regex. This function only counts rules and proofs.
     """
     rules = _read_rule_descriptions(spec_path)
     if not rules:
-        return {'structural_only_spec': False, 'rule_count': 0, 'behavioral_rule_count': 0,
-                'structural_proofs': [], 'behavioral_proofs': [], 'structural_count': 0, 'behavioral_count': 0,
-                'proof_desc_count': 0, 'structural_proof_desc_count': 0, 'behavioral_proof_desc_count': 0,
-                'structural_proof_ids': [], 'behavioral_proof_ids': []}
+        return {'rule_count': 0, 'proof_count': 0}
 
-    structural_proofs = []
-    behavioral_proofs = []
-    for rule_id, desc in rules.items():
-        if _classify_description(desc) == 'behavioral':
-            behavioral_proofs.append(rule_id)
-        else:
-            structural_proofs.append(rule_id)
-
-    # Classify proof descriptions (per audit_criteria.md Pass 0)
     proof_entries = _read_proof_descriptions(spec_path)
-    structural_proof_descs = []
-    behavioral_proof_descs = []
-    structural_proof_ids = []
-    behavioral_proof_ids = []
-    for entry in proof_entries:
-        if _classify_description(entry['description']) == 'structural':
-            structural_proof_descs.append(entry['description'])
-            structural_proof_ids.append(entry['proof_id'])
-        else:
-            behavioral_proof_descs.append(entry['description'])
-            behavioral_proof_ids.append(entry['proof_id'])
 
     return {
-        'structural_only_spec': len(behavioral_proofs) == 0,
         'rule_count': len(rules),
-        'behavioral_rule_count': len(behavioral_proofs),
-        'structural_proofs': sorted(structural_proofs),
-        'behavioral_proofs': sorted(behavioral_proofs),
-        'structural_count': len(structural_proofs),
-        'behavioral_count': len(behavioral_proofs),
-        'proof_desc_count': len(proof_entries),
-        'structural_proof_desc_count': len(structural_proof_descs),
-        'behavioral_proof_desc_count': len(behavioral_proof_descs),
-        'structural_proof_ids': sorted(structural_proof_ids),
-        'behavioral_proof_ids': sorted(behavioral_proof_ids),
+        'proof_count': len(proof_entries),
     }
 
 # ---------------------------------------------------------------------------
@@ -682,58 +600,69 @@ def write_audit_cache(project_root, cache):
 
     Stamps every entry with the real current UTC time so the dashboard shows
     accurate "last audit" regardless of what the caller passed.
+
+    The entire read→merge→write sequence is protected by an exclusive file lock
+    (audit_cache.json.lock) so that concurrent subagent writers serialize
+    correctly and no writer's entries are clobbered by a racing write.
     """
-    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-
-    # Read existing cache from disk
-    on_disk = read_audit_cache(project_root)
-
-    # Dedup in two phases: on-disk first, then new entries override.
-    # This ensures new entries always win over on-disk for same (feature, proof_id),
-    # while intra-batch dedup within each source uses timestamps.
-    latest = {}  # (feature, proof_id) -> (hash_key, entry)
-
-    # Phase 1: seed with on-disk entries
-    for hash_key, entry in on_disk.items():
-        if not isinstance(entry, dict):
-            continue
-        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
-        existing_entry = latest.get(dedup_key)
-        if existing_entry is None or entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
-            latest[dedup_key] = (hash_key, entry)
-
-    # Phase 2: new entries always override on-disk for same (feature, proof_id);
-    # intra-batch duplicates use timestamp
-    new_keys = set()
-    for hash_key, entry in cache.items():
-        if not isinstance(entry, dict):
-            continue
-        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
-        existing_entry = latest.get(dedup_key)
-        if existing_entry is None:
-            latest[dedup_key] = (hash_key, entry)
-            new_keys.add(dedup_key)
-        elif dedup_key not in new_keys:
-            # First new entry for this (feature, proof_id) — always beats on-disk
-            latest[dedup_key] = (hash_key, entry)
-            new_keys.add(dedup_key)
-        elif entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
-            # Intra-batch duplicate — use timestamp
-            latest[dedup_key] = (hash_key, entry)
-
-    # Stamp real write time so dashboard shows accurate "last audit"
-    pruned = {}
-    for hk, ent in latest.values():
-        ent['cached_at'] = now_iso
-        pruned[hk] = ent
-
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
-    tmp_path = cache_path + '.tmp'
-    with open(tmp_path, 'w') as f:
-        json.dump(pruned, f, indent=2)
-    os.replace(tmp_path, cache_path)
+    lock_path = cache_path + '.lock'
+
+    with open(lock_path, 'w') as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+            # Read existing cache from disk
+            on_disk = read_audit_cache(project_root)
+
+            # Dedup in two phases: on-disk first, then new entries override.
+            # This ensures new entries always win over on-disk for same (feature, proof_id),
+            # while intra-batch dedup within each source uses timestamps.
+            latest = {}  # (feature, proof_id) -> (hash_key, entry)
+
+            # Phase 1: seed with on-disk entries
+            for hash_key, entry in on_disk.items():
+                if not isinstance(entry, dict):
+                    continue
+                dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+                existing_entry = latest.get(dedup_key)
+                if existing_entry is None or entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
+                    latest[dedup_key] = (hash_key, entry)
+
+            # Phase 2: new entries always override on-disk for same (feature, proof_id);
+            # intra-batch duplicates use timestamp
+            new_keys = set()
+            for hash_key, entry in cache.items():
+                if not isinstance(entry, dict):
+                    continue
+                dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+                existing_entry = latest.get(dedup_key)
+                if existing_entry is None:
+                    latest[dedup_key] = (hash_key, entry)
+                    new_keys.add(dedup_key)
+                elif dedup_key not in new_keys:
+                    # First new entry for this (feature, proof_id) — always beats on-disk
+                    latest[dedup_key] = (hash_key, entry)
+                    new_keys.add(dedup_key)
+                elif entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
+                    # Intra-batch duplicate — use timestamp
+                    latest[dedup_key] = (hash_key, entry)
+
+            # Stamp real write time so dashboard shows accurate "last audit"
+            pruned = {}
+            for hk, ent in latest.values():
+                ent['cached_at'] = now_iso
+                pruned[hk] = ent
+
+            tmp_path = cache_path + '.tmp'
+            with open(tmp_path, 'w') as f:
+                json.dump(pruned, f, indent=2)
+            os.replace(tmp_path, cache_path)
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
 def _find_plugin_root():
@@ -878,6 +807,18 @@ def main():
                 project_root = sys.argv[idx + 1]
         cache = read_audit_cache(project_root)
         print(json.dumps(cache, indent=2))
+        sys.exit(0)
+
+    # --write-cache mode: read JSON from stdin and merge into audit cache
+    if '--write-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        entries = json.loads(sys.stdin.read())
+        write_audit_cache(project_root, entries)
+        print(json.dumps({'status': 'merged', 'entries': len(entries)}))
         sys.exit(0)
 
     # --clear-cache mode: atomically replace cache with empty dict

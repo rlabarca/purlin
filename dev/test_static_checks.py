@@ -1,8 +1,8 @@
-"""Tests for static_checks.py — 16 rules.
+"""Tests for static_checks.py.
 
 Covers all five Python AST checks (assert_true, no_assertions, bare_except,
 logic_mirroring, mock_target_match), JSON output format, exit codes,
-spec coverage checks (Pass 0), audit cache helpers, and language-agnostic
+spec coverage checks, audit cache helpers, and language-agnostic
 proof-file structural checks (proof_id_collision, proof_rule_orphan).
 """
 
@@ -25,7 +25,6 @@ from static_checks import (
     read_audit_cache,
     write_audit_cache,
     _read_rule_descriptions,
-    _classify_description,
     load_criteria,
 )
 
@@ -327,15 +326,16 @@ def test_bad():
             os.unlink(path)
 
 
-class TestSpecCoverageStructuralOnly:
+class TestSpecCoverage:
 
     @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
-    def test_structural_only_spec(self):
+    def test_spec_coverage_counts(self):
+        """check_spec_coverage returns rule_count and proof_count."""
         path = _write_tmp(
             "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
             "- RULE-1: Verify agent.md contains ## Core Loop section\n"
-            "- RULE-2: Grep skill files for ## Usage heading\n"
-            "- RULE-3: Verify config field appears in output\n"
+            "- RULE-2: Returns 200 on valid credentials\n"
+            "- RULE-3: Grep skill files for ## Usage heading\n"
             "\n## Proof\n"
             "- PROOF-1 (RULE-1): test\n"
             "- PROOF-2 (RULE-2): test\n"
@@ -344,22 +344,18 @@ class TestSpecCoverageStructuralOnly:
         )
         try:
             result = check_spec_coverage(path)
-            assert result['structural_only_spec'] is True
             assert result['rule_count'] == 3
-            assert result['behavioral_rule_count'] == 0
-            assert result['structural_count'] == 3
-            assert result['behavioral_count'] == 0
-            assert len(result['structural_proofs']) == 3
-            assert len(result['behavioral_proofs']) == 0
+            assert result['proof_count'] == 3
         finally:
             os.unlink(path)
 
     @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
-    def test_structural_only_via_cli(self):
+    def test_spec_coverage_via_cli(self):
+        """CLI --check-spec-coverage returns rule and proof counts."""
         path = _write_tmp(
             "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
             "- RULE-1: Verify file exists in specs directory\n"
-            "- RULE-2: Grep for section heading present\n"
+            "- RULE-2: Returns error when missing\n"
             "\n## Proof\n"
             "- PROOF-1 (RULE-1): test\n"
             "- PROOF-2 (RULE-2): test\n",
@@ -372,367 +368,22 @@ class TestSpecCoverageStructuralOnly:
             )
             assert result.returncode == 0
             data = json.loads(result.stdout)
-            assert data['structural_only_spec'] is True
             assert data['rule_count'] == 2
-            assert data['structural_count'] == 2
-            assert data['behavioral_count'] == 0
+            assert data['proof_count'] == 2
         finally:
             os.unlink(path)
 
-
-class TestSpecCoverageBehavioral:
-
-    @pytest.mark.proof("static_checks", "PROOF-9", "RULE-9")
-    def test_behavioral_spec(self):
+    @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
+    def test_spec_coverage_empty(self):
+        """Spec with no rules returns zero counts."""
         path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 200 with JWT on valid credentials\n"
-            "- RULE-2: Rejects invalid password with 401\n"
-            "- RULE-3: Logs warning when rate limit exceeded\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): test\n"
-            "- PROOF-2 (RULE-2): test\n"
-            "- PROOF-3 (RULE-3): test\n",
+            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n",
             suffix='.md'
         )
         try:
             result = check_spec_coverage(path)
-            assert result['structural_only_spec'] is False
-            assert result['rule_count'] == 3
-            assert result['behavioral_rule_count'] == 3
-            assert result['structural_count'] == 0
-            assert result['behavioral_count'] == 3
-            assert len(result['behavioral_proofs']) == 3
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-9", "RULE-9")
-    def test_mixed_spec_counts_as_behavioral(self):
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Verify config file contains required section\n"
-            "- RULE-2: Returns error when config is malformed\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): test\n"
-            "- PROOF-2 (RULE-2): test\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['structural_only_spec'] is False
-            assert result['rule_count'] == 2
-            assert result['behavioral_rule_count'] == 1
-            assert result['structural_count'] == 1
-            assert result['behavioral_count'] == 1
-            assert result['structural_proofs'] == ['RULE-1']
-            assert result['behavioral_proofs'] == ['RULE-2']
-        finally:
-            os.unlink(path)
-
-
-class TestProofDescClassification:
-
-    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-20")
-    def test_proof_desc_structural_classification(self):
-        """RULE-20: Structural proof description classified correctly."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 401 on invalid credentials\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): Verify the auth config file exists on disk\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            # Rule is behavioral
-            assert result['behavioral_rule_count'] == 1
-            # Proof description is structural ("verify...exists")
-            assert result['proof_desc_count'] == 1
-            assert result['structural_proof_desc_count'] == 1
-            assert result['behavioral_proof_desc_count'] == 0
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-20")
-    def test_proof_desc_behavioral_classification(self):
-        """RULE-20: Behavioral proof description classified correctly."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 401 on invalid credentials\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): POST wrong password to /login; verify 401 response\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['proof_desc_count'] == 1
-            assert result['behavioral_proof_desc_count'] == 1
-            assert result['structural_proof_desc_count'] == 0
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-20")
-    def test_proof_desc_mixed(self):
-        """RULE-20: Mix of structural and behavioral proof descriptions."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 401 on invalid credentials\n"
-            "- RULE-2: Config file contains auth section\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): POST wrong password; verify 401 response\n"
-            "- PROOF-2 (RULE-2): Grep config for auth section; verify present\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['proof_desc_count'] == 2
-            assert result['behavioral_proof_desc_count'] == 1
-            assert result['structural_proof_desc_count'] == 1
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-20")
-    def test_proof_desc_strips_tier_tags(self):
-        """RULE-20: Tier tags are stripped before classification."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 200 on valid login\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): POST valid creds to /login; verify 200 @integration\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['proof_desc_count'] == 1
-            assert result['behavioral_proof_desc_count'] == 1
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-20")
-    def test_proof_desc_empty_when_no_proof_section(self):
-        """RULE-20: Returns zero counts when no ## Proof section."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 200\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['proof_desc_count'] == 0
-            assert result['structural_proof_desc_count'] == 0
-            assert result['behavioral_proof_desc_count'] == 0
-        finally:
-            os.unlink(path)
-
-
-# ── _classify_description: backtick stripping ─────────────────────────
-
-class TestClassifyDescriptionBackticks:
-
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
-    def test_backtick_behavioral_verb_ignored(self):
-        """Behavioral verb inside backticks must not trigger behavioral classification."""
-        desc = "Grep `skills/anchor/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
-    def test_backtick_multiple_behavioral_verbs(self):
-        """Multiple behavioral verbs inside backticks are all stripped."""
-        desc = "Verify `creates` and `updates` patterns exist in the handler file"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
-    def test_behavioral_outside_backticks_still_works(self):
-        """Real behavioral verb outside backticks still classifies as behavioral."""
-        desc = "Returns the `config` object after parsing"
-        assert _classify_description(desc) == 'behavioral'
-
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
-    def test_mixed_backtick_and_real_behavioral(self):
-        """Backtick content stripped, real behavioral verb outside wins."""
-        desc = "Returns `grep` results from the API"
-        assert _classify_description(desc) == 'behavioral'
-
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
-    def test_empty_backticks(self):
-        """Empty backtick content does not affect classification."""
-        desc = "Grep `` for section heading"
-        assert _classify_description(desc) == 'structural'
-
-
-# ── _classify_description: structural-first priority ──────────────────
-
-class TestClassifyDescriptionPriority:
-
-    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
-    def test_structural_checked_first(self):
-        """When both structural and behavioral match, structural wins."""
-        desc = "Grep for patterns that trigger failures"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
-    def test_clear_behavioral_still_works(self):
-        """Pure behavioral description without structural indicators."""
-        desc = "Returns 200 with JWT on valid credentials"
-        assert _classify_description(desc) == 'behavioral'
-
-    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
-    def test_default_is_behavioral(self):
-        """Description matching neither regex defaults to behavioral."""
-        desc = "System processes the input correctly"
-        assert _classify_description(desc) == 'behavioral'
-
-
-# ── _classify_description: expanded structural patterns ───────────────
-
-class TestClassifyDescriptionExpandedPatterns:
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_has_frontmatter(self):
-        desc = "Skill file has YAML frontmatter with `name` and `description` fields"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_contains_section_with_gap(self):
-        """contains...section with intervening words (was broken: required adjacency)."""
-        desc = "Skill file contains a `## Usage` section documenting command syntax"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_extract_verify(self):
-        desc = "Extract `name:` from frontmatter; verify it equals `anchor`"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_includes_instruction(self):
-        desc = "Skill includes commit instructions or git operations for file modifications"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_verify_exist(self):
-        desc = "Verify `name:` and `description:` fields exist"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_field_in_frontmatter(self):
-        desc = "The `name` field in frontmatter is `anchor`, matching the directory name"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_has_delimiter(self):
-        desc = "Skill file has YAML frontmatter delimiters (`---`)"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_verify_present(self):
-        desc = "Grep config.json for required key; verify present"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_verify_appears(self):
-        desc = "Verify config field appears in output"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_contains_field(self):
-        desc = "Config file contains required field for database connection"
-        assert _classify_description(desc) == 'structural'
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_behavioral_not_false_positive(self):
-        """Behavioral descriptions must not match expanded structural patterns."""
-        behavioral = [
-            "Returns 401 on invalid credentials",
-            "Rejects invalid password with 403",
-            "Logs warning when rate limit exceeded",
-            "Creates a new user record in the database",
-            "Deletes expired sessions on cleanup",
-            "POST valid creds to /login; verify 200 response",
-            "Sends email notification after registration",
-            "Validates input schema before processing",
-            "Prevents duplicate entries in the index",
-            "Renders the dashboard component with props",
-        ]
-        for desc in behavioral:
-            assert _classify_description(desc) == 'behavioral', \
-                f"Expected behavioral for: {desc}"
-
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28")
-    def test_e2e_behavioral_not_structural(self):
-        """e2e proof descriptions with verify...contain must stay behavioral."""
-        desc = ("e2e: Create anchor with only Part 1 fields; call _scan_specs; "
-                "verify source_url is None. Run sync_status; verify output does "
-                "NOT contain 'Source:' for that anchor @e2e")
-        assert _classify_description(desc) == 'behavioral'
-
-
-# ── check_spec_coverage: per-proof ID mapping ─────────────────────────
-
-class TestPerProofIdMapping:
-
-    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
-    def test_structural_proof_ids_returned(self):
-        """All-structural spec returns all PROOF-Ns in structural_proof_ids."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Grep file for section heading\n"
-            "- RULE-2: Verify config field exists\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): Grep config for section; verify present\n"
-            "- PROOF-2 (RULE-2): Verify config field appears in output\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['structural_proof_ids'] == ['PROOF-1', 'PROOF-2']
-            assert result['behavioral_proof_ids'] == []
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
-    def test_mixed_proof_ids(self):
-        """Mixed spec returns correct PROOF-Ns in each list."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Verify config field exists\n"
-            "- RULE-2: Returns 401 on invalid credentials\n"
-            "\n## Proof\n"
-            "- PROOF-1 (RULE-1): Grep config for auth section; verify present\n"
-            "- PROOF-2 (RULE-2): POST wrong password; verify 401 response\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['structural_proof_ids'] == ['PROOF-1']
-            assert result['behavioral_proof_ids'] == ['PROOF-2']
-        finally:
-            os.unlink(path)
-
-    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
-    def test_skill_anchor_regression(self):
-        """Exact skill_anchor PROOF-1 through PROOF-4 are all structural."""
-        result = check_spec_coverage(
-            os.path.join(os.path.dirname(__file__), '..', 'specs', 'skills', 'skill_anchor.md')
-        )
-        for pid in ['PROOF-1', 'PROOF-2', 'PROOF-3', 'PROOF-4']:
-            assert pid in result['structural_proof_ids'], \
-                f"{pid} should be structural but is in behavioral_proof_ids"
-        for pid in ['PROOF-5', 'PROOF-6', 'PROOF-7']:
-            assert pid in result['behavioral_proof_ids'], \
-                f"{pid} should be behavioral but is in structural_proof_ids"
-
-    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27")
-    def test_empty_proof_section(self):
-        """No proof section returns empty ID lists."""
-        path = _write_tmp(
-            "# Feature: testfeat\n\n## What it does\nTest\n\n## Rules\n"
-            "- RULE-1: Returns 200\n",
-            suffix='.md'
-        )
-        try:
-            result = check_spec_coverage(path)
-            assert result['structural_proof_ids'] == []
-            assert result['behavioral_proof_ids'] == []
+            assert result['rule_count'] == 0
+            assert result['proof_count'] == 0
         finally:
             os.unlink(path)
 
@@ -1404,3 +1055,156 @@ class TestLoadCriteria:
         result = load_criteria(project)
         assert '## Assessment Levels' in result
         assert 'Additional Team Criteria (from' not in result
+
+
+class TestWriteCacheLocking:
+    """RULE-25: write_audit_cache serializes concurrent writers via exclusive file lock."""
+
+    def _make_entry(self, assessment, feature, proof_id, rule_id):
+        return {
+            "assessment": assessment,
+            "criterion": "matches rule intent",
+            "why": "test exercises the rule correctly",
+            "fix": "none",
+            "feature": feature,
+            "proof_id": proof_id,
+            "rule_id": rule_id,
+            "priority": "LOW",
+            "cached_at": "2026-04-01T00:00:00+00:00",
+        }
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_lock_file_created_alongside_cache(self):
+        """write_audit_cache creates audit_cache.json.lock adjacent to the cache file."""
+        import fcntl
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lock_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json.lock')
+            lock_seen = []
+
+            original_flock = fcntl.flock
+
+            def patched_flock(fd, op):
+                if op == fcntl.LOCK_EX:
+                    lock_seen.append(os.path.exists(lock_path))
+                return original_flock(fd, op)
+
+            with mock.patch('fcntl.flock', side_effect=patched_flock):
+                write_audit_cache(tmpdir, {
+                    "hash1": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
+                })
+
+            assert lock_seen, "flock(LOCK_EX) was never called"
+            assert lock_seen[0], "lock file did not exist when flock was called"
+
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    def test_concurrent_writes_preserve_all_entries(self):
+        """Two threads writing different features concurrently must both survive."""
+        import threading
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            errors = []
+
+            def writer_a():
+                try:
+                    write_audit_cache(tmpdir, {
+                        "hash_a1": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
+                        "hash_a2": self._make_entry("WEAK",   "feat_a", "PROOF-2", "RULE-2"),
+                    })
+                except Exception as e:
+                    errors.append(e)
+
+            def writer_b():
+                try:
+                    write_audit_cache(tmpdir, {
+                        "hash_b1": self._make_entry("STRONG", "feat_b", "PROOF-1", "RULE-1"),
+                        "hash_b2": self._make_entry("HOLLOW", "feat_b", "PROOF-2", "RULE-2"),
+                        "hash_b3": self._make_entry("STRONG", "feat_b", "PROOF-3", "RULE-3"),
+                    })
+                except Exception as e:
+                    errors.append(e)
+
+            t_a = threading.Thread(target=writer_a)
+            t_b = threading.Thread(target=writer_b)
+            t_a.start()
+            t_b.start()
+            t_a.join()
+            t_b.join()
+
+            assert not errors, f"Writer thread raised: {errors}"
+            after = read_audit_cache(tmpdir)
+            assert len(after) == 5, (
+                f"Expected 5 entries (2 from feat_a + 3 from feat_b), got {len(after)}:\n"
+                + json.dumps(list(after.keys()), indent=2)
+            )
+            assert "hash_a1" in after, "feat_a entry hash_a1 lost after concurrent write"
+            assert "hash_a2" in after, "feat_a entry hash_a2 lost after concurrent write"
+            assert "hash_b1" in after, "feat_b entry hash_b1 lost after concurrent write"
+            assert "hash_b2" in after, "feat_b entry hash_b2 lost after concurrent write"
+            assert "hash_b3" in after, "feat_b entry hash_b3 lost after concurrent write"
+
+
+class TestWriteCacheCLI:
+    """RULE-26: --write-cache CLI reads JSON from stdin and merges into audit cache."""
+
+    def _make_entry(self, assessment, feature, proof_id, rule_id):
+        return {
+            "assessment": assessment,
+            "criterion": "matches rule intent",
+            "why": "test exercises the rule correctly",
+            "fix": "none",
+            "feature": feature,
+            "proof_id": proof_id,
+            "rule_id": rule_id,
+            "priority": "LOW",
+            "cached_at": "2026-04-01T00:00:00+00:00",
+        }
+
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
+    def test_write_cache_cli_merges_entries(self):
+        """--write-cache reads JSON dict from stdin and merges into the cache file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            entries = {
+                "cli_hash_1": self._make_entry("STRONG", "feat_cli", "PROOF-1", "RULE-1"),
+                "cli_hash_2": self._make_entry("WEAK",   "feat_cli", "PROOF-2", "RULE-2"),
+            }
+            result = subprocess.run(
+                [sys.executable, STATIC_CHECKS_PY, '--write-cache', '--project-root', tmpdir],
+                input=json.dumps(entries),
+                capture_output=True,
+                text=True,
+            )
+            assert result.returncode == 0, f"--write-cache exited non-zero: {result.stderr}"
+            output = json.loads(result.stdout)
+            assert output['status'] == 'merged'
+            assert output['entries'] == 2
+
+            after = read_audit_cache(tmpdir)
+            assert len(after) == 2
+            assert "cli_hash_1" in after
+            assert "cli_hash_2" in after
+
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
+    def test_write_cache_cli_merges_with_existing(self):
+        """--write-cache preserves entries already on disk from a prior write."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            write_audit_cache(tmpdir, {
+                "existing_hash": self._make_entry("STRONG", "feat_existing", "PROOF-1", "RULE-1"),
+            })
+
+            new_entry = {
+                "new_hash": self._make_entry("HOLLOW", "feat_new", "PROOF-1", "RULE-1"),
+            }
+            result = subprocess.run(
+                [sys.executable, STATIC_CHECKS_PY, '--write-cache', '--project-root', tmpdir],
+                input=json.dumps(new_entry),
+                capture_output=True,
+                text=True,
+            )
+            assert result.returncode == 0, f"--write-cache exited non-zero: {result.stderr}"
+
+            after = read_audit_cache(tmpdir)
+            assert len(after) == 2, f"Expected 2 entries (existing + new), got {len(after)}"
+            assert "existing_hash" in after, "existing entry was clobbered by --write-cache"
+            assert "new_hash" in after, "new entry not written by --write-cache"

@@ -1,8 +1,8 @@
-> Criteria-Version: 14
+> Criteria-Version: 15
 
 # Proof Audit Criteria
 
-This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit pipeline has three stages: a pre-filter (Pass 0) excludes structural checks, deterministic static analysis (Pass 1) catches structural test defects like `assert True` and logic mirroring, and LLM semantic evaluation (Pass 2) checks whether tests actually prove their rules. The first two are fast and always run. The LLM stage runs only for proofs that survive the first two. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
+This document defines how `purlin:audit` evaluates whether test code actually proves what the proof description claims. The audit pipeline has two stages: deterministic static analysis (Pass 1) catches structural test defects like `assert True` and logic mirroring, and LLM semantic evaluation (Pass 2) classifies proofs as structural or behavioral and checks whether behavioral tests actually prove their rules. Pass 1 is fast and always runs. The LLM stage runs only for proofs that survive Pass 1. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
 
 ## Assessment Levels
 
@@ -12,24 +12,6 @@ This document defines how `purlin:audit` evaluates whether test code actually pr
 | WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described | Pass 2 (LLM) |
 | HOLLOW | ✗ | Test passes but doesn't prove the rule — structural defect caught deterministically | Pass 1 (static) |
 | MANUAL | ● | Human-verified via @manual stamp — assess staleness only | Either pass |
-
-## Pre-filter: Structural Check Exclusion (Pass 0 — deterministic)
-
-Before evaluating individual proofs, classify each proof description as structural or behavioral.
-
-**Structural** — proof describes file/string presence checks: grep for pattern, file exists, section exists, field present, contains string/line. These verify document content, not system behavior.
-
-**Behavioral** — proof describes observable outcomes: returns, rejects, blocks, sends, creates, renders, computes, detects. These verify the system does what the rule claims.
-
-Structural proofs are **excluded from the audit**. They are not assessed, not scored, and not included in the integrity score. They still run as checks in the test suite, but they are not proofs.
-
-Classification uses `_classify_description` in `static_checks.py`: backtick-enclosed content is stripped before matching (to prevent code patterns like `create.*commit` from triggering behavioral verbs), structural patterns are checked before behavioral patterns, and unmatched descriptions default to behavioral (safer to audit than to exclude).
-
-### Per-proof filtering in mixed specs
-
-When a spec has both structural and behavioral proofs, `check_spec_coverage` returns `structural_proof_ids` listing which specific PROOF-N identifiers are structural. The auditor uses this list to exclude individual proofs rather than only excluding entire structural-only specs. This ensures mixed specs have their structural proofs excluded while behavioral proofs are still audited.
-
-Only behavioral proofs proceed to Pass 1 (static analysis) and Pass 2 (LLM evaluation).
 
 ## Pass 1 — Deterministic Checks (static_checks.py)
 
@@ -60,13 +42,29 @@ These checks operate on proof JSON files, not source code. They work for any lan
 - **Proof ID collision** — the same PROOF-N identifier appears in the proof file targeting different RULE-N values. This confuses proof tracking: one test's coverage may shadow another's, and the proof system cannot distinguish which test proves which rule. The test with the colliding ID must be reassigned a unique proof ID, or the extra marker must be removed
 - **Proof rule orphan** — a proof entry targets a RULE-N that does not exist in the spec file. This typically means the rule was removed or renumbered, but the test's proof marker was not updated. The proof claims to cover a non-existent rule
 
-## Pass 2 — Semantic Alignment (LLM)
+## Pass 2 — Structural Classification + Semantic Alignment (LLM)
 
-The LLM evaluates whether the test semantically matches the rule. It does NOT check structural issues — those are handled by Pass 1. The LLM can only return STRONG or WEAK (or EXCLUDED for the structural guard below).
+The LLM first classifies each proof as structural or behavioral, then evaluates behavioral proofs for semantic alignment with their rules. It does NOT check structural issues like `assert True` — those are handled by Pass 1. The LLM can return STRONG, WEAK, or EXCLUDED.
 
-### Structural proof guard (LLM backup)
+### Structural vs Behavioral Classification (primary)
 
-If a proof reaches Pass 2 despite Pass 0 filtering and describes file/string presence checks rather than system behavior (e.g. reads a file and checks for string patterns, section headings, field existence — without exercising any production code), respond with `ASSESSMENT: EXCLUDED` and `CRITERION: structural presence check — not a behavioral proof`. This catches proofs that slipped past Pass 0's regex classification. The pipeline excludes these from the integrity score rather than marking them STRONG.
+The LLM examines the proof description, test code, AND fixture/setup code together to classify each proof.
+
+**Structural** — the content being checked exists independently of the test. The test reads pre-existing files or static content that no code in the test's setup chain produced. Examples:
+- Checking a config template has certain fields
+- Verifying a markdown doc has correct sections
+- Grepping source code for forbidden patterns
+- Reading a schema file and checking its structure
+
+**Behavioral** — the test verifies output produced by running code. This includes:
+- Direct function calls whose return value is asserted
+- E2E tests where a fixture runs the system (subprocess, API call, function invocation) and assertions check the artifacts it created
+- Tests that check files/strings CREATED by the test's setup chain
+- Tests where the "act" step is in a class-scoped fixture
+
+Key signal: if the fixture or setup runs code that produces the artifact being checked, the test is BEHAVIORAL — even if the assertions use string-matching or regex on file contents. The question is not "what do the assertions look like?" but "did code run to produce what's being asserted on?"
+
+Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED, not scored, and not included in the integrity score. They still run as checks in the test suite, but they are not proofs. Respond with `ASSESSMENT: EXCLUDED` and `CRITERION: structural presence check — not a behavioral proof`.
 
 ### WEAK (LLM judgment)
 

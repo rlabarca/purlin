@@ -86,7 +86,7 @@ reporters: ["default", ".purlin/plugins/jest_purlin.js"]
 
 **Shell** — Source the harness in your test scripts:
 ```bash
-source .purlin/plugins/purlin-proof.sh
+source .purlin/plugins/shell_purlin.sh
 ```
 
 ## Config System
@@ -104,6 +104,7 @@ Default config:
   "version": "0.9.0",
   "test_framework": "auto",
   "spec_dir": "specs",
+  "pre_push": "warn",
   "report": true
 }
 ```

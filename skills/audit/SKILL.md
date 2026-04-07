@@ -59,11 +59,10 @@ After the audit completes, write all new assessments to the cache (both cached h
 
 ## Step 1.6 — Plan Parallel Execution
 
-After loading the cache, run Pass 0 (`--check-spec-coverage`) for every feature to categorize them:
+After loading the cache, categorize features for parallel execution:
 
-- **Skip entirely:** structural-only specs (all proofs in `structural_proof_ids`) — report structural checks as excluded, no subagent needed
-- **Cache-only:** specs where every behavioral proof (those in `behavioral_proof_ids`) has a cache hit. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all behavioral proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed. Structural proofs from `structural_proof_ids` are always excluded regardless.
-- **Needs LLM:** at least one behavioral proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
+- **Cache-only:** specs where every proof has a cache hit. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed.
+- **Needs LLM:** at least one proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
 
 For features in the "Needs LLM" category, launch up to 3 parallel evaluations using the Agent tool:
 
@@ -80,42 +79,9 @@ Each subagent receives:
 
 When all subagents complete, merge their results into the final report and update the cache with all new assessments.
 
-For features in "Skip entirely" and "Cache-only" categories, evaluate them in the main context (no subagent needed — they're fast).
+For "Cache-only" features, evaluate them in the main context (no subagent needed — they're fast).
 
 ## Step 2 — Audit Pipeline
-
-### Pre-filter: Structural Check Exclusion (Pass 0 — always runs first)
-
-Before evaluating individual proofs, classify each proof as structural or behavioral using the proof description.
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-spec-coverage --spec-path <spec_path>
-```
-
-The output includes `structural_proof_ids` and `behavioral_proof_ids` listing which specific PROOF-N identifiers are structural vs behavioral.
-
-**Structural proofs** (those in `structural_proof_ids`):
-- Skip entirely — do not send to Pass 1 or Pass 2
-- Do not include in the audit total
-- Report once per feature: "N structural checks excluded from audit"
-
-**Behavioral proofs** (those in `behavioral_proof_ids`) proceed to Pass 1 and Pass 2 as normal.
-
-If a feature has ONLY structural proofs (`structural_only_spec: true`):
-- Report: "All proofs are structural checks — excluded from audit. Add behavioral proofs for audit coverage."
-- Do not include the feature in the integrity score
-
-If a feature has a mix:
-- Structural proofs in `structural_proof_ids` excluded, behavioral proofs audited normally
-
-Report:
-
-```
-N structural checks excluded from audit
-→ Add behavioral rules that test what the system does, not what files contain
-```
-
-Specs with at least one behavioral rule proceed to Pass 1 normally.
 
 ### Proof-File Structural Checks (Pass 0.5 — language-agnostic, no source reading)
 
@@ -133,7 +99,7 @@ Report findings inline with the feature's audit output. Proof ID collisions indi
 
 ### Static Analysis: Structural Defect Detection (Pass 1 — deterministic, no LLM)
 
-For specs that passed Pass 0 (have behavioral rules), run the deterministic static checker:
+Run the deterministic static checker on all specs with proofs:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py <test_file> <feature_name> --spec-path <spec_path>
@@ -150,36 +116,58 @@ PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
 
 The `(deterministic)` label tells the user this was caught by static analysis, not LLM judgment.
 
-### Semantic Evaluation: LLM Alignment Check (Pass 2 — only for surviving proofs)
+### Structural Classification + Semantic Evaluation (Pass 2 — only for surviving proofs)
 
-Proofs that passed structural checks go to the LLM for semantic evaluation. The LLM prompt is STRIPPED of all structural heuristics. It ONLY evaluates semantic alignment.
+Proofs that passed Pass 1 go to the LLM for classification and semantic evaluation. The LLM first classifies each proof as structural or behavioral, then evaluates behavioral proofs.
 
-**Batch all proofs for a feature into a single LLM evaluation.** Do NOT evaluate proofs one-at-a-time — this wastes LLM calls. Construct one prompt per feature containing ALL surviving proofs (those that passed Pass 0 and Pass 1 and are not cache hits).
+**Batch all proofs for a feature into a single LLM evaluation.** Do NOT evaluate proofs one-at-a-time — this wastes LLM calls. Construct one prompt per feature containing ALL surviving proofs (those that passed Pass 1 and are not cache hits).
 
 For each feature being audited:
 
 1. Read the spec's `## Proof` section — get every proof description.
 2. For each proof, find the test file and test function from `.proofs-*.json` entries.
 3. Read the actual test code (the function body, not just the marker).
-4. Drop any proof already rated HOLLOW by Pass 1 or resolved by cache hit.
-5. For `@manual` proofs: check staleness only, assess as MANUAL — exclude from LLM batch.
-6. Check if any remaining proof's rule comes from an anchor (the rule key contains a `/` prefix from a spec in `specs/_anchors/`). If so:
+4. **Read fixture/setup code** — if the test references a class-scoped or module-scoped fixture (e.g. via `self` parameter or `@pytest.fixture(scope="class")`), include the fixture code in the prompt. This is critical for e2e tests where the "act" step is in the fixture.
+5. Drop any proof already rated HOLLOW by Pass 1 or resolved by cache hit.
+6. For `@manual` proofs: check staleness only, assess as MANUAL — exclude from LLM batch.
+7. Check if any remaining proof's rule comes from an anchor (the rule key contains a `/` prefix from a spec in `specs/_anchors/`). If so:
    - The fix directive must say "strengthen the test" not "update the rule"
    - If the rule itself is ambiguous or seems wrong, collect it for the anchor author recommendations section (see Step 3)
-7. If zero proofs remain after steps 4–5: skip Pass 2 entirely for this feature.
-8. If proofs remain: construct a single prompt containing ALL surviving proof descriptions and ALL test code. Send one LLM call per feature, not one per proof.
+8. If zero proofs remain after steps 5–6: skip Pass 2 entirely for this feature.
+9. If proofs remain: construct a single prompt containing ALL surviving proof descriptions, ALL test code, and ALL fixture/setup code. Send one LLM call per feature, not one per proof.
 
 **For Claude (default auditor):**
 
 ```
-You are evaluating semantic alignment between spec rules and test code.
+You are classifying and evaluating proofs against spec rules.
 Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
 
-STRUCTURAL GUARD (check first):
-If a proof describes file/string presence checks (grep for pattern, file exists, section
-present, field present, read file and check content) rather than testing system behavior,
-classify it as EXCLUDED rather than STRONG or WEAK. Structural proofs verify document
-content, not code behavior — they should have been filtered by Pass 0.
+STEP 1 — CLASSIFY each proof as STRUCTURAL or BEHAVIORAL:
+
+Examine the proof description, test code, AND fixture/setup code together.
+
+STRUCTURAL — the content being checked exists independently of the test.
+The test reads pre-existing files or static content that no code in the
+test's setup chain produced. Examples: checking a config template has
+certain fields, grepping source code for forbidden patterns, verifying a
+markdown doc has correct sections.
+
+BEHAVIORAL — the test verifies output produced by running code. Includes:
+  - Direct function calls whose return value is asserted
+  - E2E tests where a fixture runs the system (subprocess, API call,
+    function invocation) and assertions check the artifacts it created
+  - Tests that check files/strings CREATED by the test's setup chain
+  - Tests where the "act" step is in a class-scoped fixture
+
+Key signal: if the fixture or setup runs code that produces the artifact
+being checked, the test is BEHAVIORAL — even if the assertions use
+string-matching or regex on file contents. The question is not "what do
+the assertions look like?" but "did code run to produce what's being
+asserted on?"
+
+STRUCTURAL proofs → EXCLUDED (not scored)
+
+STEP 2 — EVALUATE each BEHAVIORAL proof:
 
 For each behavioral proof, answer ONLY these questions:
 1. Does the test set up a scenario that exercises the rule's constraint?
@@ -209,7 +197,7 @@ FIX: <specific change to align test with rule, "none" if STRONG, or "none — ex
 ---
 ```
 
-Note: the LLM can return STRONG, WEAK, or EXCLUDED in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). EXCLUDED is a backup for structural proofs that slipped past Pass 0 — the pipeline treats them as excluded from scoring.
+Note: the LLM can return STRONG, WEAK, or EXCLUDED in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). EXCLUDED proofs are structural — the pipeline excludes them from scoring.
 
 ## Step 3 — Report
 
@@ -219,7 +207,7 @@ Use the bordered output format with findings grouped by value tier (see `referen
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROOF AUDIT: <feature> (<N> proofs)
 Criteria: <source> (Criteria-Version: N)
-Auditor: Pass 0 — spec coverage | Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
+Auditor: Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 CRITICAL (fix first — tests prove nothing):
@@ -254,20 +242,6 @@ AUDIT SUMMARY:
 Group findings by value tier (see `references/audit_criteria.md` § Finding Priority for the complete tier mapping). Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
 
 When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
-
-For features with structural checks excluded, the report looks like:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROOF AUDIT: purlin_agent (0 behavioral proofs)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  8 structural checks excluded from audit
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-→ All proofs are structural checks. Add behavioral rules and E2E proofs.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
 
 If HOLLOW or WEAK proofs found, append directives:
 
@@ -317,7 +291,7 @@ When a HOLLOW or WEAK proof is for an anchor rule:
 
 ## External LLM Mode
 
-When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Only proofs that pass structural checks go to the external LLM for Pass 2.
+When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Proofs that pass Pass 1 go to the external LLM for Pass 2 (classification + semantic evaluation).
 
 1. Load criteria via Step 1 above (`--load-criteria` — respects additional team criteria and `--extra`).
 2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.

@@ -247,11 +247,13 @@ Compares `> Pinned:` SHA to remote HEAD. If different, pulls the updated file an
 
 **Figma-sourced:**
 
+To create a Figma anchor, use `purlin:anchor add-figma <url>`. Then sync by name:
+
 ```
-purlin:anchor sync figma figma.com/design/abc123/Brand-System
+purlin:anchor sync weather_design
 ```
 
-Reads the Figma file via MCP. Creates a thin anchor with one visual match rule per viewport and a screenshot comparison proof. Behavioral annotations from the design are documented as context but go into feature specs as rules, not the anchor. See [references/figma_extraction_criteria.md](../references/figma_extraction_criteria.md) for the full extraction criteria.
+Compares `> Pinned:` timestamp to current Figma lastModified. If different, pulls updated screenshots and updates the timestamp. Behavioral annotations from the design are documented as context but go into feature specs as rules, not the anchor. See [references/figma_extraction_criteria.md](../references/figma_extraction_criteria.md) for the full extraction criteria.
 
 **CI staleness check:**
 

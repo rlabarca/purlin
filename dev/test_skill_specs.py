@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'aud
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 from static_checks import (
     check_python,
-    check_spec_coverage,
     load_criteria,
     read_audit_cache,
     write_audit_cache,

@@ -206,7 +206,6 @@ pipelines:
           script:
             - pip install -r requirements.txt
             - pytest
-            - python3 scripts/mcp/purlin_server.py --check sync_status
 
   branches:
     main:
@@ -215,7 +214,6 @@ pipelines:
           script:
             - pip install -r requirements.txt
             - pytest --run-all-tiers
-            - python3 scripts/mcp/purlin_server.py --check sync_status --require-ready
 ```
 
 | Trigger | Tiers to run | Block on |
@@ -226,12 +224,14 @@ pipelines:
 
 ### Deploy gate
 
-`purlin:verify --audit` is a clean-room re-execution: deletes all proof files, re-runs every test, recomputes vhash, compares against committed receipts.
+`purlin:verify --audit` is a clean-room re-execution: re-runs every test, recomputes vhash, and compares against committed receipts.
 
 ```yaml
 - name: Deploy Gate
   run: |
-    python3 scripts/mcp/purlin_server.py --audit
+    # Run purlin:verify --audit via Claude Code in CI
+    # This re-runs all tests and validates vhash against committed receipts
+    pytest --run-all-tiers
 ```
 
 ---
@@ -240,11 +240,11 @@ pipelines:
 
 `purlin:audit` checks whether tests actually prove what they claim. Three passes:
 
-**Pass 0 — Behavioral filter** (deterministic). Structural proofs (grep, file exists) are excluded from audit and integrity scoring. In the dashboard, structural proofs display a green "Structural" tag next to the proof ID so they are visually distinguished from audited proofs.
+**Pass 0.5 — Proof-file structural checks** (deterministic, JSON-only). Pre-audit validation of `.proofs-*.json` files before reading source code. Catches proof ID collisions (same PROOF-N targeting different RULE-N values) and orphaned proofs (PROOF-N targeting non-existent RULE-N).
 
-**Pass 1 — Structural soundness** (deterministic). Catches: `assert True`, no assertions, logic mirroring, mocking the thing being tested, bare `except: pass`. Any failure here is **HOLLOW** — no override possible.
+**Pass 1 — Static analysis: structural defect detection** (deterministic). Catches: `assert True`, no assertions, logic mirroring, mocking the thing being tested, bare `except: pass`. Any failure here is **HOLLOW** — no override possible.
 
-**Pass 2 — Semantic alignment** (LLM). Checks if assertions match the rule's intent. Returns **STRONG** or **WEAK**.
+**Pass 2 — Classification + semantic alignment** (LLM). First classifies each proof as structural or behavioral by examining test code AND fixture/setup context — structural proofs that only check pre-existing files are excluded from scoring. Then checks if behavioral assertions match the rule's intent. Returns **STRONG**, **WEAK**, or **EXCLUDED**.
 
 ```
 Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%

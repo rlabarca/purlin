@@ -79,7 +79,7 @@
 - PROOF-30 (RULE-6): e2e: Recompute vhash with no changes; verify matches receipt on disk @e2e
 - PROOF-31 (RULE-15): e2e: Add rule to spec; recompute vhash; verify mismatch with stale receipt @e2e
 - PROOF-32 (RULE-6): e2e: Add proof for new rule; write new receipt; verify different vhash and audit matches @e2e
-- PROOF-33 (RULE-2): e2e: Create behavioral and structural-only specs with proofs; verify both PASSING and check_spec_coverage classification @e2e
+- PROOF-33 (RULE-2): e2e: Create specs with proofs; verify both PASSING and check_spec_coverage returns correct counts @e2e
 - PROOF-34 (RULE-1): e2e: Create anchor with Source/Pinned/Path metadata; run _scan_specs; verify pinned and source_path extracted @e2e
 - PROOF-35 (RULE-22): e2e: Create external anchor; run sync_status; verify Source, Path, and Pinned lines in output @e2e
 - PROOF-36 (RULE-23): e2e: Create anchor with Source but no Pinned; run sync_status; verify unpinned warning @e2e

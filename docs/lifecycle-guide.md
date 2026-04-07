@@ -324,7 +324,7 @@ You can also say `build login` to just write code (Claude injects the spec rules
 
 ### Proof quality audit
 
-After `purlin:verify`, an audit runs automatically (three stages: spec coverage check → structural defect detection → semantic alignment). Structural-only specs get capped at WEAK. `assert True` and friends get caught deterministically. Everything else goes to the LLM for STRONG/WEAK judgment. Fix HOLLOW and WEAK proofs in the build loop and re-verify.
+After `purlin:verify`, an audit runs automatically (three passes: proof-file structural checks → static defect detection → LLM classification + semantic alignment). Structural-only proofs are EXCLUDED from integrity scoring. `assert True` and friends get caught deterministically as HOLLOW. Everything else goes to the LLM for STRONG/WEAK judgment. Fix HOLLOW and WEAK proofs in the build loop and re-verify.
 
 ### Engineers can also
 

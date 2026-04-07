@@ -12,8 +12,7 @@
 - RULE-5: Detects mock target matching the function being tested (requires --spec-path)
 - RULE-6: Returns JSON with proof_id, rule_id, test_name, status, reason for each proof
 - RULE-7: Always exits 0 for completed analysis; defects are reported via JSON output status=fail, not exit codes. Non-zero exits (2) are reserved for real errors (bad args, missing files)
-- RULE-8: check_spec_coverage returns structural_only_spec=true and per-rule structural/behavioral classification when all rules are structural presence checks
-- RULE-9: check_spec_coverage returns structural_only_spec=false and per-rule structural/behavioral classification when at least one rule describes behavioral constraints
+- RULE-8: check_spec_coverage returns rule_count and proof_count for the spec
 - RULE-10: compute_proof_hash returns a deterministic 16-char hex hash from (rule text, proof description, test code)
 - RULE-11: read_audit_cache returns an empty dict when no cache file exists and parses valid JSON when it does
 - RULE-12: write_audit_cache writes atomically via tmp + os.replace
@@ -24,15 +23,12 @@
 - RULE-17: Each audit cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
 - RULE-18: clear_audit_cache atomically replaces the cache file with an empty dict {}
 - RULE-19: write_audit_cache stamps every entry with the real current UTC time, overwriting any caller-provided cached_at
-- RULE-20: check_spec_coverage classifies proof descriptions as structural or behavioral using the same `_classify_description` function as rule classification, returning proof_desc_count, structural_proof_desc_count, behavioral_proof_desc_count
 - RULE-21: load_criteria returns built-in criteria always, appends cached additional criteria from `.purlin/cache/additional_criteria.md` if present, appends extra path if provided; no other function in static_checks.py assembles criteria text
 - RULE-22: prune_audit_cache removes all cache entries whose hash key is not in the provided live_keys set, preserving entries whose key IS in live_keys with all fields intact
 - RULE-23: prune_audit_cache with an empty live_keys set on a non-empty cache produces an empty cache (full sweep), and with all keys live produces an identical cache (no false pruning)
 - RULE-24: write_audit_cache merges new entries into the existing cache on disk — entries from prior writes for different features are preserved, not overwritten. Entries for the same (feature, proof_id) are deduplicated by keeping the latest cached_at
-- RULE-25: `_classify_description` strips backtick-enclosed content before regex matching so that code patterns like `create.*commit` do not trigger behavioral verb detection
-- RULE-26: `_classify_description` checks structural patterns before behavioral patterns and defaults to behavioral when neither matches — structural false positives (exclusion) are safer than behavioral false positives (score inflation)
-- RULE-27: `check_spec_coverage` returns `structural_proof_ids` and `behavioral_proof_ids` mapping each PROOF-N to its classification, enabling per-proof filtering in mixed specs
-- RULE-28: `_classify_description` correctly classifies expanded structural patterns including "has...frontmatter", "contains a...section" (with intervening words), "extract...verify", "includes...instruction", and "field in frontmatter"
+- RULE-25: write_audit_cache protects the entire read→merge→write cycle with an exclusive file lock (`fcntl.flock` on `audit_cache.json.lock`) so that concurrent subagent writers serialize correctly and no entries are lost
+- RULE-26: `--write-cache` CLI flag reads a JSON dict of cache entries from stdin and merges them into the existing audit cache via write_audit_cache, printing a JSON status response with `status: "merged"` and entry count
 
 ## Proof
 
@@ -43,8 +39,7 @@
 - PROOF-5 (RULE-5): Run static_checks with --spec-path on a file mocking the rule's function; verify status=fail check=mock_target_match
 - PROOF-6 (RULE-6): Run static_checks on any file; verify JSON output has proofs array with required fields
 - PROOF-7 (RULE-7): Run static_checks on a clean file and verify exit 0; run on a flawed file and verify exit 0 with status=fail in JSON output
-- PROOF-8 (RULE-8): Create spec with only grep/existence rules; call check_spec_coverage; verify structural_only_spec is true and structural_proofs list contains all rules
-- PROOF-9 (RULE-9): Create spec with behavioral rules (returns, rejects); call check_spec_coverage; verify structural_only_spec is false and behavioral_proofs list contains behavioral rules
+- PROOF-8 (RULE-8): Create spec with rules and proofs; call check_spec_coverage; verify rule_count and proof_count are correct
 - PROOF-10 (RULE-10): Call compute_proof_hash with same inputs twice and verify identical 16-char hex output; call with different inputs and verify different hash
 - PROOF-11 (RULE-11): Call read_audit_cache on a nonexistent path and verify empty dict; write valid JSON to the cache path and verify it parses correctly
 - PROOF-12 (RULE-12): Call write_audit_cache, then read the file back and verify contents match the written dict
@@ -61,7 +56,7 @@
 - PROOF-23 (RULE-7): e2e: Run on clean and flawed files; verify exit 0 for both; verify flawed has status=fail in JSON @e2e
 - PROOF-24 (RULE-5): e2e: Create test mocking bcrypt on rule about bcrypt; verify mock_target_match detected @e2e
 - PROOF-25 (RULE-3): e2e: Create test with bare except:pass; verify bare_except detected @e2e
-- PROOF-26 (RULE-8): e2e: Create structural-only and behavioral specs; verify structural_only_spec=true/false classification @e2e
+- PROOF-26 (RULE-8): e2e: Create specs with rules and proofs; call check_spec_coverage; verify rule_count and proof_count @e2e
 - PROOF-27 (RULE-13): e2e: Create shell test with if/else purlin_proof pair; verify pass; verify bare hardcoded pass still caught @e2e
 - PROOF-28 (RULE-12): e2e: Call write_audit_cache with 3 entries; verify audit_cache.json created with 3 keys @e2e
 - PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
@@ -69,13 +64,10 @@
 - PROOF-31 (RULE-12): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer; verify only STRONG entry kept @e2e
 - PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
 - PROOF-33 (RULE-19): e2e: Write cache with stale cached_at (midnight UTC); read back; verify cached_at is within 5 seconds of real current time @e2e
-- PROOF-34 (RULE-20): Create spec with behavioral rule but structural proof description "Verify file exists"; verify structural_proof_desc_count=1. Create spec with behavioral proof "POST to /login; verify 401"; verify behavioral_proof_desc_count=1
 - PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
 - PROOF-36 (RULE-22): Write cache with 3 entries (keys "aaa", "bbb", "ccc"); call prune_audit_cache with live_keys={"aaa","ccc"}; read back; verify "bbb" removed, "aaa" and "ccc" preserved with all original fields intact
 - PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
 - PROOF-38 (RULE-22): e2e: Write 5 cache entries via write_audit_cache; write 3 live keys to a temp file; call --prune-cache --live-keys-file; verify JSON output shows pruned=2, kept=3; read cache back and confirm exactly 3 entries remain @e2e
 - PROOF-39 (RULE-24): Write 3 entries for feature_a via write_audit_cache; then write 2 entries for feature_b via a second call; read cache back; verify all 5 entries are present. Then write 1 updated entry for feature_a (same proof_id, newer assessment); read back; verify feature_b entries are untouched and feature_a has the updated entry
-- PROOF-40 (RULE-25): Create description with behavioral verb inside backticks (`create.*commit` in grep context); call _classify_description; verify returns 'structural'. Create description with behavioral verb outside backticks; verify returns 'behavioral'
-- PROOF-41 (RULE-26): Call _classify_description on description matching both structural and behavioral patterns (e.g. "Grep for patterns that trigger failures"); verify returns 'structural'. Call on description matching neither; verify returns 'behavioral'
-- PROOF-42 (RULE-27): Create mixed spec with structural + behavioral proofs; call check_spec_coverage; verify structural_proof_ids contains structural PROOF-Ns and behavioral_proof_ids contains behavioral PROOF-Ns. Verify with exact skill_anchor spec as regression test
-- PROOF-43 (RULE-28): Call _classify_description on each expanded pattern variant ("has YAML frontmatter", "contains a...section", "Extract...verify", "includes...instruction", "field in frontmatter"); verify all return 'structural'. Verify 10+ behavioral descriptions return 'behavioral' (no false positives)
+- PROOF-40 (RULE-25): Run two threads calling write_audit_cache concurrently with entries for different features; verify all entries from both threads survive in the final cache. Verify the lock file is created adjacent to the cache file during the write
+- PROOF-41 (RULE-26): Call `--write-cache` via CLI with JSON on stdin; verify entries are merged and status response is correct. Seed cache first, then call `--write-cache` with entries for a different feature; verify both old and new entries survive
