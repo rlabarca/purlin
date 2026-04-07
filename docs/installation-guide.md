@@ -36,7 +36,7 @@ cd my-project
 Add the Purlin marketplace from your terminal (this is a CLI command, not inside Claude Code):
 
 ```bash
-claude plugin marketplace add git@bitbucket.org:rlabarca/purlin.git --scope project
+claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git --scope project
 ```
 
 The `--scope project` flag stores the marketplace config in the project directory (`.claude/settings.json`) so every team member who clones the repo gets Purlin automatically. Omit it for a user-level install that only applies to you.
