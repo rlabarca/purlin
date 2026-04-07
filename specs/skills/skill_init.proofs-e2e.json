@@ -54,6 +54,51 @@
       "test_name": "test_full_lifecycle_init_spec_proof_passing",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-35",
+      "rule": "RULE-33",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_prints_detecting_codebase_before_scan",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-36",
+      "rule": "RULE-34",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_always_presents_framework_selection_list",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-37",
+      "rule": "RULE-35",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_single_detection_preselected",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-38",
+      "rule": "RULE-36",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_multi_detection_preselected",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-39",
+      "rule": "RULE-37",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_no_detection_all_unselected",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

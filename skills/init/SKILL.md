@@ -50,55 +50,55 @@ Config template fields (from `templates/config.json`):
 
 ## Step 3 — Detect Test Framework
 
-Read `references/supported_frameworks.md` for the framework list and detection logic. Check project files for ALL matching frameworks — a project can use multiple (e.g., Python server + TypeScript client):
+**Print `DETECTING CODEBASE` before scanning.** Framework detection scans multiple files across the project and can take noticeable time — the user must see that work is happening:
 
-1. `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` → **pytest** (Python)
-2. `package.json` contains `vitest` → **Jest** (TypeScript/JavaScript — Vitest-compatible)
-3. `package.json` contains `jest` → **Jest** (TypeScript/JavaScript)
-4. `Makefile` or `CMakeLists.txt` at root → **C** (gcc)
-5. `composer.json` or `phpunit.xml` at root → **PHP** (PHPUnit)
-6. `.sql` files in `tests/` directory → **SQL** (sqlite3)
-
-Display ALL detected frameworks:
 ```
-Detected 2 test frameworks:
-  pytest (found conftest.py at project root)
-  Jest (found jest in package.json)
-Scaffolding both plugins to .purlin/plugins/
+DETECTING CODEBASE
+Scanning project files for test frameworks...
 ```
 
-For a single detection:
+Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth — do NOT hardcode framework names here. Check project files for ALL matching frameworks using the detection table in that reference.
+
+**Always present the framework selection list to the user**, even when auto-detection succeeds. Build the list dynamically from `references/supported_frameworks.md`. Pre-select detected frameworks with `[x]`, show undetected as `[ ]`. Always include `other` as the last option for custom plugins. This lets the user confirm, add, or remove frameworks before scaffolding.
+
+When one or more frameworks are detected:
+
 ```
-Detected: pytest (found conftest.py at project root)
-Scaffolding: .purlin/plugins/pytest_purlin.py
+DETECTING CODEBASE
+Scanning project files for test frameworks...
+
+Test frameworks (detected frameworks are pre-selected):
+  [x] <detected framework>    — <detection reason>
+  [ ] <other framework>
+  ...
+  [ ] other
+
+Confirm selection, or change? [enter to confirm]
 ```
 
-If no framework is detected, do NOT silently default to shell. Ask the user:
+When no framework is detected, do NOT silently default to shell. Show the list with nothing pre-selected:
+
 ```
+DETECTING CODEBASE
+Scanning project files for test frameworks...
+
 No test framework detected.
-Which framework(s)? [pytest (Python) / jest (JS/TS) / c (C/gcc) / php (PHP) / sql (sqlite3) / shell (Bash) / other]
-You can select multiple, e.g.: pytest, jest
+
+Test frameworks (select one or more):
+  [ ] <framework>
+  ...
+  [ ] other
+
+Which framework(s)? You can select multiple, e.g.: pytest, jest
 ```
 
 If the user selects "other", suggest `purlin:init --add-plugin` to install a custom proof plugin.
 
-Write detected frameworks to `.purlin/config.json` under `test_framework`. For multiple frameworks, use a comma-separated list: `"pytest,jest"`.
+Write selected frameworks to `.purlin/config.json` under `test_framework`. For multiple frameworks, use a comma-separated list: `"pytest,jest"`.
 
 ## Step 4 — Scaffold Proof Plugins
 
-Copy ALL detected proof plugins from `scripts/proof/` to `.purlin/plugins/`:
-
-| Framework | Source | Destination |
-|-----------|--------|-------------|
-| pytest | `scripts/proof/pytest_purlin.py` | `.purlin/plugins/pytest_purlin.py` |
-| jest | `scripts/proof/jest_purlin.js` | `.purlin/plugins/jest_purlin.js` |
-| vitest (TS) | `scripts/proof/vitest_purlin.ts` | `.purlin/plugins/vitest_purlin.ts` |
-| c | `scripts/proof/c_purlin.h` + `c_purlin_emit.py` | `.purlin/plugins/c_purlin.h` + `c_purlin_emit.py` |
-| php | `scripts/proof/phpunit_purlin.php` | `.purlin/plugins/phpunit_purlin.php` |
-| sql | `scripts/proof/sql_purlin.sh` | `.purlin/plugins/sql_purlin.sh` |
-| shell | `scripts/proof/shell_purlin.sh` | `.purlin/plugins/purlin-proof.sh` |
-
-If multiple frameworks were detected or selected, scaffold ALL of them. A project with both Python and TypeScript gets both `pytest_purlin.py` and `jest_purlin.js`.
+Copy ALL selected proof plugins from `scripts/proof/` to `.purlin/plugins/`. Use the plugin file column in `references/supported_frameworks.md` to map each framework to its source file. If multiple frameworks were selected, scaffold ALL of them.
 
 For pytest, also create or update `conftest.py` at the project root:
 
@@ -350,33 +350,13 @@ Source can be:
 purlin:init --list-plugins
 ```
 
-List all files in `.purlin/plugins/`:
+List all files in `.purlin/plugins/`. For built-in plugins, look up the framework name from `references/supported_frameworks.md` (match the plugin filename to the "Plugin file" column). Label anything not in that reference as `custom`.
 
 ```
 Installed proof plugins:
-  .purlin/plugins/pytest_purlin.py (Python/pytest)
-  .purlin/plugins/jest_purlin.js (JavaScript/Jest)
-  .purlin/plugins/vitest_purlin.ts (TypeScript/Vitest)
-  .purlin/plugins/c_purlin.h (C/gcc)
-  .purlin/plugins/phpunit_purlin.php (PHP/PHPUnit)
-  .purlin/plugins/sql_purlin.sh (SQL/sqlite3)
-  .purlin/plugins/purlin-proof.sh (Bash/shell)
+  .purlin/plugins/<plugin_file> (<Framework>)
   .purlin/plugins/my_go_plugin.py (custom)
 ```
-
-For built-in plugins, show the framework name:
-
-| Filename | Label |
-|----------|-------|
-| `pytest_purlin.py` | Python/pytest |
-| `jest_purlin.js` | JavaScript/Jest |
-| `vitest_purlin.ts` | TypeScript/Vitest |
-| `c_purlin.h` | C/gcc |
-| `c_purlin_emit.py` | C/gcc (emitter) |
-| `phpunit_purlin.php` | PHP/PHPUnit |
-| `sql_purlin.sh` | SQL/sqlite3 |
-| `purlin-proof.sh` | Bash/shell |
-| Anything else | custom |
 
 If `.purlin/plugins/` doesn't exist or is empty: `No proof plugins installed. Run purlin:init to set up.`
 

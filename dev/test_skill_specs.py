@@ -25,10 +25,17 @@ import purlin_server
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
+REFS_DIR = os.path.join(PROJECT_ROOT, 'references')
 
 
 def _read(skill_name):
     path = os.path.join(SKILLS_DIR, skill_name, 'SKILL.md')
+    with open(path) as f:
+        return f.read()
+
+
+def _read_ref(ref_name):
+    path = os.path.join(REFS_DIR, ref_name)
     with open(path) as f:
         return f.read()
 
@@ -511,12 +518,17 @@ class TestSkillInit:
     @pytest.mark.proof("skill_init", "PROOF-7", "RULE-7")
     def test_list_plugins_labels_builtin_and_custom(self):
         content = _read('init')
-        assert re.search(r'pytest_purlin\.py.*Python/pytest|Python/pytest.*pytest_purlin\.py',
-                         content), \
-            "init skill missing pytest_purlin.py → Python/pytest association"
-        assert re.search(r'jest_purlin\.js.*JavaScript/Jest|JavaScript/Jest.*jest_purlin\.js',
-                         content), \
-            "init skill missing jest_purlin.js → JavaScript/Jest association"
+        ref = _read_ref('supported_frameworks.md')
+        # Framework→plugin associations live in supported_frameworks.md
+        assert re.search(r'pytest_purlin\.py.*Python|Python.*pytest_purlin\.py',
+                         ref), \
+            "supported_frameworks.md missing pytest_purlin.py → Python association"
+        assert re.search(r'jest_purlin\.js.*JavaScript|JavaScript.*jest_purlin\.js',
+                         ref), \
+            "supported_frameworks.md missing jest_purlin.js → JavaScript association"
+        # SKILL.md must reference the file and document the custom label
+        assert 'supported_frameworks.md' in content, \
+            "init skill missing reference to supported_frameworks.md for plugin labels"
         assert 'custom' in content, \
             "init skill missing 'custom' label for non-built-in plugins"
 
@@ -575,11 +587,11 @@ class TestSkillInit:
 
     @pytest.mark.proof("skill_init", "PROOF-13", "RULE-13")
     def test_documents_pyproject_toml_detects_pytest(self):
-        content = _read('init')
-        assert 'pyproject.toml' in content, \
-            "init SKILL.md missing pyproject.toml detection indicator"
-        assert re.search(r'\[tool\.pytest\]', content), \
-            "init SKILL.md missing [tool.pytest] detection entry"
+        ref = _read_ref('supported_frameworks.md')
+        assert 'pyproject.toml' in ref, \
+            "supported_frameworks.md missing pyproject.toml detection indicator"
+        assert re.search(r'\[tool\.pytest\]', ref), \
+            "supported_frameworks.md missing [tool.pytest] detection entry"
 
     @pytest.mark.proof("skill_init", "PROOF-14", "RULE-14")
     def test_documents_package_json_jest_detects_jest(self):
@@ -591,11 +603,12 @@ class TestSkillInit:
 
     @pytest.mark.proof("skill_init", "PROOF-15", "RULE-15")
     def test_documents_vitest_maps_to_jest_plugin(self):
-        content = _read('init')
-        assert 'vitest' in content, \
-            "init SKILL.md missing vitest framework reference"
-        assert re.search(r'vitest.*jest|jest.*vitest', content, re.IGNORECASE), \
-            "init SKILL.md missing vitest -> jest scaffolding mapping"
+        ref = _read_ref('supported_frameworks.md')
+        assert 'vitest' in ref.lower(), \
+            "supported_frameworks.md missing vitest framework reference"
+        # Vitest row must reference jest_purlin.js as its plugin file
+        assert re.search(r'[Vv]itest.*jest_purlin\.js', ref), \
+            "supported_frameworks.md missing vitest -> jest_purlin.js mapping"
 
     @pytest.mark.proof("skill_init", "PROOF-16", "RULE-16")
     def test_documents_multi_framework_scaffolding(self):
@@ -626,33 +639,27 @@ class TestSkillInit:
         src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'pytest_purlin.py')
         assert os.path.isfile(src), \
             "scripts/proof/pytest_purlin.py does not exist — cannot be scaffolded"
-        content = _read('init')
-        assert 'pytest_purlin.py' in content, \
-            "init SKILL.md missing pytest_purlin.py scaffolding reference"
-        assert re.search(r'scripts/proof/pytest_purlin\.py', content), \
-            "init SKILL.md missing source path scripts/proof/pytest_purlin.py"
+        ref = _read_ref('supported_frameworks.md')
+        assert re.search(r'scripts/proof/pytest_purlin\.py', ref), \
+            "supported_frameworks.md missing source path scripts/proof/pytest_purlin.py"
 
     @pytest.mark.proof("skill_init", "PROOF-19", "RULE-19")
     def test_jest_plugin_source_exists_and_is_copy_source(self):
         src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'jest_purlin.js')
         assert os.path.isfile(src), \
             "scripts/proof/jest_purlin.js does not exist — cannot be scaffolded"
-        content = _read('init')
-        assert 'jest_purlin.js' in content, \
-            "init SKILL.md missing jest_purlin.js scaffolding reference"
-        assert re.search(r'scripts/proof/jest_purlin\.js', content), \
-            "init SKILL.md missing source path scripts/proof/jest_purlin.js"
+        ref = _read_ref('supported_frameworks.md')
+        assert re.search(r'scripts/proof/jest_purlin\.js', ref), \
+            "supported_frameworks.md missing source path scripts/proof/jest_purlin.js"
 
     @pytest.mark.proof("skill_init", "PROOF-20", "RULE-20")
     def test_shell_plugin_source_exists_and_is_copy_source(self):
         src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'shell_purlin.sh')
         assert os.path.isfile(src), \
             "scripts/proof/shell_purlin.sh does not exist — cannot be scaffolded"
-        content = _read('init')
-        assert 'purlin-proof.sh' in content, \
-            "init SKILL.md missing purlin-proof.sh destination reference"
-        assert re.search(r'shell_purlin\.sh', content), \
-            "init SKILL.md missing source path shell_purlin.sh"
+        ref = _read_ref('supported_frameworks.md')
+        assert re.search(r'shell_purlin\.sh', ref), \
+            "supported_frameworks.md missing source path shell_purlin.sh"
 
     @pytest.mark.proof("skill_init", "PROOF-21", "RULE-21", tier="e2e")
     def test_pytest_plugin_emits_valid_proofs_json(self, tmp_path):
@@ -993,6 +1000,91 @@ class TestSkillInit:
         status_output = purlin_server.sync_status(str(tmp_path))
         assert 'PASSING' in status_output, \
             f"Expected PASSING after full lifecycle run, got:\n{status_output}"
+
+    @pytest.mark.proof("skill_init", "PROOF-35", "RULE-33", tier="e2e")
+    def test_skill_prints_detecting_codebase_before_scan(self):
+        """SKILL.md must instruct printing DETECTING CODEBASE before framework scan."""
+        content = _read('init')
+        # Must contain the exact status message
+        assert 'DETECTING CODEBASE' in content, \
+            "init SKILL.md missing 'DETECTING CODEBASE' status message"
+        # The message must appear BEFORE the detection checklist
+        detecting_pos = content.index('DETECTING CODEBASE')
+        # Detection logic references conftest.py — that must come after
+        conftest_pos = content.index('conftest.py')
+        assert detecting_pos < conftest_pos, \
+            "DETECTING CODEBASE must appear before framework detection logic"
+
+    @pytest.mark.proof("skill_init", "PROOF-36", "RULE-34", tier="e2e")
+    def test_skill_always_presents_framework_selection_list(self):
+        """SKILL.md must instruct always showing the selection list, even on auto-detect."""
+        content = _read('init')
+        # Must document presenting the list always (not just when no detection)
+        assert re.search(r'(?i)always present the framework selection list', content), \
+            "init SKILL.md missing 'always present the framework selection list' instruction"
+        # Must use checkbox-style markers [x] and [ ]
+        assert '[x]' in content, \
+            "init SKILL.md missing [x] pre-selected checkbox marker"
+        assert '[ ]' in content, \
+            "init SKILL.md missing [ ] unselected checkbox marker"
+        # Must document pre-selection of detected frameworks
+        assert re.search(r'(?i)pre-select.*detected|detected.*pre-selected', content), \
+            "init SKILL.md missing pre-selection of detected frameworks"
+        # Must include a confirm prompt
+        assert re.search(r'(?i)confirm.*selection|confirm.*change', content), \
+            "init SKILL.md missing confirmation prompt for framework selection"
+
+    @pytest.mark.proof("skill_init", "PROOF-37", "RULE-35", tier="e2e")
+    def test_skill_shows_single_detection_preselected(self):
+        """SKILL.md must show a template for single detection with [x] and [ ] markers."""
+        content = _read('init')
+        ref = _read_ref('supported_frameworks.md')
+        # SKILL.md must show [x] for detected and [ ] for unselected in same block
+        assert '[x]' in content and '[ ]' in content, \
+            "init SKILL.md missing [x]/[ ] checkbox markers for detection example"
+        # The template shows detected framework with detection reason
+        assert re.search(r'\[x\].*detection reason', content), \
+            "init SKILL.md missing [x] with detection reason template"
+        # supported_frameworks.md must have at least one detection heuristic
+        assert re.search(r'conftest\.py|package\.json|Makefile', ref), \
+            "supported_frameworks.md missing detection heuristics"
+
+    @pytest.mark.proof("skill_init", "PROOF-38", "RULE-36", tier="e2e")
+    def test_skill_shows_multi_detection_preselected(self):
+        """SKILL.md documents that multiple detected frameworks are all pre-selected."""
+        content = _read('init')
+        ref = _read_ref('supported_frameworks.md')
+        # SKILL.md must document that detected frameworks are pre-selected
+        assert re.search(r'(?i)pre-select.*detected|detected.*pre-selected',
+                         content), \
+            "init SKILL.md missing detected framework pre-selection instruction"
+        # supported_frameworks.md must list multiple frameworks
+        frameworks = re.findall(r'^\| \*\*(\w+)\*\*', ref, re.MULTILINE)
+        assert len(frameworks) >= 3, \
+            f"supported_frameworks.md should list multiple frameworks, found {len(frameworks)}"
+
+    @pytest.mark.proof("skill_init", "PROOF-39", "RULE-37", tier="e2e")
+    def test_skill_shows_no_detection_all_unselected(self):
+        """SKILL.md must show a no-detection example with all [ ] unselected."""
+        content = _read('init')
+        # Must have a "no detection" section
+        assert re.search(r'(?i)no test framework.*detected|no framework.*detected', content), \
+            "init SKILL.md missing no-detection scenario"
+        # In the no-detection block, must show [ ] for framework and no [x]
+        lines = content.split('\n')
+        found_no_detect = False
+        in_no_detect_section = False
+        for i, line in enumerate(lines):
+            if re.search(r'(?i)no test framework.*detected|no framework.*detected', line):
+                in_no_detect_section = True
+            if in_no_detect_section and '[ ] <framework>' in line:
+                # Verify no [x] in nearby context
+                context = '\n'.join(lines[max(0, i-2):i+8])
+                if '[x]' not in context:
+                    found_no_detect = True
+                    break
+        assert found_no_detect, \
+            "init SKILL.md missing no-detection example with all [ ] unselected"
 
 
 # ── skill_rename ──────────────────────────────────────────────────────

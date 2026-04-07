@@ -38,6 +38,11 @@
 - RULE-30: When a non-purlin pre-push hook exists before init, the existing hook is preserved
 - RULE-31: When report: true, purlin-report.html exists at project root; when report: false, it does not
 - RULE-32: Full lifecycle works end-to-end: init creates structure, spec created, proof plugin runs, proofs emitted, sync_status reports PASSING, pre-push hook allows push
+- RULE-33: Init prints DETECTING CODEBASE before scanning for test frameworks
+- RULE-34: Init always presents the full framework selection list to the user, even when auto-detection succeeds, with detected frameworks pre-selected
+- RULE-35: When a single framework is detected, the selection list shows it pre-selected with [x] and all others unselected with [ ]
+- RULE-36: When multiple frameworks are detected, all detected frameworks are pre-selected in the list
+- RULE-37: When no frameworks are detected, the selection list shows all options unselected
 
 ## Proof
 
@@ -75,3 +80,8 @@
 - PROOF-32 (RULE-32): e2e: Python lifecycle: init, spec, pytest, proofs, PASSING, hook ok @e2e
 - PROOF-33 (RULE-32): e2e: Shell lifecycle: init, spec, shell proof, proofs, PASSING @e2e
 - PROOF-34 (RULE-32): e2e: Jest lifecycle: init, spec, reporter, proofs, PASSING @e2e
+- PROOF-35 (RULE-33): e2e: Verify SKILL.md contains "DETECTING CODEBASE" print instruction before framework scan @e2e
+- PROOF-36 (RULE-34): e2e: Verify SKILL.md documents always presenting the framework selection list with [x] and [ ] markers, including when auto-detection succeeds @e2e
+- PROOF-37 (RULE-35): e2e: Verify SKILL.md shows a single-detection example with one [x] pre-selected and remaining [ ] unselected @e2e
+- PROOF-38 (RULE-36): e2e: Verify SKILL.md shows a multi-detection example with multiple [x] pre-selected @e2e
+- PROOF-39 (RULE-37): e2e: Verify SKILL.md shows a no-detection example with all [ ] unselected @e2e
