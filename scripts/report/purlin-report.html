@@ -225,7 +225,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rt{width:100%;min-width:0;border-collapse:collapse;margin-bottom:4px;table-layout:fixed}
 .rt th{padding:5px 8px;font-size:9px;cursor:default}
 .rt td{padding:5px 8px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top;overflow-wrap:break-word;word-break:break-word}
-.rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:12px}
+.rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:24px}
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
 .rlbl-scoped{color:var(--tp-anchor-color)}.rlbl-global{color:var(--tp-global-color)}
@@ -664,81 +664,10 @@ table{min-width:680px}
       return th;
     }
 
-    /* Separate anchors from regular features */
-    var regularFeatures = [];
-    var anchorFeatures = [];
-    for (var fi = 0; fi < features.length; fi++) {
-      if (features[fi].type === 'anchor') anchorFeatures.push(features[fi]);
-      else regularFeatures.push(features[fi]);
-    }
+    /* Group all features by category (anchors included in their category) */
+    var grouped = groupByCategory(features);
 
-    /* Group regular features by category (anchors excluded) */
-    var grouped = groupByCategory(regularFeatures);
-
-    /* Anchors section — between uncommitted files and specs */
-    if (anchorFeatures.length > 0) {
-      h += '<div class="section-label">Anchors</div>';
-      h += '<div class="table-container"><table>';
-      h += '<colgroup>';
-      for (var cgi2 = 0; cgi2 < cols.length; cgi2++) {
-        h += '<col' + (cols[cgi2].w ? ' style="width:' + cols[cgi2].w + '"' : '') + '>';
-      }
-      h += '</colgroup>';
-      h += renderTableHead('Anchor');
-      h += '<tbody>';
-      for (var ai = 0; ai < anchorFeatures.length; ai++) {
-        var af = anchorFeatures[ai];
-        var isAnchorExpanded = expandedSet[af.name];
-        var aPct = af.total ? Math.round(af.proved / af.total * 100) : 0;
-        var aIntVal = (af.audit && af.audit.integrity != null) ? af.audit.integrity : null;
-
-        h += '<tr class="fr' + (isAnchorExpanded ? ' expanded' : '') + '" data-name="' + esc(af.name) + '">';
-
-        /* Name + type */
-        h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(af.name) + '</span>';
-        if (af.is_global) {
-          h += '<span class="tp tp-global">global</span>';
-        }
-        if (af.source_url) {
-          var aExtTitle = 'Source: ' + af.source_url;
-          if (af.source_path) aExtTitle += '\nPath: ' + af.source_path;
-          if (af.pinned) aExtTitle += '\nPinned: ' + (af.pinned.length > 10 ? af.pinned.substring(0, 7) : af.pinned);
-          h += '<span class="ext-icon" title="' + esc(aExtTitle) + '">' + extIconSvg + '</span>';
-          if (af.ext_status === 'stale' || af.ext_status === 'unpinned') {
-            h += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
-          }
-        }
-        h += '</div></td>';
-
-        /* Coverage */
-        h += '<td><div class="cov"><span class="cov-t">' + af.proved + '/' + af.total + '</span>';
-        h += '<div class="cov-bar"><div class="cov-fill ' + covClass(af.status) + '" style="width:' + aPct + '%"></div></div></div></td>';
-
-        /* Status */
-        h += '<td class="col-status"><span class="' + badgeClass(af.status) + '">' + badgeText(af.status) + '</span></td>';
-
-        /* Integrity */
-        h += '<td class="' + intClass(aIntVal) + '">' + (aIntVal != null ? aIntVal + '%' : '&mdash;') + '</td>';
-
-        /* Verified */
-        if (af.receipt && af.receipt.timestamp) {
-          var avt = relTime(af.receipt.timestamp);
-          var avcls = af.receipt.stale ? 'ver ver-stale' : 'ver';
-          h += '<td class="' + avcls + '">' + esc(avt) + '</td>';
-        } else {
-          h += '<td class="ver">&mdash;</td>';
-        }
-        h += '</tr>';
-
-        /* Detail row */
-        if (isAnchorExpanded) {
-          h += renderDetail(af);
-        }
-      }
-      h += '</tbody></table></div>';
-    }
-
-    /* Feature table — specs only, no anchors */
+    /* Feature table — all features grouped by category */
     h += '<div class="section-label">Specs</div>';
     h += '<div class="table-container"><table>';
     h += '<colgroup>';
