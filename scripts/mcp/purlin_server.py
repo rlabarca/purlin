@@ -382,7 +382,7 @@ def _compute_integrity(strong, weak, hollow, manual):
     """Compute integrity percentage from assessment counts.
 
     Integrity = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) × 100.
-    Measures proof quality only — NO_PROOF rules are excluded.
+    Measures proof quality only — NONE rules are excluded.
     Returns rounded integer percentage, or None if no behavioral proofs.
     """
     behavioral_total = strong + weak + hollow + manual
@@ -1373,7 +1373,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             elif best_proof and best_proof.get('status') == 'fail':
                 rule_status = 'FAIL'
             else:
-                rule_status = 'NO_PROOF'
+                rule_status = 'NONE'
 
             rules_list.append({
                 'id': key,

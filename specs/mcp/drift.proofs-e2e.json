@@ -3,46 +3,19 @@
   "proofs": [
     {
       "feature": "drift",
-      "id": "PROOF-12",
+      "id": "PROOF-17",
       "rule": "RULE-12",
-      "test_file": "dev/test_e2e_anchor_authority.sh",
-      "test_name": "mixed anchor staleness detected",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "drift detects stale anchor",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "drift",
-      "id": "PROOF-13",
-      "rule": "RULE-2",
-      "test_file": "dev/test_e2e_anchor_authority.sh",
-      "test_name": "local anchor mod \u2192 CHANGED_SPECS",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-14",
-      "rule": "RULE-13",
-      "test_file": "dev/test_e2e_anchor_authority.sh",
-      "test_name": "dual detection: stale + spec change",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-15",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_anchor_authority.sh",
-      "test_name": "proof_status correct during staleness",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-16",
-      "rule": "RULE-14",
-      "test_file": "dev/test_e2e_anchor_authority.sh",
-      "test_name": "anchor name matches spec name",
+      "id": "PROOF-18",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "drift detects unpinned anchor",
       "status": "pass",
       "tier": "e2e"
     }

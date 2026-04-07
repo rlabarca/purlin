@@ -264,6 +264,15 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_structural_proof_tag_rendering",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-30",
       "rule": "RULE-30",
       "test_file": "dev/test_purlin_report.py",

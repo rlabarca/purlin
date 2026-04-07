@@ -178,7 +178,7 @@ def make_data(overrides=None):
                         "source": None,
                         "is_deferred": False,
                         "is_assumed": False,
-                        "status": "NO_PROOF",
+                        "status": "NONE",
                         "proofs": [],
                     },
                 ],
@@ -1653,12 +1653,12 @@ def make_action_banner_data():
                     {
                         "id": "RULE-2", "description": "Does thing B",
                         "label": "own", "source": None, "is_deferred": False,
-                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                        "is_assumed": False, "status": "NONE", "proofs": [],
                     },
                     {
                         "id": "RULE-3", "description": "Does thing C",
                         "label": "own", "source": None, "is_deferred": False,
-                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                        "is_assumed": False, "status": "NONE", "proofs": [],
                     },
                 ],
                 "audit": None,
@@ -1746,7 +1746,7 @@ def make_action_banner_data():
                     {
                         "id": "RULE-1", "description": "Something",
                         "label": "own", "source": None, "is_deferred": False,
-                        "is_assumed": False, "status": "NO_PROOF", "proofs": [],
+                        "is_assumed": False, "status": "NONE", "proofs": [],
                     },
                 ],
                 "audit": None,
@@ -1865,11 +1865,11 @@ class TestRuleRowHighlights:
 
     @pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24")
     def test_no_proof_rules_have_amber_border(self, page, dashboard):
-        """PROOF-24: NO_PROOF rules have class rule-np and amber left border."""
+        """PROOF-24: NONE rules have class rule-np and amber left border."""
         data = make_action_banner_data()
         load_dashboard(page, dashboard, data=data)
 
-        # Expand the PARTIAL feature (has 2 NO_PROOF rules)
+        # Expand the PARTIAL feature (has 2 NONE rules)
         page.click("tr.fr[data-name='feat_partial']")
         page.wait_for_timeout(300)
 
@@ -1886,7 +1886,7 @@ class TestRuleRowHighlights:
         }""")
         hex_color = rgb_to_hex(border_color)
         assert hex_color == "#f59e0b", (
-            f"Expected amber (#f59e0b) border-left on NO_PROOF rule td, got {hex_color}"
+            f"Expected amber (#f59e0b) border-left on NONE rule td, got {hex_color}"
         )
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof24_no_proof_border.png"))
 
@@ -1964,7 +1964,7 @@ class TestExternalReferenceBlock:
                 "rules": [
                     {"id": "RULE-1", "description": "Some constraint",
                      "label": "own", "source": None, "is_deferred": False,
-                     "is_assumed": False, "status": "NO_PROOF", "proofs": []},
+                     "is_assumed": False, "status": "NONE", "proofs": []},
                 ],
                 "audit": None,
             },
@@ -2183,6 +2183,157 @@ class TestUncommittedWork:
         load_dashboard(page, dashboard, data=data_clean)
         uw_section_clean = page.query_selector(".uw-section")
         assert uw_section_clean is None, "Expected no .uw-section when uncommitted is empty"
+
+
+@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-31")
+def test_structural_proof_tag_rendering(dashboard, page):
+    """PROOF-31: Structural proofs show a green 'Structural' tag (.atag-st); behavioral proofs do not."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    # Put each proof in its own rule so each lives in its own .rprf td cell,
+    # making it straightforward to verify the structural tag appears only on the
+    # structural proof and not on the behavioral one.
+    data = make_data({
+        "features": [
+            {
+                "name": "auth_login",
+                "category": "auth",
+                "type": "feature",
+                "is_global": False,
+                "description": "Login feature",
+                "source_url": None,
+                "proved": 2,
+                "total": 2,
+                "deferred": 0,
+                "status": "PASSING",
+                "vhash": "a1b2c3d4",
+                "receipt": None,
+                "rules": [
+                    {
+                        "id": "RULE-1",
+                        "description": "No eval in scripts",
+                        "label": "own",
+                        "source": None,
+                        "is_deferred": False,
+                        "is_assumed": False,
+                        "status": "PASS",
+                        "proofs": [
+                            {
+                                "id": "PROOF-1",
+                                "description": "Grep scripts/ for eval(); verify zero matches",
+                                "test_file": "tests/test_sec.py",
+                                "test_name": "test_no_eval",
+                                "tier": "unit",
+                                "status": "pass",
+                            },
+                        ],
+                    },
+                    {
+                        "id": "RULE-2",
+                        "description": "Rejects expired tokens",
+                        "label": "own",
+                        "source": None,
+                        "is_deferred": False,
+                        "is_assumed": False,
+                        "status": "PASS",
+                        "proofs": [
+                            {
+                                "id": "PROOF-2",
+                                "description": "Returns 401 when token is expired",
+                                "test_file": "tests/test_login.py",
+                                "test_name": "test_expired",
+                                "tier": "unit",
+                                "status": "pass",
+                            },
+                        ],
+                    },
+                ],
+                "audit": {
+                    "integrity": 85,
+                    "strong": 1,
+                    "weak": 0,
+                    "hollow": 0,
+                    "manual": 0,
+                    "findings": [],
+                },
+            },
+        ],
+        "summary": {
+            "total_features": 1,
+            "verified": 0,
+            "passing": 1,
+            "partial": 0,
+            "failing": 0,
+            "untested": 0,
+        },
+        "audit_summary": {
+            "integrity": 85,
+            "strong": 1,
+            "weak": 0,
+            "hollow": 0,
+            "manual": 0,
+            "behavioral_total": 2,
+            "last_audit": now,
+            "last_audit_relative": "just now",
+            "stale": False,
+        },
+    })
+    load_dashboard(page, dashboard, data=data)
+
+    # Expand the auth_login feature row
+    page.click("tr.fr[data-name='auth_login']")
+    page.wait_for_timeout(300)
+    page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof31_structural_tag.png"))
+
+    # Each rule has its own .rprf td — find the cell that contains PROOF-1 exclusively
+    # (RULE-1's cell) and verify it has .atag-st
+    structural_tag = page.evaluate("""() => {
+        const detail = document.querySelector("tr.fr[data-name='auth_login'] + tr.dr");
+        if (!detail) return 'no-detail';
+        // Each rule row has exactly one .rprf td; collect them in order
+        const proofCells = Array.from(detail.querySelectorAll('tr td.rprf'));
+        // First cell = RULE-1 (structural proof PROOF-1)
+        const cell1 = proofCells[0];
+        if (!cell1) return 'no-proof-cells';
+        const tag = cell1.querySelector('.atag-st');
+        return tag ? tag.textContent.trim() : null;
+    }""")
+    assert structural_tag == "Structural", (
+        f"Expected RULE-1 proof cell (structural) to have .atag-st='Structural', got: {structural_tag!r}"
+    )
+
+    # Second cell = RULE-2 (behavioral proof PROOF-2) — must NOT have .atag-st
+    behavioral_tag = page.evaluate("""() => {
+        const detail = document.querySelector("tr.fr[data-name='auth_login'] + tr.dr");
+        if (!detail) return 'no-detail';
+        const proofCells = Array.from(detail.querySelectorAll('tr td.rprf'));
+        // Second cell = RULE-2 (behavioral proof PROOF-2)
+        const cell2 = proofCells[1];
+        if (!cell2) return 'no-second-cell';
+        const tag = cell2.querySelector('.atag-st');
+        return tag ? tag.textContent.trim() : null;
+    }""")
+    assert behavioral_tag is None, (
+        f"Expected RULE-2 proof cell (behavioral) to have no .atag-st, got: {behavioral_tag!r}"
+    )
+
+    # Verify the .atag-st element has a green background (#22c55e)
+    structural_bg = page.evaluate("""() => {
+        const tag = document.querySelector('.atag-st');
+        return tag ? getComputedStyle(tag).backgroundColor : null;
+    }""")
+    assert structural_bg is not None, "Expected .atag-st element to be present for color check"
+    assert rgb_to_hex(structural_bg) == "#22c55e", (
+        f"Expected .atag-st background #22c55e (green), got: {structural_bg!r}"
+    )
+
+    # Verify the .atag-st element has white text (#ffffff)
+    structural_color = page.evaluate("""() => {
+        const tag = document.querySelector('.atag-st');
+        return tag ? getComputedStyle(tag).color : None;
+    }""")
+    assert rgb_to_hex(structural_color) == "#ffffff", (
+        f"Expected .atag-st text color #ffffff (white), got: {structural_color!r}"
+    )
 
 
 @pytest.mark.proof("purlin_report", "PROOF-30", "RULE-30")

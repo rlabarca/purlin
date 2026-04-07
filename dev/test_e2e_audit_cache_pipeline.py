@@ -400,9 +400,9 @@ class TestAuditCachePipeline:
         """RULE-29: Integrity = (STRONG + MANUAL) / behavioral_total — quality only.
 
         Setup: Feature 'payments' has 5 behavioral rules (RULE-1..5).
-        Proofs exist for RULE-1, RULE-2, RULE-3 only. RULE-4 and RULE-5 have NO_PROOF.
+        Proofs exist for RULE-1, RULE-2, RULE-3 only. RULE-4 and RULE-5 have NONE.
         Audit cache: PROOF-1 STRONG, PROOF-2 STRONG, PROOF-3 WEAK.
-        Expected: integrity = 2 STRONG / 3 behavioral = 67% (NO_PROOF excluded)
+        Expected: integrity = 2 STRONG / 3 behavioral = 67% (NONE excluded)
         """
         _make_project(self.tmp_dir, with_git=True)
 
@@ -432,7 +432,7 @@ Process payments.
 - PROOF-5 (RULE-5): Process payment, verify audit log entry
 """)
 
-        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NO_PROOF
+        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NONE
         with open(os.path.join(spec_dir, 'payments.proofs-unit.json'), 'w') as f:
             json.dump({"tier": "unit", "proofs": [
                 {"feature": "payments", "id": "PROOF-1", "rule": "RULE-1",
@@ -472,7 +472,7 @@ Process payments.
         assert payments is not None, "payments feature not found"
         audit = payments.get('audit')
 
-        # 2 STRONG / (2 STRONG + 1 WEAK + 0 HOLLOW) = 2/3 = 67% (NO_PROOF excluded)
+        # 2 STRONG / (2 STRONG + 1 WEAK + 0 HOLLOW) = 2/3 = 67% (NONE excluded)
         assert audit['integrity'] == 67, (
             f"Expected integrity=67% (2 STRONG / 3 behavioral), got {audit['integrity']}%\n"
             f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}"
@@ -594,10 +594,10 @@ Checkout flow.
         """RULE-31: Global integrity = (STRONG + MANUAL) / behavioral_total.
 
         Setup: Two features, each with 3 behavioral rules.
-        Feature A: 2 STRONG proofs, 1 NO_PROOF rule.
-        Feature B: 2 STRONG proofs, 1 NO_PROOF rule.
+        Feature A: 2 STRONG proofs, 1 NONE rule.
+        Feature B: 2 STRONG proofs, 1 NONE rule.
         Cache: 4 STRONG total.
-        Global: 4 STRONG / 4 behavioral = 100% (NO_PROOF excluded)
+        Global: 4 STRONG / 4 behavioral = 100% (NONE excluded)
         """
         _make_project(self.tmp_dir, with_git=True)
 
@@ -693,7 +693,7 @@ Beta feature.
 
         output = sync_status(self.tmp_dir)
 
-        # Global: 4 STRONG / 4 behavioral = 100% (NO_PROOF excluded)
+        # Global: 4 STRONG / 4 behavioral = 100% (NONE excluded)
         assert 'Integrity: 100%' in output, (
             f"Expected global 'Integrity: 100%' (4 STRONG / 4 behavioral), "
             f"got:\n{output}"
@@ -933,10 +933,10 @@ Beta feature.
 
     @pytest.mark.proof("sync_status", "PROOF-54", "RULE-29", tier="e2e")
     def test_integrity_ignores_no_proof_rules_completely(self):
-        """RULE-29: Integrity = quality only. NO_PROOF rules have zero effect.
+        """RULE-29: Integrity = quality only. NONE rules have zero effect.
 
         Setup: Feature with 4 behavioral rules. Only 2 have proofs (both STRONG).
-        RULE-3 and RULE-4 have NO_PROOF.
+        RULE-3 and RULE-4 have NONE.
         Expected: integrity = 2/2 = 100% (not 2/4 = 50%).
         """
         _make_project(self.tmp_dir, with_git=True)
@@ -1014,11 +1014,11 @@ Core engine.
         assert engine is not None, "engine feature not found"
         audit = engine.get('audit')
 
-        # 2 STRONG / 2 behavioral = 100% (NO_PROOF rules excluded from denominator)
+        # 2 STRONG / 2 behavioral = 100% (NONE rules excluded from denominator)
         assert audit['integrity'] == 100, (
             f"Expected integrity=100% (2 STRONG / 2 behavioral), got {audit['integrity']}%\n"
             f"  strong={audit['strong']}, weak={audit['weak']}, hollow={audit['hollow']}\n"
-            f"  NO_PROOF rules must NOT affect integrity"
+            f"  NONE rules must NOT affect integrity"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-55", "RULE-32", tier="e2e")
@@ -1069,7 +1069,7 @@ Core engine.
         """RULE-33: Integrity formula is identical in audit_criteria, SKILL.md, and sync_status spec.
 
         Structural check: all three files contain the canonical formula text and
-        none of them include NO_PROOF in the integrity formula denominator.
+        none of them include NONE in the integrity formula denominator.
         """
         import re
 
@@ -1091,25 +1091,25 @@ Core engine.
                 f"  File: {path}"
             )
 
-        # Verify the integrity formula line itself does not include NO_PROOF
+        # Verify the integrity formula line itself does not include NONE
         with open(files['audit_criteria']) as f:
             content = f.read()
         formula_match = re.search(r'^Integrity score = .*$', content, re.MULTILINE)
         assert formula_match, "audit_criteria.md must have an 'Integrity score = ...' line"
         formula_line = formula_match.group(0)
-        assert 'NO_PROOF' not in formula_line, (
-            f"audit_criteria.md integrity formula must not include NO_PROOF:\n"
+        assert 'NONE' not in formula_line, (
+            f"audit_criteria.md integrity formula must not include NONE:\n"
             f"  Found: {formula_line}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-57", "RULE-32", tier="e2e")
     def test_integrity_with_no_proof_rules_all_sources_match(self):
-        """RULE-32: CLI, dashboard, and computed integrity agree when NO_PROOF rules exist.
+        """RULE-32: CLI, dashboard, and computed integrity agree when NONE rules exist.
 
         Setup: Isolated project with a 5-rule feature. 3 rules have proofs
-        (1 STRONG, 1 WEAK, 1 HOLLOW). RULE-4 and RULE-5 have NO_PROOF.
+        (1 STRONG, 1 WEAK, 1 HOLLOW). RULE-4 and RULE-5 have NONE.
         Expected: integrity = 1 STRONG / (1 S + 1 W + 1 H) = 1/3 = 33%.
-        NO_PROOF rules must NOT appear in the denominator (that would give 1/5 = 20%).
+        NONE rules must NOT appear in the denominator (that would give 1/5 = 20%).
         """
         _make_project(self.tmp_dir, with_git=True, with_report=True)
 
@@ -1142,7 +1142,7 @@ Invoice management.
 - PROOF-3 (RULE-3): Submit invalid address, verify rejection
 """)
 
-        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NO_PROOF
+        # Only 3 of 5 rules have proofs — RULE-4 and RULE-5 are NONE
         with open(os.path.join(spec_dir, 'invoices.proofs-unit.json'), 'w') as f:
             json.dump({"tier": "unit", "proofs": [
                 {"feature": "invoices", "id": "PROOF-1", "rule": "RULE-1",
@@ -1191,7 +1191,7 @@ Invoice management.
 
         # --- Source 1: Compute expected integrity ---
         # 1 STRONG / (1 STRONG + 1 WEAK + 1 HOLLOW) = 1/3 = 33%
-        # NOT 1/5 = 20% (NO_PROOF excluded from denominator)
+        # NOT 1/5 = 20% (NONE excluded from denominator)
         expected_integrity = round(1 / 3 * 100)  # 33
 
         # --- Source 2: Parse CLI integrity ---
@@ -1212,11 +1212,11 @@ Invoice management.
         # --- All three must match ---
         assert cli_integrity == expected_integrity, (
             f"CLI integrity ({cli_integrity}%) != computed ({expected_integrity}%)\n"
-            f"  If CLI shows 20%, NO_PROOF rules are leaking into the denominator"
+            f"  If CLI shows 20%, NONE rules are leaking into the denominator"
         )
         assert dashboard_integrity == expected_integrity, (
             f"Dashboard integrity ({dashboard_integrity}%) != computed ({expected_integrity}%)\n"
-            f"  If dashboard shows 20%, NO_PROOF rules are leaking into the denominator"
+            f"  If dashboard shows 20%, NONE rules are leaking into the denominator"
         )
         assert cli_integrity == dashboard_integrity, (
             f"CLI ({cli_integrity}%) != dashboard ({dashboard_integrity}%)"

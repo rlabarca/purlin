@@ -133,6 +133,54 @@ class TestSpecFormatEnforcement:
             f"sync_status should use scope for overlap suggestion. Got: {result}"
 
 
+class TestSpecFormatMultilineDescription:
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'test')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    def _write_spec(self, name, content):
+        path = os.path.join(self.spec_dir, f'{name}.md')
+        with open(path, 'w') as f:
+            f.write(content)
+        return path
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-8", "RULE-8")
+    def test_multiline_description_continuation(self):
+        """PROOF-8: Description continuation lines joined; Scope not included."""
+        spec_path = self._write_spec('test_feat', (
+            '# Feature: test_feat\n\n'
+            '> Description: First line\n'
+            '>   second line\n'
+            '> Scope: src/\n\n'
+            '## Rules\n'
+            '- RULE-1: Must work\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Test\n'
+        ))
+        features = purlin_server._scan_specs(self.project_root)
+        assert 'test_feat' in features, \
+            "test_feat not found in scanned specs"
+        desc = features['test_feat'].get('description', '')
+        # Description must contain both continuation lines
+        assert 'First line' in desc, \
+            f"Description missing 'First line': {desc!r}"
+        assert 'second line' in desc, \
+            f"Description missing 'second line': {desc!r}"
+        # Description must NOT contain the Scope field value
+        assert 'src/' not in desc, \
+            f"Description must not include Scope field value 'src/': {desc!r}"
+        # Scope must be parsed independently as its own field
+        scope = features['test_feat'].get('scope', [])
+        assert scope == ['src/'], \
+            f"Scope should be parsed as ['src/'], got: {scope!r}"
+
+
 class TestSpecFormatConventions:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-3", "RULE-3")

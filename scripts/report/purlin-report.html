@@ -77,10 +77,6 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
 .staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
 
-/* Auto-refresh toggle */
-.auto-refresh{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none}
-.auto-refresh input{accent-color:var(--green);cursor:pointer;margin:0}
-.auto-refresh.active{color:var(--green)}
 
 /* Theme toggle */
 .theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
@@ -227,13 +223,13 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 
 /* Rules sub-table */
 .rt{width:100%;min-width:0;border-collapse:collapse;margin-bottom:4px;table-layout:fixed}
-.rt th{padding:5px 12px;font-size:9px;cursor:default}
-.rt td{padding:5px 12px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top;overflow-wrap:break-word;word-break:break-word}
-.rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:28px}
+.rt th{padding:5px 8px;font-size:9px;cursor:default}
+.rt td{padding:5px 8px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top;overflow-wrap:break-word;word-break:break-word}
+.rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:12px}
 .rdesc{color:var(--text-primary)}
 .rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
 .rlbl-scoped{color:var(--tp-anchor-color)}.rlbl-global{color:var(--tp-global-color)}
-.rt td.rst{font-size:11px;font-weight:600;text-align:center}
+.rt td.rst{font-size:11px;font-weight:600;text-align:center;white-space:nowrap;padding:5px 6px}
 .rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--green)}.rst-chk-fail{color:var(--red)}.rst-def{color:var(--text-dim);font-style:italic}
 .rprf{font-size:12px;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word}
 .rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px;overflow-wrap:break-word;word-break:break-all}
@@ -460,7 +456,7 @@ table{min-width:680px}
     }
     if (f.status === 'PARTIAL') {
       var noProof = 0;
-      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'NO_PROOF') noProof++; }
+      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'NONE') noProof++; }
       return '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
     }
     if (f.status === 'UNTESTED') {
@@ -576,7 +572,6 @@ table{min-width:680px}
     h += '<span class="header-project">' + esc(D.project) + '</span>';
     h += '</div><div class="header-right">';
     h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
-    h += '<label class="auto-refresh" id="auto-refresh-label" title="Reload page every 15 minutes to pick up new purlin:status data"><input type="checkbox" id="auto-refresh-cb">auto</label>';
     h += '</div>';
     /* Last audit time */
     if (A && A.last_audit) {
@@ -669,10 +664,81 @@ table{min-width:680px}
       return th;
     }
 
-    /* Group features by category */
-    var grouped = groupByCategory(features);
+    /* Separate anchors from regular features */
+    var regularFeatures = [];
+    var anchorFeatures = [];
+    for (var fi = 0; fi < features.length; fi++) {
+      if (features[fi].type === 'anchor') anchorFeatures.push(features[fi]);
+      else regularFeatures.push(features[fi]);
+    }
 
-    /* Feature table — all categories including _anchors */
+    /* Group regular features by category (anchors excluded) */
+    var grouped = groupByCategory(regularFeatures);
+
+    /* Anchors section — between uncommitted files and specs */
+    if (anchorFeatures.length > 0) {
+      h += '<div class="section-label">Anchors</div>';
+      h += '<div class="table-container"><table>';
+      h += '<colgroup>';
+      for (var cgi2 = 0; cgi2 < cols.length; cgi2++) {
+        h += '<col' + (cols[cgi2].w ? ' style="width:' + cols[cgi2].w + '"' : '') + '>';
+      }
+      h += '</colgroup>';
+      h += renderTableHead('Anchor');
+      h += '<tbody>';
+      for (var ai = 0; ai < anchorFeatures.length; ai++) {
+        var af = anchorFeatures[ai];
+        var isAnchorExpanded = expandedSet[af.name];
+        var aPct = af.total ? Math.round(af.proved / af.total * 100) : 0;
+        var aIntVal = (af.audit && af.audit.integrity != null) ? af.audit.integrity : null;
+
+        h += '<tr class="fr' + (isAnchorExpanded ? ' expanded' : '') + '" data-name="' + esc(af.name) + '">';
+
+        /* Name + type */
+        h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(af.name) + '</span>';
+        if (af.is_global) {
+          h += '<span class="tp tp-global">global</span>';
+        }
+        if (af.source_url) {
+          var aExtTitle = 'Source: ' + af.source_url;
+          if (af.source_path) aExtTitle += '\nPath: ' + af.source_path;
+          if (af.pinned) aExtTitle += '\nPinned: ' + (af.pinned.length > 10 ? af.pinned.substring(0, 7) : af.pinned);
+          h += '<span class="ext-icon" title="' + esc(aExtTitle) + '">' + extIconSvg + '</span>';
+          if (af.ext_status === 'stale' || af.ext_status === 'unpinned') {
+            h += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
+          }
+        }
+        h += '</div></td>';
+
+        /* Coverage */
+        h += '<td><div class="cov"><span class="cov-t">' + af.proved + '/' + af.total + '</span>';
+        h += '<div class="cov-bar"><div class="cov-fill ' + covClass(af.status) + '" style="width:' + aPct + '%"></div></div></div></td>';
+
+        /* Status */
+        h += '<td class="col-status"><span class="' + badgeClass(af.status) + '">' + badgeText(af.status) + '</span></td>';
+
+        /* Integrity */
+        h += '<td class="' + intClass(aIntVal) + '">' + (aIntVal != null ? aIntVal + '%' : '&mdash;') + '</td>';
+
+        /* Verified */
+        if (af.receipt && af.receipt.timestamp) {
+          var avt = relTime(af.receipt.timestamp);
+          var avcls = af.receipt.stale ? 'ver ver-stale' : 'ver';
+          h += '<td class="' + avcls + '">' + esc(avt) + '</td>';
+        } else {
+          h += '<td class="ver">&mdash;</td>';
+        }
+        h += '</tr>';
+
+        /* Detail row */
+        if (isAnchorExpanded) {
+          h += renderDetail(af);
+        }
+      }
+      h += '</tbody></table></div>';
+    }
+
+    /* Feature table — specs only, no anchors */
     h += '<div class="section-label">Specs</div>';
     h += '<div class="table-container"><table>';
     h += '<colgroup>';
@@ -780,31 +846,7 @@ table{min-width:680px}
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
 
-    /* Auto-refresh: reload the page every 15 min to pick up new report-data.js */
-    var arCb = document.getElementById('auto-refresh-cb');
-    var arLabel = document.getElementById('auto-refresh-label');
-    var arKey = 'purlin-auto-refresh';
-    var arLastReload = 'purlin-auto-refresh-ts';
-    var arTimer = null;
-    var AR_INTERVAL = 15 * 60 * 1000;
-    function setAutoRefresh(on) {
-      if (arTimer) { clearInterval(arTimer); arTimer = null; }
-      if (on) {
-        arTimer = setInterval(function() {
-          try { localStorage.setItem(arLastReload, String(Date.now())); } catch(e) {}
-          location.reload();
-        }, AR_INTERVAL);
-      }
-      arLabel.classList.toggle('active', on);
-      try { localStorage.setItem(arKey, on ? '1' : '0'); } catch(e) {}
-    }
-    var arSaved = false;
-    try { arSaved = localStorage.getItem(arKey) === '1'; } catch(e) {}
-    arCb.checked = arSaved;
-    setAutoRefresh(arSaved);
-    arCb.addEventListener('change', function() { setAutoRefresh(this.checked); });
-
-    /* Live staleness: update "X ago" text every 30s so it never goes stale between reloads */
+    /* Live staleness: update "X ago" text every 30s */
     setInterval(function() {
       var dot = app.querySelector('.staleness-dot');
       var txt = app.querySelector('.staleness-text');
@@ -822,21 +864,6 @@ table{min-width:680px}
         auditEl.textContent = atxt;
       }
     }, 30000);
-
-    /* Visibility-based reload: when tab is re-focused after the refresh interval, reload immediately.
-       This defeats browser background-tab throttling of setInterval. */
-    try { localStorage.setItem(arLastReload, localStorage.getItem(arLastReload) || String(Date.now())); } catch(e) {}
-    document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState !== 'visible') return;
-      if (!arCb.checked) return;
-      try {
-        var last = parseInt(localStorage.getItem(arLastReload), 10) || 0;
-        if (Date.now() - last >= AR_INTERVAL) {
-          localStorage.setItem(arLastReload, String(Date.now()));
-          location.reload();
-        }
-      } catch(e) {}
-    });
 
     var uwToggle = document.getElementById('uw-toggle');
     if (uwToggle) {
@@ -912,7 +939,7 @@ table{min-width:680px}
       /* Support both old (r.proof) and new (r.proofs) data contract */
       var proofs = r.proofs || (r.proof ? [r.proof] : []);
 
-      var rowCls = r.status === 'NO_PROOF' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
+      var rowCls = r.status === 'NONE' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
       h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
       h += '<td class="rid">' + esc(r.id) + '</td>';
       h += '<td class="rdesc">' + esc(r.description) + '</td>';

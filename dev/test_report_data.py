@@ -340,8 +340,8 @@ class TestReportDataStructure:
 
     @pytest.mark.proof("report_data", "PROOF-9", "RULE-9")
     def test_all_rule_statuses_are_valid(self):
-        """All rule statuses are one of: PASS, FAIL, NO_PROOF, or DEFERRED."""
-        valid_statuses = {'PASS', 'FAIL', 'NO_PROOF', 'DEFERRED'}
+        """All rule statuses are one of: PASS, FAIL, NONE, or DEFERRED."""
+        valid_statuses = {'PASS', 'FAIL', 'NONE', 'DEFERRED'}
         # Build with both passing and no-proof rules
         _write_spec(self.tmp, 'feature', _minimal_spec_content())
         _write_proofs(self.tmp, 'feature', _minimal_proofs())

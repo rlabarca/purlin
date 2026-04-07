@@ -102,6 +102,15 @@
     },
     {
       "feature": "drift",
+      "id": "PROOF-17",
+      "rule": "RULE-15",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unpinned_anchor_detected",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
       "id": "PROOF-11",
       "rule": "RULE-11",
       "test_file": "dev/test_mcp_server.py",

@@ -1,5 +1,5 @@
 {
-  "tier": "unit",
+  "tier": "e2e",
   "proofs": [
     {
       "feature": "pre_push_hook",
@@ -8,7 +8,7 @@
       "test_file": "dev/test_e2e_external_refs.sh",
       "test_name": "pre-push blocks on anchor fail",
       "status": "pass",
-      "tier": "unit"
+      "tier": "e2e"
     }
   ]
 }

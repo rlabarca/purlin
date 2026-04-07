@@ -148,6 +148,19 @@ class TestSkillBuild:
         assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
             "build skill missing tier tag references (@integration/@e2e/unit)"
 
+    @pytest.mark.proof("skill_build", "PROOF-8", "RULE-8")
+    def test_documents_proof_fixer_mode(self):
+        content = _read('build')
+        # Build skill must document the "proof fixer" mode invoked by the auditor
+        assert re.search(r'(?i)(proof fixer|running as proof fixer)', content), \
+            "build skill missing 'proof fixer' mode documentation"
+        # Must instruct to fix proofs based on audit feedback
+        assert re.search(r'(?i)(audit.*finding|finding.*audit|fix.*proof|HOLLOW|WEAK)', content), \
+            "build skill missing fix-proofs-based-on-audit instruction"
+        # Must document reporting back after fixing
+        assert re.search(r'(?i)(report back|re-audit|Fixed.*PROOF)', content), \
+            "build skill missing 'report back' / 're-audit' instruction after fixing"
+
 
 # ── skill_drift ───────────────────────────────────────────────────────
 
@@ -374,6 +387,20 @@ class TestSkillSpecFromCode:
         assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
             "spec-from-code skill missing tier tag references (@integration/@e2e/unit)"
 
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-9")
+    def test_phase4_cleanup_offer_and_overwrite_in_place(self):
+        content = _read('spec-from-code')
+        # Phase 4 must offer to remove features/ after migration
+        assert re.search(r'(?i)(remove|delete).*features/', content), \
+            "spec-from-code skill missing offer to remove features/ in Phase 4"
+        # Non-compliant specs in specs/ are overwritten in place — NOT removed
+        assert re.search(r'(?i)overwritten in place', content), \
+            "spec-from-code skill missing 'overwritten in place' language for specs/"
+        # The spec must NOT say to remove non-compliant specs from specs/
+        # (they are overwritten, not deleted separately)
+        assert 'features/' in content and 'overwritten in place' in content, \
+            "spec-from-code skill must document features/ removal AND specs/ overwrite-in-place paths"
+
 
 # ── skill_status ──────────────────────────────────────────────────────
 
@@ -476,3 +503,17 @@ class TestSkillVerify:
         content = _read('verify')
         assert 'NEVER modify' in content, \
             "verify skill missing 'NEVER modify' read-only constraint"
+
+    @pytest.mark.proof("skill_verify", "PROOF-6", "RULE-6")
+    def test_step_4e_documents_independent_audit(self):
+        content = _read('verify')
+        # Step 4e must document the independent audit that reports final integrity score
+        assert re.search(r'Step 4e', content), \
+            "verify skill missing Step 4e heading"
+        assert re.search(r'(?i)independent', content), \
+            "verify skill missing 'independent' audit language in Step 4e"
+        assert re.search(r'(?i)integrity', content), \
+            "verify skill missing integrity score reference in Step 4e"
+        # Must reference the auditor agent (purlin-auditor)
+        assert 'purlin-auditor' in content, \
+            "verify skill Step 4e missing purlin-auditor reference"

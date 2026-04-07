@@ -36,6 +36,15 @@
       "test_name": "test_has_tier_review",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-5",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_phase4_cleanup_offer_and_overwrite_in_place",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

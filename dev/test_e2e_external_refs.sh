@@ -611,6 +611,229 @@ fi
 
 
 # ==========================================================================
+# PROOF-13 (RULE-5): Part 1-only anchor is local — no Source/Pinned
+# ==========================================================================
+echo "--- PROOF-13: Part 1-only anchor is local ---"
+TMP13=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP13"
+init_project "$TMP13"
+
+# Create anchor with EXACTLY the Part 1 authoring template — no Source/Path/Pinned
+cat > "$TMP13/specs/_anchors/local_only.md" << 'EOF'
+# Anchor: local_only
+
+> Description: A local cross-cutting constraint
+> Type: security
+
+## What it does
+
+Local security constraint with no external source.
+
+## Rules
+
+- RULE-1: No eval() in source files
+- RULE-2: No exec() in source files
+
+## Proof
+
+- PROOF-1 (RULE-1): grep -r "eval(" src/ returns zero matches
+- PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
+EOF
+(cd "$TMP13" && git add -A && git commit -q -m "add local anchor")
+
+# Verify _scan_specs returns source_url=None, pinned=None
+p13_scan=$(python3 -c "
+import sys, os
+sys.path.insert(0, os.path.join('$TMP13', 'scripts', 'mcp'))
+from purlin_server import _scan_specs
+features = _scan_specs('$TMP13')
+info = features.get('local_only', {})
+su = info.get('source_url')
+pi = info.get('pinned')
+sp = info.get('source_path')
+if su is None and pi is None and sp is None and info.get('is_anchor') == True:
+    print('pass')
+else:
+    print(f'fail: source_url={su} pinned={pi} source_path={sp} is_anchor={info.get(\"is_anchor\")}')
+" 2>/dev/null)
+
+# Verify sync_status output has NO Source/Pinned for this anchor
+p13_status=$(run_sync_status "$TMP13")
+p13_no_source=true; p13_no_pinned=true
+echo "$p13_status" | grep -A3 "local_only" | grep -q "Source:" && p13_no_source=false
+echo "$p13_status" | grep -A3 "local_only" | grep -q "Pinned:" && p13_no_pinned=false
+echo "$p13_status" | grep -A3 "local_only" | grep -q "Unpinned" && p13_no_pinned=false
+
+if [[ "$p13_scan" == "pass" ]] && $p13_no_source && $p13_no_pinned; then
+  echo "  PASS: Part 1-only anchor is local, no external ref lines"
+  purlin_proof "skill_anchor" "PROOF-5" "RULE-5" pass "Part 1-only anchor parsed as local"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: scan=$p13_scan no_source=$p13_no_source no_pinned=$p13_no_pinned"
+  purlin_proof "skill_anchor" "PROOF-5" "RULE-5" fail "Part 1-only anchor: scan=$p13_scan"
+  FAIL=$((FAIL + 1))
+fi
+
+# ==========================================================================
+# PROOF-14 (RULE-6): Part 2 tracking fields make anchor externally-referenced
+# ==========================================================================
+echo "--- PROOF-14: Part 2 fields make anchor external ---"
+TMP14=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP14"
+BARE14=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE14"; rm -rf "$BARE14"
+SHA14=$(create_external_repo "$BARE14" "docs/constraints.md" "# security constraints")
+
+init_project "$TMP14"
+
+# Create anchor with Part 1 + Part 2 tracking fields
+cat > "$TMP14/specs/_anchors/tracked_ext.md" << EOF
+# Anchor: tracked_ext
+
+> Description: External security constraints
+> Source: $BARE14
+> Path: docs/constraints.md
+> Pinned: $SHA14
+> Type: security
+
+## What it does
+
+External security constraints sourced from a remote repo.
+
+## Rules
+
+- RULE-1: No eval() in source files
+- RULE-2: No exec() in source files
+
+## Proof
+
+- PROOF-1 (RULE-1): grep -r "eval(" src/ returns zero matches
+- PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
+EOF
+(cd "$TMP14" && git add -A && git commit -q -m "add external anchor")
+
+# Verify _scan_specs returns all Part 2 fields populated
+p14_scan=$(python3 -c "
+import sys, os
+sys.path.insert(0, os.path.join('$TMP14', 'scripts', 'mcp'))
+from purlin_server import _scan_specs
+features = _scan_specs('$TMP14')
+info = features.get('tracked_ext', {})
+su = info.get('source_url', '')
+pi = info.get('pinned', '')
+sp = info.get('source_path', '')
+if su == '$BARE14' and pi == '$SHA14' and sp == 'docs/constraints.md':
+    print('pass')
+else:
+    print(f'fail: source_url={su} pinned={pi} source_path={sp}')
+" 2>/dev/null)
+
+# Verify sync_status output shows Source/Path/Pinned
+p14_status=$(run_sync_status "$TMP14")
+p14_has_source=false; p14_has_path=false; p14_has_pinned=false
+echo "$p14_status" | grep -q "Source:" && p14_has_source=true
+echo "$p14_status" | grep -q "Path: docs/constraints.md" && p14_has_path=true
+echo "$p14_status" | grep -q "Pinned:" && p14_has_pinned=true
+
+if [[ "$p14_scan" == "pass" ]] && $p14_has_source && $p14_has_path && $p14_has_pinned; then
+  echo "  PASS: Part 2 fields parsed, sync_status shows external ref"
+  purlin_proof "skill_anchor" "PROOF-6" "RULE-6" pass "Part 2 tracking fields fully parsed"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: scan=$p14_scan source=$p14_has_source path=$p14_has_path pinned=$p14_has_pinned"
+  purlin_proof "skill_anchor" "PROOF-6" "RULE-6" fail "Part 2 fields: scan=$p14_scan"
+  FAIL=$((FAIL + 1))
+fi
+
+# ==========================================================================
+# PROOF-15 (RULE-7): Adding Part 2 fields transitions local → external
+# ==========================================================================
+echo "--- PROOF-15: Part 1 → Part 2 transition ---"
+TMP15=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP15"
+BARE15=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE15"; rm -rf "$BARE15"
+SHA15=$(create_external_repo "$BARE15" "spec.md" "# external")
+
+init_project "$TMP15"
+
+# Phase A: Create Part 1-only anchor
+cat > "$TMP15/specs/_anchors/evolving.md" << 'EOF'
+# Anchor: evolving
+
+> Description: Starts local, becomes external
+> Type: api
+
+## What it does
+
+Constraint that starts local.
+
+## Rules
+
+- RULE-1: API responses use JSON
+- RULE-2: All endpoints require auth
+
+## Proof
+
+- PROOF-1 (RULE-1): Verify JSON content-type
+- PROOF-2 (RULE-2): Verify 401 without token
+EOF
+(cd "$TMP15" && git add -A && git commit -q -m "local anchor")
+
+# Capture Phase A state
+p15_before=$(python3 -c "
+import sys, os
+sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
+from purlin_server import _scan_specs
+features = _scan_specs('$TMP15')
+info = features.get('evolving', {})
+print(f'{info.get(\"source_url\")},{info.get(\"pinned\")}')
+" 2>/dev/null)
+
+# Phase B: Add Part 2 tracking fields (simulating purlin:anchor sync)
+cat > "$TMP15/specs/_anchors/evolving.md" << EOF
+# Anchor: evolving
+
+> Description: Starts local, becomes external
+> Source: $BARE15
+> Path: spec.md
+> Pinned: $SHA15
+> Type: api
+
+## What it does
+
+Constraint that starts local, now tracked from external source.
+
+## Rules
+
+- RULE-1: API responses use JSON
+- RULE-2: All endpoints require auth
+
+## Proof
+
+- PROOF-1 (RULE-1): Verify JSON content-type
+- PROOF-2 (RULE-2): Verify 401 without token
+EOF
+(cd "$TMP15" && git add -A && git commit -q -m "add external tracking")
+
+# Capture Phase B state
+p15_after=$(python3 -c "
+import sys, os
+sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
+from purlin_server import _scan_specs
+features = _scan_specs('$TMP15')
+info = features.get('evolving', {})
+print(f'{info.get(\"source_url\")},{info.get(\"pinned\")}')
+" 2>/dev/null)
+
+# Phase A should be None,None — Phase B should have values
+if [[ "$p15_before" == "None,None" ]] && [[ "$p15_after" == "$BARE15,$SHA15" ]]; then
+  echo "  PASS: Part 1 → Part 2 transition: local becomes external"
+  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" pass "Part 1→2 transition changes scan results"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: before=$p15_before after=$p15_after"
+  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" fail "transition: before=$p15_before after=$p15_after"
+  FAIL=$((FAIL + 1))
+fi
+
+
+# ==========================================================================
 # Emit proof files
 # ==========================================================================
 export PROJECT_ROOT="$REAL_PROJECT_ROOT"
@@ -618,5 +841,5 @@ cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "e2e_external_refs: $PASS passed, $FAIL failed (12 proofs recorded)"
+echo "e2e_external_refs: $PASS passed, $FAIL failed (15 proofs recorded)"
 [[ $FAIL -eq 0 ]]

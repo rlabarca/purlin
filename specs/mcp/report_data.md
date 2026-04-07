@@ -14,7 +14,7 @@
 - RULE-6: Features with all proofs passing (status "PASSING" or "VERIFIED") have a non-null vhash; others have null vhash
 - RULE-7: Features with receipt files include commit, timestamp, and stale fields in receipt
 - RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proofs (array of proof objects where each proof has id, description, test_file, test_name, tier, status, audit)
-- RULE-9: Rule status is one of PASS, FAIL, NO_PROOF, or DEFERRED
+- RULE-9: Rule status is one of PASS, FAIL, NONE, or DEFERRED
 - RULE-10: Rule label is one of own, required, or global
 - RULE-11: docs_url is dynamically derived from the Purlin plugin git remote
 - RULE-12: Anchor features have type "anchor" and include source_url when `> Source:` is present in spec
