@@ -1,8 +1,8 @@
 {
   "feature": "skill_init",
-  "vhash": "02bcd8a6",
-  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
-  "timestamp": "2026-04-07T13:46:48.452182+00:00",
+  "vhash": "ead6c825",
+  "commit": "011ccbaa30dc0bae1ab95724e96609a5e91ecaba",
+  "timestamp": "2026-04-08T15:36:25.098091+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -30,6 +30,11 @@
     "RULE-30",
     "RULE-31",
     "RULE-32",
+    "RULE-33",
+    "RULE-34",
+    "RULE-35",
+    "RULE-36",
+    "RULE-37",
     "RULE-4",
     "RULE-5",
     "RULE-6",
@@ -166,6 +171,31 @@
     {
       "id": "PROOF-32",
       "rule": "RULE-32",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-35",
+      "rule": "RULE-33",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-36",
+      "rule": "RULE-34",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-37",
+      "rule": "RULE-35",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-38",
+      "rule": "RULE-36",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-39",
+      "rule": "RULE-37",
       "status": "pass"
     },
     {
