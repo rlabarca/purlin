@@ -404,6 +404,14 @@ class TestAuditCache:
         h1 = compute_proof_hash("rule A", "proof A", "test A")
         h2 = compute_proof_hash("rule B", "proof B", "test B")
         assert h1 != h2
+        # Pin the exact algorithm: sha256("rule A\x00proof A\x00test A")[:16]
+        # Pre-computed independently via: hashlib.sha256(b"rule A\x00proof A\x00test A").hexdigest()[:16]
+        assert h1 == "d81ac1e833476848", (
+            f"Hash algorithm mismatch: expected d81ac1e833476848, got {h1!r}. "
+            "This pins the null-byte separator and sha256 algorithm."
+        )
+        assert len(h1) == 16
+        assert all(c in "0123456789abcdef" for c in h1)
 
     @pytest.mark.proof("static_checks", "PROOF-10", "RULE-10")
     def test_compute_proof_hash_no_separator_collision(self):

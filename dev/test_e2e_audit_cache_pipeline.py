@@ -140,9 +140,9 @@ class TestAuditCachePipeline:
 
     @pytest.mark.proof("static_checks", "PROOF-28", "RULE-12", tier="e2e")
     def test_write_cache_creates_file(self):
-        """RULE-1: write_audit_cache writes audit_cache.json with entries keyed by proof hash."""
+        """RULE-12: write_audit_cache writes atomically — file is valid JSON with correct field values."""
         _make_project(self.tmp_dir, with_git=False)
-        cache = _make_cache_entries(strong=2, weak=1)
+        cache = _make_cache_entries(feature='login', strong=2, weak=1)
 
         write_audit_cache(self.tmp_dir, cache)
 
@@ -151,6 +151,27 @@ class TestAuditCachePipeline:
         with open(cache_path) as f:
             data = json.load(f)
         assert len(data) == 3, f"Expected 3 cache entries, got {len(data)}"
+
+        # Assert specific literal field values — not the original dict — so we prove
+        # write_audit_cache actually wrote the correct content, not just that it round-trips.
+        strong_entries = [v for v in data.values() if v.get('assessment') == 'STRONG']
+        weak_entries = [v for v in data.values() if v.get('assessment') == 'WEAK']
+        assert len(strong_entries) == 2, f"Expected 2 STRONG entries on disk, got {len(strong_entries)}"
+        assert len(weak_entries) == 1, f"Expected 1 WEAK entry on disk, got {len(weak_entries)}"
+
+        # Verify the STRONG entry fields are exactly the values the function should write
+        s = strong_entries[0]
+        assert s['assessment'] == 'STRONG', f"Expected literal 'STRONG', got {s['assessment']!r}"
+        assert s['criterion'] == 'matches rule intent', f"Unexpected criterion: {s['criterion']!r}"
+        assert s['feature'] == 'login', f"Expected literal 'login', got {s['feature']!r}"
+        assert s['fix'] == 'none', f"Expected literal 'none', got {s['fix']!r}"
+
+        # Verify the WEAK entry fields
+        w = weak_entries[0]
+        assert w['assessment'] == 'WEAK', f"Expected literal 'WEAK', got {w['assessment']!r}"
+        assert w['criterion'] == 'missing negative test', f"Unexpected criterion: {w['criterion']!r}"
+        assert w['feature'] == 'login', f"Expected literal 'login', got {w['feature']!r}"
+        assert w['fix'] == 'add error case', f"Expected literal 'add error case', got {w['fix']!r}"
 
     @pytest.mark.proof("static_checks", "PROOF-29", "RULE-17", tier="e2e")
     def test_cache_entry_required_fields(self):
