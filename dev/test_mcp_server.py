@@ -661,8 +661,8 @@ class TestSyncStatus:
         assert features['login']['stack'] is None
 
     @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
-    def test_warns_too_few_rules(self):
-        """RULE-37: Warns when feature has fewer than 5 rules."""
+    def test_no_rule_count_warning_for_few_rules(self):
+        """RULE-37: No rule-count warning for features with few rules."""
         self._write_spec('login', (
             '# Feature: login\n\n'
             '## What it does\nHandles login.\n\n'
@@ -676,12 +676,12 @@ class TestSyncStatus:
             '- PROOF-3 (RULE-3): Check logs\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert '3 rules' in result
-        assert '5–10' in result or 'aim for' in result.lower()
+        assert 'aim for' not in result.lower()
+        assert '5–10' not in result
 
     @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
-    def test_warns_too_many_rules(self):
-        """RULE-37: Warns when feature has more than 10 rules."""
+    def test_no_rule_count_warning_for_many_rules(self):
+        """RULE-37: No rule-count warning for features with many rules."""
         rules = '\n'.join(f'- RULE-{i}: Constraint {i}' for i in range(1, 13))
         proofs = '\n'.join(f'- PROOF-{i} (RULE-{i}): Test {i}' for i in range(1, 13))
         self._write_spec('login', (
@@ -691,12 +691,12 @@ class TestSyncStatus:
             f'## Proof\n{proofs}\n'
         ))
         result = purlin_server.sync_status(self.project_root)
-        assert '12 rules' in result
-        assert '5–10' in result or 'aim for' in result.lower()
+        assert 'aim for' not in result.lower()
+        assert '5–10' not in result
 
     @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
     def test_no_rule_count_warning_for_anchors(self):
-        """RULE-37: Anchors are exempt from rule count warnings."""
+        """RULE-37: No rule-count warning for anchors."""
         self._write_spec('security', (
             '# Anchor: security\n\n'
             '## What it does\nSecurity.\n\n'
@@ -708,7 +708,7 @@ class TestSyncStatus:
 
     @pytest.mark.proof("sync_status", "PROOF-63", "RULE-37")
     def test_no_rule_count_warning_for_instructions(self):
-        """RULE-37: Instruction specs are exempt from rule count warnings."""
+        """RULE-37: No rule-count warning for instruction specs."""
         self._write_spec('agent_spec', (
             '# Feature: agent_spec\n\n'
             '## What it does\nAgent instructions.\n\n'
@@ -832,6 +832,39 @@ class TestSyncStatus:
         assert anchor_entry is not None, "ext_security should appear in report data features"
         assert anchor_entry['pinned'] == full_sha
         assert anchor_entry['source_path'] == 'specs/security/constraints.md'
+
+
+class TestIntegrityFormula:
+    """sync_status RULE-33: integrity formula consistency."""
+
+    @pytest.mark.proof("sync_status", "PROOF-56", "RULE-33")
+    def test_integrity_formula_consistent_across_files(self):
+        """The integrity formula is identical in audit_criteria, audit SKILL, and sync_status spec."""
+        root = os.path.join(os.path.dirname(__file__), '..')
+        files_to_check = [
+            os.path.join(root, 'references', 'audit_criteria.md'),
+            os.path.join(root, 'skills', 'audit', 'SKILL.md'),
+            os.path.join(root, 'specs', 'mcp', 'sync_status.md'),
+        ]
+        formula = '(STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)'
+        for path in files_to_check:
+            with open(path) as f:
+                content = f.read()
+            assert formula in content, (
+                f"File {os.path.basename(path)} missing integrity formula: {formula}"
+            )
+            # NONE must NOT appear in the formula's denominator expression
+            # The formula is: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)
+            # NONE should be excluded from both numerator and denominator
+            import re
+            # Find all formula-like expressions (ratio with parenthesized terms)
+            formulas_found = re.findall(
+                r'\([A-Z+\s]+\)\s*/\s*\(([A-Z+\s]+)\)', content
+            )
+            for denom in formulas_found:
+                assert 'NONE' not in denom, (
+                    f"File {os.path.basename(path)} includes NONE in formula denominator: {denom}"
+                )
 
 
 class TestPurlinConfig:
@@ -1294,6 +1327,122 @@ class TestDriftSmartFallback:
             assert 'recommendation' not in data
         finally:
             shutil.rmtree(project_root)
+
+
+class TestDriftRuleDetails:
+    """drift RULE-16: rule_details in drift output."""
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        subprocess.run(['git', 'init'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=self.project_root, capture_output=True, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        # Create a source file in scope
+        os.makedirs(os.path.join(self.project_root, 'src', 'api'))
+        with open(os.path.join(self.project_root, 'src', 'api', 'handler.py'), 'w') as f:
+            f.write('def handle(): return 200\n')
+
+        # Create a spec with 3 rules scoped to the source file
+        os.makedirs(os.path.join(self.project_root, 'specs', 'api'))
+        with open(os.path.join(self.project_root, 'specs', 'api', 'handler.md'), 'w') as f:
+            f.write(
+                '# Feature: handler\n\n'
+                '> Description: API request handler\n'
+                '> Scope: src/api/handler.py\n\n'
+                '## Rules\n'
+                '- RULE-1: Returns 200 on valid input\n'
+                '- RULE-2: Returns 400 on invalid input\n'
+                '- RULE-3: Logs request duration\n\n'
+                '## Proof\n'
+                '- PROOF-1 (RULE-1): POST valid input; verify 200\n'
+                '- PROOF-2 (RULE-2): POST invalid input; verify 400\n'
+                '- PROOF-3 (RULE-3): POST request; verify duration logged\n'
+            )
+
+        # Create proof file with 2 of 3 rules proved
+        with open(os.path.join(self.project_root, 'specs', 'api',
+                               'handler.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "handler", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test.py", "test_name": "test_valid",
+                 "status": "pass", "tier": "unit"},
+                {"feature": "handler", "id": "PROOF-2", "rule": "RULE-2",
+                 "test_file": "tests/test.py", "test_name": "test_invalid",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        # Initial commit with verify prefix
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'verify: initial'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        # Now modify the scope file to create a CHANGED_BEHAVIOR entry
+        with open(os.path.join(self.project_root, 'src', 'api', 'handler.py'), 'w') as f:
+            f.write('def handle(): return 200\ndef batch(): return 201\n')
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add batch endpoint'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    @pytest.mark.proof("drift", "PROOF-19", "RULE-16", tier="integration")
+    def test_rule_details_for_changed_behavior(self):
+        """drift returns rule_details with per-rule proof status for changed specs."""
+        result_text = purlin_server.drift(self.project_root)
+        data = json.loads(result_text)
+
+        # rule_details should exist and contain the handler spec
+        assert 'rule_details' in data, (
+            f"Missing rule_details in drift output. Keys: {list(data.keys())}"
+        )
+        assert 'handler' in data['rule_details'], (
+            f"handler not in rule_details. Specs: {list(data['rule_details'].keys())}"
+        )
+
+        details = data['rule_details']['handler']
+
+        # Should have 3 rule entries
+        assert details['total_rules'] == 3, (
+            f"Expected 3 total_rules, got {details['total_rules']}"
+        )
+        assert details['proved_rules'] == 2, (
+            f"Expected 2 proved_rules, got {details['proved_rules']}"
+        )
+
+        # Check individual rules
+        rules = {r['rule_id']: r for r in details['rules']}
+        assert 'RULE-1' in rules
+        assert 'RULE-2' in rules
+        assert 'RULE-3' in rules
+
+        # RULE-1 and RULE-2 have passing proofs, RULE-3 does not
+        assert rules['RULE-1']['proof_status'] == 'pass', (
+            f"RULE-1 should be pass, got {rules['RULE-1']['proof_status']}"
+        )
+        assert rules['RULE-2']['proof_status'] == 'pass', (
+            f"RULE-2 should be pass, got {rules['RULE-2']['proof_status']}"
+        )
+        assert rules['RULE-3']['proof_status'] == 'unproved', (
+            f"RULE-3 should be unproved, got {rules['RULE-3']['proof_status']}"
+        )
+
+        # Rule descriptions should be present
+        assert 'Returns 200' in rules['RULE-1']['description']
+        assert 'Returns 400' in rules['RULE-2']['description']
+        assert 'Logs request duration' in rules['RULE-3']['description']
+
+        # Changed files should include the scope file
+        assert 'src/api/handler.py' in details['changed_files'], (
+            f"Expected handler.py in changed_files, got {details['changed_files']}"
+        )
 
 
 class TestServerOutput:

@@ -40,9 +40,12 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 3. **Existing spec detection:** Scan for specs that can be used as migration context. Check two locations:
 
    **a) Legacy `features/` directory:** If `features/` exists at the project root:
-   - Read all `.md` files recursively (excluding `.impl.md` companion files)
+   - Read all `.md` files recursively (excluding `.impl.md` and `.discoveries.md` companion files from the main spec list)
    - For each spec, extract: feature name, category (subdirectory), description, scenarios (Given/When/Then blocks), and any behavioral constraints
-   - If `.impl.md` companion files exist, note them for `## Implementation Notes`
+   - For each spec, check for companion files:
+     - **`.impl.md`** — deviations table, architecture details, test quality audit data
+     - **`.discoveries.md`** — bug entries (resolved and open), user testing observations, Figma/design references
+   - Note all companion files found — they are critical migration inputs in Phase 3
 
    **b) Non-compliant specs in `specs/`:** Glob `specs/**/*.md` and read each file. A spec is non-compliant if any of the following are true:
    - Missing `## Rules` section
@@ -246,10 +249,19 @@ For each category:
 
    **From `features/` (legacy format):**
    - Read the original `features/<category>/<name>.md` file in full
-   - Read any companion `.impl.md` file if present
    - Extract scenarios (Given/When/Then), descriptions, and behavioral constraints
    - Old scenarios become RULE-N candidates; old descriptions inform `## What it does`
-   - If a companion `.impl.md` exists, extract architecturally significant details for `## Implementation Notes`
+
+   **Read ALL companion files:**
+   - **`.impl.md` companion** — read in full. Extract:
+     - **Active Deviations table** — each deviation where the spec says X but the implementation does Y becomes a rule reflecting the *actual* behavior. If the deviation was PM-ACCEPTED, use the implementation's behavior as the rule. If PENDING or REJECTED, flag it for the user in the review step as a discrepancy.
+     - **Architecture details** — design patterns, caching strategies, concurrency models, data flow, and tradeoffs go into `## Implementation Notes`
+     - **Test Quality Audit data** — note the last audit date and score in Implementation Notes for context
+   - **`.discoveries.md` companion** — read in full. Extract:
+     - **Resolved bugs** (`[BUG]` entries with status RESOLVED) — each becomes a RULE-N protecting against regression. E.g., `[BUG] M12: info bar overlaps disclaimer on mobile` → `RULE-N: Info bar does not overlap disclaimer on viewports below 768px`
+     - **Open bugs** — each becomes a RULE-N tagged `(deferred)`. The bug description becomes the rule, and the observed-vs-expected detail goes into a comment or Implementation Notes.
+     - **Figma/design references** — any URLs or references to visual designs become `> Visual-Reference:` metadata or `@manual` proof references
+     - **User testing observations** — behavioral observations that aren't bugs but document expected behavior become rule candidates
 
    **From `specs/` (non-compliant format):**
    - Read the existing `specs/<category>/<name>.md` file in full
@@ -264,7 +276,74 @@ For each category:
 
    If no migration candidate exists, generate from code alone (standard behavior).
 
-4. For each feature in the category, write `specs/<category>/<name>.md`:
+4. **UI feature extraction (mandatory for UI features):** If the feature's scope files are in directories associated with UI rendering (`components/`, `views/`, `pages/`, `layouts/`, `templates/`, `sections/`) or are JSX/TSX/Vue/Svelte files, apply the following extraction strategy **in addition to** standard rule extraction. This also applies to any file producing HTML output (server-rendered templates, SSR components).
+
+   The extraction is organized by **rebuild risk** — what an engineer would get wrong without the rule — not by code pattern type. See `references/spec_quality_guide.md` ("Rebuild risk tiers") for the prioritization framework.
+
+   **a) Data sources — what data, from where (wrong-behavior tier):**
+
+   For each section of the component, trace where its displayed data comes from. This is the #1 rebuild risk for UI features — connecting to the wrong field means wrong numbers on screen.
+
+   Trace these patterns:
+   - Props passed from parent components or route params
+   - API calls (`fetch`, `axios`, `useQuery`, `getServerSideProps`)
+   - State/store reads (Redux selectors, Zustand stores, React context)
+   - Computed/derived values (filters, sorts, transformations on the source data)
+
+   For each data source, write a rule specifying **what the section displays and which field it comes from**:
+   - Good: "Hero displays `product.address`, `product.loanAmount`, and `product.rate` from GET /api/products/:id"
+   - Good: "Loan details renders `product.fields` filtered by `excluded=false`, sorted by `field.order`"
+   - Bad: "Hero calls useProductQuery hook" (implementation — names the mechanism, not the data)
+
+   **b) Conditional gates — who sees what (wrong-behavior tier):**
+
+   Scan for props, state, or data-driven conditionals that control which content appears for which users or states. These are the rules that prevent showing the wrong content to the wrong user segment.
+
+   Common patterns:
+   - Ternary operators in JSX (`{isPurchase ? <PurchaseView/> : <RefiView/>}`)
+   - Conditional includes (`{showChart && <Chart/>}`)
+   - Switch/case or map-based rendering
+   - Feature flags or config-driven sections
+   - Role/permission checks that hide/show sections
+
+   Each meaningful gate is a separate rule specifying **what each segment sees**:
+   - Good: "Purchase flow displays rate lock date and estimated closing costs; refinance flow displays current balance and payoff amount"
+   - Good: "Looking Ahead chart renders only for purchase loans with chartData present"
+   - Bad: "Component checks `loanType === 'purchase'`" (implementation — describes the conditional, not the outcome)
+
+   **c) Failure modes — what happens when things break (broken-functionality tier):**
+
+   Scan for how the component handles missing data, loading states, error states, and partial failures:
+   - Null/undefined checks before rendering (`{data && <Component/>}`)
+   - Loading state handling (skeletons, spinners, placeholder text)
+   - Error boundaries or try/catch in render paths
+   - Fallback content for missing data
+   - Section independence (one section failing doesn't crash others)
+
+   Each failure mode becomes a rule describing **what the user sees when something goes wrong**:
+   - Good: "Missing chart data shows 'No data available' message instead of crashing"
+   - Good: "Accordion sections render independently — one section failing does not collapse others"
+   - Good: "Component renders a loading skeleton while product data is fetching"
+
+   **Visual reference preservation:** If the code or old specs contain references to Figma files, design mockups, or screenshots:
+   - Extract Figma URLs → `> Visual-Reference: figma://fileKey/nodeId`
+   - Extract image paths → `> Visual-Reference: ./designs/component.png`
+   - Create `@manual` proofs for visual fidelity: "Visual layout matches design spec @manual"
+
+   **What NOT to extract as rules:** Responsive behavior (media queries, breakpoints) and theme integration (CSS variables, theme hooks) become rules **only** when they cause a rebuild-risk problem — e.g., content overlap on mobile, or colors that don't change with the theme. If the responsive/theme code is purely visual polish (spacing, exact pixel values), it belongs in design review (`@manual` proofs), not in rules. See the rebuild risk tiers in the quality guide.
+
+5. **Draft and evaluate rules (mandatory):** Before writing the spec file, draft all candidate rules as full `RULE-N:` lines and evaluate each against the rebuild test. This step applies to ALL features, not just UI.
+
+   **Draft:** Combine candidate rules from standard extraction (step 1's code reading) and UI extraction (step 4, if applicable). Write each as a `RULE-N:` line.
+
+   **Evaluate each rule:**
+   - **Rebuild test:** "If an engineer rebuilt this feature from only these rules, would they get this wrong without this rule?" If the answer is "no, they'd figure it out" or "QA would catch it" — cut the rule.
+   - **Behavior test:** "Does this describe what the feature does, or how the code does it?" If it names a library, hook, CSS value, or internal function — rewrite it as the observable behavior the code produces, or cut it.
+   - **Overlap test:** "Would this rule always pass or fail together with another rule?" If yes — merge them.
+
+   **Result:** A final rule list where every rule passes all three tests. This list goes into the spec file in step 6.
+
+6. For each feature in the category, write `specs/<category>/<name>.md`:
 
 ```markdown
 <!-- Generated by purlin:spec-from-code. Review and refine. -->
@@ -307,7 +386,7 @@ Examples:
 - `> Stack: node/express, axios, redis (cache), JWT auth`
 - `> Stack: shell/bash, jq, curl`
 
-5. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
+7. **Tier review pass (mandatory):** Review every proof description just written for this category. For each proof, apply the tier heuristics from `references/spec_quality_guide.md` ("Tier Tags on Proofs"):
    - Does the proof shell out to git, subprocess, or call an external service? → append `@integration`
    - Does the proof need a browser or full app stack? → append `@e2e`
    - Does the proof need human judgment (visual, UX, brand)? → append `@manual`
@@ -315,9 +394,24 @@ Examples:
 
    Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@integration`.
 
-6. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
+8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
 
-7. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply two filters:
+
+   **Filter 1 — Drop implementation noise:** Review every rule just written. For each rule, ask: "Does this describe *what* the feature must do, or *how* the code does it?" Remove rules that specify:
+   - CSS pixel values, margins, padding (visual polish — QA catches these)
+   - Specific CSS techniques (`::before pseudo-element`, `rx={h/2}` for SVG)
+   - Library or framework choices ("uses recharts", "uses `useMediaQuery`")
+   - Token/variable names ("uses `--surface-primary`") — instead say what the behavior is ("follows the active theme")
+
+   **Filter 2 — Verify coverage dimensions:** Verify the spec covers the applicable dimensions from `references/spec_quality_guide.md` ("Coverage dimensions"). For UI features, this means the spec MUST have behavioral rules for:
+   - Data sources — what each section displays and where the data comes from (from step 4a)
+   - Conditional gates — which data/content appears for which user segments (from step 4b)
+   - Failure modes — what happens when data is missing, loading, or a section fails (from step 4c)
+
+   **Filter 3 — Tier by rebuild risk:** Review each rule against the rebuild risk tiers in `references/spec_quality_guide.md` ("Rebuild risk tiers"). Every rule should pass the test: "If an engineer rebuilt from only this spec, would they get this wrong without this rule?" If the answer is no — the rule is noise, not signal. Cut it.
+
+10. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
@@ -329,7 +423,7 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-8. Present the generated specs for this category and ask for approval:
+11. Present the generated specs for this category and ask for approval:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -345,11 +439,11 @@ Examples:
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-9. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
+12. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
-9. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
+13. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
-10. Update state: add category name to `completed_categories`.
+14. Update state: add category name to `completed_categories`.
 
 ---
 
@@ -402,5 +496,8 @@ Additional spec-from-code-specific guidelines:
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
 - **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead.
-- **Implementation Notes capture architecture, not just TODOs.** Include whenever the source reveals decisions a rebuilding agent would need to replicate: design patterns, caching strategies, concurrency models, data flow, key tradeoffs. Omit only if the feature has trivially simple implementation.
+- **Implementation Notes are context, not rules.** Architecture decisions, library choices, caching strategies, and design patterns go in `## Implementation Notes` — never in `## Rules`. They inform a rebuilding engineer but are not testable behavioral constraints. A spec with 10 rules and 5 impl notes is better than a spec with 15 rules where 5 are really impl notes.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.
+- **Rules scale with complexity, filtered by rebuild risk.** Cover all applicable dimensions from `references/spec_quality_guide.md` ("Coverage dimensions"), but every rule must pass the rebuild-risk test: "Would an engineer get this wrong without this rule?" CSS pixel values, library choices, and visual polish are not rules.
+- **UI features require data contract extraction.** Always apply Phase 3 Step 4 for UI components. A UI spec that says "renders the page" with 3 rules is incomplete — extract data sources (what data, from where), conditional gates (who sees what), and failure modes (what happens when things break). Don't generate rules for CSS spacing, SVG path formulas, token names, or animation timing — those are design review items, not spec gaps.
+- **Companion files are migration inputs, not rule factories.** When migrating from `features/`, read `.impl.md` and `.discoveries.md` in full. Extract *behavioral* deviations and bug regressions as rules. Architecture decisions go to `## Implementation Notes`. Stale bugs and resolved cosmetic issues are not rules — they belong in git history.

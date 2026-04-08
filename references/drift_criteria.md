@@ -1,4 +1,4 @@
-> Criteria-Version: 1
+> Criteria-Version: 2
 
 # Drift Detection Criteria
 
@@ -127,16 +127,44 @@ Anchors with `> Source:` metadata point to an external origin (git repo, URL). W
 
 External drift does not automatically update the anchor. The `purlin:anchor sync` command fetches the latest source, updates the anchor content, and bumps the `> Pinned:` value. This is intentionally manual — external changes require review before adoption.
 
-## Spec Drift Rules
+## Rule-Level Drift Detection
 
-For each BEHAVIORAL change, the skill checks existing rules:
+The MCP tool provides a `rule_details` field for every spec that has changed behavior files. This enables the skill to perform **rule-level** gap analysis rather than just file-level "spec may need new rules."
 
-- Rules still match → `Spec up to date ✓`
-- Spec exists but new behavior isn't covered → `⚠ Spec may need new rules`
-- No spec exists → `No spec exists → Run: purlin:spec <name>`
-- Feature is VERIFIED but structural-only with code changes → flag as above
+### `rule_details` Structure
 
-The proof count from `proof_status` reflects the state BEFORE the current changes. A feature showing "6/6 proved" after behavioral code changes still needs spec review — those 6 proofs were for the old behavior.
+```json
+{
+  "rule_details": {
+    "feature_name": {
+      "rules": [
+        {"rule_id": "RULE-1", "description": "Parse config and return defaults", "proof_status": "pass"},
+        {"rule_id": "RULE-2", "description": "Return 400 on invalid input", "proof_status": "pass"},
+        {"rule_id": "RULE-3", "description": "Rate limit to 100 req/s", "proof_status": "unproved"}
+      ],
+      "changed_files": ["src/api/handler.py", "src/api/validator.py"],
+      "total_rules": 3,
+      "proved_rules": 2
+    }
+  }
+}
+```
+
+The `proof_status` per rule is one of: `pass`, `fail`, or `unproved`. This is the state at the time of the drift check — before the changes are tested.
+
+### Skill Responsibilities
+
+The MCP tool provides the **deterministic data** (rule list, proof status, which files changed). The skill performs the **semantic analysis** (reading diffs, cross-referencing changed behavior against rule descriptions, identifying gaps). This split avoids putting LLM judgment in the MCP tool while giving the skill the structured data it needs.
+
+The skill classifies each rule as:
+- **Covered** — rule describes unchanged behavior, or behavior changed in a compatible way
+- **Potentially stale** — rule describes behavior that was modified in the diff
+- **Unproved** — rule has no proof regardless of changes
+- **Missing** — diff reveals new behavior with no matching rule
+
+### Spec Drift Rules
+
+The proof count from `proof_status` reflects the state BEFORE the current changes. A feature showing "6/6 proved" after behavioral code changes still needs spec review — those 6 proofs were for the old behavior. Rule-level analysis surfaces which specific proofs are likely invalid.
 
 ## Config Field Ownership
 

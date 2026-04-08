@@ -84,6 +84,20 @@ Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED
 - **Name/value drift** — the test function name makes a numeric or behavioral claim (e.g. "fourteen_entries", "rejects_invalid") that contradicts the actual assertion values or logic (asserts 12, or doesn't test rejection). This suggests the code changed and the test was patched to pass without updating the name
 - **Fragile string parsing in assertions** — the assertion uses string splitting, slicing, or indexing to extract a value for comparison where a simpler direct check would be more robust. Example: `result.split('WARNING')[0]` to isolate a feature's output — this breaks with multiple features or reordered output
 
+### Rule quality advisory (LLM judgment — WARNING, not a proof downgrade)
+
+During Pass 2, the LLM also evaluates the **rule itself** (not just the proof). If the rule describes an implementation detail rather than observable behavior, emit a WARNING. This does not change the proof's assessment — a STRONG proof of an implementation-detail rule is still STRONG. The warning flags the rule for rewriting.
+
+**Signals of an implementation-detail rule:**
+- Names a CSS value, variable, or technique (`margin-top: -66px`, `::before pseudo-element`, `var(--surface-primary)`)
+- Names a library, hook, or framework API (`uses recharts`, `calls useMediaQuery`, `uses Redux selector`)
+- Names an internal function, class, or module (`calls formatCurrency()`, `extends BaseComponent`)
+- Describes code structure rather than behavior (`uses try-catch around API call`, `has error boundary`)
+
+**Format:** `WARNING: RULE-N appears to describe implementation (names <what>). Consider rewriting as observable behavior.`
+
+The warning is informational — it helps the PM decide whether the rule is worth keeping. Some implementation-detail rules are intentional (e.g., "passwords hashed with bcrypt" in a compliance spec). The LLM flags, the human decides.
+
 ### STRONG (LLM judgment)
 
 A proof is STRONG when ALL of these are true:

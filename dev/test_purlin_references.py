@@ -106,7 +106,7 @@ class TestPurlinReferences:
     @pytest.mark.proof("purlin_references", "PROOF-9", "RULE-9")
     def test_spec_quality_guide_coverage(self):
         content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
-        assert re.search(r'5.{1,5}10', content), "Missing 5-10 rules guidance"
+        assert 'Coverage dimensions' in content, "Missing coverage dimensions guidance"
         assert 'FORBIDDEN' in content
         # Verify tier assignment is documented as a dedicated section/topic
         assert re.search(r'(?i)##.*tier|tier\s+assign', content), \

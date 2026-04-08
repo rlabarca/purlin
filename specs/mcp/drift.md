@@ -22,6 +22,7 @@
 - RULE-13: When the external source advances AND the local anchor file is modified, drift surfaces both: an external_anchor_drift entry with status stale AND a spec_changes entry showing the new rule
 - RULE-14: drift returns the anchor name in external_anchor_drift matching the anchor's spec name, not the external repo name or path
 - RULE-15: Detects unpinned state when an anchor has `> Source:` but no `> Pinned:`, returning an external_anchor_drift entry with status `unpinned`
+- RULE-16: Returns a `rule_details` object for each spec with CHANGED_BEHAVIOR files, containing per-rule ID, description, and proof status (pass/fail/unproved), plus the list of changed scope files
 
 ## Proof
 
@@ -43,3 +44,4 @@
 - PROOF-16 (RULE-14): e2e: Create anchor named local_security; advance repo; verify drift returns anchor=local_security @e2e
 - PROOF-17 (RULE-12): e2e: Create external anchor pinned to initial SHA; advance repo; run drift; verify stale entry with remote SHA @e2e
 - PROOF-18 (RULE-15): e2e: Create anchor with Source but no Pinned; run drift; verify unpinned status @e2e
+- PROOF-19 (RULE-16): Create spec with 3 rules and `> Scope:` pointing to a source file; add proofs for 2 of 3 rules; modify the scope file and commit; call drift; verify rule_details contains the spec with 3 rule entries, 2 with proof_status=pass, 1 with proof_status=unproved, and the changed file in changed_files @integration

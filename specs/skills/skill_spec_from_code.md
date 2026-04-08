@@ -28,6 +28,12 @@
 - RULE-20: sync_status successfully parses specs from all four scenarios without errors, reporting correct rule counts and UNTESTED status
 - RULE-21: The `## Rules` and `## Proof` sections are both present in specs from all four scenarios
 - RULE-22: When a vague-input spec's (assumed) rule is updated with an explicit value, the (assumed) tag is removed and the rule remains valid
+- RULE-23: Skill contains UI feature extraction organized by rebuild risk: data sources (what data, from where), conditional gates (who sees what), and failure modes (what happens when things break)
+- RULE-24: Skill contains a mandatory rebuild-risk filter and a draft-and-evaluate step that applies the rebuild test ("would an engineer get this wrong?") to every candidate rule before writing the spec
+- RULE-25: Migration from `features/` reads `.impl.md` companion files and extracts active deviations as rules reflecting actual behavior
+- RULE-26: Migration from `features/` reads `.discoveries.md` companion files and converts resolved bugs to regression rules and open bugs to `(deferred)` rules
+- RULE-27: `.discoveries.md` Figma/design references are preserved as `> Visual-Reference:` metadata or `@manual` proof references during migration
+- RULE-28: Quality guide references coverage dimensions instead of a fixed rule count target
 
 ## Proof
 
@@ -62,3 +68,12 @@
 - PROOF-29 (RULE-20): e2e: Run sync_status on all four scenarios; verify UNTESTED status and correct rule counts @e2e
 - PROOF-30 (RULE-21): e2e: Verify ## Rules and ## Proof sections exist in all four scenario specs @e2e
 - PROOF-31 (RULE-22): e2e: Update (assumed) rule with explicit value; verify tag removed and RULE-N format valid @e2e
+- PROOF-32 (RULE-23): Grep SKILL.md for "Data sources", "Conditional gates", "Failure modes" as subsections of step 4; verify all three exist and are organized by rebuild risk
+- PROOF-33 (RULE-23): e2e: Create a simulated React component with API data consumption, conditional rendering by user segment, and missing-data fallbacks; verify the extraction heuristics identify data source fields, conditional gates, and failure modes @e2e
+- PROOF-34 (RULE-24): Grep SKILL.md for "Draft and evaluate" AND "rebuild test" in Phase 3; verify the step applies rebuild, behavior, and overlap tests to each candidate rule
+- PROOF-35 (RULE-25): Grep SKILL.md for ".impl.md" AND "Active Deviations" AND "PM-ACCEPTED"; verify the skill reads deviations and converts PM-accepted deviations to rules reflecting actual behavior
+- PROOF-36 (RULE-25): e2e: Create a features/ directory with a spec and .impl.md containing a PM-ACCEPTED deviation; verify the deviation's actual behavior becomes a RULE-N in the migrated spec @e2e
+- PROOF-37 (RULE-26): Grep SKILL.md for ".discoveries.md" AND "Resolved bugs" AND "(deferred)"; verify resolved bugs become rules and open bugs become deferred rules
+- PROOF-38 (RULE-26): e2e: Create features/ with .discoveries.md containing one RESOLVED bug and one OPEN bug; verify the resolved bug becomes a RULE-N and the open bug becomes a RULE-N with (deferred) tag @e2e
+- PROOF-39 (RULE-27): Grep SKILL.md for "Visual-Reference" AND "Figma" in the .discoveries.md migration section; verify design references are preserved as metadata or manual proof references
+- PROOF-40 (RULE-28): Grep spec_quality_guide.md for "Coverage dimensions"; verify section exists. Grep for "5–10 rules per feature"; verify the fixed target no longer exists

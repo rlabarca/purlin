@@ -878,15 +878,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
 
-    # Advisory: rule count outside 5-10 range (non-anchor, non-instruction specs only)
-    # These are soft advisories — they don't block PASSING/VERIFIED status
     advisories = []
-    if not info.get('is_anchor') and info.get('category') not in ('instructions', '_anchors'):
-        own_rule_count = len(info.get('rules', {}))
-        if info['has_rules_section'] and 0 < own_rule_count < 5:
-            advisories.append(f"  ⚠ Only {own_rule_count} rules — aim for 5–10 per feature for rebuild detail")
-        elif own_rule_count > 10:
-            advisories.append(f"  ⚠ {own_rule_count} rules — consider splitting into sub-features (aim for 5–10)")
 
     # Check visual reference staleness (computed once, used in multiple paths)
     visual_ref = info.get('visual_ref')
@@ -1879,6 +1871,52 @@ def drift(project_root, since=None, role=None):
             entry['error'] = staleness['error']
         external_anchor_drift.append(entry)
 
+    # Build rule-level detail for specs with changed behavior files.
+    # Provides each rule's description, proof status, and which scope files
+    # changed — so the skill can cross-reference diffs against individual rules.
+    rule_details = {}
+    changed_behavior_specs = set()
+    for entry in file_entries:
+        if entry['category'] == 'CHANGED_BEHAVIOR' and entry.get('spec'):
+            changed_behavior_specs.add(entry['spec'])
+    for spec_name in changed_behavior_specs:
+        info = features.get(spec_name)
+        if not info:
+            continue
+        rules = info.get('rules', {})
+        if not rules:
+            continue
+        ps = proof_status.get(spec_name, {})
+        proof_by_rule = {}
+        if not info['is_anchor']:
+            rule_entries, _ = _build_coverage_rules(
+                spec_name, info, features, global_anchors)
+            proof_by_rule = _build_proof_lookup(
+                spec_name, rule_entries, all_proofs)
+        # Which scope files actually changed in this diff
+        changed_scope_files = [
+            e['path'] for e in file_entries
+            if e.get('spec') == spec_name
+            and e['category'] == 'CHANGED_BEHAVIOR'
+        ]
+        per_rule = []
+        for rule_id in sorted(rules.keys(),
+                              key=lambda r: int(r.split('-')[1])):
+            rule_desc = rules[rule_id]
+            proof_info = proof_by_rule.get(rule_id, {})
+            proof_status_val = proof_info.get('status', 'unproved')
+            per_rule.append({
+                'rule_id': rule_id,
+                'description': rule_desc,
+                'proof_status': proof_status_val,
+            })
+        rule_details[spec_name] = {
+            'rules': per_rule,
+            'changed_files': changed_scope_files,
+            'total_rules': len(rules),
+            'proved_rules': ps.get('proved', 0),
+        }
+
     result = {
         'since': since_desc,
         'commits': commits,
@@ -1888,6 +1926,7 @@ def drift(project_root, since=None, role=None):
         'drift_flags': drift_flags,
         'broken_scopes': broken_scopes,
         'external_anchor_drift': external_anchor_drift,
+        'rule_details': rule_details,
     }
 
     return json.dumps(result, indent=2)

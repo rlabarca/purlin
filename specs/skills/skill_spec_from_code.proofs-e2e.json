@@ -3,123 +3,6 @@
   "proofs": [
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-19",
-      "rule": "RULE-10",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_sequential_rule_numbering",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-20",
-      "rule": "RULE-11",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_every_rule_has_proof",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-21",
-      "rule": "RULE-12",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_no_assumed_tags_on_explicit_values",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-22",
-      "rule": "RULE-13",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_prd_extracts_at_least_5_rules",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-23",
-      "rule": "RULE-14",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_prd_metadata_present",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-24",
-      "rule": "RULE-15",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_requires_anchor_in_coverage",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-25",
-      "rule": "RULE-16",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_assumed_tags_present",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-26",
-      "rule": "RULE-17",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_assumed_rules_parseable_by_sync_status",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-27",
-      "rule": "RULE-18",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_feedback_translated_to_specific_rules",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-28",
-      "rule": "RULE-19",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_all_proofs_have_tier_tags",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-29",
-      "rule": "RULE-20",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_sync_status_parses_all_scenarios",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-30",
-      "rule": "RULE-21",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_all_specs_have_rules_and_proof_sections",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-31",
-      "rule": "RULE-22",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_corrected_assumed_rule_is_valid",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
       "id": "PROOF-10",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_spec_migration.py",
@@ -196,6 +79,123 @@
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_llm_evaluates_migration_fidelity",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-19",
+      "rule": "RULE-10",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_sequential_rule_numbering",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-20",
+      "rule": "RULE-11",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_every_rule_has_proof",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-21",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_no_assumed_tags_with_explicit_values",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-22",
+      "rule": "RULE-13",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_prd_extracts_at_least_5_rules",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-23",
+      "rule": "RULE-14",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_prd_has_valid_metadata",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-24",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_prd_requires_overlapping_anchor",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-25",
+      "rule": "RULE-16",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_vague_input_has_assumed_tags",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-26",
+      "rule": "RULE-17",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_assumed_tags_parseable_by_sync_status",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-27",
+      "rule": "RULE-18",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_customer_feedback_has_specific_thresholds",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-28",
+      "rule": "RULE-19",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_all_scenarios_have_tier_tags",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-29",
+      "rule": "RULE-20",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_sync_status_parses_all_scenarios",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-30",
+      "rule": "RULE-21",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_all_scenarios_have_rules_and_proof_sections",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-31",
+      "rule": "RULE-22",
+      "test_file": "dev/test_e2e_spec_migration.py",
+      "test_name": "test_assumed_tag_removal_on_explicit_update",
       "status": "pass",
       "tier": "e2e"
     }

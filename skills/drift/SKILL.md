@@ -95,15 +95,40 @@ Each entry must include:
 - **Which specs are affected** — and whether existing rules still cover the change or new rules are needed
 - **The directive** — what to do about it
 
-### 2d — Flag spec drift
+### 2d — Flag spec drift (rule-level analysis)
 
-For each BEHAVIORAL change, check: do the existing spec rules cover this new behavior?
+For each BEHAVIORAL change, perform **rule-level** analysis using the `rule_details` field from the MCP tool. This field provides, for each spec with changed behavior files: the full list of rules with descriptions, their proof status, and which scope files changed.
 
-- If the spec has rules that still match → `Spec up to date ✓`
-- If the spec exists but the new behavior isn't covered by any rule → `⚠ Spec may need new rules → update the spec for <feature>`
-- If no spec exists → `No spec exists → Run: purlin:spec <name>`
+**Step 1 — Read the diff and identify changed behavior:**
+For each spec in `rule_details`, read the diffs for its `changed_files`. Identify what behavioral aspects changed: new functions, modified conditionals, changed return values, added/removed error handling, new UI sections, changed responsive behavior, etc.
 
-Do not say "6/6 proved" if the code just added behavior that isn't in any of those 6 rules. The proof count was from BEFORE the change. The spec needs review.
+**Step 2 — Cross-reference changes against individual rules:**
+For each rule in the spec's `rules` array, ask: does this rule's description relate to any of the changed behavior? Classify each rule:
+
+- **Covered** — the rule describes behavior that was NOT changed, or was changed in a way that the rule still holds → `✓ RULE-N: <description>`
+- **Potentially stale** — the rule describes behavior that WAS changed and may no longer be accurate → `⚠ RULE-N: <description> — <what changed>`
+- **Unproved** — the rule has `proof_status: "unproved"` regardless of changes → `✗ RULE-N: <description> — no proof`
+- **Missing** — the diff reveals new behavior that NO existing rule covers → `+ Suggested RULE: <description of uncovered behavior>`
+
+**Step 3 — Format rule-level findings per spec:**
+
+```
+Spec: <name> (<total_rules> rules, <proved_rules> proved)
+Changed files: <file1>, <file2>
+
+  ✓ RULE-1: Parse config and return defaults
+  ⚠ RULE-2: Return 400 on invalid input — new validation path added for empty arrays
+  ✓ RULE-3: Log warning on retry
+  ✗ RULE-4: Rate limit to 100 req/s — no proof exists
+  + Suggested: Batch endpoint accepts up to 50 items (new behavior, no rule)
+
+→ Update spec: purlin:spec <name> (address ⚠ and + items)
+→ Write tests: test <name> (address ✗ items)
+```
+
+If no rule is potentially stale and no new behavior is uncovered → `Spec up to date ✓`
+
+If no spec exists → `No spec exists → Run: purlin:spec <name>`
 
 **Behavioral gap drift:** Check the `drift_flags` array in the MCP tool output. Each entry identifies a feature with no behavioral proofs whose code changed. For each:
 
@@ -224,6 +249,7 @@ List every item that applies, in this order:
 Before emitting ACTION ITEMS, cross-reference against the NEEDS ATTENTION entries:
 - If any entry in NEEDS ATTENTION flagged spec drift → that spec MUST appear in PM action items, even if `proof_status` shows all rules proved (the proofs were from before the change)
 - If NEEDS ATTENTION says "no missing specs" → PM action items should not list missing specs
+- **Rule-level drift:** Every spec with `⚠` (potentially stale) or `+` (missing) rules from rule_details analysis must appear in PM action items with the specific rules listed: `Spec drift: <name> — RULE-2 may be stale (new validation path), 1 new behavior uncovered → Run: purlin:spec <name>`
 - **Behavioral gap drift:** Every entry in `drift_flags` must appear in PM action items: `Spec drift: <name> — code changed, no behavioral proofs (only structural checks) → Run: purlin:spec <name>`
 - **Broken scopes:** Every entry in `broken_scopes` must appear in PM action items: `Broken scope: <name> — <path> no longer exists → Run: purlin:rename <name> or purlin:spec <name>`
 - Do not contradict the detailed analysis with the summary

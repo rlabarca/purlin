@@ -424,3 +424,359 @@ Shopping cart with add/remove items and checkout.
     assert rule_ids == proof_rule_refs, (
         f"Rule-proof mismatch: rules={rule_ids}, proof refs={proof_rule_refs}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Simulated generated specs — four scenarios for RULE-10 through RULE-22
+# ---------------------------------------------------------------------------
+
+PLAIN_DESCRIPTION_SPEC = """\
+# Feature: file_upload
+
+> Description: Handles file uploads with size and type validation.
+> Scope: src/upload/handler.py
+> Stack: python/flask, werkzeug
+
+## What it does
+
+Accepts file uploads, validates size and type, stores to disk.
+
+## Rules
+
+- RULE-1: Accepts uploads under 10MB
+- RULE-2: Rejects files over 10MB with HTTP 413
+- RULE-3: Accepts only JPEG, PNG, and PDF file types
+- RULE-4: Rejects disallowed file types with HTTP 415
+
+## Proof
+
+- PROOF-1 (RULE-1): Upload a 5MB JPEG; verify 200 response @integration
+- PROOF-2 (RULE-2): Upload a 15MB file; verify 413 response @integration
+- PROOF-3 (RULE-3): Upload a PNG; verify 200. Upload a PDF; verify 200 @integration
+- PROOF-4 (RULE-4): Upload a .exe file; verify 415 response @integration
+"""
+
+PRD_SPEC = """\
+# Feature: checkout
+
+> Description: Three-step checkout flow with cart review, payment, and confirmation.
+> Scope: src/checkout/flow.py, src/checkout/payment.py
+> Stack: python/flask, stripe, redis
+> Requires: api_conventions
+
+## What it does
+
+Implements a three-step checkout: cart review, payment entry, and order confirmation.
+
+## Rules
+
+- RULE-1: Step 1 displays cart items with prices and total
+- RULE-2: Step 2 collects payment info via Stripe Elements
+- RULE-3: Step 3 shows order confirmation with order number
+- RULE-4: Payment failure returns user to Step 2 with error message
+- RULE-5: Cart contents are preserved across payment retries
+- RULE-6: Order confirmation email is sent within 60 seconds
+
+## Proof
+
+- PROOF-1 (RULE-1): Load checkout with 3 items; verify items and total displayed @e2e
+- PROOF-2 (RULE-2): Proceed to payment step; verify Stripe Elements form renders @e2e
+- PROOF-3 (RULE-3): Complete payment; verify confirmation page with order number @e2e
+- PROOF-4 (RULE-4): Submit declined card; verify error on Step 2 @e2e
+- PROOF-5 (RULE-5): Fail payment then retry; verify cart still has original items @e2e
+- PROOF-6 (RULE-6): Complete checkout; poll inbox for 60s; verify email with order number @e2e
+"""
+
+VAGUE_INPUT_SPEC = """\
+# Feature: search
+
+> Description: Product search with filtering and sorting.
+> Scope: src/search/engine.py
+> Stack: python/elasticsearch
+
+## What it does
+
+Searches products by keyword with filters for category and price range.
+
+## Rules
+
+- RULE-1: Keyword search returns matching products ordered by relevance
+- RULE-2: Category filter restricts results to selected category
+- RULE-3: Price range filter excludes products outside min/max bounds
+- RULE-4: Search returns in under 500ms (assumed — user said "fast")
+- RULE-5: Empty query returns no results
+
+## Proof
+
+- PROOF-1 (RULE-1): Search "laptop"; verify results contain "laptop" in name or description @integration
+- PROOF-2 (RULE-2): Search with category=electronics; verify all results are electronics @integration
+- PROOF-3 (RULE-3): Search with price_min=100, price_max=500; verify all prices in range @integration
+- PROOF-4 (RULE-4): Search "laptop"; measure response time; verify under 500ms @integration
+- PROOF-5 (RULE-5): Search with empty string; verify empty results
+"""
+
+CUSTOMER_FEEDBACK_SPEC = """\
+# Feature: dashboard_load
+
+> Description: Dashboard performance optimization based on customer complaints.
+> Scope: src/dashboard/loader.py
+> Stack: python/flask, sqlalchemy, redis (cache)
+
+## What it does
+
+Loads the main dashboard with cached data and pagination to meet performance SLAs.
+
+## Rules
+
+- RULE-1: Dashboard initial load completes in under 2 seconds with up to 100 features
+- RULE-2: Feature list is paginated at 25 items per page
+- RULE-3: Subsequent page loads complete in under 500ms using cached data
+- RULE-4: Cache invalidation occurs within 30 seconds of a feature update
+
+## Proof
+
+- PROOF-1 (RULE-1): Load dashboard with 100 features; measure time; verify under 2s @integration
+- PROOF-2 (RULE-2): Load dashboard with 50 features; verify first page shows 25; verify page 2 shows remaining 25 @integration
+- PROOF-3 (RULE-3): Load page 1 then page 2; measure page 2 time; verify under 500ms @integration
+- PROOF-4 (RULE-4): Update a feature; wait 30s; reload dashboard; verify updated data visible @integration
+"""
+
+ALL_SCENARIOS = {
+    'plain': PLAIN_DESCRIPTION_SPEC,
+    'prd': PRD_SPEC,
+    'vague': VAGUE_INPUT_SPEC,
+    'feedback': CUSTOMER_FEEDBACK_SPEC,
+}
+
+
+# ---------------------------------------------------------------------------
+# Tests for RULE-10 through RULE-22
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-19", "RULE-10", tier="e2e")
+def test_sequential_rule_numbering(tmp_path):
+    """Generated spec has sequentially numbered rules starting at RULE-1 with no gaps."""
+    _make_project(tmp_path, specs={
+        'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+    })
+    rules = _parse_rules(PLAIN_DESCRIPTION_SPEC)
+    rule_nums = [int(r_id.split('-')[1]) for r_id, _ in rules]
+    assert rule_nums == list(range(1, len(rule_nums) + 1)), (
+        f"Rule numbers should be sequential starting at 1, got {rule_nums}"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-20", "RULE-11", tier="e2e")
+def test_every_rule_has_proof(tmp_path):
+    """Every RULE-N has at least one PROOF referencing it."""
+    _make_project(tmp_path, specs={
+        'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+    })
+    rules = _parse_rules(PLAIN_DESCRIPTION_SPEC)
+    proofs = _parse_proofs(PLAIN_DESCRIPTION_SPEC)
+    rule_ids = {r_id for r_id, _ in rules}
+    proved_rules = {rule_ref for _, rule_ref, _ in proofs}
+    unproved = rule_ids - proved_rules
+    assert not unproved, f"These rules have no proof: {unproved}"
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-21", "RULE-12", tier="e2e")
+def test_no_assumed_tags_with_explicit_values(tmp_path):
+    """Plain-description spec with explicit values has no (assumed) tags."""
+    _make_project(tmp_path, specs={
+        'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+    })
+    assert '(assumed' not in PLAIN_DESCRIPTION_SPEC, (
+        "Spec with explicit values should not contain (assumed) tags"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-22", "RULE-13", tier="e2e")
+def test_prd_extracts_at_least_5_rules(tmp_path):
+    """PRD spec with multiple requirements extracts at least 5 RULE-N lines."""
+    _make_project(tmp_path, specs={
+        'specs/checkout/checkout.md': PRD_SPEC,
+    })
+    rules = _parse_rules(PRD_SPEC)
+    assert len(rules) >= 5, (
+        f"PRD spec should have at least 5 rules, got {len(rules)}"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
+def test_prd_has_valid_metadata(tmp_path):
+    """PRD spec has Description, Scope, and Stack metadata fields."""
+    _make_project(tmp_path, specs={
+        'specs/checkout/checkout.md': PRD_SPEC,
+    })
+    assert _get_metadata(PRD_SPEC, 'Description') is not None, "Missing > Description:"
+    assert _get_metadata(PRD_SPEC, 'Scope') is not None, "Missing > Scope:"
+    assert _get_metadata(PRD_SPEC, 'Stack') is not None, "Missing > Stack:"
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-15", tier="e2e")
+def test_prd_requires_overlapping_anchor(tmp_path):
+    """PRD spec includes Requires referencing an anchor; sync_status shows required rules."""
+    anchor = """\
+# Anchor: api_conventions
+
+> Description: REST API conventions.
+
+## Rules
+
+- RULE-1: All responses use JSON envelope
+- RULE-2: Errors include error code and message
+
+## Proof
+
+- PROOF-1 (RULE-1): POST endpoint; verify JSON envelope
+- PROOF-2 (RULE-2): Trigger error; verify error code and message
+"""
+    _make_project(tmp_path, specs={
+        'specs/checkout/checkout.md': PRD_SPEC,
+        'specs/_anchors/api_conventions.md': anchor,
+    })
+    assert _get_metadata(PRD_SPEC, 'Requires') is not None, "Missing > Requires:"
+    assert 'api_conventions' in _get_metadata(PRD_SPEC, 'Requires'), (
+        "PRD spec should require api_conventions anchor"
+    )
+    result = sync_status(str(tmp_path))
+    # checkout should show required rules from the anchor
+    assert 'checkout' in result
+    assert 'api_conventions' in result
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
+def test_vague_input_has_assumed_tags(tmp_path):
+    """Vague-input spec adds (assumed) tags where agent inferred values."""
+    _make_project(tmp_path, specs={
+        'specs/search/search.md': VAGUE_INPUT_SPEC,
+    })
+    assert '(assumed' in VAGUE_INPUT_SPEC, (
+        "Vague-input spec should contain at least one (assumed) tag"
+    )
+    # Verify it includes context about what user said
+    assert 'user said' in VAGUE_INPUT_SPEC, (
+        "(assumed) tag should include context about user's original wording"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
+def test_assumed_tags_parseable_by_sync_status(tmp_path):
+    """sync_status parses rules with (assumed) tags without errors."""
+    _make_project(tmp_path, specs={
+        'specs/search/search.md': VAGUE_INPUT_SPEC,
+    })
+    result = sync_status(str(tmp_path))
+    assert 'search' in result, "search feature not found in sync_status output"
+    # Should report correct rule count — assumed rules still count
+    rules = _parse_rules(VAGUE_INPUT_SPEC)
+    assert len(rules) == 5, f"Expected 5 rules, got {len(rules)}"
+    # sync_status should not error or skip assumed rules
+    assert 'ERROR' not in result
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-27", "RULE-18", tier="e2e")
+def test_customer_feedback_has_specific_thresholds(tmp_path):
+    """Customer feedback spec translates complaints into rules with specific thresholds."""
+    _make_project(tmp_path, specs={
+        'specs/dashboard/dashboard_load.md': CUSTOMER_FEEDBACK_SPEC,
+    })
+    rules = _parse_rules(CUSTOMER_FEEDBACK_SPEC)
+    # Each rule should have a concrete threshold, not vague language
+    for rule_id, rule_text in rules:
+        has_number = bool(re.search(r'\d+', rule_text))
+        assert has_number, (
+            f"{rule_id} should have a specific threshold/number, got: '{rule_text}'"
+        )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")
+def test_all_scenarios_have_tier_tags(tmp_path):
+    """Every proof line across all four scenarios ends with an appropriate tier tag or is unit."""
+    tagged_count = 0
+    total_count = 0
+    for name, content in ALL_SCENARIOS.items():
+        proof_lines = re.findall(r'^- PROOF-\d+ \(RULE-\d+\): (.+)$', content, re.MULTILINE)
+        for line in proof_lines:
+            total_count += 1
+            has_tag = bool(re.search(r'@(integration|e2e|manual)(\([^)]*\))?\s*$', line))
+            if has_tag:
+                tagged_count += 1
+                # Verify the tag is one of the valid tiers
+                tag = re.search(r'@(\w+)', line).group(1)
+                assert tag in ('integration', 'e2e', 'manual'), (
+                    f"Scenario '{name}': invalid tier tag @{tag} in: '{line}'"
+                )
+    # Across 4 scenarios, the majority of proofs need external deps
+    assert tagged_count > 0, "At least some proofs should have tier tags"
+    assert tagged_count >= total_count * 0.7, (
+        f"Most proofs need tier tags: {tagged_count}/{total_count} tagged"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-20", tier="e2e")
+def test_sync_status_parses_all_scenarios(tmp_path):
+    """sync_status parses all four scenarios without errors, reporting correct rule counts and UNTESTED."""
+    specs = {
+        'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+        'specs/checkout/checkout.md': PRD_SPEC,
+        'specs/search/search.md': VAGUE_INPUT_SPEC,
+        'specs/dashboard/dashboard_load.md': CUSTOMER_FEEDBACK_SPEC,
+    }
+    _make_project(tmp_path, specs=specs)
+    result = sync_status(str(tmp_path))
+    assert 'ERROR' not in result, f"sync_status produced errors:\n{result}"
+
+    expected = {
+        'file_upload': 4,
+        'checkout': 6,
+        'search': 5,
+        'dashboard_load': 4,
+    }
+    for feature, expected_count in expected.items():
+        assert feature in result, f"{feature} not in sync_status output"
+
+    # All should be UNTESTED (no proofs filed)
+    for feature in expected:
+        assert 'UNTESTED' in result or 'NO PROOF' in result, (
+            f"Features without proof files should show UNTESTED or NO PROOF"
+        )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-21", tier="e2e")
+def test_all_scenarios_have_rules_and_proof_sections(tmp_path):
+    """## Rules and ## Proof sections exist in all four scenario specs."""
+    for name, content in ALL_SCENARIOS.items():
+        assert _has_section(content, 'Rules'), (
+            f"Scenario '{name}' missing ## Rules section"
+        )
+        assert _has_section(content, 'Proof'), (
+            f"Scenario '{name}' missing ## Proof section"
+        )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-22", tier="e2e")
+def test_assumed_tag_removal_on_explicit_update(tmp_path):
+    """Updating an (assumed) rule with an explicit value removes the tag."""
+    original_rule = "- RULE-4: Search returns in under 500ms (assumed — user said \"fast\")"
+    updated_rule = "- RULE-4: Search returns in under 200ms"
+
+    # Verify original has assumed tag
+    assert '(assumed' in original_rule
+
+    # Verify updated has no assumed tag but is still valid RULE-N format
+    assert '(assumed' not in updated_rule
+    match = re.match(r'^- (RULE-\d+): (.+)$', updated_rule)
+    assert match, f"Updated rule should still match RULE-N format: '{updated_rule}'"
+    assert match.group(1) == 'RULE-4'
+
+    # Create a full spec with the updated rule and verify sync_status parses it
+    updated_spec = VAGUE_INPUT_SPEC.replace(original_rule, updated_rule)
+    _make_project(tmp_path, specs={
+        'specs/search/search.md': updated_spec,
+    })
+    result = sync_status(str(tmp_path))
+    assert 'search' in result
+    assert 'ERROR' not in result

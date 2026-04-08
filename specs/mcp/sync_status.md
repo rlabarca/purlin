@@ -43,7 +43,7 @@
 - RULE-34: Integrity is computed by exactly one function (`_compute_integrity`) — both `_read_audit_summary` and `_build_feature_audit` delegate to it; no other function in purlin_server.py contains the integrity formula
 - RULE-35: Feature status is determined by exactly one function (`_determine_status`) — all call sites in purlin_server.py delegate to it; no other function contains the status determination logic
 - RULE-36: `_scan_specs` parses `> Stack:` metadata from spec files and includes it in feature info; report-data.js includes `stack` field when present
-- RULE-37: Warns when a non-anchor, non-instruction feature has fewer than 5 or more than 10 own rules (advisory only — does not block PASSING/VERIFIED status)
+- RULE-37: Does NOT warn about rule count — rule count scales with feature complexity per `references/spec_quality_guide.md` ("Coverage dimensions")
 
 ## Proof
 
@@ -109,4 +109,4 @@
 - PROOF-60 (RULE-34): e2e: Create isolated project with 2 features, each with different audit mixes; run sync_status with report=true; verify per-feature and global integrity in CLI output match report-data.js per-feature audit.integrity and audit_summary.integrity @e2e
 - PROOF-61 (RULE-35): e2e: Create isolated project with features in every status (VERIFIED, PASSING, PARTIAL, FAILING, UNTESTED); verify CLI summary table status matches report-data.js per-feature status for all five @e2e
 - PROOF-62 (RULE-36): Create spec with `> Stack: python/stdlib, json`; run `_scan_specs`; verify features dict has `stack == "python/stdlib, json"`. Create spec without Stack; verify `stack is None` @integration
-- PROOF-63 (RULE-37): Create feature with 3 rules; verify warning. Create feature with 12 rules; verify warning. Create anchor with 2 rules; verify NO warning. Create instruction spec with 3 rules; verify NO warning @integration
+- PROOF-63 (RULE-37): Create feature with 3 rules; verify NO rule-count warning. Create feature with 12 rules; verify NO rule-count warning. Create anchor with 2 rules; verify NO warning. Create instruction spec with 3 rules; verify NO warning @integration

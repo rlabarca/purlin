@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "drift",
+      "id": "PROOF-19",
+      "rule": "RULE-16",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_rule_details_for_changed_behavior",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

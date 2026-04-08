@@ -3,33 +3,6 @@
   "proofs": [
     {
       "feature": "sync_status",
-      "id": "PROOF-56",
-      "rule": "RULE-33",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_formula_consistent_across_sources",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-58",
-      "rule": "RULE-34",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_compute_integrity_is_single_function",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-59",
-      "rule": "RULE-35",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_determine_status_is_single_function",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_mcp_server.py",
@@ -231,7 +204,7 @@
       "id": "PROOF-63",
       "rule": "RULE-37",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_warns_too_few_rules",
+      "test_name": "test_no_rule_count_warning_for_few_rules",
       "status": "pass",
       "tier": "unit"
     },
@@ -240,7 +213,7 @@
       "id": "PROOF-63",
       "rule": "RULE-37",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_warns_too_many_rules",
+      "test_name": "test_no_rule_count_warning_for_many_rules",
       "status": "pass",
       "tier": "unit"
     },
@@ -300,46 +273,19 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-56",
+      "rule": "RULE-33",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_integrity_formula_consistent_across_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_vhash_with_prefixed_keys",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-14",
-      "rule": "RULE-14",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_unit_and_e2e_proofs_merged",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_fail_in_e2e_overrides_pass_in_unit",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_pass_does_not_override_earlier_fail",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_c_passes_but_sql_e2e_fails_same_rule",
       "status": "pass",
       "tier": "unit"
     }
