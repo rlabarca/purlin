@@ -1,42 +1,39 @@
 # Spec Quality Guide
 
-How to write good specs. For spec **syntax** (section names, ID format, metadata fields), see [references/formats/spec_format.md](formats/spec_format.md). This guide covers **judgment** — what makes a spec useful for rebuilding, testing, and verifying code.
+How to write good specs. For spec **syntax** (section names, ID format, metadata fields), see [references/formats/spec_format.md](formats/spec_format.md). This guide covers **judgment** — what makes a spec useful for rebuilding, testing, and verifying code. For bad→good rule examples from real projects, see [references/rule_examples.md](rule_examples.md).
 
 ## Writing Rules
 
-Rules must cover the **important dimensions** of a feature's behavior. The number of rules scales with the feature's complexity — there is no fixed target. A simple utility may need 3 rules; a complex UI component with multiple visual sections, responsive breakpoints, conditional rendering, and theme integration may need 25+. The test is coverage, not count.
+### The rebuild test
 
-### Coverage dimensions
+Every rule must pass one test: **"If an engineer rebuilt this feature from only this spec, would they get this wrong without this rule?"**
 
-Every feature has some subset of these dimensions. Extract rules until each applicable dimension is covered:
+If the answer is "no, they'd figure it out" or "QA would catch it immediately" — it's not a rule. Cut it.
 
-- **Core behavior** — the primary thing the feature does. What goes in, what comes out.
-- **Error handling paths** — each distinct error response is a rule. "Return 400 when email is missing" and "Return 409 when email already exists" are two separate rules, not one "handle errors" rule.
-- **Configuration behavior** — defaults, overrides, env var fallbacks. "Default timeout is 30s" and "PURLIN_TIMEOUT env var overrides the default" are both rules.
-- **Boundary conditions** — max lengths, timeouts, retry limits. "Reject passwords shorter than 8 characters" is a rule.
-- **Data flow** — what goes in, what comes out, what gets cached, what gets logged. "Log a warning when retry count exceeds 3" is a rule.
-- **Conditional branches** — if the feature behaves differently based on state, mode, or input type, each branch is a rule. "Purchase flow shows rate lock date; refi flow shows payoff amount" is two rules.
-- **Visual sections** (UI features) — each distinct visual section or region of a component gets rules for its content and layout. "Hero section displays property address, loan amount, and rate" is a rule.
-- **Responsive behavior** (UI features) — how the feature adapts to viewport changes. "Stat cards stack vertically on mobile" and "Sidebar collapses to accordion below 768px" are separate rules.
-- **Theme behavior** (UI features) — that the feature respects theming, not which token names it uses. "Hero background color follows the active theme" is a rule. "Hero uses `--surface-primary`" is implementation — it names the token, not the behavior.
-- **Performance constraints** — load times, render budgets, query limits. "Dashboard renders within 2s with 100 features" is a rule.
+This question comes before everything else. Coverage dimensions, tier tags, proof descriptions — none of that matters if the rules themselves don't capture what an engineer would get wrong.
+
+Rules describe **behavior, not implementation**:
+- Bad: "Use bcrypt.compare for password verification"
+- Good: "Return 401 when password does not match stored hash"
+
+Three tests for every candidate rule:
+
+1. **Rebuild test:** Would an engineer get this wrong without this rule?
+2. **Behavior test:** Does this describe what the feature does, or how the code does it? If it names a library, hook, CSS value, or token — rewrite it as the observable behavior, or cut it.
+3. **Overlap test:** Would this rule always pass or fail together with another rule? If yes — merge them.
 
 ### Rebuild risk tiers
 
-Not all missing rules are equally dangerous. When extracting rules, prioritize by what would go wrong in a rebuild:
+Not all missing rules are equally dangerous. Prioritize by what would go wrong in a rebuild:
 
 | Tier | Rebuild risk | Example | Spec priority |
 |------|-------------|---------|---------------|
 | **Wrong behavior** | Engineer builds the wrong thing — wrong data source, wrong conditional gate, wrong calculation | "Purchase flow uses `PurchasePriceOrPropertyValue`; refi uses `PropertyValue`" | Must be a rule. A rebuild without this produces wrong numbers. |
 | **Broken functionality** | Feature works but degrades badly under real conditions — crashes on missing data, one section failure cascades | "Accordion sections render independently — one failing does not collapse others" | Must be a rule. An engineer would likely miss this. |
 | **Wrong layout** | Feature works correctly but looks wrong in ways that affect usability — content overlaps, sections hidden | "Loan details and disclaimer do not overlap on any viewport" | Should be a rule with `@e2e` or `@manual` proof. |
-| **Visual polish** | CSS spacing, exact pixel values, animation timing, icon sizing | "Info bar has 16px bottom margin" | Not a rule. QA catches this. An engineer rebuilding from the spec gets the behavior right; pixel polish is design review. |
+| **Visual polish** | CSS spacing, exact pixel values, animation timing, icon sizing | "Info bar has 16px bottom margin" | Not a rule. QA catches this. |
 
-**The rebuild test for each gap:** "If an engineer rebuilt this feature from only the new spec, would they get this wrong?" If the answer is "no, they'd figure it out" or "QA would catch it immediately" — it's not a spec gap, it's a design review item.
-
-### Sufficiency test
-
-A spec has enough rules when an engineer unfamiliar with the code could **rebuild the feature from the spec alone** and produce functionally correct behavior. The test is behavioral correctness, not visual pixel-match.
+### Signs of too few / too many rules
 
 Signs of too few rules:
 - Data source fields not specified — engineer might pull from wrong API field
@@ -51,59 +48,21 @@ Signs of too many rules:
 - Rules for behavior that exists only in tests, not in the feature itself
 - Implementation notes masquerading as rules (architecture decisions, library choices)
 
-Rules describe **behavior, not implementation**:
-- Bad: "Use bcrypt.compare for password verification"
-- Good: "Return 401 when password does not match stored hash"
+### Coverage dimensions
 
-### UI rule examples
+After applying the rebuild test, check that the spec covers each applicable dimension. The number of rules scales with the feature's complexity — there is no fixed target.
 
-UI features have a specific failure mode: rules that describe CSS or framework techniques instead of user-visible behavior. Apply the rebuild test: "Would an engineer building from only this spec get the wrong behavior?"
-
-**Data source rules (wrong-behavior tier — always a rule):**
-```
-Bad:  "Hero calls useProductQuery hook"
-Good: "Hero displays product.address, product.loanAmount, and product.rate from GET /api/products/:id"
-
-Bad:  "Loan details uses product.fields array"
-Good: "Loan details renders product.fields filtered by excluded=false, sorted by field.order"
-
-Bad:  "Chart data comes from Redux store"
-Good: "Looking Ahead chart renders product.chartData; purchase-only — hidden for refinance loans"
-```
-
-**Conditional gate rules (wrong-behavior tier — always a rule):**
-```
-Bad:  "Component checks loanType === 'purchase'"
-Good: "Purchase flow displays rate lock date and estimated closing costs; refinance flow displays current balance and payoff amount"
-
-Bad:  "Uses feature flag to show chart"
-Good: "Chart section renders only when product.chartData is present and loanType is purchase"
-```
-
-**Failure mode rules (broken-functionality tier — always a rule):**
-```
-Bad:  "Has error boundary around chart"
-Good: "Missing chart data shows 'No data available' message instead of crashing"
-
-Bad:  "Each accordion is a separate component"
-Good: "Accordion sections render independently — one section failing does not collapse others"
-```
-
-**Implementation detail — NOT a rule:**
-```
-"Uses useMediaQuery hook with 768px breakpoint"     → implementation (names the hook)
-"Hero background uses var(--surface-primary)"        → implementation (names the token)
-"SVG elbow connector uses rx={h/2} path formula"     → implementation (names the technique)
-"Info bar has margin-top: -66px"                     → visual polish (CSS pixel value)
-"Stats grid uses CSS Grid with 3 columns"            → implementation (names the layout technique)
-```
-
-If responsive or theme code causes a **behavioral** problem (content overlaps on mobile, colors don't change with theme), that behavioral problem is a rule. The CSS technique used to solve it is not.
-
-```
-"Stat cards remain usable (no overlap, no hidden content) on viewports below 768px"  → rule (behavioral)
-"Section colors follow the active theme"                                              → rule (behavioral)
-```
+- **Core behavior** — the primary thing the feature does. What goes in, what comes out.
+- **Error handling paths** — each distinct error response is a rule. "Return 400 when email is missing" and "Return 409 when email already exists" are two separate rules, not one "handle errors" rule.
+- **Configuration behavior** — defaults, overrides, env var fallbacks.
+- **Boundary conditions** — max lengths, timeouts, retry limits.
+- **Data flow** — what goes in, what comes out, what gets cached, what gets logged.
+- **Conditional branches** — if the feature behaves differently based on state, mode, or input type, each branch is a rule.
+- **Data sources** (UI features) — what each section displays and which API field or store it comes from. This is the #1 rebuild risk for UI.
+- **Failure modes** (UI features) — what happens when data is missing, a section throws, or the API is slow.
+- **Responsive behavior** (UI features) — only when it causes functional breakage (overlap, hidden controls). Spacing changes are visual polish.
+- **Theme behavior** (UI features) — that the feature respects theming, not which token names it uses.
+- **Performance constraints** — load times, render budgets, query limits.
 
 ## Rule Tags
 

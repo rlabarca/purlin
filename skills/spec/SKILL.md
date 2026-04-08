@@ -12,8 +12,57 @@ For **syntax**: `references/formats/spec_format.md`. For **quality**: `reference
 ```
 purlin:spec <name>              Create or edit a spec
 purlin:spec <name> --anchor     Delegate to purlin:anchor create
+purlin:spec <name> --review     Review an existing spec for rule quality
 purlin:spec                     (no name — extract from user's input)
 ```
+
+---
+
+## --review Mode
+
+Lightweight rule quality check. Reads an existing spec and evaluates each rule — no test execution, no file modifications, no proof files. Use this to catch quality problems before anyone writes tests.
+
+### Step 1 — Load the spec
+
+Find `specs/**/<name>.md`. If not found, error: "Spec not found. Run `purlin:spec <name>` to create it."
+
+Read the spec in full. Also read the source files listed in `> Scope:` (if any) for context on what the code actually does.
+
+### Step 2 — Evaluate each rule
+
+For each `RULE-N:` line, apply the three tests from `references/spec_quality_guide.md` ("The rebuild test"):
+
+1. **Rebuild test:** "If an engineer rebuilt this feature from only this spec, would they get this wrong without this rule?" If the answer is no — flag as `NOISE`.
+2. **Behavior test:** Does this describe what the feature does, or how the code does it? Check for signals: names a library, hook, CSS value, token, internal function, or specific technique. If yes — flag as `IMPLEMENTATION`.
+3. **Overlap test:** Would this rule always pass or fail together with another rule in the same spec? If yes — flag as `OVERLAP` and name the paired rule.
+
+Also check:
+- **Missing coverage:** Read the source code in `> Scope:` and identify behavioral aspects not covered by any rule. Flag each as `GAP` with a suggested rule.
+- **Vague rules:** Rules that say "handle errors" or "work correctly" without specifying what happens. Flag as `VAGUE`.
+
+### Step 3 — Report
+
+```
+Spec review: <name> (<N> rules)
+
+  ✓ RULE-1: Returns 200 with JWT on valid credentials
+  ✓ RULE-2: Returns 401 on invalid password
+  ⚠ RULE-3: Uses bcrypt for password hashing — IMPLEMENTATION (names library; rewrite as: "Passwords are hashed before storage")
+  ⚠ RULE-4: Locks account after 5 failures — OVERLAP with RULE-5 (same trigger condition)
+  ✗ RULE-5: Handles rate limiting — VAGUE (what status code? what error message? what threshold?)
+
+Suggested rules (GAP):
+  + "Returns 429 with Retry-After header when rate limit exceeded" (rate limit response not specified)
+  + "Login audit log records every attempt with timestamp, IP, and success/failure" (audit trail in code but not in spec)
+
+Summary: 2 clean, 2 warnings, 1 vague, 2 gaps suggested
+```
+
+For bad→good rewrite examples, reference `references/rule_examples.md`.
+
+### No writes
+
+This mode is read-only. It does not modify the spec, create files, or run tests. The user takes the findings and applies them manually or via `purlin:spec <name>`.
 
 ---
 

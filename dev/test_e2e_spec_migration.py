@@ -606,18 +606,49 @@ def test_prd_extracts_at_least_5_rules(tmp_path):
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
 def test_prd_has_valid_metadata(tmp_path):
-    """PRD spec has Description, Scope, and Stack metadata fields."""
+    """PRD spec has Description, Scope, and Stack metadata fields — verified via _scan_specs parser."""
     _make_project(tmp_path, specs={
         'specs/checkout/checkout.md': PRD_SPEC,
     })
-    assert _get_metadata(PRD_SPEC, 'Description') is not None, "Missing > Description:"
-    assert _get_metadata(PRD_SPEC, 'Scope') is not None, "Missing > Scope:"
-    assert _get_metadata(PRD_SPEC, 'Stack') is not None, "Missing > Stack:"
+    # Verify the parser (_scan_specs) extracts the metadata fields from the written spec file.
+    # This tests that sync_status can read the spec and reports the expected fields — behavioral
+    # proof that the spec format is parser-readable, not just a string check on the constant.
+    features = _scan_specs(str(tmp_path))
+    assert 'checkout' in features, "checkout feature not found by _scan_specs"
+    feature = features['checkout']
+
+    # Description is extracted from the > Description: line
+    desc = feature.get('description')
+    assert desc is not None and desc != '', (
+        f"_scan_specs did not extract > Description: from checkout spec, got: {desc!r}"
+    )
+    assert 'checkout' in desc.lower() or 'step' in desc.lower(), (
+        f"Extracted description does not match PRD content: {desc!r}"
+    )
+
+    # Scope is extracted and stored on the feature (as a list of paths)
+    scope = feature.get('scope')
+    assert scope, (
+        f"_scan_specs did not extract > Scope: from checkout spec, got: {scope!r}"
+    )
+    scope_str = str(scope)
+    assert 'src/checkout' in scope_str, (
+        f"Extracted scope does not contain 'src/checkout': {scope!r}"
+    )
+
+    # Stack is extracted
+    stack = feature.get('stack')
+    assert stack is not None and stack != '', (
+        f"_scan_specs did not extract > Stack: from checkout spec, got: {stack!r}"
+    )
+    assert 'python' in stack.lower() or 'flask' in stack.lower(), (
+        f"Extracted stack does not match PRD content: {stack!r}"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-15", tier="e2e")
 def test_prd_requires_overlapping_anchor(tmp_path):
-    """PRD spec includes Requires referencing an anchor; sync_status shows required rules."""
+    """PRD spec includes Requires referencing an anchor; sync_status counts required rules in total."""
     anchor = """\
 # Anchor: api_conventions
 
@@ -637,14 +668,29 @@ def test_prd_requires_overlapping_anchor(tmp_path):
         'specs/checkout/checkout.md': PRD_SPEC,
         'specs/_anchors/api_conventions.md': anchor,
     })
-    assert _get_metadata(PRD_SPEC, 'Requires') is not None, "Missing > Requires:"
-    assert 'api_conventions' in _get_metadata(PRD_SPEC, 'Requires'), (
-        "PRD spec should require api_conventions anchor"
+
+    # Verify _scan_specs extracts the Requires relationship from the written spec file.
+    # This is behavioral: the parser must read > Requires: and link the anchor.
+    features = _scan_specs(str(tmp_path))
+    assert 'checkout' in features, "checkout feature not found by _scan_specs"
+    requires = features['checkout'].get('requires', [])
+    assert 'api_conventions' in requires, (
+        f"_scan_specs did not extract > Requires: api_conventions from checkout spec. "
+        f"Got requires={requires!r}"
     )
+
+    # Verify sync_status counts anchor rules toward the feature's total coverage.
+    # PRD_SPEC has 6 own rules + anchor has 2 rules = 8 total expected.
     result = sync_status(str(tmp_path))
-    # checkout should show required rules from the anchor
-    assert 'checkout' in result
-    assert 'api_conventions' in result
+    assert 'checkout' in result, "checkout not in sync_status output"
+    assert 'api_conventions' in result, (
+        "sync_status output should reference the required anchor api_conventions"
+    )
+    # With 0 proofs filed, sync_status must show the anchor rules in the total.
+    # The total should be 8 (6 own + 2 required), shown as 0/8.
+    assert '0/8' in result, (
+        f"Expected 0/8 coverage (6 own + 2 anchor rules), did not find '0/8' in:\n{result}"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
