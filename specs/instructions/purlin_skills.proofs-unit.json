@@ -133,7 +133,7 @@
       "rule": "RULE-15",
       "test_file": "dev/test_purlin_skills.py",
       "test_name": "test_init_list_plugins_labels_builtin_and_custom",
-      "status": "fail",
+      "status": "pass",
       "tier": "unit"
     }
   ]

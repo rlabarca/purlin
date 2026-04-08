@@ -1,0 +1,14 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "skill_build",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_teammate_audit_loop.sh",
+      "test_name": "build proof fixer mode fixes proofs and reports back",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

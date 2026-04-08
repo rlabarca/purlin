@@ -1,0 +1,14 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_teammate_audit_loop.sh",
+      "test_name": "verify Step 4e documents independent audit with integrity score and purlin-auditor",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

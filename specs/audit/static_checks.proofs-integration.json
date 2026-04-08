@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_collision_detected_in_c_output",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
