@@ -198,6 +198,33 @@
       "test_name": "test_assumed_tag_removal_on_explicit_update",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-33",
+      "rule": "RULE-23",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_ui_extraction_identifies_data_gates_failures",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-36",
+      "rule": "RULE-25",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_impl_deviation_extraction",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-38",
+      "rule": "RULE-26",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_discoveries_bug_extraction",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }
