@@ -51,7 +51,7 @@ def _assert_proof_json(proof_json_path, expected_proofs):
 @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
 class TestCProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
+    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22", tier="integration")
     def test_c_proof_plugin_real_compilation(self, tmp_path):
         """Compile and run a real C test, verify proof JSON emission."""
         # Create a minimal spec so the emitter can resolve the directory
@@ -126,7 +126,7 @@ int main(void) {
             {'feature': 'math_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6")
+    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6", tier="integration")
     def test_c_proof_plugin_failing_test(self, tmp_path):
         """C test that fails — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'math'
@@ -165,6 +165,51 @@ int main(void) {
             {'feature': 'math_ops', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'fail', 'tier': 'unit'},
         ])
 
+    @pytest.mark.proof("proof_plugins", "PROOF-23", "RULE-23", tier="integration")
+    def test_c_emit_pipeline_writes_to_spec_dir(self, tmp_path):
+        """purlin_proof_finish() prints JSON to stdout; c_purlin_emit.py reads and writes proof file."""
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            '# Feature: login\n\n## Rules\n- RULE-1: test\n\n## Proof\n- PROOF-1 (RULE-1): test\n'
+        )
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'c_purlin.h'), str(tmp_path))
+
+        c_file = tmp_path / 'test_emit.c'
+        c_file.write_text(r'''
+#include "c_purlin.h"
+int main(void) {
+    purlin_proof("login", "PROOF-1", "RULE-1",
+                 1, "test_login", "test_emit.c", "unit");
+    purlin_proof_finish();
+    return 0;
+}
+''')
+
+        binary = tmp_path / 'test_emit'
+        subprocess.run(['gcc', '-o', str(binary), str(c_file), '-I', str(tmp_path)],
+                       capture_output=True, text=True, check=True)
+        run_result = subprocess.run([str(binary)], capture_output=True, text=True)
+        assert run_result.returncode == 0
+
+        # Verify purlin_proof_finish() output is valid JSON on stdout
+        proof_json = json.loads(run_result.stdout)
+        assert 'proofs' in proof_json, "purlin_proof_finish() must output JSON with 'proofs' key"
+
+        # Pipe to c_purlin_emit.py and verify it writes the proof file
+        emit_result = subprocess.run(
+            [sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
+            input=run_result.stdout, capture_output=True, text=True,
+            cwd=str(tmp_path)
+        )
+        assert emit_result.returncode == 0, f"c_purlin_emit.py failed:\n{emit_result.stderr}"
+
+        proof_file = spec_dir / 'login.proofs-unit.json'
+        assert proof_file.exists(), "c_purlin_emit.py did not write proof file to spec directory"
+        _assert_proof_json(str(proof_file), [
+            {'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass', 'tier': 'unit'},
+        ])
+
 
 # ---------------------------------------------------------------------------
 # PHP tests — run with php interpreter
@@ -173,7 +218,7 @@ int main(void) {
 @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
 class TestPHPProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
+    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24", tier="integration")
     def test_php_proof_plugin_real_execution(self, tmp_path):
         """Execute real PHP test code and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -238,7 +283,7 @@ function test_empty_cart_zero_total() {
             {'feature': 'cart_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25")
+    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25", tier="integration")
     def test_php_proof_plugin_failing_test(self, tmp_path):
         """PHP test that throws — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -276,7 +321,7 @@ function test_deliberate_failure() {
 @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
 class TestSQLProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26")
+    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26", tier="integration")
     def test_sql_proof_plugin_real_execution(self, tmp_path):
         """Execute real SQL against sqlite3 and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -335,7 +380,7 @@ SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='null@test.com') = 0
             {'feature': 'data_integrity', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27")
+    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27", tier="integration")
     def test_sql_proof_plugin_failing_test(self, tmp_path):
         """SQL test that produces FAIL result."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -383,7 +428,7 @@ SELECT CASE WHEN (SELECT count(*) FROM items) = 99
 )
 class TestTypeScriptProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28", tier="integration")
     def test_typescript_proof_plugin_real_compilation(self, tmp_path):
         """Compile real TypeScript, run with Node, verify proof JSON."""
         spec_dir = tmp_path / 'specs' / 'string'
@@ -488,7 +533,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
             {'feature': 'string_utils', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28", tier="integration")
     def test_typescript_proof_plugin_failing_test(self, tmp_path):
         """TypeScript test that fails — verify status='fail'."""
         spec_dir = tmp_path / 'specs' / 'string'
@@ -546,7 +591,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
 
 class TestPythonProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("proof_plugins", "PROOF-5", "RULE-5", tier="integration")
     def test_python_proof_plugin_real_execution(self, tmp_path):
         """Run real pytest tests with proof markers and verify JSON emission."""
         spec_dir = tmp_path / 'specs' / 'calc'
@@ -604,6 +649,79 @@ def test_multiply():
 
 
 # ---------------------------------------------------------------------------
+# Proof purging: removed tests must not carry over
+# ---------------------------------------------------------------------------
+
+class TestProofPurging:
+    """Verify that feature-scoped overwrite purges stale entries on re-run."""
+
+    @pytest.mark.proof("proof_plugins", "PROOF-32", "RULE-29", tier="integration")
+    def test_removed_test_purged_on_rerun(self, tmp_path):
+        """Run with 2 proofs, then re-run with only 1 — verify the old entry is purged."""
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            '# Feature: login\n\n## Rules\n'
+            '- RULE-1: Validates password\n'
+            '- RULE-2: Returns token\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): test\n'
+            '- PROOF-2 (RULE-2): test\n'
+        )
+
+        plugins_dir = tmp_path / '.purlin' / 'plugins'
+        plugins_dir.mkdir(parents=True)
+        src = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof', 'pytest_purlin.py')
+        shutil.copy(src, str(plugins_dir / 'pytest_purlin.py'))
+
+        conftest = tmp_path / 'conftest.py'
+        conftest.write_text(
+            "import sys\n"
+            f"sys.path.insert(0, r'{str(plugins_dir)}')\n"
+            "from pytest_purlin import pytest_configure\n"
+        )
+
+        # Run 1: two proofs
+        test_file = tmp_path / 'test_login.py'
+        test_file.write_text(
+            "import pytest\n"
+            "@pytest.mark.proof('login', 'PROOF-1', 'RULE-1')\n"
+            "def test_password():\n    assert True\n"
+            "@pytest.mark.proof('login', 'PROOF-2', 'RULE-2')\n"
+            "def test_token():\n    assert True\n"
+        )
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', str(test_file), '-v', '--tb=short'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+        )
+        assert result.returncode == 0, f"Run 1 failed:\n{result.stdout}\n{result.stderr}"
+
+        proof_file = spec_dir / 'login.proofs-unit.json'
+        with open(str(proof_file)) as f:
+            data = json.load(f)
+        assert len(data['proofs']) == 2, "Run 1 should produce 2 proofs"
+
+        # Run 2: remove the second test (only PROOF-1 remains)
+        test_file.write_text(
+            "import pytest\n"
+            "@pytest.mark.proof('login', 'PROOF-1', 'RULE-1')\n"
+            "def test_password():\n    assert True\n"
+        )
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', str(test_file), '-v', '--tb=short'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+        )
+        assert result.returncode == 0, f"Run 2 failed:\n{result.stdout}\n{result.stderr}"
+
+        with open(str(proof_file)) as f:
+            data = json.load(f)
+        assert len(data['proofs']) == 1, \
+            f"Run 2 should purge removed test, got {len(data['proofs'])} proofs"
+        assert data['proofs'][0]['id'] == 'PROOF-1', \
+            "Only PROOF-1 should remain after removing PROOF-2's test"
+
+
+# ---------------------------------------------------------------------------
 # Cross-language: proof-file checks work on output from ANY plugin
 # ---------------------------------------------------------------------------
 
@@ -612,7 +730,7 @@ class TestCrossLanguageProofFileChecks:
     produced by real language-specific plugins."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15", tier="integration")
     def test_collision_detected_in_c_output(self, tmp_path):
         """C test emits duplicate PROOF-1 for different rules — check_proof_file catches it."""
         spec_dir = tmp_path / 'specs' / 'auth'

@@ -354,7 +354,8 @@ List all files in `.purlin/plugins/`. For built-in plugins, look up the framewor
 
 ```
 Installed proof plugins:
-  .purlin/plugins/<plugin_file> (<Framework>)
+  .purlin/plugins/pytest_purlin.py (Python/pytest)
+  .purlin/plugins/jest_purlin.js (JavaScript/Jest)
   .purlin/plugins/my_go_plugin.py (custom)
 ```
 

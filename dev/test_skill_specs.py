@@ -1199,6 +1199,32 @@ class TestSkillSpecFromCode:
         assert 'features/' in content and 'overwritten in place' in content, \
             "spec-from-code skill must document features/ removal AND specs/ overwrite-in-place paths"
 
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24")
+    def test_draft_and_evaluate_with_rebuild_test(self):
+        content = _read('spec-from-code')
+        assert re.search(r'(?i)draft and evaluate', content), \
+            "spec-from-code skill missing 'Draft and evaluate' step"
+        assert re.search(r'(?i)rebuild test', content), \
+            "spec-from-code skill missing 'rebuild test' filter"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-39", "RULE-27")
+    def test_discoveries_figma_preserved_as_visual_reference(self):
+        content = _read('spec-from-code')
+        assert 'Visual-Reference' in content, \
+            "spec-from-code skill missing Visual-Reference metadata"
+        assert 'Figma' in content, \
+            "spec-from-code skill missing Figma reference"
+        assert '.discoveries.md' in content, \
+            "spec-from-code skill missing .discoveries.md reference"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-28")
+    def test_quality_guide_coverage_dimensions_not_fixed_count(self):
+        content = _read_ref('spec_quality_guide.md')
+        assert re.search(r'(?i)coverage dimensions', content), \
+            "spec_quality_guide.md missing 'Coverage dimensions' section"
+        assert not re.search(r'5.10 rules per feature', content), \
+            "spec_quality_guide.md still contains fixed '5-10 rules per feature' target"
+
 
 # ── skill_status ──────────────────────────────────────────────────────
 
