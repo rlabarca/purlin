@@ -210,6 +210,8 @@ After the core spec (What it does, Rules, Proof) is solid, add metadata:
 5. Check if any rules are FORBIDDEN patterns and format proofs as grep-based assertions per "FORBIDDEN Grep Precision"
 6. Suggest the category per `references/spec_quality_guide.md` ("Spec Categories")
 
+**Rule quality check (mandatory):** Before presenting, apply the `--review` logic internally: evaluate every rule against the rebuild/behavior/overlap tests. Fix any IMPLEMENTATION or NOISE rules in the draft — don't present rules that fail the rebuild test.
+
 Present the enhanced spec with metadata added and ask "anything to adjust?"
 
 ### Structural-Only Proof Check

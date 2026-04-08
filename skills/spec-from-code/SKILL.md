@@ -411,7 +411,9 @@ Examples:
 
    **Filter 3 — Tier by rebuild risk:** Review each rule against the rebuild risk tiers in `references/spec_quality_guide.md` ("Rebuild risk tiers"). Every rule should pass the test: "If an engineer rebuilt from only this spec, would they get this wrong without this rule?" If the answer is no — the rule is noise, not signal. Cut it.
 
-10. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+10. **Rule quality review (mandatory):** For each spec just written, apply the `purlin:spec --review` logic internally: evaluate every rule against the rebuild/behavior/overlap tests. Fix any IMPLEMENTATION or NOISE rules before presenting to the user — don't defer quality problems to review time.
+
+11. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
@@ -423,7 +425,7 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-11. Present the generated specs for this category and ask for approval:
+12. Present the generated specs for this category and ask for approval:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -439,11 +441,11 @@ Examples:
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-12. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
+13. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
-13. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
+14. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
-14. Update state: add category name to `completed_categories`.
+15. Update state: add category name to `completed_categories`.
 
 ---
 
