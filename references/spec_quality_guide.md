@@ -80,7 +80,13 @@ After applying the rebuild test, check that the spec covers each applicable **co
 - Feature flag conditions
 - Mode switches that change behavior (e.g., admin mode, loan officer mode)
 
-**Supporting dimensions** (check after the five above):
+**Project-level anchors** (check once per project, not per feature):
+
+- **Environment contracts** — runtime version, key dependency versions, build command, env var inventory. Captured in a `project_environment` anchor with `> Global: true`. Every feature implicitly depends on the environment being correct.
+- **API surface** — full endpoint inventory with paths, methods, and parameter shapes. Captured in an `api_surface` anchor. Feature specs reference it for their specific endpoints; the anchor is the single source of truth for base paths, auth patterns, and response envelope conventions.
+- **Domain schemas** — critical field names for types that flow through multiple features. Captured in `schema_` anchors with field-level rules. Not the full interface — the fields that appear in transformations, display, or conditional gates. If an engineer uses the wrong field name, the feature produces wrong output.
+
+**Supporting dimensions** (check after the above):
 - Error handling paths — each distinct error response
 - Boundary conditions — max lengths, timeouts, retry limits
 - Performance constraints — load times, render budgets, query limits

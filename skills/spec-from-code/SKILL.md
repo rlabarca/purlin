@@ -81,9 +81,42 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
    - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts — cross-referenced with code modules discovered by the exploration agents
 
-6. Update state: `phase: 1, status: "complete"`.
+6. **Generate environment anchor (mandatory):** Extract project-level environment data and write `specs/_anchors/project_environment.md`. This anchor captures what's needed to compile, run, and configure the project — information that no individual feature spec carries.
 
-7. Commit per `references/commit_conventions.md`: `chore(sfc): codebase survey complete (Phase 1)`
+   **Extract from:**
+   - **Runtime & framework:** `package.json` (engines field, main framework), `go.mod`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, etc.
+   - **Key dependencies with versions:** Read the lock file (`package-lock.json`, `yarn.lock`, `poetry.lock`, `go.sum`) for pinned versions of direct dependencies. Don't list every transitive dep — list the top-level deps that appear in import statements.
+   - **Build config:** `next.config.js`, `webpack.config.js`, `tsconfig.json`, `Makefile`, `CMakeLists.txt`, `Dockerfile`, etc. Capture the build command and key overrides (output dir, asset prefix, compilation targets).
+   - **Environment variables:** Grep scanned directories for `process.env.`, `import.meta.env.`, `os.environ`, `os.Getenv`, `System.getenv`, `ENV[`. Collect every env var name. Group into: required (app fails without), optional (has fallback), and secret (API keys, tokens — note the name but not the value).
+
+   **Write the anchor:**
+   ```markdown
+   # Anchor: project_environment
+
+   > Description: Runtime, dependencies, build config, and environment variable inventory.
+   > Global: true
+   > Scope: package.json, next.config.js, .env*
+
+   ## Rules
+   - RULE-1: Runtime is <language> <version> with <framework> <version>
+   - RULE-2: Key dependencies: <name>@<version>, <name>@<version>, ...
+   - RULE-3: Build command: <command>; key config: <asset prefix, output mode, etc.>
+   - RULE-4: Required env vars: <list with descriptions>
+   - RULE-5: Dev/prod split: <which env vars differ between environments>
+
+   ## Proof
+   - PROOF-1 (RULE-1): Read package.json engines and main framework version; verify match
+   - PROOF-2 (RULE-2): Read lock file; verify listed dependency versions match
+   - PROOF-3 (RULE-3): Read build config; verify build command and key overrides
+   - PROOF-4 (RULE-4): Grep source for env var usage; verify all listed vars are present
+   - PROOF-5 (RULE-5): Read .env files or env var references; verify dev/prod differences documented
+   ```
+
+   Present the environment anchor for review. Commit: `spec(sfc): create anchor project_environment`
+
+7. Update state: `phase: 1, status: "complete"`.
+
+8. Commit per `references/commit_conventions.md`: `chore(sfc): codebase survey complete (Phase 1)`
 
 ---
 
@@ -139,6 +172,31 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    | `brand_` | Voice, naming, identity | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
    | `prodbrief_` | User stories, UX requirements | User flow definitions, feature flags, A/B test configs, analytics event schemas. Look for: feature flag configs, analytics track calls, user journey comments |
    | `legal_` | Privacy, data handling, compliance | Cookie consent, privacy policy references, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
+
+   **API surface anchor (mandatory when API calls detected):** If Phase 1 exploration found HTTP client usage (fetch, axios, http.get, requests, net/http, etc.), generate an `api_surface` anchor listing every external endpoint the codebase calls. For each endpoint, capture: HTTP method, full path (including any base path prefix), and parameter shapes (query params, body fields). Trace from the HTTP call sites back to the URL construction to capture the full path — don't just capture the relative path passed to the client.
+
+   ```markdown
+   # Anchor: api_surface
+   > Description: All external API endpoints with methods, paths, and parameter shapes.
+   > Global: true
+   ## Rules
+   - RULE-1: Base path prefix is /EdgeMobileService/EdgeService.svc/json/
+   - RULE-2: GetAnalysisDisplay — GET — params: {analysisId, reportType, isClient, ...}
+   - RULE-3: SaveLoanProductBenefit — POST — body: {analysisId, loanProductId, benefitTitle, benefitSubmessage}
+   ```
+
+   **Domain schema anchors (mandatory when shared types detected):** If Phase 1 found shared type definitions (TypeScript interfaces, Python dataclasses, Go structs, SQL schemas) consumed by 3+ features, generate a `schema_` anchor for each major domain entity. Rules must include the **critical field names** — the fields that appear in transformations, display logic, or conditional gates across features. Don't list every field; list the ones that would cause wrong behavior if an engineer used the wrong name.
+
+   ```markdown
+   # Anchor: schema_mortgage_report
+   > Description: Critical field names in the MortgageReport API response.
+   ## Rules
+   - RULE-1: Contact info is at response.contact (lowercase), not AnalysisContact
+   - RULE-2: User info is at response.user (lowercase), not User
+   - RULE-3: Loan product name is LoanProduct.Name, not ProductName
+   - RULE-4: Monthly payment is LoanProduct.Piti, not TotalMonthlyPayment
+   - RULE-5: 5-year cost is LoanProduct.FiveYrCost, not GraphShort
+   ```
 
    **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor — not be buried in individual feature specs. After detecting candidates, group them: "These N features all use `<pattern>` → propose anchor: `<prefix>_<name>`." Present the grouping evidence to the user for confirmation.
 
@@ -289,6 +347,10 @@ For each category:
    - File contents, CLI arguments, webhook payloads, queue messages
    - Database query results (table names, column names)
 
+   **Extraction depth — env vars (mandatory):** Grep the feature's scope files for `process.env.`, `import.meta.env.`, `os.environ[`, `os.Getenv(`, `System.getenv(`, `ENV[`. Every env var the feature reads becomes a rule or references the `project_environment` anchor. If the feature reads 3+ env vars, verify they're all listed in the environment anchor.
+
+   **Extraction depth — schema cross-reference (mandatory):** If the feature consumes a typed API response or shared data structure, check whether a `schema_` anchor exists with field-level rules for that type. If not, flag: "Schema anchor missing field-level rules for `<TypeName>` — feature uses fields `<list>` that aren't documented." The feature spec's inbound rules must use the same field names as the schema anchor.
+
    Write rules specifying **what the feature reads and from where**:
    - Good: "Header logo comes from `formatImageUrl(user.LogoFileName)` via GET /EdgeMobileService/EdgeService.svc/json/GetAnalysisGuidDisplay"
    - Good: "Contact name is built from `user.FirstName + ' ' + user.LastName`"
@@ -312,6 +374,8 @@ For each category:
    - Good: "POST /api/orders with body `{items, total, paymentToken}` on checkout submit"
    - Bad: "Sends analytics events on key interactions" (no event names, no params)
    - Bad: "Logs errors" (no format, no conditions)
+
+   **Extraction depth — event payloads (mandatory):** For each analytics or event call, do NOT stop at the event name. Follow the call into the tracking/emit function and extract the full parameter object. If the function merges default params (e.g., `{...defaultParams, ...eventParams}`), capture both sets. The rule must include the complete payload shape, not just the event name.
 
    **c) Transformation rules — what logic converts between inbound and outbound:**
 
