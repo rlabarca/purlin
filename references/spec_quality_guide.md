@@ -50,19 +50,41 @@ Signs of too many rules:
 
 ### Coverage dimensions
 
-After applying the rebuild test, check that the spec covers each applicable dimension. The number of rules scales with the feature's complexity — there is no fixed target.
+After applying the rebuild test, check that the spec covers each applicable **contract boundary**. Every feature has data crossing between systems or modules — the contracts at those boundaries are what an engineer would get wrong. The number of rules scales with the feature's complexity — there is no fixed target.
 
-- **Core behavior** — the primary thing the feature does. What goes in, what comes out.
-- **Error handling paths** — each distinct error response is a rule. "Return 400 when email is missing" and "Return 409 when email already exists" are two separate rules, not one "handle errors" rule.
-- **Configuration behavior** — defaults, overrides, env var fallbacks.
-- **Boundary conditions** — max lengths, timeouts, retry limits.
-- **Data flow** — what goes in, what comes out, what gets cached, what gets logged.
-- **Conditional branches** — if the feature behaves differently based on state, mode, or input type, each branch is a rule.
-- **Data sources** (UI features) — what each section displays and which API field or store it comes from. This is the #1 rebuild risk for UI.
-- **Failure modes** (UI features) — what happens when data is missing, a section throws, or the API is slow.
-- **Responsive behavior** (UI features) — only when it causes functional breakage (overlap, hidden controls). Spacing changes are visual polish.
-- **Theme behavior** (UI features) — that the feature respects theming, not which token names it uses.
-- **Performance constraints** — load times, render budgets, query limits.
+**Inbound contracts** — what data enters this feature and in what shape?
+- API response fields the feature consumes (exact field names — this is the #1 rebuild risk)
+- Config/env values the feature reads
+- Props, parameters, or messages from other modules
+- File contents, CLI arguments, webhook payloads
+
+**Outbound contracts** — what data does this feature emit?
+- Analytics events (event names, parameter shapes, when they fire)
+- API calls to other services (endpoints, payloads, query params)
+- Database writes, file outputs, log entries
+- Callbacks, events, or messages to other modules
+
+**Transformation rules** — what logic converts between inbound and outbound?
+- Field mappings (API field → display field, with exact names on both sides)
+- Calculations and formulas (the math that produces displayed or stored values)
+- Formatting functions (URL builders, phone formatters, name concatenation)
+- Filters, sorts, and aggregations applied to data
+
+**State transitions** — what lifecycle does this feature have?
+- Valid states and what triggers each transition
+- What's forbidden (can't go from X to Y directly)
+- Timeout/expiry behavior
+
+**Access contracts** — who can see or do what?
+- Role/permission gates
+- Feature flag conditions
+- Mode switches that change behavior (e.g., admin mode, loan officer mode)
+
+**Supporting dimensions** (check after the five above):
+- Error handling paths — each distinct error response
+- Boundary conditions — max lengths, timeouts, retry limits
+- Performance constraints — load times, render budgets, query limits
+- Graceful degradation — what happens when dependencies fail
 
 ## Rule Tags
 

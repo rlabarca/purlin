@@ -276,65 +276,100 @@ For each category:
 
    If no migration candidate exists, generate from code alone (standard behavior).
 
-4. **UI feature extraction (mandatory for UI features):** If the feature's scope files are in directories associated with UI rendering (`components/`, `views/`, `pages/`, `layouts/`, `templates/`, `sections/`) or are JSX/TSX/Vue/Svelte files, apply the following extraction strategy **in addition to** standard rule extraction. This also applies to any file producing HTML output (server-rendered templates, SSR components).
+4. **Data contract extraction (mandatory for ALL features):** For every feature, trace data across system boundaries and capture the contracts that an engineer would get wrong in a rebuild. This is organized by the five contract categories from `references/spec_quality_guide.md` ("Coverage dimensions"). Apply all five to every feature — not just UI.
 
-   The extraction is organized by **rebuild risk** — what an engineer would get wrong without the rule — not by code pattern type. See `references/spec_quality_guide.md` ("Rebuild risk tiers") for the prioritization framework.
+   **a) Inbound contracts — what data enters, in what shape:**
 
-   **a) Data sources — what data, from where (wrong-behavior tier):**
+   Trace every external data source the feature consumes. Capture the **exact field names** — this is the #1 rebuild risk across all codebases.
 
-   For each section of the component, trace where its displayed data comes from. This is the #1 rebuild risk for UI features — connecting to the wrong field means wrong numbers on screen.
+   What to trace:
+   - API response fields (exact names: `user.LogoFileName` not "logo field")
+   - Config/environment values (`NEXT_PUBLIC_API_URL`, `process.env.DATABASE_URL`)
+   - Props/parameters from parent modules or callers
+   - File contents, CLI arguments, webhook payloads, queue messages
+   - Database query results (table names, column names)
 
-   Trace these patterns:
-   - Props passed from parent components or route params
-   - API calls (`fetch`, `axios`, `useQuery`, `getServerSideProps`)
-   - State/store reads (Redux selectors, Zustand stores, React context)
-   - Computed/derived values (filters, sorts, transformations on the source data)
+   Write rules specifying **what the feature reads and from where**:
+   - Good: "Header logo comes from `formatImageUrl(user.LogoFileName)` via GET /EdgeMobileService/EdgeService.svc/json/GetAnalysisGuidDisplay"
+   - Good: "Contact name is built from `user.FirstName + ' ' + user.LastName`"
+   - Good: "Config reads `DATABASE_URL` from environment; falls back to `localhost:5432` if unset"
+   - Bad: "Fetches data from the API" (no field names — engineer guesses wrong)
+   - Bad: "Calls useProductQuery hook" (names mechanism, not the data contract)
 
-   For each data source, write a rule specifying **what the section displays and which field it comes from**:
-   - Good: "Hero displays `product.address`, `product.loanAmount`, and `product.rate` from GET /api/products/:id"
-   - Good: "Loan details renders `product.fields` filtered by `excluded=false`, sorted by `field.order`"
-   - Bad: "Hero calls useProductQuery hook" (implementation — names the mechanism, not the data)
+   **b) Outbound contracts — what data leaves, in what shape:**
 
-   **b) Conditional gates — who sees what (wrong-behavior tier):**
+   Find every place the feature emits data to an external system. Capture event names, payload shapes, and trigger conditions.
 
-   Scan for props, state, or data-driven conditionals that control which content appears for which users or states. These are the rules that prevent showing the wrong content to the wrong user segment.
+   What to trace:
+   - Analytics events (Firebase, Segment, Mixpanel — event name + parameter names + when fired)
+   - API calls to other services (endpoint, method, payload fields, query params)
+   - Database writes (which table, which columns, what triggers the write)
+   - Log entries (log level, message format, when emitted)
+   - Callbacks, events, or messages to other modules
 
-   Common patterns:
-   - Ternary operators in JSX (`{isPurchase ? <PurchaseView/> : <RefiView/>}`)
-   - Conditional includes (`{showChart && <Chart/>}`)
-   - Switch/case or map-based rendering
-   - Feature flags or config-driven sections
-   - Role/permission checks that hide/show sections
+   Write rules specifying **what gets sent, when, and in what shape**:
+   - Good: "Fires Firebase event `report_viewed` with params `{reportId, reportType, contactId}` when report page loads"
+   - Good: "POST /api/orders with body `{items, total, paymentToken}` on checkout submit"
+   - Bad: "Sends analytics events on key interactions" (no event names, no params)
+   - Bad: "Logs errors" (no format, no conditions)
 
-   Each meaningful gate is a separate rule specifying **what each segment sees**:
-   - Good: "Purchase flow displays rate lock date and estimated closing costs; refinance flow displays current balance and payoff amount"
-   - Good: "Looking Ahead chart renders only for purchase loans with chartData present"
-   - Bad: "Component checks `loanType === 'purchase'`" (implementation — describes the conditional, not the outcome)
+   **c) Transformation rules — what logic converts between inbound and outbound:**
 
-   **c) Failure modes — what happens when things break (broken-functionality tier):**
+   Identify every place data changes shape between input and output. Capture the exact mapping, formula, or logic.
 
-   Scan for how the component handles missing data, loading states, error states, and partial failures:
-   - Null/undefined checks before rendering (`{data && <Component/>}`)
-   - Loading state handling (skeletons, spinners, placeholder text)
-   - Error boundaries or try/catch in render paths
-   - Fallback content for missing data
-   - Section independence (one section failing doesn't crash others)
+   What to trace:
+   - Field mappings (API field → display field, with names on both sides)
+   - Calculations and formulas (interest rate computation, cost aggregation)
+   - Formatting functions (URL builders, phone/name formatters, currency display)
+   - Filters, sorts, and aggregations applied to collections
+   - Type conversions that affect correctness (string→number, date parsing)
 
-   Each failure mode becomes a rule describing **what the user sees when something goes wrong**:
-   - Good: "Missing chart data shows 'No data available' message instead of crashing"
-   - Good: "Accordion sections render independently — one section failing does not collapse others"
-   - Good: "Component renders a loading skeleton while product data is fetching"
+   Write rules specifying **the transformation, not the mechanism**:
+   - Good: "Monthly payment = principal * (rate/12) / (1 - (1 + rate/12)^-term)"
+   - Good: "`formatImageUrl` prepends CDN base URL to `user.LogoFileName`; returns empty string if null"
+   - Good: "Table rows filtered by `LoanProduct.IsHidden === false`, sorted by `LoanProduct.SortOrder`"
+   - Bad: "Formats data for display" (no mapping specified)
+   - Bad: "Uses lodash.groupBy for categorization" (names the library, not the grouping logic)
+
+   **d) State transitions — what lifecycle does this feature have:**
+
+   Identify features with distinct states and transition rules. Not every feature has these — skip if the feature is stateless.
+
+   What to trace:
+   - Enum/constant definitions that represent states
+   - Transition functions or state machines
+   - Timeout/expiry logic
+   - Forbidden transitions (can't go from X to Y)
+
+   Write rules specifying **valid states and transitions**:
+   - Good: "Recording lifecycle: idle → recording → paused → stopped. Cannot go from stopped back to recording."
+   - Good: "Analysis polling: starts on mount, pauses when tab hidden, resumes on tab focus, stops on unmount"
+   - Bad: "Has multiple states" (no states named, no transitions specified)
+
+   **e) Access contracts — who can see or do what:**
+
+   Identify every gate that controls visibility or behavior based on user identity, permissions, flags, or modes.
+
+   What to trace:
+   - Role/permission checks (admin, editor, viewer)
+   - Feature flag evaluations
+   - Mode switches that change behavior (loan officer mode, debug mode)
+   - Subscription/entitlement gates
+   - Geographic or locale-based restrictions
+
+   Write rules specifying **what each segment sees or can do**:
+   - Good: "Loan officer mode (activated by `lo=true` URL hash param) shows editable benefit fields and save button"
+   - Good: "Password-gated reports show password form; authenticated reports show content directly"
+   - Bad: "Checks user permissions" (no specifics)
 
    **Visual reference preservation:** If the code or old specs contain references to Figma files, design mockups, or screenshots:
    - Extract Figma URLs → `> Visual-Reference: figma://fileKey/nodeId`
    - Extract image paths → `> Visual-Reference: ./designs/component.png`
    - Create `@manual` proofs for visual fidelity: "Visual layout matches design spec @manual"
 
-   **What NOT to extract as rules:** Responsive behavior (media queries, breakpoints) and theme integration (CSS variables, theme hooks) become rules **only** when they cause a rebuild-risk problem — e.g., content overlap on mobile, or colors that don't change with the theme. If the responsive/theme code is purely visual polish (spacing, exact pixel values), it belongs in design review (`@manual` proofs), not in rules. See the rebuild risk tiers in the quality guide.
-
 5. **Draft and evaluate rules (mandatory):** Before writing the spec file, draft all candidate rules as full `RULE-N:` lines and evaluate each against the rebuild test. This step applies to ALL features, not just UI.
 
-   **Draft:** Combine candidate rules from standard extraction (step 1's code reading) and UI extraction (step 4, if applicable). Write each as a `RULE-N:` line.
+   **Draft:** Combine candidate rules from standard extraction (step 1's code reading) and data contract extraction (step 4). Write each as a `RULE-N:` line.
 
    **Evaluate each rule:**
    - **Rebuild test:** "If an engineer rebuilt this feature from only these rules, would they get this wrong without this rule?" If the answer is "no, they'd figure it out" or "QA would catch it" — cut the rule.
@@ -404,10 +439,12 @@ Examples:
    - Library or framework choices ("uses recharts", "uses `useMediaQuery`")
    - Token/variable names ("uses `--surface-primary`") — instead say what the behavior is ("follows the active theme")
 
-   **Filter 2 — Verify coverage dimensions:** Verify the spec covers the applicable dimensions from `references/spec_quality_guide.md` ("Coverage dimensions"). For UI features, this means the spec MUST have behavioral rules for:
-   - Data sources — what each section displays and where the data comes from (from step 4a)
-   - Conditional gates — which data/content appears for which user segments (from step 4b)
-   - Failure modes — what happens when data is missing, loading, or a section fails (from step 4c)
+   **Filter 2 — Verify contract coverage:** Verify the spec covers the applicable contract boundaries from `references/spec_quality_guide.md` ("Coverage dimensions"). The spec MUST have rules for each boundary the feature touches:
+   - Inbound contracts — exact field names from APIs, config, or upstream modules (from step 4a)
+   - Outbound contracts — event names, payload shapes, and trigger conditions (from step 4b)
+   - Transformation rules — field mappings, formulas, and formatting logic (from step 4c)
+   - State transitions — lifecycle states and transition rules (from step 4d, if applicable)
+   - Access contracts — permission/flag/mode gates (from step 4e, if applicable)
 
    **Filter 3 — Tier by rebuild risk:** Review each rule against the rebuild risk tiers in `references/spec_quality_guide.md` ("Rebuild risk tiers"). Every rule should pass the test: "If an engineer rebuilt from only this spec, would they get this wrong without this rule?" If the answer is no — the rule is noise, not signal. Cut it.
 
@@ -501,5 +538,5 @@ Additional spec-from-code-specific guidelines:
 - **Implementation Notes are context, not rules.** Architecture decisions, library choices, caching strategies, and design patterns go in `## Implementation Notes` — never in `## Rules`. They inform a rebuilding engineer but are not testable behavioral constraints. A spec with 10 rules and 5 impl notes is better than a spec with 15 rules where 5 are really impl notes.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.
 - **Rules scale with complexity, filtered by rebuild risk.** Cover all applicable dimensions from `references/spec_quality_guide.md` ("Coverage dimensions"), but every rule must pass the rebuild-risk test: "Would an engineer get this wrong without this rule?" CSS pixel values, library choices, and visual polish are not rules.
-- **UI features require data contract extraction.** Always apply Phase 3 Step 4 for UI components. A UI spec that says "renders the page" with 3 rules is incomplete — extract data sources (what data, from where), conditional gates (who sees what), and failure modes (what happens when things break). Don't generate rules for CSS spacing, SVG path formulas, token names, or animation timing — those are design review items, not spec gaps.
+- **Data contract extraction is mandatory for ALL features.** Step 4 applies to every feature, not just UI. Extract inbound contracts (exact API field names), outbound contracts (event names, payloads), transformation rules (field mappings, formulas), state transitions (lifecycle rules), and access contracts (permission gates). A spec that says "fetches data from the API" without field names fails the rebuild test.
 - **Companion files are migration inputs, not rule factories.** When migrating from `features/`, read `.impl.md` and `.discoveries.md` in full. Extract *behavioral* deviations and bug regressions as rules. Architecture decisions go to `## Implementation Notes`. Stale bugs and resolved cosmetic issues are not rules — they belong in git history.

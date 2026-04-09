@@ -220,41 +220,51 @@ def test_skill_has_migration_cleanup():
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-32", "RULE-23", tier="unit")
-def test_skill_has_rebuild_risk_extraction():
-    """SKILL.md contains UI extraction organized by rebuild risk."""
+def test_skill_has_contract_extraction():
+    """SKILL.md contains data contract extraction with five categories."""
     content = _read(SKILL_PATH)
 
-    # Three substeps organized by rebuild risk tier
+    # Five contract categories
     required_subsections = [
-        'Data sources',
-        'Conditional gates',
-        'Failure modes',
+        'Inbound contracts',
+        'Outbound contracts',
+        'Transformation rules',
+        'State transitions',
+        'Access contracts',
     ]
     for subsection in required_subsections:
         assert subsection.lower() in content.lower(), (
-            f"SKILL.md missing UI extraction subsection: '{subsection}'"
+            f"SKILL.md missing contract extraction subsection: '{subsection}'"
         )
-    # Must reference rebuild risk as the organizing principle
-    assert 'rebuild risk' in content.lower(), (
-        "SKILL.md UI extraction must reference rebuild risk"
+    # Must be mandatory for ALL features, not just UI
+    assert 'mandatory for ALL features' in content or 'mandatory for all features' in content.lower(), (
+        "SKILL.md data contract extraction must be mandatory for ALL features"
     )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24", tier="unit")
-def test_skill_has_draft_evaluate_step():
-    """SKILL.md contains a draft-and-evaluate step with rebuild test."""
+def test_skill_has_draft_evaluate_and_contract_filter():
+    """SKILL.md contains draft-and-evaluate step and contract coverage filter."""
     content = _read(SKILL_PATH)
 
+    # Draft-and-evaluate step with three tests
     assert 'Draft and evaluate' in content or 'draft and evaluate' in content.lower(), (
         "SKILL.md missing 'Draft and evaluate' step"
     )
-    assert 'rebuild test' in content.lower(), (
-        "Draft-and-evaluate step must reference the rebuild test"
-    )
-    # Must include the three evaluation criteria
     for criterion in ['Rebuild test', 'Behavior test', 'Overlap test']:
         assert criterion in content, (
             f"Draft-and-evaluate step missing '{criterion}'"
+        )
+
+    # Rebuild-risk filter verifies contract coverage
+    assert 'contract coverage' in content.lower() or 'Verify contract coverage' in content, (
+        "Rebuild-risk filter must verify contract coverage"
+    )
+    # Filter references all five categories
+    for category in ['Inbound contracts', 'Outbound contracts', 'Transformation rules',
+                     'State transitions', 'Access contracts']:
+        assert category.lower() in content.lower(), (
+            f"Rebuild-risk filter missing contract category: '{category}'"
         )
 
 
@@ -328,13 +338,13 @@ def test_quality_guide_uses_coverage_dimensions():
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-33", "RULE-23", tier="e2e")
-def test_ui_extraction_identifies_data_gates_failures(tmp_path):
-    """Simulated React component yields extractable data sources, conditional gates, and failure modes.
+def test_contract_extraction_identifies_all_categories(tmp_path):
+    """Simulated React component yields extractable contracts across all five categories.
 
-    Creates a realistic React component with API data consumption,
-    conditional rendering by loan type, and missing-data fallbacks.
-    Verifies the extraction heuristics can identify each rebuild-risk
-    dimension from the source code.
+    Creates a realistic component and verifies the extraction can identify
+    inbound contracts (data fields), outbound contracts (none in this component),
+    transformation rules (filter/sort), state transitions (none), and
+    access contracts (loanType gate).
     """
     comp_dir = tmp_path / 'src' / 'components'
     comp_dir.mkdir(parents=True)
@@ -342,65 +352,46 @@ def test_ui_extraction_identifies_data_gates_failures(tmp_path):
 
     source = SIMULATED_REACT_COMPONENT
 
-    # --- Dimension 1: Data sources (wrong-behavior tier) ---
-    # The component consumes product data via props. A rebuilding engineer
-    # needs to know WHICH fields each section displays.
+    # --- Inbound contracts: exact field names from API/props ---
+    # Hero consumes: product.address, product.loanAmount, product.rate
+    assert 'product.address' in source, "Inbound: product.address"
+    assert 'product.loanAmount' in source, "Inbound: product.loanAmount"
+    assert 'product.rate' in source, "Inbound: product.rate"
+    # Loan details consumes: product.fields
+    assert 'product.fields' in source, "Inbound: product.fields"
+    # Looking Ahead consumes: product.chartData, product.callouts, product.formulas
+    assert 'product.chartData' in source, "Inbound: product.chartData"
+    assert 'product.callouts' in source, "Inbound: product.callouts"
+    assert 'product.formulas' in source, "Inbound: product.formulas"
+    # Purchase-specific: rateLockDate, Refi-specific: payoffAmount
+    assert 'product.rateLockDate' in source, "Inbound: product.rateLockDate"
+    assert 'product.payoffAmount' in source, "Inbound: product.payoffAmount"
 
-    # Hero displays: product.address, product.loanAmount, product.rate
-    assert 'product.address' in source, "Hero data source: product.address"
-    assert 'product.loanAmount' in source, "Hero data source: product.loanAmount"
-    assert 'product.rate' in source, "Hero data source: product.rate"
+    # --- Transformation rules: filter/sort logic ---
+    assert '.filter(' in source, "Transformation: filtering on product.fields"
+    assert '.sort(' in source, "Transformation: sorting on product.fields"
 
-    # Loan details displays: product.fields (filtered, sorted)
-    assert 'product.fields' in source, "Loan details data source: product.fields"
-    assert '.filter(' in source, "Loan details: filtering logic present"
-    assert '.sort(' in source, "Loan details: sorting logic present"
-
-    # Looking Ahead displays: product.chartData, product.callouts, product.formulas
-    assert 'product.chartData' in source, "Looking Ahead data source: chartData"
-    assert 'product.callouts' in source, "Looking Ahead data source: callouts"
-    assert 'product.formulas' in source, "Looking Ahead data source: formulas"
-
-    # --- Dimension 2: Conditional gates (wrong-behavior tier) ---
-    # Purchase vs refi branching — different data shown to different segments
+    # --- Access contracts: loanType gates ---
     purchase_gates = re.findall(r"loanType\s*===\s*'purchase'", source)
     refi_gates = re.findall(r"loanType\s*===\s*'refi'", source)
-    assert len(purchase_gates) >= 1, "Missing purchase conditional gate"
-    assert len(refi_gates) >= 1, "Missing refi conditional gate"
+    assert len(purchase_gates) >= 1, "Access: purchase gate"
+    assert len(refi_gates) >= 1, "Access: refi gate"
 
-    # Purchase-specific data: rateLockDate
-    assert 'product.rateLockDate' in source, "Purchase gate shows rateLockDate"
-    # Refi-specific data: payoffAmount
-    assert 'product.payoffAmount' in source, "Refi gate shows payoffAmount"
-
-    # Chart is purchase-only gated
-    assert 'product.chartData' in source, "Chart data is conditionally rendered"
-
-    # --- Dimension 3: Failure modes (broken-functionality tier) ---
-    # Missing chart data fallback
+    # --- Failure modes (supporting dimension): missing data fallback ---
     assert 'No projection data available' in source or 'no-data' in source, (
-        "Missing failure mode: chart data fallback"
-    )
-    # The ternary `product.chartData ? <Chart/> : <fallback>` is a failure mode
-    assert '?' in source and 'Chart' in source, (
-        "Chart rendering has conditional fallback path"
+        "Failure mode: chart data fallback"
     )
 
-    # --- Rebuild-risk rule count ---
-    # Data sources: 3 sections × data fields = ~3 rules
-    # Conditional gates: purchase vs refi = ~2 rules + chart gate = 1 rule
-    # Failure modes: missing chart fallback = 1 rule
-    # Total: ~7 behavioral rules that pass the rebuild test.
-    # (Responsive and theme are NOT counted — they're visual polish unless
-    # they cause functional breakage)
-    data_source_count = 3  # Hero, Loan Details, Looking Ahead data fields
-    gate_count = 3  # purchase branch, refi branch, chart-only gate
-    failure_count = 1  # missing chart fallback
+    # --- Contract coverage count ---
+    inbound_fields = 9  # address, loanAmount, rate, fields, chartData, callouts, formulas, rateLockDate, payoffAmount
+    transformations = 2  # filter, sort
+    access_gates = 3  # purchase gate, refi gate, chart-only gate
+    failure_modes = 1  # missing chart fallback
+    # (No outbound contracts or state transitions in this component — that's fine)
 
-    behavioral_rules = data_source_count + gate_count + failure_count
-    assert behavioral_rules >= 5, (
-        f"Component should yield at least 5 behavioral rules from rebuild-risk "
-        f"extraction, got {behavioral_rules}"
+    contract_rules = inbound_fields + transformations + access_gates + failure_modes
+    assert contract_rules >= 10, (
+        f"Component should yield at least 10 contract-based rules, got {contract_rules}"
     )
 
 
