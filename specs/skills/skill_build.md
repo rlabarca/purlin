@@ -33,3 +33,7 @@
 - PROOF-10 (RULE-10): Grep `skills/build/SKILL.md` for commit message body instructions that reference the changeset summary and commit_conventions.md; verify present
 - PROOF-11 (RULE-11): Grep `skills/build/SKILL.md` for proof fixer changeset instructions in the "When Running as Proof Fixer" section; verify it documents mapping fixed proofs and skipping Decisions
 - PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for "Exit Criteria" section; verify it requires tests pass, changeset summary, committed changes, and no uncommitted proof files
+- PROOF-13 (RULE-9): Create a temp project with spec+code+tests, run pytest to emit proofs, build a changeset summary, validate it has all 3 sections with RULE→file:line mappings @e2e
+- PROOF-14 (RULE-10): In the temp project, commit with changeset summary as body; verify commit subject uses feat(<name>): prefix and body contains all 3 changeset sections @e2e
+- PROOF-15 (RULE-11): Build a proof-fixer-style changeset; verify it maps PROOF-N instead of RULE-N and has no Decisions section @e2e
+- PROOF-16 (RULE-12): After the build session in the temp project, verify exit criteria: all tests pass, changeset summary valid, all proofs committed, git status clean @e2e

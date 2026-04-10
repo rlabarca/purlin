@@ -3,10 +3,37 @@
   "proofs": [
     {
       "feature": "skill_build",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_teammate_audit_loop.sh",
-      "test_name": "build proof fixer mode fixes proofs and reports back",
+      "id": "PROOF-13",
+      "rule": "RULE-9",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_build_changeset.sh",
+      "test_name": "changeset summary has Changeset, Decisions, Review sections with RULE\u2192file:line mappings",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-14",
+      "rule": "RULE-10",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_build_changeset.sh",
+      "test_name": "git commit body contains changeset summary with feat prefix and all 3 sections",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-15",
+      "rule": "RULE-11",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_build_changeset.sh",
+      "test_name": "proof fixer changeset uses PROOF-N mappings, no Decisions section",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-16",
+      "rule": "RULE-12",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_e2e_build_changeset.sh",
+      "test_name": "exit criteria verified: tests pass, changeset printed, all committed, no uncommitted proofs",
       "status": "pass",
       "tier": "e2e"
     }
