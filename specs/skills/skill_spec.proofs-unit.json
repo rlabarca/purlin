@@ -54,6 +54,15 @@
       "test_name": "test_has_tier_review",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_spec",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_exit_criteria",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

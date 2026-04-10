@@ -321,7 +321,7 @@
       "id": "PROOF-33",
       "rule": "RULE-23",
       "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_ui_extraction_identifies_data_gates_failures",
+      "test_name": "test_contract_extraction_identifies_all_categories",
       "status": "pass",
       "tier": "e2e"
     },

@@ -72,6 +72,42 @@
       "test_name": "test_documents_proof_fixer_mode",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_changeset_summary",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_changeset_summary_in_commit_body",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_proof_fixer_changeset_maps_proofs",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_exit_criteria",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
