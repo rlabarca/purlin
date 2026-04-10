@@ -115,6 +115,44 @@ Reason: API returns 400 for validation errors, not 401. Spec rule may need updat
 
 If you changed what a test asserts (not just how), the proof description in the spec may be wrong. The commit message MUST explain why the assertion changed.
 
+## Step 5 — Changeset Summary (mandatory)
+
+After the build/test loop reaches a stable state (all behavioral rules pass), print a structured changeset summary. This summary serves two purposes: (1) it gives the reviewing engineer a 15-second overview of what changed and where to focus, and (2) it becomes the commit message body in Step 6.
+
+The summary has three sections:
+
+**Changeset** — maps each rule to the file(s) and line(s) where it was implemented, with a one-line description of the change. Every rule addressed in this session must appear. Format: `RULE-N → file:line   description`. Rules satisfied by existing code (no changes needed): `RULE-N → (already satisfied)`. Rules mapping to multiple files get multiple lines.
+
+```
+── Changeset ──────────────────────────────────────
+
+RULE-1 → src/auth.py:34         Added sanitize_input() before query
+RULE-2 → src/auth.py:71         Sliding window rate limiter (60/min)
+         tests/test_auth.py:12  2 proofs covering RULE-1 and RULE-2
+```
+
+**Decisions** — judgment calls where the agent chose between alternatives. Only genuine decisions, not mechanical translations. If there are no judgment calls: `(No judgment calls — all rules had unambiguous implementations)`.
+
+```
+── Decisions ──────────────────────────────────────
+
+• Middleware pattern over inline validation for RULE-1 — reusable across routes
+• 60 req/min hardcoded — spec says "rate limit" with no threshold
+```
+
+**Review** — curated list of areas where the engineer should focus attention. Flag security-sensitive code, spec ambiguities, performance-critical paths, and anything non-obvious. Not a list of every change — just the parts that need human eyes. If nothing notable: `(No notable risk areas — straightforward implementation)`.
+
+```
+── Review ─────────────────────────────────────────
+
+→ src/auth.py:45   Regex for SQL injection — security-sensitive
+→ Spec gap: RULE-3 says "rate limit" but doesn't specify the window size
+```
+
+**Corner cases:**
+- If no code changes were needed (tests already pass), show `RULE-N → (already satisfied)` for each rule
+- For specs with 10+ rules, list every rule in Changeset but keep Decisions and Review curated (3–5 items max)
+
 ## When Running as Proof Fixer
 
 When spawned by the auditor to fix HOLLOW or WEAK proofs:
@@ -124,17 +162,27 @@ When spawned by the auditor to fix HOLLOW or WEAK proofs:
 3. Fix the test to address the specific issue
 4. Run purlin:unit-test to verify the fix works
 5. Report back: "Fixed PROOF-N — now uses real bcrypt instead of mock. Re-audit please."
+6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section — proof fixes are mechanical, not judgment calls.
 
 Do NOT weaken assertions to satisfy audit — if the audit says a proof is HOLLOW because it mocks bcrypt, replace the mock with real bcrypt. Don't remove the assertion.
 If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating — <reason>."
 
-## Step 5 — Commit (mandatory)
+## Step 6 — Commit (mandatory)
 
-After the build/test loop reaches a stable state (tests pass, coverage improved), commit all changed files:
+After the changeset summary, commit all changed files. Use the changeset summary as the commit message body per `references/commit_conventions.md` ("Build Commit Body"):
 
 ```
 git add <source files> <test files> specs/**/*.proofs-*.json
-git commit -m "feat(<name>): implement and prove rules"
+git commit  # message body = changeset summary from Step 5
 ```
 
 Do NOT commit after each failed iteration — only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.
+
+## Exit Criteria
+
+The build is NOT complete until all of the following are true. Verify each one before responding to the user.
+
+1. **Tests pass.** The last `purlin:unit-test` run shows the target feature as PASSING or better.
+2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was output.
+3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
+4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.

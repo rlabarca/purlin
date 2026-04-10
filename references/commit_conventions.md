@@ -25,6 +25,35 @@ anchor(design_tokens): sync from upstream (abc1234)
 chore: initialize purlin project
 ```
 
+## Build Commit Body
+
+When `purlin:build` commits, the commit message body contains the changeset summary — a structured record of what the agent built and why. This is the engineer's review artifact and lives in git history permanently.
+
+Format:
+
+```
+feat(<name>): implement RULE-1, RULE-2, RULE-3
+
+RULE-1 → src/auth.py:34         Added sanitize_input() before query
+RULE-2 → src/auth.py:71         Sliding window rate limiter (60/min)
+         tests/test_auth.py:12  2 proofs covering RULE-1 and RULE-2
+
+Decisions:
+  • Middleware over inline validation — reusable across routes
+  • 60 req/min hardcoded — spec says "rate limit" with no threshold
+
+Review:
+  → src/auth.py:45  Regex for SQL injection — security-sensitive
+```
+
+The first line uses the standard `feat(<name>):` prefix. The body has three sections:
+
+| Section | Purpose | When to omit |
+|---------|---------|-------------|
+| Changeset | Rule→file:line mapping for every rule addressed | Never — always present |
+| Decisions | Judgment calls the agent made between alternatives | Omit if all rules had unambiguous implementations |
+| Review | Risk areas the engineer should scrutinize | Omit if straightforward implementation |
+
 ## Verification Receipt Commit
 
 The verify skill uses a specific format:
@@ -47,8 +76,8 @@ Skills commit at natural boundaries — after reaching a stable state, not after
 
 | Boundary | What to commit | Why |
 |----------|---------------|-----|
-| Spec approved | The spec .md file | Drift detection compares committed specs |
-| Build/test stable | Code + test files + proof .json files | Proof files are project records |
+| Spec approved | The spec .md file | Exit criteria enforce this — agent verifies git status |
+| Build stable | Code + tests + proofs + changeset summary in commit body | Exit criteria enforce this — agent verifies git status |
 | Proof files written | .proofs-*.json files | sync_status reads committed proofs |
 | Verification done | Receipt files + verify commit message | Already mandatory |
 | Anchor synced | Updated anchor file | Staleness checks use committed Pinned SHA |

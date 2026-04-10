@@ -14,6 +14,10 @@
 - RULE-6: Skill includes test failure diagnosis guidance requiring root cause analysis before fixing
 - RULE-7: Skill includes mandatory tier tag review for proof descriptions
 - RULE-8: Build skill documents proof fixer mode with instructions to fix proofs based on audit feedback and report back
+- RULE-9: Build skill produces a changeset summary after tests pass, with three sections: Changeset (rule→file:line mapping), Decisions (judgment calls), and Review (focus areas)
+- RULE-10: The changeset summary is included as the commit message body in the build commit
+- RULE-11: When running as proof fixer, the changeset summary maps fixed proofs instead of rules and omits the Decisions section
+- RULE-12: Build skill has exit criteria requiring tests pass, changeset summary printed, all changes committed, and no uncommitted proof files before the skill can complete
 
 ## Proof
 
@@ -25,3 +29,7 @@
 - PROOF-6 (RULE-6): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both present
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
 - PROOF-8 (RULE-8): e2e: Grep skills/build/SKILL.md for proof fixer mode; verify fix proofs and report instructions @e2e
+- PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for "Changeset Summary", "Changeset", "Decisions", "Review" section headers; verify all three summary sections are documented with format examples
+- PROOF-10 (RULE-10): Grep `skills/build/SKILL.md` for commit message body instructions that reference the changeset summary and commit_conventions.md; verify present
+- PROOF-11 (RULE-11): Grep `skills/build/SKILL.md` for proof fixer changeset instructions in the "When Running as Proof Fixer" section; verify it documents mapping fixed proofs and skipping Decisions
+- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for "Exit Criteria" section; verify it requires tests pass, changeset summary, committed changes, and no uncommitted proof files

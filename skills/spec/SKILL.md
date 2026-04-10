@@ -408,3 +408,12 @@ When the user provides an image (screenshot, mockup, design comp, whiteboard pho
 - Questions are specific and gap-filling, not generic.
 - Show, don't tell. Present the draft spec, then refine — don't ask the user to write rules.
 - Progressive disclosure: core spec first, metadata second, anchors third.
+
+## Exit Criteria
+
+The spec operation is NOT complete until all of the following are true. Verify each one before responding to the user.
+
+1. **Spec file committed.** Run `git status`. If the spec `.md` file is uncommitted, commit it now per the commit instructions above.
+2. **No uncommitted spec files.** `git status` must not show any modified or untracked `specs/**/*.md` files from this session.
+
+If any criterion is not met, fix it before completing. Do not respond to the user with "done" or "complete" until both are verified.

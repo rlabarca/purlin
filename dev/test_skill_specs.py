@@ -400,6 +400,62 @@ class TestSkillBuild:
         assert re.search(r'(?i)(report back|re-audit|Fixed.*PROOF)', content), \
             "build skill missing 'report back' / 're-audit' instruction after fixing"
 
+    @pytest.mark.proof("skill_build", "PROOF-9", "RULE-9")
+    def test_documents_changeset_summary(self):
+        content = _read('build')
+        # Must have Changeset Summary section
+        assert re.search(r'(?i)changeset summary', content), \
+            "build skill missing 'Changeset Summary' section"
+        # Must document all three sections
+        assert re.search(r'── Changeset ', content), \
+            "build skill missing Changeset section header"
+        assert re.search(r'── Decisions ', content), \
+            "build skill missing Decisions section header"
+        assert re.search(r'── Review ', content), \
+            "build skill missing Review section header"
+        # Must show rule→file:line mapping format
+        assert re.search(r'RULE-\d+ →.*:', content), \
+            "build skill missing RULE-N → file:line mapping format"
+
+    @pytest.mark.proof("skill_build", "PROOF-10", "RULE-10")
+    def test_changeset_summary_in_commit_body(self):
+        content = _read('build')
+        # Commit step must reference changeset summary as commit message body
+        assert re.search(r'(?i)changeset summary.*commit message body|commit message body.*changeset summary',
+                         content), \
+            "build skill missing instruction to use changeset summary as commit message body"
+        # Must reference commit_conventions.md
+        assert 'commit_conventions.md' in content, \
+            "build skill Step 6 missing reference to commit_conventions.md"
+
+    @pytest.mark.proof("skill_build", "PROOF-11", "RULE-11")
+    def test_proof_fixer_changeset_maps_proofs(self):
+        content = _read('build')
+        # Proof fixer section must document changeset with PROOF-N mapping
+        assert re.search(r'(?i)proof fixer.*changeset|changeset.*proof fix', content), \
+            "build skill missing proof fixer changeset documentation"
+        # Must document skipping Decisions section in proof fixer mode
+        assert re.search(r'(?i)(skip|omit|no).*decisions', content), \
+            "build skill missing instruction to skip Decisions in proof fixer mode"
+
+    @pytest.mark.proof("skill_build", "PROOF-12", "RULE-12")
+    def test_has_exit_criteria(self):
+        content = _read('build')
+        assert '## Exit Criteria' in content, \
+            "build skill missing '## Exit Criteria' section"
+        # Must require tests pass
+        assert re.search(r'(?i)tests pass', content), \
+            "build exit criteria missing tests pass requirement"
+        # Must require changeset summary
+        assert re.search(r'(?i)changeset summary.*printed|printed.*changeset summary', content), \
+            "build exit criteria missing changeset summary requirement"
+        # Must require committed changes
+        assert re.search(r'(?i)all changes committed|changes committed', content), \
+            "build exit criteria missing commit requirement"
+        # Must require no uncommitted proof files
+        assert re.search(r'(?i)uncommitted proof files', content), \
+            "build exit criteria missing uncommitted proof files check"
+
 
 # ── skill_drift ───────────────────────────────────────────────────────
 
@@ -1153,6 +1209,18 @@ class TestSkillSpec:
             "spec skill missing tier review step/instruction"
         assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
             "spec skill missing tier tag references (@integration/@e2e/unit)"
+
+    @pytest.mark.proof("skill_spec", "PROOF-7", "RULE-7")
+    def test_has_exit_criteria(self):
+        content = _read('spec')
+        assert '## Exit Criteria' in content, \
+            "spec skill missing '## Exit Criteria' section"
+        # Must require spec committed
+        assert re.search(r'(?i)spec.*committed|committed.*spec', content), \
+            "spec exit criteria missing spec committed requirement"
+        # Must require no uncommitted spec files
+        assert re.search(r'(?i)uncommitted spec files', content), \
+            "spec exit criteria missing uncommitted spec files check"
 
 
 # ── skill_spec_from_code ──────────────────────────────────────────────

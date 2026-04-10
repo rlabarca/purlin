@@ -12,6 +12,7 @@
 - RULE-4: Skill includes commit instructions or git operations for file modifications
 - RULE-5: Update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
 - RULE-6: Skill includes mandatory tier tag review for proof descriptions
+- RULE-7: Spec skill has exit criteria requiring the spec file is committed and no uncommitted spec files remain before the skill can complete
 
 ## Proof
 
@@ -21,3 +22,4 @@
 - PROOF-4 (RULE-4): Grep `skills/spec/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
 - PROOF-5 (RULE-5): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
 - PROOF-6 (RULE-6): Grep `skills/spec/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
+- PROOF-7 (RULE-7): Grep `skills/spec/SKILL.md` for "Exit Criteria" section; verify it requires spec committed and no uncommitted spec files
