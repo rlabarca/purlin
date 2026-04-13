@@ -16,7 +16,7 @@
 - RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage
 - RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, anchor, chore, docs
 - RULE-8: `purlin_commands.md` lists all 12 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
-- RULE-9: `spec_quality_guide.md` includes guidance on writing rules (coverage dimensions), proof descriptions, tier assignment, and FORBIDDEN patterns
+- RULE-9: `spec_quality_guide.md` includes guidance on writing rules (rebuild test, contract boundaries, coverage dimensions), proof descriptions, tier assignment, and FORBIDDEN patterns
 - RULE-10: `spec_quality_guide.md` includes test failure diagnosis guidance with the three categories (code bug, test bug, spec drift) and assertion integrity rules
 - RULE-11: `spec_quality_guide.md` includes audience-appropriate language guidance mapping artifacts to their intended readers
 - RULE-12: `drift_criteria.md` documents file classification order, NO_IMPACT patterns, behavioral directory exclusions, significance mapping, structural-only drift indicators, and precomputed drift flags
@@ -31,7 +31,7 @@
 - PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Proof coverage"; verify it appears and no second gate is defined
 - PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes: `spec`, `feat`, `fix`, `test`, `verify`, `anchor`, `chore`, `docs`; verify all 8 appear
 - PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Quality`, `Reporting`, `Project`; verify all 5 category headers exist. Count skill entries; verify 12
-- PROOF-9 (RULE-9): Grep `references/spec_quality_guide.md` for "Coverage dimensions", "FORBIDDEN", "Tier"; verify the guide covers rule coverage guidance, forbidden patterns, and tier assignment
+- PROOF-9 (RULE-9): Grep `references/spec_quality_guide.md` for "rebuild test", "contract boundary/boundaries", "Coverage dimensions", "FORBIDDEN", "Tier"; verify the guide covers the rebuild test, contract boundaries, coverage dimensions, forbidden patterns, and tier assignment
 - PROOF-10 (RULE-10): Grep `references/spec_quality_guide.md` for `Code bug`, `Test bug`, `Spec drift`, and `Assertion Integrity`; verify all appear
 - PROOF-11 (RULE-11): Grep `references/spec_quality_guide.md` for `Audience-Appropriate Language`; verify the section exists
 - PROOF-12 (RULE-12): Grep `references/drift_criteria.md` for `File Classification`, `NO_IMPACT Patterns`, `Behavioral Directory Exclusions`, `Significance Classification`, `Structural-Only Drift`, `drift_flags`; verify all sections present
