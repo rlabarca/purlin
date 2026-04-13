@@ -43,6 +43,9 @@
 - RULE-35: When a single framework is detected, the selection list shows it pre-selected with [x] and all others unselected with [ ]
 - RULE-36: When multiple frameworks are detected, all detected frameworks are pre-selected in the list
 - RULE-37: When no frameworks are detected, the selection list shows all options unselected
+- RULE-38: After init, `.mcp.json` exists at the project root with a `purlin` entry under `mcpServers`
+- RULE-39: The `purlin` MCP server entry uses `python3` command and points `args` to `purlin_server.py`
+- RULE-40: When `.mcp.json` already exists with other MCP servers, init merges the `purlin` entry without overwriting existing entries
 
 ## Proof
 
@@ -85,3 +88,6 @@
 - PROOF-37 (RULE-35): e2e: Verify SKILL.md shows a single-detection example with one [x] pre-selected and remaining [ ] unselected @e2e
 - PROOF-38 (RULE-36): e2e: Verify SKILL.md shows a multi-detection example with multiple [x] pre-selected @e2e
 - PROOF-39 (RULE-37): e2e: Verify SKILL.md shows a no-detection example with all [ ] unselected @e2e
+- PROOF-40 (RULE-38): Grep `skills/init/SKILL.md` for `.mcp.json` creation with `mcpServers` and `purlin` key; verify the step documents creating the file
+- PROOF-41 (RULE-39): Grep `skills/init/SKILL.md` for `python3` command and `purlin_server.py` in the MCP config; verify correct server entry
+- PROOF-42 (RULE-40): Grep `skills/init/SKILL.md` for merge/overwrite instructions; verify it documents merging into existing `.mcp.json` without overwriting other servers

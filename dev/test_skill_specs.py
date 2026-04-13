@@ -1142,6 +1142,38 @@ class TestSkillInit:
         assert found_no_detect, \
             "init SKILL.md missing no-detection example with all [ ] unselected"
 
+    # ── RULE-38 through RULE-40: MCP server configuration ────────────
+
+    @pytest.mark.proof("skill_init", "PROOF-40", "RULE-38")
+    def test_documents_mcp_json_creation(self):
+        """SKILL.md must document creating .mcp.json with purlin under mcpServers."""
+        content = _read('init')
+        assert '.mcp.json' in content, \
+            "init SKILL.md missing .mcp.json file reference"
+        assert 'mcpServers' in content, \
+            "init SKILL.md missing mcpServers key in .mcp.json documentation"
+        assert re.search(r'"purlin"', content), \
+            "init SKILL.md missing 'purlin' key under mcpServers"
+
+    @pytest.mark.proof("skill_init", "PROOF-41", "RULE-39")
+    def test_documents_mcp_server_entry_points_to_purlin_server(self):
+        """SKILL.md must document python3 command and purlin_server.py in MCP config."""
+        content = _read('init')
+        assert re.search(r'"command":\s*"python3"', content), \
+            "init SKILL.md missing python3 command in MCP server entry"
+        assert 'purlin_server.py' in content, \
+            "init SKILL.md missing purlin_server.py in MCP server args"
+
+    @pytest.mark.proof("skill_init", "PROOF-42", "RULE-40")
+    def test_documents_mcp_json_merge_not_overwrite(self):
+        """SKILL.md must document merging into existing .mcp.json without overwriting other servers."""
+        content = _read('init')
+        assert re.search(r'(?i)merge.*purlin.*key|merge.*mcpServers', content), \
+            "init SKILL.md missing merge instruction for existing .mcp.json"
+        assert re.search(r'(?i)do not overwrite.*other.*server|not.*overwrite.*other.*entries',
+                         content), \
+            "init SKILL.md missing 'do not overwrite other servers' guard"
+
 
 # ── skill_rename ──────────────────────────────────────────────────────
 

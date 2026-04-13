@@ -234,6 +234,33 @@
       "test_name": "test_documents_report_html_toggle",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-40",
+      "rule": "RULE-38",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_mcp_json_creation",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-41",
+      "rule": "RULE-39",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_mcp_server_entry_points_to_purlin_server",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-42",
+      "rule": "RULE-40",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_mcp_json_merge_not_overwrite",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
