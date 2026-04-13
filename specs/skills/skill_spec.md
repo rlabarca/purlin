@@ -23,3 +23,4 @@
 - PROOF-5 (RULE-5): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
 - PROOF-6 (RULE-6): Grep `skills/spec/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
 - PROOF-7 (RULE-7): Grep `skills/spec/SKILL.md` for "Exit Criteria" section; verify it requires spec committed and no uncommitted spec files
+- PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e

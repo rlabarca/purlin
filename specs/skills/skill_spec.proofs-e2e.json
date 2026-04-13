@@ -1,0 +1,14 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "skill_spec",
+      "id": "PROOF-8",
+      "rule": "RULE-7",
+      "test_file": "dev/test_e2e_build_agent.py",
+      "test_name": "test_spec_committed",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

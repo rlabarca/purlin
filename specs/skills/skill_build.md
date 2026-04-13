@@ -37,3 +37,6 @@
 - PROOF-14 (RULE-10): In the temp project, commit with changeset summary as body; verify commit subject uses feat(<name>): prefix and body contains all 3 changeset sections @e2e
 - PROOF-15 (RULE-11): Build a proof-fixer-style changeset; verify it maps PROOF-N instead of RULE-N and has no Decisions section @e2e
 - PROOF-16 (RULE-12): After the build session in the temp project, verify exit criteria: all tests pass, changeset summary valid, all proofs committed, git status clean @e2e
+- PROOF-17 (RULE-9): Run purlin:build via claude -p with a spec containing ambiguous rules; verify agent output contains Changeset with RULE mappings, non-empty Decisions with real judgment calls, and non-empty Review with risk areas @e2e
+- PROOF-18 (RULE-10): After the agent build session, verify git log shows a feat(<name>): commit whose body contains RULE references and the changeset summary sections @e2e
+- PROOF-19 (RULE-12): After the agent build session, verify git status has no uncommitted proof files or source files, and proof files are tracked in git @e2e
