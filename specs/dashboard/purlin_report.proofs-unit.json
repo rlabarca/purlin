@@ -279,6 +279,15 @@
       "test_name": "test_description_block_rendering",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-32",
+      "rule": "RULE-32",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_anchors_separate_section",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

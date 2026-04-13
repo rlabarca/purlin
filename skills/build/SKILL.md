@@ -117,7 +117,7 @@ If you changed what a test asserts (not just how), the proof description in the 
 
 ## Step 5 — Changeset Summary (mandatory)
 
-After the build/test loop reaches a stable state (all behavioral rules pass), print a structured changeset summary. This summary serves two purposes: (1) it gives the reviewing engineer a 15-second overview of what changed and where to focus, and (2) it becomes the commit message body in Step 6.
+After the build/test loop reaches a stable state (all behavioral rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
 
 The summary has three sections:
 
@@ -183,6 +183,6 @@ Do NOT commit after each failed iteration — only when stable. Do NOT defer the
 The build is NOT complete until all of the following are true. Verify each one before responding to the user.
 
 1. **Tests pass.** The last `purlin:unit-test` run shows the target feature as PASSING or better.
-2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was output.
+2. **Changeset summary visible.** The three-section summary (Changeset, Decisions, Review) was output as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
 3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
 4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.

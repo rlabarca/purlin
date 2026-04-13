@@ -664,104 +664,120 @@ table{min-width:680px}
       return th;
     }
 
-    /* Group all features by category (anchors included in their category) */
-    var grouped = groupByCategory(features);
+    /* Split features into specs and anchors */
+    var specFeatures = features.filter(function(f) { return f.type !== 'anchor'; });
+    var anchorFeatures = features.filter(function(f) { return f.type === 'anchor'; });
 
-    /* Feature table — all features grouped by category */
-    h += '<div class="section-label">Specs</div>';
-    h += '<div class="table-container"><table>';
-    h += '<colgroup>';
-    for (var cgi = 0; cgi < cols.length; cgi++) {
-      h += '<col' + (cols[cgi].w ? ' style="width:' + cols[cgi].w + '"' : '') + '>';
-    }
-    h += '</colgroup>';
-    h += '<tbody>';
+    function renderCategoryBlock(grouped) {
+      var bh = '';
+      for (var gi = 0; gi < grouped.order.length; gi++) {
+        var cat = grouped.order[gi];
+        var catFeatures = grouped.cats[cat];
+        var cs = catSummary(catFeatures);
+        var catOpen = categorySet[cat] === true; /* collapsed by default */
+        var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
+        var catCovCls = cs.failing > 0 ? 'cov-fail' : (cs.partial > 0 || cs.untested > 0 || cs.proved < cs.rules) ? 'cov-partial' : 'cov-verified';
 
-    for (var gi = 0; gi < grouped.order.length; gi++) {
-      var cat = grouped.order[gi];
-      var catFeatures = grouped.cats[cat];
-      var cs = catSummary(catFeatures);
-      var catOpen = categorySet[cat] === true; /* collapsed by default */
-      var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
-      var catCovCls = cs.failing > 0 ? 'cov-fail' : (cs.partial > 0 || cs.untested > 0 || cs.proved < cs.rules) ? 'cov-partial' : 'cov-verified';
+        /* Category header row */
+        bh += '<tr class="cat-header' + (catOpen ? ' expanded' : '') + '" data-cat="' + esc(cat) + '">';
+        bh += '<td><div class="cat-name"><span class="cat-chv">&#9654;</span>';
+        bh += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
+        bh += '<span class="cat-count">(' + cs.total + ')</span>';
+        bh += '</div></td>';
+        bh += '<td><div class="cov"><span class="cat-cov">' + cs.proved + '/' + cs.rules + '</span>';
+        bh += '<div class="cat-cov-bar"><div class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
+        bh += '<td colspan="3"><div class="cat-summary">';
+        if (cs.verified) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
+        if (cs.passing) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
+        if (cs.partial) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pt"></span>' + cs.partial + ' partial</span>';
+        if (cs.failing) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-f"></span>' + cs.failing + ' failing</span>';
+        if (cs.untested) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-u"></span>' + cs.untested + ' untested</span>';
+        bh += '</div></td>';
+        bh += '</tr>';
 
-      /* Category header row */
-      h += '<tr class="cat-header' + (catOpen ? ' expanded' : '') + '" data-cat="' + esc(cat) + '">';
-      h += '<td><div class="cat-name"><span class="cat-chv">&#9654;</span>';
-      h += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
-      h += '<span class="cat-count">(' + cs.total + ')</span>';
-      h += '</div></td>';
-      h += '<td><div class="cov"><span class="cat-cov">' + cs.proved + '/' + cs.rules + '</span>';
-      h += '<div class="cat-cov-bar"><div class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
-      h += '<td colspan="3"><div class="cat-summary">';
-      if (cs.verified) h += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
-      if (cs.passing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
-      if (cs.partial) h += '<span class="cat-stat"><span class="cat-dot cat-dot-pt"></span>' + cs.partial + ' partial</span>';
-      if (cs.failing) h += '<span class="cat-stat"><span class="cat-dot cat-dot-f"></span>' + cs.failing + ' failing</span>';
-      if (cs.untested) h += '<span class="cat-stat"><span class="cat-dot cat-dot-u"></span>' + cs.untested + ' untested</span>';
-      h += '</div></td>';
-      h += '</tr>';
+        /* Feature rows (only if category is open) */
+        if (catOpen) {
+          bh += renderColHeaders();
+          for (var i = 0; i < catFeatures.length; i++) {
+            var f = catFeatures[i];
+            var isExpanded = expandedSet[f.name];
+            var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
+            var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
 
-      /* Feature rows (only if category is open) */
-      if (catOpen) {
-        h += renderColHeaders();
-        for (var i = 0; i < catFeatures.length; i++) {
-          var f = catFeatures[i];
-          var isExpanded = expandedSet[f.name];
-          var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
-          var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
+            bh += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
 
-          h += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+            /* Name + type */
+            bh += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
+            if (f.type === 'anchor') {
+              if (f.is_global) {
+                bh += '<span class="tp tp-global">global</span>';
+              } else {
+                bh += '<span class="tp tp-anchor">anchor</span>';
+              }
+            }
+            if (f.source_url) {
+              var extTitle = 'Source: ' + f.source_url;
+              if (f.source_path) extTitle += '\nPath: ' + f.source_path;
+              if (f.pinned) extTitle += '\nPinned: ' + (f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned);
+              bh += '<span class="ext-icon" title="' + esc(extTitle) + '">' + extIconSvg + '</span>';
+              if (f.ext_status === 'stale' || f.ext_status === 'unpinned') {
+                bh += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
+              }
+            }
+            bh += '</div></td>';
 
-          /* Name + type */
-          h += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
-          if (f.type === 'anchor') {
-            if (f.is_global) {
-              h += '<span class="tp tp-global">global</span>';
+            /* Coverage */
+            bh += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
+            bh += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
+
+            /* Status */
+            bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
+
+            /* Integrity */
+            bh += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
+
+            /* Verified */
+            if (f.receipt && f.receipt.timestamp) {
+              var vt = relTime(f.receipt.timestamp);
+              var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
+              bh += '<td class="' + vcls + '">' + esc(vt) + '</td>';
             } else {
-              h += '<span class="tp tp-anchor">anchor</span>';
+              bh += '<td class="ver">&mdash;</td>';
             }
-          }
-          if (f.source_url) {
-            var extTitle = 'Source: ' + f.source_url;
-            if (f.source_path) extTitle += '\nPath: ' + f.source_path;
-            if (f.pinned) extTitle += '\nPinned: ' + (f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned);
-            h += '<span class="ext-icon" title="' + esc(extTitle) + '">' + extIconSvg + '</span>';
-            if (f.ext_status === 'stale' || f.ext_status === 'unpinned') {
-              h += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
+            bh += '</tr>';
+
+            /* Detail row */
+            if (isExpanded) {
+              bh += renderDetail(f);
             }
-          }
-          h += '</div></td>';
-
-          /* Coverage */
-          h += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
-          h += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
-
-          /* Status */
-          h += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
-
-          /* Integrity */
-          h += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
-
-          /* Verified */
-          if (f.receipt && f.receipt.timestamp) {
-            var vt = relTime(f.receipt.timestamp);
-            var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
-            h += '<td class="' + vcls + '">' + esc(vt) + '</td>';
-          } else {
-            h += '<td class="ver">&mdash;</td>';
-          }
-          h += '</tr>';
-
-          /* Detail row */
-          if (isExpanded) {
-            h += renderDetail(f);
           }
         }
       }
+      return bh;
     }
 
-    h += '</tbody></table></div>';
+    function renderSectionTable(sectionFeatures) {
+      var sh = '<div class="table-container"><table>';
+      sh += '<colgroup>';
+      for (var cgi = 0; cgi < cols.length; cgi++) {
+        sh += '<col' + (cols[cgi].w ? ' style="width:' + cols[cgi].w + '"' : '') + '>';
+      }
+      sh += '</colgroup>';
+      sh += '<tbody>';
+      sh += renderCategoryBlock(groupByCategory(sectionFeatures));
+      sh += '</tbody></table></div>';
+      return sh;
+    }
+
+    /* Specs section — non-anchor features only */
+    h += '<div class="section-label">Specs</div>';
+    h += renderSectionTable(specFeatures);
+
+    /* Anchors section — anchor features only, separate from specs */
+    if (anchorFeatures.length > 0) {
+      h += '<div class="section-label">Anchors</div>';
+      h += renderSectionTable(anchorFeatures);
+    }
 
     /* Footer */
     h += '<footer class="footer"><span>Generated by Purlin' + (D.version ? ' v' + esc(D.version) : '') + '</span>';

@@ -1310,15 +1310,31 @@ class TestCategorySections:
     @pytest.mark.proof("purlin_report", "PROOF-19", "RULE-19")
     def test_category_headers_with_rolled_up_summaries(self, page, dashboard):
         """PROOF-19: Category headers show correct rolled-up counts and breakdowns;
-        categories with untested features show amber coverage bar."""
+        categories with untested features show amber coverage bar.
+        Specs and Anchors are in separate sections with independent grouping."""
         data = make_categorized_data()
         load_dashboard(page, dashboard, data=data, expand_categories=False)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_collapsed.png"))
 
-        # Verify 3 category header rows exist
+        # Verify 3 category header rows exist total (2 in Specs, 1 in Anchors)
         cat_headers = page.query_selector_all(".cat-header")
         assert len(cat_headers) == 3, (
             f"Expected 3 category headers, got {len(cat_headers)}"
+        )
+
+        # Verify Specs section has 2 categories, Anchors section has 1
+        section_cats = page.evaluate("""() => {
+            const tables = document.querySelectorAll('.table-container');
+            return {
+                specs: tables[0] ? tables[0].querySelectorAll('.cat-header').length : 0,
+                anchors: tables[1] ? tables[1].querySelectorAll('.cat-header').length : 0
+            };
+        }""")
+        assert section_cats["specs"] == 2, (
+            f"Expected 2 spec categories, got {section_cats['specs']}"
+        )
+        assert section_cats["anchors"] == 1, (
+            f"Expected 1 anchor category, got {section_cats['anchors']}"
         )
 
         # Extract category data
@@ -1355,7 +1371,7 @@ class TestCategorySections:
             f"Expected mcp bar amber (cov-partial) due to untested feature, got {mcp['barClass']}"
         )
 
-        # Verify _anchors category: 1 feature, 11/11, green bar
+        # Verify _anchors category in Anchors section: 1 feature, 11/11, green bar
         anchors = next(c for c in cat_data if c["cat"] == "_anchors")
         assert anchors["count"] == "(1)", f"Anchors count: {anchors['count']}"
         assert "11/11" in anchors["cov"], f"Anchors coverage: {anchors['cov']}"
@@ -2361,3 +2377,127 @@ def test_description_block_rendering(dashboard, page):
     # The detail row for checkout should not have a .desc-block
     detail = page.query_selector("tr.fr[data-name='checkout'] + tr.dr .desc-block")
     assert detail is None, "Expected no .desc-block when description is null"
+
+
+@pytest.mark.proof("purlin_report", "PROOF-32", "RULE-32")
+def test_anchors_separate_section(dashboard, page):
+    """PROOF-32: Anchors render in a separate section from specs.
+    Specs section has no anchor features; Anchors section has all anchors."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    data = {
+        "timestamp": now,
+        "project": "test-project",
+        "version": "0.9.0",
+        "docs_url": None,
+        "summary": {
+            "total_features": 4,
+            "verified": 1,
+            "passing": 2,
+            "partial": 1,
+            "failing": 0,
+            "untested": 0,
+        },
+        "features": [
+            {
+                "name": "auth_login", "category": "auth", "type": "feature",
+                "is_global": False, "source_url": None,
+                "proved": 3, "total": 3, "deferred": 0, "status": "PASSING",
+                "vhash": "a1", "receipt": None, "rules": [], "audit": None,
+            },
+            {
+                "name": "auth_register", "category": "auth", "type": "feature",
+                "is_global": False, "source_url": None,
+                "proved": 2, "total": 4, "deferred": 0, "status": "PARTIAL",
+                "vhash": "a2", "receipt": None, "rules": [], "audit": None,
+            },
+            {
+                "name": "dashboard_visual", "category": "_anchors", "type": "anchor",
+                "is_global": False, "source_url": None,
+                "proved": 11, "total": 11, "deferred": 0, "status": "VERIFIED",
+                "vhash": "b1",
+                "receipt": {"commit": "x", "timestamp": now, "stale": False},
+                "rules": [], "audit": None,
+            },
+            {
+                "name": "security_policy", "category": "_anchors", "type": "anchor",
+                "is_global": True, "source_url": "https://example.com/policy.git",
+                "proved": 5, "total": 5, "deferred": 0, "status": "PASSING",
+                "vhash": "b2", "receipt": None, "rules": [], "audit": None,
+                "pinned": "abc1234567890", "source_path": "policy.md",
+                "ext_status": None,
+            },
+        ],
+        "anchors_summary": {"total": 2, "with_source": 1, "global": 1},
+        "audit_summary": None,
+        "drift": None,
+    }
+    load_dashboard(page, dashboard, data=data, expand_categories=True)
+
+    # 1. Verify two section labels exist: "Specs" and "Anchors"
+    labels = page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.section-label'))
+            .map(el => el.textContent.trim());
+    }""")
+    assert "Specs" in labels, f"Missing 'Specs' section label, got {labels}"
+    assert "Anchors" in labels, f"Missing 'Anchors' section label, got {labels}"
+
+    # 2. Verify two table containers exist (one per section)
+    table_count = page.evaluate(
+        "() => document.querySelectorAll('.table-container').length"
+    )
+    assert table_count == 2, f"Expected 2 table containers, got {table_count}"
+
+    # 3. Verify NO anchor features in the Specs section (first table)
+    anchor_in_specs = page.evaluate("""() => {
+        const tables = document.querySelectorAll('.table-container');
+        const specsTable = tables[0];
+        const rows = specsTable.querySelectorAll('tr.fr');
+        return Array.from(rows).some(r =>
+            r.querySelector('.tp-anchor') || r.querySelector('.tp-global')
+        );
+    }""")
+    assert not anchor_in_specs, "Anchor features found in Specs section"
+
+    # 4. Verify all anchor features are in the Anchors section (second table)
+    anchor_names = page.evaluate("""() => {
+        const tables = document.querySelectorAll('.table-container');
+        const anchorsTable = tables[1];
+        const rows = anchorsTable.querySelectorAll('tr.fr');
+        return Array.from(rows).map(r => r.getAttribute('data-name'));
+    }""")
+    assert "dashboard_visual" in anchor_names, (
+        f"Expected 'dashboard_visual' in Anchors section, got {anchor_names}"
+    )
+    assert "security_policy" in anchor_names, (
+        f"Expected 'security_policy' in Anchors section, got {anchor_names}"
+    )
+    assert len(anchor_names) == 2, (
+        f"Expected exactly 2 anchors in Anchors section, got {len(anchor_names)}"
+    )
+
+    # 5. Verify spec features are NOT in the Anchors section
+    spec_in_anchors = page.evaluate("""() => {
+        const tables = document.querySelectorAll('.table-container');
+        const anchorsTable = tables[1];
+        const rows = anchorsTable.querySelectorAll('tr.fr');
+        const names = Array.from(rows).map(r => r.getAttribute('data-name'));
+        return names.some(n => n === 'auth_login' || n === 'auth_register');
+    }""")
+    assert not spec_in_anchors, "Spec features found in Anchors section"
+
+    # 6. Verify spec features are in the Specs section
+    spec_names = page.evaluate("""() => {
+        const tables = document.querySelectorAll('.table-container');
+        const specsTable = tables[0];
+        const rows = specsTable.querySelectorAll('tr.fr');
+        return Array.from(rows).map(r => r.getAttribute('data-name'));
+    }""")
+    assert "auth_login" in spec_names, (
+        f"Expected 'auth_login' in Specs section, got {spec_names}"
+    )
+    assert "auth_register" in spec_names, (
+        f"Expected 'auth_register' in Specs section, got {spec_names}"
+    )
+
+    page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof32_anchors_section.png"))
