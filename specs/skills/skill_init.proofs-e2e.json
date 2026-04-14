@@ -99,6 +99,33 @@
       "test_name": "test_skill_shows_no_detection_all_unselected",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-46",
+      "rule": "RULE-44",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_pre_commit_hook_generates_and_stages_digest",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-47",
+      "rule": "RULE-45",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_digest_has_timestamp_and_git_sha",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-48",
+      "rule": "RULE-46",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_digest_does_not_trigger_audit",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

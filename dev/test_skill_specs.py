@@ -598,15 +598,15 @@ class TestSkillInit:
                 f"init SKILL.md missing required directory '{directory}'"
 
     @pytest.mark.proof("skill_init", "PROOF-9", "RULE-9")
-    def test_config_template_has_five_required_fields(self):
+    def test_config_template_has_six_required_fields(self):
         config_path = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
-        for field in ('version', 'test_framework', 'spec_dir', 'pre_push', 'report'):
+        for field in ('version', 'test_framework', 'spec_dir', 'pre_push', 'report', 'digest'):
             assert field in config, \
                 f"templates/config.json missing required field '{field}'"
-        assert len(config) == 5, \
-            f"templates/config.json should have exactly 5 fields, got {len(config)}: {list(config)}"
+        assert len(config) == 6, \
+            f"templates/config.json should have exactly 6 fields, got {len(config)}: {list(config)}"
 
     @pytest.mark.proof("skill_init", "PROOF-10", "RULE-10")
     def test_config_version_matches_version_file(self):
@@ -632,6 +632,8 @@ class TestSkillInit:
             f"Default pre_push should be 'warn', got '{config['pre_push']}'"
         assert config['report'] is True, \
             f"Default report should be true, got '{config['report']}'"
+        assert config['digest'] == 'auto', \
+            f"Default digest should be 'auto', got '{config['digest']}'"
 
     @pytest.mark.proof("skill_init", "PROOF-12", "RULE-12")
     def test_documents_conftest_py_detects_pytest(self):
@@ -943,11 +945,16 @@ class TestSkillInit:
             '.purlin/plugins/__pycache__/',
             '.purlin/cache/',
             '/purlin-report.html',
-            '.purlin/report-data.js',
         ]
         for entry in required_entries:
             assert entry in content, \
                 f"init SKILL.md missing required .gitignore entry: '{entry}'"
+        # report-data.js must NOT be gitignored — it is the committed digest
+        assert re.search(
+            r'(?i)report-data\.js.*NOT.*gitignor|NOT.*gitignor.*report-data\.js|'
+            r'report-data\.js.*is.*committed|digest.*committed',
+            content), \
+            "init SKILL.md missing statement that report-data.js is NOT gitignored"
 
     @pytest.mark.proof("skill_init", "PROOF-28", "RULE-28")
     def test_documents_reinit_does_not_duplicate_gitignore(self):
@@ -1173,6 +1180,195 @@ class TestSkillInit:
         assert re.search(r'(?i)do not overwrite.*other.*server|not.*overwrite.*other.*entries',
                          content), \
             "init SKILL.md missing 'do not overwrite other servers' guard"
+
+    # ── RULE-41 through RULE-46: digest / pre-commit hook ────────────
+
+    @pytest.mark.proof("skill_init", "PROOF-43", "RULE-41")
+    def test_config_template_has_digest_field(self):
+        """Config template must have digest field with valid value."""
+        config_path = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        assert 'digest' in config, \
+            "templates/config.json missing 'digest' field"
+        assert config['digest'] in ('auto', 'warn', 'off'), \
+            f"digest must be auto/warn/off, got '{config['digest']}'"
+
+    @pytest.mark.proof("skill_init", "PROOF-44", "RULE-42")
+    def test_documents_pre_commit_hook_installation(self):
+        """SKILL.md must document installing .git/hooks/pre-commit with purlin."""
+        content = _read('init')
+        assert '.git/hooks/pre-commit' in content, \
+            "init SKILL.md missing .git/hooks/pre-commit hook path"
+        assert re.search(r'chmod\s*\+x.*pre-commit', content), \
+            "init SKILL.md missing chmod +x for pre-commit hook"
+        assert re.search(r'(?i)pre-commit.*purlin|purlin.*pre-commit.*hook', content), \
+            "init SKILL.md missing documentation that pre-commit hook contains purlin"
+
+    @pytest.mark.proof("skill_init", "PROOF-45", "RULE-43")
+    def test_documents_existing_pre_commit_hook_preservation(self):
+        """SKILL.md must document preserving existing non-purlin pre-commit hooks."""
+        content = _read('init')
+        assert re.search(
+            r'(?i)existing pre-commit hook.*skip|'
+            r'pre-commit hook found.*skip',
+            content), \
+            "init SKILL.md missing skip/preserve instruction for existing pre-commit hooks"
+
+    @pytest.mark.proof("skill_init", "PROOF-46", "RULE-44", tier="e2e")
+    def test_pre_commit_hook_generates_and_stages_digest(self, tmp_path):
+        """In auto mode, git commit triggers the pre-commit hook which generates and stages report-data.js."""
+        # Set up a git repo with purlin structure
+        subprocess.run(['git', 'init'], cwd=str(tmp_path), capture_output=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=str(tmp_path), capture_output=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=str(tmp_path), capture_output=True)
+
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0', 'test_framework': 'auto',
+            'spec_dir': 'specs', 'pre_push': 'warn',
+            'report': True, 'digest': 'auto',
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+
+        # Create spec + passing proof
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n> Scope: src/auth.py\n\n"
+            "## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): Assert 200\n"
+        )
+        proof_data = {'tier': 'unit', 'proofs': [
+            {'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'test.py', 'test_name': 'test_ok',
+             'status': 'pass', 'tier': 'unit'},
+        ]}
+        (spec_dir / 'login.proofs-unit.json').write_text(json.dumps(proof_data))
+
+        # Install the pre-commit hook
+        hooks_dir = tmp_path / '.git' / 'hooks'
+        hooks_dir.mkdir(parents=True, exist_ok=True)
+        hook_src = os.path.join(PROJECT_ROOT, 'scripts', 'hooks', 'pre-commit.sh')
+        shutil.copy(hook_src, str(hooks_dir / 'pre-commit'))
+        (hooks_dir / 'pre-commit').chmod(0o755)
+
+        # Initial commit
+        subprocess.run(['git', 'add', '-A'], cwd=str(tmp_path), capture_output=True)
+        result = subprocess.run(
+            ['git', 'commit', '-m', 'init'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+            env={**os.environ, 'PURLIN_SKIP_DIGEST': '1'},
+        )
+        assert result.returncode == 0, f"Initial commit failed: {result.stderr}"
+
+        # Second commit — triggers hook with CLAUDE_PLUGIN_ROOT so hook finds purlin_server.py
+        (tmp_path / 'dummy.txt').write_text('trigger')
+        subprocess.run(['git', 'add', 'dummy.txt'], cwd=str(tmp_path), capture_output=True)
+        result = subprocess.run(
+            ['git', 'commit', '-m', 'trigger digest'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+            env={**os.environ, 'CLAUDE_PLUGIN_ROOT': PROJECT_ROOT},
+        )
+        assert result.returncode == 0, \
+            f"Commit with digest hook failed: {result.stderr}"
+
+        # Verify report-data.js was included in the commit
+        show_result = subprocess.run(
+            ['git', 'show', 'HEAD:.purlin/report-data.js'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+        )
+        assert show_result.returncode == 0, \
+            "report-data.js was not tracked in the commit"
+        assert 'PURLIN_DATA' in show_result.stdout, \
+            "report-data.js missing PURLIN_DATA"
+
+    @pytest.mark.proof("skill_init", "PROOF-47", "RULE-45", tier="e2e")
+    def test_digest_has_timestamp_and_git_sha(self, tmp_path):
+        """After digest generation, report-data.js contains timestamp and git_sha."""
+        # Set up a git repo with purlin structure
+        subprocess.run(['git', 'init'], cwd=str(tmp_path), capture_output=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=str(tmp_path), capture_output=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=str(tmp_path), capture_output=True)
+
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0', 'test_framework': 'auto',
+            'spec_dir': 'specs', 'pre_push': 'warn',
+            'report': True, 'digest': 'auto',
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): Assert 200\n"
+        )
+
+        # Initial commit so git SHA exists
+        subprocess.run(['git', 'add', '-A'], cwd=str(tmp_path), capture_output=True)
+        subprocess.run(
+            ['git', 'commit', '-m', 'init'],
+            cwd=str(tmp_path), capture_output=True,
+            env={**os.environ, 'PURLIN_SKIP_DIGEST': '1'},
+        )
+
+        # Generate digest directly
+        result_path = purlin_server.generate_digest(str(tmp_path))
+        assert result_path and os.path.isfile(result_path), \
+            "generate_digest did not produce a file"
+
+        content = open(result_path).read()
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+
+        assert 'timestamp' in data, "digest missing 'timestamp' field"
+        assert 'git_sha' in data, "digest missing 'git_sha' field"
+
+        # Verify timestamp is recent (within 60s)
+        import datetime
+        ts = datetime.datetime.fromisoformat(data['timestamp'].replace('Z', '+00:00'))
+        age = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds()
+        assert age < 60, f"digest timestamp is {age:.0f}s old, expected <60s"
+
+    @pytest.mark.proof("skill_init", "PROOF-48", "RULE-46", tier="e2e")
+    def test_digest_does_not_trigger_audit(self, tmp_path):
+        """Digest generation must NOT trigger a new audit — audit_summary reflects cached data only."""
+        purlin_dir = tmp_path / '.purlin'
+        purlin_dir.mkdir()
+        config = {
+            'version': '0.9.0', 'test_framework': 'auto',
+            'spec_dir': 'specs', 'pre_push': 'warn',
+            'report': True, 'digest': 'auto',
+        }
+        (purlin_dir / 'config.json').write_text(json.dumps(config))
+
+        spec_dir = tmp_path / 'specs' / 'auth'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / 'login.md').write_text(
+            "# Feature: login\n\n## Rules\n- RULE-1: Returns 200\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): Assert 200\n"
+        )
+
+        # No audit cache exists — generate digest
+        result_path = purlin_server.generate_digest(str(tmp_path))
+        assert result_path and os.path.isfile(result_path), \
+            "generate_digest did not produce a file"
+
+        content = open(result_path).read()
+        json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
+        data = json.loads(json_str)
+
+        # audit_summary should be null (no cache) — NOT a fresh audit
+        assert data.get('audit_summary') is None, \
+            f"digest should not trigger audit — expected null audit_summary, got {data.get('audit_summary')}"
 
 
 # ── skill_rename ──────────────────────────────────────────────────────
