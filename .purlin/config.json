@@ -3,5 +3,6 @@
   "test_framework": "auto",
   "spec_dir": "specs",
   "pre_push": "off",
-  "report": true
+  "report": true,
+  "digest": "auto"
 }

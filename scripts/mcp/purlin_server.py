@@ -1429,7 +1429,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
 
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,
-                       audit_summary=None):
+                       audit_summary=None, drift_data=None, git_sha=None):
     """Write .purlin/report-data.js for the dashboard. Returns the file path or None."""
     purlin_dir = os.path.join(project_root, '.purlin')
     if not os.path.isdir(purlin_dir):
@@ -1438,6 +1438,10 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
     data = _build_report_data(
         project_root, features, all_proofs, config, global_anchors, audit_summary
     )
+    if drift_data is not None:
+        data['drift'] = drift_data
+    if git_sha:
+        data['git_sha'] = git_sha
     data_path = os.path.join(purlin_dir, 'report-data.js')
 
     tmp_path = data_path + '.tmp'
@@ -1640,13 +1644,17 @@ def _check_git_staleness(source_url, pinned, project_root=None):
         return {'status': 'error', 'remote_sha': None, 'error': str(e)[:200]}
 
 
-def drift(project_root, since=None, role=None):
-    """Generate structured drift data as JSON."""
+def _compute_drift(project_root, since=None):
+    """Compute drift data as a Python dict.
+
+    Returns a dict with drift results, or a dict with 'recommendation' key
+    if no verification anchor could be resolved.
+    """
     since_ref, since_desc = _resolve_since_anchor(project_root, since)
 
     # If ref is None, _resolve_since_anchor returned a recommendation
     if since_ref is None:
-        return since_desc  # already JSON-encoded recommendation
+        return json.loads(since_desc)  # recommendation dict
 
     # Gather commits
     try:
@@ -1872,8 +1880,6 @@ def drift(project_root, since=None, role=None):
         external_anchor_drift.append(entry)
 
     # Build rule-level detail for specs with changed behavior files.
-    # Provides each rule's description, proof status, and which scope files
-    # changed — so the skill can cross-reference diffs against individual rules.
     rule_details = {}
     changed_behavior_specs = set()
     for entry in file_entries:
@@ -1893,7 +1899,6 @@ def drift(project_root, since=None, role=None):
                 spec_name, info, features, global_anchors)
             proof_by_rule = _build_proof_lookup(
                 spec_name, rule_entries, all_proofs)
-        # Which scope files actually changed in this diff
         changed_scope_files = [
             e['path'] for e in file_entries
             if e.get('spec') == spec_name
@@ -1917,7 +1922,7 @@ def drift(project_root, since=None, role=None):
             'proved_rules': ps.get('proved', 0),
         }
 
-    result = {
+    return {
         'since': since_desc,
         'commits': commits,
         'files': file_entries,
@@ -1929,7 +1934,62 @@ def drift(project_root, since=None, role=None):
         'rule_details': rule_details,
     }
 
+
+def drift(project_root, since=None, role=None):
+    """Generate structured drift data as JSON."""
+    result = _compute_drift(project_root, since)
     return json.dumps(result, indent=2)
+
+
+def generate_digest(project_root):
+    """Generate the project digest file with coverage, drift, and git SHA.
+
+    This is called by the pre-commit hook to produce .purlin/report-data.js
+    with full project state for stakeholder consumption.
+
+    IMPORTANT: Does NOT trigger a new audit. Uses cached audit data only.
+    Runs sync_status internals (coverage scan) and drift.
+    """
+    config = resolve_config(project_root)
+    if not config:
+        return None
+
+    features = _scan_specs(project_root)
+    if not features:
+        return None
+
+    all_proofs = _read_proofs(project_root)
+    global_anchors = {
+        k: v for k, v in features.items()
+        if v.get('is_anchor') and v.get('is_global')
+    }
+
+    # Read cached audit data only — never trigger a new audit
+    audit_summary = _read_audit_summary(project_root)
+
+    # Get git SHA
+    git_sha = None
+    try:
+        r = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=5,
+        )
+        if r.returncode == 0:
+            git_sha = r.stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        pass
+
+    # Compute drift data (returns dict, or recommendation dict if no anchor)
+    drift_data = None
+    try:
+        drift_data = _compute_drift(project_root)
+    except Exception:
+        pass  # Drift failure should not block digest generation
+
+    return _write_report_data(
+        project_root, features, all_proofs, config, global_anchors,
+        audit_summary, drift_data=drift_data, git_sha=git_sha,
+    )
 
 
 # ---------------------------------------------------------------------------

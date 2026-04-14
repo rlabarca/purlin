@@ -288,33 +288,6 @@
       "test_name": "test_vhash_with_prefixed_keys",
       "status": "pass",
       "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-56",
-      "rule": "RULE-33",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_formula_consistent_across_sources",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-58",
-      "rule": "RULE-34",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_compute_integrity_is_single_function",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-59",
-      "rule": "RULE-35",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_determine_status_is_single_function",
-      "status": "pass",
-      "tier": "unit"
     }
   ]
 }

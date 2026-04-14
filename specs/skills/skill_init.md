@@ -14,9 +14,9 @@
 - RULE-6: `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
 - RULE-7: `--list-plugins` identifies built-in plugins (`pytest_purlin`, `jest_purlin`, `purlin-proof`) by framework name and labels all others as `custom`
 - RULE-8: After init, `.purlin/`, `.purlin/plugins/`, `specs/`, and `specs/_anchors/` directories all exist
-- RULE-9: `config.json` is valid JSON containing all 5 required fields: version, test_framework, spec_dir, pre_push, report
+- RULE-9: `config.json` is valid JSON containing all 6 required fields: version, test_framework, spec_dir, pre_push, report, digest
 - RULE-10: The version field in config.json matches the contents of the VERSION file
-- RULE-11: Default config values are test_framework: auto, spec_dir: specs, pre_push: warn, report: true
+- RULE-11: Default config values are test_framework: auto, spec_dir: specs, pre_push: warn, report: true, digest: auto
 - RULE-12: When conftest.py exists at project root, auto-detection selects pytest
 - RULE-13: When pyproject.toml contains [tool.pytest], auto-detection selects pytest
 - RULE-14: When package.json contains jest, auto-detection selects jest
@@ -32,7 +32,7 @@
 - RULE-24: After init with empty specs dir, sync_status returns No specs found without errors
 - RULE-25: Status progression: no proofs reports UNTESTED, all passing reports PASSING, one failing reports FAILING
 - RULE-26: When report: true in config, sync_status generates .purlin/report-data.js containing valid PURLIN_DATA
-- RULE-27: .gitignore contains all required purlin entries
+- RULE-27: .gitignore contains all required purlin entries and does NOT contain `.purlin/report-data.js` (the digest is committed)
 - RULE-28: Running init twice (re-init) does not create duplicate entries in .gitignore
 - RULE-29: After init, .git/hooks/pre-push exists, is executable, and contains purlin
 - RULE-30: When a non-purlin pre-push hook exists before init, the existing hook is preserved
@@ -46,6 +46,12 @@
 - RULE-38: After init, `.mcp.json` exists at the project root with a `purlin` entry under `mcpServers`
 - RULE-39: The `purlin` MCP server entry uses `python3` command and points `args` to `purlin_server.py`
 - RULE-40: When `.mcp.json` already exists with other MCP servers, init merges the `purlin` entry without overwriting existing entries
+- RULE-41: Config has `"digest"` field with value `"auto"`, `"warn"`, or `"off"`
+- RULE-42: After init, `.git/hooks/pre-commit` exists, is executable, and contains `purlin`
+- RULE-43: When a non-purlin pre-commit hook exists before init, the existing hook is preserved
+- RULE-44: In digest `auto` mode, running `git commit` triggers the pre-commit hook which regenerates `.purlin/report-data.js` and stages it into the commit
+- RULE-45: After digest generation, `report-data.js` contains a `timestamp` field with a recent ISO timestamp and a `git_sha` field
+- RULE-46: Digest generation does NOT trigger a new audit — `audit_summary` reflects only cached data (null when no cache exists)
 
 ## Proof
 
@@ -91,3 +97,9 @@
 - PROOF-40 (RULE-38): Grep `skills/init/SKILL.md` for `.mcp.json` creation with `mcpServers` and `purlin` key; verify the step documents creating the file
 - PROOF-41 (RULE-39): Grep `skills/init/SKILL.md` for `python3` command and `purlin_server.py` in the MCP config; verify correct server entry
 - PROOF-42 (RULE-40): Grep `skills/init/SKILL.md` for merge/overwrite instructions; verify it documents merging into existing `.mcp.json` without overwriting other servers
+- PROOF-43 (RULE-41): e2e: Read config.json after init; verify `digest` field exists with value `auto` @e2e
+- PROOF-44 (RULE-42): e2e: Verify `.git/hooks/pre-commit` exists, is executable, and contains `purlin` @e2e
+- PROOF-45 (RULE-43): e2e: Create existing non-purlin pre-commit hook; run init; verify hook preserved @e2e
+- PROOF-46 (RULE-44): e2e: Create repo with spec+proofs, run `git commit`; verify `.purlin/report-data.js` is tracked in the commit via `git show HEAD:.purlin/report-data.js` @e2e
+- PROOF-47 (RULE-45): e2e: After commit, parse `report-data.js`; verify `timestamp` is within last 60s and `git_sha` field is present @e2e
+- PROOF-48 (RULE-46): e2e: After commit in fresh project (no audit cache), verify `audit_summary` in digest is null @e2e
