@@ -189,7 +189,25 @@ After writing and opening the file, print a brief summary to the chat (3-5 lines
 
 The HTML file should contain these sections. Skip any section that has zero items, EXCEPT Manual Tests which always appears when manual proofs exist.
 
-- **Header**: project name, digest timestamp, git SHA, freshness warning if >24h old
+- **Header**: project name, git SHA, and a **Data Sources** block showing when each data source was last updated. Display all timestamps in the user's local timezone (convert from UTC). The three sources are:
+
+  | Source | Timestamp field | What it tells you |
+  |--------|----------------|-------------------|
+  | Coverage (status) | `timestamp` | When the coverage scan ran — this is the digest generation time |
+  | Audit | `audit_summary.last_audit` | When proof quality was last assessed. May be days older than status. Show "not available" if `audit_summary` is null |
+  | Drift | `drift.since` | The anchor point drift is measured from (e.g., "last verification (6 days ago)") |
+
+  Format example in the header:
+  ```
+  Data freshness:
+    Coverage: Apr 14, 2026 2:52 PM EDT
+    Audit:    Apr 10, 2026 8:05 AM EDT (4 days ago)
+    Drift:    since last verification (6 days ago)
+  ```
+
+  If audit is significantly older than coverage (>24h), highlight it in amber — audit scores may not reflect recent changes. If audit is null, highlight in red.
+
+- **Freshness warning**: if the digest `timestamp` is more than 24 hours old, show a warning banner: "This digest is {age} old. Ask the team to commit to refresh it."
 - **Summary bar**: colored cards showing VERIFIED / PASSING / PARTIAL / FAILING / UNTESTED counts, plus integrity % if audit data exists
 - **Red section (Broken)**: FAILING features with specific rule descriptions and test file paths
 - **Orange section (Changed Without Coverage)**: drift items where code changed but tests are missing
