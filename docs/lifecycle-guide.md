@@ -495,7 +495,7 @@ Set during `purlin:init` or changed later with `purlin:init --pre-push`. The Pur
 
 ### Layer 2: CI pipeline (not provided by Purlin)
 
-Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for GitHub Actions and Bitbucket Pipelines examples.
+Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for CI pipeline examples.
 
 ### Layer 3: CI verification gate (not provided by Purlin)
 

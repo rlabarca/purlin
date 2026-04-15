@@ -262,7 +262,7 @@ RECOMMENDATIONS FOR ANCHOR AUTHORS
     RULE-1: "No eval() calls in source code"
     → Suggest: clarify scope — does this include test files? Current wording is ambiguous.
 
-  prodbrief_checkout (Source: git@bitbucket.org:acme/product-briefs.git)
+  prodbrief_checkout (Source: git@github.com:acme/product-briefs.git)
     RULE-3: "Order confirmation email arrives within 60 seconds"
     → Suggest: specify what "arrives" means — delivered to SMTP server, or in user's inbox?
 ```

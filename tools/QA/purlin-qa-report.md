@@ -10,9 +10,9 @@ Analyze a Purlin project digest and produce a triaged QA report. The user provid
 ## Step 1 — Clone the Repo and Read the Digest
 
 The user provides a repo URL and optionally a branch or tag:
-- `https://bitbucket.org/team/project` (defaults to `main`)
+- `https://github.com/org/project` (defaults to `main`)
 - `https://github.com/org/repo` branch `release/2.0`
-- `git@bitbucket.org:team/project.git` tag `v1.2.0`
+- `git@github.com:org/project.git` tag `v1.2.0`
 
 ### 1a. Ensure git is available
 
@@ -265,7 +265,7 @@ Section border colors: red (`--red`), orange (#f97316), yellow (`--amber`), purp
 
 ## Example Interactions
 
-**User:** "QA status for https://bitbucket.org/acme/payments"
+**User:** "QA status for https://github.com/acme/payments"
 
 You fetch `.purlin/report-data.js` from `main`, parse it, and respond with a brief text summary followed by the HTML artifact: "3 features are ready for sign-off. No failures. 2 features have code changes without updated tests — those are your priority. Proof quality is at 84% but 5 tests are suspicious."
 

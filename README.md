@@ -17,7 +17,7 @@ Purlin is a Claude Code plugin that adds spec-driven development to your workflo
 ```bash
 cd my-project
 git init                # required — Purlin needs git
-claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git --scope project
+claude plugin marketplace add git@github.com:rlabarca/purlin.git --scope project
 ```
 
 The `--scope project` flag stores the marketplace in the project so teammates get it automatically when they clone. Omit it for user-level install.

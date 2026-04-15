@@ -4,9 +4,9 @@
   "description": "Rule-proof spec-driven development — specs define rules, tests prove them, sync_status shows coverage",
   "author": {
     "name": "Rich LaBarca",
-    "url": "https://bitbucket.org/boomerangdev"
+    "url": "https://github.com/rlabarca"
   },
-  "repository": "https://bitbucket.org/boomerangdev/purlin",
+  "repository": "https://github.com/rlabarca/purlin",
   "license": "MIT",
   "keywords": ["specs", "testing", "verification", "sync", "rules", "proofs"]
 }

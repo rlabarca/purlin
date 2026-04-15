@@ -113,7 +113,7 @@ Purlin's audit skill evaluates whether tests actually prove what they claim. For
 
 ```json
 {
-  "audit_criteria": "git@bitbucket.org:acme/compliance-qa-standards.git#audit_criteria.md",
+  "audit_criteria": "git@github.com:acme/compliance-qa-standards.git#audit_criteria.md",
   "audit_criteria_pinned": "a1b2c3d4"
 }
 ```

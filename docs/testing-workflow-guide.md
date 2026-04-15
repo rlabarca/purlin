@@ -195,7 +195,7 @@ Two modes (set via `purlin:init --pre-push`):
 
 ### CI pipeline
 
-Purlin doesn't ship pipeline configs — you write them. Example (Bitbucket Pipelines):
+Purlin doesn't ship pipeline configs — you write them. Example (GitHub Actions):
 
 ```yaml
 pipelines:
