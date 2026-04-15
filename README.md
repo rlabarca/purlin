@@ -10,48 +10,6 @@
 
 Purlin is a Claude Code plugin that adds spec-driven development to your workflow. You use Claude exactly as you normally would — Purlin just gives it a structured way to track what your code should do, prove that it does it, and tell you what's missing.
 
-## What a Session Looks Like
-
-You don't need to learn a new workflow. You just use Claude Code as usual. Here's what a typical session looks like:
-
-**First time only** — install the plugin and initialize your project:
-
-```
-/plugin install purlin@purlin
-purlin:init
-```
-
-**If you have an existing codebase**, generate specs from your code:
-
-```
-purlin:spec-from-code
-```
-
-**Day-to-day work** — use any combination of these as you go:
-
-```
-purlin:spec auth_login     ← define what a feature must do
-purlin:build auth_login    ← Claude writes code + tests, iterates until rules pass
-purlin:verify              ← sign off — verification receipts committed
-```
-
-**See what needs attention:**
-
-```
-purlin:status              ← coverage table with → directives telling you what to do next
-purlin:drift               ← what changed since last verification, who needs to act
-```
-
-You can tell Claude to handle the items that come back from status and drift — they're actionable directives, not just reports.
-
-**Check test quality** (expensive — don't run every session):
-
-```
-purlin:audit               ← evaluates whether your tests actually prove what they claim
-```
-
-**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and test quality. You don't need to use it — the CLI output has everything — but it's there if you want it.
-
 ## Install
 
 **Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
@@ -87,6 +45,41 @@ purlin:init
 ```
 
 This creates `.purlin/`, `specs/`, detects your test framework, scaffolds the proof plugin, and installs git hooks.
+
+## What a Session Looks Like
+
+You don't need to learn a new workflow. You just use Claude Code as usual. Here's what a typical session looks like:
+
+**If you have an existing codebase**, generate specs from your code:
+
+```
+purlin:spec-from-code
+```
+
+**Day-to-day work** — use any combination of these as you go:
+
+```
+purlin:spec auth_login     ← define what a feature must do
+purlin:build auth_login    ← Claude writes code + tests, iterates until rules pass
+purlin:verify              ← sign off — verification receipts committed
+```
+
+**See what needs attention:**
+
+```
+purlin:status              ← coverage table with → directives telling you what to do next
+purlin:drift               ← what changed since last verification, who needs to act
+```
+
+You can tell Claude to handle the items that come back from status and drift — they're actionable directives, not just reports.
+
+**Check test quality** (expensive — don't run every session):
+
+```
+purlin:audit               ← evaluates whether your tests actually prove what they claim
+```
+
+**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and test quality. You don't need to use it — the CLI output has everything — but it's there if you want it.
 
 ### Upgrading from an older version of Purlin
 
