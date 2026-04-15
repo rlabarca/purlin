@@ -8,46 +8,57 @@
 
 **Rule-Proof Spec-Driven Development**
 
-- Write better code through proof-based specs
-- Prove spec / code drift with signed verification
-- Enable multi-discipline collaboration with drift detection and anchor specs with external references
+Purlin is a Claude Code plugin that adds spec-driven development to your workflow. You use Claude exactly as you normally would — Purlin just gives it a structured way to track what your code should do, prove that it does it, and tell you what's missing.
 
-## Quick Start
+## What a Session Looks Like
 
-After [installing Purlin](docs/installation-guide.md):
+You don't need to learn a new workflow. You just use Claude Code as usual. Here's what a typical session looks like:
 
-```
-write a spec for login       ← describe what the feature must do
-build login                  ← code + tests written, iterates until all rules pass
-/purlin:verify               ← verification receipt committed — ship it
-```
-
-Three messages. Spec → code → ship.
-
-## How It Works
-
-1. **Specs** define what your code must do. Each spec has rules (testable constraints) and proofs (observable assertions).
-2. **Proof markers** in your tests link test cases to spec rules. Test runners emit proof files automatically.
-3. **`sync_status`** reads specs and proof files, diffs them, and tells you exactly what to do next via `→` directives.
+**First time only** — install the plugin and initialize your project:
 
 ```
-auth_login: 2/3 rules proved
-  RULE-1: PASS (PROOF-1 in tests/test_login.py)
-  RULE-2: PASS (PROOF-2 in tests/test_login.py)
-  RULE-3: NO PROOF
-  → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
-  → Run: purlin:unit-test
+/plugin install purlin@purlin
+purlin:init
 ```
+
+**If you have an existing codebase**, generate specs from your code:
+
+```
+purlin:spec-from-code
+```
+
+**Day-to-day work** — use any combination of these as you go:
+
+```
+purlin:spec auth_login     ← define what a feature must do
+purlin:build auth_login    ← Claude writes code + tests, iterates until rules pass
+purlin:verify              ← sign off — verification receipts committed
+```
+
+**See what needs attention:**
+
+```
+purlin:status              ← coverage table with → directives telling you what to do next
+purlin:drift               ← what changed since last verification, who needs to act
+```
+
+You can tell Claude to handle the items that come back from status and drift — they're actionable directives, not just reports.
+
+**Check test quality** (expensive — don't run every session):
+
+```
+purlin:audit               ← evaluates whether your tests actually prove what they claim
+```
+
+**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and test quality. You don't need to use it — the CLI output has everything — but it's there if you want it.
 
 ## Install
 
 **Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
-From your terminal:
-
 ```bash
 cd my-project
-git init                # required -- Purlin needs git for proofs, receipts, and drift detection
+git init                # required — Purlin needs git
 claude plugin marketplace add git@bitbucket.org:boomerangdev/purlin.git --scope project
 ```
 
@@ -69,13 +80,13 @@ exit
 claude
 ```
 
-## Initialize a Project
+Then initialize:
 
 ```
 purlin:init
 ```
 
-This creates `.purlin/`, `specs/`, detects your test framework, and scaffolds the proof plugin.
+This creates `.purlin/`, `specs/`, detects your test framework, scaffolds the proof plugin, and installs git hooks.
 
 ### Upgrading from an older version of Purlin
 
@@ -94,67 +105,20 @@ purlin:spec-from-code
 
 Your old scenarios and rules are preserved as input for the new-format specs. See the [Installation Guide](docs/installation-guide.md#upgrading-from-an-older-version-of-purlin) for details.
 
-## Write a Spec
+## How It Works
+
+1. **Specs** define what your code must do. Each spec has rules (testable constraints) and proofs (observable assertions).
+2. **Proof markers** in your tests link test cases to spec rules. Test runners emit proof files automatically.
+3. **`sync_status`** reads specs and proof files, diffs them, and tells you exactly what to do next.
 
 ```
-purlin:spec auth_login
+auth_login: 2/3 rules proved
+  RULE-1: PASS (PROOF-1 in tests/test_login.py)
+  RULE-2: PASS (PROOF-2 in tests/test_login.py)
+  RULE-3: NO PROOF
+  → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
+  → Run: purlin:unit-test
 ```
-
-Specs use a 3-section format:
-
-```markdown
-# Feature: auth_login
-
-> Description: Handles user authentication via username/password and SSO.
-> Scope: src/auth/login.js
-
-## What it does
-Handles user authentication via username/password and SSO.
-
-## Rules
-- RULE-1: Return 200 with session token on valid credentials
-- RULE-2: Return 401 on invalid credentials
-- RULE-3: SSO redirects to provider URL
-
-## Proof
-- PROOF-1 (RULE-1): POST valid creds returns 200 + token
-- PROOF-2 (RULE-2): POST bad creds returns 401
-- PROOF-3 (RULE-3): GET /sso redirects to provider
-```
-
-## Build and Test
-
-Just ask Claude. The agent writes code, adds proof markers to tests, and iterates until all rules pass:
-
-```
-build auth_login
-```
-
-Or even simpler:
-
-```
-test auth_login
-```
-
-Claude reads the spec, writes code if needed, writes tests with proof markers, runs them, and iterates until `sync_status` shows VERIFIED. You don't need to write proof markers yourself -- the agent does it.
-
-Under the hood, proof markers link each test to a spec rule. The test framework plugin collects the results and emits proof files that `sync_status` reads. See the [Testing Workflow Guide](docs/testing-workflow-guide.md) for details on how proof markers work, manual proofs, tiers, and writing custom proof plugins.
-
-## Check Coverage
-
-```
-purlin:status
-```
-
-The `sync_status` MCP tool scans specs and proof files, then reports coverage with actionable `→` directives.
-
-## Verify Everything
-
-```
-purlin:verify
-```
-
-Runs ALL tests, issues verification receipts for every feature with 100% rule coverage.
 
 ## Skills
 
@@ -173,12 +137,22 @@ Runs ALL tests, issues verification receipts for every feature with 100% rule co
 | `purlin:rename` | Rename feature across artifacts |
 | `purlin:spec-from-code` | Generate specs from code |
 
+Skills are **optional** — you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
 
-Skills are **optional** -- you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
+## Stakeholder Tools
+
+The `tools/` directory contains skills for non-engineer stakeholders who interact with Purlin projects through Claude Desktop. These don't require a development environment — just a repo URL.
+
+| Tool | Audience | What it does |
+|------|----------|-------------|
+| `tools/QA/purlin-qa-report` | QA | Fetches project digest, produces triaged HTML report of failures, drift, test quality, manual tests due, and sign-off readiness |
+| `tools/PM/purlin-anchor-userstories` | Product | Creates and maintains user story anchor files that drive spec-driven development |
+
+Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md` contents into project instructions). They clone the repo, read the project digest, and produce visual reports — no dev tools needed.
 
 ## Hard Gate (only 1)
 
-1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
+1. **Proof coverage** — `purlin:verify` won't issue a receipt unless every rule has a passing proof.
 
 Everything else is optional guidance.
 
@@ -187,6 +161,7 @@ Everything else is optional guidance.
 ```
 .purlin/
   config.json             # Project settings
+  report-data.js          # Project digest (auto-generated on commit)
   plugins/                # Proof plugin (scaffolded by init)
 specs/
   <category>/
@@ -195,7 +170,11 @@ specs/
     <feature>.receipt.json   # Verification receipts
   _anchors/
     <name>.md             # Cross-cutting constraints (optionally synced from external sources)
+tools/
+  QA/                     # QA report skill for Claude Desktop
+  PM/                     # Product anchor skill for Claude Desktop
 ```
 
-**MCP Server:** `scripts/mcp/purlin_server.py` -- provides `sync_status` and `purlin_config` tools.
-**Proof Plugins:** `scripts/proof/` -- pytest, Jest, and shell proof collectors.
+**MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status`, `drift`, and `purlin_config` tools.
+**Proof Plugins:** `scripts/proof/` — pytest, Jest, and shell proof collectors.
+**Git Hooks:** `scripts/hooks/` — pre-push (coverage check) and pre-commit (digest auto-generation).
