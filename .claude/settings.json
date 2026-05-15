@@ -1,1 +1,5 @@
-{}
+{
+  "enabledPlugins": {
+    "purlin@purlin": true
+  }
+}

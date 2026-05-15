@@ -40,6 +40,9 @@ dev/external-refs/
 .purlin_worktree_label
 .purlin_session.lock
 
+# Claude Code per-user settings (machine-specific)
+.claude/settings.local.json
+
 # Dashboard HTML (symlinked from framework)
 /purlin-report.html
 
