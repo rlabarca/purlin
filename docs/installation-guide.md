@@ -51,11 +51,10 @@ claude
 /plugin install purlin@purlin
 ```
 
-Exit and restart Claude Code for skill autocomplete to take effect:
+Reload plugins so skill autocomplete takes effect:
 
-```bash
-exit
-claude
+```
+/reload-plugins
 ```
 
 Then initialize the Purlin workspace:
