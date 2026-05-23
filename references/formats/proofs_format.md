@@ -169,7 +169,7 @@ it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
 });
 ```
 
-Reporter: `scripts/proof/vitest_purlin.ts`.
+Reporter: `scripts/proof/vitest_purlin.ts`. It collects proofs in the `onFinished(files)` hook (stable across Vitest 2.x → 4.x). `jest_purlin.js` is not used for Vitest — Vitest does not call Jest's reporter hooks.
 
 ## Manual Proofs
 

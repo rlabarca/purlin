@@ -419,169 +419,159 @@ SELECT CASE WHEN (SELECT count(*) FROM items) = 99
 
 
 # ---------------------------------------------------------------------------
-# TypeScript tests — compile with tsc, run with node
+# TypeScript / Vitest reporter — drive the REAL reporter's onFinished(files)
+# with a synthetic Vitest 2.x+ task tree. Loaded via tsc (compile) or Node's
+# native TypeScript type-stripping (Node >= 22.6). This actually exercises the
+# reporter, unlike the old proof which only ran hand-built JSON through node.
 # ---------------------------------------------------------------------------
 
+_REPORTER_SRC = os.path.join(PROOF_SCRIPTS, 'vitest_purlin.ts')
+
+# Minimal `glob` stand-in so the compiled/stripped reporter's require("glob")
+# resolves without an npm install. It performs the real filesystem walk the
+# reporter expects (globSync("specs/**/*.md")) — only the dependency is
+# substituted; the reporter's collection and write logic run for real.
+_GLOB_SHIM = '''\
+const fs = require('fs');
+const path = require('path');
+function walk(dir, out) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full, out);
+    else if (e.name.endsWith('.md')) out.push(full);
+  }
+}
+function globSync(pattern) { const base = pattern.split('/**/')[0]; const out = []; walk(base, out); return out; }
+module.exports = { globSync };
+'''
+
+
+def _node_can_run_ts():
+    """True if `node` is present and can load .ts — via tsc, or native type-stripping (>=22.6)."""
+    if not shutil.which('node'):
+        return False
+    if shutil.which('tsc'):
+        return True
+    try:
+        out = subprocess.run(['node', '--version'], capture_output=True, text=True)
+        major, minor = (int(x) for x in out.stdout.strip().lstrip('v').split('.')[:2])
+        return major > 22 or (major == 22 and minor >= 6)
+    except Exception:
+        return False
+
+
 @pytest.mark.skipif(
-    not shutil.which('tsc') or not shutil.which('node'),
-    reason='tsc or node not available'
+    not _node_can_run_ts(),
+    reason='node with a TS loader (tsc or type-stripping) not available'
 )
 class TestTypeScriptProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28", tier="integration")
-    def test_typescript_proof_plugin_real_compilation(self, tmp_path):
-        """Compile real TypeScript, run with Node, verify proof JSON."""
+    def _drive_reporter(self, tmp_path, files_js):
+        """Load vitest_purlin.ts and call onFinished(files) with the given JS
+        task-tree literal, with cwd=tmp_path so it writes proofs under specs/."""
+        glob_dir = tmp_path / 'node_modules' / 'glob'
+        glob_dir.mkdir(parents=True)
+        (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
+        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+
+        shutil.copy(_REPORTER_SRC, str(tmp_path / 'vitest_purlin.ts'))
+
+        if shutil.which('tsc'):
+            (tmp_path / 'tsconfig.json').write_text(json.dumps({
+                "compilerOptions": {
+                    "target": "ES2020", "module": "commonjs",
+                    "esModuleInterop": True, "skipLibCheck": True,
+                    "noEmitOnError": False, "types": [],
+                    "outDir": str(tmp_path / "dist"),
+                },
+                "include": ["vitest_purlin.ts"],
+            }))
+            # type errors (missing @types/node) are tolerated — we only need the JS
+            subprocess.run(['tsc', '--project', str(tmp_path / 'tsconfig.json')],
+                           capture_output=True, text=True, cwd=str(tmp_path))
+            compiled = tmp_path / 'dist' / 'vitest_purlin.js'
+            assert compiled.exists(), "tsc did not emit dist/vitest_purlin.js"
+            harness = tmp_path / 'harness.cjs'
+            harness.write_text(
+                'const Reporter = require("./dist/vitest_purlin.js").default;\n'
+                f'const files = {files_js};\n'
+                'new Reporter().onFinished(files);\n'
+            )
+            cmd = ['node', str(harness)]
+        else:
+            harness = tmp_path / 'harness.mjs'
+            harness.write_text(
+                'import Reporter from "./vitest_purlin.ts";\n'
+                f'const files = {files_js};\n'
+                'new Reporter().onFinished(files);\n'
+            )
+            cmd = ['node', '--experimental-strip-types', str(harness)]
+
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(tmp_path))
+        assert result.returncode == 0, (
+            f"reporter harness failed:\nSTDOUT:{result.stdout}\nSTDERR:{result.stderr}"
+        )
+
+    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-30", tier="integration")
+    def test_vitest_reporter_onfinished_walk(self, tmp_path):
+        """Vitest 2.x+ onFinished(files) tree walk: pass/fail mapping, skipped
+        tasks excluded, test_file resolved from the file task's filepath."""
         spec_dir = tmp_path / 'specs' / 'string'
         spec_dir.mkdir(parents=True)
         (spec_dir / 'string_utils.md').write_text(
             '# Feature: string_utils\n\n## Rules\n'
             '- RULE-1: capitalize returns first letter uppercase\n'
             '- RULE-2: reverse returns string reversed\n\n'
-            '## Proof\n'
-            '- PROOF-1 (RULE-1): test\n'
-            '- PROOF-2 (RULE-2): test\n'
+            '## Proof\n- PROOF-1 (RULE-1): test\n- PROOF-2 (RULE-2): test\n'
         )
 
-        # Write real TypeScript source + test
-        ts_file = tmp_path / 'test_strings.ts'
-        ts_file.write_text('''\
-function capitalize(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function reverse(s: string): string {
-    return s.split("").reverse().join("");
-}
-
-interface ProofEntry {
-    feature: string; id: string; rule: string;
-    test_file: string; test_name: string;
-    status: "pass" | "fail"; tier: string;
-}
-
-const proofs: ProofEntry[] = [];
-
-function proof(feature: string, id: string, rule: string,
-               passed: boolean, testName: string, tier: string = "unit") {
-    proofs.push({
-        feature, id, rule,
-        test_file: "test_strings.ts",
-        test_name: testName,
-        status: passed ? "pass" : "fail",
-        tier,
-    });
-}
-
-// Test 1: capitalize
-const cap = capitalize("hello");
-proof("string_utils", "PROOF-1", "RULE-1",
-      cap === "Hello", "test_capitalize");
-
-// Test 2: reverse
-const rev = reverse("abcd");
-proof("string_utils", "PROOF-2", "RULE-2",
-      rev === "dcba", "test_reverse");
-
-// Emit JSON
-console.log(JSON.stringify({ proofs }, null, 2));
-''')
-
-        # Write tsconfig
-        tsconfig = tmp_path / 'tsconfig.json'
-        tsconfig.write_text(json.dumps({
-            "compilerOptions": {
-                "target": "ES2020",
-                "module": "commonjs",
-                "strict": True,
-                "outDir": str(tmp_path / "dist"),
-            },
-            "include": ["*.ts"],
-        }))
-
-        # Compile TypeScript
-        tsc_result = subprocess.run(
-            ['tsc', '--project', str(tsconfig)],
-            capture_output=True, text=True,
-            cwd=str(tmp_path)
-        )
-        assert tsc_result.returncode == 0, f"TypeScript compilation failed:\n{tsc_result.stderr}"
-
-        # Run compiled JavaScript
-        js_file = tmp_path / 'dist' / 'test_strings.js'
-        assert js_file.exists(), f"Compiled JS not found at {js_file}"
-
-        run_result = subprocess.run(
-            ['node', str(js_file)],
-            capture_output=True, text=True
-        )
-        assert run_result.returncode == 0, f"Node execution failed:\n{run_result.stderr}"
-
-        # Parse JSON and pipe to C emitter (reuse — it's generic JSON)
-        proof_data = json.loads(run_result.stdout)
-        assert len(proof_data['proofs']) == 2
-
-        emit_result = subprocess.run(
-            [sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
-            input=run_result.stdout, capture_output=True, text=True,
-            cwd=str(tmp_path)
-        )
-        assert emit_result.returncode == 0
+        # Synthetic Vitest 2.x+ task tree: a file suite task with nested test
+        # tasks carrying result.state. A `skip` task must NOT be recorded.
+        files_js = '''[{
+  type: "suite",
+  filepath: process.cwd() + "/test_strings.test.ts",
+  tasks: [
+    { type: "test", name: "capitalize works [proof:string_utils:PROOF-1:RULE-1:unit]", result: { state: "pass" } },
+    { type: "test", name: "reverse works [proof:string_utils:PROOF-2:RULE-2:unit]", result: { state: "fail" } },
+    { type: "test", name: "todo case [proof:string_utils:PROOF-9:RULE-9:unit]", result: { state: "skip" } },
+  ],
+}]'''
+        self._drive_reporter(tmp_path, files_js)
 
         proof_file = spec_dir / 'string_utils.proofs-unit.json'
+        # Exactly 2 entries — the skipped task is excluded (len check inside helper).
         _assert_proof_json(str(proof_file), [
             {'feature': 'string_utils', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass', 'tier': 'unit'},
-            {'feature': 'string_utils', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
+            {'feature': 'string_utils', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'fail', 'tier': 'unit'},
         ])
+        with open(proof_file) as f:
+            entries = json.load(f)['proofs']
+        # test_file is resolved from the file task's filepath (relative to cwd).
+        assert all(e['test_file'] == 'test_strings.test.ts' for e in entries), entries
 
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28", tier="integration")
-    def test_typescript_proof_plugin_failing_test(self, tmp_path):
-        """TypeScript test that fails — verify status='fail'."""
-        spec_dir = tmp_path / 'specs' / 'string'
+    @pytest.mark.proof("proof_plugins", "PROOF-33", "RULE-28", tier="integration")
+    def test_vitest_reporter_marker_parsing(self, tmp_path):
+        """Marker in a test name parses into feature/id/rule/tier identically to Jest."""
+        spec_dir = tmp_path / 'specs' / 'svc'
         spec_dir.mkdir(parents=True)
-        (spec_dir / 'string_utils.md').write_text(
-            '# Feature: string_utils\n\n## Rules\n- RULE-1: test\n\n## Proof\n- PROOF-1 (RULE-1): test\n'
+        (spec_dir / 'feat.md').write_text(
+            '# Feature: feat\n\n## Rules\n- RULE-1: x\n\n## Proof\n- PROOF-1 (RULE-1): test\n'
         )
 
-        ts_file = tmp_path / 'test_fail.ts'
-        ts_file.write_text('''\
-const proofs: Array<{feature: string; id: string; rule: string;
-    test_file: string; test_name: string; status: "pass"|"fail"; tier: string}> = [];
+        files_js = '''[{
+  type: "suite",
+  filepath: process.cwd() + "/feat.test.ts",
+  tasks: [
+    { type: "test", name: "does the thing [proof:feat:PROOF-1:RULE-1:integration]", result: { state: "pass" } },
+  ],
+}]'''
+        self._drive_reporter(tmp_path, files_js)
 
-const result: string = "hello";
-proofs.push({
-    feature: "string_utils", id: "PROOF-1", rule: "RULE-1",
-    test_file: "test_fail.ts", test_name: "test_wrong_value",
-    status: result === "WRONG" ? "pass" : "fail",
-    tier: "unit",
-});
-
-console.log(JSON.stringify({ proofs }, null, 2));
-''')
-
-        tsconfig = tmp_path / 'tsconfig.json'
-        tsconfig.write_text(json.dumps({
-            "compilerOptions": {"target": "ES2020", "module": "commonjs",
-                                "strict": True, "outDir": str(tmp_path / "dist")},
-            "include": ["*.ts"],
-        }))
-
-        subprocess.run(['tsc', '--project', str(tsconfig)],
-                       capture_output=True, text=True, check=True, cwd=str(tmp_path))
-        run_result = subprocess.run(
-            ['node', str(tmp_path / 'dist' / 'test_fail.js')],
-            capture_output=True, text=True
-        )
-
-        emit_result = subprocess.run(
-            [sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
-            input=run_result.stdout, capture_output=True, text=True,
-            cwd=str(tmp_path)
-        )
-        assert emit_result.returncode == 0
-
-        proof_file = spec_dir / 'string_utils.proofs-unit.json'
+        proof_file = spec_dir / 'feat.proofs-integration.json'
         _assert_proof_json(str(proof_file), [
-            {'feature': 'string_utils', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'fail', 'tier': 'unit'},
+            {'feature': 'feat', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass', 'tier': 'integration'},
         ])
 
 

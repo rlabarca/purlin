@@ -116,6 +116,15 @@ For jest, add reporter config to `jest.config.js` or `package.json`:
 }
 ```
 
+For vitest, add the TypeScript reporter to `vitest.config.ts` (Vitest loads `.ts` reporters natively via Vite — no Jest config):
+
+```typescript
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] },
+});
+```
+
 ## Step 5 — Update .gitignore
 
 Ensure `.gitignore` contains:

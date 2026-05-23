@@ -52,7 +52,7 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:integration]", a
 });
 ```
 
-Works with `ts-jest` and Vitest (via `--reporter`).
+Works with `ts-jest`. For **Vitest**, use the native TypeScript reporter `scripts/proof/vitest_purlin.ts` instead of `jest_purlin.js` — Vitest does not call Jest's reporter hooks. Register it in `vitest.config.ts`: `test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }`.
 
 ### Shell (Bash)
 

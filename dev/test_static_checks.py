@@ -1216,3 +1216,74 @@ class TestWriteCacheCLI:
             assert len(after) == 2, f"Expected 2 entries (existing + new), got {len(after)}"
             assert "existing_hash" in after, "existing entry was clobbered by --write-cache"
             assert "new_hash" in after, "new entry not written by --write-cache"
+
+
+class TestCheckJs:
+    """check_js JS/TS structural checks, exercised through the real CLI."""
+
+    @staticmethod
+    def _run(ts_source, feature):
+        path = _write_tmp(ts_source, suffix='.ts')
+        try:
+            result = subprocess.run(
+                [sys.executable, STATIC_CHECKS_PY, path, feature],
+                capture_output=True, text=True,
+            )
+            assert result.returncode == 0, f"static_checks exited non-zero: {result.stderr}"
+            return {p['proof_id']: p for p in json.loads(result.stdout)['proofs']}
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27", tier="e2e")
+    def test_check_js_assertion_detection(self):
+        """assert_true and no_assertions are detected in JS/TS bodies; clean tests pass."""
+        proofs = self._run('''
+import { it, expect } from "vitest";
+
+it("tautological [proof:jsfeat:PROOF-1:RULE-1]", () => {
+  expect(true).toBe(true);
+});
+
+it("empty body [proof:jsfeat:PROOF-2:RULE-2]", () => {
+  const x = 5;
+});
+
+it("real assertion [proof:jsfeat:PROOF-3:RULE-3]", () => {
+  expect(2 + 2).toBe(4);
+});
+''', "jsfeat")
+
+        assert proofs["PROOF-1"]["status"] == "fail"
+        assert proofs["PROOF-1"]["check"] == "assert_true"
+        assert proofs["PROOF-2"]["status"] == "fail"
+        assert proofs["PROOF-2"]["check"] == "no_assertions"
+        assert proofs["PROOF-3"]["status"] == "pass"
+
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28", tier="e2e")
+    def test_check_js_tokenizer_handles_braces_and_apostrophes(self):
+        """Issue #2 repro: nested-brace bodies are not truncated and apostrophe
+        titles are not dropped."""
+        proofs = self._run('''
+import { describe, it, expect } from "vitest";
+import { execSync } from "node:child_process";
+
+describe("repro", () => {
+  it("execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]", () => {
+    const out = execSync("ls", { cwd: ".", encoding: "utf8" });
+    expect(out).toMatch(/./);
+  });
+
+  it("cd's into a sibling [proof:demo:PROOF-2:RULE-2]", () => {
+    expect(1).toBe(1);
+  });
+});
+''', "demo")
+
+        # Bug #2: apostrophe in a double-quoted title must not drop the test.
+        assert "PROOF-1" in proofs, "options-object test vanished from audit output"
+        assert "PROOF-2" in proofs, "apostrophe-title test vanished from audit output"
+        # Bug #1: the options-object body must be captured fully, so the expect()
+        # after it is seen and the test is NOT falsely flagged no_assertions.
+        assert proofs["PROOF-1"]["status"] == "pass", proofs["PROOF-1"]
+        assert proofs["PROOF-1"].get("check") != "no_assertions"
+        assert proofs["PROOF-2"]["status"] == "pass"

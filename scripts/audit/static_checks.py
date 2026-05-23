@@ -386,53 +386,231 @@ def check_shell(filepath, feature_name):
     return results
 
 # ---------------------------------------------------------------------------
-# JavaScript/TypeScript checks (regex-based)
+# JavaScript/TypeScript checks (brace-balancing tokenizer)
+#
+# A flat regex cannot reliably bound a JS/TS test: lazy `\}\s*\)` truncates at
+# the first inner `}` (options objects, destructured params, `as { x }` type
+# assertions) and a `[^"']*` title class drops titles containing apostrophes.
+# These helpers character-walk the source, tracking string/template/regex
+# literals and comments, so braces and quotes are matched correctly.
 # ---------------------------------------------------------------------------
+
+def _read_js_string(content, i):
+    """content[i] is a quote char (" ' `). Return (inner_text, index_after_closing_quote).
+
+    Handles backslash escapes (so an apostrophe inside a double-quoted string
+    does not terminate it) and ${...} interpolation inside template literals.
+    """
+    quote = content[i]
+    n = len(content)
+    j = i + 1
+    parts = []
+    while j < n:
+        c = content[j]
+        if c == '\\':
+            parts.append(content[j:j + 2])
+            j += 2
+            continue
+        if quote == '`' and c == '$' and content[j + 1:j + 2] == '{':
+            # Skip the balanced ${ ... } interpolation (may itself contain strings).
+            _, j = _read_balanced(content, j + 1)
+            continue
+        if c == quote:
+            return ''.join(parts), j + 1
+        parts.append(c)
+        j += 1
+    return ''.join(parts), j  # unterminated — return what we have
+
+
+def _regex_allowed(content, j):
+    """Heuristic: does a `/` at index j begin a regex literal (vs division)?
+
+    A regex is allowed where an expression is expected — i.e. when the previous
+    non-space character is not the end of an operand.
+    """
+    k = j - 1
+    while k >= 0 and content[k] in ' \t\r\n':
+        k -= 1
+    if k < 0:
+        return True
+    prev = content[k]
+    return not (prev.isalnum() or prev in '_)]}')
+
+
+def _skip_regex(content, j):
+    """content[j] is `/` starting a regex literal. Return index after it (+ flags)."""
+    n = len(content)
+    k = j + 1
+    in_class = False
+    while k < n:
+        c = content[k]
+        if c == '\\':
+            k += 2
+            continue
+        if c == '[':
+            in_class = True
+        elif c == ']':
+            in_class = False
+        elif c == '\n':
+            return j + 1  # newline inside a "regex" => it was division; bail
+        elif c == '/' and not in_class:
+            k += 1
+            while k < n and content[k].isalpha():  # trailing flags (gimsuy)
+                k += 1
+            return k
+        k += 1
+    return k
+
+
+def _read_balanced(content, i):
+    """content[i] is one of { ( [. Return (inner_text, index_after_matching_close).
+
+    Skips strings, template literals, regex literals, and // and /* */ comments
+    so their contents never affect bracket depth.
+    """
+    pairs = {'{': '}', '(': ')', '[': ']'}
+    opener = content[i]
+    closer = pairs[opener]
+    n = len(content)
+    depth = 0
+    j = i
+    start_inner = i + 1
+    while j < n:
+        c = content[j]
+        if c in '"\'`':
+            _, j = _read_js_string(content, j)
+            continue
+        if c == '/' and content[j + 1:j + 2] == '/':
+            nl = content.find('\n', j)
+            j = n if nl < 0 else nl
+            continue
+        if c == '/' and content[j + 1:j + 2] == '*':
+            e = content.find('*/', j + 2)
+            j = n if e < 0 else e + 2
+            continue
+        if c == '/' and _regex_allowed(content, j):
+            j = _skip_regex(content, j)
+            continue
+        if c == opener:
+            depth += 1
+        elif c == closer:
+            depth -= 1
+            if depth == 0:
+                return content[start_inner:j], j + 1
+        j += 1
+    return content[start_inner:j], j  # unterminated
+
+
+def _find_test_body(content, i):
+    """From index i (just after a test title), locate the callback's { body }.
+
+    Returns (body_text, index_after_body), or (None, i) if no block body is
+    found (e.g. an arrow with an expression body, or a title-only `it`).
+    Balanced groups encountered before the callback (param lists, options
+    objects) are skipped so their braces/arrows are not mistaken for the body.
+    """
+    n = len(content)
+    saw_callback = False  # saw `=>` or `function` — next `{` is the body
+    while i < n:
+        c = content[i]
+        if c in '"\'`':
+            _, i = _read_js_string(content, i)
+            continue
+        if c == '/' and content[i + 1:i + 2] == '/':
+            nl = content.find('\n', i)
+            i = n if nl < 0 else nl
+            continue
+        if c == '/' and content[i + 1:i + 2] == '*':
+            e = content.find('*/', i + 2)
+            i = n if e < 0 else e + 2
+            continue
+        if c == '/' and _regex_allowed(content, i):
+            i = _skip_regex(content, i)
+            continue
+        if content.startswith('=>', i):
+            saw_callback = True
+            i += 2
+            continue
+        if content.startswith('function', i):
+            before = content[i - 1] if i > 0 else ' '
+            after = content[i + 8] if i + 8 < n else ' '
+            if not (before.isalnum() or before == '_') and not (after.isalnum() or after == '_'):
+                saw_callback = True
+                i += 8
+                continue
+        if c == '{':
+            if saw_callback:
+                return _read_balanced(content, i)
+            _, i = _read_balanced(content, i)  # options object etc. — skip
+            continue
+        if c in '([':
+            _, i = _read_balanced(content, i)  # param list / array — skip
+            continue
+        if c in ');':
+            return None, i  # end of the it(...) call without a block body
+        i += 1
+    return None, i
+
 
 def check_js(filepath, feature_name):
     """Run JS/TS test checks. Returns list of proof result dicts."""
     with open(filepath) as f:
         content = f.read()
     results = []
-    # Find test blocks with proof markers
-    test_pattern = re.compile(
-        r'(?:it|test)\s*\(\s*["\']([^"\']*\[proof:' + re.escape(feature_name)
-        + r':([^:\]]+):([^:\]]+)[^\]]*\][^"\']*)["\']'
-        r'\s*,\s*(?:async\s*)?\(\s*\)\s*=>\s*\{(.*?)\}\s*\)',
-        re.DOTALL
+    call_re = re.compile(r'\b(?:it|test)\s*\(')
+    marker_re = re.compile(
+        r'\[proof:' + re.escape(feature_name) + r':([^:\]]+):([^:\]]+)'
     )
-    for m in test_pattern.finditer(content):
-        test_title = m.group(1)
-        proof_id = m.group(2)
-        rule_id = m.group(3)
-        body = m.group(4)
+    n = len(content)
+    i = 0
+    while i < n:
+        m = call_re.search(content, i)
+        if not m:
+            break
+        # Skip whitespace after the '(' and require a string-literal title.
+        j = m.end()
+        while j < n and content[j] in ' \t\r\n':
+            j += 1
+        if j >= n or content[j] not in '"\'`':
+            i = m.end()
+            continue
+        title, after_title = _read_js_string(content, j)
+        marker = marker_re.search(title)
+        if not marker:
+            i = after_title
+            continue
+        proof_id = marker.group(1)
+        rule_id = marker.group(2)
+
+        body, after_body = _find_test_body(content, after_title)
+        if body is None:
+            # No block body to inspect — cannot run body checks; skip.
+            i = after_title
+            continue
+        i = after_body
 
         # Check assert_true
         if re.search(r'expect\s*\(\s*true\s*\)\s*\.toBe\s*\(\s*true\s*\)', body):
             results.append({
                 'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_title[:60], 'status': 'fail',
+                'test_name': title[:60], 'status': 'fail',
                 'check': 'assert_true', 'reason': 'expect(true).toBe(true) is tautological',
                 'literal': True,
             })
             continue
 
-        if re.search(r'expect\s*\([^)]+\)\s*\.toBeTruthy\s*\(\s*\)', body) and not re.search(r'expect\s*\(', body.replace(re.search(r'expect\s*\([^)]+\)\s*\.toBeTruthy\s*\(\s*\)', body).group(), '', 1)):
-            # Only flag if toBeTruthy is the sole expect and there's no meaningful setup
-            pass
-
         # Check no_assertions
         if not re.search(r'expect\s*\(', body):
             results.append({
                 'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_title[:60], 'status': 'fail',
+                'test_name': title[:60], 'status': 'fail',
                 'check': 'no_assertions', 'reason': 'test function has no expect() calls',
             })
             continue
 
         results.append({
             'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': test_title[:60], 'status': 'pass',
+            'test_name': title[:60], 'status': 'pass',
             'reason': 'structural checks passed',
         })
     return results

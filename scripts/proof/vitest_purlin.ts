@@ -4,6 +4,12 @@
  * Collects proof markers from test names and emits feature-scoped proof JSON
  * files next to the corresponding spec files.
  *
+ * Tested with Vitest 2.x and 3.x. Proofs are collected in `onFinished(files)`,
+ * the reporter hook whose shape is stable across Vitest 2 → 4. (Vitest 1.x's
+ * `onTaskUpdate(packs)` is intentionally NOT used: in Vitest 2+ a pack became
+ * `[id, result, meta]` where `result` is a TaskResult without `name`/`file`, so
+ * relying on it silently produced zero proof files while tests passed.)
+ *
  * Marker syntax in test files:
  *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => { ... });
  *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1]", () => { ... }); // tier defaults to "unit"
@@ -31,10 +37,24 @@ interface ProofEntry {
   tier: string;
 }
 
+/**
+ * Minimal shape of the task tree Vitest passes to `onFinished(files)`.
+ * Vitest 2+ passes an array of file tasks; each task may have nested `tasks`
+ * (suites and tests). Test tasks carry `name` and a `result` with `state`;
+ * the file task carries `filepath`.
+ */
+interface VitestTask {
+  type?: string;
+  name?: string;
+  filepath?: string;
+  file?: { filepath?: string };
+  result?: { state?: string };
+  tasks?: VitestTask[];
+}
+
 interface Reporter {
   onInit?: () => void;
-  onFinished?: (files?: any[]) => void;
-  onTaskUpdate?: (packs: any[]) => void;
+  onFinished?: (files?: VitestTask[]) => void;
 }
 
 const PROOF_MARKER_RE = /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?\]/;
@@ -47,40 +67,62 @@ class PurlinVitestReporter implements Reporter {
     this.rootDir = process.cwd();
   }
 
-  onTaskUpdate(packs: any[]): void {
-    for (const pack of packs) {
-      const [id, result] = pack;
-      if (!result?.state || result.state === "run") continue;
-
-      const task = result;
-      const name = task.name || "";
-      const match = name.match(PROOF_MARKER_RE);
-      if (!match) continue;
-
-      const [, feature, proofId, ruleId, tier = "unit"] = match;
-      const key = `${feature}:${tier}`;
-
-      if (!this.proofs.has(key)) {
-        this.proofs.set(key, []);
+  onFinished(files?: VitestTask[]): void {
+    if (files && files.length) {
+      for (const file of files) {
+        this.collect(file, file);
       }
-
-      const testFile = task.file?.filepath
-        ? path.relative(this.rootDir, task.file.filepath)
-        : "unknown";
-
-      this.proofs.get(key)!.push({
-        feature,
-        id: proofId,
-        rule: ruleId,
-        test_file: testFile,
-        test_name: name,
-        status: result.state === "pass" ? "pass" : "fail",
-        tier,
-      });
     }
+    this.writeProofFiles();
   }
 
-  onFinished(): void {
+  /**
+   * Recursively walk the file → suite → test task tree, collecting proof
+   * markers from each test task's name. `file` is the enclosing file task,
+   * carried down so `test_file` can be resolved from its `filepath`.
+   */
+  private collect(task: VitestTask, file: VitestTask): void {
+    if (task.tasks && task.tasks.length) {
+      for (const child of task.tasks) {
+        this.collect(child, file);
+      }
+    }
+
+    if (task.type !== "test" && task.type !== "custom") return;
+
+    // Only record tasks that produced a terminal pass/fail result.
+    // Skipped, todo, and unrun tasks have no meaningful proof status.
+    const state = task.result?.state;
+    if (state !== "pass" && state !== "fail") return;
+
+    const name = task.name ?? "";
+    const match = name.match(PROOF_MARKER_RE);
+    if (!match) return;
+
+    const [, feature, proofId, ruleId, tier = "unit"] = match;
+    const key = `${feature}:${tier}`;
+
+    if (!this.proofs.has(key)) {
+      this.proofs.set(key, []);
+    }
+
+    const filepath = file.filepath ?? file.file?.filepath;
+    const testFile = filepath
+      ? path.relative(this.rootDir, filepath)
+      : "unknown";
+
+    this.proofs.get(key)!.push({
+      feature,
+      id: proofId,
+      rule: ruleId,
+      test_file: testFile,
+      test_name: name,
+      status: state === "pass" ? "pass" : "fail",
+      tier,
+    });
+  }
+
+  private writeProofFiles(): void {
     if (this.proofs.size === 0) return;
 
     // Build feature -> spec directory mapping

@@ -30,24 +30,6 @@
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-25",
-      "rule": "RULE-24",
-      "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_php_proof_plugin_real_execution",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_plugins",
-      "id": "PROOF-26",
-      "rule": "RULE-25",
-      "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_php_proof_plugin_failing_test",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_plugins",
       "id": "PROOF-27",
       "rule": "RULE-26",
       "test_file": "dev/test_multilang_proof_plugins.py",
@@ -67,18 +49,18 @@
     {
       "feature": "proof_plugins",
       "id": "PROOF-29",
-      "rule": "RULE-28",
+      "rule": "RULE-30",
       "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_typescript_proof_plugin_real_compilation",
+      "test_name": "test_vitest_reporter_onfinished_walk",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-29",
+      "id": "PROOF-33",
       "rule": "RULE-28",
       "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_typescript_proof_plugin_failing_test",
+      "test_name": "test_vitest_reporter_marker_parsing",
       "status": "pass",
       "tier": "integration"
     },
