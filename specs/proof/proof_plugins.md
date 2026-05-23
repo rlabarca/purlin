@@ -58,6 +58,7 @@
 ### Vitest/TypeScript-specific
 
 - RULE-28: The TypeScript Vitest reporter uses the same `[proof:feature:PROOF-N:RULE-N:tier]` marker syntax in test titles as the Jest reporter
+- RULE-30: The Vitest reporter collects proofs by recursively walking the file/suite/test tree passed to `onFinished(files)` — the stable Vitest 2.x–4.x reporter API. For each task of type `test`/`custom` it reads `task.name`, maps `task.result.state === "pass"` to `"pass"` (all other terminal states to `"fail"`), skips tasks with no terminal result (`skip`/`todo`/unrun), and resolves `test_file` from the file task's `filepath`. It does not use `onTaskUpdate` (whose pack shape changed in Vitest 2 and silently yielded zero proofs)
 
 ### Installation and discovery
 
@@ -120,7 +121,8 @@
 
 ### Vitest/TypeScript-specific
 
-- PROOF-29 (RULE-28): Compile a TypeScript test with `[proof:feature:PROOF-1:RULE-1:unit]` marker using tsc; run with node; verify proof JSON has correct fields @integration
+- PROOF-29 (RULE-30): Compile `vitest_purlin.ts` with tsc; drive its `onFinished(files)` with a synthetic Vitest 2.x+ task tree (a file suite task carrying `filepath` and nested `test` tasks whose names contain `[proof:...]` markers and whose `result.state` is `pass`/`fail`); verify the emitted proof JSON has all 7 fields and that `state: pass` → `status: "pass"` while `state: fail` → `status: "fail"` @integration
+- PROOF-33 (RULE-28): Drive the compiled `vitest_purlin.ts` `onFinished` with a test task whose name contains `[proof:feat:PROOF-1:RULE-1:integration]`; verify the marker parses into `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `tier: "integration"` — identical fields to the Jest reporter's parsing of the same marker @integration
 
 ### Installation and discovery
 
@@ -134,3 +136,4 @@
 - Data flow (pytest): pytest_runtest_makereport collects markers during test execution → pytest_sessionfinish writes all proof files at end of session (pytest_purlin.py:36-85)
 - Data flow (Jest): onTestResult collects per-file → onRunComplete writes all proof files (jest_purlin.js:29-91)
 - Data flow (shell): purlin_proof accumulates pipe-delimited entries in a global variable → purlin_proof_finish pipes them to inline Python for JSON processing (shell_purlin.sh:13-69)
+- Data flow (Vitest): onFinished(files) walks the file→suite→test task tree, collecting `[proof:...]` markers from each test task's name and its result.state → writeProofFiles() resolves spec dirs and performs the feature-scoped overwrite (vitest_purlin.ts). Uses onFinished, not onTaskUpdate, because the onTaskUpdate pack shape (`[id, result, meta]`) changed in Vitest 2 and silently produced zero proofs
