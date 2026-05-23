@@ -879,13 +879,13 @@ class TestPurlinConfig:
 
     @pytest.mark.proof("purlin_config", "PROOF-1", "RULE-1")
     def test_read_write(self):
-        # Write a key — returns confirmation string
+        # Write a key — returns the exact confirmation string
         result = purlin_server.handle_purlin_config(
             self.project_root,
             {"action": "write", "key": "test_key", "value": "test_val"}
         )
-        assert "test_key" in result and "test_val" in result, \
-            f"Write should confirm key and value, got: {result}"
+        assert result == 'Set \'test_key\' = "test_val"', \
+            f"Write should return exact confirmation, got: {result!r}"
 
         # Read a single key — returns JSON with just that key
         result = purlin_server.handle_purlin_config(
@@ -901,6 +901,22 @@ class TestPurlinConfig:
         full_config = json.loads(result)
         assert full_config == {"test_key": "test_val"}, \
             f"Full config should be exactly {{test_key: test_val}}, got {full_config}"
+
+        # Error paths: invalid action and write without a key must not silently succeed.
+        invalid = purlin_server.handle_purlin_config(
+            self.project_root, {"action": "delete", "key": "test_key"}
+        )
+        assert "Unknown action" in invalid, f"Invalid action should error, got: {invalid!r}"
+        # The rejected action must not have mutated the config.
+        after = json.loads(purlin_server.handle_purlin_config(
+            self.project_root, {"action": "read"}))
+        assert after == {"test_key": "test_val"}, f"Invalid action mutated config: {after}"
+
+        no_key = purlin_server.handle_purlin_config(
+            self.project_root, {"action": "write", "value": "x"}
+        )
+        assert "key" in no_key.lower() and "required" in no_key.lower(), \
+            f"Write without key should error, got: {no_key!r}"
 
 
 class TestDrift:

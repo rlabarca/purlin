@@ -11,10 +11,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from unittest import mock
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
+import config_engine
 from config_engine import find_project_root, resolve_config, update_config
 
 
@@ -210,13 +212,44 @@ class TestUpdateConfig:
 
     @pytest.mark.proof("config_engine", "PROOF-10", "RULE-10")
     def test_atomic_replacement(self):
-        update_config(self.project_root, "key", "val")
         local_path = os.path.join(self.purlin_dir, 'config.local.json')
+
+        # Behavioral proof of the atomic mechanism: the durable file is produced
+        # by renaming a .tmp via os.replace, never by an in-place write.
+        real_replace = os.replace
+        replace_calls = []
+
+        def spy_replace(src, dst):
+            replace_calls.append((src, dst))
+            return real_replace(src, dst)
+
+        with mock.patch.object(config_engine.os, 'replace', side_effect=spy_replace):
+            update_config(self.project_root, "key", "val")
+
+        assert replace_calls, "update_config is not atomic — os.replace was never called"
+        src, dst = replace_calls[-1]
+        assert src.endswith('.tmp'), f"expected rename from a .tmp file, got {src!r}"
+        assert os.path.abspath(dst) == os.path.abspath(local_path), \
+            f"os.replace target {dst!r} is not config.local.json"
+
+        # No partial write: file exists, is valid JSON with the new key, no .tmp left.
         assert os.path.exists(local_path)
         assert not os.path.exists(local_path + '.tmp')
-        import inspect
-        source = inspect.getsource(update_config)
-        assert 'os.replace' in source
+        with open(local_path) as f:
+            assert json.load(f)["key"] == "val"
+
+        # An interrupted rename must leave the original file untouched (no partial write).
+        with open(local_path, 'w') as f:
+            json.dump({"key": "val"}, f)
+        with mock.patch.object(config_engine.os, 'replace',
+                               side_effect=OSError("simulated crash mid-rename")):
+            try:
+                update_config(self.project_root, "key", "other")
+            except OSError:
+                pass
+        with open(local_path) as f:
+            assert json.load(f) == {"key": "val"}, "interrupted write corrupted the config"
+        assert not os.path.exists(local_path + '.tmp')
 
     @pytest.mark.proof("config_engine", "PROOF-8", "RULE-8")
     def test_update_creates_local_if_missing(self):
