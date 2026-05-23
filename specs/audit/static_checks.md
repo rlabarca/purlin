@@ -1,7 +1,7 @@
 # Feature: static_checks
 
 > Scope: scripts/audit/static_checks.py
-> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests, regex for Shell/Jest tests, and language-agnostic proof-file checks (proof ID collisions, orphan rules) that operate on JSON regardless of source language. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
+> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests, a brace-balancing tokenizer for JS/TS tests, regex for Shell tests, and language-agnostic proof-file checks (proof ID collisions, orphan rules) that operate on JSON regardless of source language. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
 
 ## Rules
 
@@ -29,6 +29,8 @@
 - RULE-24: write_audit_cache merges new entries into the existing cache on disk — entries from prior writes for different features are preserved, not overwritten. Entries for the same (feature, proof_id) are deduplicated by keeping the latest cached_at
 - RULE-25: write_audit_cache protects the entire read→merge→write cycle with an exclusive file lock (`fcntl.flock` on `audit_cache.json.lock`) so that concurrent subagent writers serialize correctly and no entries are lost
 - RULE-26: `--write-cache` CLI flag reads a JSON dict of cache entries from stdin and merges them into the existing audit cache via write_audit_cache, printing a JSON status response with `status: "merged"` and entry count
+- RULE-27: check_js detects tautological assertions (`expect(true).toBe(true)`) and JS/TS test bodies with no `expect()` calls, returning the same JSON shape (proof_id, rule_id, test_name, status, reason) as check_python
+- RULE-28: check_js parses JS/TS test files with a brace-balancing tokenizer that (a) matches test titles containing apostrophes regardless of quote style, and (b) captures full test bodies containing nested braces — options objects, destructured parameters, type assertions — without truncating at the first inner `}`
 
 ## Proof
 
@@ -71,3 +73,5 @@
 - PROOF-39 (RULE-24): Write 3 entries for feature_a via write_audit_cache; then write 2 entries for feature_b via a second call; read cache back; verify all 5 entries are present. Then write 1 updated entry for feature_a (same proof_id, newer assessment); read back; verify feature_b entries are untouched and feature_a has the updated entry
 - PROOF-40 (RULE-25): Run two threads calling write_audit_cache concurrently with entries for different features; verify all entries from both threads survive in the final cache. Verify the lock file is created adjacent to the cache file during the write
 - PROOF-41 (RULE-26): Call `--write-cache` via CLI with JSON on stdin; verify entries are merged and status response is correct. Seed cache first, then call `--write-cache` with entries for a different feature; verify both old and new entries survive
+- PROOF-42 (RULE-27): e2e: Run the real static_checks.py CLI on a `.ts` file containing a `[proof:...]` test with `expect(true).toBe(true)`; verify status=fail check=assert_true. Run on one whose body has no `expect()`; verify status=fail check=no_assertions. Run on a clean test; verify status=pass @e2e
+- PROOF-43 (RULE-28): e2e: Run the real static_checks.py CLI on the issue #2 repro — `it("execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]", () => { execSync("ls", { cwd: ".", encoding: "utf8" }); expect(out).toMatch(/./); })` and `it("cd's into a sibling [proof:demo:PROOF-2:RULE-2]", () => { expect(1).toBe(1); })`; verify BOTH PROOF-1 and PROOF-2 appear in the output (apostrophe title matched) and PROOF-1 is NOT flagged no_assertions (options-object body fully captured, expect() seen) @e2e
