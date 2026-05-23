@@ -20,7 +20,7 @@
 - RULE-12: When conftest.py exists at project root, auto-detection selects pytest
 - RULE-13: When pyproject.toml contains [tool.pytest], auto-detection selects pytest
 - RULE-14: When package.json contains jest, auto-detection selects jest
-- RULE-15: When package.json contains vitest, init scaffolds jest_purlin.js (vitest maps to jest)
+- RULE-15: When package.json contains vitest, init scaffolds vitest_purlin.ts (Vitest's reporter API differs from Jest's — Vitest never calls onTestResult/onRunComplete — so the native TypeScript reporter is used for both JS and TS Vitest projects; Vitest loads .ts reporters natively via Vite)
 - RULE-16: When both conftest.py and package.json with jest exist, both plugins are scaffolded and test_framework is pytest,jest
 - RULE-17: When no framework indicators are present, shell plugin is scaffolded as fallback
 - RULE-18: Scaffolded pytest_purlin.py in .purlin/plugins/ is byte-identical to scripts/proof/pytest_purlin.py
@@ -52,6 +52,7 @@
 - RULE-44: In digest `auto` mode, running `git commit` triggers the pre-commit hook which regenerates `.purlin/report-data.js` and stages it into the commit
 - RULE-45: After digest generation, `report-data.js` contains a `timestamp` field with a recent ISO timestamp and a `git_sha` field
 - RULE-46: Digest generation does NOT trigger a new audit — `audit_summary` reflects only cached data (null when no cache exists)
+- RULE-47: Scaffolded vitest_purlin.ts in .purlin/plugins/ is byte-identical to scripts/proof/vitest_purlin.ts
 
 ## Proof
 
@@ -69,7 +70,7 @@
 - PROOF-12 (RULE-12): e2e: Create project with conftest.py; run pre-push; verify pytest detected @e2e
 - PROOF-13 (RULE-13): e2e: Create project with pyproject.toml [tool.pytest]; verify pytest detected @e2e
 - PROOF-14 (RULE-14): e2e: Create project with package.json jest; verify jest detected @e2e
-- PROOF-15 (RULE-15): e2e: Create project with vitest; verify jest_purlin.js scaffolded @e2e
+- PROOF-15 (RULE-15): e2e: Create project with vitest; verify vitest_purlin.ts scaffolded @e2e
 - PROOF-16 (RULE-16): e2e: Create project with conftest.py + package.json jest; verify both plugins and pytest,jest config @e2e
 - PROOF-17 (RULE-17): e2e: Create project with no framework indicators; verify purlin-proof.sh scaffolded @e2e
 - PROOF-18 (RULE-18): e2e: Diff scaffolded pytest_purlin.py against source; verify byte-identical @e2e
@@ -103,3 +104,4 @@
 - PROOF-46 (RULE-44): e2e: Create repo with spec+proofs, run `git commit`; verify `.purlin/report-data.js` is tracked in the commit via `git show HEAD:.purlin/report-data.js` @e2e
 - PROOF-47 (RULE-45): e2e: After commit, parse `report-data.js`; verify `timestamp` is within last 60s and `git_sha` field is present @e2e
 - PROOF-48 (RULE-46): e2e: After commit in fresh project (no audit cache), verify `audit_summary` in digest is null @e2e
+- PROOF-49 (RULE-47): e2e: Diff scaffolded vitest_purlin.ts against scripts/proof/vitest_purlin.ts; verify byte-identical @e2e
