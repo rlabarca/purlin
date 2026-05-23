@@ -660,13 +660,17 @@ class TestSkillInit:
             "init SKILL.md missing package.json jest -> jest detection mapping"
 
     @pytest.mark.proof("skill_init", "PROOF-15", "RULE-15")
-    def test_documents_vitest_maps_to_jest_plugin(self):
+    def test_documents_vitest_maps_to_vitest_plugin(self):
         ref = _read_ref('supported_frameworks.md')
         assert 'vitest' in ref.lower(), \
             "supported_frameworks.md missing vitest framework reference"
-        # Vitest row must reference jest_purlin.js as its plugin file
-        assert re.search(r'[Vv]itest.*jest_purlin\.js', ref), \
-            "supported_frameworks.md missing vitest -> jest_purlin.js mapping"
+        # Vitest row must reference the native vitest_purlin.ts reporter
+        assert re.search(r'\*\*Vitest\*\*.*vitest_purlin\.ts', ref), \
+            "supported_frameworks.md missing vitest -> vitest_purlin.ts mapping"
+        # Vitest must NOT be scaffolded with jest_purlin.js (Vitest never calls
+        # Jest's reporter hooks, so that mapping emitted zero proofs).
+        assert not re.search(r'\*\*Vitest\*\*[^\n]*jest_purlin\.js', ref), \
+            "Vitest row still maps to jest_purlin.js — should be vitest_purlin.ts"
 
     @pytest.mark.proof("skill_init", "PROOF-16", "RULE-16")
     def test_documents_multi_framework_scaffolding(self):
@@ -709,6 +713,23 @@ class TestSkillInit:
         ref = _read_ref('supported_frameworks.md')
         assert re.search(r'scripts/proof/jest_purlin\.js', ref), \
             "supported_frameworks.md missing source path scripts/proof/jest_purlin.js"
+
+    @pytest.mark.proof("skill_init", "PROOF-49", "RULE-47", tier="e2e")
+    def test_vitest_reporter_scaffold_byte_identical(self, tmp_path):
+        """Scaffolding copies vitest_purlin.ts verbatim — byte-identical to source."""
+        src = os.path.join(PROJECT_ROOT, 'scripts', 'proof', 'vitest_purlin.ts')
+        assert os.path.isfile(src), \
+            "scripts/proof/vitest_purlin.ts does not exist — cannot be scaffolded"
+        plugins_dir = tmp_path / '.purlin' / 'plugins'
+        plugins_dir.mkdir(parents=True)
+        dest = plugins_dir / 'vitest_purlin.ts'
+        shutil.copy(src, str(dest))
+        with open(src, 'rb') as a, open(dest, 'rb') as b:
+            assert a.read() == b.read(), "scaffolded vitest_purlin.ts differs from source"
+        # init must know the source path to copy from.
+        ref = _read_ref('supported_frameworks.md')
+        assert re.search(r'scripts/proof/vitest_purlin\.ts', ref), \
+            "supported_frameworks.md missing source path scripts/proof/vitest_purlin.ts"
 
     @pytest.mark.proof("skill_init", "PROOF-20", "RULE-20")
     def test_shell_plugin_source_exists_and_is_copy_source(self):

@@ -10,6 +10,7 @@ PRECOMMIT_HOOK_SCRIPT="$REAL_PROJECT_ROOT/scripts/hooks/pre-commit.sh"
 SERVER_PY="$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py"
 PYTEST_PLUGIN_SRC="$REAL_PROJECT_ROOT/scripts/proof/pytest_purlin.py"
 JEST_REPORTER_SRC="$REAL_PROJECT_ROOT/scripts/proof/jest_purlin.js"
+VITEST_REPORTER_SRC="$REAL_PROJECT_ROOT/scripts/proof/vitest_purlin.ts"
 SHELL_HARNESS_SRC="$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 REPORT_HTML_SRC="$REAL_PROJECT_ROOT/scripts/report/purlin-report.html"
 VERSION_FILE="$REAL_PROJECT_ROOT/VERSION"
@@ -70,6 +71,7 @@ with open('$tmpdir/.purlin/config.json', 'w') as f:
     case "$fw" in
       pytest) cp "$PYTEST_PLUGIN_SRC" "$tmpdir/.purlin/plugins/pytest_purlin.py" ;;
       jest)   cp "$JEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/jest_purlin.js" ;;
+      vitest) cp "$VITEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/vitest_purlin.ts" ;;
       shell)  cp "$SHELL_HARNESS_SRC" "$tmpdir/.purlin/plugins/purlin-proof.sh" ;;
     esac
   done
@@ -366,20 +368,20 @@ else
 fi
 
 # ==========================================================================
-# PROOF-8 (RULE-8): vitest → jest plugin scaffolded
+# PROOF-15 (RULE-15): vitest → native vitest_purlin.ts reporter scaffolded
 # ==========================================================================
-echo "--- PROOF-8: vitest → jest plugin ---"
+echo "--- PROOF-15: vitest → vitest_purlin.ts ---"
 TMP8=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP8"
-echo '{"devDependencies":{"vitest":"^1.0.0"}}' > "$TMP8/package.json"
-init_project "$TMP8" "jest" "warn" "true"
+echo '{"devDependencies":{"vitest":"^2.0.0"}}' > "$TMP8/package.json"
+init_project "$TMP8" "vitest" "warn" "true"
 
-if [[ -f "$TMP8/.purlin/plugins/jest_purlin.js" ]]; then
-  echo "  PASS: vitest project gets jest_purlin.js"
-  purlin_proof "skill_init" "PROOF-15" "RULE-15" pass "vitest maps to jest plugin"
+if [[ -f "$TMP8/.purlin/plugins/vitest_purlin.ts" ]]; then
+  echo "  PASS: vitest project gets vitest_purlin.ts"
+  purlin_proof "skill_init" "PROOF-15" "RULE-15" pass "vitest maps to native vitest_purlin.ts"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: jest_purlin.js not scaffolded"
-  purlin_proof "skill_init" "PROOF-15" "RULE-15" fail "jest_purlin.js not scaffolded for vitest"
+  echo "  FAIL: vitest_purlin.ts not scaffolded"
+  purlin_proof "skill_init" "PROOF-15" "RULE-15" fail "vitest_purlin.ts not scaffolded for vitest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -456,6 +458,23 @@ if diff -q "$TMP12/.purlin/plugins/jest_purlin.js" "$JEST_REPORTER_SRC" >/dev/nu
 else
   echo "  FAIL: jest_purlin.js differs from source"
   purlin_proof "skill_init" "PROOF-19" "RULE-19" fail "jest reporter differs"
+  FAIL=$((FAIL + 1))
+fi
+
+# ==========================================================================
+# PROOF-49 (RULE-47): vitest reporter byte-identical to source
+# ==========================================================================
+echo "--- PROOF-49: vitest reporter identical ---"
+TMP12B=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP12B"
+init_project "$TMP12B" "vitest" "warn" "true"
+
+if diff -q "$TMP12B/.purlin/plugins/vitest_purlin.ts" "$VITEST_REPORTER_SRC" >/dev/null 2>&1; then
+  echo "  PASS: vitest_purlin.ts identical to source"
+  purlin_proof "skill_init" "PROOF-49" "RULE-47" pass "vitest reporter byte-identical"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: vitest_purlin.ts differs from source"
+  purlin_proof "skill_init" "PROOF-49" "RULE-47" fail "vitest reporter differs"
   FAIL=$((FAIL + 1))
 fi
 

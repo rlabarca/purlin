@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "skill_init",
+      "id": "PROOF-49",
+      "rule": "RULE-47",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_vitest_reporter_scaffold_byte_identical",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-21",
       "rule": "RULE-21",
       "test_file": "dev/test_skill_specs.py",

@@ -132,7 +132,7 @@
       "id": "PROOF-15",
       "rule": "RULE-15",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_documents_vitest_maps_to_jest_plugin",
+      "test_name": "test_documents_vitest_maps_to_vitest_plugin",
       "status": "pass",
       "tier": "unit"
     },
