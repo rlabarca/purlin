@@ -32,8 +32,10 @@ from purlin_server import (
     _read_proofs,
     _write_report_data,
 )
+import static_checks
 from static_checks import write_audit_cache, read_audit_cache, clear_audit_cache, prune_audit_cache
 from config_engine import resolve_config
+from unittest import mock
 
 
 # ---------------------------------------------------------------------------
@@ -144,9 +146,26 @@ class TestAuditCachePipeline:
         _make_project(self.tmp_dir, with_git=False)
         cache = _make_cache_entries(feature='login', strong=2, weak=1)
 
-        write_audit_cache(self.tmp_dir, cache)
+        # Prove the atomic mechanism (RULE-12): the durable file is produced by
+        # renaming a temp file via os.replace, not by an in-place write.
+        real_replace = os.replace
+        replace_calls = []
+
+        def spy_replace(src, dst):
+            replace_calls.append((src, dst))
+            return real_replace(src, dst)
+
+        with mock.patch.object(static_checks.os, 'replace', side_effect=spy_replace):
+            write_audit_cache(self.tmp_dir, cache)
 
         cache_path = os.path.join(self.tmp_dir, '.purlin', 'cache', 'audit_cache.json')
+        assert replace_calls, "write is not atomic — os.replace was never called"
+        src, dst = replace_calls[-1]
+        assert src.endswith('.tmp'), f"expected rename from a .tmp file, got {src!r}"
+        assert os.path.abspath(dst) == os.path.abspath(cache_path), \
+            f"os.replace target {dst!r} is not the cache file"
+        assert not os.path.exists(cache_path + '.tmp'), "temp file left behind after rename"
+
         assert os.path.isfile(cache_path), "audit_cache.json was not created"
         with open(cache_path) as f:
             data = json.load(f)
@@ -720,9 +739,9 @@ Beta feature.
             f"got:\n{output}"
         )
 
-    @pytest.mark.proof("static_checks", "PROOF-30", "RULE-11", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-30", "RULE-24", tier="e2e")
     def test_read_side_dedup_keeps_latest_entry(self):
-        """RULE-14: Read-side dedup keeps only latest per (feature, proof_id).
+        """RULE-24: dedup by (feature, proof_id) keeps only the latest cached_at.
 
         Setup: 3 cache entries for the same (login, PROOF-1) with different
         hashes and timestamps. The oldest is HOLLOW, middle is WEAK, newest
@@ -790,9 +809,9 @@ Beta feature.
             f"Expected integrity=100% (1 STRONG / 1 total), got {audit['integrity']}%"
         )
 
-    @pytest.mark.proof("static_checks", "PROOF-31", "RULE-12", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-31", "RULE-24", tier="e2e")
     def test_write_side_pruning_removes_stale_duplicates(self):
-        """RULE-15: write_audit_cache prunes duplicate (feature, proof_id) entries.
+        """RULE-24: write_audit_cache dedups (feature, proof_id), keeping latest cached_at.
 
         Setup: Write a cache with 2 entries for same (login, PROOF-1) —
         one HOLLOW (older hash), one STRONG (newer hash). After write,
@@ -935,7 +954,12 @@ Beta feature.
         for entry in cache.values():
             entry['cached_at'] = stale_ts
 
+        # Bracket the write with real before/after timestamps. The stamp must fall
+        # inside [before, after] — proving it is the *current* UTC time, not merely
+        # "some time after midnight". Deterministic: no fixed-width tolerance window.
+        before = datetime.datetime.now(datetime.timezone.utc)
         write_audit_cache(self.tmp_dir, cache)
+        after = datetime.datetime.now(datetime.timezone.utc)
 
         data = read_audit_cache(self.tmp_dir)
         for key, entry in data.items():
@@ -945,11 +969,10 @@ Beta feature.
                 f"Entry {key}: write_audit_cache did not overwrite cached_at "
                 f"(still has stale value {stale_ts!r})"
             )
-            # The new timestamp must be strictly later than midnight (the stale oracle)
             actual_ts = datetime.datetime.fromisoformat(actual_ts_str.replace('Z', '+00:00'))
-            assert actual_ts > today_midnight, (
-                f"Entry {key}: cached_at {actual_ts_str!r} is not later than "
-                f"midnight oracle {stale_ts!r}"
+            assert before <= actual_ts <= after, (
+                f"Entry {key}: cached_at {actual_ts_str!r} is not the current UTC time "
+                f"(expected within [{before.isoformat()}, {after.isoformat()}])"
             )
 
     @pytest.mark.proof("sync_status", "PROOF-54", "RULE-29", tier="e2e")

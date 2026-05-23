@@ -11,10 +11,12 @@ import os
 import subprocess
 import sys
 import tempfile
+from unittest import mock
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
+import static_checks
 from static_checks import (
     check_proof_file,
     check_python,
@@ -473,12 +475,29 @@ class TestAuditCache:
                     "fix": "none",
                 }
             }
-            write_audit_cache(tmpdir, data)
+            # Prove the atomic mechanism: the durable file must be produced by
+            # renaming a temp file via os.replace, never by writing in place.
+            real_replace = os.replace
+            replace_calls = []
+
+            def spy_replace(src, dst):
+                replace_calls.append((src, dst))
+                return real_replace(src, dst)
+
+            with mock.patch.object(static_checks.os, 'replace', side_effect=spy_replace):
+                write_audit_cache(tmpdir, data)
+
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+            assert replace_calls, "write is not atomic — os.replace was never called"
+            src, dst = replace_calls[-1]
+            assert src.endswith('.tmp'), f"expected rename from a .tmp file, got {src!r}"
+            assert os.path.abspath(dst) == os.path.abspath(cache_path), \
+                f"os.replace target {dst!r} is not the cache file"
+
             result = read_audit_cache(tmpdir)
             assert result == data
-            # Verify no .tmp file left behind
-            cache_dir = os.path.join(tmpdir, '.purlin', 'cache')
-            assert not os.path.exists(os.path.join(cache_dir, 'audit_cache.json.tmp'))
+            # No .tmp file left behind after the rename
+            assert not os.path.exists(cache_path + '.tmp')
 
 
 class TestWriteCacheMerge:

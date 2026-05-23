@@ -62,8 +62,8 @@
 - PROOF-27 (RULE-13): e2e: Create shell test with if/else purlin_proof pair; verify pass; verify bare hardcoded pass still caught @e2e
 - PROOF-28 (RULE-12): e2e: Call write_audit_cache with 3 entries; verify audit_cache.json created with 3 keys @e2e
 - PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
-- PROOF-30 (RULE-11): e2e: Write cache with 3 entries for same (feature, proof_id); call _read_audit_cache_by_feature; verify dedup to 1 entry @e2e
-- PROOF-31 (RULE-12): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer; verify only STRONG entry kept @e2e
+- PROOF-30 (RULE-24): e2e: Write cache with 3 entries for same (feature, proof_id) at different timestamps; call _read_audit_cache_by_feature; verify dedup to 1 entry keeping the latest cached_at @e2e
+- PROOF-31 (RULE-24): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer — plus a distinct entry; verify only the latest (STRONG) per (feature, proof_id) is kept and the unique entry survives @e2e
 - PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
 - PROOF-33 (RULE-19): e2e: Write cache with stale cached_at (midnight UTC); read back; verify cached_at is within 5 seconds of real current time @e2e
 - PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
