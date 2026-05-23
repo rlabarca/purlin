@@ -1278,6 +1278,15 @@ it("real assertion [proof:jsfeat:PROOF-3:RULE-3]", () => {
         assert proofs["PROOF-2"]["check"] == "no_assertions"
         assert proofs["PROOF-3"]["status"] == "pass"
 
+        # RULE-27: check_js returns the same JSON shape as check_python —
+        # every proof dict carries proof_id, rule_id, test_name, status, reason.
+        for pid in ("PROOF-1", "PROOF-2", "PROOF-3"):
+            entry = proofs[pid]
+            for field in ("proof_id", "rule_id", "test_name", "status", "reason"):
+                assert field in entry, f"{pid} missing '{field}' (shape must match check_python): {entry}"
+        assert proofs["PROOF-1"]["rule_id"] == "RULE-1"
+        assert proofs["PROOF-3"]["test_name"].startswith("real assertion")
+
     @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28", tier="e2e")
     def test_check_js_tokenizer_handles_braces_and_apostrophes(self):
         """Issue #2 repro: nested-brace bodies are not truncated and apostrophe

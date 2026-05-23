@@ -778,6 +778,19 @@ Beta feature.
         }
         write_audit_cache(self.tmp_dir, cache)
 
+        # Write-side dedup (RULE-24): the raw cache on disk must already hold
+        # exactly 1 entry for (login, PROOF-1) — the latest (STRONG) — before any
+        # read helper runs. This proves write_audit_cache deduplicates, not the reader.
+        raw = read_audit_cache(self.tmp_dir)
+        login_p1 = [v for v in raw.values()
+                    if v.get('feature') == 'login' and v.get('proof_id') == 'PROOF-1']
+        assert len(login_p1) == 1, (
+            f"write_audit_cache did not dedup on disk: {len(login_p1)} entries for (login, PROOF-1)"
+        )
+        assert login_p1[0]['assessment'] == 'STRONG', (
+            f"write-side dedup kept the wrong entry: {login_p1[0]['assessment']}"
+        )
+
         # _read_audit_cache_by_feature should return exactly 1 entry
         by_feature = _read_audit_cache_by_feature(self.tmp_dir)
         login_entries = by_feature.get('login', [])
