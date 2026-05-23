@@ -3,10 +3,28 @@
   "proofs": [
     {
       "feature": "proof_plugins",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_python_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins",
       "id": "PROOF-22",
       "rule": "RULE-22",
       "test_file": "dev/test_multilang_proof_plugins.py",
       "test_name": "test_c_proof_plugin_real_compilation",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_emit_pipeline_writes_to_spec_dir",
       "status": "pass",
       "tier": "integration"
     },
@@ -21,10 +39,19 @@
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-23",
-      "rule": "RULE-23",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
       "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_c_emit_pipeline_writes_to_spec_dir",
+      "test_name": "test_php_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-26",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_proof_plugin_failing_test",
       "status": "pass",
       "tier": "integration"
     },
@@ -57,28 +84,19 @@
     },
     {
       "feature": "proof_plugins",
-      "id": "PROOF-33",
-      "rule": "RULE-28",
-      "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_vitest_reporter_marker_parsing",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_plugins",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_python_proof_plugin_real_execution",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_plugins",
       "id": "PROOF-32",
       "rule": "RULE-29",
       "test_file": "dev/test_multilang_proof_plugins.py",
       "test_name": "test_removed_test_purged_on_rerun",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins",
+      "id": "PROOF-33",
+      "rule": "RULE-28",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_reporter_marker_parsing",
       "status": "pass",
       "tier": "integration"
     }
