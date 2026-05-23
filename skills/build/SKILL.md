@@ -183,6 +183,6 @@ Do NOT commit after each failed iteration — only when stable. Do NOT defer the
 The build is NOT complete until all of the following are true. Verify each one before responding to the user.
 
 1. **Tests pass.** The last `purlin:unit-test` run shows the target feature as PASSING or better.
-2. **Changeset summary visible.** The three-section summary (Changeset, Decisions, Review) was output as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
+2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was printed as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
 3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
 4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.
