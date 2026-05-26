@@ -1,13 +1,14 @@
 {
   "feature": "purlin_version",
-  "vhash": "b3ef613b",
-  "commit": "6cd4518e322d351ea3c91a7b877f1e59f90f2492",
-  "timestamp": "2026-04-07T13:46:48.452182+00:00",
+  "vhash": "175608df",
+  "commit": "5336ff4a5d11a06dc1a5d9f9b75b8c2b10f473e2",
+  "timestamp": "2026-05-26T07:45:32.457582+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
-    "RULE-4"
+    "RULE-4",
+    "RULE-5"
   ],
   "proofs": [
     {
@@ -28,6 +29,11 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
       "status": "pass"
     }
   ]
