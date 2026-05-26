@@ -1,4 +1,4 @@
-"""Tests for purlin_version — 4 rules.
+"""Tests for purlin_version — 5 rules.
 
 Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
@@ -15,6 +15,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 VERSION_FILE = os.path.join(PROJECT_ROOT, 'VERSION')
 CONFIG_TEMPLATE = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
+PLUGIN_MANIFEST = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
 SERVER_PY = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin_server.py')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
@@ -89,6 +90,31 @@ class TestTemplateVersionMatchesVersionFile:
             "templates/config.json has no 'version' field"
         assert config['version'] == file_version, \
             (f"templates/config.json version is '{config['version']}' "
+             f"but VERSION file contains '{file_version}'")
+
+
+class TestPluginManifestVersionMatchesVersionFile:
+
+    @pytest.mark.proof("purlin_version", "PROOF-5", "RULE-5")
+    def test_plugin_manifest_version_matches_version_file(self):
+        """.claude-plugin/plugin.json version field must match VERSION file content.
+
+        The plugin manifest is the version consumers install against via the Claude
+        plugin marketplace. It is a separate version source from VERSION and
+        templates/config.json, so it must be kept in lockstep with the release.
+        """
+        with open(VERSION_FILE) as f:
+            file_version = f.read().strip()
+
+        assert os.path.isfile(PLUGIN_MANIFEST), \
+            f".claude-plugin/plugin.json not found at {PLUGIN_MANIFEST}"
+        with open(PLUGIN_MANIFEST) as f:
+            manifest = json.load(f)
+
+        assert 'version' in manifest, \
+            ".claude-plugin/plugin.json has no 'version' field"
+        assert manifest['version'] == file_version, \
+            (f".claude-plugin/plugin.json version is '{manifest['version']}' "
              f"but VERSION file contains '{file_version}'")
 
 

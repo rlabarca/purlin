@@ -30,6 +30,15 @@
     },
     {
       "feature": "purlin_version",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_plugin_manifest_version_matches_version_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_version.py",
