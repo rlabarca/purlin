@@ -573,6 +573,12 @@ class TestTypeScriptProofPlugin:
         _assert_proof_json(str(proof_file), [
             {'feature': 'feat', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass', 'tier': 'integration'},
         ])
+        # Directly prove RULE-1: the `[proof:feat:PROOF-1:RULE-1:integration]` marker
+        # parses into the four fields (feature, id, rule, tier) — identically to Jest.
+        with open(proof_file) as f:
+            entry = json.load(f)['proofs'][0]
+        assert (entry['feature'], entry['id'], entry['rule'], entry['tier']) == \
+            ('feat', 'PROOF-1', 'RULE-1', 'integration'), entry
 
 
 # ---------------------------------------------------------------------------
