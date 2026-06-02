@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Proof File Format
 
@@ -170,6 +170,23 @@ it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
 ```
 
 Reporter: `scripts/proof/vitest_purlin.ts`. It collects proofs in the `onFinished(files)` hook (stable across Vitest 2.x → 4.x). `jest_purlin.js` is not used for Vitest — Vitest does not call Jest's reporter hooks.
+
+### xUnit / .NET (planned — not yet shipped)
+
+The marker is a test trait, not a parsed string — `[Trait]` (xUnit), `[Category]`/`[Property]` (NUnit), and `[TestProperty]` (MSTest) all surface as `TestCase.Traits`:
+
+```csharp
+[Fact]
+[Trait("PurlinProof", "feature_name:PROOF-1:RULE-1:unit")]
+public void ValidLogin()
+{
+    Assert.Equal(200, Login("alice", "secret"));
+}
+```
+
+Runner: `dotnet test --logger purlin`
+
+Plugin: `scripts/proof/xunit_purlin.cs` — a custom `ITestLoggerWithParameters` that collects results in-process (no `.trx` post-parse). Spec: `specs/proof/proof_plugins_xunit.md`. The plugin is not yet implemented; the spec defines the contract.
 
 ## Manual Proofs
 

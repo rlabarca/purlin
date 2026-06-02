@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Supported Test Frameworks
 
@@ -17,6 +17,14 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 | **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | No auto-detection — user must select | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
 
 `purlin:init` also offers an **other** option in the selection list. When the user selects "other", direct them to `purlin:init --add-plugin` to install a custom proof plugin.
+
+## Planned Plugins
+
+These have a published spec but no shipped plugin yet — `purlin:init` does not scaffold them.
+
+| Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Spec |
+|-----------|-------------|-----------|------------|-----------|---------------|------|
+| **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` *(not yet shipped)* | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `specs/proof/proof_plugins_xunit.md` |
 
 > **Vitest version support:** the Vitest reporter (`vitest_purlin.ts`) collects proofs in the `onFinished(files)` hook, whose shape is stable across Vitest 2.x → 4.x (tested on 2.x and 3.x). Earlier `onTaskUpdate`-based collection broke silently on Vitest 2+ and is no longer used. Note that `jest_purlin.js` is **not** a drop-in for Vitest — Vitest does not call Jest's `onTestResult`/`onRunComplete` hooks, so Vitest projects use `vitest_purlin.ts`.
 
