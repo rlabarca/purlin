@@ -408,7 +408,7 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 - **Cross-cutting contracts** (file formats, schemas, security rules) → `schema/`.
 - **AI instructions** (`references/`, `skills/`, `agents/`) → `instructions/`. Rules verify sections exist and contain required content. Proofs are grep-based. These catch accidental deletions and structural drift.
 - **E2E rules belong in the feature they validate.** If an e2e test proves that `sync_status` reads proofs from multiple tiers, that rule belongs in `specs/mcp/sync_status.md` tagged `@e2e` — not in a separate `e2e_multi_tier.md`. Test tier (`@unit`, `@e2e`) is a proof attribute, not a reason to create a separate spec.
-- **Never create test-only specs.** A spec like `e2e_feature_scoped_overwrite` that exists solely to hold integration tests should not exist. Those tests prove `proof_plugins` RULE-4. Wire them there.
+- **Never create test-only specs.** A spec like `e2e_feature_scoped_overwrite` that exists solely to hold integration tests should not exist. Those tests prove `proof_common` RULE-4. Wire them there.
 
 ## Audience-Appropriate Language
 

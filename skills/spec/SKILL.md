@@ -231,7 +231,7 @@ Consider adding behavioral rules to this spec. For example:
 
 **Tests must prove rules in the feature they validate — not in a separate spec.**
 
-Do NOT create specs whose sole purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If a test validates that proof plugins preserve other features during overwrite, that test proves `proof_plugins` RULE-4 — wire it there.
+Do NOT create specs whose sole purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If a test validates that proof plugins preserve other features during overwrite, that test proves `proof_common` RULE-4 — wire it there.
 
 When the user asks for "an e2e spec" or "integration tests for X":
 1. Identify which existing feature spec the behavior belongs to

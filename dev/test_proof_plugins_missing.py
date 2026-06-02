@@ -1,25 +1,18 @@
-"""Tests for 19 missing proof_plugins rules.
+"""Supplementary proof-plugin coverage, re-homed onto the split specs.
 
-Covers:
-  RULE-2:  Proof files written as <feature>.proofs-<tier>.json
-  RULE-3:  Fallback to specs/ when spec directory not found
-  RULE-7:  No proof markers → no proof files written (no-op)
-  RULE-8:  pytest marker signature with tier default
-  RULE-9:  Markers with fewer than 3 positional args are silently skipped
-  RULE-10: test_file is relative to pytest rootdir
-  RULE-11: pytest_configure registers marker + plugin
-  RULE-12: Jest marker parsed from test title [proof:feature:PROOF-N:RULE-N:tier]
-  RULE-13: Jest tests without [proof:...] are ignored
-  RULE-14: Jest test_file is relative to rootDir
-  RULE-15: Jest "passed" → "pass", all other statuses → "fail"
-  RULE-16: purlin_proof 5 args + PURLIN_PROOF_TIER env var
-  RULE-17: test_file recorded from BASH_SOURCE[1]
-  RULE-18: purlin_proof_finish required to write proof files
-  RULE-19: Entries cleared after purlin_proof_finish
-  RULE-20: Custom plugins discovered via specs/**/*.proofs-*.json glob
-  RULE-21: Fallback emits warning to stderr naming feature + purlin:spec
-  RULE-23: c_purlin_emit.py reads stdin JSON and writes feature-scoped proof files
-  RULE-29: Removed test entries purged on re-run (not carried over)
+Originally written against the monolithic `proof_plugins` spec; markers now
+point at the split features (the proof markers on each test carry the
+authoritative feature/rule mapping). Covers:
+
+  proof_common         — file naming, fallback, no-op, glob discovery,
+                         stderr warning, purge-on-rerun
+  proof_plugins_pytest — marker signature, short-arg skip, relative test_file,
+                         pytest_configure registration
+  proof_plugins_jest   — title marker parse, no-marker ignore, relative
+                         test_file, status mapping
+  proof_plugins_shell  — 5-arg + PURLIN_PROOF_TIER, BASH_SOURCE, finish-to-write,
+                         clear-after-finish
+  proof_plugins_c      — c_purlin_emit.py stdin → feature-scoped proof files
 """
 
 import json
