@@ -1,6 +1,6 @@
 {
   "version": "0.9.1",
-  "test_framework": "auto",
+  "test_framework": "pytest,jest,shell,vitest",
   "spec_dir": "specs",
   "pre_push": "off",
   "report": true,

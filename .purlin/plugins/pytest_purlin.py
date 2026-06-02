@@ -83,7 +83,9 @@ class ProofCollector:
             # Purge this feature's old entries (kills ghosts), keep others
             kept = [e for e in existing if e.get("feature") != feature]
 
-            # Write fresh entries
-            with open(path, "w") as f:
+            # Write fresh entries (atomic: tmp + rename)
+            tmp_path = path + ".tmp"
+            with open(tmp_path, "w") as f:
                 json.dump({"tier": tier, "proofs": kept + new_entries}, f, indent=2)
                 f.write("\n")
+            os.replace(tmp_path, path)
