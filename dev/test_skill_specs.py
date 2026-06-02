@@ -1391,6 +1391,53 @@ class TestSkillInit:
         assert data.get('audit_summary') is None, \
             f"digest should not trigger audit — expected null audit_summary, got {data.get('audit_summary')}"
 
+    @pytest.mark.proof("skill_init", "PROOF-50", "RULE-48")
+    def test_selection_list_built_from_registry_not_hardcoded(self):
+        """SKILL.md must build the framework list from the registry, not hardcode it."""
+        content = _read('init')
+        # Sources the list dynamically from the registry...
+        assert re.search(r'(?i)build the (?:list|framework selection list) dynamically from `?references/supported_frameworks\.md', content), \
+            "init SKILL.md must build the selection list dynamically from supported_frameworks.md"
+        # ...and explicitly forbids hardcoding framework names.
+        assert re.search(r'(?i)do NOT hardcode framework names', content), \
+            "init SKILL.md must state framework names are not hardcoded"
+
+    @pytest.mark.proof("skill_init", "PROOF-51", "RULE-48", tier="integration")
+    def test_registry_covers_every_shipped_plugin(self):
+        """Every plugin shipped in scripts/proof/ is registered, and every
+        scripts/proof/ path the registry names exists — so the registry-built
+        selection list covers exactly the shipped frameworks."""
+        proof_dir = os.path.join(PROJECT_ROOT, 'scripts', 'proof')
+        registry = _read_ref('supported_frameworks.md')
+
+        shipped = sorted(
+            f for f in os.listdir(proof_dir)
+            if os.path.isfile(os.path.join(proof_dir, f))
+        )
+        assert shipped, "no proof plugins found in scripts/proof/"
+
+        # The registry names plugins as `scripts/proof/<file>` paths. Both
+        # directions check against THIS set (not a loose substring) so the
+        # invariant is genuinely bidirectional.
+        referenced = set(re.findall(r'scripts/proof/([A-Za-z0-9_]+\.[A-Za-z0-9]+)', registry))
+        assert referenced, "registry names no scripts/proof/ plugin paths"
+
+        # Backward: every shipped plugin is referenced as a scripts/proof/ path,
+        # so the registry-built selection list cannot omit a shipped framework.
+        unregistered = [f for f in shipped if f not in referenced]
+        assert not unregistered, (
+            f"shipped plugins missing a scripts/proof/<file> reference in "
+            f"references/supported_frameworks.md (init would not present them): {unregistered}"
+        )
+
+        # Forward: every referenced path exists on disk (registry names no ghosts).
+        missing = sorted(p for p in referenced if not os.path.isfile(os.path.join(proof_dir, p)))
+        assert not missing, f"registry references nonexistent plugin files: {missing}"
+
+        # The newly shipped xUnit plugin specifically must be covered.
+        assert 'xunit_purlin.cs' in shipped and 'xunit_purlin.cs' in referenced, \
+            "xUnit plugin must be shipped and registered (scripts/proof/xunit_purlin.cs) so init presents it"
+
 
 # ── skill_rename ──────────────────────────────────────────────────────
 

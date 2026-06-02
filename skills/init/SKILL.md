@@ -59,9 +59,9 @@ DETECTING CODEBASE
 Scanning project files for test frameworks...
 ```
 
-Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth — do NOT hardcode framework names here. Check project files for ALL matching frameworks using the detection table in that reference.
+Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth — do NOT hardcode framework names here. The complete list spans BOTH the **Built-in Plugins** table and the **Additional Plugins (manual setup)** table — present every framework from both. Check project files for ALL matching frameworks using the detection columns in that reference.
 
-**Always present the framework selection list to the user**, even when auto-detection succeeds. Build the list dynamically from `references/supported_frameworks.md`. Pre-select detected frameworks with `[x]`, show undetected as `[ ]`. Always include `other` as the last option for custom plugins. This lets the user confirm, add, or remove frameworks before scaffolding.
+**Always present the framework selection list to the user**, even when auto-detection succeeds. Build the list dynamically from `references/supported_frameworks.md` so every shipped plugin (built-in and manual-setup) is offered. Pre-select detected frameworks with `[x]`, show undetected as `[ ]`. Always include `other` as the last option for custom plugins. This lets the user confirm, add, or remove frameworks before scaffolding.
 
 When one or more frameworks are detected:
 
@@ -101,6 +101,8 @@ Write selected frameworks to `.purlin/config.json` under `test_framework`. For m
 ## Step 4 — Scaffold Proof Plugins
 
 Copy ALL selected proof plugins from `scripts/proof/` to `.purlin/plugins/`. Use the plugin file column in `references/supported_frameworks.md` to map each framework to its source file. If multiple frameworks were selected, scaffold ALL of them.
+
+For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it — after copying its plugin file, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
 
 For pytest, also create or update `conftest.py` at the project root:
 

@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "skill_init",
+      "id": "PROOF-51",
+      "rule": "RULE-48",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
