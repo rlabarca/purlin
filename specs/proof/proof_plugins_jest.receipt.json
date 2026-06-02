@@ -1,0 +1,34 @@
+{
+  "feature": "proof_plugins_jest",
+  "vhash": "2e0ab5ae",
+  "commit": "ac522f60debf1f866e0a6acfb25bcb10fafd2057",
+  "timestamp": "2026-06-02T15:45:42.990726+00:00",
+  "rules": [
+    "RULE-1",
+    "RULE-2",
+    "RULE-3",
+    "RULE-4"
+  ],
+  "proofs": [
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    }
+  ]
+}
