@@ -53,6 +53,7 @@
 - RULE-45: After digest generation, `report-data.js` contains a `timestamp` field with a recent ISO timestamp and a `git_sha` field
 - RULE-46: Digest generation does NOT trigger a new audit — `audit_summary` reflects only cached data (null when no cache exists)
 - RULE-47: Scaffolded vitest_purlin.ts in .purlin/plugins/ is byte-identical to scripts/proof/vitest_purlin.ts
+- RULE-48: The framework selection list is built dynamically from the framework registry (`references/supported_frameworks.md`) and presents an option for every proof plugin shipped in `scripts/proof/`; the skill does not hardcode framework names, so a newly shipped plugin (e.g. xUnit) appears in the selection once it is registered
 
 ## Proof
 
@@ -105,3 +106,5 @@
 - PROOF-47 (RULE-45): e2e: After commit, parse `report-data.js`; verify `timestamp` is within last 60s and `git_sha` field is present @e2e
 - PROOF-48 (RULE-46): e2e: After commit in fresh project (no audit cache), verify `audit_summary` in digest is null @e2e
 - PROOF-49 (RULE-47): e2e: Diff scaffolded vitest_purlin.ts against scripts/proof/vitest_purlin.ts; verify byte-identical @e2e
+- PROOF-50 (RULE-48): Grep `skills/init/SKILL.md`; verify it instructs building the selection list dynamically from `references/supported_frameworks.md` and explicitly says not to hardcode framework names
+- PROOF-51 (RULE-48): Cross-reference distribution and registry: every proof plugin file in `scripts/proof/` is referenced in `references/supported_frameworks.md`, and every `scripts/proof/` path the registry names exists on disk — so the registry-built selection list covers exactly the shipped frameworks @integration
