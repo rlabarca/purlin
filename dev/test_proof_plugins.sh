@@ -277,7 +277,37 @@ def test_marker_recognized(): assert True
 PY
   # Run with -W error::pytest.PytestUnknownMarkWarning to catch unregistered markers
   (cd "$d" && python3 -m pytest test_marker_check.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -W "error::pytest.PytestUnknownMarkWarning" -q --no-header 2>/dev/null)
-  local rc=$?; rm -rf "$d"; return $rc
+  local rc=$?; rm -rf "$d"
+  [[ $rc -eq 0 ]] || return 1
+
+  # "call phase only" check: a marked test that errors in SETUP emits NO proof
+  # (makereport returns early for non-call phases), while a test that fails in
+  # the CALL body DOES emit a fail proof.
+  local cp=$(mktemp -d)
+  mkdir -p "$cp/specs/a"
+  printf '# Feature: cphase\n\n## Rules\n- RULE-1: X\n- RULE-2: Y\n' > "$cp/specs/a/cphase.md"
+  cat > "$cp/test_cp.py" << 'PY'
+import pytest
+@pytest.fixture
+def boom():
+    raise RuntimeError("setup explosion — never reaches the call phase")
+@pytest.mark.proof("cphase", "PROOF-1", "RULE-1")
+def test_errors_in_setup(boom):
+    assert True
+@pytest.mark.proof("cphase", "PROOF-2", "RULE-2")
+def test_fails_in_call():
+    assert False
+PY
+  (cd "$cp" && python3 -m pytest test_cp.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null) || true
+  python3 -c "
+import json
+ps = json.load(open('$cp/specs/a/cphase.proofs-unit.json'))['proofs']
+ids = {p['id']: p['status'] for p in ps}
+# call-phase failure recorded as fail; setup-phase error not recorded at all
+assert ids.get('PROOF-2') == 'fail', f'call-phase failure not recorded: {ids}'
+assert 'PROOF-1' not in ids, f'setup-phase error must NOT be recorded (call phase only): {ids}'
+"
+  local rc2=$?; rm -rf "$cp"; return $rc2
 }
 run "proof_plugins_pytest" "PROOF-4" "RULE-4" "pytest_configure registers marker + plugin" test_pytest_configure
 
