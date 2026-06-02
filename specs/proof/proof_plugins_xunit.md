@@ -3,10 +3,9 @@
 > Requires: proof_common, schema_proof_format, security_no_dangerous_patterns
 > Scope: scripts/proof/xunit_purlin.cs
 > Stack: dotnet/xunit, custom ITestLoggerWithParameters registered via `dotnet test --logger purlin`; trait-based marker, also compatible with NUnit/MSTest via TestCase.Traits
-> Description: The xUnit/.NET proof plugin. Spec-first — the plugin (`scripts/proof/xunit_purlin.cs`)
->   is not yet implemented; these rules define the contract a future implementation must satisfy.
->   A custom `dotnet test` logger collects proof markers expressed as the `PurlinProof` test
->   trait, maps the test outcome to pass/fail, and emits standardized proof JSON. Inherits all
+> Description: The xUnit/.NET proof plugin (`scripts/proof/xunit_purlin.cs`). A custom
+>   `dotnet test` logger collects proof markers expressed as the `PurlinProof` test trait,
+>   maps the test outcome to pass/fail, and emits standardized proof JSON. Inherits all
 >   shared proof-plugin behavior (spec-dir resolution, naming, fallback, feature-scoped
 >   overwrite, the 7 fields, status, no-op, discovery, stderr warning, purge) from proof_common.
 
@@ -19,6 +18,16 @@ test platform — xUnit's `[Trait]`, NUnit's `[Category]`/`[Property]`, and MSTe
 `dotnet test --logger purlin` receives each result during the run and writes proof files on
 completion, mirroring the reporter model of the pytest/Jest/Vitest plugins (collect in-process,
 no second XML-parsing step).
+
+**Setup (consumer projects):** the .NET test platform only discovers loggers from assemblies
+whose filename ends with `TestLogger.dll`, so compile `xunit_purlin.cs` into an assembly named
+`Purlin.TestLogger` (e.g. `<AssemblyName>Purlin.TestLogger</AssemblyName>`) and reference that
+project from your test project so the DLL lands in the test output directory. Run with:
+
+    dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true
+
+The `CollectSourceInformation=true` switch is what populates `TestCase.CodeFilePath`, which
+RULE-5 records as `test_file`; without it the source path is unavailable.
 
 ## Rules
 

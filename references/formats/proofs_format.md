@@ -171,7 +171,7 @@ it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
 
 Reporter: `scripts/proof/vitest_purlin.ts`. It collects proofs in the `onFinished(files)` hook (stable across Vitest 2.x → 4.x). `jest_purlin.js` is not used for Vitest — Vitest does not call Jest's reporter hooks.
 
-### xUnit / .NET (planned — not yet shipped)
+### xUnit / .NET
 
 The marker is a test trait, not a parsed string — `[Trait]` (xUnit), `[Category]`/`[Property]` (NUnit), and `[TestProperty]` (MSTest) all surface as `TestCase.Traits`:
 
@@ -184,9 +184,11 @@ public void ValidLogin()
 }
 ```
 
-Runner: `dotnet test --logger purlin`
+Runner: `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`
 
-Plugin: `scripts/proof/xunit_purlin.cs` — a custom `ITestLoggerWithParameters` that collects results in-process (no `.trx` post-parse). Spec: `specs/proof/proof_plugins_xunit.md`. The plugin is not yet implemented; the spec defines the contract.
+Setup: the .NET test platform only discovers loggers from assemblies whose filename ends with `TestLogger.dll`. Compile `scripts/proof/xunit_purlin.cs` into an assembly named `Purlin.TestLogger` and reference that project from the test project so the DLL lands in the test output directory; then `--logger purlin` discovers it by FriendlyName. `CollectSourceInformation=true` populates `TestCase.CodeFilePath` so `test_file` is recorded.
+
+Plugin: `scripts/proof/xunit_purlin.cs` — a custom `ITestLoggerWithParameters` that collects results in-process (no `.trx` post-parse). Spec: `specs/proof/proof_plugins_xunit.md`.
 
 ## Manual Proofs
 

@@ -769,3 +769,146 @@ int main(void) {
         assert len(collisions) == 1
         assert collisions[0]['proof_id'] == 'PROOF-1'
         assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}
+
+
+# ---------------------------------------------------------------------------
+# xUnit / .NET — drive the REAL custom `dotnet test` logger end to end.
+# Builds the logger (scripts/proof/xunit_purlin.cs) plus an xUnit test project,
+# runs `dotnet test --logger purlin`, and asserts on the emitted proof JSON.
+# One build+run (class-scoped fixture is the "act"); each proof checks one rule.
+# ---------------------------------------------------------------------------
+
+_XUNIT_LOGGER_SRC = os.path.join(PROOF_SCRIPTS, 'xunit_purlin.cs')
+
+_LOGGER_CSPROJ = (
+    '<Project Sdk="Microsoft.NET.Sdk">\n'
+    '  <PropertyGroup><TargetFramework>net8.0</TargetFramework>'
+    '<AssemblyName>Purlin.TestLogger</AssemblyName><Nullable>enable</Nullable>'
+    '<ImplicitUsings>disable</ImplicitUsings></PropertyGroup>\n'
+    '  <ItemGroup><PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.11.1" /></ItemGroup>\n'
+    '</Project>\n'
+)
+
+_TEST_CSPROJ = (
+    '<Project Sdk="Microsoft.NET.Sdk">\n'
+    '  <PropertyGroup><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><IsPackable>false</IsPackable></PropertyGroup>\n'
+    '  <ItemGroup>\n'
+    '    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />\n'
+    '    <PackageReference Include="xunit" Version="2.9.2" />\n'
+    '    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />\n'
+    '  </ItemGroup>\n'
+    '  <ItemGroup><ProjectReference Include="../logger/logger.csproj" /></ItemGroup>\n'
+    '</Project>\n'
+)
+
+_TEST_CS = (
+    'using Xunit;\n'
+    'namespace Svc.Tests {\n'
+    '  public class FeatTests {\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1:unit")]\n'
+    '    public void Passes() { Assert.Equal(4, 2+2); }\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-2:RULE-2:unit")]\n'
+    '    public void Fails() { Assert.True(false); }\n'
+    '    [Fact(Skip="nyi")][Trait("PurlinProof","feat:PROOF-9:RULE-9:unit")]\n'
+    '    public void SkippedTagged() { Assert.True(false); }\n'
+    '    [Fact]\n'
+    '    public void Untagged() { Assert.True(true); }\n'
+    '  }\n'
+    '}\n'
+)
+
+
+@pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
+class TestXUnitProofPlugin:
+
+    @pytest.fixture(scope="class")
+    def run(self, tmp_path_factory):
+        root = tmp_path_factory.mktemp("xunit_proj")
+        specs = root / "specs" / "svc"
+        specs.mkdir(parents=True)
+        (specs / "feat.md").write_text(
+            "# Feature: feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n"
+        )
+        # Pre-seed with a DIFFERENT feature — must survive (feature-scoped overwrite).
+        (specs / "feat.proofs-unit.json").write_text(json.dumps({
+            "tier": "unit",
+            "proofs": [{"feature": "otherfeat", "id": "PROOF-1", "rule": "RULE-1",
+                        "test_file": "tests/Other.cs", "test_name": "Other.Keep",
+                        "status": "pass", "tier": "unit"}],
+        }))
+
+        logger = root / "logger"
+        logger.mkdir()
+        shutil.copy(_XUNIT_LOGGER_SRC, str(logger / "PurlinProofLogger.cs"))
+        (logger / "logger.csproj").write_text(_LOGGER_CSPROJ)
+
+        tests = root / "tests"
+        tests.mkdir()
+        (tests / "tests.csproj").write_text(_TEST_CSPROJ)
+        (tests / "Tests.cs").write_text(_TEST_CS)
+
+        env = dict(os.environ, DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1")
+        # RULE-2: --logger purlin (custom in-process logger).
+        # CollectSourceInformation populates CodeFilePath for RULE-5 (test_file).
+        cmd = ["dotnet", "test", "tests/tests.csproj", "--logger", "purlin",
+               "--", "RunConfiguration.CollectSourceInformation=true"]
+        proc = subprocess.run(
+            cmd, cwd=str(root), capture_output=True, text=True, env=env,
+        )
+        proof_file = specs / "feat.proofs-unit.json"
+        data = json.loads(proof_file.read_text())
+        # The logger must have run and recorded the "feat" entries.
+        assert any(p["feature"] == "feat" for p in data["proofs"]), (
+            f"logger did not record proofs:\nSTDOUT:{proc.stdout}\nSTDERR:{proc.stderr}"
+        )
+        return {"root": root, "proc": proc, "cmd": cmd, "data": data, "proof_file": proof_file,
+                "by_id": {p["id"]: p for p in data["proofs"] if p["feature"] == "feat"}}
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-1", "RULE-1", tier="integration")
+    def test_trait_marker_parses(self, run):
+        e = run["by_id"]["PROOF-1"]
+        assert (e["feature"], e["id"], e["rule"], e["tier"]) == ("feat", "PROOF-1", "RULE-1", "unit"), e
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-2", "RULE-2", tier="integration")
+    def test_logger_runs_in_process(self, run):
+        # RULE-2: the logger collects in-process, not by post-parsing a .trx file.
+        # It emits a completion line to stderr from inside TestRunComplete, which
+        # fires within the test-platform process during the run — the line's
+        # presence proves in-process collection, not a separate parse step.
+        out = run["proc"].stderr + run["proc"].stdout
+        assert "[PurlinProofLogger] collected" in out, (
+            f"no in-process logger signal in dotnet output:\n{out}"
+        )
+        # Driven by --logger purlin alone; no trx logger was requested or produced.
+        assert "trx" not in run["cmd"], run["cmd"]
+        assert not list(run["root"].rglob("*.trx")), "no .trx should be produced"
+        assert "PROOF-1" in run["by_id"]
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-3", "RULE-3", tier="integration")
+    def test_untagged_ignored(self, run):
+        names = [p["test_name"] for p in run["data"]["proofs"]]
+        assert not any("Untagged" in n for n in names), names
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-4", "RULE-4", tier="integration")
+    def test_status_mapping_and_skip_excluded(self, run):
+        by = run["by_id"]
+        assert by["PROOF-1"]["status"] == "pass", by["PROOF-1"]
+        assert by["PROOF-2"]["status"] == "fail", by["PROOF-2"]
+        # the [Fact(Skip=...)] tagged test (PROOF-9/RULE-9) must not be recorded
+        assert "PROOF-9" not in by, run["data"]["proofs"]
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-5", "RULE-5", tier="integration")
+    def test_relative_file_and_fq_name(self, run):
+        e = run["by_id"]["PROOF-1"]
+        assert e["test_file"] and not e["test_file"].startswith("/"), e["test_file"]
+        assert e["test_file"].endswith(".cs"), e["test_file"]
+        assert e["test_name"] == "Svc.Tests.FeatTests.Passes", e["test_name"]
+
+    @pytest.mark.proof("proof_plugins_xunit", "PROOF-6", "RULE-6", tier="integration")
+    def test_feature_scoped_overwrite(self, run):
+        feats = {p["feature"] for p in run["data"]["proofs"]}
+        assert "otherfeat" in feats, "pre-seeded other feature must be preserved"
+        assert "feat" in feats
+        other = [p for p in run["data"]["proofs"] if p["feature"] == "otherfeat"]
+        assert len(other) == 1 and other[0]["test_name"] == "Other.Keep", other
