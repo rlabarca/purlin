@@ -1,0 +1,41 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "pytest marker signature",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "pytest fewer args skipped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "pytest test_file relative",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "pytest_configure registers marker + plugin",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

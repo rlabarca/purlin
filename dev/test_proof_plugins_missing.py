@@ -150,7 +150,7 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None):
 # RULE-2: Proof files written as <feature>.proofs-<tier>.json
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-2", "RULE-2")
+@pytest.mark.proof("proof_common", "PROOF-2", "RULE-2")
 def test_proof_file_naming(tmp_path):
     """Proof file is named <feature>.proofs-<tier>.json inside the spec directory."""
     spec_dir = _make_spec(tmp_path, "hooks", "gate_hook")
@@ -168,7 +168,7 @@ def test_proof_file_naming(tmp_path):
 # RULE-3: Fallback to specs/ when feature spec not found
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-3", "RULE-3")
+@pytest.mark.proof("proof_common", "PROOF-3", "RULE-3")
 def test_fallback_to_specs_root_when_no_spec(tmp_path):
     """When no spec exists for a feature, proof is written to specs/<feature>.proofs-unit.json."""
     (tmp_path / "specs").mkdir()
@@ -187,7 +187,7 @@ def test_fallback_to_specs_root_when_no_spec(tmp_path):
 # RULE-7: No proof markers → no proof files written
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-7", "RULE-7")
+@pytest.mark.proof("proof_common", "PROOF-7", "RULE-7")
 def test_no_markers_no_proof_files(tmp_path):
     """Running pytest with no proof markers produces zero *.proofs-*.json files."""
     _make_spec(tmp_path, "a", "my_feat")
@@ -204,7 +204,7 @@ def test_no_markers_no_proof_files(tmp_path):
 # RULE-8: pytest marker signature with tier default
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-8", "RULE-8")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-1", "RULE-1")
 def test_pytest_marker_signature_defaults_to_unit_tier(tmp_path):
     """@pytest.mark.proof('feat','PROOF-1','RULE-1') defaults tier to 'unit'."""
     spec_dir = _make_spec(tmp_path, "a", "feat")
@@ -223,7 +223,7 @@ def test_pytest_marker_signature_defaults_to_unit_tier(tmp_path):
     assert entry["tier"] == "unit"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-8", "RULE-8")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-1", "RULE-1")
 def test_pytest_marker_explicit_tier(tmp_path):
     """@pytest.mark.proof(..., tier='integration') stores the explicit tier."""
     spec_dir = _make_spec(tmp_path, "a", "feat_integ")
@@ -242,7 +242,7 @@ def test_pytest_marker_explicit_tier(tmp_path):
 # RULE-9: Markers with fewer than 3 positional args are silently skipped
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-9", "RULE-9")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-2", "RULE-2")
 def test_pytest_marker_two_args_skipped(tmp_path):
     """A marker with only 2 positional args produces no proof entry."""
     (tmp_path / "specs").mkdir()
@@ -260,7 +260,7 @@ def test_pytest_marker_two_args_skipped(tmp_path):
         assert feat_entries == [], f"Expected no 'feat' entries, got: {feat_entries}"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-9", "RULE-9")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-2", "RULE-2")
 def test_pytest_marker_one_arg_skipped(tmp_path):
     """A marker with only 1 positional arg produces no proof entry."""
     (tmp_path / "specs").mkdir()
@@ -281,7 +281,7 @@ def test_pytest_marker_one_arg_skipped(tmp_path):
 # RULE-10: test_file is relative to pytest rootdir
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-10", "RULE-10")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-3", "RULE-3")
 def test_pytest_test_file_is_relative(tmp_path):
     """test_file in the proof entry is a relative path, not an absolute one."""
     spec_dir = _make_spec(tmp_path, "a", "feat_relpath")
@@ -317,7 +317,7 @@ def test_pytest_test_file_is_relative(tmp_path):
 # RULE-11: pytest_configure registers marker + plugin
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-11", "RULE-11")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-4", "RULE-4")
 def test_pytest_configure_registers_proof_marker_and_plugin():
     """pytest_configure registers the 'proof' marker and the 'purlin_proof' plugin."""
     sys.path.insert(0, PROOF_SCRIPTS)
@@ -352,7 +352,7 @@ def test_pytest_configure_registers_proof_marker_and_plugin():
             sys.path.remove(PROOF_SCRIPTS)
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-11", "RULE-11")
+@pytest.mark.proof("proof_plugins_pytest", "PROOF-4", "RULE-4")
 def test_pytest_configure_marker_recognized_in_session(tmp_path):
     """The 'proof' marker is recognized (no PytestUnknownMarkWarning) in a real session."""
     _make_spec(tmp_path, "a", "myf")
@@ -380,7 +380,7 @@ def test_pytest_configure_marker_recognized_in_session(tmp_path):
 # RULE-12: Jest marker parsed from test title
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-12", "RULE-12")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-1", "RULE-1")
 def test_jest_marker_parsed_from_title(tmp_path):
     """Jest reporter extracts feature/PROOF-N/RULE-N from [proof:...] in test title."""
     _make_spec(tmp_path, "a", "feat_jest")
@@ -399,7 +399,7 @@ def test_jest_marker_parsed_from_title(tmp_path):
     assert entry["rule"] == "RULE-1"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-12", "RULE-12")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-1", "RULE-1")
 def test_jest_marker_tier_defaults_to_unit(tmp_path):
     """Jest marker without explicit tier defaults to 'unit'."""
     _make_spec(tmp_path, "a", "feat_tier_default")
@@ -420,7 +420,7 @@ def test_jest_marker_tier_defaults_to_unit(tmp_path):
 # RULE-13: Jest tests without [proof:...] are ignored
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-13", "RULE-13")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-2", "RULE-2")
 def test_jest_no_marker_ignored(tmp_path):
     """Jest test titles without [proof:...] produce no proof entries."""
     (tmp_path / "specs").mkdir()
@@ -442,7 +442,7 @@ def test_jest_no_marker_ignored(tmp_path):
 # RULE-14: Jest test_file is relative to rootDir
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-14", "RULE-14")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-3", "RULE-3")
 def test_jest_test_file_is_relative_to_root_dir(tmp_path):
     """Jest proof entry's test_file is relative to the reporter's rootDir."""
     _make_spec(tmp_path, "a", "feat_rel")
@@ -466,7 +466,7 @@ def test_jest_test_file_is_relative_to_root_dir(tmp_path):
 # RULE-15: Jest "passed" → "pass", all other statuses → "fail"
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-15", "RULE-15")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-4", "RULE-4")
 def test_jest_passed_maps_to_pass(tmp_path):
     """Jest status 'passed' maps to 'pass' in the proof entry."""
     _make_spec(tmp_path, "a", "feat_status", extra_rules=2)
@@ -480,7 +480,7 @@ def test_jest_passed_maps_to_pass(tmp_path):
     assert data["proofs"][0]["status"] == "pass"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-15", "RULE-15")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-4", "RULE-4")
 def test_jest_failed_maps_to_fail(tmp_path):
     """Jest status 'failed' maps to 'fail' in the proof entry."""
     _make_spec(tmp_path, "a", "feat_fail_status")
@@ -494,7 +494,7 @@ def test_jest_failed_maps_to_fail(tmp_path):
     assert data["proofs"][0]["status"] == "fail"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-15", "RULE-15")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-4", "RULE-4")
 def test_jest_pending_maps_to_fail(tmp_path):
     """Jest status other than 'passed' (e.g., 'pending') maps to 'fail'."""
     _make_spec(tmp_path, "a", "feat_pending")
@@ -512,7 +512,7 @@ def test_jest_pending_maps_to_fail(tmp_path):
 # RULE-16: Shell purlin_proof 5 args + PURLIN_PROOF_TIER
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-16", "RULE-16")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-1", "RULE-1")
 def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
     """PURLIN_PROOF_TIER env var sets the tier in the written proof entry."""
     _make_spec(tmp_path, "a", "feat_shell_tier")
@@ -531,7 +531,7 @@ def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
     assert entry["feature"] == "feat_shell_tier"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-16", "RULE-16")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-1", "RULE-1")
 def test_shell_proof_defaults_tier_to_unit(tmp_path):
     """Without PURLIN_PROOF_TIER set, tier defaults to 'unit'."""
     _make_spec(tmp_path, "a", "feat_default_tier")
@@ -552,7 +552,7 @@ def test_shell_proof_defaults_tier_to_unit(tmp_path):
 # RULE-17: test_file recorded from BASH_SOURCE[1]
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-17", "RULE-17")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-2", "RULE-2")
 def test_shell_test_file_reflects_caller_filename(tmp_path):
     """test_file in shell proof entry matches the sourcing script's filename."""
     _make_spec(tmp_path, "a", "feat_src_file")
@@ -582,7 +582,7 @@ def test_shell_test_file_reflects_caller_filename(tmp_path):
 # RULE-18: purlin_proof_finish required to write proof files
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-18", "RULE-18")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-3", "RULE-3")
 def test_shell_proof_not_written_before_finish(tmp_path):
     """purlin_proof calls without purlin_proof_finish produce no proof files."""
     _make_spec(tmp_path, "a", "feat_nofinish")
@@ -607,7 +607,7 @@ def test_shell_proof_not_written_before_finish(tmp_path):
     assert proof_files == [], f"Expected no proof files before finish, got: {proof_files}"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-18", "RULE-18")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-3", "RULE-3")
 def test_shell_proof_written_after_finish(tmp_path):
     """purlin_proof_finish writes accumulated proof entries to disk."""
     _make_spec(tmp_path, "a", "feat_withfinish")
@@ -635,7 +635,7 @@ def test_shell_proof_written_after_finish(tmp_path):
 # RULE-19: Entries cleared after purlin_proof_finish
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-19", "RULE-19")
+@pytest.mark.proof("proof_plugins_shell", "PROOF-4", "RULE-4")
 def test_shell_entries_cleared_after_finish(tmp_path):
     """After purlin_proof_finish, _PURLIN_PROOFS is empty and second finish is no-op."""
     _make_spec(tmp_path, "a", "feat_cleared")
@@ -672,7 +672,7 @@ def test_shell_entries_cleared_after_finish(tmp_path):
 # RULE-20: Custom plugins discovered via specs/**/*.proofs-*.json glob
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-20", "RULE-20")
+@pytest.mark.proof("proof_common", "PROOF-8", "RULE-8")
 def test_custom_plugin_proof_files_discovered_by_sync_status(tmp_path):
     """A hand-written .proofs-*.json file in specs/ is discovered by sync_status."""
     spec_dir = _make_spec(tmp_path, "custom", "my_custom_feat")
@@ -707,7 +707,7 @@ def test_custom_plugin_proof_files_discovered_by_sync_status(tmp_path):
 # RULE-21: Fallback emits warning to stderr naming feature + purlin:spec
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-21", "RULE-21")
+@pytest.mark.proof("proof_common", "PROOF-9", "RULE-9")
 def test_pytest_fallback_emits_warning_to_stderr(tmp_path):
     """When spec not found, pytest_purlin writes warning to stderr with feature name + purlin:spec."""
     (tmp_path / "specs").mkdir()
@@ -752,7 +752,7 @@ def test_pytest_fallback_emits_warning_to_stderr(tmp_path):
     )
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-21", "RULE-21")
+@pytest.mark.proof("proof_common", "PROOF-9", "RULE-9")
 def test_shell_fallback_emits_warning_to_stderr(tmp_path):
     """Shell purlin_proof_finish emits warning to stderr when spec not found."""
     (tmp_path / "specs").mkdir()
@@ -781,7 +781,7 @@ def test_shell_fallback_emits_warning_to_stderr(tmp_path):
 # RULE-23: c_purlin_emit.py reads stdin JSON and writes feature-scoped proof files
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-23", "RULE-23")
+@pytest.mark.proof("proof_plugins_c", "PROOF-2", "RULE-2")
 def test_c_purlin_emit_writes_proof_file_from_stdin(tmp_path):
     """c_purlin_emit.py reads JSON from stdin and writes to the correct spec directory."""
     spec_dir = _make_spec(tmp_path, "math", "arithmetic")
@@ -815,7 +815,7 @@ def test_c_purlin_emit_writes_proof_file_from_stdin(tmp_path):
     assert data["proofs"][0]["status"] == "pass"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-23", "RULE-23")
+@pytest.mark.proof("proof_plugins_c", "PROOF-2", "RULE-2")
 def test_c_purlin_emit_feature_scoped_overwrite(tmp_path):
     """c_purlin_emit.py preserves entries for other features while replacing current feature."""
     spec_dir = _make_spec(tmp_path, "math", "arithmetic", extra_rules=2)
@@ -878,7 +878,7 @@ def test_c_purlin_emit_feature_scoped_overwrite(tmp_path):
 # RULE-29: Removed test entries purged on re-run
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_plugins", "PROOF-32", "RULE-29")
+@pytest.mark.proof("proof_common", "PROOF-10", "RULE-10")
 def test_removed_test_entry_purged_on_rerun(tmp_path):
     """When a test is removed and the feature re-runs, the old entry is not carried over."""
     spec_dir = _make_spec(tmp_path, "a", "feat_purge", extra_rules=2)
@@ -934,7 +934,7 @@ def test_removed_test_entry_purged_on_rerun(tmp_path):
     assert "PROOF-2" not in proof_ids, f"PROOF-2 should have been purged, but found: {proof_ids}"
 
 
-@pytest.mark.proof("proof_plugins", "PROOF-32", "RULE-29")
+@pytest.mark.proof("proof_common", "PROOF-10", "RULE-10")
 def test_removed_test_entry_purged_in_shell_plugin(tmp_path):
     """Shell plugin: re-running with fewer proofs purges old entries for the same feature."""
     _make_spec(tmp_path, "a", "feat_shell_purge", extra_rules=2)

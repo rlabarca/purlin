@@ -146,7 +146,7 @@ class TestTautological:
     """Assertion is always true regardless of what the code does."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-1", "RULE-1")
     def test_c_tautological(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Validates input')
         data = _run_c(tmp_path, r'''
@@ -166,7 +166,7 @@ int main(void) {
         _assert_proof_passes(data, "C tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-1", "RULE-1")
     def test_php_tautological(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Validates input')
         data = _run_php(tmp_path, r'''<?php
@@ -183,7 +183,7 @@ function test_validates_input() {
         _assert_proof_passes(data, "PHP tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
     def test_sql_tautological(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Validates input')
         data = _run_sql(tmp_path, '''\
@@ -196,7 +196,7 @@ SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;
         _assert_proof_passes(data, "SQL tautological cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
     def test_typescript_tautological(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Validates input')
         data = _run_typescript(tmp_path, '''\
@@ -240,7 +240,7 @@ class TestFixtureOnly:
     """Test asserts properties of its own constants, never invokes the real code."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-1", "RULE-1")
     def test_c_fixture_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Returns sorted list')
         data = _run_c(tmp_path, r'''
@@ -261,7 +261,7 @@ int main(void) {
         _assert_proof_passes(data, "C fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-1", "RULE-1")
     def test_php_fixture_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Returns sorted list')
         data = _run_php(tmp_path, r'''<?php
@@ -278,7 +278,7 @@ function test_returns_sorted() {
         _assert_proof_passes(data, "PHP fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
     def test_sql_fixture_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Unique constraint enforced')
         data = _run_sql(tmp_path, '''\
@@ -291,7 +291,7 @@ SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;
         _assert_proof_passes(data, "SQL fixture-only cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
     def test_typescript_fixture_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Returns sorted list')
         data = _run_typescript(tmp_path, '''\
@@ -335,7 +335,7 @@ class TestHappyPathOnly:
     """Rule describes rejection behavior, but test only validates the happy path."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6")
+    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_c_happy_path_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects negative quantities')
         data = _run_c(tmp_path, r'''
@@ -355,7 +355,7 @@ int main(void) {
         _assert_proof_passes(data, "C happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-2", "RULE-2")
     def test_php_happy_path_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects empty email')
         data = _run_php(tmp_path, r'''<?php
@@ -372,7 +372,7 @@ function test_rejects_empty_email() {
         _assert_proof_passes(data, "PHP happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2")
     def test_sql_happy_path_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects duplicate emails')
         data = _run_sql(tmp_path, '''\
@@ -387,7 +387,7 @@ SELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;
         _assert_proof_passes(data, "SQL happy-path cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
     def test_typescript_happy_path_only(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects passwords under 8 characters')
         data = _run_typescript(tmp_path, '''\
@@ -431,7 +431,7 @@ class TestNameValueDrift:
     """Test function name describes one behavior, but assertion validates the opposite."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-1", "RULE-1")
     def test_c_name_drift(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects invalid tokens')
         data = _run_c(tmp_path, r'''
@@ -452,7 +452,7 @@ int main(void) {
         _assert_proof_passes(data, "C name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-1", "RULE-1")
     def test_php_name_drift(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects invalid tokens')
         data = _run_php(tmp_path, r'''<?php
@@ -470,7 +470,7 @@ function test_rejects_invalid_token() {
         _assert_proof_passes(data, "PHP name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
     def test_sql_name_drift(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Blocks unauthorized access')
         # CHEAT: test name says "blocks" but it verifies INSERT succeeds
@@ -487,7 +487,7 @@ SELECT CASE WHEN (SELECT count(*) FROM access_log WHERE user_id = 999) = 1
         _assert_proof_passes(data, "SQL name-drift cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
     def test_typescript_name_drift(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Rejects expired sessions')
         data = _run_typescript(tmp_path, '''\
@@ -530,7 +530,7 @@ class TestNoRealAssertion:
     """Test runs code but never checks the output. Setup looks thorough."""
 
     @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6")
+    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_c_no_assertion(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Computes correct hash')
         data = _run_c(tmp_path, r'''
@@ -554,7 +554,7 @@ int main(void) {
         _assert_proof_passes(data, "C no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-2", "RULE-2")
     def test_php_no_assertion(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Sends notification email')
         data = _run_php(tmp_path, r'''<?php
@@ -571,7 +571,7 @@ function test_sends_notification() {
         _assert_proof_passes(data, "PHP no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2")
     def test_sql_no_assertion(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Cascade delete removes children')
         # CHEAT: does the delete but never checks if children were removed
@@ -590,7 +590,7 @@ SELECT 'PASS';
         _assert_proof_passes(data, "SQL no-assertion cheat passes — needs LLM")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-28")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
     def test_typescript_no_assertion(self, tmp_path):
         _setup_spec(tmp_path, 'feat', 'Reverses payload before sending')
         data = _run_typescript(tmp_path, '''\

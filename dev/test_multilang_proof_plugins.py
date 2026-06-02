@@ -51,7 +51,7 @@ def _assert_proof_json(proof_json_path, expected_proofs):
 @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
 class TestCProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-22", "RULE-22", tier="integration")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-1", "RULE-1", tier="integration")
     def test_c_proof_plugin_real_compilation(self, tmp_path):
         """Compile and run a real C test, verify proof JSON emission."""
         # Create a minimal spec so the emitter can resolve the directory
@@ -126,7 +126,7 @@ int main(void) {
             {'feature': 'math_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-24", "RULE-6", tier="integration")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-3", "RULE-1", tier="integration")
     def test_c_proof_plugin_failing_test(self, tmp_path):
         """C test that fails — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'math'
@@ -165,7 +165,7 @@ int main(void) {
             {'feature': 'math_ops', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'fail', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-23", "RULE-23", tier="integration")
+    @pytest.mark.proof("proof_plugins_c", "PROOF-2", "RULE-2", tier="integration")
     def test_c_emit_pipeline_writes_to_spec_dir(self, tmp_path):
         """purlin_proof_finish() prints JSON to stdout; c_purlin_emit.py reads and writes proof file."""
         spec_dir = tmp_path / 'specs' / 'auth'
@@ -218,7 +218,7 @@ int main(void) {
 @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
 class TestPHPProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-25", "RULE-24", tier="integration")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-1", "RULE-1", tier="integration")
     def test_php_proof_plugin_real_execution(self, tmp_path):
         """Execute real PHP test code and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -283,7 +283,7 @@ function test_empty_cart_zero_total() {
             {'feature': 'cart_ops', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-26", "RULE-25", tier="integration")
+    @pytest.mark.proof("proof_plugins_php", "PROOF-2", "RULE-2", tier="integration")
     def test_php_proof_plugin_failing_test(self, tmp_path):
         """PHP test that throws — verify status='fail' in proof JSON."""
         spec_dir = tmp_path / 'specs' / 'cart'
@@ -321,7 +321,7 @@ function test_deliberate_failure() {
 @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
 class TestSQLProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-27", "RULE-26", tier="integration")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1", tier="integration")
     def test_sql_proof_plugin_real_execution(self, tmp_path):
         """Execute real SQL against sqlite3 and verify proof JSON emission."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -380,7 +380,7 @@ SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='null@test.com') = 0
             {'feature': 'data_integrity', 'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass', 'tier': 'unit'},
         ])
 
-    @pytest.mark.proof("proof_plugins", "PROOF-28", "RULE-27", tier="integration")
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2", tier="integration")
     def test_sql_proof_plugin_failing_test(self, tmp_path):
         """SQL test that produces FAIL result."""
         spec_dir = tmp_path / 'specs' / 'db'
@@ -514,7 +514,7 @@ class TestTypeScriptProofPlugin:
             f"reporter harness failed:\nSTDOUT:{result.stdout}\nSTDERR:{result.stderr}"
         )
 
-    @pytest.mark.proof("proof_plugins", "PROOF-29", "RULE-30", tier="integration")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-2", "RULE-2", tier="integration")
     def test_vitest_reporter_onfinished_walk(self, tmp_path):
         """Vitest 2.x+ onFinished(files) tree walk: pass/fail mapping, skipped
         tasks excluded, test_file resolved from the file task's filepath."""
@@ -551,7 +551,7 @@ class TestTypeScriptProofPlugin:
         # test_file is resolved from the file task's filepath (relative to cwd).
         assert all(e['test_file'] == 'test_strings.test.ts' for e in entries), entries
 
-    @pytest.mark.proof("proof_plugins", "PROOF-33", "RULE-28", tier="integration")
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1", tier="integration")
     def test_vitest_reporter_marker_parsing(self, tmp_path):
         """Marker in a test name parses into feature/id/rule/tier identically to Jest."""
         spec_dir = tmp_path / 'specs' / 'svc'
@@ -581,7 +581,7 @@ class TestTypeScriptProofPlugin:
 
 class TestPythonProofPlugin:
 
-    @pytest.mark.proof("proof_plugins", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
     def test_python_proof_plugin_real_execution(self, tmp_path):
         """Run real pytest tests with proof markers and verify JSON emission."""
         spec_dir = tmp_path / 'specs' / 'calc'
@@ -645,7 +645,7 @@ def test_multiply():
 class TestProofPurging:
     """Verify that feature-scoped overwrite purges stale entries on re-run."""
 
-    @pytest.mark.proof("proof_plugins", "PROOF-32", "RULE-29", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-13", "RULE-10", tier="integration")
     def test_removed_test_purged_on_rerun(self, tmp_path):
         """Run with 2 proofs, then re-run with only 1 — verify the old entry is purged."""
         spec_dir = tmp_path / 'specs' / 'auth'

@@ -1,0 +1,86 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "proof_common",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "spec dir resolution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "proof file naming",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "fallback to specs/",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "feature-scoped overwrite",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "all 7 required fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "pass/fail status",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "no markers no files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "custom plugin proofs discovered by sync_status",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "/Users/richlabarca/LocalCode/purlin/dev/test_proof_plugins.sh",
+      "test_name": "fallback warning to stderr",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

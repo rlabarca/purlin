@@ -1,0 +1,23 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_proof_plugin_failing_test",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

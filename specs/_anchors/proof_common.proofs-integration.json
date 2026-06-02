@@ -1,0 +1,23 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_python_proof_plugin_real_execution",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-13",
+      "rule": "RULE-10",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_removed_test_purged_on_rerun",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

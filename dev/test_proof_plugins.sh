@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Tests for proof_plugins — 20 rules.
-# Shared behavior (RULE-1..7), pytest (RULE-8..11), jest (RULE-12..15), shell (RULE-16..19).
+# Tests for the proof plugins, re-homed across the split specs:
+#   proof_common         — shared behavior (RULE-1..7) + discovery/warning (RULE-8..9)
+#   proof_plugins_pytest  — RULE-1..4
+#   proof_plugins_jest    — RULE-1..4
+#   proof_plugins_shell   — RULE-1..4
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,23 +19,23 @@ PASS=0
 FAIL=0
 
 record() {
-  local proof_id="$1" rule_id="$2" name="$3" status="$4"
+  local feature="$1" proof_id="$2" rule_id="$3" name="$4" status="$5"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
-  purlin_proof "proof_plugins" "$proof_id" "$rule_id" "$status" "$name"
+  purlin_proof "$feature" "$proof_id" "$rule_id" "$status" "$name"
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
 
 run() {
-  local proof_id="$1" rule_id="$2" name="$3"
-  shift 3
+  local feature="$1" proof_id="$2" rule_id="$3" name="$4"
+  shift 4
   if "$@" >/dev/null 2>&1; then
-    record "$proof_id" "$rule_id" "$name" pass
+    record "$feature" "$proof_id" "$rule_id" "$name" pass
   else
-    record "$proof_id" "$rule_id" "$name" fail
+    record "$feature" "$proof_id" "$rule_id" "$name" fail
   fi
 }
 
-echo "=== proof_plugins tests ==="
+echo "=== proof plugin tests (proof_common + pytest/jest/shell) ==="
 echo "--- Shared behavior (via pytest) ---"
 
 # PROOF-1 (RULE-1): Spec directory resolution
@@ -49,7 +52,7 @@ PY
   [[ -f "$d/specs/hooks/gate_hook.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-1" "RULE-1" "spec dir resolution" test_spec_dir_resolution
+run "proof_common" "PROOF-1" "RULE-1" "spec dir resolution" test_spec_dir_resolution
 
 # PROOF-2 (RULE-2): Proof file naming <feature>.proofs-<tier>.json
 test_proof_naming() {
@@ -68,7 +71,7 @@ PY
   [[ "$fname" == "gate_hook.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-2" "RULE-2" "proof file naming" test_proof_naming
+run "proof_common" "PROOF-2" "RULE-2" "proof file naming" test_proof_naming
 
 # PROOF-3 (RULE-3): Unknown feature falls back to specs/
 test_fallback() {
@@ -83,7 +86,7 @@ PY
   [[ -f "$d/specs/nonexistent_feature.proofs-unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-3" "RULE-3" "fallback to specs/" test_fallback
+run "proof_common" "PROOF-3" "RULE-3" "fallback to specs/" test_fallback
 
 # PROOF-4 (RULE-4): Feature-scoped overwrite preserves other features
 test_overwrite() {
@@ -107,7 +110,7 @@ assert len(data['proofs']) == 2, f'expected 2, got {len(data[\"proofs\"])}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-4" "RULE-4" "feature-scoped overwrite" test_overwrite
+run "proof_common" "PROOF-4" "RULE-4" "feature-scoped overwrite" test_overwrite
 
 # PROOF-5 (RULE-5): All 7 required fields
 test_fields() {
@@ -128,7 +131,7 @@ for f in ['feature','id','rule','test_file','test_name','status','tier']:
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-5" "RULE-5" "all 7 required fields" test_fields
+run "proof_common" "PROOF-5" "RULE-5" "all 7 required fields" test_fields
 
 # PROOF-6 (RULE-6): pass/fail status
 test_status() {
@@ -152,7 +155,7 @@ assert by['PROOF-2'] == 'fail'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-6" "RULE-6" "pass/fail status" test_status
+run "proof_common" "PROOF-6" "RULE-6" "pass/fail status" test_status
 
 # PROOF-7 (RULE-7): No markers → no proof files
 test_no_markers() {
@@ -166,7 +169,7 @@ PY
   ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-7" "RULE-7" "no markers no files" test_no_markers
+run "proof_common" "PROOF-7" "RULE-7" "no markers no files" test_no_markers
 
 echo "--- pytest-specific ---"
 
@@ -191,7 +194,7 @@ assert e['tier'] == 'unit'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-8" "RULE-8" "pytest marker signature" test_pytest_marker
+run "proof_plugins_pytest" "PROOF-1" "RULE-1" "pytest marker signature" test_pytest_marker
 
 # PROOF-9 (RULE-9): Fewer than 3 args silently skipped
 test_pytest_skip_short() {
@@ -216,7 +219,7 @@ assert len(d['proofs']) == 0, f'Expected 0 proofs, got {len(d[\"proofs\"])}'
   ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-9" "RULE-9" "pytest fewer args skipped" test_pytest_skip_short
+run "proof_plugins_pytest" "PROOF-2" "RULE-2" "pytest fewer args skipped" test_pytest_skip_short
 
 # PROOF-10 (RULE-10): test_file relative to rootdir
 test_pytest_relpath() {
@@ -236,7 +239,7 @@ assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-10" "RULE-10" "pytest test_file relative" test_pytest_relpath
+run "proof_plugins_pytest" "PROOF-3" "RULE-3" "pytest test_file relative" test_pytest_relpath
 
 # PROOF-11 (RULE-11): pytest_configure registers marker and plugin
 test_pytest_configure() {
@@ -276,7 +279,7 @@ PY
   (cd "$d" && python3 -m pytest test_marker_check.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -W "error::pytest.PytestUnknownMarkWarning" -q --no-header 2>/dev/null)
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-11" "RULE-11" "pytest_configure registers marker + plugin" test_pytest_configure
+run "proof_plugins_pytest" "PROOF-4" "RULE-4" "pytest_configure registers marker + plugin" test_pytest_configure
 
 echo "--- Jest-specific ---"
 
@@ -332,7 +335,7 @@ assert e['rule'] == 'RULE-1'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-12" "RULE-12" "jest marker parsing" test_jest_marker
+run "proof_plugins_jest" "PROOF-1" "RULE-1" "jest marker parsing" test_jest_marker
 
 # PROOF-13 (RULE-13): Tests without marker ignored
 test_jest_no_marker() {
@@ -359,7 +362,7 @@ if (files.length > 0) process.exit(1);
 " 2>/dev/null
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-13" "RULE-13" "jest no marker ignored" test_jest_no_marker
+run "proof_plugins_jest" "PROOF-2" "RULE-2" "jest no marker ignored" test_jest_no_marker
 
 # PROOF-14 (RULE-14): test_file relative to rootDir
 test_jest_relpath() {
@@ -374,7 +377,7 @@ assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-14" "RULE-14" "jest test_file relative" test_jest_relpath
+run "proof_plugins_jest" "PROOF-3" "RULE-3" "jest test_file relative" test_jest_relpath
 
 # PROOF-15 (RULE-15): Jest "passed"→"pass", "failed"→"fail"
 test_jest_status() {
@@ -423,7 +426,7 @@ if (by['PROOF-2'] !== 'fail') process.exit(1);
 " 2>/dev/null
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-15" "RULE-15" "jest status mapping" test_jest_status
+run "proof_plugins_jest" "PROOF-4" "RULE-4" "jest status mapping" test_jest_status
 
 echo "--- Shell-specific ---"
 
@@ -446,7 +449,7 @@ assert e['tier'] == 'integration'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-16" "RULE-16" "shell tier from PURLIN_PROOF_TIER" test_shell_tier
+run "proof_plugins_shell" "PROOF-1" "RULE-1" "shell tier from PURLIN_PROOF_TIER" test_shell_tier
 
 # PROOF-17 (RULE-17): test_file from BASH_SOURCE[1]
 test_shell_source() {
@@ -468,7 +471,7 @@ assert 'my_test.sh' in e['test_file'], f'unexpected: {e[\"test_file\"]}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-17" "RULE-17" "shell test_file from BASH_SOURCE" test_shell_source
+run "proof_plugins_shell" "PROOF-2" "RULE-2" "shell test_file from BASH_SOURCE" test_shell_source
 
 # PROOF-18 (RULE-18): purlin_proof_finish required to write
 test_shell_finish_required() {
@@ -496,7 +499,7 @@ test_shell_finish_required() {
   [[ "$no_files" == "true" ]] && [[ "$has_files" == "true" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-18" "RULE-18" "shell finish required to write" test_shell_finish_required
+run "proof_plugins_shell" "PROOF-3" "RULE-3" "shell finish required to write" test_shell_finish_required
 
 # PROOF-19 (RULE-19): Entries cleared after finish
 test_shell_clear() {
@@ -520,7 +523,7 @@ assert len(d['proofs']) == 1, f'expected 1, got {len(d[\"proofs\"])}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-19" "RULE-19" "shell entries cleared after finish" test_shell_clear
+run "proof_plugins_shell" "PROOF-4" "RULE-4" "shell entries cleared after finish" test_shell_clear
 
 echo "--- Installation and discovery ---"
 
@@ -544,7 +547,7 @@ print(sync_status('$d'))
   echo "$output" | grep -q "1/1 rules proved"
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "PROOF-20" "RULE-20" "custom plugin proofs discovered by sync_status" test_custom_discovery
+run "proof_common" "PROOF-8" "RULE-8" "custom plugin proofs discovered by sync_status" test_custom_discovery
 
 # PROOF-21 (RULE-21): Fallback to specs/ emits warning to stderr
 test_fallback_warning() {
@@ -563,12 +566,12 @@ PY
   rm -rf "$d"
   return 0
 }
-run "PROOF-21" "RULE-21" "fallback warning to stderr" test_fallback_warning
+run "proof_common" "PROOF-9" "RULE-9" "fallback warning to stderr" test_fallback_warning
 
 # Emit proof files
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "proof_plugins: $PASS/$((PASS+FAIL)) passed"
+echo "proof plugins: $PASS/$((PASS+FAIL)) passed"
 [[ $FAIL -eq 0 ]]

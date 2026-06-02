@@ -1,0 +1,23 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "proof_plugins_vitest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_reporter_onfinished_walk",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_plugins_vitest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_reporter_marker_parsing",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
