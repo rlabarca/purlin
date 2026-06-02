@@ -1,7 +1,7 @@
 # Anchor: proof_common
 
 > Type: schema
-> Scope: scripts/proof/, skills/init/SKILL.md
+> Scope: scripts/proof/
 > Description: The behavior every Purlin proof plugin implements regardless of language —
 >   spec-directory resolution, proof-file naming, fallback, feature-scoped overwrite, the
 >   7 required fields, pass/fail status, the no-marker no-op, glob-based discovery, the
