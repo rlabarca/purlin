@@ -1,15 +1,16 @@
 {
   "feature": "skill_spec",
-  "vhash": "ffa93bb5",
-  "commit": "5f42a16ba84ca8b20a9185eabe1d7a8f73a84b72",
-  "timestamp": "2026-04-04T22:48:45.094616+00:00",
+  "vhash": "5f00e764",
+  "commit": "1eaaf8bec1ee53d2f944fb79774699f7d68f8ab1",
+  "timestamp": "2026-06-02T15:47:23.471069+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
     "RULE-4",
     "RULE-5",
-    "RULE-6"
+    "RULE-6",
+    "RULE-7"
   ],
   "proofs": [
     {
@@ -40,6 +41,16 @@
     {
       "id": "PROOF-6",
       "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-8",
+      "rule": "RULE-7",
       "status": "pass"
     }
   ]
