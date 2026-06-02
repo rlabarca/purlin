@@ -12,19 +12,19 @@
     },
     {
       "feature": "proof_plugins_c",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
+      "id": "PROOF-3",
+      "rule": "RULE-1",
       "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_c_emit_pipeline_writes_to_spec_dir",
+      "test_name": "test_c_proof_plugin_failing_test",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "proof_plugins_c",
-      "id": "PROOF-3",
-      "rule": "RULE-1",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
       "test_file": "dev/test_multilang_proof_plugins.py",
-      "test_name": "test_c_proof_plugin_failing_test",
+      "test_name": "test_c_emit_pipeline_writes_to_spec_dir",
       "status": "pass",
       "tier": "integration"
     }
