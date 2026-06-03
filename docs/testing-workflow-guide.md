@@ -54,6 +54,21 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:integration]", a
 
 Works with `ts-jest`. For **Vitest**, use the native TypeScript reporter `scripts/proof/vitest_purlin.ts` instead of `jest_purlin.js` — Vitest does not call Jest's reporter hooks. Register it in `vitest.config.ts`: `test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }`.
 
+### xUnit (.NET — C#, F#, VB.NET)
+
+The marker is a test trait, not a parsed string:
+
+```csharp
+[Fact]
+[Trait("PurlinProof", "auth_login:PROOF-1:RULE-1:unit")]
+public void ValidLoginReturns200()
+{
+    Assert.Equal(200, Login("alice", "secret"));
+}
+```
+
+NUnit `[Category]`/`[Property]` and MSTest `[TestProperty]` surface the same way. Run with `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`. Setup is manual — see [proofs_format.md](../references/formats/proofs_format.md) for wiring the `Purlin.TestLogger` assembly.
+
 ### Shell (Bash)
 
 ```bash
@@ -276,7 +291,7 @@ Use an external LLM for Pass 2 instead of Claude auditing Claude.
 
 ## Proof Plugins
 
-Built-in plugins for pytest, Jest, and Shell are installed by `purlin:init`. Check `.purlin/plugins/` to see what's active.
+Built-in plugins for pytest, Jest, Vitest, C, PHP, SQL, and Shell are installed by `purlin:init`; the xUnit (.NET) plugin ships too but needs manual wiring (see [supported frameworks](../references/supported_frameworks.md)). Check `.purlin/plugins/` to see what's active.
 
 ### Adding a plugin
 

@@ -49,7 +49,7 @@ specs/
 | Component | Path | Purpose |
 |-----------|------|---------|
 | MCP server | `scripts/mcp/purlin_server.py` | Powers `purlin:status`, `purlin:drift`, and config tools |
-| Proof plugins | `scripts/proof/` | pytest, Jest, and shell proof collectors |
+| Proof plugins | `scripts/proof/` | Proof collectors for pytest, Jest, Vitest, xUnit (.NET), C, PHP, SQL, and shell — see [supported frameworks](../references/supported_frameworks.md) |
 
 ## Skills Reference
 

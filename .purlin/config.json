@@ -1,5 +1,5 @@
 {
-  "version": "0.9.1",
+  "version": "0.9.2",
   "test_framework": "pytest,jest,shell,vitest",
   "spec_dir": "specs",
   "pre_push": "off",

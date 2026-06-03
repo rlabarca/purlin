@@ -67,7 +67,7 @@ This does 5 things:
 
 1. **Creates `.purlin/`** — config directory with `config.json` (team defaults) and `config.local.json` (per-user overrides, gitignored).
 2. **Creates `specs/`** -- directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
-3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, or shell) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files.
+3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, Vitest, C, PHP, SQL — see [supported frameworks](../references/supported_frameworks.md)) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files. The selection list offers every shipped plugin, including ones with no auto-detection (shell) or manual setup (xUnit/.NET).
 4. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are VERIFIED).
 5. **Configures audit criteria** — built-in criteria always apply. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
 
@@ -87,6 +87,12 @@ reporters: ["default", ".purlin/plugins/jest_purlin.js"]
 ```bash
 source .purlin/plugins/shell_purlin.sh
 ```
+
+**xUnit (.NET)** — Manual setup. Compile `xunit_purlin.cs` into an assembly named `Purlin.TestLogger` (the .NET test platform only discovers loggers from `*TestLogger.dll` assemblies), reference it from your test project, then run:
+```bash
+dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true
+```
+Full wiring steps: [references/formats/proofs_format.md](../references/formats/proofs_format.md).
 
 ## Config System
 
@@ -207,7 +213,7 @@ purlin:spec-from-code
 
 ## Adding More Proof Plugins
 
-Purlin ships with proof plugins for Python (pytest), JavaScript (Jest), and Bash (shell). If your project uses another language or framework, you can add a community or custom proof plugin.
+Purlin ships with proof plugins for Python (pytest), JavaScript/TypeScript (Jest, Vitest), .NET (xUnit — C#, F#, VB.NET), C, PHP, SQL, and Bash (shell) — see [supported frameworks](../references/supported_frameworks.md). If your project uses another language or framework, you can add a community or custom proof plugin.
 
 Proof plugins read proof markers from your tests and write the JSON files that Purlin reads for coverage reporting. See the [Testing Workflow Guide](testing-workflow-guide.md#proof-plugins) for details on what they are and how they work.
 

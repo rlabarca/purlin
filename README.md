@@ -168,5 +168,5 @@ tools/
 ```
 
 **MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status`, `drift`, and `purlin_config` tools.
-**Proof Plugins:** `scripts/proof/` — pytest, Jest, and shell proof collectors.
+**Proof Plugins:** `scripts/proof/` — proof collectors for pytest (Python), Jest and Vitest (JS/TS), xUnit (.NET — C#, F#, VB.NET), C, PHP, SQL, and shell. See [references/supported_frameworks.md](references/supported_frameworks.md).
 **Git Hooks:** `scripts/hooks/` — pre-push (coverage check) and pre-commit (digest auto-generation).
