@@ -1,6 +1,6 @@
 {
   "name": "purlin",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Rule-proof spec-driven development — specs define rules, tests prove them, sync_status shows coverage",
   "author": {
     "name": "Rich LaBarca",
@@ -8,5 +8,12 @@
   },
   "repository": "https://github.com/rlabarca/purlin",
   "license": "MIT",
-  "keywords": ["specs", "testing", "verification", "sync", "rules", "proofs"]
+  "keywords": [
+    "specs",
+    "testing",
+    "verification",
+    "sync",
+    "rules",
+    "proofs"
+  ]
 }
