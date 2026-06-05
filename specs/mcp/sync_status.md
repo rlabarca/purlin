@@ -44,6 +44,7 @@
 - RULE-35: Feature status is determined by exactly one function (`_determine_status`) — all call sites in purlin_server.py delegate to it; no other function contains the status determination logic
 - RULE-36: `_scan_specs` parses `> Stack:` metadata from spec files and includes it in feature info; report-data.js includes `stack` field when present
 - RULE-37: Does NOT warn about rule count — rule count scales with feature complexity per `references/spec_quality_guide.md` ("Coverage dimensions")
+- RULE-38: When the project's `.mcp.json` defines a `purlin` server whose command or args path points into the Claude plugin cache (`.claude/plugins/cache/`), sync_status prepends a preamble advisory warning that the entry shadows the plugin-bundled MCP server and is pinned to an old plugin version, with a `→ Run: purlin:init --mcp` directive; no advisory when `.mcp.json` is absent, has no `purlin` entry, or the `purlin` entry points elsewhere (e.g., a dev checkout)
 
 ## Proof
 
@@ -110,3 +111,4 @@
 - PROOF-61 (RULE-35): e2e: Create isolated project with features in every status (VERIFIED, PASSING, PARTIAL, FAILING, UNTESTED); verify CLI summary table status matches report-data.js per-feature status for all five @e2e
 - PROOF-62 (RULE-36): Create spec with `> Stack: python/stdlib, json`; run `_scan_specs`; verify features dict has `stack == "python/stdlib, json"`. Create spec without Stack; verify `stack is None` @integration
 - PROOF-63 (RULE-37): Create feature with 3 rules; verify NO rule-count warning. Create feature with 12 rules; verify NO rule-count warning. Create anchor with 2 rules; verify NO warning. Create instruction spec with 3 rules; verify NO warning @integration
+- PROOF-64 (RULE-38): Create a temp project with `.mcp.json` defining `mcpServers.purlin` with an args path containing `.claude/plugins/cache/purlin/`; run sync_status; verify the preamble contains the legacy-entry advisory and `→ Run: purlin:init --mcp`. Rewrite the entry with a non-cache path (dev checkout); verify no advisory. Delete `.mcp.json`; verify no advisory @integration
