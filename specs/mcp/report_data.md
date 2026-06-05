@@ -13,7 +13,7 @@
 - RULE-5: Every feature entry has fields: name, type, is_global, proved, total, deferred, status, vhash, receipt, rules, audit
 - RULE-6: Features with all proofs passing (status "PASSING" or "VERIFIED") have a non-null vhash; others have null vhash
 - RULE-7: Features with receipt files include commit, timestamp, and stale fields in receipt
-- RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proofs (array of proof objects where each proof has id, description, test_file, test_name, tier, status, audit)
+- RULE-8: Each rule entry has fields: id, description, label, source, is_deferred, is_assumed, status, proofs (array of proof objects where each proof has id, description, test_file, test_name, tier, status, audit). The proofs array contains executed proofs plus planned proofs — spec `PROOF-N` entries from the rule's source `## Proof` section with no executed result — distinguished by status "planned" with empty test_file, test_name, and audit, and tier parsed from the proof description's @tag (default unit); a proof id with an executed result for a rule is never also emitted as planned for that rule
 - RULE-9: Rule status is one of PASS, FAIL, NONE, or DEFERRED
 - RULE-10: Rule label is one of own, required, or global
 - RULE-11: docs_url is dynamically derived from the Purlin plugin git remote
@@ -27,6 +27,7 @@
 - RULE-19: Every feature entry includes a `category` field derived from the spec's parent directory under `specs/` (e.g., `specs/skills/skill_build.md` has category `skills`)
 - RULE-20: Coverage invariant — for every feature in report data, status PASSING or VERIFIED implies proved == total (100% coverage fraction). No feature may show PASSING or VERIFIED with proved < total
 - RULE-21: Every feature entry includes a `description` field containing the text of the spec's `> Description:` metadata field (with multi-line continuations joined), or null if the field is absent
+- RULE-22: Planned proofs do not affect coverage — proved/total counts, vhash, and feature status are computed from executed proofs only; a rule whose only proofs are planned has status NONE
 
 ## Proof
 
@@ -50,3 +51,5 @@
 - PROOF-18 (RULE-18): Create a feature with 3 behavioral rules; write passing proofs for only 2 of them; build report data; verify feature status is "PARTIAL" not "PASSING" @integration
 - PROOF-20 (RULE-20): Create multiple features — one PASSING (behavioral-only), one PASSING (mixed behavioral+structural), one VERIFIED with receipt, one PARTIAL; build report data; assert every PASSING/VERIFIED feature has proved == total and every PARTIAL feature has proved < total @integration
 - PROOF-21 (RULE-21): Create a spec with `> Description: Handles user login.`; build report data; verify feature description equals "Handles user login."; create a spec with no `> Description:` field; verify description is null
+- PROOF-22 (RULE-8): Create a spec whose `## Proof` section declares PROOF-1 (RULE-1) and PROOF-2 (RULE-1) `@integration`; write an executed proof result for PROOF-1 only; build report data; verify RULE-1's proofs array contains PROOF-1 with status pass and PROOF-2 with status "planned", empty test_file/test_name/audit, and tier "integration"; verify PROOF-1 does not also appear as planned @integration
+- PROOF-23 (RULE-22): Create a feature with one rule whose only proof is planned (no executed result); build report data; verify proved==0, feature status is UNTESTED, vhash is null, and the rule status is NONE @integration
