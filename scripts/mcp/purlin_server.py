@@ -149,6 +149,8 @@ def _scan_specs(project_root):
         proof_descriptions = []
         proof_desc_by_rule = {}
         proof_desc_by_id = {}
+        proof_tier_by_id = {}
+        planned_proof_ids_by_rule = {}
         proof_section = _extract_section(content, '## Proof')
         if proof_section:
             for line in proof_section.strip().splitlines():
@@ -163,10 +165,14 @@ def _scan_specs(project_root):
                 clean_desc = re.sub(r'\s*@\w+(?:\([^)]*\))?\s*$', '', proof_desc).strip()
                 proof_descriptions.append(proof_desc)
                 proof_desc_by_id[proof_id] = clean_desc
+                # Tier from the trailing @tag (default unit)
+                tier_match = re.search(r'@(\w+)(?:\([^)]*\))?\s*$', proof_desc)
+                proof_tier_by_id[proof_id] = tier_match.group(1) if tier_match else 'unit'
                 # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
                 rule_ids = [r.strip() for r in rule_ids_raw.split(',')]
                 for rule_id in rule_ids:
                     proof_desc_by_rule.setdefault(rule_id, []).append(proof_desc)
+                    planned_proof_ids_by_rule.setdefault(rule_id, []).append(proof_id)
                 stamp = _MANUAL_STAMPED_RE.search(line)
                 for rule_id in rule_ids:
                     if stamp:
@@ -227,6 +233,8 @@ def _scan_specs(project_root):
             'proof_descriptions': proof_descriptions,
             'proof_desc_by_rule': proof_desc_by_rule,
             'proof_desc_by_id': proof_desc_by_id,
+            'proof_tier_by_id': proof_tier_by_id,
+            'planned_proof_ids_by_rule': planned_proof_ids_by_rule,
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
             'description': description,
@@ -1336,10 +1344,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
             # Get proof descriptions from the source spec
             if label == 'own':
-                desc_by_id = info.get('proof_desc_by_id', {})
+                src_info = info
             else:
                 src_info = features.get(src_feature, {})
-                desc_by_id = src_info.get('proof_desc_by_id', {})
+            desc_by_id = src_info.get('proof_desc_by_id', {})
 
             proofs_data = []
             audit_feat = name if label == 'own' else src_feature
@@ -1356,6 +1364,24 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'tier': p.get('tier', 'unit'),
                     'status': p.get('status', ''),
                     'audit': proof_audit,
+                })
+
+            # Planned proofs: spec PROOF-N entries with no executed result.
+            # Display-only — never affects proved/total, vhash, or status.
+            bare_rule = key.split('/', 1)[1] if '/' in key else key
+            executed_ids = {p['id'] for p in proofs_data}
+            tier_by_id = src_info.get('proof_tier_by_id', {})
+            for pid in src_info.get('planned_proof_ids_by_rule', {}).get(bare_rule, []):
+                if pid in executed_ids:
+                    continue
+                proofs_data.append({
+                    'id': pid,
+                    'description': desc_by_id.get(pid, ''),
+                    'test_file': '',
+                    'test_name': '',
+                    'tier': tier_by_id.get(pid, 'unit'),
+                    'status': 'planned',
+                    'audit': '',
                 })
 
             if is_deferred:
