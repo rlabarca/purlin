@@ -35,6 +35,9 @@
 - RULE-27: `.discoveries.md` Figma/design references are preserved as `> Visual-Reference:` metadata or `@manual` proof references during migration
 - RULE-28: Quality guide references coverage dimensions instead of a fixed rule count target
 - RULE-29: The taxonomy phase never produces a category folder containing a single spec — single-feature categories are merged into a related category during taxonomy review, or the spec is placed directly at `specs/<name>.md` when no category fits
+- RULE-30: The tier review pass (Phase 3 step 7) includes an inverse check: every `@e2e` proof description must read as an observable flow (arrange → act → observe through the real running app) and must not name a source file or internal function; mis-tagged proofs are rewritten as boundary observations or retagged, per `references/spec_quality_guide.md` ("E2E proof descriptions")
+- RULE-31: Spec validation (Phase 3 step 11) includes a proof implementation-coupling check that rejects proof descriptions naming source files or internal symbols as the asserted target
+- RULE-32: When a category's generated proofs include `@e2e` and no e2e-capable test runner was detected in Phase 1, the skill surfaces a warning in the category review block and in the Phase 4 summary (tool-agnostic — Playwright, Cypress, MCP-driven browser, etc.)
 
 ## Proof
 
@@ -79,3 +82,7 @@
 - PROOF-39 (RULE-27): Grep SKILL.md for "Visual-Reference" AND "Figma" in the .discoveries.md migration section; verify design references are preserved as metadata or manual proof references
 - PROOF-40 (RULE-28): Grep spec_quality_guide.md for "Coverage dimensions"; verify section exists. Grep for "5–10 rules per feature"; verify the fixed target no longer exists
 - PROOF-41 (RULE-29): Grep `skills/spec-from-code/SKILL.md` for the Phase 2 single-feature category check; verify it instructs merging single-feature categories into a related category or placing the spec at `specs/<name>.md` without a folder
+- PROOF-42 (RULE-30): Grep `skills/spec-from-code/SKILL.md` step 7 for the inverse check: "observable flow", arrange → act → observe, and "must not name a source file or internal function"; verify the pointer to `spec_quality_guide.md` "E2E proof descriptions" is present
+- PROOF-43 (RULE-31): Grep `skills/spec-from-code/SKILL.md` step 11 for the proof implementation-coupling check; verify it rejects proof descriptions naming source files or internal symbols as the asserted target
+- PROOF-44 (RULE-32): Grep `skills/spec-from-code/SKILL.md` for the e2e-runner warning in BOTH the step 12 review block and the Phase 4 summary; verify both locations mention `@e2e` proofs with no e2e runner detected
+- PROOF-45 (RULE-30): Grep `references/spec_quality_guide.md` for the "E2E proof descriptions" section; verify the canonical guidance the skill points to exists
