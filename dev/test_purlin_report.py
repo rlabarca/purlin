@@ -1314,7 +1314,7 @@ class TestCategorySections:
         Specs and Anchors are in separate sections with independent grouping."""
         data = make_categorized_data()
         load_dashboard(page, dashboard, data=data, expand_categories=False)
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_collapsed.png"))
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories.png"))
 
         # Verify 3 category header rows exist total (2 in Specs, 1 in Anchors)
         cat_headers = page.query_selector_all(".cat-header")
@@ -1417,42 +1417,43 @@ class TestCategorySections:
             f"Expected mcp bar ~81%, got {cat_bar_widths.get('mcp')}%"
         )
 
-        # Expand all categories (re-query after each click since render rebuilds DOM)
-        for i in range(3):
-            headers = page.query_selector_all(".cat-header:not(.expanded)")
-            if not headers:
-                break
-            headers[0].click()
-            page.wait_for_timeout(200)
+        # Categories are expanded by default — feature rows already visible
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories_expanded.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-20", "RULE-20")
-    def test_categories_collapsed_by_default(self, page, dashboard):
-        """PROOF-20: Categories start collapsed — no feature rows visible initially."""
+    def test_categories_expanded_by_default(self, page, dashboard):
+        """PROOF-20: Categories start expanded — feature rows visible with empty localStorage."""
         data = make_categorized_data()
+        # expand_categories=False means: do NOT seed localStorage — pure default state
         load_dashboard(page, dashboard, data=data, expand_categories=False)
 
-        # No feature rows should be visible
+        # Feature rows should be visible without any interaction
         fr_count = page.evaluate("() => document.querySelectorAll('tr.fr').length")
-        assert fr_count == 0, (
-            f"Expected 0 feature rows when categories collapsed, got {fr_count}"
+        assert fr_count > 0, (
+            f"Expected feature rows visible by default, got {fr_count}"
         )
 
         # Category headers should exist
         cat_count = page.evaluate("() => document.querySelectorAll('.cat-header').length")
         assert cat_count == 3, f"Expected 3 category headers, got {cat_count}"
 
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_collapsed.png"))
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_expanded_default.png"))
 
-        # Click the first category header to expand it
-        page.click(".cat-header")
+        # Click the skills category header to collapse it
+        page.click(".cat-header[data-cat='skills']")
         page.wait_for_timeout(300)
 
-        # Now some feature rows should be visible
+        # Its feature rows should now be hidden
+        skills_rows = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
+        """)
+        assert skills_rows == 0, (
+            f"Expected skills features hidden after collapse, got {skills_rows}"
+        )
         fr_after = page.evaluate("() => document.querySelectorAll('tr.fr').length")
-        assert fr_after > 0, "Expected feature rows after expanding a category"
+        assert fr_after < fr_count, "Expected fewer feature rows after collapsing a category"
 
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_one_expanded.png"))
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof20_one_collapsed.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-21", "RULE-21")
     def test_category_state_persists_across_reloads(self, page, dashboard):
@@ -1460,26 +1461,26 @@ class TestCategorySections:
         data = make_categorized_data()
         load_dashboard(page, dashboard, data=data, expand_categories=False)
 
-        # All collapsed initially
+        # All expanded initially (default state)
         fr_before = page.evaluate("() => document.querySelectorAll('tr.fr').length")
-        assert fr_before == 0, "Expected all categories collapsed initially"
+        assert fr_before > 0, "Expected all categories expanded initially"
 
-        # Click the skills category to expand it
+        # Click the skills category to collapse it
         page.click(".cat-header[data-cat='skills']")
         page.wait_for_timeout(300)
 
-        # Verify skills features are visible
+        # Verify skills features are hidden
         skills_rows = page.evaluate("""() =>
             document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
         """)
-        assert skills_rows == 2, f"Expected 2 skills features after expand, got {skills_rows}"
+        assert skills_rows == 0, f"Expected 0 skills features after collapse, got {skills_rows}"
 
-        # Verify localStorage was updated
+        # Verify localStorage recorded the collapse
         stored = page.evaluate(
             "() => JSON.parse(localStorage.getItem('purlin-categories') || '{}')"
         )
-        assert stored.get("skills") is True, (
-            f"Expected skills=true in localStorage, got {stored}"
+        assert stored.get("skills") is False, (
+            f"Expected skills=false in localStorage, got {stored}"
         )
 
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof21_before_reload.png"))
@@ -1488,25 +1489,25 @@ class TestCategorySections:
         page.reload()
         page.wait_for_load_state("networkidle")
 
-        # Skills should still be expanded after reload
+        # Skills should still be collapsed after reload
         skills_after = page.evaluate("""() =>
             document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
         """)
-        assert skills_after == 2, (
-            f"Expected skills still expanded after reload, got {skills_after} rows"
+        assert skills_after == 0, (
+            f"Expected skills still collapsed after reload, got {skills_after} rows"
         )
 
-        # Other categories should still be collapsed
+        # Other categories should still be expanded
         mcp_rows = page.evaluate("""() =>
             document.querySelectorAll("tr.fr[data-name='config_engine'], tr.fr[data-name='drift']").length
         """)
-        assert mcp_rows == 0, (
-            f"Expected mcp category still collapsed after reload, got {mcp_rows} rows"
+        assert mcp_rows == 2, (
+            f"Expected mcp category still expanded after reload, got {mcp_rows} rows"
         )
 
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof21_after_reload.png"))
 
-        # Collapse skills, reload, verify collapsed
+        # Expand skills again, reload, verify expanded
         page.click(".cat-header[data-cat='skills']")
         page.wait_for_timeout(300)
         page.reload()
@@ -1515,8 +1516,8 @@ class TestCategorySections:
         skills_final = page.evaluate("""() =>
             document.querySelectorAll("tr.fr[data-name='skill_build'], tr.fr[data-name='skill_audit']").length
         """)
-        assert skills_final == 0, (
-            f"Expected skills collapsed after toggle+reload, got {skills_final} rows"
+        assert skills_final == 2, (
+            f"Expected skills expanded after toggle+reload, got {skills_final} rows"
         )
 
 
@@ -2501,3 +2502,131 @@ def test_anchors_separate_section(dashboard, page):
     )
 
     page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof32_anchors_section.png"))
+
+
+# ---------------------------------------------------------------------------
+# TestPlannedProofRendering — planned proofs greyed with "not run" indicator
+# ---------------------------------------------------------------------------
+
+def make_planned_proof_data():
+    """One feature: RULE-1 has an executed + a planned proof, RULE-2 has none."""
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return {
+        "timestamp": now,
+        "project": "test-project",
+        "version": "0.9.0",
+        "docs_url": None,
+        "summary": {"total_features": 1, "verified": 0, "partial": 1, "failing": 0, "untested": 0},
+        "features": [{
+            "name": "auth_login",
+            "category": "auth",
+            "type": "feature",
+            "is_global": False,
+            "source_url": None,
+            "proved": 1,
+            "total": 2,
+            "deferred": 0,
+            "status": "PARTIAL",
+            "vhash": None,
+            "receipt": None,
+            "rules": [
+                {
+                    "id": "RULE-1", "description": "Validates credentials",
+                    "label": "own", "source": None, "is_deferred": False,
+                    "is_assumed": False, "status": "PASS",
+                    "proofs": [
+                        {
+                            "id": "PROOF-1", "description": "POST valid creds",
+                            "test_file": "tests/test.py", "test_name": "test_valid",
+                            "tier": "unit", "status": "pass", "audit": "STRONG",
+                        },
+                        {
+                            "id": "PROOF-2", "description": "POST bad creds returns 401",
+                            "test_file": "", "test_name": "",
+                            "tier": "integration", "status": "planned", "audit": "",
+                        },
+                    ],
+                },
+                {
+                    "id": "RULE-2", "description": "Locks account after 5 failures",
+                    "label": "own", "source": None, "is_deferred": False,
+                    "is_assumed": False, "status": "NONE",
+                    "proofs": [],
+                },
+            ],
+            "audit": None,
+        }],
+        "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        "audit_summary": {
+            "integrity": 85, "strong": 4, "weak": 1, "hollow": 1, "manual": 0,
+            "behavioral_total": 6, "last_audit": now,
+            "last_audit_relative": "just now", "stale": False,
+        },
+        "drift": None,
+    }
+
+
+class TestPlannedProofRendering:
+
+    @pytest.mark.proof("purlin_report", "PROOF-33", "RULE-33")
+    def test_planned_proof_renders_greyed_not_run(self, page, dashboard):
+        """PROOF-33: Planned proofs render greyed with 'not run', no audit tag;
+        empty-proofs rules still show an em dash."""
+        load_dashboard(page, dashboard, data=make_planned_proof_data())
+
+        # Expand the feature
+        page.click("tr.fr[data-name='auth_login']")
+        page.wait_for_timeout(300)
+
+        # Planned proof renders inside .rprf-planned with a "not run" tag
+        planned = page.query_selector(".rprf-planned")
+        assert planned is not None, "Expected a .rprf-planned element for the planned proof"
+        planned_text = planned.text_content()
+        assert "not run" in planned_text, (
+            f"Expected 'not run' indicator in planned proof, got: {planned_text}"
+        )
+        assert "PROOF-2" in planned_text and "POST bad creds returns 401" in planned_text, (
+            f"Expected planned proof id and description, got: {planned_text}"
+        )
+
+        # Planned proof never shows an audit tag (even with audit_summary data)
+        planned_atags = page.evaluate("""() =>
+            document.querySelectorAll('.rprf-planned .atag, .rprf-planned .atag-st').length
+        """)
+        assert planned_atags == 0, (
+            f"Expected no audit tags inside planned proof, got {planned_atags}"
+        )
+
+        # Executed proof renders normally (outside .rprf-planned, with its audit tag)
+        executed_info = page.evaluate("""() => {
+            const cells = document.querySelectorAll('.rprf');
+            for (const c of cells) {
+                if (c.textContent.includes('PROOF-1')) {
+                    return {
+                        hasAudit: c.querySelectorAll('.atag').length > 0,
+                        hasLoc: c.textContent.includes('tests/test.py'),
+                    };
+                }
+            }
+            return null;
+        }""")
+        assert executed_info is not None, "Expected the executed proof cell to render"
+        assert executed_info["hasAudit"], "Expected audit tag on the executed proof"
+        assert executed_info["hasLoc"], "Expected test location on the executed proof"
+
+        # Rule with an empty proofs array still shows an em dash
+        dash_cell = page.evaluate("""() => {
+            const rows = document.querySelectorAll('.rt tbody tr');
+            for (const r of rows) {
+                if (r.textContent.includes('RULE-2')) {
+                    const cell = r.querySelector('.rprf');
+                    return cell ? cell.textContent.trim() : null;
+                }
+            }
+            return null;
+        }""")
+        assert dash_cell == "—", (
+            f"Expected em dash for rule with no proofs, got: {dash_cell!r}"
+        )
+
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof33_planned_proof.png"))

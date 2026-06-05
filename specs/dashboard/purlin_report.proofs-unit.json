@@ -177,7 +177,7 @@
       "id": "PROOF-20",
       "rule": "RULE-20",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_categories_collapsed_by_default",
+      "test_name": "test_categories_expanded_by_default",
       "status": "pass",
       "tier": "unit"
     },
@@ -286,6 +286,15 @@
       "rule": "RULE-32",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_anchors_separate_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-33",
+      "rule": "RULE-33",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_planned_proof_renders_greyed_not_run",
       "status": "pass",
       "tier": "unit"
     }
