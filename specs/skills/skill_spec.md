@@ -13,6 +13,7 @@
 - RULE-5: Update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
 - RULE-6: Skill includes mandatory tier tag review for proof descriptions
 - RULE-7: Spec skill has exit criteria requiring the spec file is committed and no uncommitted spec files remain before the skill can complete
+- RULE-8: Validate-Before-Commit includes an e2e proof-description check: `@e2e` proofs must describe an observable flow and must not name source files or internal functions, per `references/spec_quality_guide.md` ("E2E proof descriptions")
 
 ## Proof
 
@@ -24,3 +25,4 @@
 - PROOF-6 (RULE-6): Grep `skills/spec/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
 - PROOF-7 (RULE-7): Grep `skills/spec/SKILL.md` for "Exit Criteria" section; verify it requires spec committed and no uncommitted spec files
 - PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e
+- PROOF-9 (RULE-8): Grep `skills/spec/SKILL.md` Validate-Before-Commit for the `@e2e` observable-flow check and its pointer to `spec_quality_guide.md` "E2E proof descriptions"; verify present
