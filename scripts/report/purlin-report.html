@@ -234,6 +234,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .rprf{font-size:12px;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word}
 .rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px;overflow-wrap:break-word;word-break:break-all}
 .rprf-sep{height:8px;border-top:1px solid var(--border-light);margin-top:8px;padding-top:0}
+.rprf-planned{opacity:.55}
+.rprf-planned-tag{display:inline-block;font-size:10px;font-style:italic;color:var(--text-dim);border:1px solid var(--border-light);border-radius:3px;padding:0 4px;margin-right:4px}
 .atag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
 .atag-s{background:var(--green-dim);color:var(--green)}
 .atag-w{background:var(--amber-dim);color:var(--amber)}
@@ -468,9 +470,11 @@ table{min-width:680px}
   var hasGlobalAudit = false;
 
   function proofCell(p) {
-    var h = '';
-    if (hasGlobalAudit) h += auditTag(p.audit, p.description);
+    var planned = (p.status === 'planned');
+    var h = planned ? '<div class="rprf-planned">' : '';
+    if (hasGlobalAudit && !planned) h += auditTag(p.audit, p.description);
     if (p.id) h += '<span class="fid">' + esc(p.id) + '</span> ';
+    if (planned) h += '<span class="rprf-planned-tag">not run</span> ';
     if (p.description) {
       h += '<span>' + esc(p.description) + '</span>';
     }
@@ -478,6 +482,7 @@ table{min-width:680px}
     if (p.test_file) loc += p.test_file;
     if (p.test_name) loc += '::' + p.test_name;
     if (loc) h += '<div class="rprf-loc">' + esc(loc) + '</div>';
+    if (planned) h += '</div>';
     return h;
   }
 
@@ -674,7 +679,7 @@ table{min-width:680px}
         var cat = grouped.order[gi];
         var catFeatures = grouped.cats[cat];
         var cs = catSummary(catFeatures);
-        var catOpen = categorySet[cat] === true; /* collapsed by default */
+        var catOpen = categorySet[cat] !== false; /* expanded by default; false = user-collapsed */
         var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
         var catCovCls = cs.failing > 0 ? 'cov-fail' : (cs.partial > 0 || cs.untested > 0 || cs.proved < cs.rules) ? 'cov-partial' : 'cov-verified';
 
@@ -830,7 +835,7 @@ table{min-width:680px}
     for (var ci2 = 0; ci2 < cats.length; ci2++) {
       cats[ci2].addEventListener('click', function() {
         var cat = this.getAttribute('data-cat');
-        categorySet[cat] = !categorySet[cat];
+        categorySet[cat] = (categorySet[cat] === false); /* collapse stores false, expand stores true */
         try { localStorage.setItem('purlin-categories', JSON.stringify(categorySet)); } catch(e) {}
         render();
       });

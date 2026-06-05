@@ -91,8 +91,8 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 
 - **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and proof integrity score
 - **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and integrity percentages. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
-- **Features section** — features grouped by category (matching `specs/` subdirectories). Click a category to expand and see individual features.
-- **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW)
+- **Features section** — features grouped by category (matching `specs/` subdirectories). Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
+- **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
 - **Uncommitted files** — when `purlin:status` detects uncommitted spec or proof files, a collapsible section shows which files need committing
 - **Staleness indicator** — top-right corner shows time since last `purlin:status` run (amber after 1 hour, red after 24 hours)
 
@@ -108,7 +108,8 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 ### Coverage data
 
 ```
-purlin:status (or any skill that checks coverage)
+purlin:status (or any skill that checks coverage,
+or the pre-commit digest hook on every commit)
     |
     v
 writes .purlin/report-data.js
@@ -147,6 +148,7 @@ The HTML file loads `.purlin/report-data.js` through a script tag. No fetch call
 
 When `purlin:status` detects uncommitted changes to spec or proof files, the dashboard shows a collapsible **uncommitted files section** between the summary strip and the anchors table. This helps you remember to commit proof files after test runs or spec edits.
 
-## Gitignored by Design
+## What's Committed, What's Not
 
-Both `purlin-report.html` and `.purlin/report-data.js` are gitignored. The HTML is a local tool, not a shared artifact. Each developer runs `purlin:init` to get their own symlink.
+- **`purlin-report.html` is gitignored.** It's a symlink to the installed framework — each developer runs `purlin:init` to get their own.
+- **`.purlin/report-data.js` is committed.** It's the project digest — coverage and drift data that travels with the repo so stakeholders (QA, PM, compliance) can open the dashboard without running Purlin tools. A pre-commit hook installed by `purlin:init` regenerates it on every commit (configurable via `purlin:init --digest`: `auto`, `warn`, or `off`).
