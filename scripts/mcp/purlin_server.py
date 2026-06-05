@@ -592,6 +592,34 @@ def _check_uncommitted_specs(project_root):
     return uncommitted
 
 
+def _check_legacy_mcp_entry(project_root):
+    """Detect a legacy version-pinned purlin entry in the project's .mcp.json.
+
+    Pre-0.9.4 purlin:init wrote a purlin server entry with an absolute path
+    into the versioned plugin cache. Project-scope .mcp.json shadows the
+    plugin-bundled server, so the entry silently pins the project to an old
+    plugin version. Dev checkouts (paths outside the plugin cache) are exempt.
+
+    Returns the pinned path string, or None when no legacy entry exists.
+    """
+    mcp_path = os.path.join(project_root, '.mcp.json')
+    if not os.path.isfile(mcp_path):
+        return None
+    try:
+        with open(mcp_path, 'r') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return None
+    entry = data.get('mcpServers', {}).get('purlin')
+    if not isinstance(entry, dict):
+        return None
+    candidates = [entry.get('command', '')] + list(entry.get('args', []))
+    for value in candidates:
+        if isinstance(value, str) and '.claude/plugins/cache/' in value:
+            return value
+    return None
+
+
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     features = _scan_specs(project_root)
@@ -601,6 +629,15 @@ def sync_status(project_root, role=None):
         return "No specs found in specs/. Run purlin:init to set up, or create specs manually."
 
     preamble = []
+
+    # Warn about a legacy version-pinned MCP entry (shadows the plugin-bundled server)
+    legacy_mcp = _check_legacy_mcp_entry(project_root)
+    if legacy_mcp:
+        preamble.append('⚠ Legacy MCP config: .mcp.json pins purlin to a plugin-cache path:')
+        preamble.append(f'  {legacy_mcp}')
+        preamble.append('This entry shadows the plugin-bundled MCP server and stays on the old version after plugin updates.')
+        preamble.append('→ Run: purlin:init --mcp (then /reload-plugins)')
+        preamble.append('')
 
     # Check for uncommitted spec/proof changes
     uncommitted = _check_uncommitted_specs(project_root)

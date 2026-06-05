@@ -273,6 +273,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-68",
+      "rule": "RULE-38",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_legacy_mcp_entry_advisory",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-56",
       "rule": "RULE-33",
       "test_file": "dev/test_mcp_server.py",

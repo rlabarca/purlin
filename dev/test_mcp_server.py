@@ -833,6 +833,49 @@ class TestSyncStatus:
         assert anchor_entry['pinned'] == full_sha
         assert anchor_entry['source_path'] == 'specs/security/constraints.md'
 
+    @pytest.mark.proof("sync_status", "PROOF-68", "RULE-38")
+    def test_legacy_mcp_entry_advisory(self):
+        """Legacy plugin-cache .mcp.json entry triggers the migration advisory;
+        dev-checkout paths and absent files do not."""
+        self._write_spec('login', (
+            '# Feature: login\n\n'
+            '## What it does\nHandles login.\n\n'
+            '## Rules\n- RULE-1: Return 200\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
+        ))
+        mcp_path = os.path.join(self.project_root, '.mcp.json')
+
+        # Case 1: version-pinned plugin-cache path → advisory with directive
+        cache_path = '/Users/dev/.claude/plugins/cache/purlin/purlin/0.9.1/scripts/mcp/purlin_server.py'
+        with open(mcp_path, 'w') as f:
+            json.dump({'mcpServers': {'purlin': {
+                'command': 'python3', 'args': [cache_path]}}}, f)
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Legacy MCP config' in result, \
+            f'Expected legacy MCP advisory in preamble, got: {result[:300]}'
+        assert cache_path in result, 'Advisory should show the pinned path'
+        assert '→ Run: purlin:init --mcp' in result, \
+            'Advisory must include the purlin:init --mcp directive'
+        # Advisory is prepended — appears in the preamble, before feature output
+        preamble_section = result.split('login')[0]
+        assert 'Legacy MCP config' in preamble_section, \
+            'Advisory must appear in the preamble, before feature output'
+
+        # Case 2: non-cache path (dev checkout) → no advisory
+        with open(mcp_path, 'w') as f:
+            json.dump({'mcpServers': {'purlin': {
+                'command': 'python3',
+                'args': ['/Users/dev/LocalCode/purlin/scripts/mcp/purlin_server.py']}}}, f)
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Legacy MCP config' not in result, \
+            'Dev-checkout path must not trigger the advisory'
+
+        # Case 3: no .mcp.json → no advisory
+        os.remove(mcp_path)
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Legacy MCP config' not in result, \
+            'Absent .mcp.json must not trigger the advisory'
+
 
 class TestIntegrityFormula:
     """sync_status RULE-33: integrity formula consistency."""
