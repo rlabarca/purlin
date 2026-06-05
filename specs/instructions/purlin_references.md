@@ -2,9 +2,9 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
 > Stack: markdown (reference documentation)
-> Description: Eight reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
+> Description: Ten reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 
@@ -20,6 +20,9 @@
 - RULE-10: `spec_quality_guide.md` includes test failure diagnosis guidance with the three categories (code bug, test bug, spec drift) and assertion integrity rules
 - RULE-11: `spec_quality_guide.md` includes audience-appropriate language guidance mapping artifacts to their intended readers
 - RULE-12: `drift_criteria.md` documents file classification order, NO_IMPACT patterns, behavioral directory exclusions, significance mapping, structural-only drift indicators, and precomputed drift flags
+- RULE-13: `spec_quality_guide.md` documents E2E proof descriptions as observable flows (arrange → act → observe through the real running app), forbids naming source files or internal functions in proof descriptions, and requires descriptions to stay tool-agnostic (executable by any e2e runner)
+- RULE-14: `audit_criteria.md` defines E2E Proof Tier Integrity criteria — tier mismatch (an `@e2e` test that never drives the real UI) and source-constant assertion (asserting a config constant where the rule describes runtime behavior) — applying to ALL `@e2e` proofs, not just design anchors
+- RULE-15: `supported_frameworks.md` documents end-to-end (browser) proofs: no dedicated e2e proof reporter ships, `@e2e` proofs are tool-agnostic, and proof emission wires through the existing plugins (Vitest/Jest markers or shell `purlin_proof` wrappers)
 
 ## Proof
 
@@ -35,3 +38,6 @@
 - PROOF-10 (RULE-10): Grep `references/spec_quality_guide.md` for `Code bug`, `Test bug`, `Spec drift`, and `Assertion Integrity`; verify all appear
 - PROOF-11 (RULE-11): Grep `references/spec_quality_guide.md` for `Audience-Appropriate Language`; verify the section exists
 - PROOF-12 (RULE-12): Grep `references/drift_criteria.md` for `File Classification`, `NO_IMPACT Patterns`, `Behavioral Directory Exclusions`, `Significance Classification`, `Structural-Only Drift`, `drift_flags`; verify all sections present
+- PROOF-13 (RULE-13): Grep `references/spec_quality_guide.md` for the "E2E proof descriptions" section; verify it contains arrange → act → observe flow language, the ban on naming source files/internal functions, and tool-agnostic phrasing
+- PROOF-14 (RULE-14): Grep `references/audit_criteria.md` for "E2E Proof Tier Integrity", "tier mismatch", and "source-constant"; verify the section applies to all `@e2e` proofs, not only design anchors
+- PROOF-15 (RULE-15): Grep `references/supported_frameworks.md` for the end-to-end proofs section; verify it states no dedicated e2e reporter ships, describes tool-agnostic `@e2e` proofs, and documents wiring through existing plugins
