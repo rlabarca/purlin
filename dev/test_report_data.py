@@ -895,3 +895,101 @@ class TestReportDataStructure:
         assert feat['description'] is None, (
             f"Expected description=None when absent, got '{feat['description']}'"
         )
+
+    @pytest.mark.proof("report_data", "PROOF-22", "RULE-8")
+    def test_planned_proofs_appear_in_proofs_array(self):
+        """Spec PROOF-N entries with no executed result appear with status 'planned'."""
+        _write_spec(self.tmp, 'delta',
+                    '# Feature: delta\n\n'
+                    '> Description: Planned proof feature.\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): Verify response\n'
+                    '- PROOF-2 (RULE-1): Verify response via API @integration\n')
+        # Executed result for PROOF-1 only
+        _write_proofs(self.tmp, 'delta', [{
+            'feature': 'delta',
+            'id': 'PROOF-1',
+            'rule': 'RULE-1',
+            'test_file': 'tests/test_delta.py',
+            'test_name': 'test_response',
+            'status': 'pass',
+            'tier': 'unit',
+        }])
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'delta')
+        rule = next(r for r in feat['rules'] if r['id'] == 'RULE-1')
+        by_id = {}
+        for p in rule['proofs']:
+            by_id.setdefault(p['id'], []).append(p)
+
+        # PROOF-1 executed, never duplicated as planned
+        assert len(by_id.get('PROOF-1', [])) == 1, \
+            f"Expected exactly one PROOF-1 entry, got {by_id.get('PROOF-1')}"
+        assert by_id['PROOF-1'][0]['status'] == 'pass'
+
+        # PROOF-2 planned: empty test_file/test_name/audit, tier from @tag
+        assert len(by_id.get('PROOF-2', [])) == 1, \
+            f"Expected exactly one PROOF-2 entry, got {by_id.get('PROOF-2')}"
+        planned = by_id['PROOF-2'][0]
+        assert planned['status'] == 'planned', \
+            f"Expected status 'planned', got '{planned['status']}'"
+        assert planned['test_file'] == '' and planned['test_name'] == ''
+        assert planned['audit'] == ''
+        assert planned['tier'] == 'integration', \
+            f"Expected tier parsed from @integration tag, got '{planned['tier']}'"
+        assert planned['description'] == 'Verify response via API', \
+            f"Expected tier tag stripped from description, got '{planned['description']}'"
+
+    @pytest.mark.proof("report_data", "PROOF-22", "RULE-8")
+    def test_planned_proofs_for_required_anchor_rules(self):
+        """Required/global rules surface the source spec's planned proofs."""
+        anchor_dir = os.path.join(self.tmp, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'security_base.md'), 'w') as f:
+            f.write('# Anchor: security_base\n\n'
+                    '> Description: Security rules.\n'
+                    '> Global: true\n\n'
+                    '## Rules\n- RULE-1: No eval calls\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Grep for eval; verify zero matches\n')
+        _write_spec(self.tmp, 'epsilon', _minimal_spec_content('epsilon'))
+        _write_proofs(self.tmp, 'epsilon', _minimal_proofs('epsilon'))
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'epsilon')
+        global_rule = next(r for r in feat['rules'] if r['label'] == 'global')
+        assert len(global_rule['proofs']) == 1, \
+            f"Expected the anchor's planned proof, got {global_rule['proofs']}"
+        planned = global_rule['proofs'][0]
+        assert planned['id'] == 'PROOF-1' and planned['status'] == 'planned'
+        assert planned['description'] == 'Grep for eval; verify zero matches'
+
+    @pytest.mark.proof("report_data", "PROOF-23", "RULE-22")
+    def test_planned_proofs_do_not_affect_coverage(self):
+        """A rule whose only proof is planned: proved==0, UNTESTED, null vhash, rule NONE."""
+        _write_spec(self.tmp, 'zeta',
+                    '# Feature: zeta\n\n'
+                    '> Description: Untested feature.\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Verify response\n')
+        # No executed proofs at all
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        feat = next(f for f in data['features'] if f['name'] == 'zeta')
+        assert feat['proved'] == 0, f"Expected proved==0, got {feat['proved']}"
+        assert feat['status'] == 'UNTESTED', \
+            f"Expected UNTESTED, got '{feat['status']}'"
+        assert feat['vhash'] is None, f"Expected null vhash, got {feat['vhash']}"
+        rule = next(r for r in feat['rules'] if r['id'] == 'RULE-1')
+        assert rule['status'] == 'NONE', \
+            f"Expected rule status NONE, got '{rule['status']}'"
+        assert rule['proofs'][0]['status'] == 'planned'

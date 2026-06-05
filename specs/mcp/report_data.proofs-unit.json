@@ -207,6 +207,33 @@
       "test_name": "test_description_null_when_absent",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-22",
+      "rule": "RULE-8",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_appear_in_proofs_array",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-22",
+      "rule": "RULE-8",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_for_required_anchor_rules",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-23",
+      "rule": "RULE-22",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_do_not_affect_coverage",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
