@@ -13,6 +13,8 @@ purlin:verify           — lock in verification receipts
 
 **The progression:** UNTESTED → PARTIAL → PASSING → VERIFIED. Every rule needs a passing proof. Anchor rules count too.
 
+**Already have code?** Run `purlin:spec-from-code` to generate specs from the existing codebase first — see [Generating Specs from Code](spec-from-code-guide.md).
+
 **Anyone can do any job.** PMs write rules, engineers write code, QA writes tests — but nothing stops an engineer from writing rules or a PM from writing proofs. The roles below describe the typical flow, not restrictions.
 
 ---
@@ -69,11 +71,11 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 | Status | Meaning |
 |--------|---------|
-| VERIFIED | ALL behavioral rules proved + receipt matches |
-| PASSING | ALL behavioral rules proved, no receipt yet |
+| VERIFIED | All rules proved + receipt matches |
+| PASSING | All rules proved, no receipt yet |
 | PARTIAL | Some rules proved, none failing — more tests needed |
 | FAILING | Any proof has status FAIL |
-| UNTESTED | No behavioral proofs at all |
+| UNTESTED | No rules proved yet |
 
 **Rule-level statuses** (shown per-rule in detailed output):
 
@@ -95,7 +97,7 @@ Summary: 42 features | 22 VERIFIED | 13 PASSING | 6 PARTIAL | 0 FAILING | 1 UNTE
 
 Each feature gets detailed per-rule coverage. Features needing attention (FAILING, PARTIAL) sort to the top. Uncommitted spec/proof changes are flagged so you know the report may not reflect the latest state.
 
-The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules. Run `purlin:audit` after significant test changes to refresh the score.
+The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules (manual stamps count as strong; structural checks are excluded). Run `purlin:audit` after significant test changes to refresh the score.
 
 ### Verification Receipts
 
@@ -117,7 +119,7 @@ That's the daily loop. Everything below is detail for when you want more control
 
 ---
 
-**The PM defines what the software must do.** They own the rules — the testable constraints that the code must satisfy. Purlin helps PMs transform raw ideas (PRDs, customer feedback, Slack threads) into structured specs with numbered rules and proof descriptions. When engineers build and test, the PM sees exactly which rules are proved and which aren't via `purlin:status`. No more "is this feature done?" — the coverage number answers it.
+**The PM defines what the software must do.** Purlin turns raw input (PRDs, customer feedback, plain descriptions) into specs with numbered rules and proof descriptions. As engineers build and test, `purlin:status` shows exactly which rules are proved. No more "is this feature done?" — the coverage number answers it.
 
 ![PM Workflow](../assets/lifecycle-pm-workflow.svg)
 
@@ -291,7 +293,7 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 
 ---
 
-**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context so the engineer always knows what constraints to satisfy. The build/test loop is simple: write code, write proof-marked tests, run them, iterate until `purlin:status` shows PASSING (all rules proved). Then `purlin:verify` issues a receipt, moving the feature to VERIFIED. When rules and proofs align, the engineer ships with confidence — the verification receipt proves the code does what the spec says.
+**The Engineer builds code that satisfies the rules and writes tests that prove it.** Purlin injects the spec's rules into the build context. The loop: write code, write proof-marked tests, iterate until `purlin:status` shows PASSING (all rules proved). Then `purlin:verify` issues a receipt, moving the feature to VERIFIED — proof the code does what the spec says.
 
 ![Engineer Workflow](../assets/lifecycle-eng-workflow.svg)
 
@@ -318,7 +320,7 @@ This is the most common workflow. You say `test login` and Claude:
 3. Writes tests with proof markers
 4. Runs `purlin:unit-test`
 5. If tests fail, fixes and retries
-6. Repeats until `purlin:status` shows VERIFIED
+6. Repeats until coverage shows PASSING (all rules proved) — `purlin:verify` then moves it to VERIFIED
 
 You can also say `build login` to just write code (Claude injects the spec rules into context), then `test login` separately.
 
@@ -349,7 +351,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 
 ---
 
-**QA verifies that the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows QA exactly which rules have proofs and which don't, which manual proofs are stale, and which features are PASSING (all rules proved, ready for receipt) vs PARTIAL (more tests needed). QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` to issue the final verification receipt. QA is the last gate before code ships.
+**QA verifies the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows which rules lack proofs, which manual proofs are stale, and which features are ready for receipt (PASSING) vs needing more tests (PARTIAL). QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` — the last gate before code ships.
 
 ![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 
@@ -476,7 +478,7 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-Purlin classifies proofs as structural checks or behavioral proofs. Structural checks (grep, file exists, section present) verify document content, not system behavior — they are excluded from integrity scoring and displayed with a green "Structural" tag in the dashboard. A feature reaches PASSING only when ALL behavioral rules have passing proofs, and VERIFIED once a receipt is issued. Features with some but not all rules proved are PARTIAL. Add E2E proofs in `specs/integration/` to get real coverage.
+Purlin's audit classifies each proof as structural or behavioral. Structural checks (grep, file exists, section present) verify document content, not system behavior — they count toward rule coverage but are excluded from the integrity score, and `purlin:drift` flags features whose code changed with only structural coverage. Add E2E proofs in `specs/integration/` to get real behavioral coverage.
 
 ---
 
@@ -495,8 +497,8 @@ Set during `purlin:init` or changed later with `purlin:init --pre-push`. The Pur
 
 ### Layer 2: CI pipeline (not provided by Purlin)
 
-Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-2-ci-pipeline) for CI pipeline examples.
+Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#ci-pipeline) for CI pipeline examples.
 
 ### Layer 3: CI verification gate (not provided by Purlin)
 
-A clean-room re-execution step you configure in your CI pipeline before deploy. Re-runs tests, recomputes vhashes, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#layer-3-deploy-gate) for setup.
+A clean-room re-execution step you configure in your CI pipeline before deploy. Re-runs tests, recomputes vhashes, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#deploy-gate) for setup.

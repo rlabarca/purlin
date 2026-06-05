@@ -41,7 +41,7 @@ It also scans for **existing specs to migrate**:
 - Non-compliant specs in `specs/` (missing `> Description:`, unnumbered rules, missing sections)
 - Compliant specs are left untouched
 
-Results are synthesized into a complete inventory of the codebase and any migration candidates.
+You choose which directories to scan before the agents launch. Results are synthesized into a complete inventory of the codebase and any migration candidates. Phase 1 also writes a `project_environment` anchor capturing the runtime, key dependencies, build config, and environment variables.
 
 ### Phase 2: Taxonomy Review
 
@@ -56,7 +56,7 @@ Proposed category: auth/ (3 features)
 Approve? Rename? Merge with another category?
 ```
 
-You confirm, rename, merge, or split categories. The skill also identifies cross-cutting concerns and proposes them as anchors.
+You confirm, rename, merge, or split categories. The skill also identifies cross-cutting concerns and proposes them as anchors — always including at least one `security_` anchor (dangerous-pattern checks, proposed even when the codebase is clean).
 
 ### Phase 3: Spec Generation
 
@@ -86,12 +86,26 @@ purlin:spec-from-code --resume
 
 Completed categories are skipped. Questions already answered are not re-asked.
 
-## After Generation
+## After Generation: Proving the Specs
 
-Generated specs are a starting point. Review them, then start the build/test loop:
+Generated specs start UNTESTED — the code exists, but nothing proves it satisfies the rules. This is the reverse of the normal lifecycle: because the code was **not** built by `purlin:build`, the build loop's job here is to write the proof-marked tests, not to write code.
+
+Run the build loop with the existing code as the source of truth:
 
 ```
-purlin:status          — see what needs tests
-test <feature_name>    — write tests and iterate until VERIFIED
+build <feature> — the code already exists and is the source of truth.
+Don't modify it; only write tests with proof markers.
+```
+
+Two things matter in this mode:
+
+- **Don't let the build change the code.** Say so explicitly, as above. The rules were extracted *from* the code, so the code already satisfies them — the only missing artifact is tests.
+- **A failing test means the generated rule is probably wrong**, not the code. In a normal build, a failing test means "fix the code." Here it usually means spec-from-code extracted a rule inaccurately — review it with `purlin:spec <feature>` and correct the rule, then re-test. Only fix the code if the rule is right and you've found a genuine bug.
+
+The full loop:
+
+```
+purlin:status          — see what needs tests (everything, initially)
+build <feature>        — tests only, code is source of truth (see above)
 purlin:verify          — lock in verification receipts
 ```

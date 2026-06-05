@@ -35,6 +35,7 @@
   config.json              # Team defaults (committed)
   config.local.json        # Per-user overrides (gitignored)
   plugins/                 # Proof plugin (scaffolded by purlin:init)
+  report-data.js           # Project digest (committed, feeds the dashboard)
 specs/
   <category>/
     <feature>.md           # Spec (3-section format)

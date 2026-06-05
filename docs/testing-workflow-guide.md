@@ -72,7 +72,7 @@ NUnit `[Category]`/`[Property]` and MSTest `[TestProperty]` surface the same way
 ### Shell (Bash)
 
 ```bash
-source .purlin/plugins/purlin-proof.sh
+source .purlin/plugins/shell_purlin.sh
 purlin_proof "auth_login" "PROOF-1" "RULE-1" pass "valid login returns 200"
 purlin_proof_finish
 ```
@@ -213,22 +213,21 @@ Two modes (set via `purlin:init --pre-push`):
 Purlin doesn't ship pipeline configs — you write them. Example (GitHub Actions):
 
 ```yaml
-pipelines:
-  pull-requests:
-    '**':
-      - step:
-          name: Proof Gate
-          script:
-            - pip install -r requirements.txt
-            - pytest
+on:
+  pull_request:        # PRs: unit + integration tiers
+  push:
+    branches: [main]   # main: all tiers
 
-  branches:
-    main:
-      - step:
-          name: Full Verification
-          script:
-            - pip install -r requirements.txt
-            - pytest --run-all-tiers
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - if: github.event_name == 'pull_request'
+        run: pytest -m "not e2e"
+      - if: github.event_name == 'push'
+        run: pytest
 ```
 
 | Trigger | Tiers to run | Block on |
@@ -245,8 +244,8 @@ pipelines:
 - name: Deploy Gate
   run: |
     # Run purlin:verify --audit via Claude Code in CI
-    # This re-runs all tests and validates vhash against committed receipts
-    pytest --run-all-tiers
+    # This re-runs all tests (all tiers) and validates vhash against committed receipts
+    pytest
 ```
 
 ---
@@ -291,7 +290,7 @@ Use an external LLM for Pass 2 instead of Claude auditing Claude.
 
 ## Proof Plugins
 
-Built-in plugins for pytest, Jest, Vitest, C, PHP, SQL, and Shell are installed by `purlin:init`; the xUnit (.NET) plugin ships too but needs manual wiring (see [supported frameworks](../references/supported_frameworks.md)). Check `.purlin/plugins/` to see what's active.
+Built-in plugins for pytest, Jest, Vitest, C, PHP, SQL, and Shell are installed by `purlin:init` based on your framework selection; the xUnit (.NET) plugin ships too but needs manual wiring (see [supported frameworks](../references/supported_frameworks.md)). Check `.purlin/plugins/` to see what's active.
 
 ### Adding a plugin
 

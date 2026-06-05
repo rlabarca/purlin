@@ -6,13 +6,7 @@ Purlin is a development tool, not a compliance system. It produces structured ar
 
 **What Purlin provides:** machine-readable evidence that specific rules were proved by specific tests at a specific commit. **What Purlin does NOT provide:** legally binding signatures, tamper-proof audit trails, or document control workflows.
 
-If you're in a regulated environment, read below for how to bridge Purlin artifacts into your compliance infrastructure.
-
----
-
-**Purlin is a development productivity tool, not a compliance system.** It does not replace a Quality Management System (QMS), does not provide legally binding electronic signatures, and does not produce audit trails that satisfy FDA 21 CFR Part 11, HIPAA, SOC2, or similar regulatory frameworks on its own.
-
-What Purlin does provide: **structured, machine-readable artifacts** (specs with rules, proof results, verification receipts) that can feed into an external compliance pipeline. The rule-proof-receipt model gives your compliance infrastructure something concrete to validate — not just "tests passed" but "these specific rules were proved by these specific tests at this specific point in time."
+Purlin does not satisfy FDA 21 CFR Part 11, HIPAA, SOC2, or similar regulatory frameworks on its own. What it gives your compliance infrastructure is something concrete to validate — not just "tests passed" but "these specific rules were proved by these specific tests at this specific point in time." Read below for how to bridge Purlin artifacts into your compliance infrastructure.
 
 ---
 

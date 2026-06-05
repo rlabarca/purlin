@@ -93,7 +93,7 @@ Claude reads the spec and the Figma design directly via MCP for full visual fide
 
 ```javascript
 // Feature proofs (behavioral)
-it("fetches from OpenWeatherMap [proof:current_weather:PROOF-1:RULE-1:default]", async () => {
+it("fetches from OpenWeatherMap [proof:current_weather:PROOF-1:RULE-1:unit]", async () => {
   const mock = mockApi("/weather");
   await fetchWeather("Austin");
   expect(mock).toHaveBeenCalledWith(expect.stringContaining("q=Austin"));
@@ -123,7 +123,7 @@ purlin:unit-test
 6 tests passed. Proof files written.
 
 Coverage:
-  current_weather: 5/5 rules proved
+  current_weather: 6/6 rules proved   (5 own + 1 required from weather_design)
   weather_design: 1/1 rules proved
 ```
 

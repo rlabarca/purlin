@@ -53,4 +53,4 @@ Community or custom plugins can be installed via:
 purlin:init --add-plugin <path or git URL>
 ```
 
-See the [Testing Workflow Guide](../docs/testing-workflow-guide.md#adding-support-for-another-framework) for details on writing custom plugins.
+See the [Testing Workflow Guide](../docs/testing-workflow-guide.md#proof-plugins) for details on writing custom plugins.
