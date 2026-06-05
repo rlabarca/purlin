@@ -17,6 +17,7 @@ purlin:init --audit-llm                 Change audit LLM (default/external)
 purlin:init --pre-push                  Change pre-push mode (warn/strict)
 purlin:init --report                    Toggle HTML dashboard report (on/off)
 purlin:init --digest                    Change digest mode (auto/warn/off)
+purlin:init --mcp                       Migrate legacy .mcp.json (MCP server is plugin-bundled)
 ```
 
 Each `--flag` runs ONLY that step, not the full init.
@@ -167,28 +168,19 @@ Dashboard report is currently: on
 
 After changing, update `"report"` in `.purlin/config.json`. If turning on, copy the HTML file to project root. If turning off, do NOT delete an existing HTML file (the user may want to keep it).
 
-## Step 5c — Configure MCP Server
+## Step 5c — MCP Server (plugin-bundled) + Legacy Migration
 
-Create or update `.mcp.json` at the project root so Claude Code starts the Purlin MCP server (providing `sync_status`, `purlin_config`, and `drift` tools).
+The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin: `.claude-plugin/plugin.json` declares it under `mcpServers` with `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin path on every launch. It registers automatically wherever the plugin is enabled and tracks plugin updates. Do NOT create a `purlin` entry in the project's `.mcp.json` — a project-scope entry takes precedence over the plugin-provided server and pins a versioned cache path that silently goes stale on the next plugin update.
 
-If `.mcp.json` does not exist, create it:
+**Legacy migration (pre-0.9.4 projects):** If `.mcp.json` exists at the project root, read it as JSON. If it has a `purlin` key under `mcpServers`:
 
-```json
-{
-  "mcpServers": {
-    "purlin": {
-      "command": "python3",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py"]
-    }
-  }
-}
-```
+1. Remove the `purlin` key. Preserve ALL other server entries unchanged.
+2. If `mcpServers` is now empty and the file contains nothing else, delete `.mcp.json`. Otherwise write the file back without the `purlin` entry.
+3. Print: `Removed legacy purlin entry from .mcp.json — the MCP server is now provided by the plugin. Run /reload-plugins (or restart the session) to pick it up.`
 
-If `.mcp.json` already exists, read it as JSON and merge the `purlin` key into the existing `mcpServers` object. Do NOT overwrite other MCP server entries. If a `purlin` key already exists, update it to the current path.
+If `.mcp.json` has no `purlin` entry (or doesn't exist), print: `MCP server: bundled with plugin (sync_status, purlin_config, drift).`
 
-Resolve `${CLAUDE_PLUGIN_ROOT}` to its absolute path at init time — `.mcp.json` does not support environment variable expansion.
-
-Print: `MCP server configured: sync_status, purlin_config, drift tools available.`
+When called via `purlin:init --mcp`, ONLY this step runs — use it to migrate an existing project after updating the plugin.
 
 ## Step 6 — Confirmation
 
@@ -198,7 +190,6 @@ Project initialized for Purlin.
 Created:
   .purlin/config.json
   .purlin/plugins/<proof_plugin>
-  .mcp.json (MCP server configuration)
   specs/
   specs/_anchors/
   purlin-report.html (if report enabled)

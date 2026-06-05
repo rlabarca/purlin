@@ -8,6 +8,12 @@
   },
   "repository": "https://github.com/rlabarca/purlin",
   "license": "MIT",
+  "mcpServers": {
+    "purlin": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py"]
+    }
+  },
   "keywords": [
     "specs",
     "testing",
