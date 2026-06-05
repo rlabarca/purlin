@@ -34,6 +34,7 @@
 - RULE-26: Migration from `features/` reads `.discoveries.md` companion files and converts resolved bugs to regression rules and open bugs to `(deferred)` rules
 - RULE-27: `.discoveries.md` Figma/design references are preserved as `> Visual-Reference:` metadata or `@manual` proof references during migration
 - RULE-28: Quality guide references coverage dimensions instead of a fixed rule count target
+- RULE-29: The taxonomy phase never produces a category folder containing a single spec — single-feature categories are merged into a related category during taxonomy review, or the spec is placed directly at `specs/<name>.md` when no category fits
 
 ## Proof
 
@@ -77,3 +78,4 @@
 - PROOF-38 (RULE-26): e2e: Create features/ with .discoveries.md containing one RESOLVED bug and one OPEN bug; verify the resolved bug becomes a RULE-N and the open bug becomes a RULE-N with (deferred) tag @e2e
 - PROOF-39 (RULE-27): Grep SKILL.md for "Visual-Reference" AND "Figma" in the .discoveries.md migration section; verify design references are preserved as metadata or manual proof references
 - PROOF-40 (RULE-28): Grep spec_quality_guide.md for "Coverage dimensions"; verify section exists. Grep for "5–10 rules per feature"; verify the fixed target no longer exists
+- PROOF-41 (RULE-29): Grep `skills/spec-from-code/SKILL.md` for the Phase 2 single-feature category check; verify it instructs merging single-feature categories into a related category or placing the spec at `specs/<name>.md` without a folder
