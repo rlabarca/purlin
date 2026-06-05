@@ -1589,6 +1589,16 @@ class TestSkillSpecFromCode:
         assert not re.search(r'5.10 rules per feature', content), \
             "spec_quality_guide.md still contains fixed '5-10 rules per feature' target"
 
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-41", "RULE-29")
+    def test_no_single_spec_category_folders(self):
+        content = _read('spec-from-code')
+        assert re.search(r'(?i)single-feature category check', content), \
+            "spec-from-code skill missing Phase 2 single-feature category check"
+        assert re.search(r'(?i)merge the feature into the closest related category', content), \
+            "spec-from-code skill missing merge-into-related-category instruction"
+        assert re.search(r'(?i)`specs/<name>\.md`.*do NOT create a folder', content), \
+            "spec-from-code skill missing root-placement (no folder) instruction"
+
 
 # ── skill_status ──────────────────────────────────────────────────────
 
