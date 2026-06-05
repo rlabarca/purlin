@@ -43,9 +43,9 @@
 - RULE-35: When a single framework is detected, the selection list shows it pre-selected with [x] and all others unselected with [ ]
 - RULE-36: When multiple frameworks are detected, all detected frameworks are pre-selected in the list
 - RULE-37: When no frameworks are detected, the selection list shows all options unselected
-- RULE-38: After init, `.mcp.json` exists at the project root with a `purlin` entry under `mcpServers`
-- RULE-39: The `purlin` MCP server entry uses `python3` command and points `args` to `purlin_server.py`
-- RULE-40: When `.mcp.json` already exists with other MCP servers, init merges the `purlin` entry without overwriting existing entries
+- RULE-38: The Purlin MCP server is bundled with the plugin — `.claude-plugin/plugin.json` declares a `purlin` entry under `mcpServers`; init does NOT write a `purlin` entry into the project's `.mcp.json` (a project-scope entry would shadow the plugin server with a version-pinned path that breaks on every plugin update)
+- RULE-39: The bundled MCP server entry uses the `python3` command with `args` pointing to `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`, so the path always resolves to the currently installed plugin version
+- RULE-40: Init migrates legacy MCP config: when the project's `.mcp.json` has a `purlin` entry under `mcpServers` (pre-0.9.4 version-pinned path), init removes that entry, preserves all other server entries, deletes the file only when nothing else remains in it, and tells the user to reload plugins or restart the session
 - RULE-41: Config has `"digest"` field with value `"auto"`, `"warn"`, or `"off"`
 - RULE-42: After init, `.git/hooks/pre-commit` exists, is executable, and contains `purlin`
 - RULE-43: When a non-purlin pre-commit hook exists before init, the existing hook is preserved
@@ -96,9 +96,9 @@
 - PROOF-37 (RULE-35): e2e: Verify SKILL.md shows a single-detection example with one [x] pre-selected and remaining [ ] unselected @e2e
 - PROOF-38 (RULE-36): e2e: Verify SKILL.md shows a multi-detection example with multiple [x] pre-selected @e2e
 - PROOF-39 (RULE-37): e2e: Verify SKILL.md shows a no-detection example with all [ ] unselected @e2e
-- PROOF-40 (RULE-38): Grep `skills/init/SKILL.md` for `.mcp.json` creation with `mcpServers` and `purlin` key; verify the step documents creating the file
-- PROOF-41 (RULE-39): Grep `skills/init/SKILL.md` for `python3` command and `purlin_server.py` in the MCP config; verify correct server entry
-- PROOF-42 (RULE-40): Grep `skills/init/SKILL.md` for merge/overwrite instructions; verify it documents merging into existing `.mcp.json` without overwriting other servers
+- PROOF-40 (RULE-38): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin` exists. Grep `skills/init/SKILL.md`; verify it does NOT instruct creating a `purlin` entry in the project's `.mcp.json` (no init-time path resolution remains)
+- PROOF-41 (RULE-39): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin.command` is `python3` and `args` contains `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`
+- PROOF-42 (RULE-40): Grep `skills/init/SKILL.md` for the legacy migration step; verify it documents removing the `purlin` entry from the project's `.mcp.json`, preserving other server entries, and reloading plugins
 - PROOF-43 (RULE-41): e2e: Read config.json after init; verify `digest` field exists with value `auto` @e2e
 - PROOF-44 (RULE-42): e2e: Verify `.git/hooks/pre-commit` exists, is executable, and contains `purlin` @e2e
 - PROOF-45 (RULE-43): e2e: Create existing non-purlin pre-commit hook; run init; verify hook preserved @e2e
