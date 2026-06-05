@@ -20,7 +20,7 @@ spec(auth_login): add rules for SSO and MFA flows
 feat(auth_login): implement SSO redirect and callback
 test(auth_login): 3/3 rules proved
 fix(auth_login): handle expired tokens in callback
-verify: [Complete:all] features=5 vhash=a1b2c3d4
+verify: [Complete:all] features=5/5 vhash=a1b2c3d4
 anchor(design_tokens): sync from upstream (abc1234)
 chore: initialize purlin project
 ```
@@ -59,10 +59,10 @@ The first line uses the standard `feat(<name>):` prefix. The body has three sect
 The verify skill uses a specific format:
 
 ```
-verify: [Complete:all] features=N vhash=<combined-hash>
+verify: [Complete:all] features=N/T vhash=<combined-hash>
 ```
 
-Where `combined-hash` = `sha256(sorted individual vhashes joined by comma)[:8]`.
+Where `N/T` is the verified/total feature count and `combined-hash` = `sha256(sorted individual vhashes joined by comma)[:8]`.
 
 ## Manual Stamp Commit
 

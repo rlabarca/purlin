@@ -85,7 +85,7 @@ After writing tests, ALWAYS spawn a purlin-auditor teammate to review proofs. Do
 
 ## Step 4 — Run Tests and Iterate
 
-The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all behavioral rules proved). PARTIAL means more tests are still needed.
+The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
 
 ```
 purlin:unit-test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
@@ -117,7 +117,7 @@ If you changed what a test asserts (not just how), the proof description in the 
 
 ## Step 5 — Changeset Summary (mandatory)
 
-After the build/test loop reaches a stable state (all behavioral rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
+After the build/test loop reaches a stable state (all rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
 
 The summary has three sections:
 

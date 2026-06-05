@@ -31,7 +31,7 @@ Run the full test suite across all tiers by calling `purlin:unit-test --all`. Th
 
 Read the coverage output from `purlin:unit-test --all` (which includes sync_status results). For each feature:
 
-- **PASSING** (ALL behavioral rules have passing proofs, no receipt yet): eligible for receipt.
+- **PASSING** (ALL rules have passing proofs, no receipt yet): eligible for receipt.
 - **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
 - **FAILING** (any proof has status FAIL): report failures. No receipt.
 
