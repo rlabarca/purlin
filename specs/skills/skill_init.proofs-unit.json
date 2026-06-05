@@ -240,7 +240,7 @@
       "id": "PROOF-40",
       "rule": "RULE-38",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_documents_mcp_json_creation",
+      "test_name": "test_mcp_server_bundled_in_plugin_manifest",
       "status": "pass",
       "tier": "unit"
     },
@@ -249,7 +249,7 @@
       "id": "PROOF-41",
       "rule": "RULE-39",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_documents_mcp_server_entry_points_to_purlin_server",
+      "test_name": "test_bundled_mcp_server_uses_plugin_root_variable",
       "status": "pass",
       "tier": "unit"
     },
@@ -258,7 +258,7 @@
       "id": "PROOF-42",
       "rule": "RULE-40",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_documents_mcp_json_merge_not_overwrite",
+      "test_name": "test_documents_legacy_mcp_json_migration",
       "status": "pass",
       "tier": "unit"
     },

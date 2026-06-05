@@ -1173,34 +1173,42 @@ class TestSkillInit:
     # ── RULE-38 through RULE-40: MCP server configuration ────────────
 
     @pytest.mark.proof("skill_init", "PROOF-40", "RULE-38")
-    def test_documents_mcp_json_creation(self):
-        """SKILL.md must document creating .mcp.json with purlin under mcpServers."""
+    def test_mcp_server_bundled_in_plugin_manifest(self):
+        """Plugin manifest declares the purlin MCP server; init does not write a project entry."""
+        manifest_path = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        assert 'purlin' in manifest.get('mcpServers', {}), \
+            ".claude-plugin/plugin.json missing 'purlin' entry under mcpServers"
+
         content = _read('init')
-        assert '.mcp.json' in content, \
-            "init SKILL.md missing .mcp.json file reference"
-        assert 'mcpServers' in content, \
-            "init SKILL.md missing mcpServers key in .mcp.json documentation"
-        assert re.search(r'"purlin"', content), \
-            "init SKILL.md missing 'purlin' key under mcpServers"
+        assert re.search(r'(?i)do not create a `?purlin`? entry', content), \
+            "init SKILL.md must forbid creating a purlin entry in the project's .mcp.json"
+        assert 'Resolve `${CLAUDE_PLUGIN_ROOT}` to its absolute path at init time' not in content, \
+            "init SKILL.md still instructs init-time path resolution (version-pins the MCP server)"
 
     @pytest.mark.proof("skill_init", "PROOF-41", "RULE-39")
-    def test_documents_mcp_server_entry_points_to_purlin_server(self):
-        """SKILL.md must document python3 command and purlin_server.py in MCP config."""
-        content = _read('init')
-        assert re.search(r'"command":\s*"python3"', content), \
-            "init SKILL.md missing python3 command in MCP server entry"
-        assert 'purlin_server.py' in content, \
-            "init SKILL.md missing purlin_server.py in MCP server args"
+    def test_bundled_mcp_server_uses_plugin_root_variable(self):
+        """Bundled MCP entry uses python3 with ${CLAUDE_PLUGIN_ROOT} so the path tracks updates."""
+        manifest_path = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        entry = manifest['mcpServers']['purlin']
+        assert entry['command'] == 'python3', \
+            f"Expected python3 command in bundled MCP entry, got {entry.get('command')}"
+        assert '${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py' in entry.get('args', []), \
+            f"Expected ${{CLAUDE_PLUGIN_ROOT}}/scripts/mcp/purlin_server.py in args, got {entry.get('args')}"
 
     @pytest.mark.proof("skill_init", "PROOF-42", "RULE-40")
-    def test_documents_mcp_json_merge_not_overwrite(self):
-        """SKILL.md must document merging into existing .mcp.json without overwriting other servers."""
+    def test_documents_legacy_mcp_json_migration(self):
+        """SKILL.md must document removing the legacy purlin entry, preserving other servers."""
         content = _read('init')
-        assert re.search(r'(?i)merge.*purlin.*key|merge.*mcpServers', content), \
-            "init SKILL.md missing merge instruction for existing .mcp.json"
-        assert re.search(r'(?i)do not overwrite.*other.*server|not.*overwrite.*other.*entries',
-                         content), \
-            "init SKILL.md missing 'do not overwrite other servers' guard"
+        assert re.search(r'(?i)remove the `?purlin`? (key|entry)', content), \
+            "init SKILL.md missing removal of the legacy purlin entry from .mcp.json"
+        assert re.search(r'(?i)preserve all other server entries', content), \
+            "init SKILL.md missing 'preserve all other server entries' guard"
+        assert '/reload-plugins' in content, \
+            "init SKILL.md must tell the user to run /reload-plugins after migration"
 
     # ── RULE-41 through RULE-46: digest / pre-commit hook ────────────
 
