@@ -79,6 +79,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Cross-cutting concerns detected (auth, logging, error handling, config patterns)
    - Code comments index (significant comments with file locations)
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
+   - **`e2e_capable` flag:** true only if an e2e-capable test runner is detectable — an e2e framework (Playwright, Cypress, Puppeteer, WebdriverIO, or similar) appears in the package manifest, or an e2e config file (`playwright.config.*`, `cypress.config.*`, etc.) exists. Record the detected runner name (or `none`). This drives the `@e2e` warning in Phase 3 step 12 and the Phase 4 summary.
    - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts — cross-referenced with code modules discovered by the exploration agents
 
 6. **Generate environment anchor (mandatory):** Extract project-level environment data and write `specs/_anchors/project_environment.md`. This anchor captures what's needed to compile, run, and configure the project — information that no individual feature spec carries.
@@ -502,6 +503,8 @@ Examples:
 
    Do NOT present specs to the user with untagged proofs that clearly need a tier. When in doubt, tag `@integration`.
 
+   **Inverse check (mandatory):** After assigning tier tags, verify each description matches its tag per `references/spec_quality_guide.md` ("E2E proof descriptions"). Every `@e2e` proof must read as an observable flow — arrange → act → observe through the real running app — and must not name a source file or internal function. Rewrite any proof of the form "Assert `<file>` does X" or "Assert `<internalFn>` uses Y" as a boundary observation (the outbound network request, the rendered output, the storage state after a real flow). If a proof tagged `@e2e` could pass without launching the app, either rewrite it as a flow or retag it to the tier it actually exercises.
+
 8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
 
 9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply two filters:
@@ -529,17 +532,22 @@ Examples:
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
    - **FORBIDDEN proof precision:** If any proof uses grep-based negative assertions, verify the grep pattern targets assignment patterns, not bare keywords. If a pattern would match comments or variable names, refine it per `references/spec_quality_guide.md` ("FORBIDDEN Grep Precision").
    - **Edge case specificity:** If any proof describes a boundary condition or edge case, verify the description includes the triggering test input, not just the expected outcome. If a proof says "verify X works correctly" without specifying the input, rewrite it per `references/spec_quality_guide.md` ("Edge Case Proof Specificity").
+   - **Proof implementation-coupling:** No proof description names a source file or an internal function/symbol as the thing being asserted. Such proofs force unit-style tests that import internals and audit WEAK per `references/audit_criteria.md` ("E2E Proof Tier Integrity" — tier mismatch, source-constant assertion). Rewrite them as boundary observations per `references/spec_quality_guide.md` ("E2E proof descriptions") before presenting to the user.
 
    If any section is empty or missing content:
    - Re-read the source files listed in the spec's `> Scope:` line
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-12. Present the generated specs for this category and ask for approval:
+12. Present the generated specs for this category and ask for approval. If the category's proofs include any `@e2e` tag AND the Phase 1 inventory's `e2e_capable` flag is false, include the warning line shown below (omit it otherwise):
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ⚡ REVIEW SPECS — <category_name> (<N> specs generated)
+
+   ⚠ <K> proofs tagged @e2e but no e2e runner detected — they cannot execute
+     until one is wired in (Playwright, Cypress, an MCP-driven browser, etc.).
+     See references/supported_frameworks.md ("End-to-end (browser) proofs").
 
      [y] Approve and commit this category
      [n] Discard and regenerate
@@ -586,6 +594,13 @@ Next:
   purlin:spec <name> — refine a generated spec
 ```
 
+   If any generated proofs are tagged `@e2e` and the Phase 1 `e2e_capable` flag is false, append to the summary:
+
+```
+⚠ <K> proofs tagged @e2e but no e2e runner detected — they cannot execute until
+  one is wired in. See references/supported_frameworks.md ("End-to-end (browser) proofs").
+```
+
 4. Delete temporary files:
    - `.purlin/cache/sfc_state.json`
    - `.purlin/cache/sfc_inventory.md`
@@ -606,6 +621,7 @@ Additional spec-from-code-specific guidelines:
 
 - **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
 - **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
+- **E2E proofs are observable flows, not asserts.** `@e2e` proof descriptions must read as arrange → act → observe through the real running app and must not name source files or internal functions — see `references/spec_quality_guide.md` ("E2E proof descriptions"). When no e2e runner exists in the project, surface the warning (step 12 / Phase 4) rather than silently emitting unrunnable proofs.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
 - **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead.
 - **Implementation Notes are context, not rules.** Architecture decisions, library choices, caching strategies, and design patterns go in `## Implementation Notes` — never in `## Rules`. They inform a rebuilding engineer but are not testable behavioral constraints. A spec with 10 rules and 5 impl notes is better than a spec with 15 rules where 5 are really impl notes.

@@ -108,6 +108,33 @@
       "test_name": "test_quality_guide_audience_language",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_quality_guide_e2e_proof_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_audit_criteria_e2e_tier_integrity",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_supported_frameworks_e2e_section",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

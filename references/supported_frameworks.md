@@ -28,6 +28,17 @@ Shipped plugins that `purlin:init` does not yet auto-detect or scaffold — wire
 
 > **Vitest version support:** the Vitest reporter (`vitest_purlin.ts`) collects proofs in the `onFinished(files)` hook, whose shape is stable across Vitest 2.x → 4.x (tested on 2.x and 3.x). Earlier `onTaskUpdate`-based collection broke silently on Vitest 2+ and is no longer used. Note that `jest_purlin.js` is **not** a drop-in for Vitest — Vitest does not call Jest's `onTestResult`/`onRunComplete` hooks, so Vitest projects use `vitest_purlin.ts`.
 
+## End-to-end (browser) proofs
+
+No dedicated e2e proof reporter ships with Purlin yet. `@e2e` proof descriptions are **tool-agnostic by design** — they describe observable flows (arrange → act → observe; see `spec_quality_guide.md`, "E2E proof descriptions"), so any runner that can execute the flow qualifies: Playwright, Cypress, an MCP-driven browser (e.g. Claude in Chrome), or screenshot + vision. The description never references a specific runner's API.
+
+Until a dedicated reporter exists, `@e2e` proofs emit through the existing plugins:
+
+- **Via Vitest or Jest:** drive the browser from a Vitest/Jest test (e.g. Playwright's library API inside a test body) and put the standard marker in the test title with the `e2e` tier: `[proof:feature:PROOF-1:RULE-1:e2e]`. The `vitest_purlin.ts` / `jest_purlin.js` reporter emits the proof JSON as usual.
+- **Via shell:** wrap any e2e runner's invocation in a shell test that calls `purlin_proof "feature" "PROOF-1" "RULE-1" pass/fail "desc" "e2e"` based on the runner's exit status (see `shell_purlin.sh`).
+
+A project whose specs carry `@e2e` proofs but has no e2e-capable runner installed cannot record those proofs — `purlin:spec-from-code` warns when it detects this.
+
 ## Detection
 
 `purlin:init` detects ALL matching frameworks — not just the first match. A project can have multiple plugins (e.g., pytest for the server, Jest for the client):

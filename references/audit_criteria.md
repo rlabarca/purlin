@@ -1,4 +1,4 @@
-> Criteria-Version: 15
+> Criteria-Version: 16
 
 # Proof Audit Criteria
 
@@ -146,7 +146,7 @@ When reporting, group findings by tier. When fixing (manually or via builder), w
 
 **Pass 2 (LLM) tier mapping by criterion:**
 
-- HIGH: any WEAK with "missing" in criterion, "only happy path", "only checks", deep mocking, missing negative test for constraint rules
+- HIGH: any WEAK with "missing" in criterion, "only happy path", "only checks", deep mocking, missing negative test for constraint rules, tier mismatch, source-constant assertion
 - LOW: assertion farming, catch-all assertions, string containment instead of equality, time-dependent tests
 
 ## Audit Caching
@@ -172,6 +172,19 @@ The cache self-invalidates per-proof when:
 - The test function code changes (test was modified)
 
 No manual invalidation is needed. To force a full re-audit, delete `.purlin/cache/audit_cache.json`.
+
+## E2E Proof Tier Integrity
+
+These criteria apply to **ALL proofs tagged `@e2e`** — feature specs and anchors alike, not just `design_*` anchors. The `@e2e` tag is a claim: the test exercises the real running app end-to-end. A test that carries the tag without delivering on the claim reports coverage that does not exist.
+
+Both criteria are Pass 2 (LLM) judgments, not Pass 1 deterministic checks — static analysis cannot reliably tell whether a test drives a real UI (a shell-driven e2e run has no browser import; an MCP-driven browser leaves no framework fingerprint). The LLM sees the proof description, test code, and fixtures together and judges what actually ran.
+
+### WEAK (LLM judgment)
+
+- **Tier mismatch** — the proof is tagged `@e2e` but the test never launches a browser, renderer, or full app stack: it imports a module and asserts return values, or reads a source/config file directly. The tag claims end-to-end coverage the test does not deliver. Fix: drive the real UI (navigate → interact → observe), or retag the proof to the tier the test actually exercises (unit or `@integration`). The converse also flags: a test that renders, routes, or inspects storage after a real flow but whose proof carries no tier tag is under-tagged — it cannot run in the unit tier
+- **Source-constant assertion** — the rule describes runtime or observable behavior, but the test imports a config constant or internal symbol and asserts its literal value (e.g. asserting `authConfig.scope === "access_as_user"` to prove a login-flow rule). This proves the constant is declared, not that the flow uses it. Fix: observe the value at the boundary it crosses — the outbound request, the rendered output, the persisted storage state after a real flow
+
+For how to WRITE `@e2e` proof descriptions that avoid these findings, see `references/spec_quality_guide.md` ("E2E proof descriptions").
 
 ## Design Anchor Proofs
 

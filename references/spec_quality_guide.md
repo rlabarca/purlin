@@ -191,6 +191,42 @@ Good (outcome-based):
 
 The key differences: no CSS selectors, no class names, no `querySelector`. The proof says what the user sees — the agent decides how to verify it. This also makes proofs resilient to HTML refactors.
 
+### E2E proof descriptions (observable flows)
+
+An `@e2e` proof description must read as an **observable flow** through the real running app: **arrange → act → observe**.
+
+- **Arrange:** set up the world a user would encounter — seed state, navigate to a URL, stub an upstream API response.
+- **Act:** do what a person does — click, type, submit, scan. Never "call function X".
+- **Observe:** assert what is visible at a boundary — on-screen text, the outbound network request that fired, the storage state after the flow completed. Never a source constant.
+
+**Proof descriptions must not name source files or internal functions.** A proof like "Assert `config.ts` decrypts the keys" or "Assert `loginRedirect` uses scope X" forces the test writer into a unit-style test that imports internals and asserts declarations — which audits WEAK or HOLLOW (see `references/audit_criteria.md`, "E2E Proof Tier Integrity"). When a rule captures a data contract (a request payload, a storage key, a config value), the proof observes that contract **at the boundary it crosses** during a real flow — not by reading the source that declares it.
+
+Bad (implementation-coupled — names internals, satisfiable without launching the app):
+```
+- PROOF-2 (RULE-2): Assert loginRedirect uses the access_as_user scope, sessionStorage
+  cache, and that loginEmail is persisted. @e2e
+- PROOF-1 (RULE-1): Assert config.ts AES-decrypts the four keys from /envconfig.json
+  before authConfig consumes them. @e2e
+```
+
+Good (boundary-observable flows):
+```
+- PROOF-2 (RULE-2): Open the app → enter an email → click "Sign in" → observe the
+  redirect to the identity provider carries scope "access_as_user" → complete login
+  with a test account → verify sessionStorage holds the auth cache and
+  localStorage.loginEmail equals the entered email. @e2e
+- PROOF-1 (RULE-1): Boot the app against an encrypted /envconfig.json fixture →
+  verify the login page renders with no config error and API calls target the
+  decrypted base URL. @e2e
+```
+
+**Tier/description match (the inverse check).** The tier tag and the description must agree:
+
+- If a proof tagged `@e2e` could pass **without launching the app** — it reads a source file, asserts a constant, or names an internal function — it is mis-tagged. Either rewrite it as an observable flow, or retag it to the tier that matches what it actually does (unit or `@integration`).
+- Conversely, a proof that requires rendering, routing, or storage-state-after-a-flow but carries **no tier tag** is under-tagged — it cannot run in the unit tier. Tag it `@e2e`.
+
+**Stay tool-agnostic.** As with visual proofs, the description names the flow, not the runner. It must be executable by whatever e2e tooling the project has — Playwright, Cypress, an MCP-driven browser, or screenshot + vision. Never reference a specific runner's API in the proof description.
+
 ### Anchors for Level 3 enforcement
 
 Anchors are the strongest mechanism for Level 3 enforcement. When anyone writes an anchor with outcome-based rules, every feature that requires it must prove those rules end-to-end:
@@ -241,7 +277,7 @@ Assign a tier tag based on what the proof requires to execute. Proofs without a 
 |-----------|------|---------|
 | Pure logic, no I/O, no external dependencies | unit (no tag) | Validate input format, compute hash, parse config |
 | Needs database, network, filesystem, or external service | `@integration` | API roundtrip, database query, file system operations |
-| Needs browser, full app stack, or UI rendering | `@e2e` | Playwright login flow, screenshot comparison, full page render |
+| Needs browser, full app stack, or UI rendering | `@e2e` | Browser login flow, screenshot comparison, full page render — see "E2E proof descriptions" for how to write the description so it matches the tier |
 | Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
 
 **When in doubt, tag `@integration`.** A fast test with an `@integration` tag is harmless. A slow test with no tag blocks the unit tier.

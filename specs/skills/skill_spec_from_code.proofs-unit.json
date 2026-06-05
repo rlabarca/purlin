@@ -81,6 +81,42 @@
       "test_name": "test_no_single_spec_category_folders",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-42",
+      "rule": "RULE-30",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_tier_review_inverse_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-43",
+      "rule": "RULE-31",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step11_proof_coupling_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-44",
+      "rule": "RULE-32",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_e2e_runner_reality_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-45",
+      "rule": "RULE-30",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_quality_guide_has_e2e_flow_section",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

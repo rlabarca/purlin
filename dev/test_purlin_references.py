@@ -159,3 +159,65 @@ class TestPurlinReferences:
                   and re.search(r'(?i)(engineer|PM|QA|agent|developer)', l)]
         assert len(paired) >= 3, \
             f"Expected at least 3 artifact-to-audience mapping rows, found {len(paired)}"
+
+    @pytest.mark.proof("purlin_references", "PROOF-13", "RULE-13")
+    def test_quality_guide_e2e_proof_section(self):
+        content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
+        assert 'E2E proof descriptions' in content, \
+            "Missing 'E2E proof descriptions' section"
+        m = re.search(
+            r'E2E proof descriptions(.*?)(?=^### |^## |\Z)', content,
+            re.MULTILINE | re.DOTALL
+        )
+        assert m, "Could not extract E2E proof descriptions section"
+        section = m.group(1)
+        assert 'arrange → act → observe' in section, \
+            "E2E section missing arrange → act → observe flow language"
+        assert re.search(r'(?i)must not name source files or internal functions', section), \
+            "E2E section missing the ban on naming source files/internal functions"
+        assert re.search(r'(?i)tool-agnostic', section), \
+            "E2E section missing tool-agnostic requirement"
+        assert re.search(r'(?i)tier/description match|inverse check', section), \
+            "E2E section missing the tier/description match (inverse) check"
+
+    @pytest.mark.proof("purlin_references", "PROOF-14", "RULE-14")
+    def test_audit_criteria_e2e_tier_integrity(self):
+        content = _read(os.path.join(REFS, 'audit_criteria.md'))
+        assert 'E2E Proof Tier Integrity' in content, \
+            "Missing 'E2E Proof Tier Integrity' section"
+        m = re.search(
+            r'## E2E Proof Tier Integrity(.*?)(?=^## )', content,
+            re.MULTILINE | re.DOTALL
+        )
+        assert m, "Could not extract E2E Proof Tier Integrity section"
+        section = m.group(1)
+        assert re.search(r'(?i)tier mismatch', section), \
+            "E2E Proof Tier Integrity missing 'tier mismatch' criterion"
+        assert re.search(r'(?i)source-constant', section), \
+            "E2E Proof Tier Integrity missing 'source-constant assertion' criterion"
+        # Section must apply to ALL @e2e proofs, not only design anchors
+        assert re.search(r'(?i)ALL proofs tagged `?@e2e`?', section), \
+            "E2E Proof Tier Integrity must state it applies to ALL @e2e proofs"
+        assert re.search(r'(?i)not just `?design_', section), \
+            "E2E Proof Tier Integrity must state it is not limited to design anchors"
+
+    @pytest.mark.proof("purlin_references", "PROOF-15", "RULE-15")
+    def test_supported_frameworks_e2e_section(self):
+        content = _read(os.path.join(REFS, 'supported_frameworks.md'))
+        assert 'End-to-end (browser) proofs' in content, \
+            "Missing 'End-to-end (browser) proofs' section"
+        m = re.search(
+            r'## End-to-end \(browser\) proofs(.*?)(?=^## )', content,
+            re.MULTILINE | re.DOTALL
+        )
+        assert m, "Could not extract End-to-end (browser) proofs section"
+        section = m.group(1)
+        assert re.search(r'(?i)no dedicated e2e proof reporter', section), \
+            "e2e section must state no dedicated reporter ships"
+        assert re.search(r'(?i)tool-agnostic', section), \
+            "e2e section must describe @e2e proofs as tool-agnostic"
+        # Wiring through existing plugins: Vitest/Jest markers and shell purlin_proof
+        assert re.search(r'\[proof:[^:\]]+:PROOF-\d+:RULE-\d+:e2e\]', section), \
+            "e2e section must document the Vitest/Jest e2e marker wiring"
+        assert 'purlin_proof' in section, \
+            "e2e section must document the shell purlin_proof wiring"

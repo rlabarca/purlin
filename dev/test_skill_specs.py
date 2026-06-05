@@ -1514,6 +1514,20 @@ class TestSkillSpec:
         assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
             "spec skill missing tier tag references (@integration/@e2e/unit)"
 
+    @pytest.mark.proof("skill_spec", "PROOF-9", "RULE-8")
+    def test_validate_e2e_observable_flow(self):
+        content = _read('spec')
+        # Validate Before Commit must check @e2e proofs are observable flows
+        validate = content.split('### Validate Before Commit', 1)
+        assert len(validate) == 2, "spec skill missing 'Validate Before Commit' section"
+        section = validate[1].split('### Commit', 1)[0]
+        assert re.search(r'@e2e.*observable flow', section), \
+            "spec skill Validate Before Commit missing @e2e observable-flow check"
+        assert re.search(r'(?i)does not name a source file or internal function', section), \
+            "spec skill Validate Before Commit missing source-file/internal-function ban for @e2e proofs"
+        assert 'E2E proof descriptions' in section, \
+            "spec skill Validate Before Commit missing pointer to quality guide 'E2E proof descriptions'"
+
     @pytest.mark.proof("skill_spec", "PROOF-7", "RULE-7")
     def test_has_exit_criteria(self):
         content = _read('spec')
@@ -1606,6 +1620,67 @@ class TestSkillSpecFromCode:
             "spec-from-code skill missing merge-into-related-category instruction"
         assert re.search(r'(?i)`specs/<name>\.md`.*do NOT create a folder', content), \
             "spec-from-code skill missing root-placement (no folder) instruction"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-42", "RULE-30")
+    def test_tier_review_inverse_check(self):
+        content = _read('spec-from-code')
+        # Step 7 tier review must include the inverse check on @e2e descriptions
+        assert re.search(r'(?i)inverse check', content), \
+            "spec-from-code skill missing the tier-review inverse check"
+        assert re.search(r'observable flow', content), \
+            "spec-from-code skill inverse check missing 'observable flow' language"
+        assert re.search(r'arrange → act → observe', content), \
+            "spec-from-code skill inverse check missing arrange → act → observe flow shape"
+        assert re.search(r'(?i)must not name a source file or internal function', content), \
+            "spec-from-code skill inverse check missing source-file/internal-function ban"
+        assert re.search(r'spec_quality_guide\.md.*E2E proof descriptions', content), \
+            "spec-from-code skill inverse check missing pointer to quality guide 'E2E proof descriptions'"
+        # Mis-tagged proofs are rewritten or retagged
+        assert re.search(r'(?i)retag', content), \
+            "spec-from-code skill inverse check missing rewrite-or-retag instruction"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-43", "RULE-31")
+    def test_step11_proof_coupling_check(self):
+        content = _read('spec-from-code')
+        # The check must live inside the step 11 "Validate generated specs" block
+        m = re.search(r'11\.\s+\*\*Validate generated specs(.*?)(?=\n12\.)', content, re.DOTALL)
+        assert m, "spec-from-code skill missing step 11 'Validate generated specs'"
+        step11 = m.group(1)
+        assert re.search(r'(?i)proof implementation-coupling', step11), \
+            "spec-from-code skill step 11 missing proof implementation-coupling check"
+        assert re.search(r'(?i)names a source file or an internal function', step11), \
+            "spec-from-code step 11 coupling check must reject proofs naming source files or internal symbols"
+        assert re.search(r'audit_criteria\.md.*E2E Proof Tier Integrity', step11), \
+            "spec-from-code step 11 coupling check missing pointer to audit criteria 'E2E Proof Tier Integrity'"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-44", "RULE-32")
+    def test_e2e_runner_reality_check(self):
+        content = _read('spec-from-code')
+        # Phase 1 must record the e2e_capable flag
+        assert 'e2e_capable' in content, \
+            "spec-from-code skill missing Phase 1 e2e_capable detection"
+        # The warning must appear in BOTH the step 12 review block and the Phase 4 summary
+        warning_re = r'(?i)proofs tagged @e2e but no e2e runner detected'
+        parts = re.split(r'^## Phase 4', content, flags=re.MULTILINE)
+        assert len(parts) == 2, "spec-from-code skill missing '## Phase 4' section"
+        assert re.search(warning_re, parts[0]), \
+            "spec-from-code skill missing the @e2e/no-runner warning in the Phase 3 review block"
+        assert re.search(warning_re, parts[1]), \
+            "spec-from-code skill missing the @e2e/no-runner warning in the Phase 4 summary"
+        # Warning must be tool-agnostic and point at the frameworks registry
+        assert re.search(r'(?i)supported_frameworks\.md', content), \
+            "spec-from-code @e2e warning missing pointer to supported_frameworks.md"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-45", "RULE-30")
+    def test_quality_guide_has_e2e_flow_section(self):
+        content = _read_ref('spec_quality_guide.md')
+        assert 'E2E proof descriptions' in content, \
+            "spec_quality_guide.md missing 'E2E proof descriptions' section (the canonical " \
+            "guidance the spec-from-code inverse check points to)"
+        assert re.search(r'arrange → act → observe', content), \
+            "spec_quality_guide.md E2E section missing arrange → act → observe flow shape"
+        assert re.search(r'(?i)must not name source files or internal functions', content), \
+            "spec_quality_guide.md E2E section missing the source-file/internal-function ban"
 
 
 # ── skill_status ──────────────────────────────────────────────────────
