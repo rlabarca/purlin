@@ -160,7 +160,11 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - If consolidated: merge into a single spec whose rules cover the shared behavior and add per-implementation rules only where behavior diverges (e.g., marker syntax differences).
    - If kept separate: proceed, but note the overlap so the user is aware.
 
-6. **Detect anchor candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
+6. **Single-feature category check:** Scan the proposed taxonomy for categories containing exactly one feature. A category folder must never hold a single spec. For each single-feature category:
+   - Default: merge the feature into the closest related category (by domain or shared file scope) and note the merge when presenting the taxonomy.
+   - If no existing category fits, ask the user via `AskUserQuestion`: "Category `<name>` would contain only `<feature>`. Merge into `<closest category>`, or keep it standalone?" If kept standalone, plan the spec at `specs/<name>.md` directly — do NOT create a folder for it. (Specs at the `specs/` root display under "other" in the dashboard.)
+
+7. **Detect anchor candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
 
    | Prefix | Domain | Detection heuristics |
    |--------|--------|---------------------|
@@ -230,21 +234,21 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    Use `AskUserQuestion` to pause. Do NOT proceed without an explicit response.
 
-7. **Security anchor gate (mandatory, not skippable):** Before proceeding to Phase 3, verify that at least one `security_` prefixed anchor exists in the confirmed taxonomy. If none was confirmed:
+8. **Security anchor gate (mandatory, not skippable):** Before proceeding to Phase 3, verify that at least one `security_` prefixed anchor exists in the confirmed taxonomy. If none was confirmed:
    - Run the FORBIDDEN pattern grep anyway (`eval(`, `exec(`, `os.system(`, `shell=True`, hardcoded credentials)
    - If zero dangerous patterns found: propose `security_no_dangerous_patterns` with rules confirming absence
    - If patterns found: propose `security_<name>` with FORBIDDEN rules
    - Present to user for confirmation via `AskUserQuestion`
    - Phase 3 cannot begin without at least one security anchor confirmed or explicitly rejected by the user
 
-8. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
+9. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md`:
    - Ordered anchor list (with type prefix and description)
    - Ordered category list with features
    - Per-feature: proposed file name, description, and anchor references
 
-9. Update state: `phase: 2, status: "complete"`.
+10. Update state: `phase: 2, status: "complete"`.
 
-10. Commit per `references/commit_conventions.md`: `chore(sfc): taxonomy review complete (Phase 2)`
+11. Commit per `references/commit_conventions.md`: `chore(sfc): taxonomy review complete (Phase 2)`
 
 ---
 
