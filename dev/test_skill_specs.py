@@ -333,6 +333,15 @@ class TestSkillAudit:
         finally:
             shutil.rmtree(tmp_dir)
 
+    @pytest.mark.proof("skill_audit", "PROOF-15", "RULE-15")
+    def test_documents_portable_interpreter_fallback(self):
+        """SKILL.md documents python -> py -3 fallbacks for python3 (Windows PATH)."""
+        content = _read('audit')
+        assert 'py -3' in content, \
+            "audit SKILL.md must document the 'py -3' interpreter fallback"
+        assert '`python`' in content or 'then `python`' in content or 'python`,' in content, \
+            "audit SKILL.md must document the 'python' interpreter fallback"
+
 
 # ── skill_build ───────────────────────────────────────────────────────
 

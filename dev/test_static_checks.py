@@ -6,6 +6,7 @@ spec coverage checks, audit cache helpers, and language-agnostic
 proof-file structural checks (proof_id_collision, proof_rule_orphan).
 """
 
+import ast
 import json
 import os
 import subprocess
@@ -18,6 +19,8 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
 import static_checks
 from static_checks import (
+    analyze_test_file,
+    check_csharp,
     check_proof_file,
     check_python,
     check_shell,
@@ -1102,28 +1105,27 @@ class TestWriteCacheLocking:
 
     @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
     def test_lock_file_created_alongside_cache(self):
-        """write_audit_cache creates audit_cache.json.lock adjacent to the cache file."""
-        import fcntl
-        import unittest.mock as mock
+        """write_audit_cache acquires the exclusive lock on audit_cache.json.lock.
 
+        Patches the platform-neutral _lock_exclusive helper (not fcntl directly)
+        so the test runs identically on Windows and POSIX.
+        """
         with tempfile.TemporaryDirectory() as tmpdir:
             lock_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json.lock')
             lock_seen = []
+            real_lock = static_checks._lock_exclusive
 
-            original_flock = fcntl.flock
+            def spy(lock_file):
+                lock_seen.append(os.path.exists(lock_path))
+                return real_lock(lock_file)
 
-            def patched_flock(fd, op):
-                if op == fcntl.LOCK_EX:
-                    lock_seen.append(os.path.exists(lock_path))
-                return original_flock(fd, op)
-
-            with mock.patch('fcntl.flock', side_effect=patched_flock):
+            with mock.patch.object(static_checks, '_lock_exclusive', side_effect=spy):
                 write_audit_cache(tmpdir, {
                     "hash1": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
                 })
 
-            assert lock_seen, "flock(LOCK_EX) was never called"
-            assert lock_seen[0], "lock file did not exist when flock was called"
+            assert lock_seen, "_lock_exclusive was never called"
+            assert lock_seen[0], "lock file did not exist when the lock was acquired"
 
     @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
     def test_concurrent_writes_preserve_all_entries(self):
@@ -1315,3 +1317,153 @@ describe("repro", () => {
         assert proofs["PROOF-1"]["status"] == "pass", proofs["PROOF-1"]
         assert proofs["PROOF-1"].get("check") != "no_assertions"
         assert proofs["PROOF-2"]["status"] == "pass"
+
+
+class TestCrossPlatformPortability:
+    """RULE-29/30: static_checks.py imports and runs on Windows as well as POSIX."""
+
+    def _source(self):
+        with open(STATIC_CHECKS_PY, encoding='utf-8') as f:
+            return f.read()
+
+    @pytest.mark.proof("static_checks", "PROOF-44", "RULE-29")
+    def test_no_unconditional_fcntl_import(self):
+        """fcntl is imported under try/except ImportError, never unconditionally,
+        and _HAS_FCNTL is assigned in both branches."""
+        tree = ast.parse(self._source())
+
+        # No top-level `import fcntl` in the module body.
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                assert 'fcntl' not in [a.name for a in node.names], \
+                    "fcntl is imported unconditionally at module level"
+
+        fcntl_in_try = False
+        flag_in_try = False
+        flag_in_except = False
+        for node in tree.body:
+            if not isinstance(node, ast.Try):
+                continue
+            for stmt in node.body:
+                if isinstance(stmt, ast.Import) and any(a.name == 'fcntl' for a in stmt.names):
+                    fcntl_in_try = True
+                if isinstance(stmt, ast.Assign) and any(
+                        getattr(t, 'id', None) == '_HAS_FCNTL' for t in stmt.targets):
+                    flag_in_try = True
+            # The except must catch ImportError and set the flag.
+            catches_import_error = any(
+                h.type is not None and isinstance(h.type, ast.Name) and h.type.id == 'ImportError'
+                for h in node.handlers)
+            for h in node.handlers:
+                if any(isinstance(s, ast.Assign) and any(
+                        getattr(t, 'id', None) == '_HAS_FCNTL' for t in s.targets) for s in h.body):
+                    flag_in_except = catches_import_error
+
+        assert fcntl_in_try, "fcntl is not imported inside a try block"
+        assert flag_in_try and flag_in_except, \
+            "_HAS_FCNTL must be set in both the try and except ImportError branches"
+        assert hasattr(static_checks, '_HAS_FCNTL'), "module exposes no _HAS_FCNTL flag"
+
+    @pytest.mark.proof("static_checks", "PROOF-45", "RULE-30")
+    def test_all_text_open_calls_specify_utf8(self):
+        """Every text-mode open() in static_checks.py passes encoding='utf-8'."""
+        tree = ast.parse(self._source())
+        offenders = []
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id == 'open'):
+                continue
+            # Resolve the mode (2nd positional arg or mode= kwarg).
+            mode = None
+            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant):
+                mode = node.args[1].value
+            for kw in node.keywords:
+                if kw.arg == 'mode' and isinstance(kw.value, ast.Constant):
+                    mode = kw.value.value
+            if isinstance(mode, str) and 'b' in mode:
+                continue  # binary mode takes no encoding
+            enc = None
+            for kw in node.keywords:
+                if kw.arg == 'encoding' and isinstance(kw.value, ast.Constant):
+                    enc = kw.value.value
+            if enc != 'utf-8':
+                offenders.append(getattr(node, 'lineno', '?'))
+        assert not offenders, \
+            f"text-mode open() without encoding='utf-8' at lines: {offenders}"
+
+
+class TestCheckCsharp:
+    """RULE-31: deterministic Pass-1 checks for C#/.NET (xUnit/NUnit/MSTest) tests."""
+
+    def _cs(self, body, proof_id="PROOF-1", rule_id="RULE-1"):
+        return _write_tmp(f'''
+using Xunit;
+using FluentAssertions;
+namespace Demo {{
+  public class Tests {{
+    [Fact]
+    [Trait("PurlinProof", "csfeat:{proof_id}:{rule_id}:unit")]
+    public void TheTest() {{ {body} }}
+  }}
+}}
+''', suffix='.cs')
+
+    @pytest.mark.proof("static_checks", "PROOF-46", "RULE-31")
+    def test_detects_assert_true(self):
+        path = self._cs("Assert.True(true);")
+        try:
+            results = check_csharp(path, "csfeat")
+            assert len(results) == 1
+            assert results[0]['status'] == 'fail'
+            assert results[0]['check'] == 'assert_true'
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-47", "RULE-31")
+    def test_detects_no_assertions(self):
+        path = self._cs("var x = Compute(); var y = x + 1;")
+        try:
+            results = check_csharp(path, "csfeat")
+            assert len(results) == 1
+            assert results[0]['status'] == 'fail'
+            assert results[0]['check'] == 'no_assertions'
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-48", "RULE-31")
+    def test_recognizes_all_assertion_frameworks(self):
+        """xUnit Assert.Equal, NUnit Assert.That, MSTest Assert.IsTrue, and
+        FluentAssertions .Should() each count as a real assertion (status=pass)."""
+        cases = {
+            "xunit": "Assert.Equal(3, 1 + 2);",
+            "nunit": "Assert.That(2 + 2, Is.EqualTo(4));",
+            "mstest": "Assert.IsTrue(1 < 2);",
+            "fluent": 'var s = "hi { nested }"; s.Should().Contain("hi");',
+        }
+        for name, body in cases.items():
+            path = self._cs(body)
+            try:
+                results = check_csharp(path, "csfeat")
+                assert len(results) == 1, f"{name}: expected 1 proof"
+                assert results[0]['status'] == 'pass', \
+                    f"{name}: assertion not recognized — {results[0]}"
+            finally:
+                os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-49", "RULE-31")
+    def test_dispatch_routes_cs_to_check_csharp(self):
+        """analyze_test_file routes a .cs file to check_csharp (not the empty fallback)."""
+        path = self._cs("Assert.True(true);", proof_id="PROOF-7", rule_id="RULE-9")
+        try:
+            results = analyze_test_file(path, "csfeat")
+            assert results, ".cs file produced no proofs — dispatch fell through to []"
+            assert results[0]['proof_id'] == 'PROOF-7'
+            assert results[0]['check'] == 'assert_true'
+            # A genuinely unknown extension still yields the empty fallback.
+            other = _write_tmp("nothing here", suffix='.txt')
+            try:
+                assert analyze_test_file(other, "csfeat") == []
+            finally:
+                os.unlink(other)
+        finally:
+            os.unlink(path)

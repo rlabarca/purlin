@@ -21,6 +21,8 @@ Load combined criteria via the single-source function:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
 ```
 
+**Interpreter:** every `static_checks.py` invocation below is written as `python3`, but `python3` is not always on PATH (notably on Windows, where the launcher is `python` or `py -3`). Probe for an available interpreter and use the first that resolves — `python3`, then `python`, then `py -3` — for all `static_checks.py` commands in this skill.
+
 If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
 
 This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.

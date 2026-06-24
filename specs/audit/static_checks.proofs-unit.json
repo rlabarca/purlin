@@ -567,6 +567,60 @@
       "test_name": "test_write_cache_cli_merges_with_existing",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-44",
+      "rule": "RULE-29",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_unconditional_fcntl_import",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-45",
+      "rule": "RULE-30",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_all_text_open_calls_specify_utf8",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-46",
+      "rule": "RULE-31",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_assert_true",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-47",
+      "rule": "RULE-31",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_no_assertions",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-48",
+      "rule": "RULE-31",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_recognizes_all_assertion_frameworks",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-49",
+      "rule": "RULE-31",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_dispatch_routes_cs_to_check_csharp",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

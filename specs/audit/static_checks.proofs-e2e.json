@@ -81,6 +81,24 @@
       "test_name": "test_write_cache_stamps_real_utc_time",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-51",
+      "rule": "RULE-29",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cli_pipeline_subprocess",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-52",
+      "rule": "RULE-30",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_load_criteria_under_ascii_locale",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }
