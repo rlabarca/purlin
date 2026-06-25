@@ -1,4 +1,4 @@
-> Criteria-Version: 16
+> Criteria-Version: 17
 
 # Proof Audit Criteria
 
@@ -78,6 +78,7 @@ Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED
 - **Missing negative test for constraint rules** — when the rule describes rejection or constraint behavior ("reject passwords under 8 characters", "block after 5 failed attempts"), the test only checks the happy path (valid password accepted). STRONG requires at least one negative test proving the constraint rejects what it should
 - **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
 - **String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
+- **Presence/visibility-only assertion** — the test asserts only that an element exists, is visible, or is attached (e.g. Playwright `Expect(locator).ToBeVisibleAsync()`, `.ToBeAttachedAsync()`; or a DOM `getByText(...)` truthy check) when the rule requires a specific value, text, count, or state. Visible ≠ correct content. STRONG requires asserting the value/text/count the rule describes (`ToHaveTextAsync`, `ToHaveValueAsync`, `ToHaveCountAsync`, or an equality check), not mere presence. The WEAK heuristics in this section apply to fluent / `Expect(...)`-style assertion chains the same as to `assert`/`expect()` — judge what the chain actually verifies, not its surface form
 - **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
 - **Tautological escape hatch** — the assertion contains an OR/||/or branch that always evaluates to True, typically a comparison between test constants, fixture data, or literal values that makes the assertion pass regardless of what the code under test returns. Examples: Python `assert func() > 0 or CONSTANT not in OTHER_CONSTANT`, JavaScript `expect(result > 0 || FIXTURE === FIXTURE).toBe(true)`, Go `if result > 0 || expectedConst != "" { t.Log("ok") }`. The escape hatch may not be obvious — look for OR branches where both operands are defined in test setup rather than derived from code-under-test output
 - **Assertion validates test data, not code output** — the test's primary assertions check properties of the test's own setup data (constants, fixtures, mock return values) rather than output from the system under test. The test proves the test is correctly set up, not that the code works
@@ -147,7 +148,7 @@ When reporting, group findings by tier. When fixing (manually or via builder), w
 **Pass 2 (LLM) tier mapping by criterion:**
 
 - HIGH: any WEAK with "missing" in criterion, "only happy path", "only checks", deep mocking, missing negative test for constraint rules, tier mismatch, source-constant assertion
-- LOW: assertion farming, catch-all assertions, string containment instead of equality, time-dependent tests
+- LOW: assertion farming, catch-all assertions, string containment instead of equality, time-dependent tests, presence/visibility-only assertion
 
 ## Audit Caching
 

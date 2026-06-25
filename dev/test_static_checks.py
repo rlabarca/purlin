@@ -1467,3 +1467,32 @@ namespace Demo {{
                 os.unlink(other)
         finally:
             os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-55", "RULE-31")
+    def test_recognizes_playwright_fluent_assertions(self):
+        """A C# test asserting only via Playwright's Expect(...).To*Async() is recognized
+        as an assertion (status=pass), but a bare Expect(x) with no matcher is still flagged."""
+        # Mirrors the PR #4 repro: Nav_ShowsUser_AndSignOut asserts only through Playwright.
+        playwright = (
+            'await Assertions.Expect(page.Locator("text=" + user)).ToBeVisibleAsync();\n'
+            'await Assertions.Expect(page.Locator("a[href=\'logout\']")).ToBeVisibleAsync();'
+        )
+        path = self._cs(playwright)
+        try:
+            results = check_csharp(path, "csfeat")
+            assert len(results) == 1
+            assert results[0]['status'] == 'pass', \
+                f"Playwright assertion not recognized — {results[0]}"
+        finally:
+            os.unlink(path)
+
+        # Bare Expect(x) with no To*Async() matcher chain is NOT an assertion.
+        bare = self._cs("Expect(result);")
+        try:
+            results = check_csharp(bare, "csfeat")
+            assert len(results) == 1
+            assert results[0]['status'] == 'fail'
+            assert results[0]['check'] == 'no_assertions', \
+                f"bare Expect(x) should be no_assertions — {results[0]}"
+        finally:
+            os.unlink(bare)

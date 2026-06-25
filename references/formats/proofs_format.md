@@ -51,7 +51,7 @@ Proof files live in the same directory as their spec. The proof plugins resolve 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `tier` | string | Test tier: `"unit"`, `"integration"`, `"e2e"`, etc. |
+| `tier` | string | Test tier: `"unit"`, `"integration"`, `"e2e"`, `"windows"` (platform-gated), etc. Freeform — a proof tagged `@<name>` lives in `<feature>.proofs-<name>.json`. |
 | `proofs[].feature` | string | Feature name (matches spec filename stem) |
 | `proofs[].id` | string | Proof ID matching `## Proof` section: `PROOF-1`, `PROOF-2`, etc. |
 | `proofs[].rule` | string | Rule ID this proof covers: `RULE-1`, `RULE-2`, etc. |
@@ -70,6 +70,8 @@ When proof plugins write a proof file, they:
 4. Write the merged result.
 
 This means each test run replaces only its own feature's entries, preserving proofs from other features that share the same tier file. This is the "feature-scoped overwrite" pattern.
+
+The overwrite is scoped per `(feature, tier)`: a run only rewrites the tier files it actually collected proofs for. A platform-gated tier (e.g. `windows`, emitted only by a CI runner where those tests run, and skipped elsewhere) is therefore never clobbered by a host run that skips those tests — so a CI-committed `<feature>.proofs-windows.json` survives subsequent local runs and is read by `sync_status`/`purlin:verify` like any other tier.
 
 ## Proof Markers by Framework
 

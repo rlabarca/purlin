@@ -737,7 +737,7 @@ def check_csharp(filepath, feature_name, rule_descs=None):
     Parses `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]` markers, finds
     each marked test method's body, and applies assert-true / no-assertion
     detection. Recognizes xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`,
-    and FluentAssertions `.Should()` as assertions.
+    FluentAssertions `.Should()`, and Playwright `Expect(...).To*Async()` as assertions.
     """
     with open(filepath, encoding='utf-8') as f:
         content = f.read()
@@ -769,14 +769,21 @@ def check_csharp(filepath, feature_name, rule_descs=None):
 
         # no_assertions: no recognized assertion call in the body.
         # xUnit/NUnit/MSTest `Assert.`, FluentAssertions `.Should(`, Moq `.Verify(`.
-        if (not re.search(r'\bAssert\s*\.', body)
-                and not re.search(r'\.\s*Should\s*\(', body)
-                and not re.search(r'\.\s*Verify\s*\(', body)):
+        has_assert = re.search(r'\bAssert\s*\.', body)
+        has_should = re.search(r'\.\s*Should\s*\(', body)
+        has_verify = re.search(r'\.\s*Verify\s*\(', body)
+        # Playwright fluent assertions: Expect(...)/Assertions.Expect(...) chained to a
+        # To<Matcher>Async() call (ToBeVisibleAsync, ToHaveTextAsync, ToContainTextAsync, ...).
+        # Both tokens are required so a bare Expect(x) with no matcher is still flagged, and a
+        # plain LINQ `.ToListAsync()` (no Expect) is not mistaken for an assertion.
+        has_playwright = (re.search(r'\bExpect\s*\(', body)
+                          and re.search(r'\.\s*To\w+Async\s*\(', body))
+        if not (has_assert or has_should or has_verify or has_playwright):
             results.append({
                 'proof_id': proof_id, 'rule_id': rule_id,
                 'test_name': test_name, 'status': 'fail',
                 'check': 'no_assertions',
-                'reason': 'test method has no Assert./.Should()/.Verify() call',
+                'reason': 'test method has no Assert./.Should()/.Verify()/Expect(...).To*Async() call',
             })
             continue
 

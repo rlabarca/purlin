@@ -161,7 +161,7 @@ class TestProofFormatConventions:
 
     @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
     def test_standard_tiers_documented(self):
-        valid_tiers = {'unit', 'integration', 'e2e'}
+        valid_tiers = {'unit', 'integration', 'e2e', 'windows'}
         # Verify all existing proof files only use valid tiers
         proof_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
                                              '*.proofs-*.json'), recursive=True)
@@ -177,12 +177,13 @@ class TestProofFormatConventions:
                 assert entry_tier in valid_tiers, \
                     f"Invalid entry tier '{entry_tier}' in {entry.get('id')} of {path}"
 
-        # Verify format reference documents all 3 standard tiers
+        # Verify format reference documents the standard tiers + the platform-gated windows tier
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
                                'spec_format.md')) as f:
             fmt = f.read()
         assert '@integration' in fmt
         assert '@e2e' in fmt
+        assert '@windows' in fmt
 
     @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
     def test_proof_files_not_gitignored(self):
