@@ -28,9 +28,14 @@ from static_checks import (
     compute_proof_hash,
     prune_audit_cache,
     read_audit_cache,
+    resolve_test_file_from_name,
     write_audit_cache,
     _read_rule_descriptions,
     load_criteria,
+)
+
+_STATIC_CHECKS_PY = os.path.join(
+    os.path.dirname(__file__), '..', 'scripts', 'audit', 'static_checks.py'
 )
 
 STATIC_CHECKS_PY = os.path.join(
@@ -1496,3 +1501,35 @@ namespace Demo {{
                 f"bare Expect(x) should be no_assertions — {results[0]}"
         finally:
             os.unlink(bare)
+
+    @pytest.mark.proof("static_checks", "PROOF-56", "RULE-32")
+    def test_resolve_test_file_from_name(self):
+        """When a proof's test_file is empty (C#/xUnit under dotnet test), the
+        source file is resolved from the fully-qualified test_name by locating the
+        declaring class — preferring the authored file over a bin/ build copy."""
+        with tempfile.TemporaryDirectory() as root:
+            os.makedirs(os.path.join(root, 'tests'))
+            os.makedirs(os.path.join(root, 'bin'))
+            authored = os.path.join(root, 'tests', 'AuthLogicTests.cs')
+            with open(authored, 'w', encoding='utf-8') as f:
+                f.write('namespace Demo.Tests {\n  public class AuthLogicTests {\n'
+                        '    [Fact] public void Evaluate_NullRow() { }\n  }\n}\n')
+            # A build-output copy that must be skipped.
+            with open(os.path.join(root, 'bin', 'AuthLogicTests.cs'), 'w', encoding='utf-8') as f:
+                f.write('public class AuthLogicTests { }\n')
+
+            got = resolve_test_file_from_name(
+                'Demo.Tests.AuthLogicTests.Evaluate_NullRow', root)
+            assert got == 'tests/AuthLogicTests.cs', f"resolved to {got!r}"
+
+            # A test_name whose class is not declared anywhere resolves to ''.
+            assert resolve_test_file_from_name('Demo.Tests.MissingClass.X', root) == ''
+
+            # The --resolve-source CLI prints JSON with the resolved test_file.
+            r = subprocess.run(
+                [sys.executable, _STATIC_CHECKS_PY, '--resolve-source',
+                 'Demo.Tests.AuthLogicTests.Evaluate_NullRow', '--project-root', root],
+                capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            payload = json.loads(r.stdout)
+            assert payload['test_file'] == 'tests/AuthLogicTests.cs', payload

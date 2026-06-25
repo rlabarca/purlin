@@ -128,6 +128,13 @@ For each feature being audited:
 
 1. Read the spec's `## Proof` section — get every proof description.
 2. For each proof, find the test file and test function from `.proofs-*.json` entries.
+   - **Empty `test_file` fallback:** some runners cannot supply a source path — the xUnit logger emits `MakeRelative(_root, tc.CodeFilePath ?? "")`, and under `dotnet test` `CodeFilePath` is often null (no source info), so C# proof entries arrive with `test_file: ""`. When `test_file` is empty, resolve it from the fully-qualified `test_name` before Pass 1 and Pass 2:
+
+     ```bash
+     python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --resolve-source "<test_name>" --project-root <project_root> [--ext .cs]
+     ```
+
+     This derives the declaring type from `test_name` (the segment before the final `.method`) and searches the project's source files for its declaration, printing JSON `{test_name, test_file}`. Use the resolved `test_file` for both the Pass 1 command and the Pass-2 code read. To populate `test_file` natively instead, the consumer's test project must surface source info — run `dotnet test` with `RunConfiguration.CollectSourceInformation=true` and full PDBs.
 3. Read the actual test code (the function body, not just the marker).
 4. **Read fixture/setup code** — if the test references a class-scoped or module-scoped fixture (e.g. via `self` parameter or `@pytest.fixture(scope="class")`), include the fixture code in the prompt. This is critical for e2e tests where the "act" step is in the fixture.
 5. Drop any proof already rated HOLLOW by Pass 1 or resolved by cache hit.

@@ -49,7 +49,7 @@ class ProofCollector:
                     "feature": feature,
                     "id": proof_id,
                     "rule": rule_id,
-                    "test_file": str(item.fspath.relto(item.config.rootdir)),
+                    "test_file": str(item.fspath.relto(item.config.rootdir)).replace(os.sep, "/"),
                     "test_name": item.name,
                     "status": "pass" if call.excinfo is None else "fail",
                     "tier": tier,

@@ -21,6 +21,7 @@
 - RULE-13: Custom audit LLM command in config responds to ping, config stores audit_llm and audit_llm_name, and the two-pass audit completes
 - RULE-14: Criteria are loaded via the single `load_criteria()` function (`--load-criteria` CLI); built-in criteria always apply, additional team criteria are appended — never replaced
 - RULE-15: The skill documents a portable Python interpreter for invoking static_checks.py — falling back from `python3` to `python` to `py -3` — rather than assuming `python3` is always on PATH (it is not on stock Windows)
+- RULE-16: When a proof's `test_file` is empty (e.g. C#/xUnit, where `dotnet test` leaves `TestCase.CodeFilePath` null), the skill resolves the source file from the fully-qualified `test_name` via `static_checks.py --resolve-source` before Pass 1 and Pass 2, so C# Pass-1/Pass-2 is reachable through purlin:audit without a populated path. The skill also documents that populating it natively requires source info (`RunConfiguration.CollectSourceInformation=true` with full PDBs)
 
 ## Proof
 
@@ -39,3 +40,4 @@
 - PROOF-13 (RULE-13): e2e: Write config with fake LLM command; verify ping, config fields, and two-pass audit @e2e
 - PROOF-14 (RULE-14): e2e: Create fake git repo with additional criteria; configure project; verify load_criteria returns built-in + additional with separator; verify Pass 1 still catches assert True; verify additional criteria reach fake LLM prompt @e2e
 - PROOF-15 (RULE-15): Grep `skills/audit/SKILL.md` for the interpreter-fallback guidance; verify it documents `python` and `py -3` as fallbacks for `python3`
+- PROOF-16 (RULE-16): Grep `skills/audit/SKILL.md` for the empty-`test_file` fallback; verify it documents resolving the source from `test_name` via `--resolve-source` and mentions `CollectSourceInformation` as the native way to populate it

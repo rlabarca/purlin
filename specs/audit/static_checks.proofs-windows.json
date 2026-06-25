@@ -5,7 +5,7 @@
       "feature": "static_checks",
       "id": "PROOF-53",
       "rule": "RULE-29",
-      "test_file": "dev\\test_windows_native.py",
+      "test_file": "dev/test_windows_native.py",
       "test_name": "test_real_msvcrt_lock_path",
       "status": "pass",
       "tier": "windows"
@@ -14,7 +14,7 @@
       "feature": "static_checks",
       "id": "PROOF-54",
       "rule": "RULE-30",
-      "test_file": "dev\\test_windows_native.py",
+      "test_file": "dev/test_windows_native.py",
       "test_name": "test_load_criteria_native_console",
       "status": "pass",
       "tier": "windows"

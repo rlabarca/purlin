@@ -795,6 +795,55 @@ def check_csharp(filepath, feature_name, rule_descs=None):
     return results
 
 
+# Build-output / vendored directories that never contain authored test source.
+_SOURCE_SCAN_SKIP_DIRS = {'bin', 'obj', 'node_modules', '.git', '.purlin', 'dist', 'build'}
+
+
+def resolve_test_file_from_name(test_name, project_root, ext='.cs'):
+    """Resolve a test's source file from its fully-qualified test_name when the
+    proof's test_file is empty.
+
+    Some runners cannot surface a source path: the xUnit logger emits
+    `MakeRelative(_root, tc.CodeFilePath ?? "")`, and under `dotnet test`
+    CodeFilePath is often null (no source info / full PDBs), so test_file is "".
+    The fully-qualified test_name (e.g. `Ns.Sub.AuthLogicTests.Evaluate_NullRow`)
+    still identifies the declaring type, so we derive the type (the segment before
+    the final `.method`) and search the project's `ext` files for its declaration.
+
+    Returns the repo-relative POSIX path of the best match — preferring a file
+    whose stem equals the type name — or '' if no declaration is found. Skips
+    build-output and vendored directories.
+    """
+    if not test_name:
+        return ''
+    parts = test_name.split('.')
+    if len(parts) < 2:
+        return ''
+    type_name = parts[-2]  # final segment is the method; the one before is the type
+    if not type_name:
+        return ''
+    decl = re.compile(r'\b(?:class|struct|record|interface)\s+' + re.escape(type_name) + r'\b')
+    matches = []
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in _SOURCE_SCAN_SKIP_DIRS]
+        for fn in files:
+            if not fn.endswith(ext):
+                continue
+            path = os.path.join(root, fn)
+            try:
+                with open(path, encoding='utf-8') as f:
+                    if decl.search(f.read()):
+                        matches.append(path)
+            except (OSError, UnicodeDecodeError):
+                continue
+    if not matches:
+        return ''
+    matches.sort()  # determinism across platforms
+    best = next((m for m in matches
+                 if os.path.splitext(os.path.basename(m))[0] == type_name), matches[0])
+    return os.path.relpath(best, project_root).replace(os.sep, '/')
+
+
 def analyze_test_file(test_file, feature_name, rule_descs=None):
     """Dispatch a test file to the language checker matching its extension.
 
@@ -1197,6 +1246,28 @@ def main():
             if idx + 1 < len(sys.argv):
                 extra_path = sys.argv[idx + 1]
         print(load_criteria(project_root, extra_path=extra_path))
+        sys.exit(0)
+
+    # --resolve-source mode: locate a test's source file from its fully-qualified
+    # test_name when the proof's test_file is empty (e.g. C#/xUnit under dotnet
+    # test, where CodeFilePath is null). Prints JSON {test_name, test_file}.
+    if '--resolve-source' in sys.argv:
+        idx = sys.argv.index('--resolve-source')
+        test_name = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else ''
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            j = sys.argv.index('--project-root')
+            if j + 1 < len(sys.argv):
+                project_root = sys.argv[j + 1]
+        ext = '.cs'
+        if '--ext' in sys.argv:
+            k = sys.argv.index('--ext')
+            if k + 1 < len(sys.argv):
+                ext = sys.argv[k + 1]
+        print(json.dumps({
+            "test_name": test_name,
+            "test_file": resolve_test_file_from_name(test_name, project_root, ext=ext),
+        }))
         sys.exit(0)
 
     # --compute-proof-hash mode: hash inputs for cache key
