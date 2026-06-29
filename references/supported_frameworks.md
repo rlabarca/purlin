@@ -26,6 +26,8 @@ Shipped plugins that `purlin:init` does not yet auto-detect or scaffold — wire
 |-----------|-------------|-----------|------------|-----------|---------------|------|
 | **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `specs/proof/proof_plugins_xunit.md` |
 
+> **C# deterministic Pass-1 coverage:** the audit Pass-1 static checker (`scripts/audit/static_checks.py`) parses `.cs` test files directly — it reads the `[Trait("PurlinProof", ...)]` markers above, associates each with its `[Fact]`/`[Theory]` method body, and runs assert-true / no-assertion detection (recognizing xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`, and FluentAssertions `.Should()`). This is independent of the runtime proof plugin, which still records pass/fail during the actual test run.
+
 > **Vitest version support:** the Vitest reporter (`vitest_purlin.ts`) collects proofs in the `onFinished(files)` hook, whose shape is stable across Vitest 2.x → 4.x (tested on 2.x and 3.x). Earlier `onTaskUpdate`-based collection broke silently on Vitest 2+ and is no longer used. Note that `jest_purlin.js` is **not** a drop-in for Vitest — Vitest does not call Jest's `onTestResult`/`onRunComplete` hooks, so Vitest projects use `vitest_purlin.ts`.
 
 ## End-to-end (browser) proofs

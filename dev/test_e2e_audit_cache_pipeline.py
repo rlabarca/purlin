@@ -1692,3 +1692,115 @@ Payments.
                 f"CLI summary table should show {name} as {exp_status}\n"
                 f"CLI output:\n{cli_output}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Cross-platform portability (issue #3): Windows lock path + UTF-8 stdio
+# ---------------------------------------------------------------------------
+
+_STATIC_CHECKS_PY = os.path.join(
+    os.path.dirname(__file__), '..', 'scripts', 'audit', 'static_checks.py'
+)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+
+def _audit_entry(assessment, feature, proof_id, rule_id):
+    return {
+        "assessment": assessment,
+        "criterion": "matches rule intent",
+        "why": "test exercises the rule correctly",
+        "fix": "none",
+        "feature": feature,
+        "proof_id": proof_id,
+        "rule_id": rule_id,
+        "priority": "LOW",
+        "cached_at": "2026-04-01T00:00:00+00:00",
+    }
+
+
+class _FakeMsvcrt:
+    """Stand-in for the Windows msvcrt module — records locking() calls."""
+    LK_LOCK = 1
+    LK_UNLCK = 0
+
+    def __init__(self):
+        self.calls = []
+
+    def locking(self, fd, mode, nbytes):
+        self.calls.append(mode)
+        return None
+
+
+class TestCrossPlatformCachePipeline:
+    """RULE-29/30: the audit-cache pipeline works on Windows (no fcntl, ASCII locale)."""
+
+    @pytest.mark.proof("static_checks", "PROOF-50", "RULE-29", tier="integration")
+    def test_windows_lock_path_via_fake_msvcrt(self):
+        """With fcntl unavailable and msvcrt faked, write_audit_cache round-trips
+        and drives the msvcrt LK_LOCK / LK_UNLCK lock path."""
+        fake = _FakeMsvcrt()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch.object(static_checks, '_HAS_FCNTL', False), \
+                 mock.patch.dict(sys.modules, {'msvcrt': fake}):
+                write_audit_cache(tmpdir, {
+                    "h1": _audit_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
+                    "h2": _audit_entry("WEAK", "feat_a", "PROOF-2", "RULE-2"),
+                })
+            after = read_audit_cache(tmpdir)
+            assert len(after) == 2, f"entries lost on Windows lock path: {list(after)}"
+            assert "h1" in after and "h2" in after
+            assert fake.calls == [fake.LK_LOCK, fake.LK_UNLCK], (
+                f"expected LK_LOCK then LK_UNLCK via msvcrt, got {fake.calls}"
+            )
+
+    @pytest.mark.proof("static_checks", "PROOF-51", "RULE-29", tier="e2e")
+    def test_cli_pipeline_subprocess(self):
+        """Drive the real CLI as a subprocess: write-cache (stdin) -> read-cache ->
+        Pass-1 on a hollow .cs fixture; observe JSON output and the cache on disk."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            entries = {"h1": _audit_entry("STRONG", "feat", "PROOF-1", "RULE-1")}
+            w = subprocess.run(
+                [sys.executable, _STATIC_CHECKS_PY, '--write-cache', '--project-root', tmpdir],
+                input=json.dumps(entries), capture_output=True, text=True)
+            assert w.returncode == 0, w.stderr
+            assert json.loads(w.stdout)['status'] == 'merged'
+
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+            assert os.path.isfile(cache_path), "audit_cache.json was not written"
+
+            r = subprocess.run(
+                [sys.executable, _STATIC_CHECKS_PY, '--read-cache', '--project-root', tmpdir],
+                capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            assert 'h1' in json.loads(r.stdout)
+
+            cs = os.path.join(tmpdir, 'Tests.cs')
+            with open(cs, 'w', encoding='utf-8') as f:
+                f.write('public class T {\n'
+                        '  [Fact]\n'
+                        '  [Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]\n'
+                        '  public void X() { Assert.True(true); }\n}\n')
+            p = subprocess.run([sys.executable, _STATIC_CHECKS_PY, cs, 'feat'],
+                               capture_output=True, text=True)
+            assert p.returncode == 0, p.stderr
+            proofs = json.loads(p.stdout)['proofs']
+            assert any(pr.get('check') == 'assert_true' for pr in proofs), proofs
+
+    @pytest.mark.proof("static_checks", "PROOF-52", "RULE-30", tier="e2e")
+    def test_load_criteria_under_ascii_locale(self):
+        """Reproduce the Windows cp1252 default: run --load-criteria under an ASCII
+        locale over the tool's own non-ASCII audit_criteria.md. Must not raise
+        UnicodeDecodeError (read) or UnicodeEncodeError (stdout)."""
+        env = dict(os.environ)
+        env['PYTHONUTF8'] = '0'
+        env['LC_ALL'] = 'C'
+        env['LANG'] = 'C'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            r = subprocess.run(
+                [sys.executable, _STATIC_CHECKS_PY, '--load-criteria', '--project-root', tmpdir],
+                cwd=_REPO_ROOT, env=env, capture_output=True, text=True)
+            assert r.returncode == 0, (
+                f"--load-criteria crashed under ASCII locale:\n{r.stderr}")
+            # Criteria carry non-ASCII glyphs; their presence proves UTF-8 stdout.
+            assert any(ord(ch) > 127 for ch in r.stdout), \
+                "criteria output had no non-ASCII character — stdout not UTF-8?"

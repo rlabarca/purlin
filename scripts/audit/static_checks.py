@@ -13,12 +13,17 @@ Output: JSON to stdout with per-proof results.
 
 import ast
 import datetime
-import fcntl
 import hashlib
 import json
 import os
 import re
 import sys
+
+try:
+    import fcntl  # POSIX only — absent on Windows
+    _HAS_FCNTL = True
+except ImportError:  # Windows: fall back to msvcrt-based locking (imported lazily)
+    _HAS_FCNTL = False
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -255,7 +260,7 @@ def _check_mock_target_match(node, source, rule_desc):
 def check_python(filepath, feature_name, rule_descs=None):
     """Run all Python checks. Returns list of proof result dicts."""
     rule_descs = rule_descs or {}
-    with open(filepath) as f:
+    with open(filepath, encoding='utf-8') as f:
         source = f.read()
     proofs = _get_python_proofs_and_functions(source, feature_name)
     results = []
@@ -299,7 +304,7 @@ def check_python(filepath, feature_name, rule_descs=None):
 
 def check_shell(filepath, feature_name):
     """Run shell test checks. Returns list of proof result dicts."""
-    with open(filepath) as f:
+    with open(filepath, encoding='utf-8') as f:
         content = f.read()
     lines = content.splitlines()
     results = []
@@ -554,7 +559,7 @@ def _find_test_body(content, i):
 
 def check_js(filepath, feature_name):
     """Run JS/TS test checks. Returns list of proof result dicts."""
-    with open(filepath) as f:
+    with open(filepath, encoding='utf-8') as f:
         content = f.read()
     results = []
     call_re = re.compile(r'\b(?:it|test)\s*\(')
@@ -615,6 +620,191 @@ def check_js(filepath, feature_name):
         })
     return results
 
+
+# ---------------------------------------------------------------------------
+# C# / .NET (xUnit / NUnit / MSTest) checks
+# ---------------------------------------------------------------------------
+
+def _read_csharp_balanced(content, i, opener, closer):
+    """content[i] is `opener`. Return (inner_text, index_after_matching_close).
+
+    Skips C# strings (regular, verbatim @"", interpolated $""), char literals,
+    and // and /* */ comments so their contents never affect bracket depth.
+    """
+    n = len(content)
+    depth = 0
+    j = i
+    start_inner = i + 1
+    while j < n:
+        c = content[j]
+        if c == '/' and content[j + 1:j + 2] == '/':
+            nl = content.find('\n', j)
+            j = n if nl < 0 else nl
+            continue
+        if c == '/' and content[j + 1:j + 2] == '*':
+            e = content.find('*/', j + 2)
+            j = n if e < 0 else e + 2
+            continue
+        if c == '@' and content[j + 1:j + 2] == '"':  # verbatim string: "" escapes a quote
+            j += 2
+            while j < n:
+                if content[j] == '"':
+                    if content[j + 1:j + 2] == '"':
+                        j += 2
+                        continue
+                    j += 1
+                    break
+                j += 1
+            continue
+        if c == '"':  # regular or interpolated string ($ prefix already passed over)
+            j += 1
+            while j < n:
+                if content[j] == '\\':
+                    j += 2
+                    continue
+                if content[j] == '"':
+                    j += 1
+                    break
+                j += 1
+            continue
+        if c == "'":  # char literal
+            j += 1
+            while j < n:
+                if content[j] == '\\':
+                    j += 2
+                    continue
+                if content[j] == "'":
+                    j += 1
+                    break
+                j += 1
+            continue
+        if c == opener:
+            depth += 1
+        elif c == closer:
+            depth -= 1
+            if depth == 0:
+                return content[start_inner:j], j + 1
+        j += 1
+    return content[start_inner:j], j  # unterminated
+
+
+def _find_csharp_body(content, i):
+    """From index i (just after a [Trait(...)] marker), locate the test method's
+    { body }. Skips trailing attributes ([Fact], [InlineData(...)]) and the
+    method signature/parameter list. Returns (body_text, index_after_body,
+    method_name), or (None, i, method_name) for expression-bodied or abstract
+    members with no block body.
+    """
+    n = len(content)
+    method_name = None
+    while i < n:
+        c = content[i]
+        if c == '/' and content[i + 1:i + 2] == '/':
+            nl = content.find('\n', i)
+            i = n if nl < 0 else nl
+            continue
+        if c == '/' and content[i + 1:i + 2] == '*':
+            e = content.find('*/', i + 2)
+            i = n if e < 0 else e + 2
+            continue
+        if c == '[':  # another attribute or an array — skip balanced [...]
+            _, i = _read_csharp_balanced(content, i, '[', ']')
+            continue
+        if c == '(':  # the identifier just before this paren is the method name
+            k = i - 1
+            while k >= 0 and content[k].isspace():
+                k -= 1
+            end = k + 1
+            while k >= 0 and (content[k].isalnum() or content[k] == '_'):
+                k -= 1
+            method_name = content[k + 1:end] or method_name
+            _, i = _read_csharp_balanced(content, i, '(', ')')
+            continue
+        if content.startswith('=>', i):
+            return None, i, method_name  # expression-bodied member — no block
+        if c == ';':
+            return None, i, method_name  # no body
+        if c == '{':
+            body, after = _read_csharp_balanced(content, i, '{', '}')
+            return body, after, method_name
+        i += 1
+    return None, i, method_name
+
+
+def check_csharp(filepath, feature_name, rule_descs=None):
+    """Run C#/.NET (xUnit/NUnit/MSTest) test checks. Returns list of proof dicts.
+
+    Parses `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]` markers, finds
+    each marked test method's body, and applies assert-true / no-assertion
+    detection. Recognizes xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`,
+    and FluentAssertions `.Should()` as assertions.
+    """
+    with open(filepath, encoding='utf-8') as f:
+        content = f.read()
+    results = []
+    marker_re = re.compile(
+        r'\[\s*Trait\s*\(\s*"PurlinProof"\s*,\s*"'
+        + re.escape(feature_name)
+        + r':([^:"\]]+):([^:"\]]+):[^"]*"\s*\)\s*\]'
+    )
+    for m in marker_re.finditer(content):
+        proof_id = m.group(1)
+        rule_id = m.group(2)
+        body, _after, method_name = _find_csharp_body(content, m.end())
+        if body is None:
+            # No block body to inspect (expression-bodied or abstract) — skip.
+            continue
+        test_name = (method_name or proof_id)[:60]
+
+        # assert_true: tautological assertions across the supported frameworks.
+        if (re.search(r'Assert\s*\.\s*(?:True|IsTrue)\s*\(\s*true\s*\)', body)
+                or re.search(r'Assert\s*\.\s*(?:Equal|AreEqual)\s*\(\s*true\s*,\s*true\s*\)', body)):
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'assert_true', 'reason': 'Assert.True(true) is tautological',
+                'literal': True,
+            })
+            continue
+
+        # no_assertions: no recognized assertion call in the body.
+        # xUnit/NUnit/MSTest `Assert.`, FluentAssertions `.Should(`, Moq `.Verify(`.
+        if (not re.search(r'\bAssert\s*\.', body)
+                and not re.search(r'\.\s*Should\s*\(', body)
+                and not re.search(r'\.\s*Verify\s*\(', body)):
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'no_assertions',
+                'reason': 'test method has no Assert./.Should()/.Verify() call',
+            })
+            continue
+
+        results.append({
+            'proof_id': proof_id, 'rule_id': rule_id,
+            'test_name': test_name, 'status': 'pass',
+            'reason': 'structural checks passed',
+        })
+    return results
+
+
+def analyze_test_file(test_file, feature_name, rule_descs=None):
+    """Dispatch a test file to the language checker matching its extension.
+
+    Returns the list of proof result dicts, or [] for unsupported extensions.
+    """
+    ext = os.path.splitext(test_file)[1].lower()
+    if ext == '.py':
+        return check_python(test_file, feature_name, rule_descs)
+    if ext == '.sh':
+        return check_shell(test_file, feature_name)
+    if ext in ('.js', '.ts', '.jsx', '.tsx'):
+        return check_js(test_file, feature_name)
+    if ext == '.cs':
+        return check_csharp(test_file, feature_name, rule_descs)
+    return []
+
+
 # ---------------------------------------------------------------------------
 # Spec reading (for mock_target_match)
 # ---------------------------------------------------------------------------
@@ -625,7 +815,7 @@ def _read_rule_descriptions(spec_path):
     """Read rule descriptions from a spec file."""
     if not spec_path or not os.path.isfile(spec_path):
         return {}
-    with open(spec_path) as f:
+    with open(spec_path, encoding='utf-8') as f:
         content = f.read()
     return {m.group(1): m.group(2).strip() for m in _RULE_LINE_RE.finditer(content)}
 
@@ -645,7 +835,7 @@ def _read_proof_descriptions(spec_path):
     """
     if not spec_path or not os.path.isfile(spec_path):
         return []
-    with open(spec_path) as f:
+    with open(spec_path, encoding='utf-8') as f:
         content = f.read()
     proof_section_match = re.search(
         r'^## Proof\s*\n(.*?)(?=^## |\Z)',
@@ -695,7 +885,7 @@ def check_proof_file(proof_json_path, spec_path=None):
     if not os.path.isfile(proof_json_path):
         return []
 
-    with open(proof_json_path) as f:
+    with open(proof_json_path, encoding='utf-8') as f:
         data = json.load(f)
 
     proofs = data.get('proofs', [])
@@ -758,7 +948,7 @@ def read_audit_cache(project_root):
     cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
     if os.path.isfile(cache_path):
         try:
-            with open(cache_path) as f:
+            with open(cache_path, encoding='utf-8') as f:
                 data = json.load(f)
             if not isinstance(data, dict):
                 return {}
@@ -766,6 +956,39 @@ def read_audit_cache(project_root):
         except (json.JSONDecodeError, OSError):
             return {}
     return {}
+
+
+def _lock_exclusive(lock_file):
+    """Acquire an exclusive, blocking lock on an open file handle.
+
+    POSIX uses fcntl.flock; Windows uses msvcrt.locking on a 1-byte region.
+    On Windows, msvcrt.locking with LK_LOCK gives up after ~10s under
+    contention, so we retry to match flock's indefinite-block semantics.
+    """
+    if _HAS_FCNTL:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        return
+    import msvcrt
+    # Ensure a byte exists at offset 0 to lock, then block until it is ours.
+    lock_file.write('\0')
+    lock_file.flush()
+    lock_file.seek(0)
+    while True:
+        try:
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            return
+        except OSError:
+            continue
+
+
+def _unlock(lock_file):
+    """Release a lock acquired by _lock_exclusive."""
+    if _HAS_FCNTL:
+        fcntl.flock(lock_file, fcntl.LOCK_UN)
+        return
+    import msvcrt
+    lock_file.seek(0)
+    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 def write_audit_cache(project_root, cache):
@@ -788,8 +1011,8 @@ def write_audit_cache(project_root, cache):
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
     lock_path = cache_path + '.lock'
 
-    with open(lock_path, 'w') as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(lock_path, 'w', encoding='utf-8') as lock_file:
+        _lock_exclusive(lock_file)
         try:
             now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -836,11 +1059,11 @@ def write_audit_cache(project_root, cache):
                 pruned[hk] = ent
 
             tmp_path = cache_path + '.tmp'
-            with open(tmp_path, 'w') as f:
+            with open(tmp_path, 'w', encoding='utf-8') as f:
                 json.dump(pruned, f, indent=2)
             os.replace(tmp_path, cache_path)
         finally:
-            fcntl.flock(lock_file, fcntl.LOCK_UN)
+            _unlock(lock_file)
 
 
 def _find_plugin_root():
@@ -871,20 +1094,20 @@ def load_criteria(project_root, extra_path=None):
     builtin_path = os.path.join(plugin_root, 'references', 'audit_criteria.md')
     if not os.path.isfile(builtin_path):
         return ''
-    with open(builtin_path) as f:
+    with open(builtin_path, encoding='utf-8') as f:
         criteria = f.read()
 
     # 2. Check for cached additional criteria (saved by purlin:init --sync-audit-criteria)
     cached_path = os.path.join(project_root, '.purlin', 'cache', 'additional_criteria.md')
     if os.path.isfile(cached_path):
-        with open(cached_path) as f:
+        with open(cached_path, encoding='utf-8') as f:
             additional = f.read()
         # Read source URL from config for the separator header
         source = 'team criteria'
         config_path = os.path.join(project_root, '.purlin', 'config.json')
         if os.path.isfile(config_path):
             try:
-                with open(config_path) as f:
+                with open(config_path, encoding='utf-8') as f:
                     config = json.load(f)
                 source = config.get('audit_criteria', source)
             except (json.JSONDecodeError, OSError):
@@ -893,7 +1116,7 @@ def load_criteria(project_root, extra_path=None):
 
     # 3. Append extra file if provided (--criteria flag)
     if extra_path and os.path.isfile(extra_path):
-        with open(extra_path) as f:
+        with open(extra_path, encoding='utf-8') as f:
             extra = f.read()
         criteria += f"\n\n---\n\n## Additional Criteria (from {extra_path})\n\n{extra}"
 
@@ -906,7 +1129,7 @@ def clear_audit_cache(project_root):
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
     tmp_path = cache_path + '.tmp'
-    with open(tmp_path, 'w') as f:
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump({}, f)
     os.replace(tmp_path, cache_path)
     return cache_path
@@ -929,7 +1152,7 @@ def prune_audit_cache(project_root, live_keys):
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
     tmp_path = cache_path + '.tmp'
-    with open(tmp_path, 'w') as f:
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(pruned, f, indent=2)
     os.replace(tmp_path, cache_path)
 
@@ -940,7 +1163,20 @@ def prune_audit_cache(project_root, live_keys):
 # Main
 # ---------------------------------------------------------------------------
 
+def _force_utf8_stdio():
+    """Reconfigure stdout/stderr to UTF-8 so output containing non-ASCII
+    characters (criteria glyphs like ✓/⚠) prints regardless of the OS console
+    codec (cp1252 / ASCII on Windows would otherwise raise UnicodeEncodeError).
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except (AttributeError, ValueError):
+            pass  # not a reconfigurable text stream (e.g. captured/replaced)
+
+
 def main():
+    _force_utf8_stdio()
     # --load-criteria mode: output combined criteria (built-in + additional)
     if '--load-criteria' in sys.argv:
         project_root = os.getcwd()
@@ -1025,7 +1261,7 @@ def main():
         if not live_keys_file or not os.path.isfile(live_keys_file):
             print(json.dumps({'error': '--prune-cache requires --live-keys-file <path>'}))
             sys.exit(2)
-        with open(live_keys_file) as f:
+        with open(live_keys_file, encoding='utf-8') as f:
             live_keys = set(line.strip() for line in f if line.strip())
         result = prune_audit_cache(project_root, live_keys)
         print(json.dumps(result))
@@ -1085,16 +1321,7 @@ def main():
         sys.exit(2)
 
     rule_descs = _read_rule_descriptions(spec_path)
-    ext = os.path.splitext(test_file)[1].lower()
-
-    if ext == '.py':
-        results = check_python(test_file, feature_name, rule_descs)
-    elif ext == '.sh':
-        results = check_shell(test_file, feature_name)
-    elif ext in ('.js', '.ts', '.jsx', '.tsx'):
-        results = check_js(test_file, feature_name)
-    else:
-        results = []
+    results = analyze_test_file(test_file, feature_name, rule_descs)
 
     output = {'proofs': results}
     print(json.dumps(output, indent=2))

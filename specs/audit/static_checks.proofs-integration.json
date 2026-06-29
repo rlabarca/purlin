@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "static_checks",
+      "id": "PROOF-50",
+      "rule": "RULE-29",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_windows_lock_path_via_fake_msvcrt",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
       "test_file": "dev/test_multilang_proof_plugins.py",
