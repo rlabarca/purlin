@@ -1,0 +1,46 @@
+name: windows-proofs
+
+# Runs the Windows-native proofs for static_checks (RULE-29/30) on a real windows-latest
+# runner and commits the emitted `windows`-tier proof file back to the branch, so
+# purlin:verify/purlin:status can read genuine Windows verification — not host simulation.
+
+on:
+  push:
+    # Skip the runner's own proof commit (loop guard, paired with [skip ci]).
+    paths-ignore:
+      - '**/*.proofs-windows.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-native:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run Windows-native proofs
+        run: python -m pytest dev/test_windows_native.py -v
+
+      - name: Commit Windows proof file back to the branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add specs/audit/static_checks.proofs-windows.json
+          if git diff --cached --quiet; then
+            echo "No proof-file changes to commit."
+          else
+            git commit -m "test(static_checks): windows-native proofs from windows-latest [skip ci]"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi

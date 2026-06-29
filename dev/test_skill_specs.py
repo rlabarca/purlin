@@ -342,6 +342,18 @@ class TestSkillAudit:
         assert '`python`' in content or 'then `python`' in content or 'python`,' in content, \
             "audit SKILL.md must document the 'python' interpreter fallback"
 
+    @pytest.mark.proof("skill_audit", "PROOF-16", "RULE-16")
+    def test_documents_empty_test_file_fallback(self):
+        """SKILL.md documents resolving an empty test_file from test_name via
+        --resolve-source, and names CollectSourceInformation as the native fix."""
+        content = _read('audit')
+        assert '--resolve-source' in content, \
+            "audit SKILL.md must document the --resolve-source fallback"
+        assert 'test_file' in content and 'test_name' in content, \
+            "audit SKILL.md must explain resolving an empty test_file from test_name"
+        assert 'CollectSourceInformation' in content, \
+            "audit SKILL.md must name CollectSourceInformation as the native way to populate test_file"
+
 
 # ── skill_build ───────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-> Format-Version: 7
+> Format-Version: 8
 
 # Spec Format
 
@@ -130,6 +130,9 @@ Append a tier tag to proofs that aren't unit:
 | `@integration` | Needs database, network, filesystem, or external service |
 | `@e2e` | Needs browser, full app stack, or UI rendering |
 | `@manual` | Requires human judgment |
+| `@windows` | Needs a real Windows runner (e.g. `windows-latest` in CI); skipped on POSIX hosts |
+
+Tier tags are not limited to this set: any `@<name>` is parsed as a tier, and its proofs are read from the matching `<feature>.proofs-<name>.json` file. The tags above are the common ones.
 
 ### Manual proofs
 
