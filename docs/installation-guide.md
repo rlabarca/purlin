@@ -36,10 +36,12 @@ cd my-project
 Add the Purlin marketplace from your terminal (this is a CLI command, not inside Claude Code):
 
 ```bash
-claude plugin marketplace add git@github.com:rlabarca/purlin.git --scope project
+claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
 ```
 
 The `--scope project` flag stores the marketplace config in the project directory (`.claude/settings.json`) so every team member who clones the repo gets Purlin automatically. Omit it for a user-level install that only applies to you.
+
+Already added `purlin` using the SSH URL (`git@github.com:...`)? Run `claude plugin marketplace remove purlin` first, then the command above. The name `purlin` stays bound to whichever URL it was added with.
 
 Then start Claude Code and install the plugin:
 
