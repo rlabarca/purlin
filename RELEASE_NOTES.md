@@ -1,5 +1,49 @@
 # Release Notes
 
+## Unreleased
+
+### Changed
+
+- **The version string now has exactly one place to edit.** It lived in four files and the
+  `purlin_version` spec checked three, so this repo's own `.purlin/config.json` sat at `0.9.2`
+  while `VERSION`, `templates/config.json` and `.claude-plugin/plugin.json` all read `0.10.0`.
+  The dashboard reported the stale number. Two further copies hid in prose: the config-field
+  tables in `skills/init/SKILL.md` and `references/drift_criteria.md` both still said `"0.9.0"`,
+  two releases behind.
+
+  `dev/bump_version.sh <semver>` writes `VERSION` and propagates it to every derived location;
+  `--check` exits 1 naming each file that disagrees. The script's header comment is the
+  authoritative list of derived locations and `--check` reads that same list, so the inventory
+  cannot drift away from the gate enforcing it. Because `purlin:init` already stamps config.json
+  from `${CLAUDE_PLUGIN_ROOT}/VERSION`, the two doc tables now cite the VERSION file by name
+  instead of restating a number, retiring those locations rather than syncing them.
+
+  CI record: `.github/workflows/version-check.yml` runs `--check` on every push or PR touching a
+  version-bearing file, then runs the `purlin_version` proofs. The job log prints `VERSION`
+  alongside each location marked `ok` / `DRIFT` / `absent`, so what the version was and what
+  disagreed is recorded per commit. New rules: `purlin_version` RULE-6/7/8, with proofs.
+
+### Fixed
+
+- **The pre-commit digest blanked the Proof Design gauge.** `generate_digest`, the entry point
+  the pre-commit hook uses to write `.purlin/report-data.js`, read the audit cache and left
+  `design_summary` at its `None` default. Every digest refresh therefore erased the Proof Design
+  card that `sync_status` had just populated, and the dashboard read "run purlin:audit" with a
+  full design cache on disk. `report_data` RULE-23 already required the field and PROOF-24 proved
+  it, but only ever through `sync_status`; a defaulted parameter let the second entry point
+  violate the rule while the proof stayed green. RULE-24 now requires every writer of
+  report-data.js to populate both gauges, and PROOF-25 exercises `generate_digest` directly.
+
+- `dev/test_purlin_version.py` was outside `dev/run_tests.sh` and is now in the pooled pytest
+  session. It is the sole writer of `purlin_version` proofs, so it cannot collide under
+  feature-scoped overwrite. Full suite: 393 passed, 8 skipped across 5 suites, 40/40 VERIFIED.
+
+- `docs/images/dashboard-{summary,categories}.png` were captured on 18 June and showed the old
+  six-card summary strip with no Proof Design card. `dev/capture_doc_screenshots.py` regenerates
+  them from the live dashboard, so the next refresh is a command rather than a manual crop.
+  `dashboard-features.png` is deleted: it was byte-identical to `dashboard-summary.png` and
+  referenced by zero markdown files.
+
 ## v0.10.0 — Two proof gauges: Proof Design and Proof Integrity
 
 ### Added
@@ -54,7 +98,7 @@
 
 - `purlin_report` PROOF-34 is the one new proof not executed locally: it drives the real dashboard through Playwright and Chromium could not be downloaded in the build environment. PROOF-35 covers the same rule structurally and does run, so RULE-34 is not left unproven. It emits at the `integration` tier deliberately — two test files emitting one feature at one tier collide under feature-scoped overwrite, which purged all 33 committed browser proofs during development.
 
-- `dev/run_tests.sh` gains `test_purlin_report_markup.py` and `test_purlin_version.py`. Full suite: 392 passed, 8 skipped across 5 suites, zero NO PROOF and zero FAILING across all 40 features.
+- `dev/run_tests.sh` gains `test_purlin_report_markup.py`. Full suite: 383 passed, 8 skipped across 5 suites, zero NO PROOF and zero FAILING across all 40 features. (The entry previously claimed 413 passed, a figure that predated deleting 32 duplicate doc-grep tests and was never re-measured.)
 
 **Upgrading an existing project:** no action required for the gauges — `purlin:audit` writes
 `.purlin/cache/design_cache.json` on its next run and `.purlin/cache/` is already gitignored.
