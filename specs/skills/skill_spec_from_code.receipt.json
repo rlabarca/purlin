@@ -1,8 +1,8 @@
 {
   "feature": "skill_spec_from_code",
-  "vhash": "9e996e68",
-  "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
-  "timestamp": "2026-09-11T21:32:29.401865+00:00",
+  "vhash": "142cd284",
+  "commit": "746a3408724282faabdd46c0c1095d89146b9400",
+  "timestamp": "2026-09-11T23:20:27.331803+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -38,6 +38,11 @@
     "RULE-9"
   ],
   "proofs": [
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
     {
       "id": "PROOF-1",
       "rule": "RULE-1",
@@ -96,6 +101,11 @@
     {
       "id": "PROOF-19",
       "rule": "RULE-10",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
       "status": "pass"
     },
     {
@@ -209,6 +219,11 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-30",
       "rule": "RULE-21",
       "status": "pass"
@@ -226,6 +241,11 @@
     {
       "id": "PROOF-31",
       "rule": "RULE-22",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-32",
+      "rule": "RULE-23",
       "status": "pass"
     },
     {
@@ -239,8 +259,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-34",
+      "rule": "RULE-24",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-35",
+      "rule": "RULE-25",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-36",
       "rule": "RULE-25",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-37",
+      "rule": "RULE-26",
       "status": "pass"
     },
     {
@@ -254,8 +289,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-39",
+      "rule": "RULE-27",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-4",
       "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-40",
+      "rule": "RULE-28",
       "status": "pass"
     },
     {
@@ -290,6 +340,11 @@
     },
     {
       "id": "PROOF-5",
+      "rule": "RULE-9",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-9",
       "rule": "RULE-9",
       "status": "pass"
     }

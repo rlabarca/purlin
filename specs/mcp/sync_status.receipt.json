@@ -1,8 +1,8 @@
 {
   "feature": "sync_status",
-  "vhash": "593cfad7",
-  "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
-  "timestamp": "2026-09-11T21:32:29.401865+00:00",
+  "vhash": "99eaad51",
+  "commit": "746a3408724282faabdd46c0c1095d89146b9400",
+  "timestamp": "2026-09-11T23:20:27.331803+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -191,6 +191,46 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-22",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-23",
+      "rule": "RULE-10",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-24",
+      "rule": "RULE-21",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-25",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-26",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-27",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-28",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-29",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-3",
       "rule": "RULE-3",
       "status": "pass"
@@ -211,7 +251,52 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-4",
+      "id": "PROOF-30",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-31",
+      "rule": "RULE-15",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-32",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-33",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-34",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-35",
+      "rule": "RULE-22",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-36",
+      "rule": "RULE-23",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-37",
+      "rule": "RULE-24",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-38",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-39",
       "rule": "RULE-4",
       "status": "pass"
     },
@@ -228,6 +313,26 @@
     {
       "id": "PROOF-4",
       "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-40",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-41",
+      "rule": "RULE-9",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-42",
+      "rule": "RULE-2",
       "status": "pass"
     },
     {
