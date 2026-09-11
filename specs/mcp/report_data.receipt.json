@@ -1,8 +1,8 @@
 {
   "feature": "report_data",
-  "vhash": "1ca710db",
-  "commit": "b954dd0fcb012638a0fe5ada7ce57c3995385115",
-  "timestamp": "2026-09-11T18:30:05.943959+00:00",
+  "vhash": "4be19904",
+  "commit": "b0e7e67f67f315ca910ca6f93c404c00cc22b848",
+  "timestamp": "2026-09-11T19:01:03.650118+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -24,6 +24,7 @@
     "RULE-25",
     "RULE-26",
     "RULE-27",
+    "RULE-28",
     "RULE-3",
     "RULE-4",
     "RULE-5",
@@ -46,6 +47,11 @@
     {
       "id": "PROOF-28",
       "rule": "RULE-27",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-29",
+      "rule": "RULE-28",
       "status": "pass"
     },
     {
