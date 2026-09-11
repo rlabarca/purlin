@@ -34,7 +34,7 @@
 - RULE-25: Shows "consider re-auditing" when the audit cache is older than 24 hours
 - RULE-26: report-data.js includes audit_summary with integrity, assessment counts, last_audit, last_audit_relative, and stale fields when cache exists; audit_summary is null when no cache exists
 - RULE-27: report-data.js per-feature audit data is populated from cache entries matching the feature name
-- RULE-28: Cache entries without a feature field are excluded from per-feature audit data but counted in project-wide summary
+- RULE-28: When the audit cache already contains entries without a `feature` field — written before the writer-side check existed, or hand-edited — the reader tolerates them: they are excluded from per-feature audit data but still counted in the project-wide summary. Rejecting such entries is the writer's job (`static_checks` RULE-33), not the reader's
 - RULE-29: Per-feature integrity = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — measures proof quality only; NONE rules do not affect the integrity denominator
 - RULE-30: Per-feature integrity counts only proofs cached under that feature name — required/global anchor proofs are counted under the anchor's own feature, not the consuming feature
 - RULE-31: Global integrity (project-wide) = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) across all features — NONE rules do not affect the denominator
@@ -96,7 +96,7 @@
 - PROOF-46 (RULE-26): e2e: Write cache with report=true; parse report-data.js; verify audit_summary fields @e2e
 - PROOF-47 (RULE-26): e2e: No cache with report=true; verify report-data.js audit_summary is null @e2e
 - PROOF-48 (RULE-27): e2e: Write cache for feature login; verify per-feature audit data with correct integrity and findings @e2e
-- PROOF-49 (RULE-28): e2e: Write cache with/without feature field; verify per-feature excludes no-feature entries; verify project-wide counts both @e2e
+- PROOF-49 (RULE-28): e2e: Seed an audit cache on disk containing one entry with a `feature` field and one without; verify per-feature grouping excludes the no-feature entry while the project-wide summary counts both. Verify write_audit_cache refuses the same entry, so the tolerance is read-side only @e2e
 - PROOF-50 (RULE-19): e2e: Write cache then delete; verify sync_status reverts to no-audit state @e2e
 - PROOF-51 (RULE-29): e2e: Feature with 5 rules, 3 proved (2 STRONG, 1 WEAK); verify integrity = 2/3 = 67% (quality only, NONE excluded) @e2e
 - PROOF-52 (RULE-30): e2e: Feature with 2 own STRONG rules requiring anchor with 3 rules; verify integrity = 2/2 = 100% (anchor proofs counted under anchor) @e2e

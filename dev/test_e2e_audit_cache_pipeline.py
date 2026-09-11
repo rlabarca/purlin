@@ -363,7 +363,15 @@ class TestAuditCachePipeline:
 
     @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="e2e")
     def test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally(self):
-        """RULE-9: Entries missing 'feature' field excluded from per-feature but in project summary."""
+        """RULE-28: a cache that ALREADY CONTAINS entries without a 'feature' field is read
+        tolerantly — excluded from per-feature grouping, still counted in the project summary.
+
+        The reader must stay tolerant because such entries exist in caches written before
+        static_checks RULE-33 added the writer-side check, and because the cache is a local
+        artifact a user can hand-edit. The writer is the boundary that rejects them, so this
+        fixture is seeded directly on disk rather than through write_audit_cache(), which
+        would now (correctly) raise.
+        """
         _make_project(self.tmp_dir, with_git=True)
 
         # One entry with feature, one without
@@ -382,7 +390,15 @@ class TestAuditCachePipeline:
                 'priority': 'HIGH', 'cached_at': ts,
             },
         }
-        write_audit_cache(self.tmp_dir, cache)
+        # Seed on disk, bypassing the writer's RULE-33 validation on purpose.
+        cache_dir = os.path.join(self.tmp_dir, '.purlin', 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(os.path.join(cache_dir, 'audit_cache.json'), 'w', encoding='utf-8') as f:
+            json.dump(cache, f)
+
+        # And confirm the writer is in fact the boundary that refuses such an entry.
+        with pytest.raises(ValueError):
+            write_audit_cache(self.tmp_dir, {'hash_no_feature': cache['hash_no_feature']})
 
         # Per-feature grouping should only see the 'login' entry
         by_feature = _read_audit_cache_by_feature(self.tmp_dir)

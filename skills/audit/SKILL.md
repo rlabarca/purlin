@@ -37,7 +37,7 @@ Read `.purlin/cache/audit_cache.json` via:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --read-cache
 ```
 
-The cache maps proof hashes to previous assessments:
+The cache maps proof hashes to previous assessments. Every entry carries all nine fields:
 
 ```json
 {
@@ -46,10 +46,22 @@ The cache maps proof hashes to previous assessments:
     "criterion": "matches rule intent",
     "why": "test exercises the rule correctly",
     "fix": "none",
-    "cached_at": "2026-04-03T..."
+    "feature": "login",
+    "proof_id": "PROOF-1",
+    "rule_id": "RULE-1",
+    "priority": "LOW",
+    "cached_at": "2026-04-03T00:00:00+00:00"
   }
 }
 ```
+
+`feature` and `proof_id` are not optional: they are the deduplication key used by both
+`write_audit_cache()` and `_read_audit_summary()`. An entry missing either one deduplicates
+under the empty key `('', '')`, so an entire batch written in that shape collapses to a single
+surviving row and the integrity score is then computed from one proof — a confident, plausible,
+wrong percentage. `--write-cache` rejects such entries rather than merging them.
+
+`cached_at` is stamped by the writer, so a value supplied here is advisory.
 
 For each proof that reaches Pass 2, compute the proof hash from (rule text + proof description + test function code). If the hash exists in the cache, use the cached assessment — skip the LLM call. Report cached results with a `(cached)` label:
 

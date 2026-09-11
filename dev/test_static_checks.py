@@ -481,6 +481,10 @@ class TestAuditCache:
                     "criterion": "matches rule intent",
                     "why": "test exercises the rule correctly",
                     "fix": "none",
+                    "feature": "login",
+                    "proof_id": "PROOF-1",
+                    "rule_id": "RULE-1",
+                    "priority": "LOW",
                 }
             }
             # Prove the atomic mechanism: the durable file must be produced by
@@ -1533,3 +1537,96 @@ namespace Demo {{
             assert r.returncode == 0, r.stderr
             payload = json.loads(r.stdout)
             assert payload['test_file'] == 'tests/AuthLogicTests.cs', payload
+
+
+class TestCacheEntryValidation:
+    """RULE-33 — reject entries whose dedup key is missing.
+
+    The documented entry shape used to omit `feature` and `proof_id`, so an agent
+    following the docs produced entries that all keyed under ('', ''). On write
+    they collapsed to one surviving row, and integrity was then computed from a
+    single proof: a confident, plausible, wrong percentage.
+    """
+
+    def _entry(self, **over):
+        e = {
+            "assessment": "STRONG",
+            "criterion": "matches rule intent",
+            "why": "test exercises the rule correctly",
+            "fix": "none",
+            "feature": "login",
+            "proof_id": "PROOF-1",
+            "rule_id": "RULE-1",
+            "priority": "LOW",
+            "cached_at": "2026-01-01T00:00:00+00:00",
+        }
+        e.update(over)
+        return e
+
+    @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33")
+    def test_rejects_entries_missing_dedup_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+
+            # Missing proof_id -> raises, naming the offending cache key
+            bad = {"h1": self._entry()}
+            del bad["h1"]["proof_id"]
+            with pytest.raises(ValueError) as exc:
+                write_audit_cache(tmpdir, bad)
+            assert 'proof_id' in str(exc.value)
+            assert 'h1' in str(exc.value), "the error must name the offending cache key"
+            assert not os.path.exists(cache_path), \
+                "a rejected batch must not create the cache file"
+
+            # Missing feature -> also raises
+            bad2 = {"h2": self._entry()}
+            del bad2["h2"]["feature"]
+            with pytest.raises(ValueError):
+                write_audit_cache(tmpdir, bad2)
+
+            # An empty-string value is as bad as an absent key: it keys under ('', '')
+            with pytest.raises(ValueError):
+                write_audit_cache(tmpdir, {"h3": self._entry(feature="")})
+
+            # Seed a valid cache, then attempt a batch with one malformed entry.
+            # The good entries must not be merged — the batch is rejected whole.
+            write_audit_cache(tmpdir, {"good": self._entry(proof_id="PROOF-9")})
+            before = open(cache_path, encoding='utf-8').read()
+            mixed = {"ok": self._entry(proof_id="PROOF-2"), "broken": self._entry()}
+            del mixed["broken"]["proof_id"]
+            with pytest.raises(ValueError):
+                write_audit_cache(tmpdir, mixed)
+            assert open(cache_path, encoding='utf-8').read() == before, \
+                "a rejected batch must leave the cache on disk byte-identical"
+
+    @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33")
+    def test_write_cache_cli_reports_error_and_exits_2(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            def run(stdin_text):
+                return subprocess.run(
+                    [sys.executable, _STATIC_CHECKS_PY, '--write-cache',
+                     '--project-root', tmpdir],
+                    input=stdin_text, capture_output=True, text=True)
+
+            # Missing dedup key
+            bad = {"h1": self._entry()}
+            del bad["h1"]["proof_id"]
+            r = run(json.dumps(bad))
+            assert r.returncode == 2, f"expected exit 2, got {r.returncode}: {r.stdout}{r.stderr}"
+            assert 'proof_id' in json.loads(r.stdout)['error']
+
+            # Non-JSON stdin: a JSON error object, not a traceback
+            r = run('not json at all')
+            assert r.returncode == 2, r.stdout
+            assert 'error' in json.loads(r.stdout)
+
+            # A JSON list used to reach .items() and raise AttributeError
+            r = run('[1, 2, 3]')
+            assert r.returncode == 2, r.stdout
+            assert 'error' in json.loads(r.stdout)
+            assert 'Traceback' not in r.stderr, "must not leak a traceback"
+
+            # A well-formed batch still merges
+            r = run(json.dumps({"h9": self._entry()}))
+            assert r.returncode == 0, f"{r.stdout}{r.stderr}"
+            assert json.loads(r.stdout)['status'] == 'merged'

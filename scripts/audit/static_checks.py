@@ -1047,6 +1047,41 @@ def _unlock(lock_file):
     msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
 
 
+# Fields every audit-cache entry must carry. `feature` and `proof_id` form the
+# deduplication key used here and by _read_audit_summary() in purlin_server.py;
+# an entry missing either one keys under ('', ''), so a whole batch written that
+# way collapses to one surviving row and the integrity score is then computed
+# from a single proof. See references/audit_criteria.md, Required entry fields.
+_CACHE_DEDUP_FIELDS = ('feature', 'proof_id')
+
+
+def _validate_cache_entries(cache):
+    """Reject entries that would collapse into the empty ('', '') dedup bucket.
+
+    Raises ValueError naming every offending key, so a malformed batch fails
+    loudly instead of silently merging into a plausible wrong percentage.
+    """
+    if not isinstance(cache, dict):
+        raise ValueError(
+            f"audit cache must be a JSON object of hash -> entry, got {type(cache).__name__}"
+        )
+    bad = []
+    for hash_key, entry in cache.items():
+        if not isinstance(entry, dict):
+            bad.append(f"{hash_key!r}: not an object")
+            continue
+        missing = [f for f in _CACHE_DEDUP_FIELDS if not entry.get(f)]
+        if missing:
+            bad.append(f"{hash_key!r}: missing {', '.join(missing)}")
+    if bad:
+        raise ValueError(
+            "audit cache entries are missing their deduplication key "
+            "(feature, proof_id); these would all collapse into one entry and the "
+            "integrity score would be computed from a single proof:\n  "
+            + "\n  ".join(bad)
+        )
+
+
 def write_audit_cache(project_root, cache):
     """Merge new entries into audit cache atomically, pruning stale duplicates.
 
@@ -1062,6 +1097,10 @@ def write_audit_cache(project_root, cache):
     (audit_cache.json.lock) so that concurrent subagent writers serialize
     correctly and no writer's entries are clobbered by a racing write.
     """
+    # Validate before touching the filesystem, so a rejected batch leaves the
+    # cache on disk exactly as it was.
+    _validate_cache_entries(cache)
+
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
@@ -1308,8 +1347,17 @@ def main():
             idx = sys.argv.index('--project-root')
             if idx + 1 < len(sys.argv):
                 project_root = sys.argv[idx + 1]
-        entries = json.loads(sys.stdin.read())
-        write_audit_cache(project_root, entries)
+        raw = sys.stdin.read()
+        try:
+            entries = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            print(json.dumps({'error': f'--write-cache expects a JSON object on stdin: {exc}'}))
+            sys.exit(2)
+        try:
+            write_audit_cache(project_root, entries)
+        except ValueError as exc:
+            print(json.dumps({'error': str(exc)}))
+            sys.exit(2)
         print(json.dumps({'status': 'merged', 'entries': len(entries)}))
         sys.exit(0)
 
