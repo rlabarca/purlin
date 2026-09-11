@@ -1004,6 +1004,41 @@ Beta feature.
                 f"(expected within [{before.isoformat()}, {after.isoformat()}])"
             )
 
+        # Entries carried forward from disk must KEEP their timestamp. Re-stamping
+        # everything made every surviving entry look freshly audited, so last_audit
+        # always read "now" and the 24h staleness check in _read_audit_summary()
+        # could never fire.
+        first_batch = {k: e['cached_at'] for k, e in read_audit_cache(self.tmp_dir).items()}
+        assert first_batch, "first batch should be on disk"
+
+        # Distinct hash keys: _make_cache_entries restarts its key numbering at 1,
+        # so reusing it here would collide on 'hash_s1' and overwrite the first batch.
+        second = {
+            'hash_checkout_1': {
+                'assessment': 'STRONG', 'criterion': 'matches rule intent',
+                'why': 'good test', 'fix': 'none', 'feature': 'checkout',
+                'proof_id': 'PROOF-1', 'rule_id': 'RULE-1', 'priority': 'LOW',
+                'cached_at': stale_ts,
+            }
+        }
+        write_audit_cache(self.tmp_dir, second)
+
+        merged = read_audit_cache(self.tmp_dir)
+        for key, original_ts in first_batch.items():
+            assert key in merged, f"carried-forward entry {key} was dropped"
+            assert merged[key]['cached_at'] == original_ts, (
+                f"Entry {key}: cached_at was re-stamped on carry-forward "
+                f"({original_ts!r} -> {merged[key]['cached_at']!r}). Staleness becomes "
+                f"undetectable when untouched entries are re-dated."
+            )
+        # ...while the newly supplied entry did get stamped now.
+        new_keys = set(merged) - set(first_batch)
+        assert new_keys, "second batch should have added an entry"
+        for key in new_keys:
+            ts = datetime.datetime.fromisoformat(
+                merged[key]['cached_at'].replace('Z', '+00:00'))
+            assert ts >= before, f"new entry {key} should carry a fresh stamp"
+
     @pytest.mark.proof("sync_status", "PROOF-54", "RULE-29", tier="e2e")
     def test_integrity_ignores_no_proof_rules_completely(self):
         """RULE-29: Integrity = quality only. NONE rules have zero effect.

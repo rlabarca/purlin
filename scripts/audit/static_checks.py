@@ -1090,8 +1090,10 @@ def write_audit_cache(project_root, cache):
     This ensures concurrent or sequential writers for different features
     don't overwrite each other's data.
 
-    Stamps every entry with the real current UTC time so the dashboard shows
-    accurate "last audit" regardless of what the caller passed.
+    Stamps the real current UTC time on the entries this call supplies, so the
+    dashboard's "last audit" reflects when an assessment was actually made and
+    a caller-supplied cached_at cannot backdate it. Entries carried forward from
+    disk keep their existing timestamp, so staleness remains detectable.
 
     The entire read→merge→write sequence is protected by an exclusive file lock
     (audit_cache.json.lock) so that concurrent subagent writers serialize
@@ -1147,10 +1149,20 @@ def write_audit_cache(project_root, cache):
                     # Intra-batch duplicate — use timestamp
                     latest[dedup_key] = (hash_key, entry)
 
-            # Stamp real write time so dashboard shows accurate "last audit"
+            # Stamp the real write time on entries this call actually supplied, so
+            # "last audit" reflects when an assessment was genuinely made. Entries
+            # carried forward from disk keep their original cached_at: re-stamping
+            # them made every surviving entry look freshly audited, which left the
+            # 24h staleness check in purlin_server._read_audit_summary() unable to
+            # ever fire and made last_audit always read as "now".
             pruned = {}
-            for hk, ent in latest.values():
-                ent['cached_at'] = now_iso
+            for dedup_key, (hk, ent) in latest.items():
+                if dedup_key in new_keys:
+                    ent['cached_at'] = now_iso
+                elif not ent.get('cached_at'):
+                    # Legacy or hand-edited entry with no timestamp at all; stamping
+                    # it is better than leaving the field absent for the reader.
+                    ent['cached_at'] = now_iso
                 pruned[hk] = ent
 
             tmp_path = cache_path + '.tmp'

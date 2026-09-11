@@ -22,7 +22,7 @@
 - RULE-16: Proof entries referencing non-existent rules in the spec are flagged as orphans
 - RULE-17: Each audit cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
 - RULE-18: clear_audit_cache atomically replaces the cache file with an empty dict {}
-- RULE-19: write_audit_cache stamps every entry with the real current UTC time, overwriting any caller-provided cached_at
+- RULE-19: write_audit_cache stamps the real current UTC time on the entries the caller supplies, overwriting any caller-provided cached_at so a stamp cannot be backdated. Entries carried forward from the existing cache on disk keep their original cached_at — re-stamping them would make every surviving entry look freshly audited, leaving `last_audit` permanently reading "now" and the 24h staleness check unable to fire
 - RULE-21: load_criteria returns built-in criteria always, appends cached additional criteria from `.purlin/cache/additional_criteria.md` if present, appends extra path if provided; no other function in static_checks.py assembles criteria text
 - RULE-22: prune_audit_cache removes all cache entries whose hash key is not in the provided live_keys set, preserving entries whose key IS in live_keys with all fields intact
 - RULE-23: prune_audit_cache with an empty live_keys set on a non-empty cache produces an empty cache (full sweep), and with all keys live produces an identical cache (no false pruning)
@@ -70,7 +70,7 @@
 - PROOF-30 (RULE-24): e2e: Write cache with 3 entries for same (feature, proof_id) at different timestamps; call _read_audit_cache_by_feature; verify dedup to 1 entry keeping the latest cached_at @e2e
 - PROOF-31 (RULE-24): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer — plus a distinct entry; verify only the latest (STRONG) per (feature, proof_id) is kept and the unique entry survives @e2e
 - PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
-- PROOF-33 (RULE-19): e2e: Write cache with stale cached_at (midnight UTC); read back; verify cached_at is within 5 seconds of real current time @e2e
+- PROOF-33 (RULE-19): e2e: Write cache entries carrying a stale cached_at (midnight UTC); read back and verify each falls inside the bracketed [before, after] window of the write, proving the caller value was overwritten with the real current time. Then write a second batch for a different (feature, proof_id) and verify the first batch's entries retain their earlier timestamp rather than being re-stamped, so `_read_audit_summary` can still detect staleness @e2e
 - PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
 - PROOF-36 (RULE-22): Write cache with 3 entries (keys "aaa", "bbb", "ccc"); call prune_audit_cache with live_keys={"aaa","ccc"}; read back; verify "bbb" removed, "aaa" and "ccc" preserved with all original fields intact
 - PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
