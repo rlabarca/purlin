@@ -30,10 +30,12 @@ tests and is what most of this guide discusses.
 
 ![Purlin Lifecycle](../assets/lifecycle-big-picture.svg)
 
-> The diagrams in this guide trace the build → test → verify path. They do not show the quality
-> gauges: `purlin:audit --design` runs against a spec before anything on these diagrams exists,
-> and the full `purlin:audit` runs after `purlin:verify`. Neither is a step in the flow, because
-> neither gates anything.
+> Both quality gauges appear in these diagrams, but neither is a gate: `purlin:audit --design`
+> grades proof descriptions before anything is built, and the full `purlin:audit` measures
+> Proof Integrity once tests exist. Only `purlin:verify` decides pass or fail.
+>
+> The diagrams are generated from `assets/src/*.mmd` — run `bash dev/render-diagrams.sh` after
+> editing a source file.
 
 Every role can do every job. The arrows show the typical flow, not restrictions.
 
