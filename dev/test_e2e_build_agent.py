@@ -27,6 +27,19 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "mcp"))
 
+# The gate is an explicit opt-in, mirroring test_e2e_figma_web.py: `claude`
+# being on PATH says nothing about whether the operator wants to spend the
+# budget these two sessions cost. Set PURLIN_E2E_AGENT=1 to run it.
+#
+# Skipping writes no proof entries (proof_common RULE-13), so whatever a capable
+# host last proved stays committed and untouched. This file is therefore an
+# exception in proof_common RULE-14, not a member of dev/run_tests.sh.
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("PURLIN_E2E_AGENT"),
+    reason="set PURLIN_E2E_AGENT=1 to run: drives real claude -p sessions "
+           "and spends API budget",
+)
+
 
 # ---------------------------------------------------------------------------
 # Claude CLI helper (same pattern as test_e2e_figma_web.py)

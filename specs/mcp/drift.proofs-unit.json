@@ -3,6 +3,24 @@
   "proofs": [
     {
       "feature": "drift",
+      "id": "PROOF-17",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "drift detects stale anchor",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-18",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "drift detects unpinned anchor",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_mcp_server.py",

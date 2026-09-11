@@ -3,6 +3,33 @@
   "proofs": [
     {
       "feature": "skill_anchor",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "Part 1-only anchor parsed as local",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_anchor",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "Part 2 tracking fields fully parsed",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_anchor",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "Part 1\u21922 transition changes scan results",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_anchor",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_skill_specs.py",

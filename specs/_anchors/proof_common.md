@@ -26,6 +26,12 @@ large suite be split across files. The cost of the narrower key is that a run on
 what it can see: RULE-11 reaps entries whose test file is gone, and RULE-12 states the
 bounded case that survives.
 
+A proof file is only evidence while something regenerates it. RULE-14 closes that gap for this
+repository's own proofs: a committed entry whose test file no sweep runs would stay green no
+matter what the code did, so every proof-named test file is either in `dev/run_tests.sh` or in
+an explicit exception list that names the runner it needs, and the proof of that rule fails in
+both directions, so an exception cannot outlive its reason.
+
 ## Rules
 
 - RULE-1: Each plugin resolves the spec directory by scanning `specs/**/*.md` and matching the feature name to the spec filename stem
@@ -41,6 +47,7 @@ bounded case that survives.
 - RULE-11: Orphan reaping: when writing a tier file, the current feature's entries whose `test_file` no longer resolves to a file in the working tree are dropped, not preserved. A renamed or deleted test file's entries are therefore reaped on the next run of that `(feature, tier)`
 - RULE-12: A test file's entries are reaped only by a run that executes that `(feature, tier)`. Removing a proof marker from a test file that the run did not execute leaves that entry in place until that file runs again
 - RULE-13: `status` records execution, never availability. A test that did not run on this host emits no proof entry at all: `"fail"` means the test ran and its assertion failed, and `"pass"` means it ran and passed. Writing `"fail"` for a skipped test is forbidden, because a reader and every gate downstream cannot tell a broken build from a missing tool. Emitting nothing is safe under the RULE-4 merge key: whatever a capable host last proved for those ids stays committed and untouched, so the skip neither falsifies nor destroys it
+- RULE-14: Every test file named by a committed proof entry is either executed by `dev/run_tests.sh` or listed with its runner in this rule's exception list: `dev/test_windows_native.py` (Windows runner), `dev/test_e2e_figma_web.py` (Figma MCP, `PURLIN_E2E_FIGMA=1`), `dev/test_e2e_build_agent.py` (claude CLI, `PURLIN_E2E_AGENT=1`). A test file outside both sets is a proof nothing regenerates. The list is exact: a listed file the sweep runs, or that no committed proof names, is a stale exception and is removed
 
 ## Proof
 
@@ -61,3 +68,4 @@ bounded case that survives.
 - PROOF-15 (RULE-11): Run the real pytest plugin for one feature from test files A and B, delete A, then run the same feature from test file C; verify A's entry is absent from the merged file while B's entry, whose file still exists and was not re-run, is still present @integration
 - PROOF-16 (RULE-12): Run the real pytest plugin for one feature from test files A and B, remove the proof marker from A, then re-run B only; verify A's entry is still present because A was not executed @integration
 - PROOF-17 (RULE-13): Run a suite whose prerequisite is absent so it takes its skip path; verify it writes no proof file and leaves an existing one byte-identical, and that its output names the proof ids it did not execute. Scan every proof-emitting test script in the repo for a call that writes `fail` from inside a skip or unavailable-prerequisite branch; verify there are none @integration
+- PROOF-18 (RULE-14): Parse `dev/run_tests.sh` for every `$SCRIPT_DIR/test_*` path it invokes; parse every git-tracked `specs/**/*.proofs-*.json` for `test_file`; read the exception list from RULE-14's own text. Verify the set of proof-named files the sweep does not invoke equals the exception list exactly: a proof-named file in neither set fails with its path, and a listed exception the sweep now runs or that no proof names fails with its path

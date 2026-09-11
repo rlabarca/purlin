@@ -3,6 +3,195 @@
   "proofs": [
     {
       "feature": "sync_status",
+      "id": "PROOF-34",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "Pinned/Path extraction correct",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-35",
+      "rule": "RULE-22",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "sync_status shows pinned info",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-36",
+      "rule": "RULE-23",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "unpinned warning present",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-37",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "report-data.js includes pinned fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-38",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "coverage includes anchor rules",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-39",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "2 external anchors counted",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-40",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "external + local anchor counted",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-41",
+      "rule": "RULE-9",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "global external anchor auto-applies",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-42",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "coverage progression correct",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-26",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "stamped manual proof shows PASS with verified date",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-27",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "scope file change makes manual proof STALE with directive",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-28",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "re-stamp clears stale state, shows PASS",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-22",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status counts required+global rules in total",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-23",
+      "rule": "RULE-10",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status labels rules as own/required/global",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-24",
+      "rule": "RULE-21",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "partial proofs show 2/5 and not VERIFIED",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-25",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "full proofs show 5/5 and PASSING",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-29",
+      "rule": "RULE-6",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "receipt written with correct vhash, commit, rules, proofs",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-30",
+      "rule": "RULE-6",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "audit matches when rules+proofs unchanged",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-31",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "audit detects mismatch when rule added but receipt stale",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-32",
+      "rule": "RULE-6",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "re-verify produces different vhash, audit matches after update",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-33",
+      "rule": "RULE-2",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "both specs PASSING, coverage counts correct",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_mcp_server.py",

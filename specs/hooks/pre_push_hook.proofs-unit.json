@@ -9,6 +9,24 @@
       "test_name": "pre-push blocks on anchor fail",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-15",
+      "rule": "RULE-8",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict blocks when required rules lack proofs",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-16",
+      "rule": "RULE-8",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict allows when all rules (own+required) proved",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

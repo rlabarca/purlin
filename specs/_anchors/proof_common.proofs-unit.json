@@ -234,6 +234,15 @@
       "test_name": "test_c_no_assertion",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-18",
+      "rule": "RULE-14",
+      "test_file": "dev/test_sweep_completeness.py",
+      "test_name": "test_every_proof_named_test_file_is_swept_or_excepted",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

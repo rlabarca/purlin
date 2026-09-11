@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "skill_audit",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_e2e_additional_criteria.sh",
+      "test_name": "All 5 phases passed: built-in always active, load_criteria appends, criteria reach LLM, SHA staleness detected, --extra appends",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_audit",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_skill_specs.py",
