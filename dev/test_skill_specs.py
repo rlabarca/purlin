@@ -421,6 +421,45 @@ class TestSkillAudit:
         assert re.search(r'(?i)empty live-keys', prune_body), \
             "the prune step must warn against pruning with an empty live-keys file"
 
+    @pytest.mark.proof("skill_audit", "PROOF-19", "RULE-19")
+    def test_mode_is_derived_from_observable_state(self):
+        """The agent must derive the mode, not guess. Without this, an audit on a
+        spec-only project runs Pass 0.5 and Pass 1 against files that do not
+        exist, and static_checks exits 2."""
+        content = _read('audit')
+        section = content.split('## Step 0', 1)
+        assert len(section) == 2, "audit SKILL.md has no Step 0 mode-selection step"
+        body = section[1].split('## Step D', 1)[0]
+
+        assert '--audit-scope' in body, "Step 0 must invoke --audit-scope"
+        assert 'design' in body and 'both' in body, \
+            "Step 0 must name both mode outcomes"
+        assert '--design' in body and '--integrity' in body, \
+            "Step 0 must document the explicit overrides"
+        assert 'scope_files_exist' in body, \
+            "Step 0 must use scope_files_exist to tell 'nothing built' from 'no tests'"
+        assert re.search(r'(?i)announce', body), \
+            "Step 0 must require announcing the chosen mode"
+        assert re.search(r'exit 2', body), \
+            "Step 0 must warn that Pass 0.5 / Pass 1 exit 2 without proof files"
+
+    @pytest.mark.proof("skill_audit", "PROOF-20", "RULE-20")
+    def test_documents_the_proof_design_pass(self):
+        content = _read('audit')
+        section = content.split('## Step D', 1)
+        assert len(section) == 2, "audit SKILL.md has no Proof Design pass"
+        body = section[1].split('## Step 1 ', 1)[0]
+
+        assert '--check-proof-design' in body
+        for level in ('PROVABLE', 'LOOSE', 'UNPROVABLE', 'STRUCTURAL'):
+            assert level in body, f"Design pass must name {level}"
+        assert 'PROVABLE + LOOSE + UNPROVABLE' in body, \
+            "Design pass must state the scoring formula"
+        assert 'purlin:spec' in body, \
+            "a Design finding is fixed in the spec, not the build loop"
+        assert re.search(r'STRONG/WEAK/HOLLOW', body), \
+            "Design pass must forbid using test vocabulary for descriptions"
+
 
 # ── skill_build ───────────────────────────────────────────────────────
 
@@ -1639,6 +1678,20 @@ class TestSkillSpec:
             "spec SKILL.md must name Pass D or the Design levels"
         assert 'HOLLOW' in content and 'EXCLUDED' in content, \
             "spec SKILL.md must state that HOLLOW and EXCLUDED are not moved by spec edits"
+
+    @pytest.mark.proof("skill_spec", "PROOF-11", "RULE-10")
+    def test_exit_criteria_report_design_and_next_step(self):
+        content = _read('spec')
+        exit_section = content.split('## Exit Criteria', 1)
+        assert len(exit_section) == 2, "spec SKILL.md has no Exit Criteria section"
+        body = exit_section[1]
+
+        assert '--check-proof-design' in body, \
+            "exit criteria must grade the proof descriptions just written"
+        assert re.search(r'(?i)advisory', body), \
+            "the Design report must be advisory, never blocking"
+        assert 'purlin:build' in body and 'purlin:unit-test' in body, \
+            "exit criteria must print the next-step directive for the current state"
 
 
 # ── skill_spec_from_code ──────────────────────────────────────────────

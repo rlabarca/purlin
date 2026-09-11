@@ -1,0 +1,23 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-35",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_report_markup.py",
+      "test_name": "test_renders_both_gauges_with_shared_styling",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-35",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_report_markup.py",
+      "test_name": "test_integrity_null_label_distinguishes_untested",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

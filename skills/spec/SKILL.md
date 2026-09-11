@@ -417,5 +417,23 @@ The spec operation is NOT complete until all of the following are true. Verify e
 
 1. **Spec file committed.** Run `git status`. If the spec `.md` file is uncommitted, commit it now per the commit instructions above.
 2. **No uncommitted spec files.** `git status` must not show any modified or untracked `specs/**/*.md` files from this session.
+3. **Proof Design reported.** Grade the proof descriptions you just wrote and show the score:
 
-If any criterion is not met, fix it before completing. Do not respond to the user with "done" or "complete" until both are verified.
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
+     --check-proof-design --spec-path <spec_path>
+   ```
+
+   This needs no test code. Report the score and every `UNPROVABLE` or `LOOSE` finding —
+   advisory, never blocking. It costs seconds here and saves a whole write-test → audit →
+   rewrite cycle later, because a `LOOSE` description caps what any test can prove and an
+   `UNPROVABLE` one guarantees the test will have to be redone.
+
+4. **Next step printed.** End with the directive for the state the spec is now in, so the
+   next move is never a guess:
+
+   - Proof descriptions have `UNPROVABLE` findings → `→ Run: purlin:spec <name>` to fix them first
+   - The files in `> Scope:` do not exist yet → `→ Run: purlin:build <name>`
+   - Code exists but has no proofs → `→ Run: purlin:unit-test <name>`
+
+If any criterion is not met, fix it before completing. Do not respond to the user with "done" or "complete" until all four are verified.

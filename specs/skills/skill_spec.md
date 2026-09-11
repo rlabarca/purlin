@@ -15,6 +15,7 @@
 - RULE-7: Spec skill has exit criteria requiring the spec file is committed and no uncommitted spec files remain before the skill can complete
 - RULE-8: Validate-Before-Commit includes an e2e proof-description check: `@e2e` proofs must describe an observable flow and must not name source files or internal functions, per `references/spec_quality_guide.md` ("E2E proof descriptions")
 - RULE-9: The skill points at the Proof Design criteria (`references/audit_criteria.md` § Pass D) and states that editing spec prose moves the Design gauge only — HOLLOW and EXCLUDED are decided by test code
+- RULE-10: Exit criteria require reporting the Proof Design score for the descriptions just written, via `--check-proof-design` (which needs no test code), as advisory output that never blocks the commit; and require printing the next-step directive for the state the spec is now in — fix UNPROVABLE descriptions, `purlin:build` when the `> Scope:` files do not exist, or `purlin:unit-test` when code exists without proofs
 
 ## Proof
 
@@ -28,3 +29,4 @@
 - PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e
 - PROOF-9 (RULE-8): Grep `skills/spec/SKILL.md` Validate-Before-Commit for the `@e2e` observable-flow check and its pointer to `spec_quality_guide.md` "E2E proof descriptions"; verify present
 - PROOF-10 (RULE-9): Grep `skills/spec/SKILL.md` for the pointer to `audit_criteria.md`; verify it names the Design levels or Pass D and states that spec edits do not move HOLLOW or EXCLUDED
+- PROOF-11 (RULE-10): Grep `skills/spec/SKILL.md` Exit Criteria; verify they invoke `--check-proof-design`, state the report is advisory, and enumerate the three next-step directives including `purlin:build` and `purlin:unit-test`

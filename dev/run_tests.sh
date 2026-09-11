@@ -47,6 +47,7 @@ run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_e2e_audit_cache_pipeline.py" \
   "$SCRIPT_DIR/test_multilang_proof_plugins.py" \
   "$SCRIPT_DIR/test_purlin_teammate_definitions.py" \
+  "$SCRIPT_DIR/test_purlin_report_markup.py" \
   -v
 
 echo ""

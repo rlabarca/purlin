@@ -561,6 +561,7 @@ table{min-width:680px}
     var st = staleness(D.timestamp);
     var S = D.summary;
     var A = D.audit_summary;
+    var G = D.design_summary;
     hasGlobalAudit = !!(A && A.integrity != null);
     var features = sortFeatures(D.features);
 
@@ -606,6 +607,18 @@ table{min-width:680px}
     else if (S.partial) h += '<div class="summary-card-sub">' + S.partial + ' partial</div>';
     h += '</div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
+    /* Proof Design card. Reuses the integrity colour bands and CSS classes, so
+       the dashboard_visual anchor (RULE-10) needs no change. */
+    if (G && G.design != null) {
+      var dcls = G.design >= 80 ? '' : G.design >= 50 ? ' int-mid' : ' int-lo';
+      h += '<div class="summary-card sc-integrity' + dcls + '"><div class="summary-card-number">' + G.design + '%</div><div class="summary-card-label">Proof Design</div>';
+      h += '<div class="summary-card-sub">' + G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U</div>';
+      h += '</div>';
+    } else {
+      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Proof Design</div>';
+      h += '<div class="summary-card-sub">run purlin:audit</div>';
+      h += '</div>';
+    }
     /* Integrity card */
     if (A && A.integrity != null) {
       var icls = A.integrity >= 80 ? '' : A.integrity >= 50 ? ' int-mid' : ' int-lo';
@@ -614,7 +627,7 @@ table{min-width:680px}
       h += '</div>';
     } else {
       h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Proof Integrity</div>';
-      h += '<div class="summary-card-sub">run purlin:audit</div>';
+      h += '<div class="summary-card-sub">' + (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit') + '</div>';
       h += '</div>';
     }
     h += '</div>';

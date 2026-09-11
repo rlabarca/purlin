@@ -8,10 +8,106 @@ Audit all proofs (or a specific feature) against configurable criteria. Read-onl
 ## Usage
 
 ```
-purlin:audit                        Audit all features with receipts
+purlin:audit                        Audit — mode derived from project state
 purlin:audit <feature>              Audit a specific feature
+purlin:audit --design               Proof Design only (specs; no tests needed)
+purlin:audit --integrity            Proof Integrity only (requires tests)
 purlin:audit --criteria <path>      Use a specific criteria file
 ```
+
+Two gauges, measured separately (`references/audit_criteria.md`):
+
+| Gauge | Question | Reads | Needs tests? |
+|-------|----------|-------|-------------|
+| **Proof Design** | *Is the claim provable?* | the rule and its proof description | No |
+| **Proof Integrity** | *Is the claim proven?* | the test code behind each proof | Yes |
+
+`purlin:verify` answers the third question — *does it pass right now?* — and owns pass/fail.
+Neither gauge is a gate.
+
+## Step 0 — Select Mode
+
+**Derive the mode from what exists. Do not guess, and do not ask.**
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
+  --audit-scope --project-root <project_root>
+```
+
+That reports, per feature, `rules`, `proofs_declared`, `proofs_executed`,
+`scope_files_exist`, `test_files_present`, plus a `recommended_mode` and the `why` behind it.
+
+| Observed state | Mode | Why |
+|---|---|---|
+| The user asked for one ("audit my spec", "are my proofs any good", "before we build") | as asked | Words beat inference |
+| `--design` or `--integrity` passed | as passed | Explicit override |
+| `proofs_executed == 0` everywhere | **design only** | No test code exists, so Integrity is unmeasurable. Pass 1 and Pass 0.5 would exit 2 on the missing files |
+| `proofs_executed == proofs_declared` | **both** | Design is cheap and bounds what Integrity can reach |
+| partial | **both** | Run Integrity only for the features that have executed proofs — never report it over proofs that never ran |
+
+`scope_files_exist` separates two states that look identical in a coverage report: a spec whose
+`> Scope:` files do not exist yet (nothing built — the next step is `purlin:build`) from one
+whose files exist but have no proofs (the next step is `purlin:unit-test`).
+
+**Announce the choice and the state behind it**, so the user can see why:
+
+```
+Mode: Proof Design only — 12 features, 47 proof descriptions, 0 executed proofs.
+      No test code to grade yet. Run purlin:build to reach Proof Integrity.
+```
+
+In design-only mode, run Step 1 (criteria) then Step D below, and skip Steps 1.6, 2, 3.5. Step
+3.4 still applies: write the design cache. Never run Pass 0.5 or Pass 1 without proof files —
+they exit 2, which is the crash this step exists to prevent.
+
+## Step D — Proof Design Pass
+
+Grades proof descriptions. Reads no test code, so it runs on a spec-only project.
+
+**Pass D1 — deterministic.** Per spec:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
+  --check-proof-design --spec-path <spec_path>
+```
+
+Returns a level per proof — `PROVABLE`, `LOOSE`, `UNPROVABLE` or `STRUCTURAL` — with a `check`
+name and a `reason`. `STRUCTURAL` is not a defect: the rule is structural, so a presence check
+is the right proof, and it is excluded from the Design score exactly as `EXCLUDED` is excluded
+from Integrity.
+
+**Pass D2 — LLM, for the descriptions D1 graded `PROVABLE`.** D1 is deliberately conservative
+and only catches unambiguous defects. Ask, per proof:
+
+```
+For each proof description, given its rule:
+1. If a test implemented this description faithfully, would it demonstrate the rule?
+2. Is any part of the rule left uncovered by every proof for it?
+3. Does the tier tag match what verifying this would actually require?
+4. For a constraint rule (reject/block/limit), does the description exercise the rejection?
+
+Rate each: PROVABLE, LOOSE, or UNPROVABLE. Report CRITERION, WHY and FIX for anything
+that is not PROVABLE. Do not use STRONG/WEAK/HOLLOW — those describe tests, not
+descriptions.
+```
+
+Cache results with `--write-design-cache` (same nine-field entry shape as Step 3.4), then
+report:
+
+```
+PROOF DESIGN: <feature> (<N> descriptions)
+  UNPROVABLE  PROOF-1 (RULE-1): existence is the entire assertion
+    Fix: name the input and the expected output
+  LOOSE       PROOF-4 (RULE-4): no expected value
+  PROVABLE    PROOF-2, PROOF-3
+  STRUCTURAL  PROOF-5 (excluded from scoring)
+
+PROOF DESIGN SCORE: 50%  (PROVABLE / (PROVABLE + LOOSE + UNPROVABLE))
+```
+
+Remediation for a Design finding is `purlin:spec <feature>` — the description is the artifact
+that is wrong. Never narrow a description to match a weak test, and never reword an anchor
+rule.
 
 ## Step 1 — Load Criteria
 

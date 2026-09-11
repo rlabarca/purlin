@@ -2630,3 +2630,68 @@ class TestPlannedProofRendering:
         )
 
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof33_planned_proof.png"))
+
+
+class TestProofDesignCard:
+    """RULE-34 — the Proof Design gauge renders beside Proof Integrity."""
+
+    def _data(self, design=None, audit=None, all_untested=False):
+        data = make_data()
+        data["design_summary"] = design
+        data["audit_summary"] = audit
+        if all_untested:
+            for f in data["features"]:
+                f["status"] = "UNTESTED"
+                f["proved"] = 0
+            s = data["summary"]
+            s["untested"] = s["total_features"]
+            for k in ("verified", "passing", "partial", "failing"):
+                s[k] = 0
+        return data
+
+    def _design(self, pct, provable=9, loose=1, unprovable=0):
+        return {
+            "design": pct, "provable": provable, "loose": loose,
+            "unprovable": unprovable, "structural": 3,
+            "gradeable_total": provable + loose + unprovable,
+            "last_design_audit": None, "last_design_audit_relative": "just now",
+        }
+
+    @pytest.mark.proof("purlin_report", "PROOF-34", "RULE-34", tier="e2e")
+    def test_design_card_renders_with_shared_colour_bands(self, page, dashboard):
+        # 90% green, 60% amber, 30% red — the same bands as the integrity card,
+        # so dashboard_visual RULE-10 needs no change.
+        for pct, expect_cls in ((90, None), (60, "int-mid"), (30, "int-lo")):
+            load_dashboard(page, dashboard, data=self._data(design=self._design(pct)))
+            card = page.locator(".summary-card", has_text="Proof Design").first
+            assert card.count() > 0, f"no Proof Design card at {pct}%"
+            assert f"{pct}%" in card.inner_text(), card.inner_text()
+            cls = card.get_attribute("class") or ""
+            if expect_cls:
+                assert expect_cls in cls, f"{pct}% should carry {expect_cls}, got {cls!r}"
+            else:
+                assert "int-mid" not in cls and "int-lo" not in cls, \
+                    f"90% should use the default green class, got {cls!r}"
+
+        # Per-level counts appear in the sub-label.
+        load_dashboard(page, dashboard,
+                       data=self._data(design=self._design(75, 3, 1, 0)))
+        card = page.locator(".summary-card", has_text="Proof Design").first
+        assert "3P" in card.inner_text() and "1L" in card.inner_text(), card.inner_text()
+
+        # A null gauge shows an em dash, not a zero.
+        load_dashboard(page, dashboard, data=self._data(design=None))
+        card = page.locator(".summary-card", has_text="Proof Design").first
+        assert "—" in card.inner_text(), card.inner_text()
+
+    @pytest.mark.proof("purlin_report", "PROOF-34", "RULE-34", tier="e2e")
+    def test_integrity_card_says_no_tests_yet_when_nothing_is_tested(self, page, dashboard):
+        # Spec-first project: no audit cache AND nothing tested.
+        load_dashboard(page, dashboard, data=self._data(all_untested=True))
+        card = page.locator(".summary-card", has_text="Proof Integrity").first
+        assert "no tests yet" in card.inner_text(), card.inner_text()
+
+        # Tested but never audited is a different state.
+        load_dashboard(page, dashboard, data=self._data(all_untested=False))
+        card = page.locator(".summary-card", has_text="Proof Integrity").first
+        assert "run purlin:audit" in card.inner_text(), card.inner_text()
