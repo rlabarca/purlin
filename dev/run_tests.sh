@@ -28,6 +28,7 @@ run_suite() {
 run_suite "Proof Plugins (Shell)" bash "$SCRIPT_DIR/test_proof_plugins.sh"
 run_suite "E2E Teammate Audit Loop" bash "$SCRIPT_DIR/test_e2e_teammate_audit_loop.sh"
 run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
+run_suite "E2E Init" bash "$SCRIPT_DIR/test_init_e2e.sh"
 
 # ── All pytest tests in a single session ─────────────────────────────
 # Running in one session ensures the proof plugin collects ALL markers

@@ -39,6 +39,15 @@ _MANUAL_STAMPED_RE = re.compile(
     r'@manual\(([^,]+),\s*(\d{4}-\d{2}-\d{2}),\s*([a-f0-9]+)\)'
 )
 _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
+
+# A tier tag is metadata appended after the description: ` @e2e`, ` @manual(...)`.
+# It must NOT match a description whose prose merely ends in an @word, e.g.
+# "verify spec_format.md documents @integration, @e2e, and @windows" — which was
+# read as tier=windows and had its last clause silently truncated. Requiring that
+# the tag not follow a list connector (',' 'and' 'or') separates the two cases.
+_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\([^)]*\))?\s*$'
+_TIER_TAG_RE = re.compile(_TIER_TAG_BODY)
+
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)', re.MULTILINE
 )
@@ -162,11 +171,11 @@ def _scan_specs(project_root):
                 rule_ids_raw = proof_match.group(2)
                 proof_desc = proof_match.group(3).strip()
                 # Strip tier tags (@unit, @integration, @e2e, @manual...) from description
-                clean_desc = re.sub(r'\s*@\w+(?:\([^)]*\))?\s*$', '', proof_desc).strip()
+                clean_desc = _TIER_TAG_RE.sub('', proof_desc).strip()
                 proof_descriptions.append(proof_desc)
                 proof_desc_by_id[proof_id] = clean_desc
                 # Tier from the trailing @tag (default unit)
-                tier_match = re.search(r'@(\w+)(?:\([^)]*\))?\s*$', proof_desc)
+                tier_match = _TIER_TAG_RE.search(proof_desc)
                 proof_tier_by_id[proof_id] = tier_match.group(1) if tier_match else 'unit'
                 # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
                 rule_ids = [r.strip() for r in rule_ids_raw.split(',')]

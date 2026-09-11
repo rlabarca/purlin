@@ -215,3 +215,72 @@ class TestSpecFormatConventions:
             for h in headings:
                 assert valid.match(h), \
                     f"Invalid heading in {path}: {h}"
+
+
+class TestTierTagParsing:
+    """RULE-9 — a trailing @word is only a tier tag when it is metadata.
+
+    schema_proof_format PROOF-4's description ends "...documents @integration,
+    @e2e, and @windows". Both parsers read that as tier=windows and truncated the
+    description at the final clause, so a host-runnable proof was classified as
+    platform-gated.
+    """
+
+    def _patterns(self):
+        import importlib.util, os
+        mods = {}
+        for name, rel in (('server', 'scripts/mcp/purlin_server.py'),
+                          ('checks', 'scripts/audit/static_checks.py')):
+            path = os.path.join(os.path.dirname(__file__), '..', rel)
+            spec = importlib.util.spec_from_file_location(f'_tt_{name}', path)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            mods[name] = m
+        return mods
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
+    def test_prose_ending_in_at_word_is_not_a_tier_tag(self):
+        mods = self._patterns()
+
+        # The two modules are independent and cannot share an import, so the
+        # pattern must be character-identical or they will disagree.
+        assert mods['server']._TIER_TAG_BODY == mods['checks']._TIER_TAG_BODY, (
+            "purlin_server and static_checks must use an identical tier-tag pattern")
+
+        import re as _re
+        pat = _re.compile(mods['server']._TIER_TAG_BODY)
+
+        cases = [
+            ('Grep the file; verify present @e2e', 'e2e'),
+            ('Run it against a database @integration', 'integration'),
+            ('Visual layout matches design @manual(dev@example.com, 2026-03-31, a1b2c3d)', 'manual'),
+            # Prose that merely ends in an @word — these must NOT be tier tags.
+            ('verify `spec_format.md` documents @integration, @e2e, and @windows', None),
+            ('Check the documented tiers @integration, @e2e', None),
+            ('Accepts either @e2e or @integration', None),
+        ]
+        for desc, expected in cases:
+            m = pat.search(desc)
+            got = m.group(1) if m else None
+            assert got == expected, f"{desc!r}: tier {got!r}, expected {expected!r}"
+
+        # And the description must survive intact when there is no tag.
+        prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
+        assert pat.sub('', prose).strip() == prose, \
+            "a description with no tier tag must not be truncated"
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
+    def test_real_spec_is_parsed_correctly(self):
+        """The spec that exposed this must now parse as untagged."""
+        import importlib.util, os
+        path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'purlin_server.py')
+        spec = importlib.util.spec_from_file_location('_tt_srv2', path)
+        srv = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(srv)
+
+        root = os.path.join(os.path.dirname(__file__), '..')
+        info = srv._scan_specs(root)['schema_proof_format']
+        assert info['proof_tier_by_id'].get('PROOF-4') == 'unit', (
+            "PROOF-4 has no tier tag; its prose merely ends in '@windows'")
+        assert info['proof_desc_by_id']['PROOF-4'].rstrip().endswith('@windows'), (
+            "the description's final clause must not be truncated")

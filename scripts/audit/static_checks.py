@@ -888,12 +888,24 @@ def _read_rule_descriptions(spec_path):
     return {m.group(1): m.group(2).strip() for m in _RULE_LINE_RE.finditer(content)}
 
 
+# A tier tag is metadata appended after the description: ` @e2e`, ` @manual(...)`.
+# It must NOT match a description whose prose merely ends in an @word, e.g.
+# "verify spec_format.md documents @integration, @e2e, and @windows" — which was
+# read as tier=windows and had its last clause silently truncated. Requiring that
+# the tag not follow a list connector (',' 'and' 'or') separates the two cases.
+#
+# purlin_server.py carries an identical pattern. The two modules are independent
+# (the MCP server does not import this CLI), so they are kept in step by
+# schema_spec_format PROOF-9 rather than by a shared import.
+_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\([^)]*\))?\s*$'
+_TIER_TAG_RE = re.compile(_TIER_TAG_BODY)
+
+
 _PROOF_DESC_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)',
     re.MULTILINE,
 )
 
-_TIER_TAG_RE = re.compile(r'\s*@\w+(?:\([^)]*\))?\s*$')
 
 
 def _read_proof_descriptions(spec_path):
@@ -1001,7 +1013,7 @@ def _read_proof_tiers(spec_path):
         return tiers
     with open(spec_path, encoding='utf-8') as f:
         for m in _PROOF_DESC_RE.finditer(f.read()):
-            tag = re.search(r'@(\w+)\s*$', m.group(3).strip())
+            tag = _TIER_TAG_RE.search(m.group(3).rstrip())
             tiers[m.group(1)] = tag.group(1) if tag else 'unit'
     return tiers
 

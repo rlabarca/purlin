@@ -91,11 +91,11 @@
 - PROOF-32 (RULE-32): e2e: Python lifecycle: init, spec, pytest, proofs, PASSING, hook ok @e2e
 - PROOF-33 (RULE-32): e2e: Shell lifecycle: init, spec, shell proof, proofs, PASSING @e2e
 - PROOF-34 (RULE-32): e2e: Jest lifecycle: init, spec, reporter, proofs, PASSING @e2e
-- PROOF-35 (RULE-33): e2e: Verify SKILL.md contains "DETECTING CODEBASE" print instruction before framework scan @e2e
-- PROOF-36 (RULE-34): e2e: Verify SKILL.md documents always presenting the framework selection list with [x] and [ ] markers, including when auto-detection succeeds @e2e
-- PROOF-37 (RULE-35): e2e: Verify SKILL.md shows a single-detection example with one [x] pre-selected and remaining [ ] unselected @e2e
-- PROOF-38 (RULE-36): e2e: Verify SKILL.md shows a multi-detection example with multiple [x] pre-selected @e2e
-- PROOF-39 (RULE-37): e2e: Verify SKILL.md shows a no-detection example with all [ ] unselected @e2e
+- PROOF-35 (RULE-33): Verify SKILL.md contains "DETECTING CODEBASE" print instruction before framework scan
+- PROOF-36 (RULE-34): Verify SKILL.md documents always presenting the framework selection list with [x] and [ ] markers, including when auto-detection succeeds
+- PROOF-37 (RULE-35): Verify SKILL.md shows a single-detection example with one [x] pre-selected and remaining [ ] unselected
+- PROOF-38 (RULE-36): Verify SKILL.md shows a multi-detection example with multiple [x] pre-selected
+- PROOF-39 (RULE-37): Verify SKILL.md shows a no-detection example with all [ ] unselected
 - PROOF-40 (RULE-38): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin` exists. Grep `skills/init/SKILL.md`; verify it does NOT instruct creating a `purlin` entry in the project's `.mcp.json` (no init-time path resolution remains)
 - PROOF-41 (RULE-39): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin.command` is `python3` and `args` contains `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`
 - PROOF-42 (RULE-40): Grep `skills/init/SKILL.md` for the legacy migration step; verify it documents removing the `purlin` entry from the project's `.mcp.json`, preserving other server entries, and reloading plugins

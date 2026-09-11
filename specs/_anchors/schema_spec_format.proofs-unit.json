@@ -72,6 +72,24 @@
       "test_name": "test_spec_headings_use_correct_prefix",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_prose_ending_in_at_word_is_not_a_tier_tag",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_real_spec_is_parsed_correctly",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

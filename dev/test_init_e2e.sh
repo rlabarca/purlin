@@ -18,6 +18,12 @@ VERSION_FILE="$REAL_PROJECT_ROOT/VERSION"
 # Load proof harness
 source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
+
+# Every proof this script emits is declared @e2e in its spec, so the tier must be
+# set before purlin_proof runs. Without it the entries land in the unit-tier proof
+# files and clobber whatever else writes that feature at unit.
+export PURLIN_PROOF_TIER="e2e"
+
 echo "=== init_e2e tests ==="
 
 # --- Cleanup ---
@@ -623,6 +629,9 @@ create_spec "$TMP16" "deploy" "ops" 2
 (
   cd "$TMP16"
   export PROJECT_ROOT="$TMP16"
+  # This script exports PURLIN_PROOF_TIER for its OWN proofs; the nested temp
+  # project must not inherit it, or its proofs land in the wrong tier file.
+  unset PURLIN_PROOF_TIER
   source "$TMP16/.purlin/plugins/purlin-proof.sh"
   purlin_proof "deploy" "PROOF-1" "RULE-1" pass "deploy check 1"
   purlin_proof "deploy" "PROOF-2" "RULE-2" pass "deploy check 2"
@@ -926,6 +935,7 @@ create_spec "$TMP26" "deploy_check" "ops" 2
 (
   cd "$TMP26"
   export PROJECT_ROOT="$TMP26"
+  unset PURLIN_PROOF_TIER
   source "$TMP26/.purlin/plugins/purlin-proof.sh"
   purlin_proof "deploy_check" "PROOF-1" "RULE-1" pass "deploy step 1"
   purlin_proof "deploy_check" "PROOF-2" "RULE-2" pass "deploy step 2"

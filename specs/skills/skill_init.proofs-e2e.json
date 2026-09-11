@@ -3,10 +3,127 @@
   "proofs": [
     {
       "feature": "skill_init",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "all init directories exist",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "config.json has all required fields",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "config version matches VERSION file",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "default config values correct",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "conftest.py triggers pytest detection",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pyproject.toml [tool.pytest] triggers pytest",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "package.json jest triggers jest detection",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "vitest maps to native vitest_purlin.ts",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "multi-framework scaffolding correct",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "shell fallback scaffolds purlin-proof.sh",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pytest plugin byte-identical",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "jest reporter byte-identical",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-49",
       "rule": "RULE-47",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_vitest_reporter_scaffold_byte_identical",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "vitest reporter byte-identical",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "shell harness byte-identical",
       "status": "pass",
       "tier": "e2e"
     },
@@ -14,8 +131,17 @@
       "feature": "skill_init",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_pytest_plugin_emits_valid_proofs_json",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded pytest plugin produces valid proofs",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded jest reporter produces valid proofs",
       "status": "pass",
       "tier": "e2e"
     },
@@ -23,8 +149,8 @@
       "feature": "skill_init",
       "id": "PROOF-23",
       "rule": "RULE-23",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_shell_plugin_emits_valid_proofs_json",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded shell harness produces valid proofs",
       "status": "pass",
       "tier": "e2e"
     },
@@ -32,8 +158,8 @@
       "feature": "skill_init",
       "id": "PROOF-24",
       "rule": "RULE-24",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_sync_status_returns_no_specs_found_for_empty_project",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "empty specs returns No specs found",
       "status": "pass",
       "tier": "e2e"
     },
@@ -41,8 +167,8 @@
       "feature": "skill_init",
       "id": "PROOF-25",
       "rule": "RULE-25",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_status_progression_untested_passing_failing",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "status progression UNTESTED\u2192PASSING\u2192FAILING",
       "status": "pass",
       "tier": "e2e"
     },
@@ -50,8 +176,53 @@
       "feature": "skill_init",
       "id": "PROOF-26",
       "rule": "RULE-26",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_sync_status_generates_report_data_js_when_report_true",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "report-data.js generated correctly",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "all gitignore entries present, digest not ignored",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "no duplicate gitignore entries",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pre-push hook installed correctly",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "non-purlin hook preserved",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "dashboard report on/off correct",
       "status": "pass",
       "tier": "e2e"
     },
@@ -59,53 +230,53 @@
       "feature": "skill_init",
       "id": "PROOF-32",
       "rule": "RULE-32",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_full_lifecycle_init_spec_proof_passing",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Python lifecycle: init\u2192spec\u2192pytest\u2192proofs\u2192PASSING\u2192hook-ok",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-35",
-      "rule": "RULE-33",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_prints_detecting_codebase_before_scan",
+      "id": "PROOF-33",
+      "rule": "RULE-32",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Shell lifecycle: init\u2192spec\u2192shell-proof\u2192PASSING",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-36",
-      "rule": "RULE-34",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_always_presents_framework_selection_list",
+      "id": "PROOF-34",
+      "rule": "RULE-32",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Jest lifecycle: init\u2192spec\u2192reporter\u2192PASSING",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-37",
-      "rule": "RULE-35",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_shows_single_detection_preselected",
+      "id": "PROOF-43",
+      "rule": "RULE-41",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest field present",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-38",
-      "rule": "RULE-36",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_shows_multi_detection_preselected",
+      "id": "PROOF-44",
+      "rule": "RULE-42",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pre-commit hook installed",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-39",
-      "rule": "RULE-37",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_shows_no_detection_all_unselected",
+      "id": "PROOF-45",
+      "rule": "RULE-43",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "existing hook preserved",
       "status": "pass",
       "tier": "e2e"
     },
@@ -113,8 +284,8 @@
       "feature": "skill_init",
       "id": "PROOF-46",
       "rule": "RULE-44",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_pre_commit_hook_generates_and_stages_digest",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest auto-generated and staged",
       "status": "pass",
       "tier": "e2e"
     },
@@ -122,8 +293,8 @@
       "feature": "skill_init",
       "id": "PROOF-47",
       "rule": "RULE-45",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_digest_has_timestamp_and_git_sha",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest has fresh timestamp and git_sha",
       "status": "pass",
       "tier": "e2e"
     },
@@ -131,8 +302,8 @@
       "feature": "skill_init",
       "id": "PROOF-48",
       "rule": "RULE-46",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_digest_does_not_trigger_audit",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "no audit triggered",
       "status": "pass",
       "tier": "e2e"
     }
