@@ -54,7 +54,7 @@
 
 - `purlin_report` PROOF-34 is the one new proof not executed locally: it drives the real dashboard through Playwright and Chromium could not be downloaded in the build environment. PROOF-35 covers the same rule structurally and does run, so RULE-34 is not left unproven. It emits at the `integration` tier deliberately — two test files emitting one feature at one tier collide under feature-scoped overwrite, which purged all 33 committed browser proofs during development.
 
-- `dev/run_tests.sh` gains `test_purlin_report_markup.py`. Full suite: 413 passed, 8 skipped, zero NO PROOF and zero FAILING across all 40 features.
+- `dev/run_tests.sh` gains `test_purlin_report_markup.py` and `test_purlin_version.py`. Full suite: 392 passed, 8 skipped across 5 suites, zero NO PROOF and zero FAILING across all 40 features.
 
 **Upgrading an existing project:** no action required for the gauges — `purlin:audit` writes
 `.purlin/cache/design_cache.json` on its next run and `.purlin/cache/` is already gitignored.
