@@ -225,10 +225,11 @@ Execute all steps now.
 def pw_page():
     try:
         from playwright.sync_api import sync_playwright
+        from browser_launch import launch_browser
     except ImportError:
         pytest.skip("playwright not installed")
     with sync_playwright() as pw:
-        b = pw.chromium.launch()
+        b = launch_browser(pw)
         p = b.new_page(viewport={"width": 428, "height": 700})
         yield p
         b.close()

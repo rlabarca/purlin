@@ -13,6 +13,8 @@ import shutil
 import pytest
 from playwright.sync_api import sync_playwright
 
+from browser_launch import launch_browser
+
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -273,7 +275,7 @@ def write_data(tmp_dir, data):
 @pytest.fixture(scope="module")
 def browser():
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = launch_browser(p)
         yield b
         b.close()
 
@@ -366,7 +368,11 @@ class TestPurlinReport:
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof3_summary.png"))
         cards = page.query_selector_all(".summary-card")
-        assert len(cards) == 6, f"Expected 6 summary cards (incl. integrity), got {len(cards)}"
+        # 7 cards: the five counts, plus both quality gauges (Proof Design and
+        # Proof Integrity). purlin_report RULE-34 requires the grid to be ruled for
+        # exactly this many columns, so a count change here is a real signal.
+        assert len(cards) == 7, (
+            f"Expected 7 summary cards (5 counts + both gauges), got {len(cards)}")
         strip_text = page.inner_text(".summary-strip")
         assert "10" in strip_text, "Expected total_features=10 in summary strip"
         assert "4" in strip_text, "Expected verified=4 in summary strip"
