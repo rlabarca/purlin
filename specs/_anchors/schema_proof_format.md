@@ -2,7 +2,7 @@
 # Anchor: schema_proof_format
 
 > Scope: specs/**/*.proofs-*.json, scripts/proof/
-> Description: Defines the JSON schema for proof files emitted by test runners and how plugins merge results when re-running tests (feature-scoped overwrite). The `sync_status` tool reads these files to compute rule coverage.
+> Description: Defines the JSON schema for proof files emitted by test runners and how plugins merge results when re-running tests (write-scoped overwrite, keyed by `(feature, tier, test_file)`). The `sync_status` tool reads these files to compute rule coverage.
 
 ## Rules
 
@@ -10,7 +10,7 @@
 - RULE-2: The JSON schema has a top-level `tier` string and a `proofs` array. Each proof entry contains: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`
 - RULE-3: `status` is either `"pass"` or `"fail"` — no other values
 - RULE-4: `tier` values are: `"unit"`, `"integration"`, `"e2e"`, and `"windows"` (a platform-gated tier proven only on a Windows runner) — no other automated tiers
-- RULE-5: Proof plugins use feature-scoped overwrite: load existing file, purge entries matching current feature, append new entries, write merged result
+- RULE-5: Proof plugins merge on the key `(feature, tier, test_file)`: load the existing tier file, drop the current feature's entries whose `test_file` this run executed or whose `test_file` no longer exists, append the new entries, write the merged result
 - RULE-6: Proof files are committed to git — they are project records, not ephemeral build artifacts
 - RULE-7: Manual proofs are stamped inline in the spec's `## Proof` section as `@manual(<email>, <date>, <commit_sha>)`, not in proof JSON files
 
@@ -23,3 +23,4 @@
 - PROOF-5 (RULE-5): Pre-seed a proof file with feature B entries; run the real pytest proof plugin for feature A via subprocess; verify feature B entries are preserved and feature A entries are added @integration
 - PROOF-6 (RULE-6): Grep `.gitignore` for `*.proofs-*.json`; verify no gitignore rule excludes proof files
 - PROOF-7 (RULE-7): Grep `references/formats/proofs_format.md` for `@manual`; verify manual stamp format is `@manual(<email>, <date>, <commit_sha>)`
+- PROOF-8 (RULE-5): Pre-seed one tier file with two entries for the same feature recorded against two different `test_file` values; run the real pytest proof plugin for that feature from only one of those files; verify the re-run file's entry is replaced and the other file's entry survives @integration

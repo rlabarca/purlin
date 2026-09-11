@@ -1,0 +1,59 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_sql_asserts_setup_not_query_result",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_tautological",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_sql",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_sql_no_assertion",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

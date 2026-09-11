@@ -1,6 +1,6 @@
 """Purlin proof plugin for pytest.
 
-Collects @pytest.mark.proof markers and emits feature-scoped proof JSON files
+Collects @pytest.mark.proof markers and emits write-scoped proof JSON files
 next to the corresponding spec files.
 
 Usage in tests:
@@ -80,8 +80,23 @@ class ProofCollector:
                 with open(path) as f:
                     existing = json.load(f).get("proofs", [])
 
-            # Purge this feature's old entries (kills ghosts), keep others
-            kept = [e for e in existing if e.get("feature") != feature]
+            # Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
+            # RULE-4. Keep other features untouched; keep this feature's entries from test
+            # files this run did not execute, so two files covering one (feature, tier) can
+            # run in any order; reap entries whose test file is gone (RULE-11). The
+            # existence check is relative to cwd, which the spec glob above already assumes
+            # is the repo root. If it is not, every path misses and the merge degrades to
+            # the older feature-wide purge, never to something wider.
+            run_files = {e["test_file"] for e in new_entries}
+            kept = [
+                e
+                for e in existing
+                if e.get("feature") != feature
+                or (
+                    e.get("test_file") not in run_files
+                    and os.path.exists(e.get("test_file") or "")
+                )
+            ]
 
             # Write fresh entries (atomic: tmp + rename)
             tmp_path = path + ".tmp"

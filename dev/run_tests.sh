@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # Run all Purlin dev tests and print summary.
 #
-# Shell tests run first. Then ALL pytest tests run in a single session so the
-# proof plugin accumulates every proof before writing — no feature-scoped
-# overwrite collisions between test files.
+# Shell tests run first, then the pytest tests. Since the proof merge key became
+# (feature, tier, test_file), two test files covering one feature at one tier no
+# longer clobber each other, so suites no longer have to be pooled into one
+# process to survive. Pooling the pytest files is kept because it is faster, not
+# because it is required.
+#
+# Still true at the FILE level: running a subset of the tests inside one file
+# replaces that file's entries for the features it touches, so the proofs from
+# the tests you skipped go away. Run whole files.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,16 +35,20 @@ run_suite "Proof Plugins (Shell)" bash "$SCRIPT_DIR/test_proof_plugins.sh"
 run_suite "E2E Teammate Audit Loop" bash "$SCRIPT_DIR/test_e2e_teammate_audit_loop.sh"
 run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
 run_suite "E2E Init" bash "$SCRIPT_DIR/test_init_e2e.sh"
+run_suite "E2E Write-Scoped Overwrite" bash "$SCRIPT_DIR/test_e2e_feature_scoped_overwrite.sh"
 
 # ── All pytest tests in a single session ─────────────────────────────
-# Running in one session ensures the proof plugin collects ALL markers
-# before writing proof files, avoiding feature-scoped overwrite between
-# separate pytest invocations.
+# One session for speed. Correctness no longer depends on it: the merge key
+# includes test_file, so these files can coexist in one proof file.
 #
-# test_report_data.py and test_purlin_report.py were outside the sweep and so
-# could rot unnoticed. Each is the sole writer of its (feature, tier) pairs
-# — report_data@unit/@integration, and purlin_report@unit/@e2e plus
-# dashboard_visual@unit — so pooling them collides with nothing.
+# test_proof_plugins_missing.py, test_proof_stress.py and test_cheat_matrix.py
+# were held out of the sweep because they collided with test_proof_plugins.sh
+# and each other over proof_common@unit, static_checks@unit and
+# sync_status@unit. Running them used to delete roughly a thousand lines of
+# another file's proofs, which is why proof_common PROOF-10/11/12 were specced
+# but absent from every committed proof file. With the merge key fixed they
+# belong in the sweep.
+#
 # test_purlin_report.py drives a real browser and adds roughly 80s.
 run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_config_engine.py" \
@@ -53,6 +63,9 @@ run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_static_checks.py" \
   "$SCRIPT_DIR/test_e2e_audit_cache_pipeline.py" \
   "$SCRIPT_DIR/test_multilang_proof_plugins.py" \
+  "$SCRIPT_DIR/test_proof_plugins_missing.py" \
+  "$SCRIPT_DIR/test_proof_stress.py" \
+  "$SCRIPT_DIR/test_cheat_matrix.py" \
   "$SCRIPT_DIR/test_purlin_teammate_definitions.py" \
   "$SCRIPT_DIR/test_purlin_report_markup.py" \
   "$SCRIPT_DIR/test_purlin_version.py" \

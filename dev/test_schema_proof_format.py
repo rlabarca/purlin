@@ -156,6 +156,72 @@ class TestProofFormatEnforcement:
         assert 'feat_b' in features, "feat_b entries were not preserved by plugin"
         assert 'feat_a' in features, "feat_a entries were not added by plugin"
 
+    @pytest.mark.proof("schema_proof_format", "PROOF-8", "RULE-5")
+    def test_merge_key_includes_test_file(self):
+        """RULE-5: the merge key is (feature, tier, test_file), not (feature, tier).
+
+        Two entries for ONE feature in one tier file, recorded against two different
+        test files. Re-running only one of them must replace that one and leave the
+        other alone. A merge keyed on the feature alone deletes both.
+        """
+        import subprocess
+        self._write_spec('feat_split', (
+            '# Feature: feat_split\n\n'
+            '## What it does\nSplit across two test files.\n\n'
+            '## Rules\n- RULE-1: first half\n- RULE-2: second half\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n'
+        ))
+        # Both test files must exist on disk: an entry pointing at a vanished file is
+        # reaped by design, which would mask the behaviour under test.
+        for name, pid, rid in (('test_first_half.py', 'PROOF-1', 'RULE-1'),
+                               ('test_second_half.py', 'PROOF-2', 'RULE-2')):
+            with open(os.path.join(self.project_root, name), 'w') as f:
+                f.write(
+                    'import pytest\n'
+                    f'@pytest.mark.proof("feat_split", "{pid}", "{rid}")\n'
+                    f'def test_{pid.lower().replace("-", "_")}():\n'
+                    '    assert True\n'
+                )
+        self._write_proofs('feat_split', [
+            {"feature": "feat_split", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "test_first_half.py", "test_name": "stale_name",
+             "status": "fail", "tier": "unit"},
+            {"feature": "feat_split", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "test_second_half.py", "test_name": "test_proof_2",
+             "status": "pass", "tier": "unit"},
+        ])
+
+        plugin_path = os.path.join(PROJECT_ROOT, 'scripts', 'proof')
+        with open(os.path.join(self.project_root, 'conftest.py'), 'w') as f:
+            f.write(
+                'import sys\n'
+                f'sys.path.insert(0, r"{plugin_path}")\n'
+                'from pytest_purlin import pytest_configure  # noqa\n'
+            )
+        result = subprocess.run(
+            ['python3', '-m', 'pytest', 'test_first_half.py', '-q'],
+            cwd=self.project_root, capture_output=True, text=True,
+        )
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+        proof_path = os.path.join(self.project_root, 'specs', 'test',
+                                  'feat_split.proofs-unit.json')
+        with open(proof_path) as f:
+            entries = json.load(f)['proofs']
+        by_file = {e['test_file']: e for e in entries}
+
+        assert 'test_second_half.py' in by_file, (
+            "the test file this run did not execute must survive: the merge key includes "
+            f"test_file. Got {entries}"
+        )
+        assert by_file['test_second_half.py']['test_name'] == 'test_proof_2', \
+            "the untouched entry must be carried over verbatim"
+        assert by_file['test_first_half.py']['status'] == 'pass', \
+            "the re-run file's entry must be replaced with the fresh result"
+        assert by_file['test_first_half.py']['test_name'] == 'test_proof_1', \
+            "the re-run file's stale test_name must be replaced"
+        assert len(entries) == 2, f"expected exactly 2 entries, got {entries}"
+
 
 class TestProofFormatConventions:
 

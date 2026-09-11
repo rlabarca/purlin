@@ -2,7 +2,7 @@
 
 Two areas examined:
 1. Multi-feature, multi-tier, multi-language proof file merges — exercising
-   feature-scoped overwrite, conflict resolution, and cross-tier aggregation.
+   write-scoped overwrite, conflict resolution, and cross-tier aggregation.
 2. Deliberately crafted "cheating" test patterns that LOOK correct but are
    misleading — validating that static_checks and the audit criteria catch them.
 
@@ -73,7 +73,7 @@ def _proof_entry(feature, proof_id, rule_id, status="pass", tier="unit",
 # ===========================================================================
 
 class TestMultiFeatureMerge:
-    """Multiple features coexisting in the same proof file via feature-scoped overwrite."""
+    """Multiple features coexisting in the same proof file via write-scoped overwrite."""
 
     @pytest.mark.proof("proof_common", "PROOF-4", "RULE-4")
     def test_three_features_share_one_proof_file(self, tmp_path):

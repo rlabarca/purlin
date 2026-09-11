@@ -2,7 +2,7 @@
 # Purlin proof harness for SQL tests.
 #
 # Runs SQL test files against sqlite3, parses proof markers from comments,
-# and emits feature-scoped proof JSON files.
+# and emits write-scoped proof JSON files.
 #
 # Marker syntax in SQL files:
 #   -- @purlin feature_name PROOF-1 RULE-1 unit
@@ -107,7 +107,7 @@ for spec in glob.glob('specs/**/*.md', recursive=True):
     stem = os.path.splitext(os.path.basename(spec))[0]
     spec_dirs[stem] = os.path.dirname(spec)
 
-# Write proof files (feature-scoped overwrite)
+# Write proof files (write-scoped overwrite)
 for key, new_entries in proofs_by_key.items():
     feature, tier = key.split(':')
     spec_dir = spec_dirs.get(feature)
@@ -119,7 +119,14 @@ for key, new_entries in proofs_by_key.items():
     if os.path.exists(path):
         with open(path) as f:
             existing = json.load(f).get('proofs', [])
-    kept = [e for e in existing if e.get('feature') != feature]
+    # Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common RULE-4,
+    # plus orphan reaping of vanished test files (RULE-11).
+    run_files = {e['test_file'] for e in new_entries}
+    kept = [
+        e for e in existing
+        if e.get('feature') != feature
+        or (e.get('test_file') not in run_files and os.path.exists(e.get('test_file') or ''))
+    ]
     tmp_path = path + '.tmp'
     with open(tmp_path, 'w') as f:
         json.dump({'tier': tier, 'proofs': kept + new_entries}, f, indent=2)

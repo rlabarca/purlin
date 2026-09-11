@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E test: Feature-Scoped Overwrite
+# E2E test: Write-Scoped Overwrite, keyed by (feature, tier, test_file)
 # 3 proofs covering 3 rules — all @e2e (Level 3).
 # Creates a real temp git repo with 2 specs and tests that proof file writes
 # for one feature don't affect another, and that re-runs correctly purge old entries.
@@ -69,23 +69,25 @@ trap cleanup_all EXIT
 # ==========================================================================
 # Setup: create temp repo with 2 specs (login + signup)
 # ==========================================================================
-TMPDIR=$(mktemp -d)
-ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR"
+# --- Helper: build a fresh temp repo with the login + signup specs ---
+# Each phase that measures a merge outcome needs its own repo. Entries written
+# by an earlier phase from a different test file now legitimately survive a
+# later run (that is the point of the (feature, tier, test_file) key), so a
+# phase reading the whole proof file must start from a clean one or it is
+# measuring the previous phase's leftovers.
+make_repo() {
+  local dir
+  dir=$(mktemp -d)
+  ALL_TMPDIRS="$ALL_TMPDIRS $dir"
 
-mkdir -p "$TMPDIR/.purlin"
-mkdir -p "$TMPDIR/specs/auth"
-mkdir -p "$TMPDIR/scripts/mcp"
+  mkdir -p "$dir/.purlin" "$dir/specs/auth" "$dir/scripts/mcp"
+  echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$dir/.purlin/config.json"
 
-# Create default config
-echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$TMPDIR/.purlin/config.json"
+  cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$dir/scripts/mcp/purlin_server.py"
+  cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$dir/scripts/mcp/config_engine.py"
+  cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$dir/scripts/mcp/__init__.py" 2>/dev/null || true
 
-# Copy the real MCP server files
-cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR/scripts/mcp/purlin_server.py"
-cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$TMPDIR/scripts/mcp/config_engine.py"
-cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$TMPDIR/scripts/mcp/__init__.py" 2>/dev/null || true
-
-# login spec: 2 rules
-cat > "$TMPDIR/specs/auth/login.md" << 'SPEC'
+  cat > "$dir/specs/auth/login.md" << 'SPEC'
 # Feature: login
 
 ## What it does
@@ -103,8 +105,7 @@ User login feature.
 - PROOF-2 (RULE-2): POST /login with bad creds; verify 401 @e2e
 SPEC
 
-# signup spec: 2 rules
-cat > "$TMPDIR/specs/auth/signup.md" << 'SPEC'
+  cat > "$dir/specs/auth/signup.md" << 'SPEC'
 # Feature: signup
 
 ## What it does
@@ -122,8 +123,11 @@ User signup feature.
 - PROOF-2 (RULE-2): POST /signup with existing email; verify 409 @e2e
 SPEC
 
-# Initialize git repo
-(cd "$TMPDIR" && git init -q && git add -A && git commit -q -m "init")
+  (cd "$dir" && git init -q && git add -A && git commit -q -m "init")
+  echo "$dir"
+}
+
+TMPDIR=$(make_repo)
 
 # ==========================================================================
 # Phase A — Write login proofs, then signup proofs → both PASSING
@@ -179,8 +183,8 @@ fi
 echo "  --- Phase B: Overwrite login proofs ---"
 
 # Use the shell proof harness to simulate a real re-run for login only.
-# The harness does feature-scoped overwrite: removes old entries for the feature,
-# then appends new ones.
+# The harness does write-scoped overwrite: it replaces this feature's entries for
+# the test files the run executed, then appends the new ones.
 (
   cd "$TMPDIR"
   source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
@@ -215,38 +219,80 @@ else
 fi
 
 # ==========================================================================
-# Phase C — Simulate deleted test: login proof file with only 1 of 2 proofs
+# Phase C — Re-run one test file with a proof removed: the entry is purged
 # ==========================================================================
-echo "  --- Phase C: Simulate deleted test ---"
+# Previously this phase hand-wrote a 1-of-2 proof file, which proved that
+# sync_status reads what is on disk, not that anything was ever purged. Under
+# the (feature, tier, test_file) merge key (proof_common RULE-4) the purge is
+# only observable by re-running the SAME test file with one proof dropped, so
+# that is what this phase now does.
+echo "  --- Phase C: Re-run the same test file with PROOF-2 removed ---"
 
-# Write login proof file with only PROOF-1 (PROOF-2 removed — simulates a test deletion)
-write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
-  "PROOF-1|RULE-1|pass"
+# One generated test file, written twice at the SAME path. Run 1 emits both
+# proofs, run 2 emits only PROOF-1. Anything that survives into run 2's output
+# was carried over rather than purged.
+# Its own repo: see make_repo's comment. Phase B left login entries recorded
+# against a different test file, and those now survive by design, so reading
+# this phase's outcome out of Phase B's proof file would measure the wrong thing.
+TMPDIR_C=$(make_repo)
+LOGIN_TEST="$TMPDIR_C/test_login_proofs.sh"
 
-(cd "$TMPDIR" && git add -A && git commit -q -m "remove PROOF-2 from login")
+write_login_test() {
+  # $@ = "PROOF-N|RULE-N" pairs to emit
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'set -euo pipefail'
+    echo "source \"$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh\""
+    for entry in "$@"; do
+      pid=$(echo "$entry" | cut -d'|' -f1)
+      rid=$(echo "$entry" | cut -d'|' -f2)
+      echo "purlin_proof \"login\" \"$pid\" \"$rid\" pass \"login $pid\""
+    done
+    echo 'purlin_proof_finish'
+  } > "$LOGIN_TEST"
+}
 
-STATUS_C=$(run_sync_status "$TMPDIR")
+write_login_test "PROOF-1|RULE-1" "PROOF-2|RULE-2"
+(cd "$TMPDIR_C" && bash "$LOGIN_TEST")
+
+STATUS_C_BEFORE=$(run_sync_status "$TMPDIR_C")
+login_two_of_two=false
+echo "$STATUS_C_BEFORE" | grep -q "login: PASSING" && login_two_of_two=true
+
+# Same path, PROOF-2's call deleted.
+write_login_test "PROOF-1|RULE-1"
+(cd "$TMPDIR_C" && bash "$LOGIN_TEST")
+
+(cd "$TMPDIR_C" && git add -A && git commit -q -m "re-run login test with PROOF-2 removed")
+
+STATUS_C=$(run_sync_status "$TMPDIR_C")
+
+# PROOF-2 must be gone from the file itself, not merely uncounted.
+proof2_gone=true
+if grep -q '"PROOF-2"' "$TMPDIR_C/specs/auth/login.proofs-unit.json"; then
+  proof2_gone=false
+fi
 
 phase_c_ok=false
-# login should show 1/2 rules proved (not PASSING, not carrying over old PROOF-2)
-if echo "$STATUS_C" | grep -q "login: 1/2 rules proved"; then
-  # Also verify signup is still PASSING
-  if echo "$STATUS_C" | grep -q "signup: PASSING"; then
-    echo "    Phase C PASS: login shows 1/2 (purged old proof), signup still PASSING"
-    phase_c_ok=true
-  else
-    echo "    Phase C FAIL: signup not PASSING"
-  fi
-else
+if ! $login_two_of_two; then
+  echo "    Phase C FAIL: run 1 did not leave login PASSING (2/2)"
+  echo "$STATUS_C_BEFORE"
+elif ! $proof2_gone; then
+  echo "    Phase C FAIL: PROOF-2 entry survived a re-run of its own test file"
+  cat "$TMPDIR_C/specs/auth/login.proofs-unit.json"
+elif ! echo "$STATUS_C" | grep -q "login: 1/2 rules proved"; then
   echo "    Phase C FAIL: expected 'login: 1/2 rules proved'"
   echo "    Status output:"
   echo "$STATUS_C"
+else
+  echo "    Phase C PASS: 2/2, then a re-run of the same file purged PROOF-2 to 1/2"
+  phase_c_ok=true
 fi
 
 if $phase_c_ok; then
-  purlin_proof "proof_common" "PROOF-12" "RULE-10" pass "removed test proof is purged, not carried over"
+  purlin_proof "proof_common" "PROOF-12" "RULE-10" pass "re-run of the same test file purges the removed proof"
 else
-  purlin_proof "proof_common" "PROOF-12" "RULE-10" fail "removed test proof is purged, not carried over"
+  purlin_proof "proof_common" "PROOF-12" "RULE-10" fail "re-run of the same test file purges the removed proof"
 fi
 
 # --- Emit proof files ---

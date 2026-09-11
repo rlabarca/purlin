@@ -1,0 +1,59 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_c_purlin_emit_writes_proof_file_from_stdin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_c_purlin_emit_feature_scoped_overwrite",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_tautological_proof_detected_by_proof_file_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_tautological",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_fixture_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_c",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_name_drift",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 """Purlin proof emitter for C tests.
 
 Reads JSON proof output from a C test runner (via stdin) and writes
-feature-scoped proof JSON files next to the corresponding specs.
+write-scoped proof JSON files next to the corresponding specs.
 
 Usage:
     ./test_runner | python3 scripts/proof/c_purlin_emit.py
@@ -32,7 +32,7 @@ def main():
         key = (entry["feature"], entry.get("tier", "unit"))
         grouped.setdefault(key, []).append(entry)
 
-    # Write proof files (feature-scoped overwrite)
+    # Write proof files (write-scoped overwrite)
     for (feature, tier), new_entries in grouped.items():
         spec_dir = spec_dirs.get(feature)
         if spec_dir is None:
@@ -50,7 +50,18 @@ def main():
             with open(path) as f:
                 existing = json.load(f).get("proofs", [])
 
-        kept = [e for e in existing if e.get("feature") != feature]
+        # Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
+        # RULE-4, plus orphan reaping of vanished test files (RULE-11).
+        run_files = {e.get("test_file") for e in new_entries}
+        kept = [
+            e
+            for e in existing
+            if e.get("feature") != feature
+            or (
+                e.get("test_file") not in run_files
+                and os.path.exists(e.get("test_file") or "")
+            )
+        ]
 
         tmp_path = path + ".tmp"
         with open(tmp_path, "w") as f:

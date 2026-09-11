@@ -2,7 +2,7 @@
 
 > Scope: skills/test/SKILL.md
 > Stack: markdown (skill definition)
-> Description: The `purlin:test` skill runs tests (unit tier unless `--all`), emits proof files via feature-scoped overwrite, and reports coverage per feature. It is the single owner of test execution: `purlin:build` and `purlin:verify` delegate to it rather than invoking runners themselves.
+> Description: The `purlin:test` skill runs tests (unit tier unless `--all`), emits proof files via write-scoped overwrite, and reports coverage per feature. It is the single owner of test execution: `purlin:build` and `purlin:verify` delegate to it rather than invoking runners themselves.
 
 ## Rules
 

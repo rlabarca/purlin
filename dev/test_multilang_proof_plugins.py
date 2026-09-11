@@ -649,7 +649,7 @@ def test_multiply():
 # ---------------------------------------------------------------------------
 
 class TestProofPurging:
-    """Verify that feature-scoped overwrite purges stale entries on re-run."""
+    """Verify that a re-run of one test file purges that file's stale entries."""
 
     @pytest.mark.proof("proof_common", "PROOF-13", "RULE-10", tier="integration")
     def test_removed_test_purged_on_rerun(self, tmp_path):
@@ -715,6 +715,144 @@ class TestProofPurging:
             f"Run 2 should purge removed test, got {len(data['proofs'])} proofs"
         assert data['proofs'][0]['id'] == 'PROOF-1', \
             "Only PROOF-1 should remain after removing PROOF-2's test"
+
+
+# ---------------------------------------------------------------------------
+# Write-scoped overwrite: the (feature, tier, test_file) merge key
+# ---------------------------------------------------------------------------
+
+class TestWriteScopedMergeKey:
+    """proof_common RULE-4/11/12: two test files covering one (feature, tier) coexist.
+
+    Every test here drives the real scripts/proof/pytest_purlin.py in a subprocess with
+    cwd set to a temp repo root, which is what the plugin's spec glob and its test-file
+    existence check both assume.
+    """
+
+    FEATURE = 'ledger'
+
+    def _repo(self, tmp_path):
+        """A temp repo root with a 2-rule spec and the real plugin wired into conftest."""
+        spec_dir = tmp_path / 'specs' / 'money'
+        spec_dir.mkdir(parents=True)
+        (spec_dir / f'{self.FEATURE}.md').write_text(
+            f'# Feature: {self.FEATURE}\n\n## Rules\n'
+            '- RULE-1: debits are recorded\n'
+            '- RULE-2: credits are recorded\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): test\n'
+            '- PROOF-2 (RULE-2): test\n'
+        )
+        plugin = os.path.abspath(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'))
+        (tmp_path / 'conftest.py').write_text(
+            'import sys\n'
+            f'sys.path.insert(0, r{os.path.dirname(plugin)!r})\n'
+            'from pytest_purlin import pytest_configure  # noqa: F401\n'
+        )
+        return spec_dir / f'{self.FEATURE}.proofs-unit.json'
+
+    def _write_test(self, tmp_path, name, proof_id, rule_id):
+        (tmp_path / name).write_text(
+            'import pytest\n'
+            f'@pytest.mark.proof({self.FEATURE!r}, {proof_id!r}, {rule_id!r})\n'
+            f'def test_{proof_id.lower().replace("-", "_")}(): assert True\n'
+        )
+
+    def _run(self, tmp_path, name):
+        """Run ONE test file, from the repo root, as its own pytest process."""
+        r = subprocess.run(
+            [sys.executable, '-m', 'pytest', name, '-q', '--no-header'],
+            cwd=str(tmp_path), capture_output=True, text=True,
+        )
+        assert r.returncode == 0, f'{name} failed:\n{r.stdout}\n{r.stderr}'
+        return r
+
+    @staticmethod
+    def _entries(proof_file):
+        return {
+            (e['id'], e['test_file']): e
+            for e in json.loads(proof_file.read_text())['proofs']
+        }
+
+    @pytest.mark.proof("proof_common", "PROOF-14", "RULE-4", tier="integration")
+    def test_two_test_files_one_feature_and_tier_coexist_in_either_order(self, tmp_path):
+        """Two files writing one (feature, tier) keep both entries, whichever runs last."""
+        proof_file = self._repo(tmp_path)
+        self._write_test(tmp_path, 'test_debit.py', 'PROOF-1', 'RULE-1')
+        self._write_test(tmp_path, 'test_credit.py', 'PROOF-2', 'RULE-2')
+
+        # Order A→B
+        self._run(tmp_path, 'test_debit.py')
+        self._run(tmp_path, 'test_credit.py')
+        assert set(self._entries(proof_file)) == {
+            ('PROOF-1', 'test_debit.py'),
+            ('PROOF-2', 'test_credit.py'),
+        }, 'B must not clobber A'
+
+        # Order B→A, from a clean proof file
+        proof_file.unlink()
+        self._run(tmp_path, 'test_credit.py')
+        self._run(tmp_path, 'test_debit.py')
+        assert set(self._entries(proof_file)) == {
+            ('PROOF-1', 'test_debit.py'),
+            ('PROOF-2', 'test_credit.py'),
+        }, 'A must not clobber B'
+
+    @pytest.mark.proof("proof_common", "PROOF-15", "RULE-11", tier="integration")
+    def test_deleted_test_file_entry_is_reaped(self, tmp_path):
+        """An entry whose test file no longer exists is dropped on the next write.
+
+        Three files, so the assertion separates reaping from a blanket feature purge: the
+        deleted file's entry must go while the surviving file that this run also did not
+        execute must stay. A purge-everything merge satisfies the first half and fails the
+        second.
+        """
+        proof_file = self._repo(tmp_path)
+        self._write_test(tmp_path, 'test_debit.py', 'PROOF-1', 'RULE-1')
+        self._write_test(tmp_path, 'test_credit.py', 'PROOF-2', 'RULE-2')
+        self._write_test(tmp_path, 'test_balance.py', 'PROOF-1', 'RULE-1')
+
+        self._run(tmp_path, 'test_debit.py')
+        self._run(tmp_path, 'test_credit.py')
+        assert ('PROOF-1', 'test_debit.py') in self._entries(proof_file)
+
+        (tmp_path / 'test_debit.py').unlink()
+        self._run(tmp_path, 'test_balance.py')
+
+        entries = self._entries(proof_file)
+        assert ('PROOF-1', 'test_debit.py') not in entries, (
+            f'deleted test file should be reaped, got {sorted(entries)}'
+        )
+        assert ('PROOF-2', 'test_credit.py') in entries, (
+            'a still-present file that this run did not execute must survive the reap; '
+            f'got {sorted(entries)}'
+        )
+        assert ('PROOF-1', 'test_balance.py') in entries
+
+    @pytest.mark.proof("proof_common", "PROOF-16", "RULE-12", tier="integration")
+    def test_marker_removed_from_a_file_that_is_not_rerun_survives(self, tmp_path):
+        """The bounded cost of per-file scoping, asserted so it cannot change silently.
+
+        Dropping a marker from test_debit.py while running only test_credit.py leaves the
+        stale entry: the write key is (feature, tier, test_file) and this run never
+        executed test_debit.py. The file still exists, so RULE-11's reap does not apply.
+        """
+        proof_file = self._repo(tmp_path)
+        self._write_test(tmp_path, 'test_debit.py', 'PROOF-1', 'RULE-1')
+        self._write_test(tmp_path, 'test_credit.py', 'PROOF-2', 'RULE-2')
+        self._run(tmp_path, 'test_debit.py')
+        self._run(tmp_path, 'test_credit.py')
+
+        # Marker removed, file kept, file NOT re-run.
+        (tmp_path / 'test_debit.py').write_text('def test_debit_no_longer_a_proof(): assert True\n')
+        self._run(tmp_path, 'test_credit.py')
+
+        entries = self._entries(proof_file)
+        assert ('PROOF-1', 'test_debit.py') in entries, (
+            'an unexecuted file\'s entry must survive until that file runs again; '
+            f'got {sorted(entries)}'
+        )
+        assert ('PROOF-2', 'test_credit.py') in entries
 
 
 # ---------------------------------------------------------------------------

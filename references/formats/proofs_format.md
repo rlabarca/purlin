@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Proof File Format
 
@@ -60,18 +60,60 @@ Proof files live in the same directory as their spec. The proof plugins resolve 
 | `proofs[].status` | string | `"pass"` or `"fail"` |
 | `proofs[].tier` | string | Tier this proof belongs to |
 
-## Merge Behavior (Feature-Scoped Overwrite)
+## Merge Behavior (Write-Scoped Overwrite)
+
+The merge key is `(feature, tier, test_file)`. The tier is carried by the filename, so within
+one tier file an entry is addressed by `(feature, test_file)`.
 
 When proof plugins write a proof file, they:
 
 1. Load the existing file (if any).
-2. Remove all entries where `feature` matches the feature being tested.
+2. Keep an existing entry only if it belongs to a different feature, **or** its `test_file`
+   was not executed in this run **and** that `test_file` still resolves to a file in the
+   working tree.
 3. Append the new entries from the current test run.
 4. Write the merged result.
 
-This means each test run replaces only its own feature's entries, preserving proofs from other features that share the same tier file. This is the "feature-scoped overwrite" pattern.
+```python
+keep(e) = e["feature"] != feature
+          or (e["test_file"] not in this_run_files and os.path.exists(e["test_file"]))
+```
 
-The overwrite is scoped per `(feature, tier)`: a run only rewrites the tier files it actually collected proofs for. A platform-gated tier (e.g. `windows`, emitted only by a CI runner where those tests run, and skipped elsewhere) is therefore never clobbered by a host run that skips those tests — so a CI-committed `<feature>.proofs-windows.json` survives subsequent local runs and is read by `sync_status`/`purlin:verify` like any other tier.
+An entry whose `test_file` is empty or unresolvable fails the existence check and is reaped,
+then rewritten by the same write if the current run produced it. No special case is needed.
+
+### Why the key includes the test file
+
+Scoping the overwrite per `(feature, tier)` alone means that whenever two test files cover
+the same feature at the same tier, whichever runs last erases the other's entries. That
+forces every writer for a `(feature, tier)` pair into a single process, which in turn makes
+it impossible to split a large suite across files, to run suites independently, or to prove
+a platform-gated tier on a remote runner and merge the result back.
+
+With `test_file` in the key, those writers coexist. They can run in any order, in separate
+processes, on separate machines.
+
+### How orphans are reaped
+
+A narrower key reaps less, so two rules bound what survives:
+
+- **A deleted or renamed test file is reaped** (step 2's existence check). A rename presents
+  as a gone path plus a new one: the old entry is dropped and the new is appended in the
+  same write.
+- **A marker removed from a file that is not re-run is not reaped.** The entry stays until
+  that `(feature, tier)` is run again by something that executes the file. This is the
+  deliberate cost of per-file scoping, and it is asserted by a proof so it cannot change
+  silently.
+
+The existence check resolves `test_file` relative to the process's working directory, which
+the plugins already require to be the repository root (they glob `specs/**/*.md` from it). If
+a plugin is run from elsewhere, every path fails the check and the merge degrades to the
+older feature-wide purge: narrower than intended, never wider.
+
+A platform-gated tier (e.g. `windows`, emitted only by a CI runner where those tests run, and
+skipped elsewhere) is never touched by a host run that skips those tests: a run only rewrites
+the tier files it actually collected proofs for. So a CI-committed `<feature>.proofs-windows.json`
+survives subsequent local runs and is read by `sync_status`/`purlin:verify` like any other tier.
 
 ## Proof Markers by Framework
 

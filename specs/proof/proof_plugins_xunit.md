@@ -6,7 +6,7 @@
 > Description: The xUnit/.NET proof plugin (`scripts/proof/xunit_purlin.cs`). A custom
 >   `dotnet test` logger collects proof markers expressed as the `PurlinProof` test trait,
 >   maps the test outcome to pass/fail, and emits standardized proof JSON. Inherits all
->   shared proof-plugin behavior (spec-dir resolution, naming, fallback, feature-scoped
+>   shared proof-plugin behavior (spec-dir resolution, naming, fallback, write-scoped
 >   overwrite, the 7 fields, status, no-op, discovery, stderr warning, purge) from proof_common.
 
 ## What it does
@@ -36,7 +36,7 @@ RULE-5 records as `test_file`; without it the source path is unavailable.
 - RULE-3: Tests without a `PurlinProof` trait are ignored — no proof entry is emitted for them
 - RULE-4: A test `Outcome` of `Passed` maps to `status: "pass"`; `Failed` and all other non-skipped outcomes (e.g. `NotExecuted`) map to `status: "fail"`; a `Skipped` test is not recorded at all
 - RULE-5: `test_file` is recorded as the source file path relative to the project root (resolved from `TestCase` source information / `CodeFilePath`); `test_name` is the fully-qualified test method name
-- RULE-6: On run completion the logger emits proof JSON to the resolved spec directory following the shared feature-scoped overwrite contract
+- RULE-6: On run completion the logger emits proof JSON to the resolved spec directory following the shared write-scoped overwrite contract
 
 ## Proof
 
@@ -45,4 +45,4 @@ RULE-5 records as `test_file`; without it the source path is unavailable.
 - PROOF-3 (RULE-3): Run a test with no `PurlinProof` trait; verify no proof entry is emitted for that test @integration
 - PROOF-4 (RULE-4): Run a passing marked test and a failing marked test; verify `status: "pass"` and `status: "fail"` respectively; add a `[Fact(Skip="...")]` marked test and verify it is not recorded @integration
 - PROOF-5 (RULE-5): Run `dotnet test` from a project root; verify `test_file` is relative (not absolute) and `test_name` is the fully-qualified method name @integration
-- PROOF-6 (RULE-6): Pre-seed a proof file with feature B entries; run the logger for feature A; verify feature B entries are preserved and feature A entries are replaced (inherits the proof_common feature-scoped overwrite contract) @integration
+- PROOF-6 (RULE-6): Pre-seed a proof file with feature B entries; run the logger for feature A; verify feature B entries are preserved and feature A entries are replaced (inherits the proof_common write-scoped overwrite contract) @integration

@@ -33,7 +33,7 @@
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_proof_plugins.sh",
-      "test_name": "feature-scoped overwrite",
+      "test_name": "write-scoped overwrite",
       "status": "pass",
       "tier": "unit"
     },
@@ -79,6 +79,159 @@
       "rule": "RULE-9",
       "test_file": "dev/test_proof_plugins.sh",
       "test_name": "fallback warning to stderr",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-10",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "separate proof files don't interfere",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-11",
+      "rule": "RULE-4",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "overwrite replaces only target feature, others intact",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-12",
+      "rule": "RULE-10",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "re-run of the same test file purges the removed proof",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_proof_file_naming",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_fallback_to_specs_root_when_no_spec",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_no_markers_no_proof_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_custom_plugin_proof_files_discovered_by_sync_status",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_fallback_emits_warning_to_stderr",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_fallback_emits_warning_to_stderr",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-13",
+      "rule": "RULE-10",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_on_rerun",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-13",
+      "rule": "RULE-10",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_in_shell_plugin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_three_features_share_one_proof_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_overwrite_replaces_only_own_feature",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_and_sql_proofs_coexist",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_test_name_contradicts_behavior",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_happy_path_only",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_no_assertion",
       "status": "pass",
       "tier": "unit"
     }

@@ -3,7 +3,7 @@
  * Purlin proof collector for PHPUnit.
  *
  * Standalone script that runs PHPUnit tests, parses proof markers from
- * docblock annotations, and emits feature-scoped proof JSON files.
+ * docblock annotations, and emits write-scoped proof JSON files.
  *
  * Marker syntax in test files:
  *   /** @purlin feature_name PROOF-1 RULE-1 unit * /
@@ -96,8 +96,19 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
             $existing = $data['proofs'] ?? [];
         }
 
-        // Feature-scoped overwrite
-        $kept = array_filter($existing, fn($e) => ($e['feature'] ?? '') !== $feature);
+        // Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
+        // RULE-4, plus orphan reaping of vanished test files (RULE-11).
+        $run_files = [];
+        foreach ($new_entries as $e) {
+            $run_files[$e['test_file'] ?? ''] = true;
+        }
+        $kept = array_filter($existing, function($e) use ($feature, $run_files) {
+            if (($e['feature'] ?? '') !== $feature) {
+                return true;
+            }
+            $tf = $e['test_file'] ?? '';
+            return $tf !== '' && !isset($run_files[$tf]) && file_exists($tf);
+        });
 
         // Atomic write
         $tmp = $path . '.tmp';

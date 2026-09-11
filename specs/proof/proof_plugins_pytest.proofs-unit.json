@@ -36,6 +36,69 @@
       "test_name": "pytest_configure registers marker + plugin",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_signature_defaults_to_unit_tier",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_explicit_tier",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_two_args_skipped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_marker_one_arg_skipped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_test_file_is_relative",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_configure_registers_proof_marker_and_plugin",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_pytest",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_configure_marker_recognized_in_session",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

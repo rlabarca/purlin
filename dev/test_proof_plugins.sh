@@ -110,7 +110,7 @@ assert len(data['proofs']) == 2, f'expected 2, got {len(data[\"proofs\"])}'
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_common" "PROOF-4" "RULE-4" "feature-scoped overwrite" test_overwrite
+run "proof_common" "PROOF-4" "RULE-4" "write-scoped overwrite" test_overwrite
 
 # PROOF-5 (RULE-5): All 7 required fields
 test_fields() {
@@ -567,17 +567,66 @@ purlin_proof "feat" "PROOF-1" "RULE-1" pass "test"
 purlin_proof_finish
 SHEOF
   chmod +x "$d/nested/abs_test.sh"
-  # Invoke by ABSOLUTE path — this is what bakes a home directory into proof files
+
+  # Invoke by ABSOLUTE path. This is what bakes a home directory into proof files.
   (cd "$d" && bash "$d/nested/abs_test.sh")
-  python3 -c "
+  local from_abs
+  from_abs=$(python3 -c "
 import json
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-tf = e['test_file']
-assert tf == 'nested/abs_test.sh', f'expected repo-relative nested/abs_test.sh, got {tf!r}'
-assert not tf.startswith('/'), f'absolute path leaked into proof file: {tf!r}'
-assert '..' not in tf, f'parent traversal in recorded path: {tf!r}'
+print(json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]['test_file'])
+") || { rm -rf "$d"; return 1; }
+
+  # Invoke the SAME script by a RELATIVE path. The recorded value must be
+  # byte-identical: under the (feature, tier, test_file) merge key a difference
+  # does not collapse, it accumulates as a second entry for one proof.
+  (cd "$d" && bash "nested/abs_test.sh")
+  local from_rel n_entries
+  from_rel=$(python3 -c "
+import json
+print(json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]['test_file'])
+") || { rm -rf "$d"; return 1; }
+  n_entries=$(python3 -c "
+import json
+print(len(json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs']))
+")
+
+  # A script OUTSIDE the project tree keeps an absolute path rather than gaining
+  # ../ segments. Its own dir is not a project, so neither candidate root fits.
+  local outside
+  outside=$(mktemp -d)
+  cat > "$outside/far_test.sh" << SHEOF
+#!/usr/bin/env bash
+source "$SHELL_HARNESS"
+purlin_proof "feat" "PROOF-2" "RULE-1" pass "outside"
+purlin_proof_finish
+SHEOF
+  (cd "$d" && bash "$outside/far_test.sh")
+  local outside_tf
+  outside_tf=$(python3 -c "
+import json
+entries = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs']
+print([e['test_file'] for e in entries if e['id'] == 'PROOF-2'][0])
+")
+
+  python3 -c "
+from_abs, from_rel, outside_tf = '$from_abs', '$from_rel', '$outside_tf'
+assert from_abs == 'nested/abs_test.sh', \
+    f'expected project-relative nested/abs_test.sh, got {from_abs!r}'
+assert not from_abs.startswith('/'), f'absolute path leaked into proof file: {from_abs!r}'
+assert '..' not in from_abs, f'parent traversal in recorded path: {from_abs!r}'
+assert from_rel == from_abs, (
+    'the same script recorded two different test_file values depending on how it '
+    f'was invoked: absolute gave {from_abs!r}, relative gave {from_rel!r}. Under the '
+    '(feature, tier, test_file) merge key that accumulates duplicate entries.'
+)
+assert $n_entries == 1, \
+    'the relative re-run must replace the absolute run entry, not add to it'
+assert outside_tf.startswith('/'), \
+    f'a script outside the project tree must keep an absolute path, got {outside_tf!r}'
+assert '..' not in outside_tf, \
+    f'a script outside the project tree must not gain ../ segments, got {outside_tf!r}'
 "
-  local rc=$?; rm -rf "$d"; return $rc
+  local rc=$?; rm -rf "$d" "$outside"; return $rc
 }
 run "proof_plugins_shell" "PROOF-5" "RULE-5" "shell test_file is repo-relative" test_shell_relative_path
 

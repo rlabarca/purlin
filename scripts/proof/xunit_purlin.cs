@@ -10,12 +10,14 @@
 // test output directory, where vstest discovers it by FriendlyName ("purlin").
 //
 // It collects the `PurlinProof` test trait during the run and writes
-// feature-scoped proof JSON files next to the matching spec, implementing the
+// write-scoped proof JSON files next to the matching spec, implementing the
 // shared proof-plugin contract (see specs/_anchors/proof_common.md):
 //   - resolve the spec directory by scanning specs/**/*.md (RULE-1)
 //   - write <feature>.proofs-<tier>.json into that directory (RULE-2)
 //   - fall back to specs/ with a stderr warning when no spec matches (RULE-3, RULE-9)
-//   - feature-scoped overwrite: keep other features, replace this one (RULE-4)
+//   - write-scoped overwrite keyed by (feature, tier, test_file): keep other features
+//     and this feature's other test files, replace only what this run ran (RULE-4),
+//     reaping entries whose test file no longer exists (RULE-11)
 //   - emit all 7 fields (RULE-5); status is "pass"/"fail" only (RULE-6)
 //   - no markers collected -> write nothing (RULE-7)
 //
@@ -171,13 +173,22 @@ namespace Purlin
 
                 string path = Path.Combine(specDir, $"{feature}.proofs-{tier}.json");
 
-                // RULE-4: feature-scoped overwrite — keep other features, drop this one's old entries.
+                // RULE-4: write-scoped overwrite keyed by (feature, tier, test_file):
+                // keep other features, keep this feature's entries from test files this run
+                // did not execute, and reap entries whose test file is gone (RULE-11).
+                var runFiles = new HashSet<string>(group.Select(p => p.TestFile));
                 var kept = new List<Dictionary<string, string>>();
                 if (File.Exists(path))
                 {
                     foreach (var entry in ReadProofs(path))
                     {
                         if (!entry.TryGetValue("feature", out string? f) || f != feature)
+                        {
+                            kept.Add(entry);
+                            continue;
+                        }
+                        entry.TryGetValue("test_file", out string? tf);
+                        if (!string.IsNullOrEmpty(tf) && !runFiles.Contains(tf) && File.Exists(tf))
                             kept.Add(entry);
                     }
                 }

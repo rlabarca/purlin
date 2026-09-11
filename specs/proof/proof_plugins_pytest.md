@@ -5,7 +5,7 @@
 > Stack: python/stdlib, pytest plugin (pytest_configure + pytest_runtest_makereport hooks)
 > Description: The pytest proof plugin. Collects `@pytest.mark.proof(...)` markers during the
 >   test call phase and emits standardized proof JSON. Inherits all shared proof-plugin
->   behavior (spec-dir resolution, naming, fallback, feature-scoped overwrite, the 7 fields,
+>   behavior (spec-dir resolution, naming, fallback, write-scoped overwrite, the 7 fields,
 >   status, no-op, discovery, stderr warning, purge) from proof_common.
 
 ## What it does

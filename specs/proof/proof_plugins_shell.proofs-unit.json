@@ -45,6 +45,60 @@
       "test_name": "shell test_file is repo-relative",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_uses_purlin_proof_tier_env",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_defaults_tier_to_unit",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_test_file_reflects_caller_filename",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_not_written_before_finish",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_written_after_finish",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_plugins_shell",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_entries_cleared_after_finish",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

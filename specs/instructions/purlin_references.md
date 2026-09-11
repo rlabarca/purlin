@@ -9,7 +9,7 @@
 ## Rules
 
 - RULE-1: `spec_format.md` documents the 2 required sections (`## Rules`, `## Proof`), the `> Description:` metadata field, and the RULE-N/PROOF-N numbering convention
-- RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields and the feature-scoped overwrite merge behavior
+- RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields and the write-scoped overwrite merge behavior keyed by `(feature, tier, test_file)`
 - RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
 - RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
@@ -29,7 +29,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## Rules`, `## Proof`; verify both appear as required sections. Grep for `> Description:` in the metadata fields table. Grep for `RULE-N` pattern documentation
-- PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear. Grep for "feature-scoped overwrite"
+- PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear. Grep for "write-scoped overwrite" and for the merge key `(feature, tier, test_file)`
 - PROOF-3 (RULE-3): Grep `references/formats/proofs_format.md` for `### pytest`, `### Jest`, `### Shell`; verify all 3 framework subsections exist
 - PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear
 - PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`; verify all appear in the type metadata documentation

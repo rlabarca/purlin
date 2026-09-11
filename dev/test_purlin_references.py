@@ -40,7 +40,10 @@ class TestPurlinReferences:
         content = _read(os.path.join(FORMATS, 'proofs_format.md'))
         for field in ('feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'):
             assert field in content, f"Missing field: {field}"
-        assert re.search(r'[Ff]eature.[Ss]coped [Oo]verwrite', content)
+        assert re.search(r'[Ww]rite.[Ss]coped [Oo]verwrite', content), \
+            "proofs_format.md must name the merge behaviour"
+        assert '(feature, tier, test_file)' in content, \
+            "proofs_format.md must state the merge key, not just the pattern's name"
 
     @pytest.mark.proof("purlin_references", "PROOF-3", "RULE-3")
     def test_proofs_format_three_frameworks(self):

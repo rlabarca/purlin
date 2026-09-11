@@ -19,7 +19,7 @@ live here.
 - RULE-2: `test_file` is recorded from `BASH_SOURCE[1]` (the caller's file)
 - RULE-3: `purlin_proof_finish` must be called to write proof files — entries are accumulated in memory until then
 - RULE-4: After `purlin_proof_finish`, the accumulated entries are cleared (reset for next batch)
-- RULE-5: `test_file` is recorded as a repo-relative POSIX path, derived from `BASH_SOURCE` relative to the project root, so a script invoked by absolute path does not bake one machine's home directory into a committed proof file. A path that resolves outside the project tree is left unchanged rather than rewritten with `../` segments
+- RULE-5: `test_file` is recorded as a project-relative POSIX path and is identical for a given test script however that script was invoked, so neither one machine's home directory nor the caller's choice of an absolute or relative path reaches a committed proof file. `BASH_SOURCE` is resolved to an absolute path when the proof is recorded, then made relative at write time against the project being written to, or failing that against the project the test script itself lives in. A path that resolves outside both is left absolute rather than rewritten with `../` segments
 
 ## Proof
 
@@ -27,4 +27,4 @@ live here.
 - PROOF-2 (RULE-2): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @integration
 - PROOF-3 (RULE-3): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @integration
 - PROOF-4 (RULE-4): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @integration
-- PROOF-5 (RULE-5): Invoke a sourcing test script by absolute path; verify the emitted `test_file` is the repo-relative POSIX path with no leading `/` and no home directory, and that a script outside the project tree keeps its original path rather than gaining `../` segments @integration
+- PROOF-5 (RULE-5): Invoke a sourcing test script by absolute path; verify the emitted `test_file` is the project-relative POSIX path with no leading `/` and no home directory. Invoke the same script again by a relative path and verify the emitted `test_file` is byte-identical to the absolute run's, since under the `(feature, tier, test_file)` merge key a difference would accumulate as two entries for one proof rather than collapse. Verify a script outside the project tree keeps an absolute path rather than gaining `../` segments @integration

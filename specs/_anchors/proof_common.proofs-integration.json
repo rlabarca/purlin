@@ -18,6 +18,33 @@
       "test_name": "test_removed_test_purged_on_rerun",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-14",
+      "rule": "RULE-4",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_two_test_files_one_feature_and_tier_coexist_in_either_order",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-15",
+      "rule": "RULE-11",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_deleted_test_file_entry_is_reaped",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-16",
+      "rule": "RULE-12",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_marker_removed_from_a_file_that_is_not_rerun_survives",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

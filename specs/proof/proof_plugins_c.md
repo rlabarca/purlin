@@ -11,13 +11,13 @@
 
 `c_purlin.h` is included in C test code; `purlin_proof(...)` calls accumulate results and
 `purlin_proof_finish()` prints them as JSON. The compiled test's stdout is piped to
-`c_purlin_emit.py`, which performs the shared feature-scoped overwrite. Only the C marker
+`c_purlin_emit.py`, which performs the shared write-scoped overwrite. Only the C marker
 signature and the two-stage emit pipeline live here.
 
 ## Rules
 
 - RULE-1: The C marker is `purlin_proof("feature", "PROOF-N", "RULE-N", passed_bool, "test_name", __FILE__, "tier")` called from C source code
-- RULE-2: `purlin_proof_finish()` prints accumulated proofs as JSON to stdout; `c_purlin_emit.py` reads stdin and performs feature-scoped overwrite to proof files
+- RULE-2: `purlin_proof_finish()` prints accumulated proofs as JSON to stdout; `c_purlin_emit.py` reads stdin and performs write-scoped overwrite to proof files
 
 ## Proof
 

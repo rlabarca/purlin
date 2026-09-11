@@ -3,7 +3,7 @@ name: test
 description: Run tests and emit proof files with coverage report
 ---
 
-Run tests (unit tier unless `--all`), emit proof files via feature-scoped overwrite, and report coverage per feature.
+Run tests (unit tier unless `--all`), emit proof files via write-scoped overwrite, and report coverage per feature.
 
 ## Usage
 
@@ -33,7 +33,7 @@ npx jest --testPathPattern="unit"
 npx jest
 ```
 
-The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file. This is a **feature-scoped overwrite**: each run replaces all proof entries for the tested feature in that tier file, preserving entries from other features.
+The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file. This is a **write-scoped overwrite** keyed by `(feature, tier, test_file)`: each run replaces the tested feature's entries from the test files it actually executed, reaps entries whose test file no longer exists, and preserves everything else. Two test files covering one feature at one tier can therefore run in any order, in separate processes. See `references/formats/proofs_format.md`.
 
 ### Proof File Freshness Check
 

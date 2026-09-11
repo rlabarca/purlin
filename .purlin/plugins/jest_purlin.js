@@ -1,7 +1,7 @@
 /**
  * Purlin proof reporter for Jest.
  *
- * Collects proof markers from test names and emits feature-scoped proof JSON
+ * Collects proof markers from test names and emits write-scoped proof JSON
  * files next to the corresponding spec files.
  *
  * Usage in tests:
@@ -83,8 +83,16 @@ class PurlinProofReporter {
         }
       }
 
-      // Purge this feature's old entries, keep others
-      const kept = existing.filter((e) => e.feature !== feature);
+      // Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
+      // RULE-4, plus orphan reaping of vanished test files (RULE-11).
+      const runFiles = new Set(newEntries.map((e) => e.test_file));
+      const kept = existing.filter(
+        (e) =>
+          e.feature !== feature ||
+          (!runFiles.has(e.test_file) &&
+            !!e.test_file &&
+            fs.existsSync(e.test_file))
+      );
 
       // Atomic write: tmp + rename
       const tmpPath = filePath + ".tmp";

@@ -111,4 +111,4 @@ Proof files (`.proofs-*.json`) are generated from test results, not hand-written
 2. Run `purlin:test` to regenerate from the merged code.
 3. Commit the regenerated file.
 
-This works because proof files are feature-scoped — testing feature X only rewrites X's entries.
+This works because the merge is write-scoped: re-running a test file rewrites only that file's entries for that feature and tier. Re-run every suite that writes the conflicting tier file, not just one, or the suites you skip keep whatever the merge inherited.

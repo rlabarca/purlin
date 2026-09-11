@@ -868,54 +868,53 @@ def test_c_purlin_emit_feature_scoped_overwrite(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# RULE-29: Removed test entries purged on re-run
+# RULE-10: Removed test entries purged on re-run of the same test file
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("proof_common", "PROOF-10", "RULE-10")
+@pytest.mark.proof("proof_common", "PROOF-13", "RULE-10")
 def test_removed_test_entry_purged_on_rerun(tmp_path):
-    """When a test is removed and the feature re-runs, the old entry is not carried over."""
+    """When a test is removed from a file and that file re-runs, its entry is not carried over.
+
+    Both runs use the SAME test file path. Under the (feature, tier, test_file) merge key
+    (proof_common RULE-4) that is what makes this a test removal rather than a second
+    writer. Two different paths would legitimately coexist, which RULE-12 covers.
+    """
     spec_dir = _make_spec(tmp_path, "a", "feat_purge", extra_rules=2)
+    run_file = tmp_path / "test_purge_target.py"
+
+    def _run():
+        return subprocess.run(
+            [
+                sys.executable, "-m", "pytest",
+                str(run_file),
+                "-p", "pytest_purlin",
+                f"--override-ini=pythonpath={PROOF_SCRIPTS}",
+                "-q", "--no-header",
+            ],
+            capture_output=True, text=True, cwd=str(tmp_path),
+        )
+
     # First run: 2 proofs
-    first_run = tmp_path / "test_first.py"
-    first_run.write_text(textwrap.dedent("""
+    run_file.write_text(textwrap.dedent("""
         import pytest
         @pytest.mark.proof("feat_purge", "PROOF-1", "RULE-1")
         def test_one(): assert 1 + 1 == 2
         @pytest.mark.proof("feat_purge", "PROOF-2", "RULE-2")
         def test_two(): assert 2 + 2 == 4
     """))
-    subprocess.run(
-        [
-            sys.executable, "-m", "pytest",
-            str(first_run),
-            "-p", "pytest_purlin",
-            f"--override-ini=pythonpath={PROOF_SCRIPTS}",
-            "-q", "--no-header",
-        ],
-        capture_output=True, text=True, cwd=str(tmp_path),
-    )
+    _run()
     proof_file = spec_dir / "feat_purge.proofs-unit.json"
     assert proof_file.exists()
     first_data = json.loads(proof_file.read_text())
     assert len(first_data["proofs"]) == 2, "First run should produce 2 proofs"
 
-    # Second run: only 1 proof (test_two was "deleted")
-    second_run = tmp_path / "test_second.py"
-    second_run.write_text(textwrap.dedent("""
+    # Second run: same file, test_two deleted
+    run_file.write_text(textwrap.dedent("""
         import pytest
         @pytest.mark.proof("feat_purge", "PROOF-1", "RULE-1")
         def test_one(): assert 1 + 1 == 2
     """))
-    subprocess.run(
-        [
-            sys.executable, "-m", "pytest",
-            str(second_run),
-            "-p", "pytest_purlin",
-            f"--override-ini=pythonpath={PROOF_SCRIPTS}",
-            "-q", "--no-header",
-        ],
-        capture_output=True, text=True, cwd=str(tmp_path),
-    )
+    _run()
     second_data = json.loads(proof_file.read_text())
     feat_entries = [p for p in second_data["proofs"] if p["feature"] == "feat_purge"]
     assert len(feat_entries) == 1, (
@@ -927,9 +926,13 @@ def test_removed_test_entry_purged_on_rerun(tmp_path):
     assert "PROOF-2" not in proof_ids, f"PROOF-2 should have been purged, but found: {proof_ids}"
 
 
-@pytest.mark.proof("proof_common", "PROOF-10", "RULE-10")
+@pytest.mark.proof("proof_common", "PROOF-13", "RULE-10")
 def test_removed_test_entry_purged_in_shell_plugin(tmp_path):
-    """Shell plugin: re-running with fewer proofs purges old entries for the same feature."""
+    """Shell plugin: re-running the same script with fewer proofs purges the old entry.
+
+    _run_shell_proof writes both runs to the same run_proof.sh, so this is a re-run of one
+    test file under the (feature, tier, test_file) merge key, not two writers.
+    """
     _make_spec(tmp_path, "a", "feat_shell_purge", extra_rules=2)
     # First run: 2 proofs
     first_result = _run_shell_proof(

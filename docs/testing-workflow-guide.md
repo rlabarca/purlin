@@ -190,7 +190,7 @@ purlin:status
 purlin:test
 ```
 
-The proof plugin collects markers and writes proof files using feature-scoped overwrite — only the tested feature's entries are replaced.
+The proof plugin collects markers and writes proof files using write-scoped overwrite: within a tier file, it replaces only the tested feature's entries from the test files this run executed. Entries from another feature, or from a test file this run did not touch, are left alone.
 
 ### 3. Fix failures
 
@@ -353,8 +353,9 @@ A proof plugin has one job: read test metadata during execution, write a JSON fi
 """Minimal proof plugin for a custom test framework.
 
 Collects proof results and writes .proofs-<tier>.json files
-next to specs. Uses feature-scoped overwrite so other features'
-proofs are preserved.
+next to specs. Merges on (feature, tier, test_file) so other
+features' proofs, and this feature's proofs from test files
+this run did not execute, are preserved.
 """
 
 def write_proofs(results, tier="unit"):
@@ -393,7 +394,7 @@ def write_proofs(results, tier="unit"):
 
 Requirements:
 1. Read proof metadata from tests (annotations, decorators, tags)
-2. Feature-scoped overwrite (purge entries for tested features, preserve others)
+2. Write-scoped overwrite: replace this feature's entries from the test files this run executed, reap entries whose test file no longer exists, preserve everything else
 3. Write files next to specs: `specs/<category>/<feature>.proofs-<tier>.json`
 4. Handle parameterized tests (one entry per proof, pass only if ALL variants pass)
 
@@ -409,4 +410,4 @@ Proof files are derived state. When merging:
 2. Run `purlin:test` to regenerate from the merged code
 3. Commit the result
 
-This works because proof files are feature-scoped — testing feature X only rewrites X's entries.
+This works because the merge is write-scoped: re-running a test file rewrites only that file's entries for that feature and tier. Re-run every suite that writes the conflicting tier file, not just one, or the suites you skip keep whatever the merge inherited.
