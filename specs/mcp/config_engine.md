@@ -17,6 +17,7 @@
 - RULE-8: `update_config` writes only to config.local.json, never to config.json
 - RULE-9: `update_config` preserves existing keys in config.local.json when adding or updating a key
 - RULE-10: `update_config` uses atomic replacement (write to .tmp, then os.replace) to prevent partial writes
+- RULE-11: Overlay is per top-level key. A nested object in `config.local.json` replaces the base object of the same name rather than merging into it, because `update_config` writes whole top-level values and a second merge semantics would make what the user wrote and what the server read differ
 
 ## Proof
 
@@ -31,4 +32,5 @@
 - PROOF-9 (RULE-9): Create config.local.json with {"existing": "keep"}; call update_config(root, "added", "new"); verify config.local.json has both {"existing": "keep", "added": "new"}
 - PROOF-10 (RULE-10): Call update_config; verify no .tmp file remains and os.replace is used in source
 - PROOF-11 (RULE-4): Create config.json with {"report": true, "version": "0.9.0"} and config.local.json with {"pre_push": "strict"}; call resolve_config; verify result has all three keys — framework key "report" visible despite not being in local. This is the key scenario: framework adds a new default, existing user keeps their overrides, new default is visible
+- PROOF-13 (RULE-11): Create config.json with `platforms` holding two entries (`win-2022` and `mac-14`) and config.local.json with `platforms` holding only `ubuntu-24`; call resolve_config and verify `result["platforms"]` equals exactly `{"ubuntu-24": ...}` with neither base entry present, so a deep merge that kept `win-2022` or `mac-14` fails
 - PROOF-12 (RULE-8): Call update_config to set "report" to false; verify config.json is untouched and config.local.json now has "report": false; call resolve_config; verify merged result has "report": false (local override wins)

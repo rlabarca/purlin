@@ -40,7 +40,7 @@ specs/
 
 Read the Purlin framework version from `${CLAUDE_PLUGIN_ROOT}/VERSION` and write it as the `version` field in config.json. This ensures the config always matches the installed framework version.
 
-Config template fields (from `templates/config.json`):
+Config template fields (from `templates/config.json`), plus the optional `platforms` field that init never writes:
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -51,6 +51,7 @@ Config template fields (from `templates/config.json`):
 | `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` discovers a runner-gated proof |
 | `report` | `true` | HTML dashboard report generation |
 | `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |
+| `platforms` | not set (optional; not written by init) | Registry for `@on(...)` proof tags: `{"<id>": {"os": windows\|macos\|linux, "version", "distro", "arch", "runner", "label"}}`. The family ids `windows`, `macos`, `linux` are built in; an entry pins a version or attaches a runner. Written by `purlin:test`'s setup offer with consent, or by hand; see `references/drift_criteria.md` |
 
 ## Step 3 — Detect Test Framework
 

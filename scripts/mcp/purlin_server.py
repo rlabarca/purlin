@@ -16,6 +16,7 @@ import glob
 import hashlib
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -917,6 +918,226 @@ def _gauge_suffix(summary, which, audit_summary, design_summary):
 _REMOTE_VERIFICATION_MODES = ('required', 'optional', 'off')
 
 
+# ---------------------------------------------------------------------------
+# Platform registry and host detection (sync_status RULE-50/51)
+# ---------------------------------------------------------------------------
+
+# The three family ids every project has with zero config. A config entry of
+# the same id replaces the built-in, which is how a project attaches a runner
+# to `windows` without inventing a second id for the same platform.
+_BUILTIN_PLATFORMS = {
+    'windows': {'os': 'windows'},
+    'macos': {'os': 'macos'},
+    'linux': {'os': 'linux'},
+}
+_PLATFORM_OS_VALUES = ('windows', 'macos', 'linux')
+# Named so the rejection can say "not yet supported" rather than "unknown":
+# the extension point exists, the support does not.
+_PLATFORM_OS_RESERVED = ('ios', 'android')
+_ARCH_ALIASES = {
+    'x86_64': 'x86_64', 'amd64': 'x86_64', 'x64': 'x86_64',
+    'arm64': 'arm64', 'aarch64': 'arm64',
+}
+_PLATFORM_VERSION_RE = re.compile(r'^(>=)?(\d+(?:\.\d+)*)$')
+_PLATFORM_ENTRY_KEYS = ('os', 'version', 'distro', 'arch', 'runner', 'label')
+_PLATFORM_RUNNER_KEYS = ('provider', 'runs_on', 'workflow')
+
+
+def _normalise_arch(value):
+    """Canonical `x86_64` / `arm64`, or None when the alias is unknown."""
+    if not isinstance(value, str):
+        return None
+    return _ARCH_ALIASES.get(value.strip().lower())
+
+
+def _validate_platform_entry(pid, entry):
+    """Return (normalised_entry, error) for one `platforms` entry.
+
+    Every problem is an error and the entry is dropped, including an unknown
+    key: a typo like `vresion` must not vanish into an entry that then
+    matches every host of its family.
+    """
+    if not _PLATFORM_ID_RE.match(pid):
+        return None, f'{pid}: id must match [a-z0-9][a-z0-9-]*'
+    if not isinstance(entry, dict):
+        return None, f'{pid}: entry must be an object'
+    unknown = sorted(k for k in entry if k not in _PLATFORM_ENTRY_KEYS)
+    if unknown:
+        return None, (f'{pid}: unknown key {unknown[0]!r} '
+                      f'(allowed: {", ".join(_PLATFORM_ENTRY_KEYS)})')
+    os_name = entry.get('os')
+    if not isinstance(os_name, str) or not os_name:
+        return None, f'{pid}: "os" is required (one of {", ".join(_PLATFORM_OS_VALUES)})'
+    if os_name in _PLATFORM_OS_RESERVED:
+        return None, f'{pid}: os {os_name!r} is not yet supported'
+    if os_name not in _PLATFORM_OS_VALUES:
+        return None, f'{pid}: os {os_name!r} must be one of {", ".join(_PLATFORM_OS_VALUES)}'
+    out = {'_id': pid, 'os': os_name}
+
+    version = entry.get('version')
+    if version is not None:
+        if not isinstance(version, str) or not _PLATFORM_VERSION_RE.match(version.strip()):
+            return None, f'{pid}: version {version!r} must be N[.N...] or >=N[.N...]'
+        out['version'] = version.strip()
+
+    distro = entry.get('distro')
+    if distro is not None:
+        if not isinstance(distro, str) or not distro:
+            return None, f'{pid}: distro must be a non-empty string'
+        if os_name != 'linux':
+            return None, f'{pid}: distro is only valid when os is linux'
+        out['distro'] = distro
+
+    arch = entry.get('arch')
+    if arch is not None:
+        norm = _normalise_arch(arch)
+        if norm is None:
+            return None, (f'{pid}: arch {arch!r} must be one of '
+                          f'{", ".join(sorted(_ARCH_ALIASES))}')
+        out['arch'] = norm
+
+    runner = entry.get('runner')
+    if runner is not None:
+        if not isinstance(runner, dict):
+            return None, f'{pid}: runner must be an object'
+        bad = sorted(k for k in runner if k not in _PLATFORM_RUNNER_KEYS)
+        if bad:
+            return None, (f'{pid}: runner has unknown key {bad[0]!r} '
+                          f'(allowed: {", ".join(_PLATFORM_RUNNER_KEYS)})')
+        provider = runner.get('provider')
+        if not isinstance(provider, str) or not provider:
+            return None, f'{pid}: runner.provider is required'
+        for key in ('runs_on', 'workflow'):
+            if key in runner and not isinstance(runner[key], str):
+                return None, f'{pid}: runner.{key} must be a string'
+        out['runner'] = dict(runner)
+
+    label = entry.get('label')
+    if label is not None:
+        if not isinstance(label, str):
+            return None, f'{pid}: label must be a string'
+        out['label'] = label
+    return out, None
+
+
+def _platform_registry(config):
+    """(registry, errors): built-in family ids overlaid by config `platforms`.
+
+    A config entry replaces the built-in of the same id. A malformed entry is
+    dropped and named in `errors` (id and problem); the built-in it would have
+    replaced stays, so `@on(windows)` keeps resolving while the preamble says
+    what was ignored. Every entry carries `_id`.
+    """
+    registry = {pid: dict(entry, _id=pid) for pid, entry in _BUILTIN_PLATFORMS.items()}
+    errors = []
+    declared = (config or {}).get('platforms')
+    if declared is None:
+        return registry, errors
+    if not isinstance(declared, dict):
+        errors.append('platforms: must be an object mapping ids to entries')
+        return registry, errors
+    for pid, entry in declared.items():
+        pid = str(pid)
+        normalised, error = _validate_platform_entry(pid, entry)
+        if error:
+            errors.append(error)
+            continue
+        registry[pid] = normalised
+    return registry, errors
+
+
+def _detect_host_platform():
+    """{os, version, distro, arch, id} for the machine sync_status runs on.
+
+    `id` is `PURLIN_PLATFORM` when set, which is how a runner (or a developer
+    on a pinned machine) claims a registry id that detection alone cannot
+    prove, such as `windows-2022` versus any other Windows 10 build.
+    """
+    system = platform.system()
+    family = {'Darwin': 'macos', 'Windows': 'windows', 'Linux': 'linux'}.get(
+        system, (system or '').lower())
+    version = ''
+    distro = ''
+    if family == 'macos':
+        version = platform.mac_ver()[0] or ''
+    elif family == 'windows':
+        version = platform.win32_ver()[1] or ''
+    elif family == 'linux':
+        try:
+            release = platform.freedesktop_os_release()
+        except (AttributeError, OSError):
+            release = {}
+        distro = release.get('ID', '') or ''
+        version = release.get('VERSION_ID', '') or ''
+    machine = platform.machine() or ''
+    return {
+        'os': family,
+        'version': version,
+        'distro': distro,
+        'arch': _normalise_arch(machine) or machine.lower(),
+        'id': os.environ.get('PURLIN_PLATFORM') or None,
+    }
+
+
+def _version_tuple(text):
+    """Leading dotted integers of a version string, or None when none lead."""
+    m = re.match(r'(\d+(?:\.\d+)*)', (text or '').strip())
+    if not m:
+        return None
+    return tuple(int(part) for part in m.group(1).split('.'))
+
+
+def _version_satisfies(constraint, actual):
+    """Two forms only. `14` is a prefix: `14` matches `14.7.1`, `14.7` does not
+    match `14.8`. `>=N[.N...]` compares component-wise, shorter side padded
+    with zeros. No constraint always holds; any constraint fails against an
+    unknown host version, because "unknown" is not "new enough".
+    """
+    if constraint is None:
+        return True
+    actual_t = _version_tuple(actual)
+    if actual_t is None:
+        return False
+    constraint = constraint.strip()
+    if constraint.startswith('>='):
+        want = _version_tuple(constraint[2:])
+        if want is None:
+            return False
+        width = max(len(want), len(actual_t))
+        pad = lambda t: t + (0,) * (width - len(t))
+        return pad(actual_t) >= pad(want)
+    want = _version_tuple(constraint)
+    if want is None:
+        return False
+    return actual_t[:len(want)] == want
+
+
+def _platform_satisfied_by_host(platform_def, host):
+    """True when this host can prove a proof declared on `platform_def`.
+
+    `PURLIN_PLATFORM` equal to the entry's id short-circuits: the runner
+    asserts what it is. Otherwise os must match, distro and arch must match
+    whenever the entry names them, and the version constraint must hold. A
+    family entry with only `os` is satisfied by any host of that family.
+    """
+    host = host or {}
+    if host.get('id') and host['id'] == platform_def.get('_id'):
+        return True
+    if platform_def.get('os') != host.get('os'):
+        return False
+    if platform_def.get('distro') and platform_def['distro'] != host.get('distro'):
+        return False
+    if platform_def.get('arch') and platform_def['arch'] != host.get('arch'):
+        return False
+    return _version_satisfies(platform_def.get('version'), host.get('version') or '')
+
+
+def _host_platform_ids(registry, host):
+    """Sorted registry ids this host satisfies."""
+    return sorted(pid for pid, entry in registry.items()
+                  if _platform_satisfied_by_host(entry, host))
+
+
 def _remote_verification_line(config, awaiting_count):
     """The project's declared remote-verification mode, or '' when silent.
 
@@ -1142,6 +1363,12 @@ def sync_status(project_root, role=None):
 
     preamble = []
 
+    # Config is read before the preamble and kept for the summary block: the
+    # platform registry (RULE-50) reports its rejected entries up here, and the
+    # summary reports the declared remote-verification mode (RULE-49).
+    config = resolve_config(project_root)
+    registry, registry_errors = _platform_registry(config)
+
     # Warn about a legacy version-pinned MCP entry (shadows the plugin-bundled server)
     legacy_mcp = _check_legacy_mcp_entry(project_root)
     if legacy_mcp:
@@ -1159,6 +1386,17 @@ def sync_status(project_root, role=None):
             preamble.append(f'  {entry}')
         preamble.append('Drift detection, staleness checks, and verification use committed state.')
         preamble.append('\u2192 Commit these files before running purlin:drift or purlin:verify')
+        preamble.append('')
+
+    # Malformed `platforms` entries are dropped from the registry, never
+    # silently: a typo that vanished would leave a proof matching every host
+    # of its family. Named here so the fix is one edit away.
+    if registry_errors:
+        n = len(registry_errors)
+        preamble.append(f'\u26a0 Platform registry: {n} entr{"ies" if n != 1 else "y"} ignored:')
+        for error in registry_errors:
+            preamble.append(f'  {error}')
+        preamble.append('\u2192 Fix: edit "platforms" in .purlin/config.json')
         preamble.append('')
 
     # Separate anchors from regular features
@@ -1191,7 +1429,7 @@ def sync_status(project_root, role=None):
         info = regular[name]
         feature_lines = _report_feature(
             name, info, features, all_proofs, project_root, role, global_anchors,
-            gauges=gauges_by_feature.get(name),
+            gauges=gauges_by_feature.get(name), registry=registry,
         )
         detail.extend(feature_lines)
         detail.append('')
@@ -1292,9 +1530,8 @@ def sync_status(project_root, role=None):
     _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary)
 
-    # Config is read before the table, not after: the summary block reports the
+    # `config` was resolved above the preamble; the summary block reports the
     # declared remote-verification mode (RULE-49), so the table builder needs it.
-    config = resolve_config(project_root)
     awaiting_count = sum(
         len(_awaiting_runner(name, info, all_proofs))
         for name, info in features.items()
@@ -1553,11 +1790,13 @@ def _active_rule_entries(name, info, rule_entries, all_proofs):
 
 
 def _report_feature(name, info, all_features, all_proofs, project_root, role,
-                    global_anchors=None, gauges=None):
+                    global_anchors=None, gauges=None, registry=None):
     """Generate report lines for a single feature."""
     lines = []
     if global_anchors is None:
         global_anchors = {}
+    if registry is None:
+        registry, _ = _platform_registry({})
 
     # Build combined rule set (own + required + global)
     rule_entries, unresolved_requires = _build_coverage_rules(name, info, all_features, global_anchors)
@@ -1597,6 +1836,24 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # verdict: a legacy `@windows` alias must not demote a PASSING feature.
     for proof_id, message in info.get('proof_tag_warnings') or []:
         advisories.append(f"  WARNING: {proof_id}: {message}")
+    # A platform id no registry entry and no family carries (RULE-50). Also an
+    # advisory: the proof is declared on a platform nobody can be, which is a
+    # config gap to name, not a failing feature.
+    known_platforms = set(registry) | set(_BUILTIN_PLATFORMS)
+    unknown_platforms = []
+    for proof_id, platforms in sorted(
+            (info.get('proof_platforms_by_id') or {}).items(),
+            key=lambda item: int(re.sub(r'\D', '', item[0]) or 0)):
+        for pid in platforms:
+            if pid not in known_platforms:
+                unknown_platforms.append((proof_id, pid))
+    for proof_id, pid in unknown_platforms:
+        advisories.append(
+            f'  WARNING: {proof_id} names platform "{pid}", which is not in '
+            f'.purlin/config.json platforms and is not a family id '
+            f'({", ".join(_BUILTIN_PLATFORMS)})')
+    if unknown_platforms:
+        advisories.append('  \u2192 Fix: add it under platforms, or use a family id')
 
     # Check visual reference staleness (computed once, used in multiple paths)
     visual_ref = info.get('visual_ref')

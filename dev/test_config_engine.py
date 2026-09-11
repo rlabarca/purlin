@@ -154,6 +154,23 @@ class TestResolveConfig:
         result = resolve_config(self.project_root)
         assert result == {"version": "0.9.0", "custom_setting": 42}
 
+    @pytest.mark.proof("config_engine", "PROOF-13", "RULE-11")
+    def test_nested_object_in_local_replaces_base_object_whole(self):
+        """The overlay is per top-level key. update_config writes whole
+        values, so a deep merge on read would make what the user wrote and
+        what the server read differ."""
+        self._write_shared({"platforms": {
+            "win-2022": {"os": "windows", "version": ">=10.0.20348"},
+            "mac-14": {"os": "macos", "version": "14"},
+        }})
+        self._write_local({"platforms": {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}})
+        result = resolve_config(self.project_root)
+        assert result["platforms"] == {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}, (
+            "a nested object in local must replace the base object whole, "
+            f"not merge into it: {result['platforms']}")
+        assert "win-2022" not in result["platforms"]
+        assert "mac-14" not in result["platforms"]
+
     @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_empty_local_returns_shared(self):
         """Empty local override file means all shared keys visible."""

@@ -305,6 +305,76 @@ same commit as the phase's last work. Run whole test files only; finish with
   with a proof (two-entry base, one-entry local, resolved has one). `drift_criteria.md` table
   gains the `platforms` row (owner: `purlin:test` setup offer with consent, or hand edit).
 
+## DONE — Phase 6.2: registry and host detection (`feat(config_engine,sync_status): platforms registry and host detection`, receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order, not the provisional table).** `sync_status` RULE-50 (registry)
+  and RULE-51 (host), PROOF-82/83 (RULE-50) and PROOF-84 (RULE-51); `config_engine` RULE-11 and
+  PROOF-13 as allocated. The reviewer table had pencilled RULE-50/51 and PROOF-82/83 for 6.4's
+  Platforms block and undeclared-results rules; 6.4 now takes RULE-52+ and PROOF-85+, and
+  6.5's one-verdict rule moves to the next free number after that.
+- **Server** (`scripts/mcp/purlin_server.py`): `import platform` (line 19); a registry block
+  directly under `_REMOTE_VERIFICATION_MODES`: `_BUILTIN_PLATFORMS` (928), `_normalise_arch`
+  (946), `_validate_platform_entry` (953), `_platform_registry` (1023), `_detect_host_platform`
+  (1049), `_version_tuple` (1082), `_version_satisfies` (1090), `_platform_satisfied_by_host`
+  (1115), `_host_platform_ids` (1135). `sync_status` resolves config once, above the preamble
+  (the second `resolve_config` before the summary table is gone), builds the registry, and after
+  the uncommitted-changes block prints `⚠ Platform registry: N entries ignored:` with one
+  indented error per dropped entry and `→ Fix: edit "platforms" in .purlin/config.json`.
+  `_report_feature` gains `registry=None` (defaults to the built-ins) and appends
+  `WARNING: PROOF-N names platform "x", which is not in .purlin/config.json platforms and is
+  not a family id (windows, macos, linux)` plus one `→ Fix: add it under platforms, or use a
+  family id` line through the 6.1 `advisories` list, so no verdict moves.
+- **Decisions the phase text left open.** A malformed config entry that would have replaced a
+  built-in (say `windows: {os: "ios"}`) is dropped and the built-in stays, so `@on(windows)`
+  keeps resolving while the preamble names the rejection; RULE-50 states it. `distro` on a
+  non-linux entry is an error, not ignored. `>=` pads the shorter tuple with zeros
+  (`>=14.0` holds on `14`; `>=14.0.1` does not). A host version that is empty or has no
+  leading digits fails every constraint. `arch` on the host falls back to the lower-cased raw
+  `machine()` when it is not one of the five aliases, so an exotic arch mismatches rather than
+  crashes. A non-object `platforms` value is one error (`platforms: must be an object ...`) and
+  the registry is the built-ins. `provider` is any non-empty string, as decided; nothing is
+  dispatched here.
+- **Not built (6.4).** No Platforms block, no payload `platforms` shape, no change to
+  `_runner_gated_proofs`/`_awaiting_runner`, no gate exit code. `_detect_host_platform`,
+  `_platform_satisfied_by_host` and `_host_platform_ids` have no caller in `sync_status` yet;
+  6.4 wires them into the satisfaction model.
+- **config_engine.** Overlay stays `dict.update`. RULE-11 states the flat replace and why;
+  PROOF-13 (`dev/test_config_engine.py`, `test_nested_object_in_local_replaces_base_object_whole`)
+  seeds a two-entry `platforms` in base and a one-entry `platforms` in local and asserts the
+  resolved object is exactly the local one. Module docstring gains the paragraph.
+- **Proofs** in `dev/test_mcp_server.py`, class `TestPlatformRegistry`: PROOF-82
+  (`test_registry_keeps_valid_entries_and_names_every_dropped_one`: six entries, four dropped,
+  each named in the errors and the preamble; the `windows` override carries its workflow;
+  `AMD64` reads `x86_64`), PROOF-83 (`@unit @on(foo)` advisory, gone once `foo` is registered,
+  absent for `@on(macos)`), PROOF-84 (`test_host_detection_and_satisfaction`: monkeypatched
+  `platform.system/mac_ver/win32_ver/freedesktop_os_release/machine` and `PURLIN_PLATFORM`;
+  macOS 14.7.1 arm64, Ubuntu 24.04, os-release raising OSError, Windows build 10.0.20348,
+  env-id short-circuit with `_host_platform_ids`). All four new descriptions grade PROVABLE
+  under `--check-proof-design`.
+- **Mutations** (each applied, proof run, restored): deep-merge the overlay in
+  `resolve_config` and PROOF-13 fails; replace the `>=` tuple comparison with the prefix
+  comparison and PROOF-84 fails (`>=13` on 14.7.1 is the discriminating case; `>=14.8` alone
+  would not have caught it); accept unknown keys (`unknown = []`) and PROOF-82 fails; drop the
+  unknown-id collection and PROOF-83 fails; delete the `platforms` row from
+  `drift_criteria.md` and purlin_references PROOF-20 fails.
+- **Docs.** `references/drift_criteria.md` ownership table gains the `platforms` row (owner
+  `purlin:test` setup offer with consent, or hand edit; readers `sync_status`, `purlin:test`,
+  `scripts/ci/verify_gate.py`; default not set, family ids only); the "only skill that writes
+  config" sentence now says "unprompted" and names `purlin:test`'s consent path; the closing
+  invariant names the five optional fields. `purlin_references` RULE-20/PROOF-20 extended to
+  require rows for `audit_llm`, `audit_llm_name`, `audit_criteria`, `audit_criteria_pinned`,
+  `platforms` (all five had rows already except `platforms`). `skills/init/SKILL.md` config
+  table gains a `platforms` row marked optional and not written by init; the table intro says
+  so. `templates/config.json` untouched; `skill_init` RULE-9 stays at seven fields.
+- **Sweep.** `bash dev/run_tests.sh`: 14 suites, `650 passed, 21 skipped` (was 646: PROOF-82/83/84 and
+  PROOF-13 are new). `git diff --stat specs/`: `sync_status.proofs-integration.json` 4 to 7 entries,
+  `config_engine.proofs-unit.json` 19 to 20, `purlin_references.proofs-unit.json` unchanged (the
+  PROOF-20 test kept its name); no entry lost. A first sweep run in the background was killed by
+  the OS for memory alongside a second waiting shell; the churned proof files were restored with
+  `git checkout -- 'specs/**/*.proofs-*.json'` and the sweep re-run in the foreground, which is the
+  count above.
+- CLAUDE.md unchanged.
+
 ### 6.3 Scoped proof files and plugins (`proof_common`, `schema_proof_format`, `proofs_format.md` v5)
 
 - Name `<feature>.proofs-<tier>@<platform-id>.json`; agnostic files unchanged and byte-identical.

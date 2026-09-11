@@ -93,6 +93,15 @@
     },
     {
       "feature": "config_engine",
+      "id": "PROOF-13",
+      "rule": "RULE-11",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_nested_object_in_local_replaces_base_object_whole",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_config_engine.py",

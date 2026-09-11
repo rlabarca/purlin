@@ -30,6 +30,33 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-82",
+      "rule": "RULE-50",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_registry_keeps_valid_entries_and_names_every_dropped_one",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-83",
+      "rule": "RULE-50",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unregistered_platform_id_is_a_feature_advisory_not_a_verdict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-84",
+      "rule": "RULE-51",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_host_detection_and_satisfaction",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

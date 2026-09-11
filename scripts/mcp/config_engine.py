@@ -10,6 +10,11 @@ top — local values win for any key present in both files. Keys only in
 config.json are always visible. Keys only in config.local.json are user
 additions (rare, but allowed).
 
+The overlay is flat, per top-level key. A nested object in config.local.json
+(such as `platforms`) replaces the base object of the same name; it does not
+merge into it. update_config writes whole top-level values, so a deep merge
+on read would make what the user wrote and what the server read differ.
+
 update_config writes ONLY to config.local.json. It never modifies
 config.json — that file is owned by purlin:init and version control.
 """

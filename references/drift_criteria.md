@@ -183,8 +183,11 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
 | `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
 | `digest` | `purlin:init --digest` | pre-commit hook (digest regeneration) | `"auto"` |
+| `platforms` | `purlin:test` setup offer (with consent), or hand edit | `sync_status`, `purlin:test`, `scripts/ci/verify_gate.py` | not set (family ids `windows`, `macos`, `linux` only) |
 
-`purlin:init` is the only skill that writes config. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).
+`purlin:init` is the only skill that writes config unprompted; `purlin:test` writes `platforms` only after the user accepts its runner setup offer. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).
 
-This table must name every field `templates/config.json` carries. A field written into new projects
-but absent here has no recorded owner, which is how `digest` went unlisted through four releases.
+This table must name every field `templates/config.json` carries and every optional field a skill
+reads (`audit_llm`, `audit_llm_name`, `audit_criteria`, `audit_criteria_pinned`, `platforms`). A field
+written into new projects, or read by a skill, but absent here has no recorded owner, which is how
+`digest` went unlisted through four releases.

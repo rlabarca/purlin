@@ -360,3 +360,12 @@ class TestRemoteVerificationReference:
         assert not missing, (
             f"templates/config.json stamps {missing} into every new project "
             f"with no row in drift_criteria.md's Config Field Ownership table")
+
+        # Optional fields init never writes still need an owner and a default:
+        # a skill reads them, so somebody has to say who sets them.
+        optional = {'audit_llm', 'audit_llm_name', 'audit_criteria',
+                    'audit_criteria_pinned', 'platforms'}
+        missing_optional = sorted(optional - listed)
+        assert not missing_optional, (
+            f"optional config fields {missing_optional} are read by a skill but "
+            f"have no row in drift_criteria.md's Config Field Ownership table")

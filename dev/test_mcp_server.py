@@ -1874,3 +1874,194 @@ class TestCoverageReportUsability:
             out = sync_status(tmpdir)
             assert 'Run: purlin:test' in out
             assert 'purlin:build' not in out
+
+
+class TestPlatformRegistry:
+    """sync_status RULE-50/51: the `platforms` registry and the host it runs on.
+
+    A malformed entry is dropped and named, never silently: a typo that
+    vanished would leave a proof matching every host of its family.
+    """
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'audit')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    def _write_spec(self, tag):
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write('# Feature: locking\n\n'
+                    '## Rules\n- RULE-1: Locks on POSIX\n\n'
+                    f'## Proof\n- PROOF-1 (RULE-1): fcntl path locks {tag}\n')
+        with open(os.path.join(self.spec_dir, 'locking.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "dev/test_locking.py", "test_name": "test_fcntl",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+    def _config(self, platforms=None):
+        cfg = {'report': False}
+        if platforms is not None:
+            cfg['platforms'] = platforms
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+
+    MIXED = {
+        'win-2022': {'os': 'windows', 'version': '>=10.0.20348', 'arch': 'AMD64',
+                     'runner': {'provider': 'github', 'runs_on': 'windows-2022'}},
+        'windows': {'os': 'windows',
+                    'runner': {'provider': 'github', 'workflow': 'purlin-windows-proofs.yml'}},
+        'mac-typo': {'os': 'macos', 'vresion': '14'},
+        'iphone': {'os': 'ios'},
+        'mac-tilde': {'os': 'macos', 'version': '~14'},
+        'Bad_Id': {'os': 'linux'},
+    }
+
+    @pytest.mark.proof("sync_status", "PROOF-82", "RULE-50", tier="integration")
+    def test_registry_keeps_valid_entries_and_names_every_dropped_one(self):
+        registry, errors = purlin_server._platform_registry({'platforms': self.MIXED})
+
+        assert sorted(registry) == ['linux', 'macos', 'win-2022', 'windows'], (
+            f"the four malformed entries must be dropped and the family ids kept: "
+            f"{sorted(registry)}")
+        assert registry['windows']['runner']['workflow'] == 'purlin-windows-proofs.yml', (
+            "a config entry must replace the built-in of the same id")
+        assert registry['windows']['os'] == 'windows'
+        assert registry['win-2022']['arch'] == 'x86_64', (
+            f"AMD64 must normalise to x86_64: {registry['win-2022']}")
+        assert registry['win-2022']['_id'] == 'win-2022'
+        assert registry['win-2022']['version'] == '>=10.0.20348'
+        for pid in ('linux', 'macos'):
+            assert registry[pid] == {'_id': pid, 'os': pid}, registry[pid]
+
+        assert len(errors) == 4, errors
+        by_id = {e.split(':', 1)[0]: e for e in errors}
+        assert set(by_id) == {'mac-typo', 'iphone', 'mac-tilde', 'Bad_Id'}, errors
+        assert 'vresion' in by_id['mac-typo'], (
+            f"an unknown key must be named, or the typo vanishes: {by_id['mac-typo']}")
+        assert 'not yet supported' in by_id['iphone'], by_id['iphone']
+        assert 'version' in by_id['mac-tilde'] and '~14' in by_id['mac-tilde'], by_id['mac-tilde']
+        assert 'id' in by_id['Bad_Id'], by_id['Bad_Id']
+
+        # The preamble carries the same four, with the fix.
+        self._write_spec('@unit')
+        self._config(self.MIXED)
+        out = purlin_server.sync_status(self.project_root)
+        assert 'Platform registry: 4 entries ignored' in out, out
+        for pid in ('mac-typo', 'iphone', 'mac-tilde', 'Bad_Id'):
+            assert pid in out, f"the preamble must name the dropped id {pid}:\n{out}"
+        assert 'edit "platforms" in .purlin/config.json' in out, out
+        head = out.split('locking:', 1)[0]
+        assert 'Platform registry' in head, (
+            f"the registry block must be in the preamble, before the features:\n{out}")
+
+        # No `platforms` key: no line at all.
+        self._config()
+        out2 = purlin_server.sync_status(self.project_root)
+        assert 'Platform registry' not in out2, out2
+
+    @pytest.mark.proof("sync_status", "PROOF-83", "RULE-50", tier="integration")
+    def test_unregistered_platform_id_is_a_feature_advisory_not_a_verdict(self):
+        self._write_spec('@unit @on(foo)')
+        self._config()
+        out = purlin_server.sync_status(self.project_root)
+        assert 'WARNING: PROOF-1 names platform "foo"' in out, out
+        assert 'not a family id (windows, macos, linux)' in out, out
+        assert 'add it under platforms, or use a family id' in out, out
+        assert 'locking: PASSING' in out or 'locking: VERIFIED' in out, (
+            f"an unregistered id is an advisory, not a demotion:\n{out}")
+
+        # Registering the id silences it.
+        self._config({'foo': {'os': 'linux'}})
+        out2 = purlin_server.sync_status(self.project_root)
+        assert 'names platform "foo"' not in out2, out2
+
+        # A family id needs no registration.
+        self._write_spec('@unit @on(macos)')
+        self._config()
+        out3 = purlin_server.sync_status(self.project_root)
+        assert 'names platform' not in out3, out3
+
+    @pytest.mark.proof("sync_status", "PROOF-84", "RULE-51", tier="integration")
+    def test_host_detection_and_satisfaction(self, monkeypatch):
+        sat = purlin_server._platform_satisfied_by_host
+
+        def host_is(system, mac='', win_build='', release=None, machine='x86_64',
+                    raise_release=False):
+            monkeypatch.setattr(purlin_server.platform, 'system', lambda: system)
+            monkeypatch.setattr(purlin_server.platform, 'mac_ver',
+                                lambda: (mac, ('', '', ''), ''))
+            monkeypatch.setattr(purlin_server.platform, 'win32_ver',
+                                lambda: ('10', win_build, 'SP0', 'Multiprocessor Free'))
+
+            def os_release():
+                if raise_release:
+                    raise OSError('no os-release')
+                return dict(release or {})
+            monkeypatch.setattr(purlin_server.platform, 'freedesktop_os_release',
+                                os_release, raising=False)
+            monkeypatch.setattr(purlin_server.platform, 'machine', lambda: machine)
+            return purlin_server._detect_host_platform()
+
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+
+        # macOS 14.7.1 on Apple silicon.
+        host = host_is('Darwin', mac='14.7.1', machine='aarch64')
+        assert host == {'os': 'macos', 'version': '14.7.1', 'distro': '',
+                        'arch': 'arm64', 'id': None}, host
+        assert sat({'_id': 'macos', 'os': 'macos'}, host), "family match"
+        assert not sat({'_id': 'linux', 'os': 'linux'}, host), "family mismatch"
+        for version in ('14', '14.7', '14.7.1', '>=13', '>=14.7', '>=14.7.1'):
+            assert sat({'_id': 'm', 'os': 'macos', 'version': version}, host), version
+        for version in ('14.8', '15', '13', '>=14.8', '>=15', '>=14.7.2'):
+            assert not sat({'_id': 'm', 'os': 'macos', 'version': version}, host), version
+        assert sat({'_id': 'm', 'os': 'macos', 'arch': 'arm64'}, host)
+        assert not sat({'_id': 'm', 'os': 'macos', 'arch': 'x86_64'}, host), "arch mismatch"
+        # A shorter host version against a longer >= bound pads with zeros.
+        assert purlin_server._version_satisfies('>=14.0', '14')
+        assert not purlin_server._version_satisfies('>=14.0.1', '14')
+
+        # Ubuntu 24.04.
+        host = host_is('Linux', release={'ID': 'ubuntu', 'VERSION_ID': '24.04'})
+        assert host['os'] == 'linux' and host['distro'] == 'ubuntu', host
+        assert host['version'] == '24.04' and host['arch'] == 'x86_64', host
+        assert sat({'_id': 'u', 'os': 'linux', 'distro': 'ubuntu'}, host)
+        assert not sat({'_id': 'd', 'os': 'linux', 'distro': 'debian'}, host), "distro mismatch"
+        assert sat({'_id': 'u', 'os': 'linux', 'version': '24'}, host)
+        assert sat({'_id': 'u', 'os': 'linux', 'version': '>=22.04'}, host)
+        assert not sat({'_id': 'u', 'os': 'linux', 'version': '>=24.10'}, host)
+
+        # os-release unreadable: distro and version unknown, family still holds.
+        host = host_is('Linux', raise_release=True)
+        assert host['distro'] == '' and host['version'] == '', host
+        assert sat({'_id': 'linux', 'os': 'linux'}, host)
+        assert not sat({'_id': 'u', 'os': 'linux', 'version': '24'}, host), (
+            "an unknown host version must not satisfy a version constraint")
+        assert not sat({'_id': 'u', 'os': 'linux', 'distro': 'ubuntu'}, host)
+
+        # Windows Server 2022 build.
+        host = host_is('Windows', win_build='10.0.20348', machine='AMD64')
+        assert host['os'] == 'windows' and host['version'] == '10.0.20348', host
+        assert host['arch'] == 'x86_64', host
+        assert sat({'_id': 'w', 'os': 'windows', 'version': '>=10.0.20348'}, host)
+        assert not sat({'_id': 'w', 'os': 'windows', 'version': '>=10.0.20349'}, host)
+        assert sat({'_id': 'w', 'os': 'windows', 'version': '10.0'}, host)
+
+        # PURLIN_PLATFORM claims an id detection cannot prove.
+        registry, _ = purlin_server._platform_registry({'platforms': {
+            'win-2022': {'os': 'windows', 'version': '>=10.0.20348'}}})
+        monkeypatch.setenv('PURLIN_PLATFORM', 'win-2022')
+        host = host_is('Darwin', mac='14.7.1', machine='arm64')
+        assert host['id'] == 'win-2022', host
+        assert sat(registry['win-2022'], host), "the env id short-circuits detection"
+        assert purlin_server._host_platform_ids(registry, host) == ['macos', 'win-2022']
+        monkeypatch.delenv('PURLIN_PLATFORM')
+        host = host_is('Darwin', mac='14.7.1', machine='arm64')
+        assert host['id'] is None
+        assert not sat(registry['win-2022'], host)
+        assert purlin_server._host_platform_ids(registry, host) == ['macos']
