@@ -1,0 +1,55 @@
+name: version-check
+
+# Fails the build when any derived version location disagrees with the VERSION
+# file at the project root.
+#
+# WHEN THE VERSION CHANGES, CHANGE IT IN ONE PLACE:
+#
+#     bash dev/bump_version.sh <semver>
+#
+# That writes VERSION and propagates it to every file that carries a literal.
+# Nothing else should ever be hand-edited. The authoritative list of derived
+# locations lives in the header comment of `dev/bump_version.sh`. This job runs
+# that same script in `--check` mode, so the list cannot drift away from the gate
+# that enforces it.
+#
+# Governed by specs/instructions/purlin_version.md (RULE-6/7/8).
+
+on:
+  push:
+    paths:
+      - 'VERSION'
+      - 'templates/config.json'
+      - '.claude-plugin/plugin.json'
+      - '.purlin/config.json'
+      - 'dev/bump_version.sh'
+      - '.github/workflows/version-check.yml'
+  pull_request:
+    paths:
+      - 'VERSION'
+      - 'templates/config.json'
+      - '.claude-plugin/plugin.json'
+      - '.purlin/config.json'
+      - 'dev/bump_version.sh'
+      - '.github/workflows/version-check.yml'
+  workflow_dispatch:
+
+jobs:
+  version-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Prints VERSION and every derived location with ok / DRIFT / absent, so
+      # the job log is the record of what the version was and what disagreed.
+      - name: Check version consistency
+        run: bash dev/bump_version.sh --check
+
+      - name: Run the purlin_version proofs
+        run: |
+          pip install pytest
+          python -m pytest dev/test_purlin_version.py -v

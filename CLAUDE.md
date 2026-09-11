@@ -48,15 +48,34 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 
 ## Releasing a New Version
 
-The version string lives in **one file**: `VERSION` at the project root. Everything else reads from it.
+The version string lives in **one file**: `VERSION` at the project root. Never hand-edit any
+other version literal.
 
 **When tagging a release or updating RELEASE_NOTES.md with a new version:**
-1. Update `VERSION` to the new semver (e.g., `echo "1.0.0" > VERSION`)
-2. Update `templates/config.json` to match (the `"version"` field)
-3. Commit both in the same commit
-4. Tag and push
+1. `bash dev/bump_version.sh <semver>`: writes `VERSION` and propagates it to every derived
+   location in one step
+2. Commit `VERSION` and every file the script touched in the SAME commit
+3. Tag and push
 
-`purlin_server.py` reads `VERSION` at startup — no code changes needed. The `purlin_version` structural spec (`specs/instructions/purlin_version.md`) catches drift if `VERSION` and `templates/config.json` disagree.
+**Derived locations** (the script's header comment is the authoritative list; add a row there
+and `--check` starts guarding it in the same edit):
+
+| Location | Why it carries a literal |
+|----------|--------------------------|
+| `templates/config.json` | stamped into new projects by `purlin:init` |
+| `.claude-plugin/plugin.json` | what the Claude plugin loader reports |
+| `.purlin/config.json` | this repo's own project stamp; the dashboard reports it |
+
+`scripts/mcp/purlin_server.py` reads `VERSION` at runtime via `_read_version()`, so there is no
+literal and no change needed. Docs that describe the config `version` field cite the `VERSION` file by name
+rather than restating a number (`purlin_version` RULE-8), so no doc table can go stale.
+
+**CI record:** `.github/workflows/version-check.yml` runs `bash dev/bump_version.sh --check` on
+every push or PR that touches a version-bearing file, then runs the `purlin_version` proofs. The
+job log prints `VERSION` alongside each derived location marked `ok` / `DRIFT` / `absent`, so
+what the version was and what disagreed is recorded per commit. Run the same command locally
+before committing a bump. The `purlin_version` spec (`specs/instructions/purlin_version.md`)
+covers all four locations plus the script itself (RULE-6/7/8).
 
 ## Tool Folder Separation
 

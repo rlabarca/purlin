@@ -44,7 +44,7 @@ Config template fields (from `templates/config.json`):
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `version` | `"0.9.0"` | Purlin framework version |
+| `version` | from `VERSION` | Purlin framework version, stamped from `${CLAUDE_PLUGIN_ROOT}/VERSION` at init; never a literal in this table |
 | `test_framework` | `"auto"` | Detected test framework(s) |
 | `spec_dir` | `"specs"` | Directory containing specs |
 | `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |

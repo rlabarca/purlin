@@ -172,7 +172,7 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
-| `version` | `purlin:init` | — | `"0.9.0"` |
+| `version` | `purlin:init` | — | from `VERSION` |
 | `test_framework` | `purlin:init` (Step 3) | `purlin:unit-test` (Step 1) | `"auto"` |
 | `spec_dir` | `purlin:init` | `sync_status` MCP tool | `"specs"` |
 | `pre_push` | `purlin:init` | pre-push hook | `"warn"` |
