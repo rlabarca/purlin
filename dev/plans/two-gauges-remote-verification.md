@@ -4,7 +4,7 @@
 
 # Two gauges everywhere, honest roll-ups, and remote verification
 
-## Status: Phases 0-5 COMPLETE and committed. Phases 6-7 remain.
+## Status: Phases 0-5 COMPLETE and committed. Phases 6-7 superseded; see platform-generic-remote-verification.md
 
 Baseline at handoff: **578 passed, 21 skipped, 6 suites, 41/41 VERIFIED**, working tree clean
 (except `.claude/settings.json` and `.claude/settings.json.bak`, which must stay uncommitted).
@@ -304,61 +304,14 @@ purlin:verify  ->  reads the returned proofs, issues receipts   (never edits a f
   wrong). Recommend: CI recomputes Design deterministically, publishes Integrity only where
   `audit_llm` is set.
 
-## Phase 6 — The four pre-push defects
+## Phases 6 and 7: SUPERSEDED
 
-1. **Strict mode does not do what its own spec requires.** `pre_push_hook` RULE-8 and PROOF-10
-   require strict to block `PASSING`, but `scripts/hooks/pre-push.sh:99-101` files `PASSING` under
-   `PASSES` and the strict gate at `:156` tests only `NON_READY`. A repo of all-PASSING features
-   with zero receipts passes the strict gate.
-2. **The hook runs no tests in this repo.** `test_framework` is the comma list
-   `"pytest,jest,shell,vitest"`, matching none of the three `case` arms at `:41-50`. Parse the list.
-3. **Nested specs are invisible.** `find -maxdepth 2` (`:25-28`) misses `specs/<a>/<b>/<file>.md`
-   and silently disables the hook.
-4. **`"off"` is unspecified.** Implemented at `:21-23`, documented only in that file's header
-   comment; no rule, no proof, and the spec says there are two modes. This repo runs `off`.
-
-## Phase 7 — Docs and images
-
-Phases 0-2 already updated: `docs/dashboard-guide.md` (cell vocabulary table, per-gauge header
-semantics), `docs/lifecycle-guide.md` (sample status output, PROOF-4 column set),
-`skills/audit/SKILL.md` (Step 4 reports both gauges), `README.md` (dashboard line),
-`docs/anchors-guide.md` (`--recheck`), plus every `purlin:test` reference.
-
-Still to do, and mostly waiting on Phases 4-5:
-
-| File | What changes |
-|---|---|
-| `docs/testing-workflow-guide.md` | `:84-101` tier table (runner-gated tiers), `:213-219` enforcement table, `:228-254` the CI section and its `#ci-pipeline` anchor, `:256-266` deploy gate, `:289` the Integrity formula copy RULE-33 does not cover |
-| `docs/collaboration-guide.md` | `:79-91` pre-push mode and "strict for protected branches" (impossible with one per-clone value, which is what CI resolves), `:93-104` what travels with the branch, **`:102` "quality-gauge results are NOT shared" becomes wrong**, `:106-113` merge-conflict advice that cannot work for a runner-gated tier |
-| `docs/regulated-environments.md` | `:37-47` trust-level layer table, `:39` "CI and deploy gates are integration patterns you configure", `:93` vhash-as-CI-contract |
-| `docs/index.md` | New Guides row for remote verification (after `:22`), `:71-74` skill one-liners, `:82-88` hard gate |
-| `docs/installation-guide.md` | `:79` pre-push install, `:125-129` config sample, `:153-166` post-init settings table |
-| `docs/examples/figma-web-app.md` | `:165-179` the CI example, which must distinguish itself from remote verification |
-| `references/*` | `purlin_commands.md` ("12 skills" count, remote flags), `hard_gates.md:25`, `spec_quality_guide.md` tier table, `audit_criteria.md` Pass D tier criterion, new `remote_verification.md` |
-| `tools/QA/purlin-qa-report.md` | `README.md:168` claims it reports both gauges; the file never names them |
-
-The enforcement-layer model is duplicated in three docs (`lifecycle-guide.md:527-546`,
-`testing-workflow-guide.md:213-219`, `regulated-environments.md:37-47`) and must stay consistent.
-Consider extracting it to one reference the others point at.
-
-### Images
-
-- **`docs/images/dashboard-{summary,categories}.png`** — regenerate with
-  `python3 dev/capture_doc_screenshots.py`, never a manual crop. Already current as of Phase 2.
-- **Five Mermaid diagrams**, sources in `assets/src/*.mmd`, rendered by `bash dev/render-diagrams.sh`.
-  Never hand-edit the SVGs. Needs the CA-bundle and `PUPPETEER_SKIP_DOWNLOAD` exports documented
-  in that script's header.
-  - `lifecycle-big-picture.mmd` — **most inaccurate.** Models `verify → pre-push → Remote repo →
-    CI Gate (optional)`, with CI downstream and optional. Remote verification inverts that: the
-    remote run happens *inside* the test loop. Needs a runner-gated node and a proved-remotely
-    outcome.
-  - `lifecycle-eng-workflow.mmd`, `lifecycle-qa-workflow.mmd` — the `verify --gaps--> items` edge
-    is a purely local loop; the remote loop is a different edge with a CI node in it.
-  - `lifecycle-handoff.mmd` — QA's `verify → git push` is wrong once the test skill pushes.
-  - `lifecycle-pm-workflow.mmd` — least affected.
-- **`dev/screenshots/` — 43 PNGs, 3.1 MB, referenced by zero markdown files.** Playwright proof
-  artifacts. Decide whether they are committed artifacts worth regenerating or build output that
-  should be gitignored.
+The remaining phases of this plan were re-planned on 2026-09-11 with a generic platform model
+replacing the `windows`-only tier, per-platform reporting, `purlin:init --update`, the pre-push
+defects, the trust and GxP fixes, and the docs work. The continuation is
+`dev/plans/platform-generic-remote-verification.md`, which is now the authoritative working plan
+for branch `two-gauges-remote-verification`. Its "TODO before pushing main" section is the
+list that gates the eventual push of `main`.
 
 ---
 
