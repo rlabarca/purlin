@@ -8,6 +8,7 @@ Run with: python3 -m pytest dev/test_e2e_audit_cache_pipeline.py -v
 """
 
 import datetime
+import glob
 import json
 import os
 import shutil
@@ -27,6 +28,8 @@ from purlin_server import (
     _read_audit_cache_by_feature,
     _build_feature_audit,
     _compute_integrity,
+    _compute_design,
+    _read_design_summary,
     _determine_status,
     _scan_specs,
     _read_proofs,
@@ -1855,3 +1858,94 @@ class TestCrossPlatformCachePipeline:
             # Criteria carry non-ASCII glyphs; their presence proves UTF-8 stdout.
             assert any(ord(ch) > 127 for ch in r.stdout), \
                 "criteria output had no non-ASCII character — stdout not UTF-8?"
+
+
+class TestProofDesignGauge:
+    """RULE-39 / RULE-23 — both gauges surface, and a spec-first project is not
+    reported as a neglected one."""
+
+    def setup_method(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def _design_entry(self, level, pid, feature='login'):
+        return {
+            'assessment': level, 'criterion': 'c', 'why': 'w', 'fix': 'f',
+            'feature': feature, 'proof_id': pid, 'rule_id': 'RULE-1',
+            'priority': 'LOW',
+            'cached_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+
+    @pytest.mark.proof("sync_status", "PROOF-69", "RULE-39", tier="e2e")
+    def test_reports_both_gauges_and_distinguishes_untested(self):
+        _make_project(self.tmp_dir, with_git=True)
+
+        # Remove every executed proof so this is a spec-only project.
+        for pf in glob.glob(os.path.join(self.tmp_dir, 'specs', '**', '*.proofs-*.json'),
+                            recursive=True):
+            os.remove(pf)
+
+        out = sync_status(self.tmp_dir)
+        assert 'no tests yet' in out, (
+            "a project with no executed proofs must say so, not 'No audit data' — "
+            f"got:\n{out[:400]}")
+        assert 'No audit data' not in out
+
+        # Grade the descriptions. STRUCTURAL must be excluded from the denominator,
+        # so 1 PROVABLE + 1 UNPROVABLE + 1 STRUCTURAL is 50%, not 33%.
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._design_entry('PROVABLE', 'PROOF-1'),
+            'd2': self._design_entry('UNPROVABLE', 'PROOF-2'),
+            'd3': self._design_entry('STRUCTURAL', 'PROOF-3'),
+        }, static_checks.DESIGN_CACHE)
+
+        summary = _read_design_summary(self.tmp_dir)
+        assert summary['design'] == 50, summary
+        assert summary['gradeable_total'] == 2, \
+            "STRUCTURAL must not count toward the Design denominator"
+        assert summary['structural'] == 1
+
+        out = sync_status(self.tmp_dir)
+        assert 'Proof Design: 50%' in out, f"got:\n{out[:400]}"
+        assert 'no tests yet' in out, "Integrity is still unmeasurable here"
+
+    @pytest.mark.proof("sync_status", "PROOF-69", "RULE-39", tier="e2e")
+    def test_design_score_needs_no_audit_cache(self):
+        """The gauges are independent: Design reports with no audit cache at all."""
+        _make_project(self.tmp_dir, with_git=True)
+        assert not os.path.isfile(
+            os.path.join(self.tmp_dir, '.purlin', 'cache', 'audit_cache.json'))
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._design_entry('PROVABLE', 'PROOF-1'),
+        }, static_checks.DESIGN_CACHE)
+        assert _read_design_summary(self.tmp_dir)['design'] == 100
+        assert _read_audit_summary(self.tmp_dir) is None
+
+    @pytest.mark.proof("report_data", "PROOF-24", "RULE-23", tier="e2e")
+    def test_report_data_carries_design_summary(self):
+        _make_project(self.tmp_dir, with_git=True, with_report=True)
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._design_entry('PROVABLE', 'PROOF-1'),
+            'd2': self._design_entry('LOOSE', 'PROOF-2'),
+        }, static_checks.DESIGN_CACHE)
+
+        sync_status(self.tmp_dir)
+        raw = open(os.path.join(self.tmp_dir, '.purlin', 'report-data.js')).read()
+        data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
+        assert data['design_summary'] is not None, "report data must carry design_summary"
+        assert data['design_summary']['design'] == 50
+        assert data['design_summary']['loose'] == 1
+
+        # Removing the cache reverts the gauge to null rather than a stale number.
+        os.remove(os.path.join(self.tmp_dir, '.purlin', 'cache', 'design_cache.json'))
+        sync_status(self.tmp_dir)
+        raw = open(os.path.join(self.tmp_dir, '.purlin', 'report-data.js')).read()
+        data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
+        assert data['design_summary'] is None
+
+    def test_compute_design_excludes_structural(self):
+        assert _compute_design(3, 1, 0) == (75, 4)
+        assert _compute_design(0, 0, 0) == (None, 0)
+        assert _compute_design(1, 0, 1) == (50, 2)

@@ -386,6 +386,39 @@ def _relative_time(iso_timestamp):
     return f"{days} day{'s' if days != 1 else ''} ago"
 
 
+def _dedup_cache_entries(cache):
+    """Deduplicate cache entries by (feature, proof_id), keeping the latest.
+
+    Shared by the audit-cache and design-cache readers. Previously each reader
+    carried its own copy of this loop, which is how they could drift.
+    """
+    latest = {}
+    if not isinstance(cache, dict):
+        return latest
+    for _key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+        existing = latest.get(dedup_key)
+        if existing is None or entry.get('cached_at', '') > existing.get('cached_at', ''):
+            latest[dedup_key] = entry
+    return latest
+
+
+def _compute_design(provable, loose, unprovable):
+    """Compute the Proof Design percentage from graded-description counts.
+
+    Design = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE) x 100. STRUCTURAL
+    descriptions are excluded from both numerator and denominator, mirroring how
+    EXCLUDED proofs are excluded from Proof Integrity.
+    Returns (rounded percentage, denominator), or (None, 0) if nothing is gradeable.
+    """
+    gradeable = provable + loose + unprovable
+    if gradeable == 0:
+        return None, 0
+    return round(provable / gradeable * 100), gradeable
+
+
 def _compute_integrity(strong, weak, hollow, manual):
     """Compute integrity percentage from assessment counts.
 
@@ -492,7 +525,56 @@ def _read_audit_summary(project_root):
     }
 
 
-def _build_summary_table(summary_rows, audit_summary=None):
+def _read_design_summary(project_root):
+    """Read the design cache and compute the project-wide Proof Design summary.
+
+    Design grades proof DESCRIPTIONS, so this is meaningful with no tests in the
+    project at all — which is the point. Returns None if no design cache exists.
+    """
+    cache_path = os.path.join(project_root, '.purlin', 'cache', 'design_cache.json')
+    if not os.path.isfile(cache_path):
+        return None
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return None
+    if not isinstance(cache, dict) or not cache:
+        return None
+
+    provable = loose = unprovable = structural = 0
+    latest_ts = None
+    for entry in _dedup_cache_entries(cache).values():
+        level = entry.get('assessment', '').upper()
+        if level == 'PROVABLE':
+            provable += 1
+        elif level == 'LOOSE':
+            loose += 1
+        elif level == 'UNPROVABLE':
+            unprovable += 1
+        elif level == 'STRUCTURAL':
+            structural += 1
+        ts = entry.get('cached_at')
+        if ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+    design, gradeable = _compute_design(provable, loose, unprovable)
+    if design is None:
+        return None
+
+    return {
+        'design': design,
+        'provable': provable,
+        'loose': loose,
+        'unprovable': unprovable,
+        'structural': structural,
+        'gradeable_total': gradeable,
+        'last_design_audit': latest_ts,
+        'last_design_audit_relative': _relative_time(latest_ts) if latest_ts else None,
+    }
+
+
+def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
     """Build a coverage summary table with Unicode box-drawing characters."""
     if not summary_rows:
         return []
@@ -536,15 +618,28 @@ def _build_summary_table(summary_rows, audit_summary=None):
     total_features = len(summary_rows)
     summary_line = f"{verified_count}/{total_features} features VERIFIED"
 
+    if design_summary:
+        summary_line += f" | Proof Design: {design_summary['design']}%"
+
     if audit_summary:
         pct = audit_summary['integrity']
         rel = audit_summary.get('last_audit_relative', '')
         if audit_summary.get('stale'):
-            summary_line += f" | Integrity: {pct}% (last purlin:audit: {rel} \u2014 consider re-auditing)"
+            summary_line += f" | Proof Integrity: {pct}% (last purlin:audit: {rel} \u2014 consider re-auditing)"
         else:
-            summary_line += f" | Integrity: {pct}% (last purlin:audit: {rel})"
+            summary_line += f" | Proof Integrity: {pct}% (last purlin:audit: {rel})"
     else:
-        summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
+        # No audit cache. Distinguish "nothing has been tested yet" from "tests
+        # exist but were never audited" — reporting them identically made a
+        # deliberate spec-first project look like a neglected one. summary_rows
+        # carries (name, coverage_str, _, status); UNTESTED everywhere means no
+        # proof has executed at all.
+        all_untested = bool(summary_rows) and all(
+            row[3] == 'UNTESTED' for row in summary_rows)
+        if all_untested:
+            summary_line += " | Proof Integrity: no tests yet \u2014 run purlin:audit for Proof Design"
+        else:
+            summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
 
     lines.append(summary_line)
     lines.append("")  # blank line before detail
@@ -755,18 +850,20 @@ def sync_status(project_root, role=None):
 
             summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
 
-    # Read audit cache for integrity summary
+    # Read both quality gauges. Design needs no tests, so it is meaningful even
+    # when the audit cache is absent.
     audit_summary = _read_audit_summary(project_root)
+    design_summary = _read_design_summary(project_root)
 
     # Build summary table and combine output
-    table_lines = _build_summary_table(summary_rows, audit_summary)
+    table_lines = _build_summary_table(summary_rows, audit_summary, design_summary)
 
     # Report data generation (side effect)
     config = resolve_config(project_root)
     if config.get('report'):
         data_path = _write_report_data(
             project_root, features, all_proofs, config, global_anchors,
-            audit_summary,
+            audit_summary, design_summary=design_summary,
         )
         if data_path:
             html_path = os.path.join(project_root, 'purlin-report.html')
@@ -1283,7 +1380,7 @@ def _check_uncommitted_all(project_root):
 
 
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
-                       audit_summary=None):
+                       audit_summary=None, design_summary=None):
     """Build the structured PURLIN_DATA dict for the dashboard."""
     audit_by_feature = _read_audit_cache_by_feature(project_root)
     # Build per-proof audit lookup: (feature_name, proof_id) -> assessment
@@ -1486,20 +1583,23 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'global': anchors_global,
         },
         'audit_summary': audit_summary,
+        'design_summary': design_summary,
         'drift': None,
         'uncommitted': uncommitted_files,
     }
 
 
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,
-                       audit_summary=None, drift_data=None, git_sha=None):
+                       audit_summary=None, drift_data=None, git_sha=None,
+                       design_summary=None):
     """Write .purlin/report-data.js for the dashboard. Returns the file path or None."""
     purlin_dir = os.path.join(project_root, '.purlin')
     if not os.path.isdir(purlin_dir):
         return None
 
     data = _build_report_data(
-        project_root, features, all_proofs, config, global_anchors, audit_summary
+        project_root, features, all_proofs, config, global_anchors, audit_summary,
+        design_summary=design_summary,
     )
     if drift_data is not None:
         data['drift'] = drift_data

@@ -1,0 +1,14 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "report_data",
+      "id": "PROOF-24",
+      "rule": "RULE-23",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_carries_design_summary",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

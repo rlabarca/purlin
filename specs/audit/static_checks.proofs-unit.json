@@ -684,6 +684,42 @@
       "test_name": "test_bad_invocation_prints_every_usage_line",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-60",
+      "rule": "RULE-35",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_grades_each_design_level",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-60",
+      "rule": "RULE-35",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_absence_assertions_are_not_unprovable",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-61",
+      "rule": "RULE-36",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_audit_scope_derives_the_mode",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-62",
+      "rule": "RULE-37",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_design_cache_is_separate_and_validated",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

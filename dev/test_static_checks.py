@@ -7,6 +7,7 @@ proof-file structural checks (proof_id_collision, proof_rule_orphan).
 """
 
 import ast
+import glob
 import json
 import os
 import re
@@ -25,6 +26,8 @@ from static_checks import (
     check_proof_file,
     check_python,
     check_shell,
+    audit_scope,
+    check_proof_design,
     check_spec_coverage,
     clear_audit_cache,
     compute_proof_hash,
@@ -1768,3 +1771,146 @@ class TestCliSelfDocumentation:
         assert r.returncode == 2, f"expected exit 2 for a bad invocation, got {r.returncode}"
         for line in static_checks._USAGE:
             assert line in r.stderr, f"usage line not printed: {line!r}"
+
+
+_DESIGN_SPEC = '''# Feature: login
+
+> Scope: src/auth.py
+
+## Rules
+
+- RULE-1: Returns 401 with an invalid_credentials error on a wrong password
+- RULE-2: Locks the account after 5 failed attempts
+- RULE-3: No eval() in source
+- RULE-4: Passwords are hashed before storage
+- RULE-5: Returns 401 on a wrong password
+
+## Proof
+
+- PROOF-1 (RULE-1): Verify the login endpoint exists
+- PROOF-2 (RULE-2): Test that account locking works correctly
+- PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches
+- PROOF-4 (RULE-4): POST {"user": "alice", "pass": "secret"} to /register; verify the stored hash is not the literal "secret"
+- PROOF-5 (RULE-5): Call authenticate("alice", "wrong"); verify it returns 401 @e2e
+'''
+
+
+class TestProofDesign:
+    """RULE-35 — grade proof DESCRIPTIONS with no test code present."""
+
+    def _spec(self, root, body=_DESIGN_SPEC):
+        d = os.path.join(root, 'specs', 'auth')
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, 'login.md')
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(body)
+        return path
+
+    @pytest.mark.proof("static_checks", "PROOF-60", "RULE-35")
+    def test_grades_each_design_level(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            spec = self._spec(tmpdir)
+            # No test files and no proof JSON exist anywhere in this project.
+            assert not glob.glob(os.path.join(tmpdir, '**', '*.proofs-*.json'), recursive=True)
+
+            got = {p['proof_id']: p for p in check_proof_design(spec)['proofs']}
+            assert got['PROOF-1']['level'] == 'UNPROVABLE', got['PROOF-1']
+            assert got['PROOF-1']['check'] == 'level1_presence'
+            assert got['PROOF-2']['level'] == 'LOOSE', got['PROOF-2']
+            assert got['PROOF-3']['level'] == 'STRUCTURAL', got['PROOF-3']
+            assert got['PROOF-4']['level'] == 'PROVABLE', got['PROOF-4']
+            assert got['PROOF-5']['level'] == 'UNPROVABLE', got['PROOF-5']
+            assert got['PROOF-5']['check'] == 'e2e_names_internal_call'
+
+            # Every finding must be actionable, not just a label.
+            for pid, p in got.items():
+                assert p['reason'], f"{pid} has no reason"
+
+            # The real CLI returns the same grading.
+            r = subprocess.run(
+                [sys.executable, _STATIC_CHECKS_PY, '--check-proof-design',
+                 '--spec-path', spec],
+                capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            cli = {p['proof_id']: p['level'] for p in json.loads(r.stdout)['proofs']}
+            assert cli == {k: v['level'] for k, v in got.items()}
+
+    @pytest.mark.proof("static_checks", "PROOF-60", "RULE-35")
+    def test_absence_assertions_are_not_unprovable(self):
+        """A FORBIDDEN proof asserts absence. That is a correct structural proof,
+        not a Level 1 defect — flagging it would tell users to rewrite good specs."""
+        body = _DESIGN_SPEC.replace(
+            '- PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches',
+            '- PROOF-3 (RULE-3): Grep src/ for eval(); verify none exist')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            got = {p['proof_id']: p['level']
+                   for p in check_proof_design(self._spec(tmpdir, body))['proofs']}
+            assert got['PROOF-3'] == 'STRUCTURAL', got
+
+    @pytest.mark.proof("static_checks", "PROOF-61", "RULE-36")
+    def test_audit_scope_derives_the_mode(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._spec(tmpdir)
+
+            # Spec only: nothing built, nothing tested.
+            scope = audit_scope(tmpdir)
+            assert scope['recommended_mode'] == 'design', scope['why']
+            row = scope['features'][0]
+            assert row['proofs_executed'] == 0
+            assert row['scope_files'] == 1 and row['scope_files_exist'] == 0, \
+                "a spec naming a file that does not exist means nothing is built yet"
+            assert row['rules'] == 5 and row['proofs_declared'] == 5
+
+            # Code now exists, tests still do not. This is a DIFFERENT state, and
+            # nothing else in the toolchain could previously tell them apart.
+            os.makedirs(os.path.join(tmpdir, 'src'), exist_ok=True)
+            with open(os.path.join(tmpdir, 'src', 'auth.py'), 'w') as f:
+                f.write('def auth(): pass\n')
+            scope = audit_scope(tmpdir)
+            assert scope['features'][0]['scope_files_exist'] == 1
+            assert scope['recommended_mode'] == 'design', \
+                "still no executed proofs, so Integrity remains unmeasurable"
+
+            # A proof has now executed.
+            with open(os.path.join(tmpdir, 'specs', 'auth',
+                                   'login.proofs-unit.json'), 'w') as f:
+                json.dump({'tier': 'unit', 'proofs': [{
+                    'feature': 'login', 'id': 'PROOF-4', 'rule': 'RULE-4',
+                    'test_file': 'tests/test_login.py', 'test_name': 't',
+                    'status': 'pass', 'tier': 'unit'}]}, f)
+            scope = audit_scope(tmpdir)
+            assert scope['recommended_mode'] == 'both', scope['why']
+            assert scope['features'][0]['proofs_executed'] == 1
+            assert scope['features'][0]['test_files_present'] == 1
+
+    @pytest.mark.proof("static_checks", "PROOF-62", "RULE-37")
+    def test_design_cache_is_separate_and_validated(self):
+        entry = {
+            "assessment": "PROVABLE", "criterion": "none", "why": "concrete",
+            "fix": "none", "feature": "login", "proof_id": "PROOF-4",
+            "rule_id": "RULE-4", "priority": "LOW",
+            "cached_at": "2026-01-01T00:00:00+00:00",
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            write_audit_cache(tmpdir, {"d1": entry}, static_checks.DESIGN_CACHE)
+            cache_dir = os.path.join(tmpdir, '.purlin', 'cache')
+            assert os.path.isfile(os.path.join(cache_dir, 'design_cache.json'))
+            assert not os.path.isfile(os.path.join(cache_dir, 'audit_cache.json')), \
+                "design results must not be written into the audit cache"
+            assert os.path.isfile(os.path.join(cache_dir, 'design_cache.json.lock')), \
+                "the design cache must take the same exclusive lock"
+            assert read_audit_cache(tmpdir, static_checks.DESIGN_CACHE)['d1']['assessment'] \
+                == 'PROVABLE'
+
+            # The RULE-33 validator guards this cache too.
+            bad = dict(entry)
+            del bad['proof_id']
+            with pytest.raises(ValueError):
+                write_audit_cache(tmpdir, {"d2": bad}, static_checks.DESIGN_CACHE)
+
+        # The design hash ignores test code but tracks the description.
+        h1 = static_checks.compute_design_hash('RULE text', 'proof description')
+        h2 = static_checks.compute_design_hash('RULE text', 'proof description')
+        h3 = static_checks.compute_design_hash('RULE text', 'a different description')
+        assert h1 == h2 and h1 != h3
+        assert len(h1) == 16

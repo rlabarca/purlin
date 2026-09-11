@@ -24,6 +24,7 @@ Output: JSON to stdout.
 
 import ast
 import datetime
+import glob
 import hashlib
 import json
 import os
@@ -922,6 +923,261 @@ def _read_proof_descriptions(spec_path):
     return results
 
 
+# ---------------------------------------------------------------------------
+# Pass D — Proof Design (deterministic half)
+#
+# Grades a proof DESCRIPTION against its rule. Reads no test code, so it runs on
+# a spec-only project. The detectors are the authoring rules from
+# references/spec_quality_guide.md made executable ("Recognizing Level 1 proofs",
+# "Writing Proof Descriptions", "Edge Case Proof Specificity", "E2E proof
+# descriptions").
+#
+# Deliberately conservative. A false UNPROVABLE tells someone to rewrite a proof
+# that was already correct, which is worse than a miss, so anything needing real
+# interpretation is left to the LLM half (Pass D2) — the same division of labour
+# Pass 1 and Pass 2 already use. In particular, "this rule deserved a behavioural
+# proof rather than a grep" requires understanding what the rule means, so a
+# presence-only description is graded STRUCTURAL here and D2 decides whether the
+# rule warranted more.
+# ---------------------------------------------------------------------------
+
+# The description's action is reading an artifact that exists independently of the
+# test: no code ran to produce what is asserted on. That is the definition of a
+# structural proof in references/audit_criteria.md.
+_D_PRESENCE_ONLY_RE = re.compile(
+    r'^\s*(?:grep|read|scan|glob|parse|extract|count|inspect|open)\b',
+    re.IGNORECASE)
+
+# An act step: code runs before the assertion, so the proof is behavioural.
+_D_ACT_RE = re.compile(
+    r'\b(?:call|invoke|run|write|create|POST|GET|PUT|DELETE|load|render|launch|'
+    r'navigate|click|type|submit|execute|spawn|start|seed|patch|set|configure|'
+    r'initialize|init|mock|simulate|trigger|send|drive)\b',
+    re.IGNORECASE)
+
+# "verify X exists" / "check Y is not null" / "assert Z is present"
+_D_LEVEL1_RE = re.compile(
+    r'\b(?:verify|check|assert|ensure)\b[^.;]{0,40}?'
+    r'\b(?:exists?|is\s+not\s+(?:null|None)|is\s+present|are\s+present|'
+    r'is\s+defined|is\s+truthy)\b',
+    re.IGNORECASE)
+
+# An assertion of ABSENCE is a FORBIDDEN-pattern proof, not a Level 1 proof.
+_D_ABSENCE_RE = re.compile(
+    r'\b(?:none\s+exist|no\s+matches|zero\s+matches|does\s+not\s+exist|'
+    r'not\s+present|no\s+longer|absent|zero\b|removed|purged)\b',
+    re.IGNORECASE)
+
+_D_VAGUE_RE = re.compile(
+    r'\b(?:works?|working|correctly|properly|as\s+expected|appropriately|'
+    r'successfully|handles?\s+(?:it|them|errors?))\b',
+    re.IGNORECASE)
+
+# Evidence that a concrete expected value is named.
+_D_CONCRETE_RE = re.compile(
+    r'(?:\d|"[^"]+"|\'[^\']+\'|`[^`]+`|\bexactly\b|\bzero\b|\bempty\b|'
+    r'\bnone\b|\btrue\b|\bfalse\b|[A-Z]{2,}(?:_[A-Z0-9]+)+)',
+    re.IGNORECASE)
+
+# An @e2e description must read as something a person does, not a function call.
+_D_INTERNAL_CALL_RE = re.compile(
+    r'\b(?:call|invoke)\b[^.;]{0,40}?\w+\(', re.IGNORECASE)
+
+
+def _design_finding(proof_id, rule_id, level, check, reason):
+    return {
+        'proof_id': proof_id,
+        'rule_id': rule_id,
+        'level': level,
+        'check': check,
+        'reason': reason,
+    }
+
+
+def _read_proof_tiers(spec_path):
+    """Map proof_id -> tier tag (default 'unit') from a spec's ## Proof section."""
+    tiers = {}
+    if not spec_path or not os.path.isfile(spec_path):
+        return tiers
+    with open(spec_path, encoding='utf-8') as f:
+        for m in _PROOF_DESC_RE.finditer(f.read()):
+            tag = re.search(r'@(\w+)\s*$', m.group(3).strip())
+            tiers[m.group(1)] = tag.group(1) if tag else 'unit'
+    return tiers
+
+
+def check_proof_design(spec_path):
+    """Grade each proof description as PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL.
+
+    Returns {'spec': path, 'proofs': [...]}. Requires only the spec file: no test
+    code and no proof JSON, so it runs before anything is built. See
+    references/audit_criteria.md, Pass D.
+    """
+    proofs = _read_proof_descriptions(spec_path)
+    tiers = _read_proof_tiers(spec_path)
+
+    results = []
+    for entry in proofs:
+        pid = entry['proof_id']
+        first_rule = entry['rule_ids'].split(',')[0].strip()
+        desc = entry['description']
+        tier = tiers.get(pid, 'unit')
+
+        has_act = bool(_D_ACT_RE.search(desc))
+        concrete = bool(_D_CONCRETE_RE.search(desc))
+
+        # STRUCTURAL first: nothing ran to produce what is being asserted on.
+        if _D_PRESENCE_ONLY_RE.match(desc) and not has_act:
+            results.append(_design_finding(
+                pid, first_rule, 'STRUCTURAL', 'structural_presence_check',
+                'Reads an artifact that exists independently of the test, so no code ran '
+                'to produce what is asserted on. Excluded from the Design score rather '
+                'than counted against it.'))
+            continue
+
+        # UNPROVABLE: an @e2e proof that reads as a function call, not a user action.
+        if tier == 'e2e' and _D_INTERNAL_CALL_RE.search(desc):
+            results.append(_design_finding(
+                pid, first_rule, 'UNPROVABLE', 'e2e_names_internal_call',
+                'An @e2e description must read as an observable flow (arrange -> act -> '
+                'observe). "Call <function>(...)" is not something a person does — drive '
+                'the real interface or retag the proof to the tier it actually exercises.'))
+            continue
+
+        # UNPROVABLE: existence is the whole assertion. Absence assertions are
+        # FORBIDDEN-pattern proofs and are excluded, as are descriptions that name
+        # a concrete expected value alongside the presence check.
+        if (_D_LEVEL1_RE.search(desc)
+                and not _D_ABSENCE_RE.search(desc)
+                and not concrete):
+            results.append(_design_finding(
+                pid, first_rule, 'UNPROVABLE', 'level1_presence',
+                'Existence is the entire assertion, so a faithful test proves nothing '
+                'about behaviour. Name the input and the expected output instead.'))
+            continue
+
+        # LOOSE
+        if _D_VAGUE_RE.search(desc) and not concrete:
+            results.append(_design_finding(
+                pid, first_rule, 'LOOSE', 'vague_verb_no_expected_value',
+                'Vague verb with no expected value. A description should be '
+                'copy-pasteable into a test without interpretation.'))
+            continue
+        if not concrete:
+            results.append(_design_finding(
+                pid, first_rule, 'LOOSE', 'no_expected_value',
+                'No literal, number, quoted string or named constant, so almost any '
+                'assertion would satisfy this description.'))
+            continue
+
+        results.append(_design_finding(
+            pid, first_rule, 'PROVABLE', 'none',
+            'Names an observable outcome with a concrete expected value.'))
+
+    return {'spec': spec_path, 'proofs': results}
+
+
+def audit_scope(project_root):
+    """Report what exists, so purlin:audit can DERIVE its mode instead of guessing.
+
+    For each feature: how many rules and declared proofs the spec has, how many
+    proofs have actually executed (from specs/**/<feature>.proofs-*.json), whether
+    the files in `> Scope:` exist on disk, and how many distinct test files back
+    the executed proofs.
+
+    `scope_files_exist` is the field that distinguishes "spec written, nothing
+    built" from "code exists, tests missing" — a distinction nothing else in the
+    toolchain could make, and the two states need different next steps.
+
+    recommended_mode:
+      design    — no proof has executed anywhere; only the spec side is measurable
+      both      — every declared proof has executed
+      both      — partial: Integrity is reported for the features that have proofs
+    """
+    spec_dir = os.path.join(project_root, 'specs')
+    features = {}
+
+    for spec_path in sorted(glob.glob(os.path.join(spec_dir, '**', '*.md'), recursive=True)):
+        feature = os.path.splitext(os.path.basename(spec_path))[0]
+        with open(spec_path, encoding='utf-8') as f:
+            content = f.read()
+        rules = _RULE_LINE_RE.findall(content)
+        declared = _read_proof_descriptions(spec_path)
+
+        scope_files, scope_present = [], 0
+        m = re.search(r'^>\s*Scope:\s*(.+)$', content, re.MULTILINE)
+        if m:
+            for raw in m.group(1).split(','):
+                rel = raw.strip()
+                if not rel:
+                    continue
+                scope_files.append(rel)
+                if glob.glob(os.path.join(project_root, rel), recursive=True):
+                    scope_present += 1
+
+        features[feature] = {
+            'feature': feature,
+            'spec': os.path.relpath(spec_path, project_root).replace(os.sep, '/'),
+            'rules': len(rules),
+            'proofs_declared': len(declared),
+            'proofs_executed': 0,
+            'test_files_present': 0,
+            'scope_files': len(scope_files),
+            'scope_files_exist': scope_present,
+        }
+
+    executed = {}
+    tests = {}
+    for pf in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
+        try:
+            with open(pf, encoding='utf-8') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+        for entry in data.get('proofs', []):
+            feat = entry.get('feature')
+            if not feat:
+                continue
+            executed.setdefault(feat, set()).add(entry.get('id'))
+            tf = entry.get('test_file')
+            if tf:
+                tests.setdefault(feat, set()).add(tf)
+
+    for feat, ids in executed.items():
+        if feat in features:
+            features[feat]['proofs_executed'] = len(ids)
+            features[feat]['test_files_present'] = len(tests.get(feat, ()))
+
+    rows = [features[k] for k in sorted(features)]
+    total_declared = sum(r['proofs_declared'] for r in rows)
+    total_executed = sum(r['proofs_executed'] for r in rows)
+
+    if total_executed == 0:
+        mode, why = 'design', (
+            'No proof has executed anywhere, so there is no test code to grade. '
+            'Only Proof Design is measurable.')
+    elif total_executed >= total_declared and total_declared > 0:
+        mode, why = 'both', (
+            'Every declared proof has executed. Design is cheap and bounds what '
+            'Integrity can reach, so run both.')
+    else:
+        mode, why = 'both', (
+            f'{total_executed} of {total_declared} declared proofs have executed. '
+            'Run both, scoping Integrity to the features that have executed proofs.')
+
+    return {
+        'features': rows,
+        'totals': {
+            'features': len(rows),
+            'rules': sum(r['rules'] for r in rows),
+            'proofs_declared': total_declared,
+            'proofs_executed': total_executed,
+        },
+        'recommended_mode': mode,
+        'why': why,
+    }
+
+
 def check_spec_coverage(spec_path):
     """Return rule and proof counts for a spec.
 
@@ -1010,9 +1266,28 @@ def compute_proof_hash(spec_rule_text, proof_description, test_code):
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
-def read_audit_cache(project_root):
-    """Read .purlin/cache/audit_cache.json. Returns dict of proof_hash → assessment."""
-    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
+AUDIT_CACHE = 'audit_cache.json'
+DESIGN_CACHE = 'design_cache.json'
+
+
+def compute_design_hash(spec_rule_text, proof_description):
+    """Hash the inputs that determine a Proof Design result.
+
+    Deliberately excludes test code: a design grade is about the description, so
+    it must survive test edits. Kept in a separate cache file from the audit
+    cache so the two keyspaces cannot collide.
+    """
+    payload = f"{spec_rule_text}\x00{proof_description}"
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def read_audit_cache(project_root, cache_name=AUDIT_CACHE):
+    """Read .purlin/cache/<cache_name>. Returns dict of proof_hash → assessment.
+
+    Both gauges use the same entry shape and the same locking, so one pair of
+    read/write functions serves the audit cache and the design cache.
+    """
+    cache_path = os.path.join(project_root, '.purlin', 'cache', cache_name)
     if os.path.isfile(cache_path):
         try:
             with open(cache_path, encoding='utf-8') as f:
@@ -1073,11 +1348,15 @@ _USAGE = (
     "<test_file> <feature_name> [--spec-path <path>]",
     "--check-proof-file --proof-path <path> [--spec-path <path>]",
     "--check-spec-coverage --spec-path <path>",
+    "--check-proof-design --spec-path <path>",
+    "--audit-scope [--project-root <path>]",
     "--compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>",
     "--resolve-source <test_name> [--project-root <path>] [--ext .cs]",
     "--load-criteria [--project-root <path>] [--extra <path>]",
     "--read-cache [--project-root <path>]",
     "--write-cache [--project-root <path>]      (JSON object of entries on stdin)",
+    "--read-design-cache [--project-root <path>]",
+    "--write-design-cache [--project-root <path>]  (JSON object of entries on stdin)",
     "--clear-cache [--project-root <path>]",
     "--prune-cache --live-keys-file <path> [--project-root <path>]",
 )
@@ -1111,7 +1390,7 @@ def _validate_cache_entries(cache):
         )
 
 
-def write_audit_cache(project_root, cache):
+def write_audit_cache(project_root, cache, cache_name=AUDIT_CACHE):
     """Merge new entries into audit cache atomically, pruning stale duplicates.
 
     Reads the existing cache from disk first, merges the new entries on top,
@@ -1134,7 +1413,7 @@ def write_audit_cache(project_root, cache):
 
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
-    cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    cache_path = os.path.join(cache_dir, cache_name)
     lock_path = cache_path + '.lock'
 
     with open(lock_path, 'w', encoding='utf-8') as lock_file:
@@ -1143,7 +1422,7 @@ def write_audit_cache(project_root, cache):
             now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
             # Read existing cache from disk
-            on_disk = read_audit_cache(project_root)
+            on_disk = read_audit_cache(project_root, cache_name)
 
             # Dedup in two phases: on-disk first, then new entries override.
             # This ensures new entries always win over on-disk for same (feature, proof_id),
@@ -1426,6 +1705,37 @@ def main():
         print(json.dumps({'status': 'merged', 'entries': len(entries)}))
         sys.exit(0)
 
+    # --read-design-cache / --write-design-cache: the Proof Design sibling of the
+    # audit cache. Same entry shape, same lock, separate file.
+    if '--read-design-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        print(json.dumps(read_audit_cache(project_root, DESIGN_CACHE), indent=2))
+        sys.exit(0)
+
+    if '--write-design-cache' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        raw = sys.stdin.read()
+        try:
+            entries = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            print(json.dumps({'error': f'--write-design-cache expects a JSON object on stdin: {exc}'}))
+            sys.exit(2)
+        try:
+            write_audit_cache(project_root, entries, DESIGN_CACHE)
+        except ValueError as exc:
+            print(json.dumps({'error': str(exc)}))
+            sys.exit(2)
+        print(json.dumps({'status': 'merged', 'entries': len(entries)}))
+        sys.exit(0)
+
     # --clear-cache mode: atomically replace cache with empty dict
     if '--clear-cache' in sys.argv:
         project_root = os.getcwd()
@@ -1456,6 +1766,29 @@ def main():
             live_keys = set(line.strip() for line in f if line.strip())
         result = prune_audit_cache(project_root, live_keys)
         print(json.dumps(result))
+        sys.exit(0)
+
+    # --check-proof-design mode: grade proof descriptions, no test code needed
+    if '--check-proof-design' in sys.argv:
+        spec_path = None
+        if '--spec-path' in sys.argv:
+            idx = sys.argv.index('--spec-path')
+            if idx + 1 < len(sys.argv):
+                spec_path = sys.argv[idx + 1]
+        if not spec_path or not os.path.isfile(spec_path):
+            print(json.dumps({'error': '--check-proof-design requires --spec-path <path>'}))
+            sys.exit(2)
+        print(json.dumps(check_proof_design(spec_path), indent=2))
+        sys.exit(0)
+
+    # --audit-scope mode: report observable state so the audit can derive its mode
+    if '--audit-scope' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        print(json.dumps(audit_scope(project_root), indent=2))
         sys.exit(0)
 
     # --check-proof-file mode: run proof-file structural checks (language-agnostic)
