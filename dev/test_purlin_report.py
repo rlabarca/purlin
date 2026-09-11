@@ -2925,6 +2925,52 @@ class TestGaugeCellsAndCoverage:
             "full measurement coverage must colour the sub-label green: "
             f"classes were {sub_cls}")
 
+    @pytest.mark.proof("purlin_report", "PROOF-41", "RULE-39", tier="e2e")
+    def test_awaiting_runner_block_explains_the_reduced_coverage(self, page, dashboard):
+        """RULE-39: a row that silently dropped a rule must say why.
+
+        The coverage fraction already excludes a rule whose only proof is
+        runner-gated, so without this block the row reads a clean N/N and never
+        mentions that a platform the project claims to support is unproven.
+        """
+        data = make_data()
+        feats = data["features"]
+        assert len(feats) >= 2, "need two features to contrast"
+        feats[0]["awaiting_runner"] = [{"id": "PROOF-2", "tier": "windows"}]
+        waiting_name, waiting_status = feats[0]["name"], feats[0]["status"]
+        feats[1]["awaiting_runner"] = []
+        clean_name = feats[1]["name"]
+        load_dashboard(page, dashboard, data=data)
+
+        def detail_text(name):
+            page.click(f"tr.fr[data-name='{name}']")
+            page.wait_for_timeout(200)
+            return page.evaluate(
+                """(n) => {
+                    const row = document.querySelector(`tr.fr[data-name="${n}"]`);
+                    const detail = row ? row.nextElementSibling : null;
+                    return (detail && detail.classList.contains('dr'))
+                        ? detail.textContent : '';
+                }""", name)
+
+        waiting = detail_text(waiting_name)
+        assert "Awaiting Runner" in waiting, (
+            f"no Awaiting Runner block for a feature that has one:\n{waiting}")
+        assert "@windows" in waiting, f"the block must name the tier:\n{waiting}"
+        assert "PROOF-2" in waiting, f"the block must name the proof id:\n{waiting}"
+
+        clean = detail_text(clean_name)
+        assert "Awaiting Runner" not in clean, (
+            f"an empty list must render no block at all:\n{clean}")
+
+        # Warn, never block: the badge is whatever the status alone dictates.
+        badge = page.inner_text(
+            f"tr.fr[data-name='{waiting_name}'] .sb").strip().upper()
+        assert badge == waiting_status.upper(), (
+            f"awaiting a runner must not change the status badge: status is "
+            f"{waiting_status}, badge reads {badge}")
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof41_awaiting_runner.png"))
+
     @pytest.mark.proof("purlin_report", "PROOF-40", "RULE-38", tier="e2e")
     def test_summary_strip_rows_are_exactly_filled(self, page, dashboard):
         """RULE-38: no empty cells in the summary strip above 900px.

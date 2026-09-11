@@ -1426,6 +1426,67 @@ class TestSkillTest:
 
 class TestSkillVerify:
 
+    @pytest.mark.proof("skill_verify", "PROOF-9", "RULE-9", tier="integration")
+    def test_platform_partial_receipt_records_what_it_could_not_verify(self):
+        """RULE-9: an absent runner must not make a receipt unobtainable, and a
+        receipt issued without one must not claim to be verified everywhere."""
+        root = os.path.join(os.path.dirname(__file__), '..')
+        issuer = os.path.join(root, 'dev', 'issue_receipts.py')
+        assert os.path.isfile(issuer), "receipt issuer missing"
+
+        tmp = tempfile.mkdtemp()
+        try:
+            spec_dir = os.path.join(tmp, 'specs', 'audit')
+            os.makedirs(spec_dir)
+            os.makedirs(os.path.join(tmp, '.purlin'))
+            with open(os.path.join(spec_dir, 'locking.md'), 'w') as f:
+                f.write('# Feature: locking\n\n## What it does\nLocks.\n\n'
+                        '## Rules\n- RULE-1: POSIX\n- RULE-2: Windows\n\n'
+                        '## Proof\n'
+                        '- PROOF-1 (RULE-1): fcntl locks @unit\n'
+                        '- PROOF-2 (RULE-2): msvcrt locks on a real windows runner @windows\n')
+            with open(os.path.join(spec_dir, 'plain.md'), 'w') as f:
+                f.write('# Feature: plain\n\n## What it does\nP.\n\n'
+                        '## Rules\n- RULE-1: A\n\n'
+                        '## Proof\n- PROOF-1 (RULE-1): a @unit\n')
+            for feat in ('locking', 'plain'):
+                with open(os.path.join(spec_dir, f'{feat}.proofs-unit.json'), 'w') as f:
+                    json.dump({"tier": "unit", "proofs": [
+                        {"feature": feat, "id": "PROOF-1", "rule": "RULE-1",
+                         "test_file": "dev/t.py", "test_name": "t",
+                         "status": "pass", "tier": "unit"}]}, f)
+
+            sys.path.insert(0, os.path.join(root, 'scripts', 'mcp'))
+            import purlin_server as ps
+            features = ps._scan_specs(tmp)
+            all_proofs = ps._read_proofs(tmp)
+
+            awaiting = ps._awaiting_runner('locking', features['locking'], all_proofs)
+            assert awaiting == [('PROOF-2', 'windows')], awaiting
+            assert ps._awaiting_runner('plain', features['plain'], all_proofs) == []
+
+            # The issuer writes exactly what RULE-9 requires.
+            src = open(issuer).read()
+            assert "receipt['awaiting_runner']" in src, \
+                "the issuer must record the gap on the receipt"
+            assert 'if awaiting:' in src, \
+                "the key must be omitted when nothing is awaiting"
+
+            # And the feature still qualifies: its coverage excludes the rule
+            # whose only proof is runner-gated, so it is PASSING, not PARTIAL.
+            rule_entries, _ = ps._build_coverage_rules(
+                'locking', features['locking'], features, {})
+            active, aw, gated = ps._active_rule_entries(
+                'locking', features['locking'], rule_entries, all_proofs)
+            assert len(active) == 1 and gated == 1, (active, gated)
+            proof_by_rule = ps._build_proof_lookup('locking', rule_entries, all_proofs)
+            proved = sum(1 for k, _, _ in active
+                         if proof_by_rule.get(k, {}).get('status') == 'pass')
+            assert proved == len(active), \
+                "an absent runner must leave the feature receipt-eligible"
+        finally:
+            shutil.rmtree(tmp)
+
     @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
         content = _read('verify')

@@ -115,6 +115,18 @@ skipped elsewhere) is never touched by a host run that skips those tests: a run 
 the tier files it actually collected proofs for. So a CI-committed `<feature>.proofs-windows.json`
 survives subsequent local runs and is read by `sync_status`/`purlin:verify` like any other tier.
 
+### A skipped test writes nothing
+
+`status` records execution, never availability. A test that could not run on this host emits no
+entry at all: `"fail"` means it ran and its assertion failed. Writing `"fail"` for a skipped test
+is forbidden, because nothing downstream can then tell a broken build from a missing tool. Under
+the merge key above, emitting nothing is safe: whatever a capable host last proved for those ids
+stays committed and untouched, so the skip neither falsifies nor destroys it.
+
+A proof the spec declares at a runner-gated tier with no entry in that tier's file is reported as
+`AWAITING RUNNER` rather than `NO PROOF`. It does not count against coverage and does not block a
+receipt; a receipt issued while one is outstanding records it as platform-partial.
+
 ## Proof Markers by Framework
 
 ### pytest

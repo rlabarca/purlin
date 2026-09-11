@@ -877,6 +877,120 @@ class TestSyncStatus:
             'Absent .mcp.json must not trigger the advisory'
 
 
+class TestRunnerGatedProofs:
+    """sync_status RULE-47/48: a proof waiting for a runner is not a missing proof.
+
+    A @windows proof that had never run reported nothing at all. Its rule read
+    PASS off a local proof, so every surface was silent about a platform the
+    project claims to support.
+    """
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'audit')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    SPEC = (
+        '# Feature: locking\n\n'
+        '## What it does\nFile locking.\n\n'
+        '## Rules\n'
+        '- RULE-1: Locks on POSIX\n'
+        '- RULE-2: Locks on Windows\n\n'
+        '## Proof\n'
+        '- PROOF-1 (RULE-1): fcntl path locks @unit\n'
+        '- PROOF-2 (RULE-2): msvcrt path locks on a real windows runner @windows\n'
+    )
+
+    def _seed(self):
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write(self.SPEC)
+        self._write_proofs('unit', [
+            {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "dev/test_locking.py", "test_name": "test_fcntl",
+             "status": "pass", "tier": "unit"},
+        ])
+
+    def _write_proofs(self, tier, proofs):
+        with open(os.path.join(self.spec_dir, f'locking.proofs-{tier}.json'), 'w') as f:
+            json.dump({"tier": tier, "proofs": proofs}, f)
+
+    @pytest.mark.proof("sync_status", "PROOF-79", "RULE-47", tier="integration")
+    def test_awaiting_runner_is_distinct_from_no_proof_and_does_not_block(self):
+        self._seed()
+        out = purlin_server.sync_status(self.project_root)
+
+        assert 'AWAITING RUNNER' in out, out
+        assert 'PROOF-2' in out, "the awaiting line must name the proof id"
+        assert '@windows' in out, "the awaiting line must name the tier"
+        assert 'NO PROOF' not in out, (
+            "a runner-gated proof that has not run is waiting, not missing; "
+            f"reporting NO PROOF sends someone to write a test that exists:\n{out}"
+        )
+        # RULE-2's only declared proof is runner-gated, so it leaves the
+        # denominator: 1 of 1, and the feature is not dragged to PARTIAL.
+        assert '1/1 rules proved' in out, (
+            f"the windows-only rule must leave the coverage denominator:\n{out}")
+        assert 'locking: PASSING' in out or 'locking: VERIFIED' in out, (
+            f"an absent runner must not turn a covered feature PARTIAL:\n{out}")
+        assert 'PARTIAL' not in out and 'FAILING' not in out, out
+
+        # Once the runner reports, the signal clears and the rule rejoins.
+        self._write_proofs('windows', [
+            {"feature": "locking", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "dev/test_windows.py", "test_name": "test_msvcrt",
+             "status": "pass", "tier": "windows"},
+        ])
+        out2 = purlin_server.sync_status(self.project_root)
+        assert 'AWAITING RUNNER' not in out2, out2
+        assert '2/2 rules proved' in out2, (
+            f"the rule must rejoin the denominator once proved:\n{out2}")
+
+    @pytest.mark.proof("sync_status", "PROOF-80", "RULE-48", tier="integration")
+    def test_runner_provenance_comes_from_the_commit_not_the_proof_file(self):
+        """Proof entries carry no timestamp, which is what keeps a CI
+        commit-back idempotent. So 'last proved remotely' is read from git."""
+        self._seed()
+        self._write_proofs('windows', [
+            {"feature": "locking", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "dev/test_windows.py", "test_name": "test_msvcrt",
+             "status": "pass", "tier": "windows"},
+        ])
+        env = dict(os.environ,
+                   GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@e',
+                   GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@e')
+        for args in (['init', '-q'], ['add', '-A']):
+            subprocess.run(['git'] + args, cwd=self.project_root,
+                           capture_output=True, env=env)
+        subprocess.run(
+            ['git', 'commit', '-q', '-m',
+             'test(locking): windows proofs\n\nPurlin-Runner: github-actions/windows-latest'],
+            cwd=self.project_root, capture_output=True, env=env)
+
+        out = purlin_server.sync_status(self.project_root)
+        assert 'proved remotely' in out, f"no provenance line:\n{out}"
+        assert 'github-actions/windows-latest' in out, (
+            f"the runner must come from the commit trailer:\n{out}")
+        # No timestamp field was added to the proof entries to achieve it.
+        with open(os.path.join(self.spec_dir, 'locking.proofs-windows.json')) as f:
+            entry = json.load(f)['proofs'][0]
+        assert set(entry) == {'feature', 'id', 'rule', 'test_file', 'test_name',
+                              'status', 'tier'}, (
+            f"provenance must not add a field to the proof entry, got {sorted(entry)}")
+
+        # A tier file committed with no trailer still reports, runner unrecorded.
+        subprocess.run(['git', 'commit', '-q', '--allow-empty', '--amend', '-m',
+                        'test(locking): windows proofs'],
+                       cwd=self.project_root, capture_output=True, env=env)
+        out2 = purlin_server.sync_status(self.project_root)
+        assert 'proved remotely' in out2, (
+            f"a missing trailer must not drop the line:\n{out2}")
+        assert 'runner not recorded' in out2, out2
+
+
 class TestIntegrityFormula:
     """sync_status RULE-33: integrity formula consistency."""
 

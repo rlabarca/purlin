@@ -75,6 +75,23 @@ For each feature with PASSING status:
 }
 ```
 
+#### Platform-partial receipts
+
+A feature declaring a proof at a runner-gated tier (`@windows`) that has no result
+there still earns a receipt: an absent runner is not a failure, and blocking on one
+would make a receipt unobtainable on every machine but the runner. The receipt
+records the gap instead, so it never claims more than was verified:
+
+```json
+  "awaiting_runner": [{"id": "PROOF-53", "tier": "windows"}]
+```
+
+The key is omitted when nothing is awaiting, so an ordinary receipt is unchanged.
+A receipt carrying it is a verified-here claim, not a verified-everywhere one.
+`sync_status` reports the same proofs as `AWAITING RUNNER`, and re-running verify
+after CI commits the results clears the list. See `specs/skills/skill_verify.md`
+RULE-9 and `specs/mcp/sync_status.md` RULE-47.
+
 ### Step 4 — Report
 
 ```

@@ -9,7 +9,7 @@
 - RULE-1: Proof files are named `<feature>.proofs-<tier>.json` and live in the same directory as their spec
 - RULE-2: The JSON schema has a top-level `tier` string and a `proofs` array. Each proof entry contains: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`
 - RULE-3: `status` is either `"pass"` or `"fail"` — no other values
-- RULE-4: `tier` values are: `"unit"`, `"integration"`, `"e2e"`, and `"windows"` (a platform-gated tier proven only on a Windows runner) — no other automated tiers
+- RULE-4: `tier` values are: `"unit"`, `"integration"`, `"e2e"`, and `"windows"` — no other automated tiers. `windows` is the only **runner-gated** tier: one that cannot execute on an arbitrary developer machine and is proven only on a specific runner. A proof declaring a runner-gated tier with no result there reports `AWAITING RUNNER` rather than `NO PROOF` (`sync_status` RULE-47). Adding a runner-gated tier means adding its name in three places: this rule, the `_RUNNER_GATED_TIERS` set in `scripts/mcp/purlin_server.py`, and the check that enforces the closed set in `dev/test_schema_proof_format.py`
 - RULE-5: Proof plugins merge on the key `(feature, tier, test_file)`: load the existing tier file, drop the current feature's entries whose `test_file` this run executed or whose `test_file` no longer exists, append the new entries, write the merged result
 - RULE-6: Proof files are committed to git — they are project records, not ephemeral build artifacts
 - RULE-7: Manual proofs are stamped inline in the spec's `## Proof` section as `@manual(<email>, <date>, <commit_sha>)`, not in proof JSON files

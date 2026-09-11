@@ -40,6 +40,7 @@ bounded case that survives.
 - RULE-10: When a test is removed from a test file and that file is re-run, the old proof entry is purged and not carried over from the previous proof file
 - RULE-11: Orphan reaping: when writing a tier file, the current feature's entries whose `test_file` no longer resolves to a file in the working tree are dropped, not preserved. A renamed or deleted test file's entries are therefore reaped on the next run of that `(feature, tier)`
 - RULE-12: A test file's entries are reaped only by a run that executes that `(feature, tier)`. Removing a proof marker from a test file that the run did not execute leaves that entry in place until that file runs again
+- RULE-13: `status` records execution, never availability. A test that did not run on this host emits no proof entry at all: `"fail"` means the test ran and its assertion failed, and `"pass"` means it ran and passed. Writing `"fail"` for a skipped test is forbidden, because a reader and every gate downstream cannot tell a broken build from a missing tool. Emitting nothing is safe under the RULE-4 merge key: whatever a capable host last proved for those ids stays committed and untouched, so the skip neither falsifies nor destroys it
 
 ## Proof
 
@@ -59,3 +60,4 @@ bounded case that survives.
 - PROOF-14 (RULE-4): Run the real pytest plugin for one feature from test file A, then from test file B, both at tier `unit`; verify the merged file holds both entries. Repeat with the order reversed; verify the merged file again holds both @integration
 - PROOF-15 (RULE-11): Run the real pytest plugin for one feature from test files A and B, delete A, then run the same feature from test file C; verify A's entry is absent from the merged file while B's entry, whose file still exists and was not re-run, is still present @integration
 - PROOF-16 (RULE-12): Run the real pytest plugin for one feature from test files A and B, remove the proof marker from A, then re-run B only; verify A's entry is still present because A was not executed @integration
+- PROOF-17 (RULE-13): Run a suite whose prerequisite is absent so it takes its skip path; verify it writes no proof file and leaves an existing one byte-identical, and that its output names the proof ids it did not execute. Scan every proof-emitting test script in the repo for a call that writes `fail` from inside a skip or unavailable-prerequisite branch; verify there are none @integration

@@ -51,25 +51,35 @@ def main():
 
         rules = {k: True for k, _, _ in active}
         vhash = ps._compute_vhash(rules, proofs)
+        receipt = {
+            'feature': name,
+            'vhash': vhash,
+            'commit': commit,
+            'timestamp': now,
+            'rules': sorted(rules.keys()),
+            'proofs': sorted(
+                ({'id': p['id'], 'rule': p['rule'], 'status': p['status']}
+                 for p in proofs),
+                key=lambda p: (p['id'], p['rule']),
+            ),
+        }
+        # skill_verify RULE-9: a platform-partial receipt says so. The key is
+        # omitted entirely when nothing is awaiting, so an ordinary receipt is
+        # byte-identical to one issued before this existed.
+        awaiting = ps._awaiting_runner(name, info, all_proofs)
+        if awaiting:
+            receipt['awaiting_runner'] = [
+                {'id': pid, 'tier': tier} for pid, tier in awaiting
+            ]
         path = os.path.join(os.path.dirname(info['path']), f'{name}.receipt.json')
         with open(path, 'w') as f:
-            json.dump({
-                'feature': name,
-                'vhash': vhash,
-                'commit': commit,
-                'timestamp': now,
-                'rules': sorted(rules.keys()),
-                'proofs': sorted(
-                    ({'id': p['id'], 'rule': p['rule'], 'status': p['status']}
-                     for p in proofs),
-                    key=lambda p: (p['id'], p['rule']),
-                ),
-            }, f, indent=2)
+            json.dump(receipt, f, indent=2)
             f.write('\n')
-        issued.append((name, vhash))
+        issued.append((name, vhash, len(awaiting)))
 
-    for n, v in issued:
-        print(f'  receipt {n:38s} vhash={v}')
+    for n, v, aw in issued:
+        note = f'  ({aw} awaiting runner)' if aw else ''
+        print(f'  receipt {n:38s} vhash={v}{note}')
     for n, why in skipped:
         print(f'  SKIP    {n:38s} {why}')
     print(f'\n{len(issued)} receipts issued, {len(skipped)} skipped')

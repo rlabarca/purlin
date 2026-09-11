@@ -1024,6 +1024,83 @@ def _cache_entry(assessment, feature, proof_id, rule_id='RULE-1'):
     }
 
 
+class TestAwaitingRunnerPayload:
+    """report_data RULE-29 and RULE-19."""
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp)
+
+    def _build(self):
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        anchors = {k: v for k, v in features.items() if v.get('is_global')}
+        return purlin_server._build_report_data(
+            self.tmp, features, proofs, {'report': True}, anchors, None)
+
+    @pytest.mark.proof("report_data", "PROOF-30", "RULE-29", tier="integration")
+    def test_awaiting_runner_explains_the_coverage_it_reduced(self):
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n'
+                    '## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: POSIX\n- RULE-2: Windows\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): fcntl locks @unit\n'
+                    '- PROOF-2 (RULE-2): msvcrt locks on a real windows runner @windows\n')
+        _write_proofs(self.tmp, 'locking', [
+            {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "dev/t.py", "test_name": "t", "status": "pass", "tier": "unit"},
+        ])
+        _write_spec(self.tmp, 'plain',
+                    '# Feature: plain\n\n'
+                    '## What it does\nPlain.\n\n'
+                    '## Rules\n- RULE-1: A\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): a @unit\n')
+        _write_proofs(self.tmp, 'plain', [
+            {"feature": "plain", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "dev/t.py", "test_name": "t", "status": "pass", "tier": "unit"},
+        ])
+
+        by_name = {f['name']: f for f in self._build()['features']}
+
+        locking = by_name['locking']
+        assert locking['awaiting_runner'] == [{'id': 'PROOF-2', 'tier': 'windows'}], (
+            f"expected the windows proof to be listed, got {locking['awaiting_runner']}")
+        assert locking['total'] == 1, (
+            "the windows-only rule must leave the coverage denominator, so the payload "
+            f"reports 1 rather than 2; got {locking['total']}")
+        assert locking['proved'] == 1
+
+        # A feature with nothing awaiting carries an empty list, not a missing
+        # key: a consumer must be able to read the field unconditionally.
+        assert by_name['plain']['awaiting_runner'] == [], by_name['plain']['awaiting_runner']
+        assert 'awaiting_runner' in by_name['plain']
+
+    @pytest.mark.proof("report_data", "PROOF-19", "RULE-19", tier="integration")
+    def test_feature_category_is_the_parent_directory_name(self):
+        """RULE-19 had no declared PROOF line in the spec even though a test
+        emitted PROOF-19 for it, so schema_spec_format RULE-4 was violated
+        without sync_status noticing: coverage counts executed proofs, not
+        declared ones."""
+        _write_spec(self.tmp, 'login',
+                    '# Feature: login\n\n## What it does\nL.\n\n'
+                    '## Rules\n- RULE-1: A\n\n## Proof\n- PROOF-1 (RULE-1): a @unit\n',
+                    subdir='auth')
+        _write_spec(self.tmp, 'invoices',
+                    '# Feature: invoices\n\n## What it does\nI.\n\n'
+                    '## Rules\n- RULE-1: A\n\n## Proof\n- PROOF-1 (RULE-1): a @unit\n',
+                    subdir='billing')
+        by_name = {f['name']: f for f in self._build()['features']}
+        assert by_name['login']['category'] == 'auth', by_name['login']['category']
+        assert by_name['invoices']['category'] == 'billing', by_name['invoices']['category']
+        for cat in (by_name['login']['category'], by_name['invoices']['category']):
+            assert '/' not in cat, f"category must be the directory name, not a path: {cat!r}"
+            assert not cat.endswith('.md'), f"category must not be the filename: {cat!r}"
+
+
 class TestPerFeatureDesignAndGaugeStates:
     """RULE-25/26/27 — the two gauges reported per feature, with denominators.
 

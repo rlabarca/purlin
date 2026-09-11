@@ -39,6 +39,15 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-41",
+      "rule": "RULE-39",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_awaiting_runner_block_explains_the_reduced_coverage",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-40",
       "rule": "RULE-38",
       "test_file": "dev/test_purlin_report.py",

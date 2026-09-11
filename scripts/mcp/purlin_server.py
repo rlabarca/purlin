@@ -690,6 +690,64 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
         summary['weighted'] = round(passing / denom * 100) if denom else assessed
 
 
+# Tiers that cannot execute on an arbitrary developer machine: they need a
+# specific runner. A proof declaring one of these is not missing when it has no
+# result here, it is waiting, and the two must not report identically. Adding a
+# tier name here also requires adding it to the closed tier set in
+# specs/_anchors/schema_proof_format.md RULE-4 and the check that enforces it in
+# dev/test_schema_proof_format.py.
+_RUNNER_GATED_TIERS = frozenset({'windows'})
+
+
+def _runner_gated_proofs(info):
+    """{proof_id: tier} for this spec's proofs that declare a runner-gated tier."""
+    return {
+        pid: tier
+        for pid, tier in (info.get('proof_tier_by_id') or {}).items()
+        if tier in _RUNNER_GATED_TIERS
+    }
+
+
+def _awaiting_runner(name, info, all_proofs):
+    """Declared runner-gated proofs with no executed result in their own tier.
+
+    Keyed on (proof id, tier) rather than proof id alone: a proof declared
+    @windows is satisfied only by a windows-tier result, so an entry for the
+    same id at another tier does not count. Returns [(proof_id, tier)] sorted.
+    """
+    gated = _runner_gated_proofs(info)
+    if not gated:
+        return []
+    executed = {(e.get('id'), e.get('tier')) for e in all_proofs.get(name, [])}
+    return sorted((pid, tier) for pid, tier in gated.items()
+                  if (pid, tier) not in executed)
+
+
+def _runner_provenance(project_root, spec_path, feature, tier):
+    """When a runner-gated tier file was last committed, and by which runner.
+
+    Proof entries deliberately carry no timestamp: that is what makes the CI
+    workflow's `git diff --cached --quiet` guard idempotent. So provenance is
+    read back out of git instead of stored in the file, with the runner taken
+    from the commit's `Purlin-Runner:` trailer. Zero new fields.
+    """
+    # spec_path is already project-relative and git runs with cwd=project_root,
+    # so relativizing again would resolve against the process cwd instead.
+    rel = os.path.join(os.path.dirname(spec_path), f'{feature}.proofs-{tier}.json')
+    try:
+        out = subprocess.run(
+            ['git', 'log', '-1', '--format=%cI%x00%(trailers:key=Purlin-Runner,valueonly)',
+             '--', rel],
+            cwd=project_root, capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0 or not out.stdout.strip():
+        return None
+    when, _, runner = out.stdout.strip().partition('\x00')
+    return {'when': when.strip(), 'runner': runner.strip() or None}
+
+
 def _gauge_token(gauge, which):
     """Render one feature's gauge for the text table.
 
@@ -999,10 +1057,11 @@ def sync_status(project_root, role=None):
         detail.extend(feature_lines)
         detail.append('')
 
-        # Collect summary data (must match _report_feature's counting logic)
+        # Same counting as the detail report, from the one helper both use.
         rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
-        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        active_entries, _awaiting, _gated = _active_rule_entries(
+            name, info, rule_entries, all_proofs)
         active_total = len(active_entries)
         proved = sum(1 for key, _, _ in active_entries
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -1014,7 +1073,8 @@ def sync_status(project_root, role=None):
         has_current_receipt = False
         if all_proved_passing and receipt:
             cli_rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
-            cli_active = [(k, l, s) for k, l, s, is_def in cli_rule_entries if not is_def]
+            cli_active, _, _ = _active_rule_entries(
+                name, info, cli_rule_entries, all_proofs)
             cli_all_proofs_list = _collect_relevant_proofs(name, cli_rule_entries, all_proofs)
             cli_vhash = _compute_vhash(
                 {key: True for key, _, _ in cli_active}, cli_all_proofs_list
@@ -1270,6 +1330,82 @@ def _gauge_directives(name, gauges):
     return out
 
 
+def _runner_lines(project_root, name, info, all_proofs, awaiting, awaiting_rule_count):
+    """Report runner-gated proofs: what is waiting, and what a runner already proved.
+
+    A proof declaring @windows that has never run reported nothing at all. Its
+    rule read PASS off a local proof, so the dashboard, the summary line and the
+    receipt were all silent about a platform the project claims to support. That
+    silence is the defect; the fix is a distinct AWAITING RUNNER signal that does
+    not count against coverage and does not block a receipt.
+    """
+    out = []
+    if awaiting:
+        by_tier = {}
+        for pid, tier in awaiting:
+            by_tier.setdefault(tier, []).append(pid)
+        for tier in sorted(by_tier):
+            ids = ', '.join(by_tier[tier])
+            n = len(by_tier[tier])
+            out.append(f"  \u26a0 AWAITING RUNNER: {n} proof{'s' if n != 1 else ''} "
+                       f"declared @{tier} with no result \u2014 {ids}")
+        if awaiting_rule_count:
+            out.append(f"  \u2192 {awaiting_rule_count} rule"
+                       f"{'s' if awaiting_rule_count != 1 else ''} left the coverage "
+                       f"denominator: every declared proof needs a runner")
+        out.append("  \u2192 Run these on a host for that tier and commit the proof "
+                   "file it writes. Not a failure and not a blocker")
+
+    # What a runner did prove, and when. Read from git rather than the proof
+    # file, which carries no timestamp on purpose.
+    proved_tiers = sorted(
+        {tier for tier in _runner_gated_proofs(info).values()} -
+        {tier for _, tier in awaiting}
+    )
+    for tier in proved_tiers:
+        prov = _runner_provenance(project_root, info['path'], name, tier)
+        if not prov:
+            continue
+        when = _relative_time(prov['when']) if prov.get('when') else 'unknown'
+        runner = prov.get('runner') or 'runner not recorded'
+        out.append(f"  \u2713 @{tier} proved remotely {when} ({runner})")
+    return out
+
+
+def _active_rule_entries(name, info, rule_entries, all_proofs):
+    """The rules that count toward coverage, and why the others do not.
+
+    Four surfaces computed this independently: the detail report, the summary
+    table (whose comment read "must match _report_feature's counting logic"),
+    the dashboard payload and the digest. They drifted the moment
+    awaiting-runner rules were introduced, so the table said 1/2 PARTIAL while
+    the detail beneath it said 1/1 PASSING. One definition, four callers.
+
+    Excluded: DEFERRED rules, and rules whose every declared proof is
+    runner-gated and unproved. A required anchor rule is never excluded on
+    runner grounds, because it is proved under the anchor's own feature name.
+
+    Returns (active_entries, awaiting, awaiting_rule_count).
+    """
+    awaiting = _awaiting_runner(name, info, all_proofs)
+    awaiting_rules = set()
+    if awaiting:
+        awaiting_ids = {pid for pid, _ in awaiting}
+        for rule_id, pids in (info.get('planned_proof_ids_by_rule') or {}).items():
+            if pids and set(pids) <= awaiting_ids:
+                awaiting_rules.add(rule_id)
+
+    active, gated = [], 0
+    for key, label, src, is_deferred in rule_entries:
+        if is_deferred:
+            continue
+        if label == 'own' and key in awaiting_rules:
+            gated += 1
+            continue
+        active.append((key, label, src))
+    return active, awaiting, gated
+
+
 def _report_feature(name, info, all_features, all_proofs, project_root, role,
                     global_anchors=None, gauges=None):
     """Generate report lines for a single feature."""
@@ -1284,7 +1420,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
     total = len(rule_entries)
     deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
-    active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+
+    # Runner-gated proofs waiting for their runner. A rule whose only declared
+    # proofs are runner-gated is not unproved, it is unprovable here, so it
+    # leaves the coverage denominator the way a DEFERRED rule does. Warn, never
+    # block: a missing Windows runner must not turn a green repo red.
+    active_entries, awaiting, awaiting_rule_count = _active_rule_entries(
+        name, info, rule_entries, all_proofs)
     active_total = len(active_entries)
     proved = sum(1 for key, _, _ in active_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -1352,6 +1494,8 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             lines.append(f"{name}: {header_status}")
         lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         lines.append(f"  vhash={vhash}")
+        lines.extend(_runner_lines(project_root, name, info, all_proofs,
+                                   awaiting, awaiting_rule_count))
 
         if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
@@ -1398,6 +1542,8 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
     lines.extend(advisories)
+    lines.extend(_runner_lines(project_root, name, info, all_proofs,
+                               awaiting, awaiting_rule_count))
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -1836,7 +1982,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         all_proofs_by_rule = _build_all_proofs_lookup(name, rule_entries, all_proofs)
         all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
 
-        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        active_entries, awaiting_runner, awaiting_rule_count = _active_rule_entries(
+            name, info, rule_entries, all_proofs)
         deferred_count = sum(1 for _, _, _, d in rule_entries if d)
         active_total = len(active_entries)
 
@@ -1983,6 +2130,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'proved': proved,
             'total': active_total,
             'deferred': deferred_count,
+            # Proofs declared at a runner-gated tier with no result there. The
+            # coverage fraction above already excludes the rules they are the
+            # only proof for, so without this the dashboard would show a clean
+            # 1/1 and never say a platform is unproven (sync_status RULE-47).
+            'awaiting_runner': [{'id': pid, 'tier': tier} for pid, tier in awaiting_runner],
             'status': status,
             'vhash': vhash,
             'receipt': receipt_data,
@@ -2368,7 +2520,8 @@ def _compute_drift(project_root, since=None):
         if total == 0:
             continue
         deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
-        active_entries = [(k, l, s) for k, l, s, is_def in rule_entries if not is_def]
+        active_entries, _, _ = _active_rule_entries(
+            name, info, rule_entries, all_proofs)
         active_total = len(active_entries)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
         proved = sum(1 for key, _, _ in active_entries

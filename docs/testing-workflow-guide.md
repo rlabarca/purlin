@@ -90,7 +90,15 @@ Tiers control which proofs run when:
 | unit (no tag) | Every build | Pure logic, no I/O |
 | `@integration` | On check-in / PR | Database, network, filesystem |
 | `@e2e` | On release / nightly | Full system, browser |
+| `@windows` | Only on a Windows runner | Behaviour that needs that platform: native `msvcrt` locking, the Windows console codec |
 | `@manual` | Human-initiated | Visual quality, UX judgment |
+
+`@windows` is the one **runner-gated** tier: it names a platform the test must run
+*on*, not a stack it needs. A proof tagged this way with no result reports
+`AWAITING RUNNER` rather than `NO PROOF`, does not count against coverage and does
+not block a receipt, and a receipt issued while one is outstanding records it as
+platform-partial. So tagging a test `@windows` that any host could run quietly
+removes it from the coverage denominator.
 
 ```python
 @pytest.mark.proof("login", "PROOF-1", "RULE-1")                          # unit

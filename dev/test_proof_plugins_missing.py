@@ -20,6 +20,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import glob
+import re
 import textwrap
 
 import pytest
@@ -865,6 +867,76 @@ def test_c_purlin_emit_feature_scoped_overwrite(tmp_path):
     assert len(arith_entries) == 1
     assert arith_entries[0]["test_name"] == "test_addition_v2"
     assert arith_entries[0]["status"] == "pass"
+
+
+# ---------------------------------------------------------------------------
+# RULE-13: a skipped test writes nothing; "fail" means it ran and failed
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("proof_common", "PROOF-17", "RULE-13", tier="integration")
+def test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure(tmp_path):
+    """A suite whose prerequisite is missing must emit no proof entry.
+
+    dev/test_e2e_cross_model_audit.sh used to write status "fail" for three
+    proofs when the gemini CLI was absent, which made skill_audit FAILING on
+    every machine without it and would have blocked a push. "fail" has to mean
+    the test ran and the assertion failed, or no gate downstream can tell a
+    broken build from a missing tool.
+    """
+    repo = os.path.join(os.path.dirname(__file__), '..')
+
+    # --- Half 1: a skip path leaves an existing proof file byte-identical. ---
+    spec_dir = _make_spec(tmp_path, 'a', 'feat_skip', extra_rules=1)
+    proof_file = spec_dir / 'feat_skip.proofs-unit.json'
+    _run_shell_proof(tmp_path, 'feat_skip', [
+        ('PROOF-1', 'RULE-1', 'pass', 'proved by a capable host'),
+    ])
+    before = proof_file.read_bytes()
+
+    skipper = tmp_path / 'gated_test.sh'
+    skipper.write_text(textwrap.dedent(f"""\
+        #!/usr/bin/env bash
+        set -euo pipefail
+        source {SHELL_HARNESS}
+        if ! command -v definitely_not_installed_xyz &>/dev/null; then
+          echo "Skipping: prerequisite absent. PROOF-1 was not executed."
+          exit 0
+        fi
+        purlin_proof "feat_skip" "PROOF-1" "RULE-1" pass "ran"
+        purlin_proof_finish
+    """))
+    result = subprocess.run(['bash', str(skipper)], cwd=str(tmp_path),
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert 'PROOF-1' in result.stdout, (
+        f"a skip must name the proofs it did not execute, got: {result.stdout!r}")
+    assert proof_file.read_bytes() == before, (
+        "a skipped run must leave the committed proof file untouched, not rewrite it")
+
+    # --- Half 2: no proof-emitting script fakes a failure from a skip branch. ---
+    offenders = []
+    # A prerequisite guard is a branch testing whether an external binary EXISTS,
+    # not any line whose prose happens to say "not installed". `if ! grep -q ...`
+    # inside a test is an assertion, and a `fail` under it is correct.
+    guard_re = re.compile(r'^\s*(?:el)?if\s+!\s*(?:command\s+-v|which|type)\s+\S')
+    fail_re = re.compile(r'purlin_proof\s+"[^"]+"\s+"[^"]+"\s+"[^"]+"\s+fail\b')
+    for path in sorted(glob.glob(os.path.join(repo, 'dev', '*.sh'))):
+        lines = open(path).read().splitlines()
+        for i, line in enumerate(lines):
+            if not guard_re.search(line):
+                continue
+            for follow in lines[i + 1:]:
+                stripped = follow.strip()
+                if stripped in ('fi', 'else') or stripped.startswith('elif'):
+                    break
+                if fail_re.search(follow):
+                    offenders.append(
+                        f'{os.path.relpath(path, repo)}: {stripped[:70]}')
+    assert not offenders, (
+        'these scripts write status "fail" from an unavailable-prerequisite '
+        'branch, which reports a missing tool as a broken test:\n  '
+        + '\n  '.join(offenders)
+    )
 
 
 # ---------------------------------------------------------------------------

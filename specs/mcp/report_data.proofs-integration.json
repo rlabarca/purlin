@@ -3,6 +3,24 @@
   "proofs": [
     {
       "feature": "report_data",
+      "id": "PROOF-30",
+      "rule": "RULE-29",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_awaiting_runner_explains_the_coverage_it_reduced",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_feature_category_is_the_parent_directory_name",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-26",
       "rule": "RULE-25",
       "test_file": "dev/test_report_data.py",

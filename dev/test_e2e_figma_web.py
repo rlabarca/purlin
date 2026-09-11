@@ -27,6 +27,24 @@ import sys
 
 import pytest
 
+# This suite drives the real `claude` CLI against a real Figma MCP server and
+# spends API budget. It had 15 @e2e marks and no module gate at all, so on a host
+# lacking the MCP server every test errored rather than skipping, which reads as a
+# broken suite rather than an unavailable prerequisite.
+#
+# The gate is an explicit opt-in rather than a `which` probe: `claude` being on
+# PATH says nothing about whether a Figma MCP server is configured or whether the
+# operator wants to spend the budget, and gating on the binary made the suite
+# error anyway on a host that had it. Set PURLIN_E2E_FIGMA=1 to run it.
+#
+# Skipping writes no proof entries (proof_common RULE-13), so whatever a capable
+# host last proved stays committed and untouched.
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("PURLIN_E2E_FIGMA"),
+    reason="set PURLIN_E2E_FIGMA=1 to run: needs a configured Figma MCP server "
+           "and spends API budget",
+)
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------

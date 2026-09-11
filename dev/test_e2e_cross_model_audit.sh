@@ -16,14 +16,14 @@ echo "=== e2e_cross_model_audit tests ==="
 
 # --- Pre-flight: check gemini CLI ---
 if ! command -v gemini &>/dev/null; then
-  echo "Skipping: gemini CLI not installed"
-  # Record skipped proofs so sync_status sees them
-  purlin_proof "skill_audit" "PROOF-9" "RULE-9" fail "skipped — gemini CLI not installed"
-  purlin_proof "skill_audit" "PROOF-10" "RULE-10" fail "skipped — gemini CLI not installed"
-  purlin_proof "skill_audit" "PROOF-11" "RULE-11" fail "skipped — gemini CLI not installed"
-  export PROJECT_ROOT="$REAL_PROJECT_ROOT"
-  cd "$PROJECT_ROOT"
-  purlin_proof_finish
+  echo "Skipping: gemini CLI not installed."
+  echo "  PROOF-9, PROOF-10 and PROOF-11 were not executed on this host."
+  echo "  No proof entries written: proof_common RULE-13 reserves \"fail\" for a test"
+  echo "  that ran and failed. Writing it here made skill_audit FAILING on every"
+  echo "  machine without the gemini CLI, and would have blocked a push."
+  # Emit nothing at all. Under the (feature, tier, test_file) merge key any
+  # previously committed result for these proofs survives untouched, so a host
+  # that cannot run them neither falsifies nor destroys what a capable host proved.
   exit 0
 fi
 

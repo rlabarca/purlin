@@ -85,6 +85,11 @@ external-LLM mode (see § External LLM Auditing).
   `querySelector` instead of what a person would see.
 - **Implausible tier tag** — `@e2e` with no observable action verb, or an untagged description
   that needs a database, browser, or network. The design twin of "tier mismatch".
+  `@windows` is runner-gated, not a slower tier: it is plausible only when the description
+  names behaviour that genuinely requires that platform (a native `msvcrt` lock, the Windows
+  default console codec) and says what is observed there. A `@windows` description that any
+  host could verify is `LOOSE` — the tag removes the proof from the coverage denominator, so
+  an implausible one hides a rule rather than merely mislabelling a test.
 - **Imprecise FORBIDDEN grep** — a grep-for-absence pattern loose enough to match comments,
   docstrings, or variable names containing the keyword.
 

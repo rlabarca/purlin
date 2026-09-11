@@ -45,6 +45,15 @@
       "test_name": "test_marker_removed_from_a_file_that_is_not_rerun_survives",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

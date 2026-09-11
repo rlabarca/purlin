@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_platform_partial_receipt_records_what_it_could_not_verify",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

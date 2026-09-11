@@ -218,6 +218,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .dr>td{padding:0!important;border-bottom:1px solid var(--border)!important}
 .dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border);overflow:hidden}
 .dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
+.awr{font-size:11px;color:var(--text-secondary);line-height:1.7}
+.awr-tier{font-family:var(--font-mono);color:var(--amber);font-weight:600}
 .dst:first-child{margin-top:0}
 
 /* Description block */
@@ -1010,6 +1012,27 @@ table{min-width:830px}
     /* Description */
     if (f.description) {
       h += '<div class="desc-block">' + esc(f.description) + '</div>';
+    }
+
+    /* Runner-gated proofs still waiting for their runner. The coverage fraction
+       on this row already excludes the rules they are the only proof for, so
+       without this line the row reads a clean N/N and never says a platform the
+       project claims to support is unproven (sync_status RULE-47). Warn, never
+       block: it carries no status change and no red. */
+    var aw = f.awaiting_runner || [];
+    if (aw.length) {
+      var awTiers = {};
+      for (var ai = 0; ai < aw.length; ai++) {
+        (awTiers[aw[ai].tier] = awTiers[aw[ai].tier] || []).push(aw[ai].id);
+      }
+      h += '<div class="dst">Awaiting Runner</div>';
+      h += '<div class="awr">';
+      Object.keys(awTiers).sort().forEach(function (tier) {
+        h += '<div><span class="awr-tier">@' + esc(tier) + '</span> '
+           + esc(awTiers[tier].join(', '))
+           + ' declared, no result on this host</div>';
+      });
+      h += '</div>';
     }
 
     /* Rules table */
