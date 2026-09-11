@@ -2881,3 +2881,69 @@ class TestGaugeCellsAndCoverage:
         cls = card.get_attribute("class")
         assert "int-mid" not in cls and "int-lo" not in cls, \
             f"a complete 100% must read green, classes were {cls}"
+
+    @pytest.mark.proof("purlin_report", "PROOF-39", "RULE-37", tier="e2e")
+    def test_refresh_directive_names_only_the_stale_gauge(self, page, dashboard):
+        """RULE-37: refresh the half that is stale, not both.
+
+        Design grading is deterministic and needs no tests; Integrity grading
+        needs test code and costs LLM calls. A blanket `purlin:audit` directive
+        spent that budget re-grading Integrity when only Design had gone stale.
+        """
+        def summaries(design_stale, audit_stale):
+            old = "2026-01-01T00:00:00+00:00"
+            new = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            return {
+                "design_summary": {
+                    "design": 90, "provable": 9, "loose": 1, "unprovable": 0,
+                    "structural": 0, "gradeable_total": 10,
+                    "last_design_audit": old if design_stale else new,
+                    "last_design_audit_relative": "8 months ago" if design_stale else "just now",
+                    "stale": design_stale,
+                },
+                "audit_summary": {
+                    "integrity": 90, "strong": 9, "weak": 1, "hollow": 0, "manual": 0,
+                    "behavioral_total": 10,
+                    "last_audit": old if audit_stale else new,
+                    "last_audit_relative": "8 months ago" if audit_stale else "just now",
+                    "stale": audit_stale,
+                },
+            }
+
+        base = {
+            "features": [make_integrity_feature("f1", 90, design=90)],
+            "summary": {"total_features": 1, "verified": 1, "partial": 0,
+                        "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        }
+
+        def header_text():
+            return " ".join(e.text_content() for e in
+                            page.query_selector_all(".audit-time"))
+
+        # Only Design stale: refresh Design alone.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, **summaries(True, False))))
+        txt = header_text()
+        assert "purlin:audit --design" in txt, \
+            f"a stale Design gauge must name --design: {txt!r}"
+        assert "--integrity" not in txt, (
+            "refreshing Design must not drag Integrity along, which costs LLM "
+            f"calls for no reason: {txt!r}")
+
+        # Only Integrity stale: refresh Integrity alone.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, **summaries(False, True))))
+        txt = header_text()
+        assert "purlin:audit --integrity" in txt, \
+            f"a stale Integrity gauge must name --integrity: {txt!r}"
+        assert "--design" not in txt, f"Design is fresh and must not be named: {txt!r}"
+
+        # Both stale: the bare command is the right one.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, **summaries(True, True))))
+        txt = header_text()
+        assert "run purlin:audit" in txt
+        assert "--design" not in txt and "--integrity" not in txt, \
+            f"with both stale the directive is a bare full audit: {txt!r}"
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof39_refresh_directive.png"))

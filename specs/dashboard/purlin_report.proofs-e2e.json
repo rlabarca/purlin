@@ -36,6 +36,15 @@
       "test_name": "test_gauge_card_states_its_denominator_and_goes_amber",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-39",
+      "rule": "RULE-37",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_refresh_directive_names_only_the_stale_gauge",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }
