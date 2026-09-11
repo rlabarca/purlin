@@ -1,8 +1,8 @@
 {
   "feature": "schema_spec_format",
   "vhash": "4974630b",
-  "commit": "c7c0b59dfd1b00279e5c9ac68c5242eaad84e33b",
-  "timestamp": "2026-09-11T15:35:41.454863+00:00",
+  "commit": "0638da970699d69f05d5d6c7437190abe1513d37",
+  "timestamp": "2026-09-11T20:12:34.573212+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",

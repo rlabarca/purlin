@@ -1,8 +1,8 @@
 {
   "feature": "skill_audit",
-  "vhash": "28415e3c",
-  "commit": "7e73a8aa1204972cc61847f7aba27fa59e65f575",
-  "timestamp": "2026-09-11T14:28:00.945249+00:00",
+  "vhash": "b362f1ad",
+  "commit": "0638da970699d69f05d5d6c7437190abe1513d37",
+  "timestamp": "2026-09-11T20:12:34.573212+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -102,6 +102,16 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass"
@@ -112,8 +122,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-7",
       "rule": "RULE-7",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-8",
+      "rule": "RULE-8",
       "status": "pass"
     },
     {
