@@ -27,6 +27,15 @@
       "test_name": "test_gauge_summaries_state_their_denominator",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-29",
+      "rule": "RULE-28",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_each_feature_gauge_carries_its_own_coverage",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

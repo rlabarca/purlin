@@ -910,6 +910,30 @@ class TestIntegrityFormula:
                 )
 
 
+
+    @pytest.mark.proof("sync_status", "PROOF-75", "RULE-43")
+    def test_design_formula_consistent_across_the_same_three_files(self):
+        """RULE-43: the Design formula is pinned where RULE-33 pins Integrity's.
+
+        RULE-33 kept the integrity formula identical across three files. Design
+        had no equivalent, so its formula could drift between the criteria
+        reference, the audit skill and this spec without anything noticing.
+        """
+        formula = 'PROVABLE / (PROVABLE + LOOSE + UNPROVABLE)'
+        root = os.path.join(os.path.dirname(__file__), '..')
+        for rel in ('references/audit_criteria.md',
+                    'skills/audit/SKILL.md',
+                    'specs/mcp/sync_status.md'):
+            with open(os.path.join(root, rel), encoding='utf-8') as f:
+                body = f.read()
+            assert formula in body, \
+                f"{rel} does not carry the design formula {formula!r}"
+            # STRUCTURAL is excluded from the denominator, never counted in it.
+            for line in body.splitlines():
+                if formula in line:
+                    denom = line.split(formula, 1)[0] + formula
+                    assert 'STRUCTURAL +' not in denom, \
+                        f"{rel} includes STRUCTURAL in the design denominator: {line}"
 class TestPurlinConfig:
     """purlin_config RULE-1: config read/write."""
 

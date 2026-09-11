@@ -1300,6 +1300,69 @@ class TestSkillStatus:
 
 # ── skill_test ───────────────────────────────────────────────────
 
+    @pytest.mark.proof("skill_status", "PROOF-6", "RULE-6")
+    def test_feature_table_has_both_gauge_columns(self):
+        """RULE-6: the documented table shows both gauges per feature.
+
+        It was ruled for three columns and showed neither gauge, so an agent
+        reading purlin:status could not see that a VERIFIED feature rested on
+        unfalsifiable descriptions.
+        """
+        content = _read('status')
+        assert 'three columns' not in content, \
+            "the skill still claims a three-column table"
+        block = content.split('## Step 2', 1)[1].split('```', 2)[1]
+        header = block.strip().splitlines()[0]
+        for col in ('Feature', 'Coverage', 'Status', 'Design', 'Integrity'):
+            assert col in header, f"table header is missing {col}: {header!r}"
+        rows = [l for l in block.strip().splitlines()[2:] if l.strip()]
+        assert any('%' in l.split('Status')[-1] for l in rows), \
+            "no sample row carries a gauge percentage"
+        # Each gauge's unscorable word, in its own vocabulary.
+        assert 'structural' in block and 'excluded' in block, \
+            "the sample rows must show both unscorable tokens"
+        assert 'not audited' in block, "the sample rows must show the unmeasured token"
+
+    @pytest.mark.proof("skill_status", "PROOF-7", "RULE-7")
+    def test_prints_the_servers_summary_line_not_a_substitute(self):
+        """RULE-7: a reconstructed status-count line cannot carry a gauge."""
+        content = _read('status')
+        assert not re.search(r'Summary:\s*\d+\s*features\s*\|', content), (
+            "the skill still templates its own 'Summary: N features |' line, which "
+            "structurally cannot carry either gauge")
+        assert re.search(r'(?i)exactly as .{0,20}sync_status.{0,20}returned', content), \
+            "the skill must instruct printing sync_status's summary line verbatim"
+        # And the sample must be the real thing, with both gauges and denominators.
+        assert 'Proof Design:' in content and 'Proof Integrity:' in content, \
+            "the documented summary line must show both gauges"
+        assert 'measured' in content, \
+            "the documented summary line must show each gauge's denominator"
+
+    @pytest.mark.proof("skill_status", "PROOF-8", "RULE-8")
+    def test_documents_gauge_remediation_and_ordering(self):
+        """RULE-8: each finding routes to the artifact that can actually fix it."""
+        content = _read('status')
+        section = content.split('Gauge Recommendations', 1)
+        assert len(section) == 2, "no gauge recommendation section"
+        body = section[1]
+
+        assert re.search(r'LOOSE.*purlin:spec|purlin:spec.*LOOSE', body, re.S), \
+            "a Design finding must route to purlin:spec"
+        assert re.search(r'(WEAK|HOLLOW).*purlin:build|purlin:build.*(WEAK|HOLLOW)', body, re.S), \
+            "an Integrity finding must route to purlin:build"
+        assert 'purlin:audit' in body, "an unmeasured gauge must route to purlin:audit"
+
+        # Design before Integrity, with the reason stated rather than asserted.
+        assert body.index('purlin:spec') < body.index('purlin:build'), \
+            "Design remediation must be documented before Integrity"
+        assert re.search(r'(?i)design before integrity', body), \
+            "the ordering must be stated explicitly"
+        assert re.search(r'(?i)compare a test against its proof description', body), \
+            "the reason for the ordering must be given, not just the order"
+
+
+
+
 class TestSkillTest:
 
     @pytest.mark.proof("skill_test", "PROOF-1", "RULE-1")
@@ -1335,8 +1398,6 @@ class TestSkillTest:
         assert 'not optional' in content, \
             "test skill doesn't state sync_status is not optional"
 
-
-
     @pytest.mark.proof("skill_test", "PROOF-6", "RULE-6")
     def test_zero_tests_is_not_a_plugin_failure(self):
         """"No tests collected" and "the plugin failed to emit" are different, and
@@ -1360,6 +1421,8 @@ class TestSkillTest:
             "purlin:init --force must only appear in the branch where tests actually ran"
 
 # ── skill_verify ──────────────────────────────────────────────────────
+
+
 
 class TestSkillVerify:
 

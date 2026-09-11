@@ -178,8 +178,9 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
 
 /* Integrity */
-.int{font-family:var(--font-mono);font-size:12px}
+.int{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
 .int-hi{color:var(--green)}.int-mid{color:var(--amber)}.int-lo{color:var(--red)}.int-na{color:var(--text-dim)}
+.int-excluded{color:var(--teal)}.int-pending{color:var(--amber)}
 
 /* Verified */
 .ver{font-size:12px;color:var(--text-secondary)}
@@ -285,7 +286,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .footer a:hover{text-decoration:underline}
 
 /* ===== RESPONSIVE ===== */
-table{min-width:790px}
+table{min-width:830px}
 @media (max-width:1500px) {
   .summary-strip{grid-template-columns:repeat(4,1fr)}
 }
@@ -394,15 +395,25 @@ table{min-width:790px}
   /* Renders one gauge cell. A percentage when measured; otherwise an explicit
      token naming why there is no number, with the reason in a tooltip. Never
      an em dash — that is indistinguishable from "nobody looked". */
-  function gaugeCell(pct, gauge, label) {
+  function gaugeCell(pct, gauge, label, which) {
     var state = (gauge && gauge.state) ? gauge.state : 'unmeasured';
+    var cov = (gauge && gauge.coverage) ? gauge.coverage : null;
+    var covText = (cov && cov.total != null)
+      ? ' (' + cov.measured + ' of ' + cov.total + ' assessed)' : '';
     if (pct != null) {
-      return '<td class="' + intClass(pct) + '" title="' + label + ': ' + pct + '%">' + pct + '%</td>';
+      return '<td class="' + intClass(pct) + '" title="' + label + ': ' + pct + '%' + covText + '">' + pct + '%</td>';
     }
     if (state === 'excluded') {
-      return '<td class="int int-na" title="' + label + ': nothing gradeable — every assessment is excluded from scoring">excl</td>';
+      /* The unscorable word comes from this gauge's own vocabulary: STRUCTURAL
+         describes a description, EXCLUDED describes a test, and the two never
+         mix (RULE-35). Neither is a defect. */
+      var word = which === 'design' ? 'structural' : 'excluded';
+      var why = which === 'design'
+        ? 'every description is a structural presence check, the correct proof for a structural rule'
+        : 'every proof is excluded from scoring, so nothing is gradeable';
+      return '<td class="int int-excluded" title="' + label + ': ' + why + covText + '">' + word + '</td>';
     }
-    return '<td class="int int-na" title="' + label + ': not measured yet — run purlin:audit">unmeasured</td>';
+    return '<td class="int int-pending" title="' + label + ': not measured yet' + covText + ' — run purlin:audit">not audited</td>';
   }
 
   function intClass(v) {
@@ -580,6 +591,38 @@ table{min-width:790px}
 
   /* One gauge card. `cov` drives both the denominator sub-label and the amber
      override, so a score can never be read without knowing what it covers. */
+  /* The narrowest command that refreshes what is actually stale. Design grading
+     is deterministic and needs no tests; Integrity grading needs test code and
+     costs LLM calls, so sending someone to a full audit to refresh Design alone
+     spends budget for nothing (RULE-37). */
+  function refreshCommand(audit, design) {
+    var dStale = !design || design.stale;
+    var aStale = !audit || audit.stale;
+    if (dStale && aStale) return 'purlin:audit';
+    if (dStale) return 'purlin:audit --design';
+    return 'purlin:audit --integrity';
+  }
+
+  function freshnessText(summary, which, audit, design) {
+    var ts = summary && (which === 'design' ? summary.last_design_audit
+                                            : summary.last_audit);
+    if (!summary || !ts) {
+      return '/' + which + ' not measured \u2014 run ' + refreshCommand(audit, design);
+    }
+    var txt = '/' + which + ' ' + (relTime(ts) || 'unknown');
+    if (summary.stale) txt += ' \u2014 run ' + refreshCommand(audit, design);
+    return txt;
+  }
+
+  function gaugeFreshness(summary, which, audit, design) {
+    var ts = summary && (which === 'design' ? summary.last_design_audit
+                                            : summary.last_audit);
+    var stale = !summary || !ts || summary.stale;
+    var cls = stale ? 'audit-time stale' : 'audit-time';
+    return '<span class="' + cls + '" data-gauge="' + which + '">'
+         + esc(freshnessText(summary, which, audit, design)) + '</span>';
+  }
+
   function gaugeCard(summary, label, pct, counts) {
     var cov = summary && summary.coverage ? summary.coverage : null;
     var sub = counts;
@@ -624,14 +667,11 @@ table{min-width:790px}
     h += '</div><div class="header-right">';
     h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
     h += '</div>';
-    /* Last audit time */
-    if (A && A.last_audit) {
-      var auditRel = relTime(A.last_audit);
-      var acls = A.stale ? 'audit-time stale' : 'audit-time';
-      var atxt = '/audit ' + (auditRel || 'unknown');
-      if (A.stale) atxt += ' \u2014 run purlin:audit to refresh';
-      h += '<span class="' + acls + '">' + esc(atxt) + '</span>';
-    }
+    /* One freshness label per gauge. A single combined "audit" label reported
+       the Integrity cache's age as though it were the project's, so a repo
+       graded for Design an hour ago read as 78 days stale (RULE-15). */
+    h += gaugeFreshness(G, 'design', A, G);
+    h += gaugeFreshness(A, 'integrity', A, G);
     h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
     h += '<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
     h += '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
@@ -686,8 +726,8 @@ table{min-width:790px}
       {key:'name', label:'Spec', w:''},
       {key:'coverage', label:'Coverage', w:'140px'},
       {key:'status', label:'Status', w:'100px'},
-      {key:'design', label:'Design', w:'110px'},
-      {key:'integrity', label:'Integrity', w:'110px'},
+      {key:'design', label:'Design', w:'130px'},
+      {key:'integrity', label:'Integrity', w:'130px'},
       {key:'verified', label:'Verified', w:'180px'}
     ];
 
@@ -789,8 +829,8 @@ table{min-width:790px}
 
             /* Design and Integrity. gaugeCell never emits an em dash: a blank
                cell under a populated summary card is what RULE-35 forbids. */
-            bh += gaugeCell(dsnVal, f.design, 'Proof Design');
-            bh += gaugeCell(intVal, f.audit, 'Proof Integrity');
+            bh += gaugeCell(dsnVal, f.design, 'Proof Design', 'design');
+            bh += gaugeCell(intVal, f.audit, 'Proof Integrity', 'integrity');
 
             /* Verified */
             if (f.receipt && f.receipt.timestamp) {
@@ -857,13 +897,13 @@ table{min-width:790px}
         txt.className = 'staleness-text' + (st.warn ? ' ' + st.cls : '');
         txt.textContent = st.text + st.warn;
       }
-      var auditEl = app.querySelector('.audit-time');
-      if (auditEl && D.audit_summary && D.audit_summary.last_audit) {
-        var ar = relTime(D.audit_summary.last_audit);
-        var atxt = '/audit ' + (ar || 'unknown');
-        if (D.audit_summary.stale) atxt += ' \u2014 run purlin:audit to refresh';
-        auditEl.textContent = atxt;
-      }
+      /* Re-render both gauge labels from their own timestamps, so the 30s tick
+         cannot drift from what render() produced. */
+      app.querySelectorAll('.audit-time').forEach(function(el) {
+        var which = el.getAttribute('data-gauge');
+        var sum = which === 'design' ? D.design_summary : D.audit_summary;
+        el.textContent = freshnessText(sum, which, D.audit_summary, D.design_summary);
+      });
     }, 30000);
 
     var uwToggle = document.getElementById('uw-toggle');

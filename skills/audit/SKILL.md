@@ -540,7 +540,7 @@ This removes cache entries for features that no longer exist while preserving al
 that deletes every entry, including the ones Step 3.4 just wrote. If no proof hashes were
 computed during this audit, skip the prune entirely.
 
-## Step 4 — Refresh Status and Report Integrity
+## Step 4 — Refresh Status and Report Both Gauges
 
 After the audit report is complete and the cache has been written, call `sync_status` to compute the integrity score and refresh the dashboard:
 
@@ -548,14 +548,22 @@ After the audit report is complete and the cache has been written, call `sync_st
 sync_status()
 ```
 
-The `sync_status` output includes the integrity percentage (computed by `_compute_integrity()` in `purlin_server.py`). **Do not compute the integrity percentage yourself** — always read it from the `sync_status` output. This ensures the audit CLI and the dashboard always show the same value from the same computation.
+The `sync_status` output includes both gauge percentages (computed by `_compute_integrity()` and `_compute_design()` in `purlin_server.py`), each with its measurement coverage and its own age. **Do not compute either percentage yourself** — always read them from the `sync_status` output. This ensures the audit CLI and the dashboard always show the same values from the same computation.
 
-After `sync_status` completes, report the integrity score it returned:
+After `sync_status` completes, report both scores it returned, Design first:
 
 ```
+PROOF DESIGN SCORE: <N>% (from sync_status, computed by _compute_design())
+  Formula: PROVABLE / (PROVABLE + LOOSE + UNPROVABLE) — STRUCTURAL excluded.
+  Measured over <M> of <T> declared proof descriptions.
+
 INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
   Formula: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — proof quality only.
+  Measured over <M> of <T> executed proofs.
 ```
+
+Report the coverage alongside each score. A percentage over a subset is not a project-wide
+percentage, and saying so is the difference between a measurement and a claim.
 
 ## Which Lever Moves Which Assessment
 

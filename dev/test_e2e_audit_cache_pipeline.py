@@ -11,6 +11,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
 
+import purlin_server
 from purlin_server import (
     sync_status,
     _build_report_data,
@@ -230,8 +232,12 @@ class TestAuditCachePipeline:
         assert 'Integrity: 67%' in output, (
             f"Expected 'Integrity: 67%' in output, got:\n{output}"
         )
-        assert 'last purlin:audit:' in output, (
-            f"Expected 'last purlin:audit:' in output, got:\n{output}"
+        # The line now carries each gauge's own age inside its parenthetical
+        # rather than one shared "last purlin:audit:" figure (RULE-39/45).
+        line = next(l for l in output.splitlines() if 'Proof Integrity:' in l)
+        tail = line.split('Proof Integrity:', 1)[1]
+        assert 'ago' in tail or 'just now' in tail, (
+            f"Expected Proof Integrity to carry its own relative age, got:\n{line}"
         )
         # write_audit_cache stamps real current time, so it shows "just now"
         assert 'just now' in output, (
@@ -257,7 +263,7 @@ class TestAuditCachePipeline:
 
     @pytest.mark.proof("sync_status", "PROOF-45", "RULE-25", tier="e2e")
     def test_sync_status_stale_cache_warns(self):
-        """RULE-5: sync_status shows 'consider re-auditing' when cache is older than 24 hours."""
+        """RULE-25: a cache older than 24h is marked stale, per gauge."""
         _make_project(self.tmp_dir, with_git=True)
         # Write cache file directly to simulate old timestamps (write_audit_cache
         # would overwrite cached_at with current time per RULE-19)
@@ -268,8 +274,12 @@ class TestAuditCachePipeline:
 
         output = sync_status(self.tmp_dir)
 
-        assert 'consider re-auditing' in output, (
-            f"Expected 'consider re-auditing' in output, got:\n{output}"
+        # The generic "consider re-auditing" prompt is replaced by the narrowest
+        # refresh command for the gauge that actually went stale (RULE-45), so a
+        # stale Integrity cache no longer sends anyone to re-grade fresh Design.
+        line = next(l for l in output.splitlines() if 'Proof Integrity:' in l)
+        assert 'run purlin:audit' in line, (
+            f"Expected a stale gauge to name its refresh command, got:\n{line}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-46", "RULE-26", tier="e2e")
@@ -2006,3 +2016,223 @@ class TestProofDesignGauge:
         assert _compute_design(3, 1, 0) == (75, 4)
         assert _compute_design(0, 0, 0) == (None, 0)
         assert _compute_design(1, 0, 1) == (50, 2)
+
+
+class TestStatusReportsBothGauges:
+    """sync_status RULE-18/39/44 — both gauges in the table, the summary line and
+    the directives.
+
+    The CLI table showed neither gauge and the directive layer was blind to
+    both: a feature with every rule proved reported "No action needed." however
+    hollow its tests or however unfalsifiable its proof descriptions.
+    """
+
+    def setup_method(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def _entry(self, assessment, feature, proof_id, rule_id='RULE-1'):
+        return {
+            'assessment': assessment, 'criterion': 'c', 'why': 'w', 'fix': 'f',
+            'feature': feature, 'proof_id': proof_id, 'rule_id': rule_id,
+            'priority': 'LOW',
+            'cached_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+
+    def _table(self, output):
+        return [l for l in output.splitlines() if l.startswith(('┌', '│', '├', '└'))]
+
+    @pytest.mark.proof("sync_status", "PROOF-73", "RULE-18", tier="e2e")
+    def test_summary_table_carries_both_gauge_columns(self):
+        _make_project(self.tmp_dir, with_git=True)
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': self._entry('LOOSE', 'login', 'PROOF-2', 'RULE-2'),
+        }, static_checks.DESIGN_CACHE)
+        write_audit_cache(self.tmp_dir, {
+            'a1': self._entry('STRONG', 'login', 'PROOF-1'),
+        })
+
+        out = sync_status(self.tmp_dir)
+        table = self._table(out)
+        header = next(l for l in table if 'Feature' in l)
+        for col in ('Coverage', 'Status', 'Design', 'Integrity'):
+            assert col in header, f"summary table header is missing {col}: {header}"
+
+        row = next(l for l in table if 'login' in l)
+        assert '50%' in row, f"design 50% (1 PROVABLE of 2 gradeable) missing: {row}"
+        assert '100%' in row, f"integrity 100% missing: {row}"
+
+        # RULE-40: every rendered line the same width, including the new columns.
+        widths = {len(l) for l in table}
+        assert len(widths) == 1, f"table lines have differing widths: {sorted(widths)}"
+
+    @pytest.mark.proof("sync_status", "PROOF-73", "RULE-18", tier="e2e")
+    def test_gauge_cells_use_whole_words_for_both_empty_states(self):
+        """`excluded` and `not audited` are different facts and neither is blank."""
+        _make_project(self.tmp_dir, with_git=True)
+        # Every assessment excluded from scoring: gradeable denominator is zero.
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('STRUCTURAL', 'login', 'PROOF-1'),
+            'd2': self._entry('STRUCTURAL', 'login', 'PROOF-2', 'RULE-2'),
+            'd3': self._entry('STRUCTURAL', 'login', 'PROOF-3', 'RULE-3'),
+        }, static_checks.DESIGN_CACHE)
+
+        out = sync_status(self.tmp_dir)
+        row = next(l for l in self._table(out) if 'login' in l)
+        # login declares 3 descriptions; all 3 graded STRUCTURAL, so Design is
+        # legitimately unscorable and says so in its own vocabulary.
+        assert 'structural' in row, (
+            "a fully STRUCTURAL design gauge must read 'structural', the Design "
+            f"vocabulary's unscorable level: {row}")
+        assert 'excluded' not in row, \
+            f"a Design cell must never borrow the Integrity word 'excluded': {row}"
+        assert 'not audited' in row, f"an unmeasured integrity gauge must read 'not audited': {row}"
+        assert 'excl ' not in row and 'unmeasured' not in row, \
+            f"gauge tokens must be whole words, not abbreviations: {row}"
+
+    @pytest.mark.proof("sync_status", "PROOF-74", "RULE-39", tier="e2e")
+    def test_summary_line_states_each_gauge_denominator(self):
+        _make_project(self.tmp_dir, with_git=True)
+        # login declares 3 proof descriptions; grade 2 of them.
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': self._entry('PROVABLE', 'login', 'PROOF-2', 'RULE-2'),
+        }, static_checks.DESIGN_CACHE)
+
+        out = sync_status(self.tmp_dir)
+        line = next(l for l in out.splitlines() if 'features VERIFIED' in l)
+        assert 'Proof Design: 100% (2 of 3 measured' in line, (
+            "a perfect score over part of the project must state its denominator; "
+            f"got: {line}")
+
+        # With no design cache the gauge says so rather than vanishing.
+        os.remove(os.path.join(self.tmp_dir, '.purlin', 'cache', 'design_cache.json'))
+        line = next(l for l in sync_status(self.tmp_dir).splitlines()
+                    if 'features VERIFIED' in l)
+        assert 'Proof Design: not measured' in line, (
+            "an absent design cache must print a state, not omit the gauge; "
+            f"got: {line}")
+
+
+    @pytest.mark.proof("sync_status", "PROOF-77", "RULE-45", tier="e2e")
+    def test_each_gauge_reports_its_own_age_and_refresh_command(self):
+        """One shared "last audit" figure reported the Integrity cache's age as
+        though it were the project's, so a repo graded for Design an hour ago
+        read as 78 days stale. And a blanket `purlin:audit` directive spends LLM
+        budget re-grading Integrity when only Design went stale."""
+        _make_project(self.tmp_dir, with_git=True)
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        def seed(design_age_hours, audit_age_hours):
+            # Written directly rather than via write_audit_cache: that writer
+            # deliberately refuses to honour a caller-supplied cached_at, so it
+            # cannot be used to age an entry (static_checks RULE-19).
+            cache_dir = os.path.join(self.tmp_dir, '.purlin', 'cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            for fname, entry, hours in (
+                ('design_cache.json', self._entry('PROVABLE', 'login', 'PROOF-1'),
+                 design_age_hours),
+                ('audit_cache.json', self._entry('STRONG', 'login', 'PROOF-1'),
+                 audit_age_hours),
+            ):
+                e = dict(entry)
+                e['cached_at'] = (now - datetime.timedelta(hours=hours)).isoformat()
+                with open(os.path.join(cache_dir, fname), 'w', encoding='utf-8') as f:
+                    json.dump({'k1': e}, f)
+
+        def line():
+            return next(l for l in sync_status(self.tmp_dir).splitlines()
+                        if 'features VERIFIED' in l)
+
+        # Design graded an hour ago, Integrity 78 days ago.
+        seed(1, 78 * 24)
+        got = line()
+        design_part, _, integrity_part = got.partition('| Proof Integrity:')
+        assert 'hour' in design_part, \
+            f"Proof Design must carry its own age, not the audit cache's: {got}"
+        assert 'day' in integrity_part, \
+            f"Proof Integrity must carry its own age: {got}"
+        # Only the stale gauge prompts, and it names the narrow command.
+        assert 'run purlin:audit' not in design_part, \
+            f"a fresh Design gauge must not prompt a re-audit: {got}"
+        assert 'run purlin:audit --integrity' in integrity_part, (
+            "a stale Integrity gauge must name --integrity, not a full audit that "
+            f"would also re-grade fresh Design results: {got}")
+
+        # Both stale: the bare command is correct, because both need refreshing.
+        seed(80 * 24, 78 * 24)
+        got = line()
+        assert 'run purlin:audit' in got
+        assert '--integrity' not in got and '--design' not in got, (
+            "with both gauges stale the directive is a bare full audit: " + got)
+
+    @pytest.mark.proof("sync_status", "PROOF-76", "RULE-44", tier="e2e")
+    def test_fully_covered_feature_gets_gauge_directives(self):
+        """A VERIFIED feature with findings must not report "No action needed."."""
+        _make_project(self.tmp_dir, with_git=True)
+        # Prove and receipt every rule so the feature reaches VERIFIED.
+        features = _scan_specs(self.tmp_dir)
+        all_proofs = _read_proofs(self.tmp_dir)
+        rule_entries, _ = purlin_server._build_coverage_rules(
+            'login', features['login'], features, {})
+        active = [(k, l, s) for k, l, s, d in rule_entries if not d]
+        relevant = purlin_server._collect_relevant_proofs('login', rule_entries, all_proofs)
+        vhash = purlin_server._compute_vhash({k: True for k, _, _ in active}, relevant)
+        with open(os.path.join(self.tmp_dir, 'specs', 'auth', 'login.receipt.json'),
+                  'w', encoding='utf-8') as f:
+            json.dump({'feature': 'login', 'vhash': vhash, 'commit': 'x',
+                       'timestamp': '2026-01-01T00:00:00+00:00',
+                       'rules': sorted(k for k, _, _ in active),
+                       'proofs': [{'id': p['id'], 'rule': p['rule'],
+                                   'status': p['status']} for p in relevant]}, f)
+
+        def login_block(output):
+            """The per-feature detail block, which may end the output."""
+            lines = output.splitlines()
+            start = next((i for i, l in enumerate(lines)
+                          if l.startswith('login:')), None)
+            assert start is not None, f"no login detail block:\n{output[-600:]}"
+            end = start + 1
+            while end < len(lines) and lines[end].startswith(' '):
+                end += 1
+            return '\n'.join(lines[start:end])
+
+        # ── Both gauges have findings ────────────────────────────────────
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('LOOSE', 'login', 'PROOF-2', 'RULE-2'),
+        }, static_checks.DESIGN_CACHE)
+        write_audit_cache(self.tmp_dir, {
+            'a1': self._entry('WEAK', 'login', 'PROOF-1'),
+        })
+        block = login_block(sync_status(self.tmp_dir))
+        assert 'No action needed' not in block, (
+            "a feature with LOOSE descriptions and WEAK tests is not done:\n" + block)
+        assert 'purlin:spec login' in block, "a Design finding must route to purlin:spec"
+        assert 'purlin:build login' in block, "an Integrity finding must route to purlin:build"
+        # Design first: Integrity criteria compare a test to its description, so a
+        # LOOSE description leaves them nothing to catch.
+        assert block.index('purlin:spec login') < block.index('purlin:build login'), (
+            "Design must be reported before Integrity:\n" + block)
+
+        # ── Neither gauge measured ───────────────────────────────────────
+        cache_dir = os.path.join(self.tmp_dir, '.purlin', 'cache')
+        for name in ('design_cache.json', 'audit_cache.json'):
+            os.remove(os.path.join(cache_dir, name))
+        block = login_block(sync_status(self.tmp_dir))
+        assert 'purlin:audit' in block, \
+            "an unmeasured gauge must route to purlin:audit:\n" + block
+        assert 'No action needed' not in block
+
+        # ── Both gauges clean ────────────────────────────────────────────
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('PROVABLE', 'login', 'PROOF-1'),
+        }, static_checks.DESIGN_CACHE)
+        write_audit_cache(self.tmp_dir, {
+            'a1': self._entry('STRONG', 'login', 'PROOF-1'),
+        })
+        block = login_block(sync_status(self.tmp_dir))
+        assert 'No action needed' in block, (
+            "with both gauges clean the feature really is done:\n" + block)

@@ -103,7 +103,7 @@ expensive one. Note the order matters: most Integrity checks compare a test agai
 description, so a vague description leaves them nothing to catch — a high Integrity score over
 vague proofs means the spec is unfalsifiable, not that the tests are good.
 
-**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and both quality gauges. You don't need to use it — the CLI output has everything — but it's there if you want it.
+**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and both quality gauges, per feature and in aggregate. You don't need to use it — the CLI table carries the same five columns and the same numbers — but it's there if you want it.
 
 ### Upgrading from an older version of Purlin
 

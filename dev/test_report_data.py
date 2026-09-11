@@ -1093,13 +1093,31 @@ class TestPerFeatureDesignAndGaugeStates:
         for name in ('measured_feat', 'excluded_feat', 'unmeasured_feat'):
             _write_spec(self.tmp, name, _minimal_spec_content(name))
             _write_proofs(self.tmp, name, _minimal_proofs(name))
+        # A fourth feature with 3 proofs but only 1 assessed, and that one
+        # EXCLUDED. Claiming `excluded` here would assert "nothing gradeable"
+        # off a third of the evidence, which is how skill_audit reported
+        # `excluded` from 2 assessments while 18 proofs went unlooked-at.
+        partial_spec = (
+            '# Feature: partial_feat\n\n## Rules\n'
+            '- RULE-1: One\n- RULE-2: Two\n- RULE-3: Three\n\n## Proof\n'
+            '- PROOF-1 (RULE-1): Call with 1, assert 2\n'
+            '- PROOF-2 (RULE-2): Call with 3, assert 4\n'
+            '- PROOF-3 (RULE-3): Call with 5, assert 6\n'
+        )
+        _write_spec(self.tmp, 'partial_feat', partial_spec)
+        _write_proofs(self.tmp, 'partial_feat', [
+            dict(_minimal_proofs('partial_feat')[0], id=f'PROOF-{i}', rule=f'RULE-{i}')
+            for i in (1, 2, 3)
+        ])
         _write_design_cache(self.tmp, {
             'd1': _cache_entry('PROVABLE', 'measured_feat', 'PROOF-1'),
             'd2': _cache_entry('STRUCTURAL', 'excluded_feat', 'PROOF-1'),
+            'd3': _cache_entry('STRUCTURAL', 'partial_feat', 'PROOF-1'),
         })
         _write_audit_cache(self.tmp, {
             'a1': _cache_entry('STRONG', 'measured_feat', 'PROOF-1'),
             'a2': _cache_entry('EXCLUDED', 'excluded_feat', 'PROOF-1'),
+            'a3': _cache_entry('EXCLUDED', 'partial_feat', 'PROOF-1'),
         })
         features = purlin_server._scan_specs(self.tmp)
         proofs = purlin_server._read_proofs(self.tmp)
@@ -1118,8 +1136,12 @@ class TestPerFeatureDesignAndGaugeStates:
 
             assert by_name['measured_feat'][gauge]['state'] == 'measured'
             assert by_name['excluded_feat'][gauge]['state'] == 'excluded', \
-                "entries exist but none are gradeable, which is not the same as unaudited"
+                "fully assessed with nothing gradeable is not the same as unaudited"
             assert by_name['unmeasured_feat'][gauge]['state'] == 'unmeasured'
+            # The load-bearing case: a subset assessed, and that subset unscorable.
+            assert by_name['partial_feat'][gauge]['state'] == 'unmeasured', (
+                f"partial_feat.{gauge} is {by_name['partial_feat'][gauge]['state']!r}; "
+                "`excluded` must not be claimed from a subset of a feature's proofs")
 
         # The excluded feature has no percentage, but it is NOT unmeasured.
         assert by_name['excluded_feat']['audit']['integrity'] is None
@@ -1188,3 +1210,44 @@ class TestPerFeatureDesignAndGaugeStates:
         audit, design = summaries()
         assert design['coverage'] == {'measured': 4, 'total': 4, 'complete': True}
         assert audit['coverage'] == {'measured': 4, 'total': 4, 'complete': True}
+
+
+    @pytest.mark.proof("report_data", "PROOF-29", "RULE-28", tier="integration")
+    def test_each_feature_gauge_carries_its_own_coverage(self):
+        """RULE-28: a row must be able to say how much of itself was assessed.
+
+        The project summaries carried coverage; per-feature gauges did not,
+        which is what let a row assert `excluded` over an audited subset.
+        """
+        spec = (
+            '# Feature: login\n\n## Rules\n'
+            '- RULE-1: Does one thing\n- RULE-2: Does another\n\n## Proof\n'
+            '- PROOF-1 (RULE-1): Call with 1, assert 2\n'
+            '- PROOF-2 (RULE-2): Call with 3, assert 4\n'
+        )
+        _write_spec(self.tmp, 'login', spec)
+        _write_proofs(self.tmp, 'login', [
+            dict(_minimal_proofs('login')[0], id='PROOF-1', rule='RULE-1'),
+            dict(_minimal_proofs('login')[0], id='PROOF-2', rule='RULE-2'),
+        ])
+        # Integrity: 1 of 2 executed proofs assessed. Design: both descriptions.
+        _write_audit_cache(self.tmp, {
+            'a1': _cache_entry('STRONG', 'login', 'PROOF-1'),
+        })
+        _write_design_cache(self.tmp, {
+            'd1': _cache_entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': _cache_entry('PROVABLE', 'login', 'PROOF-2', 'RULE-2'),
+        })
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = purlin_server._build_report_data(
+            self.tmp, features, proofs, {'report': True},
+            {k: v for k, v in features.items() if v.get('is_global')},
+        )
+        login = next(f for f in data['features'] if f['name'] == 'login')
+        assert login['audit']['coverage'] == {
+            'measured': 1, 'total': 2, 'complete': False}, \
+            f"integrity coverage was {login['audit']['coverage']}"
+        assert login['design']['coverage'] == {
+            'measured': 2, 'total': 2, 'complete': True}, \
+            f"design coverage was {login['design']['coverage']}"

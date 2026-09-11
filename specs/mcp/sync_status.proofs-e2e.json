@@ -162,6 +162,51 @@
       "test_name": "test_design_score_needs_no_audit_cache",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-73",
+      "rule": "RULE-18",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_summary_table_carries_both_gauge_columns",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-73",
+      "rule": "RULE-18",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_gauge_cells_use_whole_words_for_both_empty_states",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-74",
+      "rule": "RULE-39",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_summary_line_states_each_gauge_denominator",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-77",
+      "rule": "RULE-45",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_each_gauge_reports_its_own_age_and_refresh_command",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-76",
+      "rule": "RULE-44",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_fully_covered_feature_gets_gauge_directives",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

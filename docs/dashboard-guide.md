@@ -89,8 +89,8 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 
 ![Feature categories with coverage bars and status badges](images/dashboard-categories.png)
 
-- **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and both quality gauges: Proof Design and Proof Integrity
-- **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and Proof Integrity percentages. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
+- **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and both quality gauges: Proof Design and Proof Integrity. Each gauge card states what it measured over (`566 of 586 measured`) and turns amber below full coverage however high the percentage, so a score over a thin slice cannot read as a project-wide result
+- **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and both quality gauges. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
 - **Features section** — features grouped by category (matching `specs/` subdirectories). Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
 - **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW for tests, PROVABLE/LOOSE/UNPROVABLE for proof descriptions). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
 - **Uncommitted files** — when `purlin:status` detects uncommitted spec or proof files, a collapsible section shows which files need committing
@@ -143,7 +143,31 @@ dashboard shows both gauges in summary strip
 
 `purlin:audit` populates both caches. `purlin:status` reads them and includes the findings in the data file. A gauge with no data shows "--".
 
-The two "--" states mean different things. Proof Design shows "--" only when no design audit has run. Proof Integrity shows "--" either because no audit has run *or* because no test has executed yet — and in that second case the card reads "no tests yet" rather than "run purlin:audit", because a project being authored spec-first is not a neglected one.
+The **Design** and **Integrity** columns are separate because they are separate measurements: one grades the proof *description*, the other the *test* behind it. Neither cell is ever blank. A cell reads:
+
+| Cell | Meaning |
+|------|---------|
+| `94%` | Measured. Coloured green at 80%+, amber at 50-79%, red below 50%. |
+| `not audited` | Nothing has assessed this feature, or only part of it. Amber, because it is actionable. |
+| `structural` | Design only. Every description is a structural presence check, which is the correct proof for a structural rule. Teal, because there is nothing to fix. |
+| `excluded` | Integrity only. Every proof is excluded from scoring, so nothing is gradeable. Teal. |
+
+`structural` and `excluded` are the same state in each gauge's own vocabulary: STRUCTURAL
+describes a description, EXCLUDED describes a test, and the two never mix. Hover any cell for
+the reason and the feature's assessment coverage.
+
+A gauge is never reported as `excluded` or `structural` from a subset. If a feature has twenty
+proofs and two were assessed, the cell reads `not audited` however those two graded, because the
+answer is not known yet.
+
+The header carries one freshness label per gauge — `/design 3h ago`, `/integrity 78d ago` — each
+from its own cache, since the two age independently. A stale gauge names the narrowest command
+that refreshes it: `purlin:audit --design`, `purlin:audit --integrity`, or bare `purlin:audit`
+when both are stale. Design grading is deterministic and needs no tests; Integrity grading needs
+test code and costs LLM calls, so refreshing Design alone should not trigger a full audit.
+
+The Proof Integrity card reads `no tests yet` rather than `run purlin:audit` when every feature
+is UNTESTED, because a project being authored spec-first is not a neglected one.
 
 The HTML file loads `.purlin/report-data.js` through a script tag. No fetch calls, no CORS, no server. Just a static file loading another static file.
 

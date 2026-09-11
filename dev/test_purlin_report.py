@@ -804,14 +804,16 @@ def make_gauge(pct, kind='audit', state=None):
     """
     if state is None:
         state = 'measured' if pct is not None else 'unmeasured'
+    cov = {"measured": 1, "total": 1, "complete": True}
     if kind == 'design':
         return {
             "design": pct, "provable": 1, "loose": 0, "unprovable": 0,
-            "structural": 0, "gradeable_total": 1, "state": state, "findings": [],
+            "structural": 0, "gradeable_total": 1, "state": state,
+            "coverage": cov, "findings": [],
         }
     return {
         "integrity": pct, "strong": 1, "weak": 0, "hollow": 0, "manual": 0,
-        "behavioral_total": 1, "state": state, "findings": [],
+        "behavioral_total": 1, "state": state, "coverage": cov, "findings": [],
     }
 
 
@@ -1185,6 +1187,28 @@ class TestDashboardVisual:
             assert any(band in c for c in design_classes), (
                 f"Expected a {band} cell from the design gauge, got: {design_classes}"
             )
+
+        # A gauge with no percentage is coloured by why, never greyed: teal for
+        # a correct terminal state, amber for one that needs an audit run.
+        state_data = make_data({
+            "features": [
+                make_integrity_feature("excl_feat", None, design=None,
+                                       audit_state="excluded", design_state="excluded"),
+                make_integrity_feature("pending_feat", None, design=None,
+                                       audit_state="unmeasured", design_state="unmeasured"),
+            ],
+            "summary": {"total_features": 2, "verified": 2, "partial": 0, "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        })
+        load_dashboard(page, dashboard, data=state_data)
+        state_classes = [c.get_attribute("class")
+                         for c in page.query_selector_all("td.int")]
+        assert any("int-excluded" in c for c in state_classes), (
+            f"an excluded gauge must take the teal class, got: {state_classes}")
+        assert any("int-pending" in c for c in state_classes), (
+            f"an unmeasured gauge must take the amber class, got: {state_classes}")
+        assert not any("int-na" in c for c in state_classes), (
+            f"no gauge cell may be greyed out: {state_classes}")
 
     @pytest.mark.proof("dashboard_visual", "PROOF-11", "RULE-11")
     def test_no_hardcoded_hex_outside_custom_properties(self):
@@ -2775,23 +2799,42 @@ class TestGaugeCellsAndCoverage:
             f"expected 6 gauge cells for 3 features x 2 gauges, got {len(cells)}"
 
         texts = [c.text_content().strip() for c in cells]
-        # Rows sort by status then name, and both gauges carry the same value per
-        # feature here, so assert on the multiset rather than the order.
+        # Each gauge names its unscorable state in its own vocabulary: STRUCTURAL
+        # describes a description, EXCLUDED describes a test. Design must never
+        # read "excluded" (references/audit_criteria.md: the two never mix).
         assert sorted(texts) == sorted(
-            ["75%", "75%", "excl", "excl", "unmeasured", "unmeasured"]), \
+            ["75%", "75%", "structural", "excluded", "not audited", "not audited"]), \
             f"unexpected gauge cell contents: {texts}"
+        design_cells = [r.query_selector_all("td.int")[0].text_content().strip()
+                        for r in page.query_selector_all("tr.fr")]
+        assert "excluded" not in design_cells, (
+            "a Proof Design cell must never read 'excluded' — its unscorable "
+            f"level is STRUCTURAL: {design_cells}")
 
         for c, t in zip(cells, texts):
             assert "—" not in t and "&mdash;" not in t, \
                 f"gauge cell rendered an em dash: {t!r}"
             assert c.get_attribute("title"), \
                 f"gauge cell {t!r} carries no tooltip explaining the value"
+            # Whole words, so nothing in the column needs decoding.
+            assert not t.endswith("."), f"abbreviated gauge token: {t!r}"
 
-        # `excl` and `unmeasured` must be distinguishable, which is the whole
+        # The two non-numeric states must be distinguishable, which is the whole
         # point: one means fully assessed with nothing scorable, the other means
-        # nobody has looked.
-        assert texts.count("excl") == 2 and texts.count("unmeasured") == 2, \
-            "excluded and unmeasured must render as different tokens"
+        # nobody has looked. And each is coloured by its meaning rather than
+        # greyed out, so neither reads as absent data.
+        assert texts.count("not audited") == 2, \
+            "the unmeasured state must render as its own token"
+        by_text = {}
+        for c, t in zip(cells, texts):
+            by_text.setdefault(t, []).append(c.get_attribute("class"))
+        for word in ("structural", "excluded"):
+            for cls in by_text[word]:
+                assert "int-excluded" in cls and "int-na" not in cls, \
+                    f"an unscorable gauge must be teal, not grey: {cls}"
+        for cls in by_text["not audited"]:
+            assert "int-pending" in cls and "int-na" not in cls, \
+                f"an unmeasured gauge must be amber, not grey: {cls}"
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof37_gauge_cells.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-38", "RULE-36", tier="e2e")

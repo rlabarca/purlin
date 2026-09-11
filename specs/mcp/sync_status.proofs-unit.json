@@ -291,6 +291,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-75",
+      "rule": "RULE-43",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_design_formula_consistent_across_the_same_three_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_mcp_server.py",

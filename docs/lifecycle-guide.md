@@ -106,8 +106,11 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 `purlin:status` shows a summary of all features with their coverage:
 
 ```
-Summary: 42 features | 22 VERIFIED | 13 PASSING | 6 PARTIAL | 0 FAILING | 1 UNTESTED
+22/42 features VERIFIED | Proof Design: 91% (566 of 586 measured, 3 hours ago) | Proof Integrity: 100% (15 of 592 measured, 78 days ago, run purlin:audit --integrity)
 ```
+
+Each gauge states its own measurement coverage and its own age. A percentage without its
+denominator is what let 100% over 15 of 592 assessments read as a project-wide 100%.
 
 Each feature gets detailed per-rule coverage. Features needing attention (FAILING, PARTIAL) sort to the top. Uncommitted spec/proof changes are flagged so you know the report may not reflect the latest state.
 
@@ -497,7 +500,7 @@ The real proof that instructions work is: **does the agent produce correct outpu
 - PROOF-1 (RULE-1): Run purlin:init on empty project; verify directories exist @e2e
 - PROOF-2 (RULE-2): Run purlin:spec-from-code; verify generated specs have RULE-N and PROOF-N lines @e2e
 - PROOF-3 (RULE-3): Run tests with proof markers; verify .proofs-*.json files appear next to specs @e2e
-- PROOF-4 (RULE-4): Run purlin:status; verify output contains feature table with Coverage and Status columns @e2e
+- PROOF-4 (RULE-4): Run purlin:status; verify output contains a feature table with Coverage, Status, Design and Integrity columns @e2e
 - PROOF-5 (RULE-5): Run purlin:verify; verify receipt.json with vhash @e2e
 ```
 

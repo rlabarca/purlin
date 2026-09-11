@@ -442,6 +442,22 @@ def _dedup_cache_entries(cache):
     return latest
 
 
+def _is_stale(latest_ts, max_age_seconds=86400):
+    """True when the newest assessment is older than max_age (default 24h).
+
+    Shared by both gauge readers. Design carried no staleness flag at all, so a
+    project graded a year ago was indistinguishable from one graded this morning.
+    """
+    if not latest_ts:
+        return False
+    try:
+        then = datetime.datetime.fromisoformat(latest_ts.replace('Z', '+00:00'))
+        return (datetime.datetime.now(datetime.timezone.utc) - then
+                ).total_seconds() > max_age_seconds
+    except (ValueError, TypeError):
+        return False
+
+
 def _compute_design(provable, loose, unprovable):
     """Compute the Proof Design percentage from graded-description counts.
 
@@ -535,14 +551,7 @@ def _read_audit_summary(project_root):
     if integrity is None:
         return None
 
-    stale = False
-    if latest_ts:
-        try:
-            then = datetime.datetime.fromisoformat(latest_ts.replace('Z', '+00:00'))
-            delta = datetime.datetime.now(datetime.timezone.utc) - then
-            stale = delta.total_seconds() > 86400
-        except (ValueError, TypeError):
-            pass
+    stale = _is_stale(latest_ts)
 
     return {
         'integrity': integrity,
@@ -603,6 +612,7 @@ def _read_design_summary(project_root):
         'gradeable_total': gradeable,
         'last_design_audit': latest_ts,
         'last_design_audit_relative': _relative_time(latest_ts) if latest_ts else None,
+        'stale': _is_stale(latest_ts),
     }
 
 
@@ -652,7 +662,65 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
         }
 
 
-def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
+def _gauge_token(gauge, which):
+    """Render one feature's gauge for the text table.
+
+    Uses the same tokens as the dashboard so the two surfaces cannot disagree
+    about what a blank would have meant. The unscorable word comes from that
+    gauge's own vocabulary: STRUCTURAL describes a description, EXCLUDED
+    describes a test, and the two never mix (sync_status RULE-18).
+    """
+    if not gauge:
+        return 'not audited'
+    pct = gauge.get('design') if which == 'design' else gauge.get('integrity')
+    if pct is not None:
+        return f'{pct}%'
+    if gauge.get('state') == 'excluded':
+        return 'structural' if which == 'design' else 'excluded'
+    return 'not audited'
+
+
+def _refresh_command(audit_summary, design_summary):
+    """The narrowest purlin:audit invocation that refreshes what is stale.
+
+    Design grading is deterministic and needs no test code; Integrity grading
+    needs tests and costs LLM calls. Sending someone to a full audit to refresh
+    Design alone spends budget for nothing (sync_status RULE-45).
+    """
+    d_stale = not design_summary or design_summary.get('stale')
+    a_stale = not audit_summary or audit_summary.get('stale')
+    if d_stale and a_stale:
+        return 'purlin:audit'
+    return 'purlin:audit --design' if d_stale else 'purlin:audit --integrity'
+
+
+def _gauge_suffix(summary, which, audit_summary, design_summary):
+    """` (N of M measured, <age>)` for one gauge, from its own timestamp.
+
+    A percentage printed with no denominator is what let 100% over 15 of 608
+    assessments read as a project-wide result. And each age comes from that
+    gauge's own cache: one shared "last audit" figure reported the Integrity
+    cache's age as though it were the whole project's.
+    """
+    if not summary:
+        return ''
+    parts = []
+    cov = summary.get('coverage')
+    if cov and not cov.get('complete'):
+        parts.append(f"{cov['measured']} of {cov['total']} measured")
+    rel = summary.get('last_design_audit_relative' if which == 'design'
+                      else 'last_audit_relative')
+    if rel:
+        parts.append(rel)
+    if summary.get('stale'):
+        parts.append(f"run {_refresh_command(audit_summary, design_summary)}")
+    if not parts:
+        return ''
+    return " (" + ", ".join(parts) + ")"
+
+
+def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
+                         gauges_by_feature=None):
     """Build a coverage summary table with Unicode box-drawing characters."""
     if not summary_rows:
         return []
@@ -665,6 +733,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
         return (priority, ratio, _name)
 
     summary_rows = sorted(summary_rows, key=_sort_key)
+    gauges_by_feature = gauges_by_feature or {}
 
     # Calculate column widths
     name_width = max(len(r[0]) for r in summary_rows)
@@ -675,13 +744,17 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
     # and a spec-only project is 100% UNTESTED, which misaligned every single row.
     status_width = max(len(s) for s in
                        ("VERIFIED", "PASSING", "FAILING", "PARTIAL", "UNTESTED", "Status"))
+    # Both gauges share a width, ruled for the longest token ("unmeasured") so a
+    # row cannot overflow its border the way UNTESTED once did.
+    gauge_width = max(len('not audited'), len('structural'), len('Integrity'))
     cov_rule = '\u2500' * 10
     status_rule = '\u2500' * (status_width + 2)
+    gauge_rule = '\u2500' * (gauge_width + 2)
 
     lines = []
-    lines.append(f"\u250c\u2500{'─' * name_width}\u2500\u252c{cov_rule}\u252c{status_rule}\u2510")
-    lines.append(f"\u2502 {'Feature':<{name_width}} \u2502 Coverage \u2502 {'Status':<{status_width}} \u2502")
-    lines.append(f"\u251c\u2500{'─' * name_width}\u2500\u253c{cov_rule}\u253c{status_rule}\u2524")
+    lines.append(f"\u250c\u2500{'─' * name_width}\u2500\u252c{cov_rule}\u252c{status_rule}\u252c{gauge_rule}\u252c{gauge_rule}\u2510")
+    lines.append(f"\u2502 {'Feature':<{name_width}} \u2502 Coverage \u2502 {'Status':<{status_width}} \u2502 {'Design':>{gauge_width}} \u2502 {'Integrity':>{gauge_width}} \u2502")
+    lines.append(f"\u251c\u2500{'─' * name_width}\u2500\u253c{cov_rule}\u253c{status_rule}\u253c{gauge_rule}\u253c{gauge_rule}\u2524")
 
     for name, proved, total, status in summary_rows:
         coverage = f"{proved}/{total}"
@@ -695,25 +768,38 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
             symbol = "PARTIAL"
         else:
             symbol = "UNTESTED"
-        lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>{status_width}} \u2502")
+        # Anchors are labelled "<name> (anchor)" in the row; the gauge lookup
+        # keys on the bare feature name.
+        bare = name.split(' (', 1)[0]
+        g = gauges_by_feature.get(bare, {})
+        design_tok = _gauge_token(g.get('design'), 'design')
+        integrity_tok = _gauge_token(g.get('audit'), 'integrity')
+        lines.append(
+            f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>{status_width}} "
+            f"\u2502 {design_tok:>{gauge_width}} \u2502 {integrity_tok:>{gauge_width}} \u2502")
 
-    lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534{cov_rule}\u2534{status_rule}\u2518")
+    lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534{cov_rule}\u2534{status_rule}\u2534{gauge_rule}\u2534{gauge_rule}\u2518")
 
     # Summary line with optional integrity
     verified_count = sum(1 for _, _, _, s in summary_rows if s == "VERIFIED")
     total_features = len(summary_rows)
     summary_line = f"{verified_count}/{total_features} features VERIFIED"
 
+    # Design first: a high Integrity score over LOOSE descriptions measures an
+    # unfalsifiable spec, so the gauge that bounds the other is reported first.
     if design_summary:
-        summary_line += f" | Proof Design: {design_summary['design']}%"
+        summary_line += (f" | Proof Design: {design_summary['design']}%"
+                         + _gauge_suffix(design_summary, 'design',
+                                         audit_summary, design_summary))
+    else:
+        # No design cache. Say so rather than dropping the gauge: an omitted
+        # label is indistinguishable from a reporter that forgot to print it.
+        summary_line += " | Proof Design: not measured"
 
     if audit_summary:
-        pct = audit_summary['integrity']
-        rel = audit_summary.get('last_audit_relative', '')
-        if audit_summary.get('stale'):
-            summary_line += f" | Proof Integrity: {pct}% (last purlin:audit: {rel} \u2014 consider re-auditing)"
-        else:
-            summary_line += f" | Proof Integrity: {pct}% (last purlin:audit: {rel})"
+        summary_line += (f" | Proof Integrity: {audit_summary['integrity']}%"
+                         + _gauge_suffix(audit_summary, 'integrity',
+                                         audit_summary, design_summary))
     else:
         # No audit cache. Distinguish "nothing has been tested yet" from "tests
         # exist but were never audited" — reporting them identically made a
@@ -841,10 +927,26 @@ def sync_status(project_root, role=None):
     detail = []
 
     # Process regular features
+    # Per-feature gauges for the table's two quality columns. Same readers the
+    # dashboard uses, so the CLI and the dashboard cannot disagree.
+    audit_by_feature = _read_audit_cache_by_feature(project_root)
+    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json')
+    populations = _feature_populations(features, all_proofs)
+    gauges_by_feature = {
+        name: {
+            'audit': _build_feature_audit(audit_by_feature.get(name, []),
+                                          populations.get(name, {}).get('audit')),
+            'design': _build_feature_design(design_by_feature.get(name, []),
+                                            populations.get(name, {}).get('design')),
+        }
+        for name in features
+    }
+
     for name in sorted(regular.keys()):
         info = regular[name]
         feature_lines = _report_feature(
-            name, info, features, all_proofs, project_root, role, global_anchors
+            name, info, features, all_proofs, project_root, role, global_anchors,
+            gauges=gauges_by_feature.get(name),
         )
         detail.extend(feature_lines)
         detail.append('')
@@ -944,7 +1046,8 @@ def sync_status(project_root, role=None):
                            audit_summary, design_summary)
 
     # Build summary table and combine output
-    table_lines = _build_summary_table(summary_rows, audit_summary, design_summary)
+    table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
+                                       gauges_by_feature)
 
     # Report data generation (side effect)
     config = resolve_config(project_root)
@@ -1074,8 +1177,53 @@ def _collect_relevant_proofs(name, rule_entries, all_proofs):
     return proofs
 
 
+def _gauge_directives(name, gauges):
+    """Next steps for a fully covered feature, driven by its quality gauges.
+
+    Coverage is the only hard gate, so a feature with every rule proved used to
+    report "No action needed." however hollow its tests or however unfalsifiable
+    its proof descriptions. The directive layer was blind to both gauges.
+
+    Design is addressed before Integrity on purpose: most Integrity criteria
+    compare a test against its proof description, so a LOOSE description leaves
+    them nothing to catch and a high Integrity score over one measures an
+    unfalsifiable spec rather than good tests (sync_status RULE-44).
+    """
+    gauges = gauges or {}
+    design = gauges.get('design') or {}
+    audit = gauges.get('audit') or {}
+    out = []
+
+    d_find = design.get('findings') or []
+    if d_find:
+        ids = ', '.join(f.get('proof_id', '?') for f in d_find[:3])
+        more = f" (+{len(d_find) - 3} more)" if len(d_find) > 3 else ''
+        out.append(f"  \u26a0 Proof Design: {len(d_find)} description"
+                   f"{'s' if len(d_find) != 1 else ''} not PROVABLE \u2014 {ids}{more}")
+        out.append(f"  \u2192 Run: purlin:spec {name} (the proof description is the artifact at fault)")
+
+    a_find = audit.get('findings') or []
+    if a_find:
+        ids = ', '.join(f.get('proof_id', '?') for f in a_find[:3])
+        more = f" (+{len(a_find) - 3} more)" if len(a_find) > 3 else ''
+        out.append(f"  \u26a0 Proof Integrity: {len(a_find)} proof"
+                   f"{'s' if len(a_find) != 1 else ''} WEAK or HOLLOW \u2014 {ids}{more}")
+        out.append(f"  \u2192 Run: purlin:build {name} (only test code moves Integrity)")
+
+    if not out:
+        unmeasured = [label for label, g in (('Design', design), ('Integrity', audit))
+                      if g.get('state') == 'unmeasured']
+        if unmeasured:
+            out.append(f"  \u26a0 Proof {' and Proof '.join(unmeasured)} not measured")
+            flag = ' --design' if unmeasured == ['Design'] else ''
+            out.append(f"  \u2192 Run: purlin:audit{flag} {name}")
+        else:
+            out.append("  \u2192 No action needed.")
+    return out
+
+
 def _report_feature(name, info, all_features, all_proofs, project_root, role,
-                    global_anchors=None):
+                    global_anchors=None, gauges=None):
     """Generate report lines for a single feature."""
     lines = []
     if global_anchors is None:
@@ -1188,7 +1336,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
         elif has_current_receipt:
-            lines.append("  \u2192 No action needed.")
+            lines.extend(_gauge_directives(name, gauges))
         if assumed_count:
             lines.append(f"  \u26a0 {assumed_count} rule{'s' if assumed_count != 1 else ''} ha{'ve' if assumed_count != 1 else 's'} (assumed) values \u2014 PM should confirm")
         for missing_name in unresolved_requires:
@@ -1418,7 +1566,7 @@ def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json'):
     return by_feature
 
 
-def _build_feature_audit(entries):
+def _build_feature_audit(entries, total=None):
     """Build per-feature audit data from cache entries.
 
     Integrity = (STRONG + MANUAL) / behavioral_total — measures proof quality
@@ -1470,25 +1618,67 @@ def _build_feature_audit(entries):
         'hollow': hollow,
         'manual': manual,
         'behavioral_total': behavioral_total,
-        'state': _gauge_state(entries, integrity),
+        'state': _gauge_state(entries, integrity, total),
+        'coverage': _feature_coverage(entries, total),
         'findings': findings,
     }
 
 
-def _gauge_state(entries, pct):
+def _gauge_state(entries, pct, total=None):
     """Classify a feature's gauge as measured / excluded / unmeasured.
 
     Returning None for anything unscorable collapsed two different facts into
     one blank cell: a feature whose every proof is legitimately EXCLUDED (or
     every description STRUCTURAL) looked identical to one nobody has audited.
-    The dashboard then had nothing to render but an em dash for both.
+
+    `excluded` is a strong claim — nothing here is gradeable — so it requires
+    that every one of the feature's proofs has actually been assessed. Without
+    that check, skill_audit read `excluded` off 2 assessments that both happened
+    to be EXCLUDED while its other 18 executed proofs had never been looked at.
+    A partially assessed feature is `unmeasured`: the answer is not known yet.
     """
     if pct is not None:
         return 'measured'
-    return 'excluded' if entries else 'unmeasured'
+    if not entries:
+        return 'unmeasured'
+    if total is not None and len(entries) < total:
+        return 'unmeasured'
+    return 'excluded'
 
 
-def _build_feature_design(entries):
+def _feature_populations(features, all_proofs):
+    """Per feature, the population each gauge could assess.
+
+    Integrity is scored over executed proofs; Design over declared proof
+    descriptions, which is why Design is measurable with nothing built. Without
+    these totals a per-feature gauge cannot tell "fully assessed, nothing
+    gradeable" from "two of twenty assessed and both happened to be excluded".
+    """
+    pops = {}
+    for name, info in features.items():
+        declared = sum(len(ids) for ids in
+                       info.get('planned_proof_ids_by_rule', {}).values())
+        pops[name] = {
+            'audit': len(all_proofs.get(name, [])),
+            'design': declared,
+        }
+    return pops
+
+
+def _feature_coverage(entries, total):
+    """How much of one feature's population this gauge actually assessed.
+
+    The project summaries carry this; per-feature gauges did not, which is why
+    a row could assert "nothing gradeable" over a small audited subset.
+    """
+    measured = len(entries)
+    if total is None:
+        return {'measured': measured, 'total': None, 'complete': None}
+    return {'measured': measured, 'total': total,
+            'complete': total > 0 and measured >= total}
+
+
+def _build_feature_design(entries, total=None):
     """Build per-feature Proof Design data from design-cache entries.
 
     Mirrors _build_feature_audit: Design = PROVABLE / (PROVABLE + LOOSE +
@@ -1532,7 +1722,8 @@ def _build_feature_design(entries):
         'unprovable': unprovable,
         'structural': structural,
         'gradeable_total': gradeable_total,
-        'state': _gauge_state(entries, design),
+        'state': _gauge_state(entries, design, total),
+        'coverage': _feature_coverage(entries, total),
         'findings': findings,
     }
 
@@ -1565,6 +1756,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     # gauge (report_data RULE-24); reading from the cache inside the builder
     # makes both entry points correct by construction.
     design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json')
+    populations = _feature_populations(features, all_proofs)
     # Build per-proof audit lookup: (feature_name, proof_id) -> assessment
     audit_by_proof = {}
     for feat_name, entries in audit_by_feature.items():
@@ -1747,8 +1939,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'vhash': vhash,
             'receipt': receipt_data,
             'rules': rules_list,
-            'audit': _build_feature_audit(audit_by_feature.get(name, [])),
-            'design': _build_feature_design(design_by_feature.get(name, [])),
+            'audit': _build_feature_audit(audit_by_feature.get(name, []),
+                                          populations.get(name, {}).get('audit')),
+            'design': _build_feature_design(design_by_feature.get(name, []),
+                                            populations.get(name, {}).get('design')),
         })
 
     uncommitted_files = _check_uncommitted_all(project_root)

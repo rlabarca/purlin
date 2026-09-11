@@ -156,5 +156,11 @@ class TestFeatureTableColumns:
         # RULE-10's colour bands true for Design without a second definition.
         assert html.count('bh += gaugeCell(') == 2, \
             "both gauge cells must route through the one gaugeCell helper"
-        assert re.search(r'function gaugeCell\(pct, gauge, label\)', html), \
+        assert re.search(r'function gaugeCell\(pct, gauge, label, which\)', html), \
             "gaugeCell helper not found"
+        # Each gauge names its unscorable state in its own vocabulary: STRUCTURAL
+        # describes a description, EXCLUDED describes a test (RULE-35).
+        assert re.search(r"which === 'design' \? 'structural' : 'excluded'", html), \
+            "the unscorable token must come from each gauge's own vocabulary"
+        assert "gaugeCell(dsnVal, f.design, 'Proof Design', 'design')" in html
+        assert "gaugeCell(intVal, f.audit, 'Proof Integrity', 'integrity')" in html
