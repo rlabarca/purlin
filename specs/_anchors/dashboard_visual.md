@@ -15,7 +15,7 @@
 - RULE-7: PARTIAL status badge is amber outline pill (transparent background, amber border)
 - RULE-8: FAIL status badge is solid red pill with white text
 - RULE-9: UNTESTED status badge is gray pill with amber text; no-proofs badge (generic) is gray pill at reduced opacity
-- RULE-10: Integrity color coding: green at 80%+, amber at 50-79%, red below 50%, gray when null
+- RULE-10: Quality gauge color coding, applied identically to Proof Design and Proof Integrity: green at 80%+, amber at 50-79%, red below 50%, gray when null
 - RULE-11: All colors and visual constants are defined as CSS custom properties in :root or theme selectors, not hardcoded in component styles
 
 ## Proof
@@ -29,5 +29,5 @@
 - PROOF-7 (RULE-7): Load dashboard with a partial feature in Playwright; verify .sb-partial element has transparent background and amber border @e2e
 - PROOF-8 (RULE-8): Load dashboard with a FAIL feature in Playwright; verify .sb-fail element has background-color matching --red @e2e
 - PROOF-9 (RULE-9): Load dashboard with an UNTESTED feature in Playwright; verify .sb-untested element has gray background and amber text color; verify a separate no-proofs element (.sb-none) has reduced opacity @e2e
-- PROOF-10 (RULE-10): Load dashboard with features at integrity 90%, 60%, and 30%; verify green, amber, and red color classes respectively @e2e
+- PROOF-10 (RULE-10): Load dashboard with features at integrity 90%, 60% and 30%; verify green, amber and red colour classes respectively. Repeat with the same three values on the design gauge and verify it resolves to the identical three classes, proving one helper serves both @e2e
 - PROOF-11 (RULE-11): Grep purlin-report.html for hardcoded hex colors outside of CSS custom property definitions; verify none exist in component style rules

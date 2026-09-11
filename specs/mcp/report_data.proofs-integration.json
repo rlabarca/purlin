@@ -1,0 +1,32 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "report_data",
+      "id": "PROOF-26",
+      "rule": "RULE-25",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_design_excludes_structural_from_denominator",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-27",
+      "rule": "RULE-26",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_feature_carries_a_gauge_state_and_no_nulls",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-28",
+      "rule": "RULE-27",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_gauge_summaries_state_their_denominator",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

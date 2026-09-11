@@ -993,3 +993,198 @@ class TestReportDataStructure:
         assert rule['status'] == 'NONE', \
             f"Expected rule status NONE, got '{rule['status']}'"
         assert rule['proofs'][0]['status'] == 'planned'
+
+
+# ---------------------------------------------------------------------------
+# Per-feature Design, gauge states, and measurement coverage (RULE-25/26/27)
+# ---------------------------------------------------------------------------
+
+def _write_design_cache(tmp_dir, entries):
+    """Write design_cache.json to .purlin/cache/."""
+    cache_dir = os.path.join(tmp_dir, '.purlin', 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    path = os.path.join(cache_dir, 'design_cache.json')
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(entries, f)
+    return path
+
+
+def _cache_entry(assessment, feature, proof_id, rule_id='RULE-1'):
+    """A nine-field cache entry, the shape both caches share."""
+    return {
+        'assessment': assessment,
+        'criterion': 'c',
+        'why': 'w',
+        'fix': 'f',
+        'feature': feature,
+        'proof_id': proof_id,
+        'rule_id': rule_id,
+        'priority': 'LOW',
+        'cached_at': '2026-09-11T00:00:00+00:00',
+    }
+
+
+class TestPerFeatureDesignAndGaugeStates:
+    """RULE-25/26/27 — the two gauges reported per feature, with denominators.
+
+    Before this, `design_cache.json` had exactly one reader and it produced only
+    a project-wide aggregate, so the dashboard showed two gauges at the top and
+    one underneath. And a null per-feature gauge meant two different facts: a
+    feature whose every proof is legitimately excluded looked identical to one
+    nobody audited.
+    """
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _two_feature_project(self):
+        """`login` and `payments`, each with one rule and one executed proof."""
+        for name in ('login', 'payments'):
+            _write_spec(self.tmp, name, _minimal_spec_content(name))
+            _write_proofs(self.tmp, name, _minimal_proofs(name))
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        return purlin_server._build_report_data(
+            self.tmp, features, proofs, {'report': True},
+            {k: v for k, v in features.items() if v.get('is_global')},
+        )
+
+    @pytest.mark.proof("report_data", "PROOF-26", "RULE-25", tier="integration")
+    def test_per_feature_design_excludes_structural_from_denominator(self):
+        """Design = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE); STRUCTURAL out."""
+        _write_design_cache(self.tmp, {
+            'd1': _cache_entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': _cache_entry('PROVABLE', 'login', 'PROOF-2'),
+            'd3': _cache_entry('LOOSE', 'login', 'PROOF-3'),
+            'd4': _cache_entry('STRUCTURAL', 'login', 'PROOF-4'),
+            'd5': _cache_entry('STRUCTURAL', 'login', 'PROOF-5'),
+            'd6': _cache_entry('STRUCTURAL', 'login', 'PROOF-6'),
+        })
+        data = self._two_feature_project()
+        login = next(f for f in data['features'] if f['name'] == 'login')
+        payments = next(f for f in data['features'] if f['name'] == 'payments')
+
+        # 2 PROVABLE of 3 gradeable = 67%. Were STRUCTURAL counted it would be 33%.
+        assert login['design']['design'] == 67, \
+            f"expected 67% (2/3 gradeable), got {login['design']['design']}"
+        assert login['design']['provable'] == 2
+        assert login['design']['loose'] == 1
+        assert login['design']['structural'] == 3
+        assert login['design']['gradeable_total'] == 3, \
+            "STRUCTURAL must stay out of the denominator"
+        # The LOOSE description is a finding the author can act on.
+        assert [f['proof_id'] for f in login['design']['findings']] == ['PROOF-3']
+
+        assert payments['design']['design'] is None, \
+            "a feature with no design entries has no percentage"
+
+    @pytest.mark.proof("report_data", "PROOF-27", "RULE-26", tier="integration")
+    def test_every_feature_carries_a_gauge_state_and_no_nulls(self):
+        """measured / excluded / unmeasured are distinguishable, and never null.
+
+        `excluded` and `unmeasured` both used to render as a bare em dash, so
+        "fully assessed, nothing scorable" was indistinguishable from "nobody
+        has looked at this yet".
+        """
+        for name in ('measured_feat', 'excluded_feat', 'unmeasured_feat'):
+            _write_spec(self.tmp, name, _minimal_spec_content(name))
+            _write_proofs(self.tmp, name, _minimal_proofs(name))
+        _write_design_cache(self.tmp, {
+            'd1': _cache_entry('PROVABLE', 'measured_feat', 'PROOF-1'),
+            'd2': _cache_entry('STRUCTURAL', 'excluded_feat', 'PROOF-1'),
+        })
+        _write_audit_cache(self.tmp, {
+            'a1': _cache_entry('STRONG', 'measured_feat', 'PROOF-1'),
+            'a2': _cache_entry('EXCLUDED', 'excluded_feat', 'PROOF-1'),
+        })
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = purlin_server._build_report_data(
+            self.tmp, features, proofs, {'report': True},
+            {k: v for k, v in features.items() if v.get('is_global')},
+        )
+        by_name = {f['name']: f for f in data['features']}
+
+        for gauge in ('audit', 'design'):
+            for f in data['features']:
+                assert f[gauge] is not None, \
+                    f"{f['name']}.{gauge} is null; every feature must carry an object"
+                assert f[gauge]['state'] in ('measured', 'excluded', 'unmeasured'), \
+                    f"{f['name']}.{gauge}.state is {f[gauge]['state']!r}"
+
+            assert by_name['measured_feat'][gauge]['state'] == 'measured'
+            assert by_name['excluded_feat'][gauge]['state'] == 'excluded', \
+                "entries exist but none are gradeable, which is not the same as unaudited"
+            assert by_name['unmeasured_feat'][gauge]['state'] == 'unmeasured'
+
+        # The excluded feature has no percentage, but it is NOT unmeasured.
+        assert by_name['excluded_feat']['audit']['integrity'] is None
+        assert by_name['excluded_feat']['design']['design'] is None
+
+    @pytest.mark.proof("report_data", "PROOF-28", "RULE-27", tier="integration")
+    def test_gauge_summaries_state_their_denominator(self):
+        """coverage.{measured,total,complete} — a score is never readable alone.
+
+        100% Integrity computed from a handful of cached assessments over a repo
+        of hundreds of executed proofs rendered identically to 100% over all of
+        them. `complete` is what the dashboard colours on.
+        """
+        # Four declared proof descriptions across two features, four executed proofs.
+        spec = (
+            '# Feature: {name}\n\n## Rules\n'
+            '- RULE-1: Does the first thing\n'
+            '- RULE-2: Does the second thing\n\n## Proof\n'
+            '- PROOF-1 (RULE-1): Call it with 1, assert 2\n'
+            '- PROOF-2 (RULE-2): Call it with 3, assert 4\n'
+        )
+        for name in ('login', 'payments'):
+            _write_spec(self.tmp, name, spec.format(name=name))
+            _write_proofs(self.tmp, name, [
+                dict(_minimal_proofs(name)[0], id='PROOF-1', rule='RULE-1'),
+                dict(_minimal_proofs(name)[0], id='PROOF-2', rule='RULE-2'),
+            ])
+        _write_design_cache(self.tmp, {
+            'd1': _cache_entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': _cache_entry('PROVABLE', 'login', 'PROOF-2', 'RULE-2'),
+        })
+        _write_audit_cache(self.tmp, {
+            'a1': _cache_entry('STRONG', 'login', 'PROOF-1'),
+        })
+
+        def summaries():
+            features = purlin_server._scan_specs(self.tmp)
+            proofs = purlin_server._read_proofs(self.tmp)
+            a = purlin_server._read_audit_summary(self.tmp)
+            d = purlin_server._read_design_summary(self.tmp)
+            purlin_server._attach_gauge_coverage(self.tmp, features, proofs, a, d)
+            return a, d
+
+        audit, design = summaries()
+        assert design['coverage'] == {'measured': 2, 'total': 4, 'complete': False}, \
+            f"design coverage was {design['coverage']}"
+        assert audit['coverage'] == {'measured': 1, 'total': 4, 'complete': False}, \
+            f"audit coverage was {audit['coverage']}"
+        # 100% over one measured proof must still report incomplete.
+        assert audit['integrity'] == 100 and audit['coverage']['complete'] is False, \
+            "a perfect score over a thin slice must not read as complete"
+
+        # Fill both caches to the full population.
+        _write_design_cache(self.tmp, {
+            f'd{i}': _cache_entry('PROVABLE', feat, pid, rule)
+            for i, (feat, pid, rule) in enumerate(
+                [('login', 'PROOF-1', 'RULE-1'), ('login', 'PROOF-2', 'RULE-2'),
+                 ('payments', 'PROOF-1', 'RULE-1'), ('payments', 'PROOF-2', 'RULE-2')])
+        })
+        _write_audit_cache(self.tmp, {
+            f'a{i}': _cache_entry('STRONG', feat, pid, rule)
+            for i, (feat, pid, rule) in enumerate(
+                [('login', 'PROOF-1', 'RULE-1'), ('login', 'PROOF-2', 'RULE-2'),
+                 ('payments', 'PROOF-1', 'RULE-1'), ('payments', 'PROOF-2', 'RULE-2')])
+        })
+        audit, design = summaries()
+        assert design['coverage'] == {'measured': 4, 'total': 4, 'complete': True}
+        assert audit['coverage'] == {'measured': 4, 'total': 4, 'complete': True}

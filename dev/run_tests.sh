@@ -34,6 +34,12 @@ run_suite "E2E Init" bash "$SCRIPT_DIR/test_init_e2e.sh"
 # Running in one session ensures the proof plugin collects ALL markers
 # before writing proof files, avoiding feature-scoped overwrite between
 # separate pytest invocations.
+#
+# test_report_data.py and test_purlin_report.py were outside the sweep and so
+# could rot unnoticed. Each is the sole writer of its (feature, tier) pairs
+# — report_data@unit/@integration, and purlin_report@unit/@e2e plus
+# dashboard_visual@unit — so pooling them collides with nothing.
+# test_purlin_report.py drives a real browser and adds roughly 80s.
 run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_config_engine.py" \
   "$SCRIPT_DIR/test_mcp_server.py" \
@@ -50,6 +56,8 @@ run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_purlin_teammate_definitions.py" \
   "$SCRIPT_DIR/test_purlin_report_markup.py" \
   "$SCRIPT_DIR/test_purlin_version.py" \
+  "$SCRIPT_DIR/test_report_data.py" \
+  "$SCRIPT_DIR/test_purlin_report.py" \
   -v
 
 echo ""

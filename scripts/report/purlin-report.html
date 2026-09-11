@@ -285,7 +285,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .footer a:hover{text-decoration:underline}
 
 /* ===== RESPONSIVE ===== */
-table{min-width:680px}
+table{min-width:790px}
 @media (max-width:1500px) {
   .summary-strip{grid-template-columns:repeat(4,1fr)}
 }
@@ -389,6 +389,20 @@ table{min-width:680px}
     if (status === 'FAILING') return 'Failing';
     if (status === 'UNTESTED') return 'Untested';
     return 'Untested';
+  }
+
+  /* Renders one gauge cell. A percentage when measured; otherwise an explicit
+     token naming why there is no number, with the reason in a tooltip. Never
+     an em dash — that is indistinguishable from "nobody looked". */
+  function gaugeCell(pct, gauge, label) {
+    var state = (gauge && gauge.state) ? gauge.state : 'unmeasured';
+    if (pct != null) {
+      return '<td class="' + intClass(pct) + '" title="' + label + ': ' + pct + '%">' + pct + '%</td>';
+    }
+    if (state === 'excluded') {
+      return '<td class="int int-na" title="' + label + ': nothing gradeable — every assessment is excluded from scoring">excl</td>';
+    }
+    return '<td class="int int-na" title="' + label + ': not measured yet — run purlin:audit">unmeasured</td>';
   }
 
   function intClass(v) {
@@ -509,6 +523,10 @@ table{min-width:680px}
           va = (a.audit && a.audit.integrity != null) ? a.audit.integrity : -1;
           vb = (b.audit && b.audit.integrity != null) ? b.audit.integrity : -1;
           break;
+        case 'design':
+          va = (a.design && a.design.design != null) ? a.design.design : -1;
+          vb = (b.design && b.design.design != null) ? b.design.design : -1;
+          break;
         case 'verified':
           va = (a.receipt && a.receipt.timestamp) ? new Date(a.receipt.timestamp).getTime() : 0;
           vb = (b.receipt && b.receipt.timestamp) ? new Date(b.receipt.timestamp).getTime() : 0;
@@ -558,6 +576,30 @@ table{min-width:680px}
   function catDisplayName(cat) {
     if (cat === '_anchors') return 'anchors';
     return cat;
+  }
+
+  /* One gauge card. `cov` drives both the denominator sub-label and the amber
+     override, so a score can never be read without knowing what it covers. */
+  function gaugeCard(summary, label, pct, counts) {
+    var cov = summary && summary.coverage ? summary.coverage : null;
+    var sub = counts;
+    var cls;
+    if (pct == null) {
+      cls = ' int-na';
+      return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">&mdash;</div>'
+           + '<div class="summary-card-label">' + label + '</div>'
+           + '<div class="summary-card-sub">' + sub + '</div></div>';
+    }
+    if (cov && cov.complete === false) {
+      cls = ' int-mid';
+      sub = cov.measured + ' of ' + cov.total + ' measured';
+    } else {
+      cls = pct >= 80 ? '' : pct >= 50 ? ' int-mid' : ' int-lo';
+      if (cov) sub = cov.measured + ' of ' + cov.total + ' measured';
+    }
+    return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">' + pct + '%</div>'
+         + '<div class="summary-card-label">' + label + '</div>'
+         + '<div class="summary-card-sub" title="' + counts + '">' + sub + '</div></div>';
   }
 
   function render() {
@@ -610,29 +652,18 @@ table{min-width:680px}
     else if (S.partial) h += '<div class="summary-card-sub">' + S.partial + ' partial</div>';
     h += '</div>';
     h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
-    /* Proof Design card. Reuses the integrity colour bands and CSS classes, so
-       the dashboard_visual anchor (RULE-10) needs no change. */
-    if (G && G.design != null) {
-      var dcls = G.design >= 80 ? '' : G.design >= 50 ? ' int-mid' : ' int-lo';
-      h += '<div class="summary-card sc-integrity' + dcls + '"><div class="summary-card-number">' + G.design + '%</div><div class="summary-card-label">Proof Design</div>';
-      h += '<div class="summary-card-sub">' + G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U</div>';
-      h += '</div>';
-    } else {
-      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Proof Design</div>';
-      h += '<div class="summary-card-sub">run purlin:audit</div>';
-      h += '</div>';
-    }
-    /* Integrity card */
-    if (A && A.integrity != null) {
-      var icls = A.integrity >= 80 ? '' : A.integrity >= 50 ? ' int-mid' : ' int-lo';
-      h += '<div class="summary-card sc-integrity' + icls + '"><div class="summary-card-number">' + A.integrity + '%</div><div class="summary-card-label">Proof Integrity</div>';
-      h += '<div class="summary-card-sub">' + A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H</div>';
-      h += '</div>';
-    } else {
-      h += '<div class="summary-card sc-integrity int-na"><div class="summary-card-number">&mdash;</div><div class="summary-card-label">Proof Integrity</div>';
-      h += '<div class="summary-card-sub">' + (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit') + '</div>';
-      h += '</div>';
-    }
+    /* Both gauge cards. They reuse the same colour bands and CSS classes, so
+       the dashboard_visual anchor (RULE-10) covers both.
+
+       A gauge below full measurement coverage is forced amber whatever its
+       percentage: 100% computed from 15 cached assessments over 608 executed
+       proofs is not a green project, and rendering it green was the defect
+       RULE-36 closes. The sub-label always states the denominator. */
+    h += gaugeCard(G, 'Proof Design', G ? G.design : null,
+      G ? (G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U') : 'run purlin:audit');
+    h += gaugeCard(A, 'Proof Integrity', A ? A.integrity : null,
+      A ? (A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H')
+        : (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit'));
     h += '</div>';
 
     /* Uncommitted work section */
@@ -655,7 +686,8 @@ table{min-width:680px}
       {key:'name', label:'Spec', w:''},
       {key:'coverage', label:'Coverage', w:'140px'},
       {key:'status', label:'Status', w:'100px'},
-      {key:'integrity', label:'Integrity', w:'100px'},
+      {key:'design', label:'Design', w:'110px'},
+      {key:'integrity', label:'Integrity', w:'110px'},
       {key:'verified', label:'Verified', w:'180px'}
     ];
 
@@ -707,7 +739,7 @@ table{min-width:680px}
         bh += '</div></td>';
         bh += '<td><div class="cov"><span class="cat-cov">' + cs.proved + '/' + cs.rules + '</span>';
         bh += '<div class="cat-cov-bar"><div class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
-        bh += '<td colspan="3"><div class="cat-summary">';
+        bh += '<td colspan="4"><div class="cat-summary">';
         if (cs.verified) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
         if (cs.passing) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
         if (cs.partial) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pt"></span>' + cs.partial + ' partial</span>';
@@ -724,6 +756,7 @@ table{min-width:680px}
             var isExpanded = expandedSet[f.name];
             var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
             var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
+            var dsnVal = (f.design && f.design.design != null) ? f.design.design : null;
 
             bh += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
 
@@ -754,8 +787,10 @@ table{min-width:680px}
             /* Status */
             bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
 
-            /* Integrity */
-            bh += '<td class="' + intClass(intVal) + '">' + (intVal != null ? intVal + '%' : '&mdash;') + '</td>';
+            /* Design and Integrity. gaugeCell never emits an em dash: a blank
+               cell under a populated summary card is what RULE-35 forbids. */
+            bh += gaugeCell(dsnVal, f.design, 'Proof Design');
+            bh += gaugeCell(intVal, f.audit, 'Proof Integrity');
 
             /* Verified */
             if (f.receipt && f.receipt.timestamp) {
@@ -869,7 +904,7 @@ table{min-width:680px}
   }
 
   function renderDetail(f) {
-    var h = '<tr class="dr cat-child"><td colspan="5"><div class="dc">';
+    var h = '<tr class="dr cat-child"><td colspan="6"><div class="dc">';
 
     /* Action banner */
     h += actionBanner(f);

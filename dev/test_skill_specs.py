@@ -976,6 +976,38 @@ class TestSkillRename:
         assert 'name:' in content, "rename SKILL.md must have a name: field"
         _assert_name_matches(content, 'rename')
 
+    @pytest.mark.proof("skill_rename", "PROOF-4", "RULE-4")
+    def test_rename_covers_the_quality_caches(self):
+        """RULE-4: a rename that skips the caches orphans every assessment.
+
+        Both caches key on feature name. Renaming skill_unit_test to skill_test
+        left six graded descriptions stranded under the old key, and the feature
+        dropped to `unmeasured` on both gauges despite having been fully graded
+        moments earlier. The skill's documented surface did not mention them.
+        """
+        content = _read('rename')
+
+        for cache in ('audit_cache.json', 'design_cache.json'):
+            assert cache in content, \
+                f"rename SKILL.md never mentions {cache}, so a rename orphans its entries"
+
+        # Named in both the what-it-renames list and the execute steps, so an
+        # agent reading either half sees it.
+        listing, _, steps = content.partition('## Steps')
+        assert 'audit_cache.json' in listing and 'design_cache.json' in listing, \
+            "the caches must appear in the numbered what-it-renames list"
+        assert 'audit_cache.json' in steps and 'design_cache.json' in steps, \
+            "the caches must appear in the execute steps, not only the summary list"
+
+        # The `feature` field is what moves, and cached_at must not be re-stamped:
+        # re-stamping would reset the 24h staleness check on untouched results.
+        assert re.search(r'`?"?feature"?`?', steps), \
+            "the steps must name the `feature` field as what gets rewritten"
+        assert 'cached_at' in content, \
+            "the skill must address cached_at when repointing cache entries"
+        assert re.search(r'(?i)(do not|never|forbid).{0,40}re-?stamp', content), \
+            "the skill must forbid re-stamping cached_at during a rename"
+
 
 # ── skill_spec ────────────────────────────────────────────────────────
 

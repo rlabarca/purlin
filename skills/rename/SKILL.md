@@ -25,6 +25,12 @@ purlin:rename <old-name> <new-name>    Rename a feature
 5. **Feature name inside spec file**: `# Feature: old_name` → `# Feature: new_name`
 6. **`> Requires:` references in other specs**: grep all `specs/**/*.md` for `> Requires:` lines containing the old name, replace with new name
 7. **Proof file entries**: inside the renamed proof JSON, update the `"feature"` field in each entry from old name to new name
+8. **Quality cache entries**: rewrite the `"feature"` field of every entry in
+   `.purlin/cache/audit_cache.json` and `.purlin/cache/design_cache.json` from the old name to
+   the new one. These caches key on feature name, so skipping them orphans every cached
+   assessment: the feature reports `unmeasured` on both gauges after a rename even though it was
+   fully graded a moment earlier. The caches are gitignored, so this is local repair, not a
+   committed change.
 
 ---
 
@@ -98,6 +104,12 @@ git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # i
 
 **f. Update `"feature"` field in proof JSON entries:**
 - Inside each renamed proof file, replace `"feature": "old-name"` with `"feature": "new-name"`
+
+**f2. Repoint quality cache entries:**
+- In `.purlin/cache/audit_cache.json` and `.purlin/cache/design_cache.json`, replace
+  `"feature": "old-name"` with `"feature": "new-name"` in every entry. Skip silently if a
+  cache is absent. Do not re-stamp `cached_at` — the assessments are unchanged, only their key
+  moved, and re-stamping would defeat the 24-hour staleness check.
 
 **g. Run `sync_status`** to verify everything still resolves.
 

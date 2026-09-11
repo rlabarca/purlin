@@ -796,8 +796,28 @@ def make_fail_feature(name):
     }
 
 
-def make_integrity_feature(name, integrity):
-    """Return a feature with a specific audit integrity value."""
+def make_gauge(pct, kind='audit', state=None):
+    """Build one per-feature gauge object in the shape report_data RULE-26 fixes.
+
+    `state` defaults to `measured` when a percentage is present and
+    `unmeasured` when it is None, which is what the server does.
+    """
+    if state is None:
+        state = 'measured' if pct is not None else 'unmeasured'
+    if kind == 'design':
+        return {
+            "design": pct, "provable": 1, "loose": 0, "unprovable": 0,
+            "structural": 0, "gradeable_total": 1, "state": state, "findings": [],
+        }
+    return {
+        "integrity": pct, "strong": 1, "weak": 0, "hollow": 0, "manual": 0,
+        "behavioral_total": 1, "state": state, "findings": [],
+    }
+
+
+def make_integrity_feature(name, integrity, design=None, audit_state=None,
+                           design_state=None):
+    """Return a feature with specific audit and design gauge values."""
     return {
         "name": name,
         "category": "test",
@@ -812,14 +832,8 @@ def make_integrity_feature(name, integrity):
         "vhash": None,
         "receipt": None,
         "rules": [],
-        "audit": {
-            "integrity": integrity,
-            "strong": 1,
-            "weak": 0,
-            "hollow": 0,
-            "manual": 0,
-            "findings": [],
-        },
+        "audit": make_gauge(integrity, 'audit', audit_state),
+        "design": make_gauge(design, 'design', design_state),
     }
 
 
@@ -1146,6 +1160,31 @@ class TestDashboardVisual:
         assert any("int-lo" in c for c in classes_list), (
             f"Expected an int-lo cell for 30% integrity, got classes: {classes_list}"
         )
+
+        # The same three values on the Design gauge must resolve to the same three
+        # classes: one helper serves both, so RULE-10 covers Design without a
+        # second colour definition to drift from.
+        design_data = make_data({
+            "features": [
+                make_integrity_feature("high_design", None, design=90),
+                make_integrity_feature("mid_design", None, design=60),
+                make_integrity_feature("low_design", None, design=30),
+            ],
+            "summary": {"total_features": 3, "verified": 3, "partial": 0, "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+            "design_summary": {
+                "design": 60, "provable": 3, "loose": 0, "unprovable": 0, "structural": 0,
+                "gradeable_total": 3, "last_design_audit": None,
+                "last_design_audit_relative": None,
+            },
+        })
+        load_dashboard(page, dashboard, data=design_data)
+        design_classes = [c.get_attribute("class")
+                          for c in page.query_selector_all("td.int")]
+        for band in ("int-hi", "int-mid", "int-lo"):
+            assert any(band in c for c in design_classes), (
+                f"Expected a {band} cell from the design gauge, got: {design_classes}"
+            )
 
     @pytest.mark.proof("dashboard_visual", "PROOF-11", "RULE-11")
     def test_no_hardcoded_hex_outside_custom_properties(self):
@@ -2701,3 +2740,101 @@ class TestProofDesignCard:
         load_dashboard(page, dashboard, data=self._data(all_untested=False))
         card = page.locator(".summary-card", has_text="Proof Integrity").first
         assert "run purlin:audit" in card.inner_text(), card.inner_text()
+
+
+class TestGaugeCellsAndCoverage:
+    """RULE-35/36 — no blank quality cell, and no score without its denominator.
+
+    The dashboard showed a confident Proof Integrity of 100% in the summary strip
+    while 39 of 40 feature rows read an em dash, because the roll-up's
+    denominator silently excluded every unaudited proof. A number at the top with
+    blank rows beneath it is the state these two rules forbid.
+    """
+
+    def _three_states(self):
+        return [
+            make_integrity_feature("measured_feat", 75, design=75),
+            make_integrity_feature("excluded_feat", None, design=None,
+                                   audit_state="excluded", design_state="excluded"),
+            make_integrity_feature("unmeasured_feat", None, design=None,
+                                   audit_state="unmeasured", design_state="unmeasured"),
+        ]
+
+    @pytest.mark.proof("purlin_report", "PROOF-37", "RULE-35", tier="e2e")
+    def test_gauge_cells_never_render_an_em_dash(self, page, dashboard):
+        data = make_data({
+            "features": self._three_states(),
+            "summary": {"total_features": 3, "verified": 3, "partial": 0,
+                        "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        })
+        load_dashboard(page, dashboard, data=data)
+
+        cells = page.query_selector_all("td.int")
+        assert len(cells) == 6, \
+            f"expected 6 gauge cells for 3 features x 2 gauges, got {len(cells)}"
+
+        texts = [c.text_content().strip() for c in cells]
+        # Rows sort by status then name, and both gauges carry the same value per
+        # feature here, so assert on the multiset rather than the order.
+        assert sorted(texts) == sorted(
+            ["75%", "75%", "excl", "excl", "unmeasured", "unmeasured"]), \
+            f"unexpected gauge cell contents: {texts}"
+
+        for c, t in zip(cells, texts):
+            assert "—" not in t and "&mdash;" not in t, \
+                f"gauge cell rendered an em dash: {t!r}"
+            assert c.get_attribute("title"), \
+                f"gauge cell {t!r} carries no tooltip explaining the value"
+
+        # `excl` and `unmeasured` must be distinguishable, which is the whole
+        # point: one means fully assessed with nothing scorable, the other means
+        # nobody has looked.
+        assert texts.count("excl") == 2 and texts.count("unmeasured") == 2, \
+            "excluded and unmeasured must render as different tokens"
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof37_gauge_cells.png"))
+
+    @pytest.mark.proof("purlin_report", "PROOF-38", "RULE-36", tier="e2e")
+    def test_gauge_card_states_its_denominator_and_goes_amber(self, page, dashboard):
+        base = {
+            "features": self._three_states(),
+            "summary": {"total_features": 3, "verified": 3, "partial": 0,
+                        "failing": 0, "untested": 0},
+            "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
+        }
+
+        def design_summary(measured, total, complete):
+            return {
+                "design": 100, "provable": measured, "loose": 0, "unprovable": 0,
+                "structural": 0, "gradeable_total": measured,
+                "last_design_audit": None, "last_design_audit_relative": None,
+                "coverage": {"measured": measured, "total": total, "complete": complete},
+            }
+
+        def design_card():
+            for card in page.query_selector_all(".summary-card"):
+                label = card.query_selector(".summary-card-label")
+                if label and label.text_content().strip() == "Proof Design":
+                    return card
+            raise AssertionError("Proof Design card not found")
+
+        # 100% over a thin slice: amber, with the denominator spelled out.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, design_summary=design_summary(11, 560, False))))
+        card = design_card()
+        assert card.query_selector(".summary-card-sub").text_content().strip() == "11 of 560 measured", \
+            "the card must state what it measured over"
+        assert "int-mid" in card.get_attribute("class"), (
+            "a 100% score over 11 of 560 must render amber, not green: "
+            f"classes were {card.get_attribute('class')}"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof38_coverage_partial.png"))
+
+        # Full coverage: the amber override lifts and 100% reads green.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, design_summary=design_summary(560, 560, True))))
+        card = design_card()
+        assert card.query_selector(".summary-card-sub").text_content().strip() == "560 of 560 measured"
+        cls = card.get_attribute("class")
+        assert "int-mid" not in cls and "int-lo" not in cls, \
+            f"a complete 100% must read green, classes were {cls}"

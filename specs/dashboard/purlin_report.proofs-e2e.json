@@ -1,0 +1,41 @@
+{
+  "tier": "e2e",
+  "proofs": [
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-34",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_design_card_renders_with_shared_colour_bands",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-34",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_integrity_card_says_no_tests_yet_when_nothing_is_tested",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-37",
+      "rule": "RULE-35",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_gauge_cells_never_render_an_em_dash",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-38",
+      "rule": "RULE-36",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_gauge_card_states_its_denominator_and_goes_amber",
+      "status": "pass",
+      "tier": "e2e"
+    }
+  ]
+}

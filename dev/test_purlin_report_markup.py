@@ -39,23 +39,33 @@ class TestSummaryStripGauges:
         assert 'Proof Design' in html, "no Proof Design card label"
         assert re.search(r'G\.design', html), "the card must read design_summary.design"
 
-        # Same colour bands as integrity, so dashboard_visual RULE-10 still holds.
-        design_block = html.split('Proof Design card', 1)
-        assert len(design_block) == 2, "expected the Proof Design card block"
-        block = design_block[1][:900]
+        # Both cards are built by one helper, which is what keeps their colour
+        # bands identical without a second definition to drift from.
+        m = re.search(r'function gaugeCard\(summary, label, pct, counts\) \{(.*?)\n  \}',
+                      html, re.DOTALL)
+        assert m, "gaugeCard helper not found"
+        block = m.group(1)
         assert 'int-mid' in block and 'int-lo' in block, \
-            "the design card must reuse the integrity colour classes"
-        assert '>= 80' in block and '>= 50' in block, \
-            "the design card must use the same 80/50 thresholds as integrity"
+            "the gauge card must reuse the integrity colour classes"
+        assert 'pct >= 80' in block and 'pct >= 50' in block, \
+            "the gauge card must use the same 80/50 thresholds as integrity"
         assert 'sc-integrity' in block, \
-            "the design card must reuse the sc-integrity card class"
-
-        # Per-level counts in the sub-label.
-        for field in ('G.provable', 'G.loose', 'G.unprovable'):
-            assert field in block, f"design card sub-label missing {field}"
+            "the gauge card must reuse the sc-integrity card class"
 
         # Null gauge renders an em dash rather than a stale or zero number.
-        assert '&mdash;' in block, "a null design gauge must render an em dash"
+        assert '&mdash;' in block, "a null gauge card must render an em dash"
+
+        # Per-level counts reach the card as its `counts` argument.
+        design_call = re.search(r"gaugeCard\(G, 'Proof Design'.*?\);", html, re.DOTALL)
+        assert design_call, "no gaugeCard call for Proof Design"
+        for field in ('G.provable', 'G.loose', 'G.unprovable'):
+            assert field in design_call.group(0), \
+                f"design card sub-label missing {field}"
+        integrity_call = re.search(r"gaugeCard\(A, 'Proof Integrity'.*?\);", html, re.DOTALL)
+        assert integrity_call, "no gaugeCard call for Proof Integrity"
+        for field in ('A.strong', 'A.weak', 'A.hollow'):
+            assert field in integrity_call.group(0), \
+                f"integrity card sub-label missing {field}"
 
     @pytest.mark.proof("purlin_report", "PROOF-35", "RULE-34", tier="integration")
     def test_integrity_null_label_distinguishes_untested(self):
@@ -77,9 +87,10 @@ class TestSummaryStripGauges:
         strip = html.split("h += '<div class=\"summary-strip\">'", 1)
         assert len(strip) == 2, "could not locate the summary strip render block"
         block = strip[1].split('/* Uncommitted work section */', 1)[0]
-        # Each card contributes one label; the two gauges each have a null branch,
-        # so count distinct labels rather than occurrences.
+        # Five cards are emitted inline; the two gauge cards come from gaugeCard,
+        # which takes its label as an argument. Count both spellings.
         labels = set(re.findall(r'summary-card-label">([^<\']+)', block))
+        labels |= set(re.findall(r"gaugeCard\([AG], '([^']+)'", block))
         cards = len(labels)
         assert cards >= 7, f"expected at least 7 summary cards, found {cards}: {sorted(labels)}"
 
@@ -102,3 +113,48 @@ class TestSummaryStripGauges:
             assert cards % n != 1, (
                 f"at max-width:{width}px the grid is {n} columns, which leaves a "
                 f"single orphaned card out of {cards}")
+
+
+class TestFeatureTableColumns:
+
+    @pytest.mark.proof("purlin_report", "PROOF-36", "RULE-4", tier="integration")
+    def test_design_and_integrity_are_separate_columns(self):
+        """RULE-4: six columns, Design before Integrity, colspans sized for six.
+
+        The table carried one Integrity column while the summary strip carried
+        two gauge cards, so the dashboard presented two concepts at the top and
+        one underneath. Adding a column also moves two colspans that were ruled
+        for five, which is the kind of off-by-one that only shows up visually.
+        """
+        html = _html()
+
+        # The shared column list drives the head, the per-category header row and
+        # the colgroup, so asserting on it covers all three.
+        m = re.search(r'var cols = \[(.*?)\];', html, re.DOTALL)
+        assert m, "shared column list not found"
+        keys = re.findall(r"key:'(\w+)'", m.group(1))
+        assert keys == ['name', 'coverage', 'status', 'design', 'integrity', 'verified'], \
+            f"expected six columns with design before integrity, got {keys}"
+
+        labels = re.findall(r"label:'([^']+)'", m.group(1))
+        assert 'Design' in labels and 'Integrity' in labels, \
+            f"both gauges need a column label, got {labels}"
+
+        # Sorting is wired generically off data-col, so a `design` comparator
+        # case is what makes the new header actually sortable.
+        assert re.search(r"case 'design':", html), \
+            "sort comparator has no 'design' case, so the header would not sort"
+
+        # Colspans: category header spans everything but name+coverage (4), the
+        # expanded detail row spans all six.
+        assert re.search(r'colspan="4"><div class="cat-summary"', html), \
+            "category header colspan must be 4 for a six-column table"
+        assert re.search(r'class="dr cat-child"><td colspan="6"', html), \
+            "expanded detail row colspan must be 6 for a six-column table"
+
+        # One helper serves both gauges, which is what keeps dashboard_visual
+        # RULE-10's colour bands true for Design without a second definition.
+        assert html.count('bh += gaugeCell(') == 2, \
+            "both gauge cells must route through the one gaugeCell helper"
+        assert re.search(r'function gaugeCell\(pct, gauge, label\)', html), \
+            "gaugeCell helper not found"

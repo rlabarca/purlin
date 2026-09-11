@@ -505,15 +505,10 @@ def _read_audit_summary(project_root):
     if not isinstance(cache, dict) or not cache:
         return None
 
-    # Deduplicate by (feature, proof_id) — keep latest entry
-    latest = {}
-    for _key, entry in cache.items():
-        if not isinstance(entry, dict):
-            continue
-        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
-        existing = latest.get(dedup_key)
-        if existing is None or entry.get('cached_at', '') > existing.get('cached_at', ''):
-            latest[dedup_key] = entry
+    # Deduplicate via the shared helper. This function used to carry its own
+    # copy of the loop, which is exactly the drift _dedup_cache_entries exists
+    # to prevent.
+    latest = _dedup_cache_entries(cache)
 
     strong = 0
     weak = 0
@@ -609,6 +604,52 @@ def _read_design_summary(project_root):
         'last_design_audit': latest_ts,
         'last_design_audit_relative': _relative_time(latest_ts) if latest_ts else None,
     }
+
+
+def _count_cache_entries(project_root, cache_name):
+    """Count deduplicated entries in a quality cache. 0 when absent."""
+    cache_path = os.path.join(project_root, '.purlin', 'cache', cache_name)
+    if not os.path.isfile(cache_path):
+        return 0
+    try:
+        with open(cache_path, encoding='utf-8') as f:
+            cache = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return 0
+    return len(_dedup_cache_entries(cache))
+
+
+def _attach_gauge_coverage(project_root, features, all_proofs,
+                           audit_summary, design_summary):
+    """Give each gauge summary the denominator it is scored over.
+
+    A percentage with no denominator is the defect this closes: 100% Integrity
+    computed from 24 cached assessments over a repo of ~560 executed proofs
+    rendered identically to 100% over all of them. `complete` is what the
+    dashboard colours on, so a high score across a thin slice reads amber.
+
+    Integrity's population is every executed proof; Design's is every declared
+    proof description, because a description is gradeable with nothing built.
+    """
+    executed_total = sum(len(entries) for entries in all_proofs.values())
+    declared_total = sum(
+        len(ids)
+        for info in features.values()
+        for ids in info.get('planned_proof_ids_by_rule', {}).values()
+    )
+
+    for summary, cache_name, total in (
+        (audit_summary, 'audit_cache.json', executed_total),
+        (design_summary, 'design_cache.json', declared_total),
+    ):
+        if summary is None:
+            continue
+        measured = _count_cache_entries(project_root, cache_name)
+        summary['coverage'] = {
+            'measured': measured,
+            'total': total,
+            'complete': total > 0 and measured >= total,
+        }
 
 
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
@@ -899,6 +940,8 @@ def sync_status(project_root, role=None):
     # when the audit cache is absent.
     audit_summary = _read_audit_summary(project_root)
     design_summary = _read_design_summary(project_root)
+    _attach_gauge_coverage(project_root, features, all_proofs,
+                           audit_summary, design_summary)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary)
@@ -1333,14 +1376,18 @@ def _get_plugin_docs_url():
     return None
 
 
-def _read_audit_cache_by_feature(project_root):
-    """Read audit cache and group entries by feature name.
+def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json'):
+    """Read a quality cache and group entries by feature name.
 
     Returns dict of feature_name -> list of {assessment, criterion, fix, proof_id, rule_id, priority}.
     Uses the 'feature' field that the audit skill stores in cache entries.
     Falls back to returning an empty dict if the cache doesn't exist or has no feature info.
+
+    The audit and design caches are shape-identical (same nine fields, level in
+    `assessment`), so one reader serves both, parameterized the way
+    static_checks.read_audit_cache already is.
     """
-    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
+    cache_path = os.path.join(project_root, '.purlin', 'cache', cache_name)
     if not os.path.isfile(cache_path):
         return {}
     try:
@@ -1411,8 +1458,6 @@ def _build_feature_audit(entries):
             manual += 1
 
     integrity, behavioral_total = _compute_integrity(strong, weak, hollow, manual)
-    if integrity is None:
-        return None
 
     # Sort findings by priority
     prio_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
@@ -1424,6 +1469,70 @@ def _build_feature_audit(entries):
         'weak': weak,
         'hollow': hollow,
         'manual': manual,
+        'behavioral_total': behavioral_total,
+        'state': _gauge_state(entries, integrity),
+        'findings': findings,
+    }
+
+
+def _gauge_state(entries, pct):
+    """Classify a feature's gauge as measured / excluded / unmeasured.
+
+    Returning None for anything unscorable collapsed two different facts into
+    one blank cell: a feature whose every proof is legitimately EXCLUDED (or
+    every description STRUCTURAL) looked identical to one nobody has audited.
+    The dashboard then had nothing to render but an em dash for both.
+    """
+    if pct is not None:
+        return 'measured'
+    return 'excluded' if entries else 'unmeasured'
+
+
+def _build_feature_design(entries):
+    """Build per-feature Proof Design data from design-cache entries.
+
+    Mirrors _build_feature_audit: Design = PROVABLE / (PROVABLE + LOOSE +
+    UNPROVABLE), with STRUCTURAL excluded from both numerator and denominator
+    exactly as EXCLUDED is excluded from Integrity.
+    """
+    provable = loose = unprovable = structural = 0
+    findings = []
+
+    for e in entries:
+        level = e.get('assessment', '').upper()
+        if level == 'PROVABLE':
+            provable += 1
+        elif level == 'STRUCTURAL':
+            structural += 1
+        elif level in ('LOOSE', 'UNPROVABLE'):
+            if level == 'LOOSE':
+                loose += 1
+                default_priority = 'MEDIUM'
+            else:
+                unprovable += 1
+                default_priority = 'HIGH'
+            findings.append({
+                'proof_id': e.get('proof_id', ''),
+                'rule_id': e.get('rule_id', ''),
+                'level': level,
+                'priority': e.get('priority', default_priority),
+                'criterion': e.get('criterion', ''),
+                'fix': e.get('fix', ''),
+            })
+
+    design, gradeable_total = _compute_design(provable, loose, unprovable)
+
+    prio_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
+    findings.sort(key=lambda f: prio_order.get(f.get('priority', ''), 4))
+
+    return {
+        'design': design,
+        'provable': provable,
+        'loose': loose,
+        'unprovable': unprovable,
+        'structural': structural,
+        'gradeable_total': gradeable_total,
+        'state': _gauge_state(entries, design),
         'findings': findings,
     }
 
@@ -1451,6 +1560,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                        audit_summary=None, design_summary=None):
     """Build the structured PURLIN_DATA dict for the dashboard."""
     audit_by_feature = _read_audit_cache_by_feature(project_root)
+    # Read the design cache here rather than accepting it as a parameter. A
+    # defaulted parameter is what let generate_digest silently blank the Design
+    # gauge (report_data RULE-24); reading from the cache inside the builder
+    # makes both entry points correct by construction.
+    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json')
     # Build per-proof audit lookup: (feature_name, proof_id) -> assessment
     audit_by_proof = {}
     for feat_name, entries in audit_by_feature.items():
@@ -1634,6 +1748,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'receipt': receipt_data,
             'rules': rules_list,
             'audit': _build_feature_audit(audit_by_feature.get(name, [])),
+            'design': _build_feature_design(design_by_feature.get(name, [])),
         })
 
     uncommitted_files = _check_uncommitted_all(project_root)
@@ -2201,6 +2316,8 @@ def generate_digest(project_root):
     # the Proof Design card that sync_status had just populated.
     audit_summary = _read_audit_summary(project_root)
     design_summary = _read_design_summary(project_root)
+    _attach_gauge_coverage(project_root, features, all_proofs,
+                           audit_summary, design_summary)
 
     # Get git SHA
     git_sha = None
