@@ -67,3 +67,38 @@ class TestSummaryStripGauges:
             ("the integrity card's null sub-label must read 'no tests yet' when every "
              "feature is UNTESTED, and 'run purlin:audit' otherwise")
         assert "'run purlin:audit'" in html
+
+    @pytest.mark.proof("purlin_report", "PROOF-35", "RULE-34", tier="integration")
+    def test_summary_grid_holds_every_card_without_orphaning(self):
+        """The grid column count must match the number of cards. It was pinned at
+        6 while 7 cards were emitted, so the last one wrapped onto a row alone."""
+        html = _html()
+
+        strip = html.split("h += '<div class=\"summary-strip\">'", 1)
+        assert len(strip) == 2, "could not locate the summary strip render block"
+        block = strip[1].split('/* Uncommitted work section */', 1)[0]
+        # Each card contributes one label; the two gauges each have a null branch,
+        # so count distinct labels rather than occurrences.
+        labels = set(re.findall(r'summary-card-label">([^<\']+)', block))
+        cards = len(labels)
+        assert cards >= 7, f"expected at least 7 summary cards, found {cards}: {sorted(labels)}"
+
+        m = re.search(r'\.summary-strip\{[^}]*grid-template-columns:repeat\((\d+),', html)
+        assert m, "summary-strip has no default repeat(N,1fr) column count"
+        cols = int(m.group(1))
+        assert cols == cards, (
+            f"the summary grid is ruled for {cols} columns but {cards} cards are "
+            f"rendered; the remainder orphans onto its own row")
+
+        # Desktop breakpoints must not leave a single card stranded on its own row.
+        # Below 900px a trailing card is ordinary responsive wrapping, and the
+        # 3-column rule there is depended on by PROOF-17.
+        for bp in re.findall(
+                r'@media \(max-width:(\d+)px\) \{\s*\.summary-strip\{grid-template-columns:repeat\((\d+),',
+                html):
+            width, n = int(bp[0]), int(bp[1])
+            if width < 900:
+                continue
+            assert cards % n != 1, (
+                f"at max-width:{width}px the grid is {n} columns, which leaves a "
+                f"single orphaned card out of {cards}")

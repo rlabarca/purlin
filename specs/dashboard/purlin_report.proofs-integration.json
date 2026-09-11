@@ -18,6 +18,15 @@
       "test_name": "test_integrity_null_label_distinguishes_untested",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-35",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_report_markup.py",
+      "test_name": "test_summary_grid_holds_every_card_without_orphaning",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

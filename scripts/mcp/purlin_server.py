@@ -363,6 +363,34 @@ def _get_rule_proof_descs(key, label, src_feature, info, all_features):
     return src_info.get('proof_desc_by_rule', {}).get(bare_rule, [])
 
 
+def _get_rule_planned_proof_ids(key, label, src_feature, info, all_features):
+    """Get the PROOF ids the spec declares for a rule, in declaration order."""
+    if label == 'own':
+        return info.get('planned_proof_ids_by_rule', {}).get(key, [])
+    bare_rule = key.split('/', 1)[1] if '/' in key else key
+    src_info = all_features.get(src_feature, {})
+    return src_info.get('planned_proof_ids_by_rule', {}).get(bare_rule, [])
+
+
+def _scope_files_exist(project_root, info):
+    """True when at least one file named in the spec's `> Scope:` exists on disk.
+
+    Distinguishes "the spec is written but nothing is built" from "code exists but
+    has no tests". The two states need different next steps, and nothing in the
+    report could tell them apart. A spec with no `> Scope:` is treated as built,
+    since there is nothing to look for.
+    """
+    scope = info.get('scope_files') or info.get('scope') or []
+    if isinstance(scope, str):
+        scope = [p.strip() for p in scope.split(',') if p.strip()]
+    if not scope:
+        return True
+    for rel in scope:
+        if glob.glob(os.path.join(project_root, rel), recursive=True):
+            return True
+    return False
+
+
 def _relative_time(iso_timestamp):
     """Return human-readable relative time string from an ISO 8601 timestamp."""
     if not iso_timestamp:
@@ -592,10 +620,18 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
     name_width = max(len(r[0]) for r in summary_rows)
     name_width = max(name_width, len("Feature"))
 
+    # The longest status word is 8 characters (UNTESTED, VERIFIED). The column was
+    # ruled for 9 and padded to 7, so those two overflowed the right border by one —
+    # and a spec-only project is 100% UNTESTED, which misaligned every single row.
+    status_width = max(len(s) for s in
+                       ("VERIFIED", "PASSING", "FAILING", "PARTIAL", "UNTESTED", "Status"))
+    cov_rule = '\u2500' * 10
+    status_rule = '\u2500' * (status_width + 2)
+
     lines = []
-    lines.append(f"\u250c\u2500{'─' * name_width}\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510")
-    lines.append(f"\u2502 {'Feature':<{name_width}} \u2502 Coverage \u2502 Status  \u2502")
-    lines.append(f"\u251c\u2500{'─' * name_width}\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524")
+    lines.append(f"\u250c\u2500{'─' * name_width}\u2500\u252c{cov_rule}\u252c{status_rule}\u2510")
+    lines.append(f"\u2502 {'Feature':<{name_width}} \u2502 Coverage \u2502 {'Status':<{status_width}} \u2502")
+    lines.append(f"\u251c\u2500{'─' * name_width}\u2500\u253c{cov_rule}\u253c{status_rule}\u2524")
 
     for name, proved, total, status in summary_rows:
         coverage = f"{proved}/{total}"
@@ -609,9 +645,9 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None):
             symbol = "PARTIAL"
         else:
             symbol = "UNTESTED"
-        lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>7} \u2502")
+        lines.append(f"\u2502 {name:<{name_width}} \u2502 {coverage:>8} \u2502 {symbol:>{status_width}} \u2502")
 
-    lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518")
+    lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534{cov_rule}\u2534{status_rule}\u2518")
 
     # Summary line with optional integrity
     verified_count = sum(1 for _, _, _, s in summary_rows if s == "VERIFIED")
@@ -1172,18 +1208,41 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             else:
                 marker_feature = name
                 rule_id = key
-            lines.append(f'  \u2192 Fix: write a test with @pytest.mark.proof("{marker_feature}", "PROOF-N", "{rule_id}")')
+
+            # Surface what the spec already planned for this rule. A spec-first
+            # project has written real proof descriptions and real PROOF ids; the
+            # report used to show neither, printing the literal string "PROOF-N"
+            # and discarding the descriptions entirely.
             src_info = all_features.get(src_feature, {})
+            planned_ids = _get_rule_planned_proof_ids(
+                key, label, src_feature, info, all_features)
+            planned_descs = _get_rule_proof_descs(
+                key, label, src_feature, info, all_features)
+            for pid, desc in zip(planned_ids, planned_descs):
+                lines.append(f"     planned {pid}: {desc}")
+
+            marker_id = planned_ids[0] if planned_ids else 'PROOF-N'
+            lines.append(f'  \u2192 Fix: write a test with @pytest.mark.proof("{marker_feature}", "{marker_id}", "{rule_id}")')
             if src_info.get('is_anchor'):
                 lines.append(f"  Note: read specs/_anchors/{src_feature}.md for exact assertion values before writing tests")
-            lines.append(f"  \u2192 Run: purlin:unit-test")
 
-    # If no proof files at all
+            # Route by what exists. purlin:build appeared nowhere in this file, so
+            # nothing could send a user into the build loop: a spec with no code was
+            # told to run purlin:unit-test, which collects no tests.
+            if not _scope_files_exist(project_root, info):
+                lines.append(f"  \u2192 Run: purlin:build {name}")
+            else:
+                lines.append(f"  \u2192 Run: purlin:unit-test")
+
+    # If no proof files at all. The per-rule branch above already emits a directive
+    # for every uncovered rule, so repeating it here just duplicated the line; emit
+    # it only when there were no rules to report against.
     feature_proofs = all_proofs.get(name, [])
-    if not feature_proofs and not manual_proofs and not any(
-        proof_by_rule.get(key) for key, _, _ in active_entries
-    ):
-        lines.append(f"  \u2192 Run: purlin:unit-test")
+    if not feature_proofs and not manual_proofs and not active_entries:
+        if _scope_files_exist(project_root, info):
+            lines.append(f"  \u2192 Run: purlin:unit-test")
+        else:
+            lines.append(f"  \u2192 Run: purlin:build {name}")
 
     if assumed_count:
         lines.append(f"  \u26a0 {assumed_count} rule{'s' if assumed_count != 1 else ''} ha{'ve' if assumed_count != 1 else 's'} (assumed) values \u2014 PM should confirm")

@@ -1545,3 +1545,83 @@ class TestServerOutput:
         expected_hash = 'c0919893'
         assert hash_combined == expected_hash, \
             f"vhash algorithm mismatch: expected {expected_hash}, got {hash_combined}"
+
+
+class TestCoverageReportUsability:
+    """RULE-40/41/42 — the report must be legible and route by observable state.
+
+    All three defects hit a spec-first project hardest: every row is UNTESTED, so
+    every row had a broken border; the proof descriptions the user just wrote were
+    not shown at all; and the only directive offered was purlin:unit-test, which
+    collects nothing when no code exists.
+    """
+
+    @pytest.mark.proof("sync_status", "PROOF-70", "RULE-40")
+    def test_table_borders_align_for_every_status(self):
+        from purlin_server import _build_summary_table
+        rows = [
+            ("feat_failing", 0, 2, "FAILING"),
+            ("feat_partial", 1, 2, "PARTIAL"),
+            ("feat_passing", 2, 2, "PASSING"),
+            ("feat_verified", 2, 2, "VERIFIED"),
+            ("feat_untested", 0, 2, "UNTESTED"),
+        ]
+        lines = [l for l in _build_summary_table(rows)
+                 if l.startswith(('┌', '│', '├', '└'))]
+        widths = {len(l) for l in lines}
+        assert len(widths) == 1, (
+            f"table lines have differing widths {sorted(widths)} — the status column "
+            f"overflows for 8-character statuses:\n" + "\n".join(lines))
+
+        # And the longest status is actually present, not truncated.
+        assert any('UNTESTED' in l for l in lines)
+        assert any('VERIFIED' in l for l in lines)
+
+    def _spec_project(self, tmpdir, scope='src/auth.py'):
+        d = os.path.join(tmpdir, 'specs', 'auth')
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, 'login.md'), 'w') as f:
+            f.write(
+                '# Feature: login\n\n'
+                f'> Scope: {scope}\n\n'
+                '## Rules\n\n'
+                '- RULE-1: Returns 401 on a wrong password\n\n'
+                '## Proof\n\n'
+                '- PROOF-7 (RULE-1): POST a wrong password for "alice"; verify 401\n')
+        return tmpdir
+
+    @pytest.mark.proof("sync_status", "PROOF-71", "RULE-41")
+    def test_reports_declared_proof_ids_and_descriptions(self):
+        from purlin_server import sync_status
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._spec_project(tmpdir)
+            out = sync_status(tmpdir)
+            assert 'PROOF-7' in out, \
+                "the declared proof id must appear; the report showed none of it"
+            assert 'POST a wrong password' in out, \
+                "the proof description the user wrote must be surfaced"
+            assert '"PROOF-N"' not in out, \
+                "the suggested marker must name the real declared id, not the placeholder"
+
+    @pytest.mark.proof("sync_status", "PROOF-72", "RULE-42")
+    def test_directive_routes_on_whether_code_exists(self):
+        from purlin_server import sync_status
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._spec_project(tmpdir)
+
+            # Scope file absent: nothing is built, so building is the next step.
+            out = sync_status(tmpdir)
+            assert 'purlin:build login' in out, \
+                "a spec whose scope files do not exist must route to purlin:build"
+            assert out.count('→ Run: purlin:build login') == 1, \
+                f"the directive must appear once, got:\n{out}"
+            assert 'Run: purlin:unit-test' not in out, \
+                "unit-test collects nothing when no code exists"
+
+            # Scope file present: the gap is tests, not code.
+            os.makedirs(os.path.join(tmpdir, 'src'), exist_ok=True)
+            with open(os.path.join(tmpdir, 'src', 'auth.py'), 'w') as f:
+                f.write('def auth(): pass\n')
+            out = sync_status(tmpdir)
+            assert 'Run: purlin:unit-test' in out
+            assert 'purlin:build' not in out
