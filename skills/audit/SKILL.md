@@ -397,6 +397,32 @@ INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
   Formula: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — proof quality only.
 ```
 
+## Which Lever Moves Which Assessment
+
+Full criteria: `references/audit_criteria.md` § Pass D and § Scoring. The short version, because
+agents guess this wrong and the guess is expensive:
+
+| Level | Decided by | What moves it |
+|-------|-----------|---------------|
+| HOLLOW | Pass 1 reading test code | Editing the test, via `purlin:build`. Nothing else. |
+| EXCLUDED | The test's shape — did setup run code that produced the asserted artifact? | New test code. Rewording a rule does not make a source-grep test behavioural. |
+| WEAK | Pass 2 comparing test to description | A better test. Narrowing the description "fixes" it only by lowering the claim — never do this, and never on an anchor rule. |
+| PROVABLE / LOOSE / UNPROVABLE | Pass D reading the description | Editing the proof description. This is the gauge prose is *supposed* to move. |
+
+Two consequences worth stating outright:
+
+- **Marking something EXCLUDED or STRUCTURAL shrinks the denominator rather than improving
+  anything.** Never reclassify to raise a score.
+- **A high Proof Integrity score over LOOSE descriptions means nothing.** Most WEAK criteria are
+  comparisons against the description, so a vague description leaves them unable to fire. Fix
+  Design first or the Integrity number is measuring an unfalsifiable spec.
+
+**Reaching a target Integrity score.** With `N` behavioural proofs and `H` HOLLOW: the ceiling is
+`(N − H) / N`, a target `T` is reachable iff `H ≤ (1 − T) × N`, and the number of tests that must
+be rewritten is `max(0, H − floor((1 − T) × N))`. For 287 proofs with 57 HOLLOW the ceiling is
+80%, and a 90% target needs 29 tests rewritten. Answer this arithmetic before starting work, not
+after a full audit.
+
 ## Key Principles
 
 - **Read-only.** Never modify code or test files.

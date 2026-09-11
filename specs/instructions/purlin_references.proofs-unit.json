@@ -135,6 +135,15 @@
       "test_name": "test_supported_frameworks_e2e_section",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_audit_criteria_defines_both_gauges",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

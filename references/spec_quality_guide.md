@@ -125,14 +125,21 @@ Remove the tag when work begins. The rule immediately starts requiring proofs.
 
 Proof descriptions must be **observable assertions with concrete inputs and expected outputs**. The description should tell the agent exactly what to do and what to assert — it should be copy-pasteable into a test without interpretation.
 
-Bad:
+This section is the authoring side of the **Proof Design** gauge. `purlin:audit` grades every
+proof description as `PROVABLE`, `LOOSE`, `UNPROVABLE` or `STRUCTURAL` using exactly these
+rules — see `references/audit_criteria.md` § Pass D for how each level is decided. A description
+can be graded before any test exists, which is the point: a `LOOSE` description caps what the
+eventual test can prove, and an `UNPROVABLE` one guarantees the test will have to be rewritten.
+
+Bad — graded `LOOSE` (a vague verb with no expected value):
 ```
 - PROOF-1 (RULE-1): Test the login
 - PROOF-1 (RULE-1): Verify authentication works
 - PROOF-1 (RULE-1): Check error handling
 ```
 
-Good:
+Good — the first two graded `PROVABLE`; the third graded `STRUCTURAL`, which is correct rather
+than a defect, because RULE-3 is itself a FORBIDDEN-pattern rule:
 ```
 - PROOF-1 (RULE-1): POST {"user": "alice", "pass": "wrong"} to /login; verify 401 with {error: "invalid_credentials"}
 - PROOF-2 (RULE-2): Call resolve_config() with only config.json present; verify returned dict matches config.json contents
@@ -147,6 +154,12 @@ Include test setup context when architecture matters:
 ## Proof Levels
 
 Rules and proofs operate at three levels of confidence. Understanding these levels helps PMs write rules that get the coverage they actually need.
+
+These levels are how the **Proof Design** gauge is decided. The bridge rule: **a Level 1
+description against a behavioural rule is graded `UNPROVABLE`.** Level 2 and Level 3
+descriptions are graded `PROVABLE` when they name concrete inputs and expected outputs, and
+`LOOSE` when they do not. Level is *depth* — what the proof reaches for. The Design grade is
+*quality* — whether the description is well formed enough to be proved at all.
 
 | Level | What it proves | Example rule | Example proof |
 |-------|---------------|-------------|--------------|
@@ -171,6 +184,8 @@ PMs write Level 3 rules for user flows. Security engineers write them for compli
 
 ### Visual proof descriptions
 
+*Graded as: implementation-coupled visual descriptions are `LOOSE`.*
+
 For rules about UI rendering, write proofs that describe **what a person would see**, not DOM selectors or CSS classes. The agent picks the tool (Playwright, headless Chrome, MCP browser, screenshot + vision — whatever is available).
 
 Bad (implementation-coupled):
@@ -192,6 +207,8 @@ Good (outcome-based):
 The key differences: no CSS selectors, no class names, no `querySelector`. The proof says what the user sees — the agent decides how to verify it. This also makes proofs resilient to HTML refactors.
 
 ### E2E proof descriptions (observable flows)
+
+*Graded as: an `@e2e` description that names a source file or internal function, or that asserts a source constant, is `UNPROVABLE`. One that reads as a flow but omits expected values is `LOOSE`.*
 
 An `@e2e` proof description must read as an **observable flow** through the real running app: **arrange → act → observe**.
 
@@ -257,19 +274,21 @@ Every feature that `> Requires: prodbrief_checkout` must prove these rules. The 
 
 | Level | When to use | Who typically writes |
 |-------|------------|---------------------|
-| **Level 1** | Never. These are hollow. `assert X is not None` proves nothing. | Nobody |
+| **Level 1** | Never. These are `UNPROVABLE` by construction — `assert X is not None` proves nothing. | Nobody |
 | **Level 2** | Internal logic, data transformations, error codes, validation, algorithms | Engineer or AI |
 | **Level 3** | User-facing flows, multi-system integration, regulatory requirements, things that have broken in production | PM (via prodbrief/spec rules) |
 
 ### Recognizing Level 1 proofs (and rejecting them)
 
-If a proof description says "verify X exists", "check that Y is not null", or "assert Z is present" — it's Level 1. Rewrite it to test behavior:
+If a proof description says "verify X exists", "check that Y is not null", or "assert Z is present" — it's Level 1, and `purlin:audit` grades it `UNPROVABLE`. These three phrasings are the deterministic Pass D detector. Rewrite it to test behavior:
 
 - Level 1: "Verify the login endpoint exists"
 - Level 2: "POST to /login with valid credentials; verify 200 and JWT token in response"
 - Level 3: "Open browser, enter credentials, click login, verify dashboard loads"
 
 ## Tier Assignment
+
+*Graded as: a tier tag that does not match what verifying the description would actually require is `LOOSE` — the design twin of the Proof Integrity finding "tier mismatch".*
 
 Assign a tier tag based on what the proof requires to execute. Proofs without a tag are `unit` tier.
 
@@ -320,6 +339,8 @@ Anchors capture **cross-cutting constraints shared across features**. If 3+ feat
 
 ## FORBIDDEN Grep Precision
 
+*Graded as: a FORBIDDEN proof of a structural rule is `STRUCTURAL` and correctly so; an imprecise pattern that would match comments or variable names is `LOOSE`.*
+
 FORBIDDEN proofs use grep to assert absence. The grep pattern must be precise enough to avoid false positives.
 
 **Common false positives:**
@@ -340,6 +361,8 @@ grep -rn "password\s*=\s*[\"'][^\"']*[\"']" scripts/ --include="*.py" | grep -v 
 Target the **assignment pattern** (`keyword = "literal string"`), not the keyword alone. Exclude test files and comments.
 
 ## Edge Case Proof Specificity
+
+*Graded as: an edge-case description that names the expected output but not the triggering input is `LOOSE`.*
 
 Proofs for boundary conditions and edge cases must include the **specific test input that triggers the edge case** — not just the expected output.
 
@@ -459,9 +482,13 @@ Specs, drift reports, and other reports serve different audiences. Match the lan
 
 **The test for good drift report language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
 
-## Test Quality Rules
+## Test Quality Rules (Proof Integrity)
 
-These rules apply when writing or reviewing any proof-marked test. Violating them produces HOLLOW or WEAK assessments during audit (see `references/audit_criteria.md` for assessment criteria):
+These rules apply when writing or reviewing any proof-marked test. They are the authoring side
+of the **Proof Integrity** gauge: violating them produces HOLLOW or WEAK assessments during
+audit (see `references/audit_criteria.md` for assessment criteria). They say nothing about
+whether the proof *description* is any good — that is Proof Design, § Writing Proof
+Descriptions above.
 
 - **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
 - **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
@@ -490,6 +517,13 @@ Never:
 If the spec itself is wrong (the rule describes behavior that shouldn't exist), update the spec first — change the rule, update the proof description, THEN update the test and code. The spec is the source of truth.
 
 ### Assertion Integrity
+
+This is the runtime twin of Proof Design: the description and the assertion are two statements
+of the same claim, so when they disagree, exactly one of them is wrong and you must find out
+which before proceeding. Strengthening the test raises Proof Integrity; rewriting the
+description to demand more raises Proof Design; narrowing the description to match a weaker
+test lowers Proof Design while leaving Integrity flatteringly high, which is the failure mode
+to avoid.
 
 If you change WHAT a test asserts (not just HOW — e.g., changing `assert status == 401` to `assert status == 400`), the proof description in the spec may be wrong. This is a signal, not a bug:
 

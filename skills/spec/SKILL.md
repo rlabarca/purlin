@@ -6,6 +6,7 @@ description: Scaffold or edit feature specs in 3-section format
 Create or edit a spec from any input — plain English, PRDs, customer feedback, code files, or existing specs. The agent extracts structured rules from unstructured input. The user describes what they want; the agent writes the spec.
 
 For **syntax**: `references/formats/spec_format.md`. For **quality**: `references/spec_quality_guide.md`.
+For **how your proof descriptions will be graded**: `references/audit_criteria.md` § Pass D — `purlin:audit` scores every description as PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL with no test code required, so you can drive that number up before anything is built. Editing spec prose moves that gauge and only that gauge: HOLLOW and EXCLUDED are decided by test code, so no rewording moves them.
 
 ## Usage
 

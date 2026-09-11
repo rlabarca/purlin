@@ -23,6 +23,7 @@
 - RULE-13: `spec_quality_guide.md` documents E2E proof descriptions as observable flows (arrange → act → observe through the real running app), forbids naming source files or internal functions in proof descriptions, and requires descriptions to stay tool-agnostic (executable by any e2e runner)
 - RULE-14: `audit_criteria.md` defines E2E Proof Tier Integrity criteria — tier mismatch (an `@e2e` test that never drives the real UI) and source-constant assertion (asserting a config constant where the rule describes runtime behavior) — applying to ALL `@e2e` proofs, not just design anchors
 - RULE-15: `supported_frameworks.md` documents end-to-end (browser) proofs: no dedicated e2e proof reporter ships, `@e2e` proofs are tool-agnostic, and proof emission wires through the existing plugins (Vitest/Jest markers or shell `purlin_proof` wrappers)
+- RULE-16: `audit_criteria.md` defines both gauges — Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, graded from the proof description with no test code) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED/MANUAL, graded from test code) — with a scoring formula for each, and marks the Integrity criteria that are comparisons against the proof description so a reader knows which ones a vague description disables. `spec_quality_guide.md` labels its proof-description sections with the Design level each defect is graded as
 
 ## Proof
 
@@ -41,3 +42,4 @@
 - PROOF-13 (RULE-13): Grep `references/spec_quality_guide.md` for the "E2E proof descriptions" section; verify it contains arrange → act → observe flow language, the ban on naming source files/internal functions, and tool-agnostic phrasing
 - PROOF-14 (RULE-14): Grep `references/audit_criteria.md` for "E2E Proof Tier Integrity", "tier mismatch", and "source-constant"; verify the section applies to all `@e2e` proofs, not only design anchors
 - PROOF-15 (RULE-15): Grep `references/supported_frameworks.md` for the end-to-end proofs section; verify it states no dedicated e2e reporter ships, describes tool-agnostic `@e2e` proofs, and documents wiring through existing plugins
+- PROOF-16 (RULE-16): Grep `references/audit_criteria.md` for `Pass D`, all four Design levels, both scoring formulas, and the `[relative]` markers; grep `references/spec_quality_guide.md` for the Design-level labels on its proof-description sections and for `Test Quality Rules (Proof Integrity)`

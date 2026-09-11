@@ -360,6 +360,35 @@ class TestSkillAudit:
         assert 'CollectSourceInformation' in content, \
             "audit SKILL.md must name CollectSourceInformation as the native way to populate test_file"
 
+    @pytest.mark.proof("skill_audit", "PROOF-17", "RULE-17")
+    def test_documents_which_lever_moves_which_assessment(self):
+        """The skill must say which lever moves which assessment, so an agent does not
+        try to raise Integrity by editing spec prose, and must carry the arithmetic."""
+        content = _read('audit')
+        section = content.split('## Which Lever Moves Which Assessment', 1)
+        assert len(section) == 2, \
+            "audit SKILL.md missing 'Which Lever Moves Which Assessment' section"
+        body = section[1].split('## Key Principles', 1)[0]
+
+        # Each level, and what actually moves it
+        for level in ('HOLLOW', 'EXCLUDED', 'WEAK', 'UNPROVABLE'):
+            assert level in body, f"lever section must name {level}"
+        assert 'purlin:build' in body, \
+            "lever section must say HOLLOW is moved by editing the test via purlin:build"
+        assert re.search(r'(?i)narrow', body), \
+            "lever section must warn against narrowing a proof description"
+        assert re.search(r'(?i)anchor', body), \
+            "lever section must forbid narrowing descriptions for anchor rules"
+        assert re.search(r'(?i)(shrink|denominator)', body), \
+            "lever section must warn that reclassifying shrinks the denominator"
+
+        # The arithmetic, so feasibility is a one-step answer
+        assert '(N \u2212 H) / N' in body or '(N - H) / N' in body, \
+            "lever section must state the ceiling formula"
+        assert re.search(r'H\s*\u2264\s*\(1\s*\u2212\s*T\)', body) or \
+               re.search(r'H\s*<=\s*\(1\s*-\s*T\)', body), \
+            "lever section must state the reachability condition"
+
 
 # ── skill_build ───────────────────────────────────────────────────────
 
@@ -1566,6 +1595,18 @@ class TestSkillSpec:
         # Must require no uncommitted spec files
         assert re.search(r'(?i)uncommitted spec files', content), \
             "spec exit criteria missing uncommitted spec files check"
+
+    @pytest.mark.proof("skill_spec", "PROOF-10", "RULE-9")
+    def test_points_at_proof_design_criteria(self):
+        """purlin:spec is the skill a user reaches for when they want the quality number
+        to go up, so it must point at the Design criteria and say what prose cannot move."""
+        content = _read('spec')
+        assert 'audit_criteria.md' in content, \
+            "spec SKILL.md must point at references/audit_criteria.md"
+        assert re.search(r'(Pass D|PROVABLE)', content), \
+            "spec SKILL.md must name Pass D or the Design levels"
+        assert 'HOLLOW' in content and 'EXCLUDED' in content, \
+            "spec SKILL.md must state that HOLLOW and EXCLUDED are not moved by spec edits"
 
 
 # ── skill_spec_from_code ──────────────────────────────────────────────

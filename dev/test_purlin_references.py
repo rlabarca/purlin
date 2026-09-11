@@ -221,3 +221,33 @@ class TestPurlinReferences:
             "e2e section must document the Vitest/Jest e2e marker wiring"
         assert 'purlin_proof' in section, \
             "e2e section must document the shell purlin_proof wiring"
+
+    @pytest.mark.proof("purlin_references", "PROOF-16", "RULE-16")
+    def test_audit_criteria_defines_both_gauges(self):
+        """audit_criteria.md must define Proof Design and Proof Integrity separately,
+        score each, and mark the Integrity criteria a vague description disables."""
+        crit = _read(os.path.join(REFS, 'audit_criteria.md'))
+
+        assert '## Pass D' in crit, "audit_criteria.md missing the Pass D (Proof Design) section"
+        for level in ('PROVABLE', 'LOOSE', 'UNPROVABLE', 'STRUCTURAL'):
+            assert level in crit, f"audit_criteria.md missing Design level {level}"
+        for level in ('STRONG', 'WEAK', 'HOLLOW', 'EXCLUDED', 'MANUAL'):
+            assert level in crit, f"audit_criteria.md missing Integrity level {level}"
+
+        # Both scoring formulas, with the Integrity one kept verbatim for sync_status RULE-33
+        assert '(STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL)' in crit, \
+            "audit_criteria.md must keep the Integrity formula verbatim"
+        assert 'PROVABLE / (PROVABLE + LOOSE + UNPROVABLE)' in crit, \
+            "audit_criteria.md must state the Design formula"
+
+        # The criteria that only fire against a specific description
+        assert crit.count('[relative]') >= 5, \
+            "audit_criteria.md must mark the description-relative Integrity criteria"
+
+        guide = _read(os.path.join(REFS, 'spec_quality_guide.md'))
+        assert '## Test Quality Rules (Proof Integrity)' in guide, \
+            "spec_quality_guide.md must name the gauge its test-quality rules belong to"
+        assert guide.count('*Graded as:') >= 4, \
+            "spec_quality_guide.md proof-description sections must carry Design-level labels"
+        assert 'UNPROVABLE' in guide, \
+            "spec_quality_guide.md must use the Design vocabulary for Level 1 descriptions"
