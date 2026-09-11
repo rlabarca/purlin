@@ -3080,3 +3080,49 @@ class TestGaugeCellsAndCoverage:
         assert "--design" not in txt and "--integrity" not in txt, \
             f"with both stale the directive is a bare full audit: {txt!r}"
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof39_refresh_directive.png"))
+
+
+class TestRemoteVerificationChip:
+    """purlin_report RULE-40 — the declared mode in the header.
+
+    A chip and not a gauge: it reports what the project declared, and a
+    declaration is not a measurement. Its tooltip carries the
+    declaration/enforcement split, because the chip alone invites the reading
+    that the config field is the gate.
+    """
+
+    @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-40", tier="integration")
+    def test_header_chip_names_the_mode_and_where_enforcement_lives(
+            self, page, dashboard):
+        for mode in ("required", "optional"):
+            data = make_data()
+            data["remote_verification"] = mode
+            load_dashboard(page, dashboard, data=data)
+            chip = page.locator(".header .rv-mode")
+            assert chip.count() == 1, (
+                f"expected exactly one mode chip for {mode!r}, "
+                f"got {chip.count()}")
+            assert chip.get_attribute("data-rv-mode") == mode, (
+                f"chip must carry the declared mode, got "
+                f"{chip.get_attribute('data-rv-mode')!r}")
+            assert mode in chip.inner_text(), chip.inner_text()
+            title = chip.get_attribute("title") or ""
+            assert "branch protection" in title, (
+                f"the tooltip must name the enforcement: {title!r}")
+            assert "declares" in title or "Declared" in title, (
+                f"the tooltip must say the field is a declaration: {title!r}")
+
+        # off renders nothing. A project that never opted in gains no chip.
+        data = make_data()
+        data["remote_verification"] = "off"
+        load_dashboard(page, dashboard, data=data)
+        assert page.locator(".header .rv-mode").count() == 0, (
+            "an 'off' project must render no mode chip")
+
+        # And a payload written before the field existed must not break or
+        # invent a mode.
+        data = make_data()
+        data.pop("remote_verification", None)
+        load_dashboard(page, dashboard, data=data)
+        assert page.locator(".header .rv-mode").count() == 0, (
+            "a payload with no remote_verification key must render no chip")

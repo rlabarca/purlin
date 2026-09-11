@@ -991,6 +991,117 @@ class TestRunnerGatedProofs:
         assert 'runner not recorded' in out2, out2
 
 
+class TestRemoteVerificationMode:
+    """sync_status RULE-49: report the declared mode, and say it is a declaration.
+
+    Builds its own fixture rather than subclassing TestRunnerGatedProofs:
+    inheriting would re-run every parent test under this class's name, and one
+    of those asserts `AWAITING RUNNER` is absent, which this line can contain.
+    """
+
+    SPEC = (
+        '# Feature: locking\n\n'
+        '## Rules\n'
+        '- RULE-1: Locks on POSIX\n'
+        '- RULE-2: Locks on Windows\n\n'
+        '## Proof\n'
+        '- PROOF-1 (RULE-1): fcntl path locks @unit\n'
+        '- PROOF-2 (RULE-2): msvcrt path locks on a real windows runner @windows\n'
+    )
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'audit')
+        os.makedirs(self.spec_dir)
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write(self.SPEC)
+        self._write_proofs('unit', [
+            {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "dev/test_locking.py", "test_name": "test_fcntl",
+             "status": "pass", "tier": "unit"},
+        ])
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    def _write_proofs(self, tier, proofs):
+        with open(os.path.join(self.spec_dir, f'locking.proofs-{tier}.json'), 'w') as f:
+            json.dump({"tier": tier, "proofs": proofs}, f)
+
+    def _config(self, mode=None):
+        cfg = {'report': False}
+        if mode is not None:
+            cfg['remote_verification'] = mode
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+
+    def _mode_line(self):
+        out = purlin_server.sync_status(self.project_root)
+        line = next((l for l in out.splitlines()
+                     if l.startswith('Remote verification:')), None)
+        return line, out
+
+    @pytest.mark.proof("sync_status", "PROOF-81", "RULE-49", tier="integration")
+    def test_mode_is_reported_as_a_declaration_not_as_the_gate(self):
+        # required and optional: the mode, plus the declaration/enforcement
+        # split. The field is editable in the tree, so presenting it as the
+        # gate would misreport where the trust boundary is.
+        for mode in ('required', 'optional'):
+            self._config(mode)
+            line, out = self._mode_line()
+            assert line, f"no remote-verification line for mode {mode!r}:\n{out}"
+            assert mode in line, f"the line must name the mode: {line!r}"
+            assert 'branch protection' in line, (
+                f"the line must name the enforcement, not just the mode: {line!r}")
+            assert 'Declared in config' in line, (
+                f"the line must say the field is a declaration: {line!r}")
+
+        # off, with a proof actually awaiting: say how many and where to go.
+        # Silence here leaves a proof that can never fill in looking like one
+        # that simply has not run yet.
+        self._config('off')
+        line, out = self._mode_line()
+        assert line, f"an off project with a waiting proof must report:\n{out}"
+        assert 'off' in line and '1 proof' in line, line
+        assert 'purlin:test' in line, (
+            f"the off line must point at the skill that sets a runner up: {line!r}")
+
+        # A typo must not silently disable the declaration.
+        self._config('requried')
+        line, out = self._mode_line()
+        assert line, f"an unrecognized mode must be reported, not dropped:\n{out}"
+        assert 'not a recognized mode' in line, line
+        for valid in ('required', 'optional', 'off'):
+            assert valid in line, (
+                f"the error must name the valid modes so the typo is fixable: {line!r}")
+
+        # off, and the runner already proved it: nothing is stuck, so the line
+        # must go. Keyed on declared rather than awaiting, this branch told a
+        # fully proved project its proofs "will stay AWAITING RUNNER".
+        self._write_proofs('windows', [
+            {"feature": "locking", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "dev/test_windows.py", "test_name": "test_msvcrt",
+             "status": "pass", "tier": "windows"},
+        ])
+        self._config('off')
+        line, out = self._mode_line()
+        assert line is None, (
+            "an off project whose runner-gated proofs are already proved has "
+            f"nothing stuck and must print no mode line:\n{out}")
+
+        # And with no runner-gated proof declared at all, still silent: a
+        # project that never opted in gains nothing from the line.
+        os.remove(os.path.join(self.spec_dir, 'locking.proofs-windows.json'))
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write('# Feature: locking\n\n'
+                    '## Rules\n- RULE-1: Locks on POSIX\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): fcntl path locks @unit\n')
+        line, out = self._mode_line()
+        assert line is None, (
+            f"an off project with nothing gated must print no mode line:\n{out}")
+
+
 class TestIntegrityFormula:
     """sync_status RULE-33: integrity formula consistency."""
 

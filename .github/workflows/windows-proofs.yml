@@ -41,6 +41,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "No proof-file changes to commit."
           else
-            git commit -m "test(static_checks): windows-native proofs from windows-latest [skip ci]"
+            # The Purlin-Runner trailer is the only record of which runner
+            # proved these: proof entries carry no such field, by design, so
+            # that `git diff --cached --quiet` above stays an accurate
+            # idempotency check. sync_status reads the trailer back with
+            # `git log -1` (specs/mcp/sync_status.md RULE-48). Without it the
+            # report reads "runner not recorded", which is a gap, not a state.
+            # Required by specs/ci/verify_gate.md RULE-7.
+            git commit -m "test(static_checks): windows-native proofs from windows-latest [skip ci]" \
+                       -m "Purlin-Runner: github-actions/windows-latest"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi

@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Issue verification receipts for every PASSING feature.
 
+    python3 dev/issue_receipts.py [project_root]
+
 Drives the MCP server's own coverage and vhash functions rather than
 reimplementing them, so a receipt can never disagree with what sync_status
 reports. This is `purlin:verify` Step 3 as a script; the skill is the
 authority on the receipt shape.
 
 Receipts reference COMMITTED state, so commit specs and proofs first.
+
+`project_root` defaults to this repository. It is a parameter so a test can
+receipt a temp project through the real issuer instead of hand-writing a
+receipt shape that would then be free to drift from this one.
 """
 import datetime
 import json
@@ -20,15 +26,16 @@ import purlin_server as ps  # noqa: E402
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
-def main():
-    features = ps._scan_specs(ROOT)
-    all_proofs = ps._read_proofs(ROOT)
+def main(root=None, quiet=False):
+    root = root or ROOT
+    features = ps._scan_specs(root)
+    all_proofs = ps._read_proofs(root)
     global_anchors = {
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')
     }
     commit = subprocess.run(['git', 'rev-parse', 'HEAD'],
-                            cwd=ROOT, capture_output=True, text=True).stdout.strip()
+                            cwd=root, capture_output=True, text=True).stdout.strip()
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     issued, skipped = [], []
@@ -71,11 +78,19 @@ def main():
             receipt['awaiting_runner'] = [
                 {'id': pid, 'tier': tier} for pid, tier in awaiting
             ]
-        path = os.path.join(os.path.dirname(info['path']), f'{name}.receipt.json')
+        # info['path'] is project-relative, so it must be resolved against
+        # `root`. Without the join this only worked when cwd happened to be the
+        # project root, which is true for a bare `python3 dev/issue_receipts.py`
+        # and false for every other caller.
+        path = os.path.join(root, os.path.dirname(info['path']),
+                            f'{name}.receipt.json')
         with open(path, 'w') as f:
             json.dump(receipt, f, indent=2)
             f.write('\n')
         issued.append((name, vhash, len(awaiting)))
+
+    if quiet:
+        return issued, skipped
 
     for n, v, aw in issued:
         note = f'  ({aw} awaiting runner)' if aw else ''
@@ -83,7 +98,8 @@ def main():
     for n, why in skipped:
         print(f'  SKIP    {n:38s} {why}')
     print(f'\n{len(issued)} receipts issued, {len(skipped)} skipped')
+    return issued, skipped
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else None)

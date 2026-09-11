@@ -15,7 +15,9 @@ Purlin — Spec-Driven Development
   Building
   ──────
   purlin:build [name]           Inject spec rules into context, then implement
-  purlin:test [feature]    Run tests, emit proof files, report coverage
+  purlin:test [feature]         Run tests, emit proof files, report coverage
+  purlin:test --all             Run all tiers, including the remote path
+  purlin:test --local           Skip the remote path; report runner-gated as awaiting
   purlin:verify                 Run ALL tests, issue verification receipts
   purlin:verify --recheck         Clean-room re-execution, compare vhash to receipts
   purlin:verify --manual <f> <P>  Stamp a manual proof

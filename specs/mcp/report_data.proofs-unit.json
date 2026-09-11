@@ -234,6 +234,15 @@
       "test_name": "test_planned_proofs_do_not_affect_coverage",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-31",
+      "rule": "RULE-30",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_mode_is_carried_verbatim_and_defaults_rather_than_vanishing",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

@@ -4,6 +4,7 @@ Grep-based structural verification of the 8 reference documents
 that define Purlin's formats, conventions, and quality standards.
 """
 
+import json
 import os
 import re
 
@@ -278,3 +279,84 @@ class TestHardGatesAccuracy:
         assert len(not_gate) == 2, "hard_gates.md missing the 'What Is NOT a Gate' list"
         assert 'Proof Design' in not_gate[1] and 'Proof Integrity' in not_gate[1], \
             "both gauges must be listed as non-gates"
+
+
+class TestRemoteVerificationReference:
+    """purlin_references RULE-18/19/20."""
+
+    RV = os.path.join(REFS, 'remote_verification.md')
+
+    @pytest.mark.proof("purlin_references", "PROOF-18", "RULE-18")
+    def test_documents_the_loop_and_a_complete_workflow_template(self):
+        rv = _read(self.RV)
+
+        assert 'purlin:test' in rv, "the reference must name the owning skill"
+        assert re.search(r'(?i)read-only', rv), (
+            "it must give verify's read-only contract as the reason the loop "
+            "lives in purlin:test")
+
+        for label, pattern in (('push', r'(?i)push(es)? the (current )?branch'),
+                               ('dispatch', r'(?i)dispatch'),
+                               ('await', r'(?i)await'),
+                               ('pull', r'(?i)pull')):
+            assert re.search(pattern, rv), f"the loop is missing {label}"
+
+        assert re.search(r'bounded at \*\*3 rounds\*\*|at \*\*3 rounds\*\*|3 rounds',
+                         rv), "the 3-round bound must be stated as a literal"
+
+        # The template is what gets copied, so its load-bearing parts must be
+        # in the template block itself, not only in the prose around it.
+        m = re.search(r'```yaml(.*?)```', rv, re.S)
+        assert m, "no YAML workflow template block"
+        template = m.group(1)
+        assert 'paths-ignore' in template, (
+            "a template copied without paths-ignore loops forever")
+        assert '[skip ci]' in template, (
+            "a template copied without [skip ci] loops on other triggers")
+        assert 'Purlin-Runner:' in template, (
+            "a template copied without the trailer produces proofs whose "
+            "runner is unrecorded")
+
+    @pytest.mark.proof("purlin_references", "PROOF-19", "RULE-19")
+    def test_states_the_declaration_enforcement_split_and_the_gauge_gap(self):
+        rv = _read(self.RV)
+
+        assert 'branch protection' in rv, (
+            "the enforcement must be named")
+        assert re.search(r'(?i)declares? the mode', rv), (
+            "the field must be described as declaring, not enforcing")
+        assert re.search(r'(?i)agent can edit', rv), (
+            "the reason must be given: the field is editable in the tree")
+
+        assert re.search(r'(?i)gitignored', rv), (
+            "both gauge caches must be recorded as gitignored")
+        assert 'audit_cache.json' in rv and 'design_cache.json' in rv, (
+            "both caches must be named")
+        assert re.search(r'(?i)per-machine|do not\b.*travel|not travelling', rv), (
+            "the reference must say the gauges do not travel with a branch")
+        assert 'audit_llm' in rv, (
+            "the Integrity recommendation must name the config that makes it "
+            "possible")
+        assert re.search(r'(?i)deterministic', rv), (
+            "the Design recommendation rests on it being deterministic")
+
+    @pytest.mark.proof("purlin_references", "PROOF-20", "RULE-20")
+    def test_every_config_template_field_has_an_ownership_row(self):
+        """A field stamped into new projects with no row here has no recorded
+        owner and no recorded default, which is how `digest` went unlisted."""
+        with open(os.path.join(PROJECT_ROOT, 'templates', 'config.json')) as f:
+            template_keys = set(json.load(f).keys())
+        assert template_keys, "templates/config.json is empty"
+
+        drift = _read(os.path.join(REFS, 'drift_criteria.md'))
+        section = drift.split('Config Field Ownership', 1)
+        assert len(section) == 2, "drift_criteria.md has no ownership section"
+        body = section[1].split('\n## ', 1)[0]
+
+        listed = set(re.findall(r'^\|\s*`([^`]+)`\s*\|', body, re.M))
+        assert listed, "the ownership table has no rows"
+
+        missing = sorted(template_keys - listed)
+        assert not missing, (
+            f"templates/config.json stamps {missing} into every new project "
+            f"with no row in drift_criteria.md's Config Field Ownership table")

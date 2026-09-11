@@ -96,13 +96,13 @@ Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: 
 
 ## Step 4 — Run Tests and Iterate
 
-The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
+The iteration loop is: **write code → write tests → run `purlin:test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
 
 ```
-purlin:unit-test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
+purlin:test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
 ```
 
-`purlin:unit-test` handles test framework detection, proof file emission, freshness checks, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:unit-test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:unit-test` and follow any `→` directives for uncovered rules.
+`purlin:test` is the single owner of test execution: **never invoke a test runner directly from this skill** (no `pytest`, no `npx jest`, no `bash dev/*.sh`). Delegate to `purlin:test` and read its output. It handles test framework detection, tier classification, proof file emission, freshness checks, remote execution of runner-gated tiers, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:test` and follow any `→` directives for uncovered rules.
 
 **When a test fails, diagnose the root cause before fixing:**
 1. Read the failing assertion — what did the test expect vs what did it get?
@@ -181,7 +181,7 @@ When spawned by the auditor to fix HOLLOW or WEAK proofs:
 1. Read the audit findings — each has a PROOF-ID, issue description, and suggested fix
 2. Read the spec rule and current test code
 3. Fix the test to address the specific issue
-4. Run purlin:unit-test to verify the fix works
+4. Run purlin:test to verify the fix works
 5. Report back: "Fixed PROOF-N — now uses real bcrypt instead of mock. Re-audit please."
 6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section — proof fixes are mechanical, not judgment calls.
 
@@ -203,7 +203,7 @@ Do NOT commit after each failed iteration — only when stable. Do NOT defer the
 
 The build is NOT complete until all of the following are true. Verify each one before responding to the user.
 
-1. **Tests pass.** The last `purlin:unit-test` run shows the target feature as PASSING or better.
+1. **Tests pass.** The last `purlin:test` run shows the target feature as PASSING or better.
 2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was printed as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
 3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
 4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.

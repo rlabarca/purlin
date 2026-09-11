@@ -14,6 +14,7 @@ VITEST_REPORTER_SRC="$REAL_PROJECT_ROOT/scripts/proof/vitest_purlin.ts"
 SHELL_HARNESS_SRC="$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 REPORT_HTML_SRC="$REAL_PROJECT_ROOT/scripts/report/purlin-report.html"
 VERSION_FILE="$REAL_PROJECT_ROOT/VERSION"
+CONFIG_TEMPLATE="$REAL_PROJECT_ROOT/templates/config.json"
 
 # Load proof harness
 source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
@@ -53,19 +54,24 @@ init_project() {
   mkdir -p "$tmpdir/.purlin/plugins"
   mkdir -p "$tmpdir/specs/_anchors"
 
-  # Step 2: Write config.json
+  # Step 2: Write config.json.
+  # The base comes from templates/config.json, which is what purlin:init stamps
+  # into a new project. Hand-building the dict here made the required-fields
+  # proof assert against the test's own literal, so a field added to the
+  # template would never have been noticed missing.
   local report_py
   [[ "$report" == "true" ]] && report_py="True" || report_py="False"
   python3 -c "
 import json
-config = {
+with open('$CONFIG_TEMPLATE') as f:
+    config = json.load(f)
+config.update({
     'version': '$version',
     'test_framework': '$framework',
-    'spec_dir': 'specs',
     'pre_push': '$pre_push',
     'report': $report_py,
-    'digest': '$digest'
-}
+    'digest': '$digest',
+})
 with open('$tmpdir/.purlin/config.json', 'w') as f:
     json.dump(config, f, indent=2)
     f.write('\n')
@@ -245,13 +251,13 @@ init_project "$TMP2" "shell" "warn" "true"
 if python3 -c "
 import json, sys
 d = json.load(open('$TMP2/.purlin/config.json'))
-required = ['version', 'test_framework', 'spec_dir', 'pre_push', 'report', 'digest']
+required = ['version', 'test_framework', 'spec_dir', 'pre_push', 'remote_verification', 'report', 'digest']
 missing = [k for k in required if k not in d]
 if missing:
     print('Missing:', missing, file=sys.stderr)
     sys.exit(1)
 " 2>/dev/null; then
-  echo "  PASS: all 6 required fields present"
+  echo "  PASS: all 7 required fields present"
   purlin_proof "skill_init" "PROOF-9" "RULE-9" pass "config.json has all required fields"
   PASS=$((PASS + 1))
 else
@@ -293,6 +299,7 @@ d = json.load(open('$TMP4/.purlin/config.json'))
 assert d['test_framework'] == 'auto', f'test_framework={d[\"test_framework\"]}'
 assert d['spec_dir'] == 'specs', f'spec_dir={d[\"spec_dir\"]}'
 assert d['pre_push'] == 'warn', f'pre_push={d[\"pre_push\"]}'
+assert d['remote_verification'] == 'off', f'remote_verification={d[\"remote_verification\"]}'
 assert d['report'] == True, f'report={d[\"report\"]}'
 " 2>/dev/null; then
   echo "  PASS: defaults correct"

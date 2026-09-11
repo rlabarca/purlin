@@ -178,6 +178,14 @@ Everything else is optional guidance. In particular **neither quality gauge is a
 Proof Design or Proof Integrity score never blocks a commit, a push, or a receipt. They tell
 you how good the evidence is; the gate only asks whether it exists.
 
+A project can add gates of its own, and one ships as a template: `scripts/ci/verify_gate.py
+--check` fails a branch whose features are not VERIFIED, or that are awaiting a runner for a
+platform tier. That is **project policy layered on the framework's single gate**, not a second
+one: the project owns it, configures it, and can turn it off. `.purlin/config.json`'s
+`remote_verification` field declares whether a project holds itself to that bar; branch protection
+marking the job a required check is what enforces it. See
+[Remote Verification](references/remote_verification.md).
+
 ## Architecture
 
 ```

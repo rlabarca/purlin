@@ -825,8 +825,49 @@ def _gauge_suffix(summary, which, audit_summary, design_summary):
     return " (" + ", ".join(parts) + ")"
 
 
+_REMOTE_VERIFICATION_MODES = ('required', 'optional', 'off')
+
+
+def _remote_verification_line(config, awaiting_count):
+    """The project's declared remote-verification mode, or '' when silent.
+
+    Two things this line must not do. It must not present the field as the
+    gate: `.purlin/config.json` is a file in the tree the agent can edit, and
+    `docs/regulated-environments.md` requires policy to live outside the repo.
+    The field declares the mode; branch protection marking the gate job a
+    required check is what enforces it, and both halves are said together
+    (sync_status RULE-49).
+
+    And it must not swallow a typo. A mode outside the three is named as
+    unrecognized rather than falling back to `off`, because a silent fallback
+    would disable the declaration invisibly.
+    """
+    mode = config.get('remote_verification', 'off')
+    declared = " Declared in config; enforcement is branch protection marking the verify-gate job a required check"
+
+    if mode not in _REMOTE_VERIFICATION_MODES:
+        return (f"Remote verification: {mode!r} is not a recognized mode "
+                f"(" + " | ".join(_REMOTE_VERIFICATION_MODES) + ")")
+    if mode == 'required':
+        return ("Remote verification: required — runner-gated proofs must be proved "
+                "before a merge." + declared)
+    if mode == 'optional':
+        return ("Remote verification: optional — the remote loop is available and "
+                "reported; findings never block." + declared)
+    # off: silent unless something is actually waiting. Keyed on awaiting
+    # rather than on declared, because a project whose runner-gated proofs
+    # were already proved elsewhere has nothing stuck, and telling it those
+    # proofs "will stay AWAITING RUNNER" would be false.
+    if not awaiting_count:
+        return ''
+    n = awaiting_count
+    return (f"Remote verification: off — {n} proof{'s' if n != 1 else ''} "
+            f"awaiting a runner will stay that way. "
+            f"→ Run: purlin:test to set up a runner")
+
+
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
-                         gauges_by_feature=None):
+                         gauges_by_feature=None, config=None, awaiting_count=0):
     """Build a coverage summary table with Unicode box-drawing characters."""
     if not summary_rows:
         return []
@@ -920,6 +961,15 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
             summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
 
     lines.append(summary_line)
+
+    # The declared remote-verification mode, on its own line rather than
+    # appended: the summary line is already carrying two gauges with their own
+    # denominators and ages, and the declaration/enforcement split needs a
+    # clause of its own to be readable at all.
+    rv_line = _remote_verification_line(config or {}, awaiting_count)
+    if rv_line:
+        lines.append(rv_line)
+
     lines.append("")  # blank line before detail
 
     return lines
@@ -1153,12 +1203,19 @@ def sync_status(project_root, role=None):
     _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary)
 
+    # Config is read before the table, not after: the summary block reports the
+    # declared remote-verification mode (RULE-49), so the table builder needs it.
+    config = resolve_config(project_root)
+    awaiting_count = sum(
+        len(_awaiting_runner(name, info, all_proofs))
+        for name, info in features.items()
+    )
+
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
-                                       gauges_by_feature)
+                                       gauges_by_feature, config, awaiting_count)
 
     # Report data generation (side effect)
-    config = resolve_config(project_root)
     if config.get('report'):
         data_path = _write_report_data(
             project_root, features, all_proofs, config, global_anchors,
@@ -1353,8 +1410,8 @@ def _runner_lines(project_root, name, info, all_proofs, awaiting, awaiting_rule_
             out.append(f"  \u2192 {awaiting_rule_count} rule"
                        f"{'s' if awaiting_rule_count != 1 else ''} left the coverage "
                        f"denominator: every declared proof needs a runner")
-        out.append("  \u2192 Run these on a host for that tier and commit the proof "
-                   "file it writes. Not a failure and not a blocker")
+        out.append("  \u2192 Run: purlin:test \u2014 it dispatches a runner for that tier "
+                   "and pulls back the proofs it commits. Not a failure and not a blocker")
 
     # What a runner did prove, and when. Read from git rather than the proof
     # file, which carries no timestamp on purpose.
@@ -2151,6 +2208,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'project': os.path.basename(os.path.abspath(project_root)),
         'version': config.get('version', ''),
+        # Always present, defaulted here rather than at each reader. The CI gate
+        # (scripts/ci/verify_gate.py) decides its exit code from this payload, and
+        # a gate that cannot tell "mode absent" from "older payload" cannot fail
+        # closed on the difference (report_data RULE-30).
+        'remote_verification': config.get('remote_verification', 'off'),
         'docs_url': _get_plugin_docs_url(),
         'summary': summary,
         'features': feature_list,
@@ -2164,6 +2226,37 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         'drift': None,
         'uncommitted': uncommitted_files,
     }
+
+
+def read_report_payload(project_root):
+    """Assemble the structured status payload without writing anything.
+
+    `_write_report_data` is the writing path; this is the reading one. The CI
+    gate (`scripts/ci/verify_gate.py`) needs exactly the payload the dashboard
+    gets and must not touch the tree to get it (verify_gate RULE-5), so it
+    calls this rather than re-implementing the assembly or parsing the
+    rendered summary table. Returns None when the directory is not a readable
+    Purlin project, which the gate turns into a bad-invocation exit.
+    """
+    config = resolve_config(project_root)
+    if not config:
+        return None
+    features = _scan_specs(project_root)
+    if not features:
+        return None
+    all_proofs = _read_proofs(project_root)
+    global_anchors = {
+        k: v for k, v in features.items()
+        if v.get('is_anchor') and v.get('is_global')
+    }
+    audit_summary = _read_audit_summary(project_root)
+    design_summary = _read_design_summary(project_root)
+    _attach_gauge_coverage(project_root, features, all_proofs,
+                           audit_summary, design_summary)
+    return _build_report_data(
+        project_root, features, all_proofs, config, global_anchors,
+        audit_summary, design_summary=design_summary,
+    )
 
 
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,

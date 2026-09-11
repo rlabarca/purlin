@@ -1562,3 +1562,186 @@ class TestSkillVerify:
             "build's audit must be described as feature-scoped"
         assert re.search(r'(?i)advisory', build), \
             "build's audit must be described as advisory"
+
+
+class TestSkillTestRemotePath:
+    """skill_test RULE-7 through RULE-11: tier classification and the remote path.
+
+    A @windows proof that had never run reported nothing: the rule read PASS
+    off a local proof while nothing had proved the platform. Phase 4 made the
+    gap visible; these rules are the skill that closes it.
+    """
+
+    @pytest.mark.proof("skill_test", "PROOF-7", "RULE-7")
+    def test_tiers_are_classified_before_anything_runs(self):
+        content = _read('test')
+        assert 'Step 1.5' in content, "no tier-classification step"
+        i_classify = content.index('Step 1.5')
+        i_run = content.index('## Step 2')
+        assert i_classify < i_run, (
+            "classification must come before the step that runs tests; naming "
+            "what cannot run here after running is not a warning")
+
+        section = content[i_classify:i_run]
+        assert 'locally-runnable' in section and 'runner-gated' in section, (
+            "the step must name both groups")
+        assert 'windows' in section, "the runner-gated tier must be named"
+        assert 'schema_proof_format' in section, (
+            "the step must cite the closed tier set that defines runner-gated, "
+            "so adding a tier has one place to change")
+        assert re.search(r'(?i)never.*substitut|not a windows proof', section), (
+            "the step must forbid substituting a local approximation")
+        assert re.search(r'(?i)never block|does not block|warn, never block',
+                         section), (
+            "an absent runner warns; the step must say it does not block")
+
+    @pytest.mark.proof("skill_test", "PROOF-8", "RULE-8")
+    def test_the_remote_path_is_four_ordered_operations_and_says_why_it_is_here(self):
+        content = _read('test')
+        assert 'Step 2b' in content, "no remote-path step"
+        section = content[content.index('Step 2b'):content.index('### Proof File Freshness')]
+
+        order = []
+        for label, pattern in (
+                ('push', r'(?i)push the current branch'),
+                ('dispatch', r'(?i)dispatch the workflow'),
+                ('await', r'(?i)await it'),
+                ('pull', r'(?i)pull the proof commits')):
+            m = re.search(pattern, section)
+            assert m, f"the remote path is missing the {label} operation"
+            order.append((m.start(), label))
+        assert order == sorted(order), (
+            f"the four operations must appear in order, got "
+            f"{[l for _, l in order]}")
+
+        # Why here and not in verify. The reason, not just the placement.
+        assert re.search(r'(?i)read-only', content), (
+            "the skill must name verify's read-only contract as the reason")
+        assert 'purlin:verify' in content
+
+        # And verify must not have grown a write path of its own.
+        verify = _read('verify')
+        for forbidden in ('git push', 'gh workflow run', 'git pull'):
+            assert forbidden not in verify, (
+                f"skills/verify/SKILL.md gained {forbidden!r}; verify is a "
+                "read-only gate and must inherit the remote path by delegation")
+
+    @pytest.mark.proof("skill_test", "PROOF-9", "RULE-9")
+    def test_remotely_proved_is_reported_distinctly_and_sourced_from_the_commit(self):
+        content = _read('test')
+        step3 = content[content.index('## Step 3'):content.index('## Step 4')]
+        assert re.search(r'(?i)locally-proved', step3) and \
+               re.search(r'(?i)remotely-proved', step3), (
+            "Step 3 must distinguish the two kinds of pass by name")
+        assert 'proved remotely' in step3, (
+            "the sample output must mark a remotely-proved tier")
+        assert 'Purlin-Runner' in step3, (
+            "the runner identity must be sourced from the commit trailer")
+        assert re.search(r'(?i)not\s+from\s+the\s+proof\s+entry'
+                         r'|only\s+the\s+commit\s+says\s+where', step3, re.S), (
+            "Step 3 must say the proof entry does not record where it ran")
+
+        fresh = content[content.index('Proof File Freshness'):content.index('## Step 3')]
+        assert re.search(r'(?i)locally-runnable tiers only|does not apply', fresh), (
+            "the freshness check must exclude pulled runner-gated proof files, "
+            "whose mtime says when they were fetched")
+
+    @pytest.mark.proof("skill_test", "PROOF-10", "RULE-10")
+    def test_the_remote_loop_bound_is_three_and_matches_the_other_skills(self):
+        content = _read('test')
+        assert re.search(r'Bound the loop at 3 rounds', content), (
+            "the remote loop must be bounded at a literal 3 rounds")
+        # The three skills must not drift to different bounds.
+        for skill in ('audit', 'verify'):
+            other = _read(skill)
+            assert re.search(r'3 rounds', other), (
+                f"skills/{skill}/SKILL.md no longer says 3 rounds; the bound "
+                "has drifted between skills")
+
+    @pytest.mark.proof("skill_test", "PROOF-11", "RULE-11")
+    def test_setup_is_offered_on_discovery_and_never_at_init(self):
+        content = _read('test')
+        section = content[content.index('Step 2b'):content.index('### Proof File Freshness')]
+        assert re.search(r'(?i)no workflow is configured', section), (
+            "the offer must be conditioned on discovering no workflow")
+        assert 'references/remote_verification.md' in section, (
+            "the offer must point at the template")
+        assert re.search(r'(?i)only on a yes|never write a workflow file unasked',
+                         section), (
+            "writing a workflow changes what runs on every push; it needs consent")
+        assert re.search(r'(?i)init is not the place', section), (
+            "the skill must state that init is not where this happens")
+        assert re.search(r'(?i)asks nothing about runners|has no answer yet',
+                         section), (
+            "and must give the reason, not just the rule")
+
+        init = _read('init')
+        assert 'remote_verification' in init, (
+            "init must still write the config field, so a project has a default")
+        assert not re.search(r'(?i)(scaffold|set up|configure).{0,40}'
+                             r'(runner|remote verification workflow)', init), (
+            "purlin:init must not have gained a remote-verification setup step")
+
+
+class TestBuildDelegatesTestExecution:
+
+    @pytest.mark.proof("skill_build", "PROOF-21", "RULE-14")
+    def test_build_names_purlin_test_and_no_retired_name_survives(self):
+        """The skill was renamed from purlin:unit-test and build's iteration
+        loop kept pointing at the old name, directing the agent at a skill
+        that does not exist."""
+        content = _read('build')
+        assert 'purlin:unit-test' not in content, (
+            "skills/build/SKILL.md still names the retired purlin:unit-test")
+        assert 'purlin:test' in content
+        assert re.search(r'(?i)single owner of test execution', content), (
+            "build must name purlin:test as the single owner of test execution")
+        assert re.search(r'(?i)never invoke a test runner directly', content), (
+            "build must forbid invoking a runner itself")
+
+        # No bare runner invocation as an instruction. The prohibition itself
+        # names them, so exclude the line that carries it.
+        for line in content.splitlines():
+            if 'never invoke a test runner directly' in line.lower():
+                continue
+            assert not re.search(r'^\s*(npx (jest|vitest)|pytest)\b', line), (
+                f"build instructs a runner directly: {line!r}")
+
+
+class TestRetiredVerifyFlagIsGone:
+
+    @pytest.mark.proof("skill_verify", "PROOF-10", "RULE-10")
+    def test_no_doc_names_the_retired_audit_flag(self):
+        """`purlin:verify --audit` collided with the purlin:audit skill and was
+        renamed to --recheck. Three references in docs/ survived the rename."""
+        roots = [os.path.join(PROJECT_ROOT, d)
+                 for d in ('skills', 'references', 'docs')]
+        md_files = [os.path.join(PROJECT_ROOT, 'README.md')]
+        for root in roots:
+            for dirpath, _dirnames, filenames in os.walk(root):
+                md_files.extend(os.path.join(dirpath, fn)
+                                for fn in filenames if fn.endswith('.md'))
+
+        offenders = []
+        for path in md_files:
+            if os.path.basename(path) == 'RELEASE_NOTES.md':
+                continue
+            text = open(path).read()
+            for m in re.finditer(r'[^\w-]--audit\b(?!-)', text):
+                # Attribute the flag: verify's flag is the retired one.
+                window = text[max(0, m.start() - 120):m.end() + 60]
+                if re.search(r'(?i)(verify|deploy gate|re-execution|clean-room)',
+                             window):
+                    offenders.append(
+                        f"{os.path.relpath(path, PROJECT_ROOT)}: "
+                        f"{window.strip()[:140]}")
+        assert not offenders, (
+            "the retired `purlin:verify --audit` flag survives in:\n  "
+            + "\n  ".join(offenders))
+
+        # The replacement must exist, so the scan cannot pass by the flag
+        # having been deleted rather than renamed.
+        verify = _read('verify')
+        usage = verify[verify.index('## Usage'):verify.index('## Default Mode')]
+        assert '--recheck' in usage, (
+            "verify's Usage block must document --recheck")

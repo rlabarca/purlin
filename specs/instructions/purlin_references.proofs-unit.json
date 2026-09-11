@@ -153,6 +153,33 @@
       "test_name": "test_receipt_condition_is_passing_not_verified",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_documents_the_loop_and_a_complete_workflow_template",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_states_the_declaration_enforcement_split_and_the_gauge_gap",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_every_config_template_field_has_an_ownership_row",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

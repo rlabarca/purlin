@@ -70,6 +70,7 @@ run_suite "All Pytest Tests" pytest \
   "$SCRIPT_DIR/test_purlin_report_markup.py" \
   "$SCRIPT_DIR/test_purlin_version.py" \
   "$SCRIPT_DIR/test_report_data.py" \
+  "$SCRIPT_DIR/test_verify_gate.py" \
   "$SCRIPT_DIR/test_purlin_report.py" \
   -v
 

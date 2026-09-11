@@ -36,6 +36,15 @@
       "test_name": "test_design_and_integrity_are_separate_columns",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-42",
+      "rule": "RULE-40",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_header_chip_names_the_mode_and_where_enforcement_lives",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

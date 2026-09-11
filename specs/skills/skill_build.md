@@ -19,6 +19,7 @@
 - RULE-11: When running as proof fixer, the changeset summary maps fixed proofs instead of rules and omits the Decisions section
 - RULE-12: Build skill has exit criteria requiring tests pass, changeset summary printed, all changes committed, and no uncommitted proof files before the skill can complete
 - RULE-13: The assertion-change guard forbids resolving a description/assertion disagreement by narrowing the proof description, explains that doing so lowers Proof Design while leaving Proof Integrity flatteringly high, and forbids it outright for anchor rules
+- RULE-14: The build skill names `purlin:test` as the single owner of test execution and forbids invoking a test runner directly, because `purlin:build` and `purlin:verify` inherit tier classification, remote execution and the `sync_status` call by delegating rather than by each reimplementing them. No retired skill name appears: the skill was renamed from `purlin:unit-test`, and this skill's iteration loop kept pointing at the old name through a release, directing the agent at a skill that does not exist
 
 ## Proof
 
@@ -42,3 +43,4 @@
 - PROOF-18 (RULE-10): After the agent build session, verify git log shows a feat(<name>): commit whose body contains RULE references and the changeset summary sections @e2e
 - PROOF-19 (RULE-12): After the agent build session, verify git status has no uncommitted proof files or source files, and proof files are tracked in git @e2e
 - PROOF-20 (RULE-13): Grep `skills/build/SKILL.md` for the assertion-change guard; verify it forbids narrowing the proof description, names both gauges, and forbids narrowing anchor-rule descriptions
+- PROOF-21 (RULE-14): Grep `skills/build/SKILL.md` for `purlin:test` and verify it is named as the single owner of test execution with a prohibition on invoking a runner directly. Verify the retired name `purlin:unit-test` appears nowhere in the file, and that no bare runner invocation (`pytest`, `npx jest`, `npx vitest`) appears as an instruction outside the prohibition itself

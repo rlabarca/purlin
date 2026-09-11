@@ -2,9 +2,9 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md
 > Stack: markdown (reference documentation)
-> Description: Ten reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
+> Description: Eleven reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 
@@ -13,7 +13,7 @@
 - RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
 - RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
-- RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage
+- RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage. A project's own CI gate is documented there as project policy layered on that one gate, in a section that is not a `## Gate N` heading, so the framework's count cannot be inflated by describing what a project configures for itself
 - RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, anchor, chore, docs
 - RULE-8: `purlin_commands.md` lists all 12 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
 - RULE-9: `spec_quality_guide.md` includes guidance on writing rules (rebuild test, contract boundaries, coverage dimensions), proof descriptions, tier assignment, and FORBIDDEN patterns
@@ -25,6 +25,9 @@
 - RULE-15: `supported_frameworks.md` documents end-to-end (browser) proofs: no dedicated e2e proof reporter ships, `@e2e` proofs are tool-agnostic, and proof emission wires through the existing plugins (Vitest/Jest markers or shell `purlin_proof` wrappers)
 - RULE-16: `audit_criteria.md` defines both gauges — Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, graded from the proof description with no test code) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED/MANUAL, graded from test code) — with a scoring formula for each, and marks the Integrity criteria that are comparisons against the proof description so a reader knows which ones a vague description disables. `spec_quality_guide.md` labels its proof-description sections with the Design level each defect is graded as
 - RULE-17: `hard_gates.md` states that receipts are issued for features reported PASSING and explains that VERIFIED is the post-receipt state, so requiring it would deadlock the first receipt. Its "What Is NOT a Gate" list records that a low Proof Design or Proof Integrity score never blocks
+- RULE-18: `remote_verification.md` documents the remote-execution loop for runner-gated tiers: that it lives in `purlin:test` because `purlin:verify` is read-only, the four ordered operations, the 3-round bound, and a GitHub Actions workflow template. The template carries both loop-guard halves (a `paths-ignore` entry and `[skip ci]`) and the `Purlin-Runner:` trailer, because a template copied without them produces either an infinite trigger loop or a proof whose runner is unrecorded
+- RULE-19: `remote_verification.md` states the declaration/enforcement split for the `remote_verification` config field: the field declares the mode, and branch protection marking the gate job a required check is the enforcement. It gives the reason rather than only the rule, citing that the field is in the tree where the agent can edit it. It also records that neither quality gauge travels with a branch, because both caches are gitignored, and recommends recomputing Design in CI (deterministic and free) while recomputing Integrity only where `audit_llm` is configured
+- RULE-20: `drift_criteria.md`'s Config Field Ownership table names every field `templates/config.json` carries. A field stamped into new projects with no row here has no recorded owner and no recorded default, which is how `digest` went unlisted
 
 ## Proof
 
@@ -45,3 +48,6 @@
 - PROOF-15 (RULE-15): Grep `references/supported_frameworks.md` for the end-to-end proofs section; verify it states no dedicated e2e reporter ships, describes tool-agnostic `@e2e` proofs, and documents wiring through existing plugins
 - PROOF-16 (RULE-16): Grep `references/audit_criteria.md` for `Pass D`, all four Design levels, both scoring formulas, and the `[relative]` markers; grep `references/spec_quality_guide.md` for the Design-level labels on its proof-description sections and for `Test Quality Rules (Proof Integrity)`
 - PROOF-17 (RULE-17): Grep `references/hard_gates.md`; verify it names PASSING as the receipt condition, explains the VERIFIED bootstrapping problem, and lists both gauges as non-gates
+- PROOF-18 (RULE-18): Grep `references/remote_verification.md` for the loop: verify it names `purlin:test` as the owner and `purlin:verify`'s read-only contract as the reason, that all four operations appear (push, dispatch, await, pull), that the bound is the literal 3, and that the workflow template block contains `paths-ignore`, `[skip ci]` and a `Purlin-Runner:` trailer
+- PROOF-19 (RULE-19): Grep `references/remote_verification.md` for the declaration/enforcement split; verify it names branch protection as the enforcement and gives the reason (the field is editable in the tree), and that it lists both gauge caches as gitignored and not travelling, with the Design/Integrity recomputation recommendation naming `audit_llm`
+- PROOF-20 (RULE-20): Parse the keys of `templates/config.json` and the field column of `drift_criteria.md`'s Config Field Ownership table; verify every template key has a row. Assert the table was actually found and is non-empty, so the proof cannot pass by comparing two empty sets

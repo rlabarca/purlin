@@ -42,9 +42,9 @@ Purlin's pre-push hook is the built-in enforcement layer. CI and deploy gates ar
 |-------|------------|----------------|
 | **Layer 1: Git pre-push hook** | Low — local, bypassable with `--no-verify` | Developer mistakes (broken proofs before they reach remote) |
 | **Layer 2: CI pipeline** | Medium — remote, configured by team | Code that doesn't pass tiered proof checks |
-| **Layer 3: Deploy gate (`--audit`)** | Higher — clean-room re-execution | Tampered proof files, weakened tests, stale receipts |
+| **Layer 3: Deploy gate (`purlin:verify --recheck`)** | Higher — clean-room re-execution | Tampered proof files, weakened tests, stale receipts |
 
-**For regulated environments, Layer 3 is required but not sufficient.** The `--audit` re-execution proves the tests pass in CI, but it doesn't prove the tests are meaningful (see "Not a test quality gate" above). Your QMS must independently verify test quality.
+**For regulated environments, Layer 3 is required but not sufficient.** The `--recheck` re-execution proves the tests pass in CI, but it doesn't prove the tests are meaningful (see "Not a test quality gate" above). Your QMS must independently verify test quality.
 
 ---
 
@@ -90,7 +90,7 @@ Purlin's `RULE-N` lines in specs and `PROOF-N` entries in proof files create a m
 
 ### Verification Evidence
 
-The `vhash` in verification receipts is a deterministic hash of rule IDs + proof statuses. Your CI pipeline can use the `vhash` to verify that the developer's local state matches the CI environment, before the CI runner executes its own clean-room verification to submit to the QMS. The local `vhash` is evidence that the developer ran the tests — the CI `--audit` run is the evidence that the tests pass in a trusted environment.
+The `vhash` in verification receipts is a deterministic hash of rule IDs + proof statuses. Your CI pipeline can use the `vhash` to verify that the developer's local state matches the CI environment, before the CI runner executes its own clean-room verification to submit to the QMS. The local `vhash` is evidence that the developer ran the tests — the CI `purlin:verify --recheck` run is the evidence that the tests pass in a trusted environment.
 
 ### Human Approval Workflow
 

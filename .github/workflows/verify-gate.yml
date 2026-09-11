@@ -1,0 +1,59 @@
+name: verify-gate
+
+# Runs the deterministic verification gate: scripts/ci/verify_gate.py --check reads
+# the structured status payload and decides whether the branch may merge.
+#
+# DECLARATION VERSUS ENFORCEMENT
+#   The `remote_verification` field in .purlin/config.json DECLARES the mode. This
+#   workflow reads that declaration and exits 0 or 1 accordingly. Neither the field
+#   nor this file is the enforcement: both are in the repository, where the agent can
+#   edit them. Enforcement is branch protection marking this job a required check,
+#   plus auto-merge gated on it, which lives in the forge and not in the tree.
+#   See docs/regulated-environments.md ("Policy lives outside the repo") and
+#   references/remote_verification.md.
+#
+#   This repo declares "optional", so the job reports findings and passes. Declaring
+#   "required" is what turns the same findings into an exit 1.
+#
+# Governed by specs/ci/verify_gate.md (RULE-1 through RULE-6).
+
+on:
+  push:
+    paths:
+      - 'specs/**'
+      - '.purlin/config.json'
+      - 'scripts/ci/verify_gate.py'
+      - 'scripts/mcp/purlin_server.py'
+      - '.github/workflows/verify-gate.yml'
+  pull_request:
+    paths:
+      - 'specs/**'
+      - '.purlin/config.json'
+      - 'scripts/ci/verify_gate.py'
+      - 'scripts/mcp/purlin_server.py'
+      - '.github/workflows/verify-gate.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-gate:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: the gate's payload includes runner provenance, which
+      # sync_status reads with `git log -1` on each runner-gated tier file.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Prints the declared mode, the enforcement note, and every finding, so the
+      # job log is the record of what the gate saw and why it decided as it did.
+      - name: Run the verification gate
+        run: python3 scripts/ci/verify_gate.py --check --project-root .
+
+      - name: Run the verify_gate proofs
+        run: |
+          pip install pytest
+          python -m pytest dev/test_verify_gate.py -v

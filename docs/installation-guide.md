@@ -124,6 +124,7 @@ Default config (`version` is set from the installed framework's `VERSION` file a
   "test_framework": "auto",
   "spec_dir": "specs",
   "pre_push": "warn",
+  "remote_verification": "off",
   "report": true,
   "digest": "auto"
 }

@@ -14,9 +14,9 @@
 - RULE-6: `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
 - RULE-7: `--list-plugins` identifies built-in plugins (`pytest_purlin`, `jest_purlin`, `purlin-proof`) by framework name and labels all others as `custom`
 - RULE-8: After init, `.purlin/`, `.purlin/plugins/`, `specs/`, and `specs/_anchors/` directories all exist
-- RULE-9: `config.json` is valid JSON containing all 6 required fields: version, test_framework, spec_dir, pre_push, report, digest
+- RULE-9: `config.json` is valid JSON containing all 7 required fields: version, test_framework, spec_dir, pre_push, remote_verification, report, digest
 - RULE-10: The version field in config.json matches the contents of the VERSION file
-- RULE-11: Default config values are test_framework: auto, spec_dir: specs, pre_push: warn, report: true, digest: auto
+- RULE-11: Default config values are test_framework: auto, spec_dir: specs, pre_push: warn, remote_verification: off, report: true, digest: auto. `remote_verification` defaults to `off` because setup is offered on discovery rather than at init (`skill_test` RULE-11): a project with no runner-gated proofs has no runner to configure, so init writes the field and declines to ask about it
 - RULE-12: When conftest.py exists at project root, auto-detection selects pytest
 - RULE-13: When pyproject.toml contains [tool.pytest], auto-detection selects pytest
 - RULE-14: When package.json contains jest, auto-detection selects jest
@@ -65,7 +65,7 @@
 - PROOF-6 (RULE-6): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
 - PROOF-7 (RULE-7): Grep `skills/init/SKILL.md` for `pytest_purlin.py` with `Python/pytest`, `jest_purlin.js` with `JavaScript/Jest`, and the label `custom`; verify the labeling table exists
 - PROOF-8 (RULE-8): e2e: Create init-equivalent structure; verify .purlin/, .purlin/plugins/, specs/, specs/_anchors/ all exist @e2e
-- PROOF-9 (RULE-9): e2e: Read config.json; parse as JSON; verify all 5 required fields present @e2e
+- PROOF-9 (RULE-9): e2e: Read config.json; parse as JSON; verify all 7 required fields are present by name, so a field added to the template without being added to this list fails @e2e
 - PROOF-10 (RULE-10): e2e: Read VERSION file and config.json version; verify identical @e2e
 - PROOF-11 (RULE-11): e2e: Create project with no overrides; verify default values @e2e
 - PROOF-12 (RULE-12): e2e: Create project with conftest.py; run pre-push; verify pytest detected @e2e

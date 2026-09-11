@@ -48,6 +48,7 @@ Config template fields (from `templates/config.json`):
 | `test_framework` | `"auto"` | Detected test framework(s) |
 | `spec_dir` | `"specs"` | Directory containing specs |
 | `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |
+| `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` discovers a runner-gated proof |
 | `report` | `true` | HTML dashboard report generation |
 | `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |
 

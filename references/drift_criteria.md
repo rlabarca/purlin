@@ -176,10 +176,15 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `test_framework` | `purlin:init` (Step 3) | `purlin:test` (Step 1) | `"auto"` |
 | `spec_dir` | `purlin:init` | `sync_status` MCP tool | `"specs"` |
 | `pre_push` | `purlin:init` | pre-push hook | `"warn"` |
+| `remote_verification` | `purlin:init` | `sync_status`, the dashboard header, `scripts/ci/verify_gate.py` | `"off"` |
 | `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
 | `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |
 | `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
 | `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
+| `digest` | `purlin:init --digest` | pre-commit hook (digest regeneration) | `"auto"` |
 
 `purlin:init` is the only skill that writes config. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).
+
+This table must name every field `templates/config.json` carries. A field written into new projects
+but absent here has no recorded owner, which is how `digest` went unlisted through four releases.

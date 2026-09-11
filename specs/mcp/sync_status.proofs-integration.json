@@ -21,6 +21,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-81",
+      "rule": "RULE-49",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_mode_is_reported_as_a_declaration_not_as_the_gate",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

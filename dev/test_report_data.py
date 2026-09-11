@@ -1328,3 +1328,46 @@ class TestPerFeatureDesignAndGaugeStates:
         assert login['design']['coverage'] == {
             'measured': 2, 'total': 2, 'complete': True}, \
             f"design coverage was {login['design']['coverage']}"
+
+
+class TestRemoteVerificationInPayload:
+    """report_data RULE-30: the declared mode travels in the payload.
+
+    `scripts/ci/verify_gate.py` decides its exit code from this payload. A key
+    that is sometimes absent forces the gate to guess whether the mode is
+    missing or the payload is from an older build, and a gate that guesses
+    cannot fail closed on the difference.
+    """
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _minimal_spec_content())
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp)
+
+    def _build(self, config):
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        anchors = {k: v for k, v in features.items() if v.get('is_global')}
+        return purlin_server._build_report_data(
+            self.tmp, features, proofs, config, anchors, None)
+
+    @pytest.mark.proof("report_data", "PROOF-31", "RULE-30")
+    def test_mode_is_carried_verbatim_and_defaults_rather_than_vanishing(self):
+        for mode in ('required', 'optional', 'off'):
+            data = self._build({'report': True, 'remote_verification': mode})
+            assert data['remote_verification'] == mode, (
+                f"the payload must carry the declared mode verbatim; "
+                f"declared {mode!r}, payload says {data.get('remote_verification')!r}")
+
+        # Config omits the field entirely: the key is still there, defaulted.
+        data = self._build({'report': True})
+        assert 'remote_verification' in data, (
+            "the key must be present even when the config omits the field, so a "
+            "consumer never has to distinguish 'mode absent' from 'old payload'")
+        assert data['remote_verification'] == 'off', (
+            f"an omitted field defaults to 'off', got "
+            f"{data['remote_verification']!r}")

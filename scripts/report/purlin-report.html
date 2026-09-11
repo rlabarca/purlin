@@ -110,6 +110,12 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .audit-time{font-size:12px;color:var(--text-dim);margin-left:4px}
 .audit-time.stale{color:var(--amber)}
 
+/* Declared remote-verification mode. A chip, not a gauge: it reports what the
+   project declared, and the declaration is not a measurement. Teal for
+   required (the project committed to the bar), dim for optional. */
+.rv-mode{font-size:12px;margin-left:4px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
+.rv-mode.required{color:var(--teal);border-color:var(--teal)}
+
 /* ===== TABLE ===== */
 .table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow-x:auto;margin-bottom:20px}
 table{width:100%;border-collapse:collapse}
@@ -628,6 +634,24 @@ table{min-width:830px}
     return txt;
   }
 
+  /* The declared remote-verification mode. Read from the payload, never
+     recomputed: two surfaces computing one figure is how they come to
+     disagree (purlin_report RULE-40).
+
+     The tooltip carries the declaration/enforcement split because the chip
+     alone invites the reading that the config field is the gate. It is not:
+     config.json is a file in the tree the agent can edit, and enforcement is
+     branch protection marking the verify-gate job a required check. */
+  function remoteVerificationChip(mode) {
+    if (!mode || mode === 'off') return '';
+    var title = 'Declared in .purlin/config.json. The field declares the mode; '
+              + 'enforcement is branch protection marking the verify-gate job a '
+              + 'required check.';
+    var cls = 'rv-mode' + (mode === 'required' ? ' required' : '');
+    return '<span class="' + cls + '" data-rv-mode="' + esc(mode) + '" title="'
+         + esc(title) + '">Remote verification: ' + esc(mode) + '</span>';
+  }
+
   function gaugeFreshness(summary, which, audit, design) {
     var ts = summary && (which === 'design' ? summary.last_design_audit
                                             : summary.last_audit);
@@ -713,6 +737,7 @@ table{min-width:830px}
        graded for Design an hour ago read as 78 days stale (RULE-15). */
     h += gaugeFreshness(G, 'design', A, G);
     h += gaugeFreshness(A, 'integrity', A, G);
+    h += remoteVerificationChip(D.remote_verification);
     h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
     h += '<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
     h += '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
