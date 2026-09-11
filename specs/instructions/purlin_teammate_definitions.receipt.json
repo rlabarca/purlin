@@ -1,8 +1,8 @@
 {
   "feature": "purlin_teammate_definitions",
   "vhash": "06cf4fd9",
-  "commit": "0638da970699d69f05d5d6c7437190abe1513d37",
-  "timestamp": "2026-09-11T20:12:34.573212+00:00",
+  "commit": "01c04dc4dcf7b0f17f3c5b831a93ff7136921b9f",
+  "timestamp": "2026-09-11T20:56:53.624154+00:00",
   "rules": [
     "RULE-1",
     "RULE-4",

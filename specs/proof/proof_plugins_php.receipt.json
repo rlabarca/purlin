@@ -1,8 +1,8 @@
 {
   "feature": "proof_plugins_php",
-  "vhash": "409fbc45",
-  "commit": "0638da970699d69f05d5d6c7437190abe1513d37",
-  "timestamp": "2026-09-11T20:12:34.573212+00:00",
+  "vhash": "ed2c4bec",
+  "commit": "01c04dc4dcf7b0f17f3c5b831a93ff7136921b9f",
+  "timestamp": "2026-09-11T20:56:53.624154+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -10,6 +10,7 @@
     "proof_common/RULE-10",
     "proof_common/RULE-11",
     "proof_common/RULE-12",
+    "proof_common/RULE-13",
     "proof_common/RULE-2",
     "proof_common/RULE-3",
     "proof_common/RULE-4",
@@ -100,6 +101,11 @@
     {
       "id": "PROOF-16",
       "rule": "RULE-12",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-17",
+      "rule": "RULE-13",
       "status": "pass"
     },
     {
