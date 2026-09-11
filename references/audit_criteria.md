@@ -85,11 +85,14 @@ external-LLM mode (see § External LLM Auditing).
   `querySelector` instead of what a person would see.
 - **Implausible tier tag** — `@e2e` with no observable action verb, or an untagged description
   that needs a database, browser, or network. The design twin of "tier mismatch".
-  `@windows` is runner-gated, not a slower tier: it is plausible only when the description
-  names behaviour that genuinely requires that platform (a native `msvcrt` lock, the Windows
-  default console codec) and says what is observed there. A `@windows` description that any
-  host could verify is `LOOSE` — the tag removes the proof from the coverage denominator, so
-  an implausible one hides a rule rather than merely mislabelling a test.
+- **Implausible platform tag**: `@on(<platform-id>[, ...])` is not a slower tier. It names the
+  platforms the proof must be proved on and removes the proof from the local coverage path
+  until a runner on each of them reports. It is plausible only when the description names
+  behaviour that genuinely requires those platforms (a native `msvcrt` lock, the Windows
+  default console codec, a case-insensitive filesystem) and says what is observed there. A
+  description under `@on(...)` that any host could verify is `LOOSE`: the tag hides a rule from
+  local verification rather than merely mislabelling a test. The legacy `@windows` tier reads
+  as `@unit @on(windows)` and is graded the same way.
 - **Imprecise FORBIDDEN grep** — a grep-for-absence pattern loose enough to match comments,
   docstrings, or variable names containing the keyword.
 

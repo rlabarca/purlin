@@ -218,6 +218,69 @@ same commit as the phase's last work. Run whole test files only; finish with
 - Format-Version: `spec_format.md` 8 to 9 (tier table row `@windows` replaced by a "Platform
   tags" paragraph). Commit the format file with the code.
 
+## DONE — Phase 6.1: grammar and parsing (`feat(schema_spec_format,static_checks): parse @on(...) platform tags`, receipts in the `verify:` commit that follows it)
+
+- **Grammar.** `_TIER_TAG_BODY` is now
+  `(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$` (args captured), and
+  `_split_proof_tags(desc) -> (clean_desc, tier, platforms, warnings)` sits directly under it in
+  both `scripts/mcp/purlin_server.py` (line 56) and `scripts/audit/static_checks.py` (line 908),
+  character-identical (`inspect.getsource` equal), with `_PLATFORM_ID_RE = ^[a-z0-9][a-z0-9-]*$`
+  beside each. Right-to-left scan; `on` fills platforms (split on `,`, stripped, deduped,
+  order kept, invalid ids dropped with a warning); any other name is the tier; a second tier
+  tag or second `@on` stops the scan with a warning and stays in the description; `@on` alone
+  is tier `unit`; `@on` on `@manual` warns and drops the platforms; bare `@windows` is tier
+  `unit`, platforms `['windows']`, warning `@windows is a platform, not a tier: write @unit
+  @on(windows)`. One case the phase text did not name: `@windows @on(x)` is also aliased to
+  `unit` with the same warning and keeps the declared platforms rather than adding `windows`.
+  `@on()` with no id warns `@on() names no platform`. The connector lookbehinds are unchanged,
+  so `..., and @windows` still yields no tag and no truncation.
+- **Server.** `_scan_specs` calls the helper once per proof line; the feature dict gains
+  `proof_platforms_by_id` (every proof id, `[]` when agnostic) and `proof_tag_warnings`
+  (`[(proof_id, message)]`). `_report_feature` prints each as `WARNING: PROOF-N: <message>`.
+  It goes through the `advisories` list, not `warnings`: the `warnings` list also decides the
+  `PASSING`/`VERIFIED` short path (`if all_proved_passing and not warnings`), and routing the
+  alias warning there demoted a passing feature with one legacy `@windows` proof into the
+  per-rule detail, where its gated rule printed `NO PROOF` (sync_status PROOF-79 caught it).
+  Advisories print in the same block in every path and change no verdict.
+- **CLI.** `static_checks._read_proof_tiers` is now `_read_proof_tags(spec_path) -> (tiers,
+  platforms)`; `check_proof_design` reads the tiers from it and `_read_proof_descriptions` strips
+  tags with the helper (so a two-tag line loses both tags, where the old single `re.sub` left one).
+  No wrapper kept: the old name had one caller.
+- **Legacy alias downstream.** `proof_tier_by_id` for a bare `@windows` proof now reads `unit`,
+  so `_runner_gated_proofs` alone would have stopped gating it and sync_status PROOF-79/80,
+  report_data PROOF-30, verify_gate PROOF-4, purlin_report PROOF-41 and the skill_verify
+  fixtures in `dev/test_skill_specs.py` (all built on `... @windows`) would have gone red. The
+  minimal move for this commit: `_runner_gated_proofs` also gates a `unit` proof whose
+  `proof_platforms_by_id` entry names a member of `_RUNNER_GATED_TIERS`, under that platform
+  name. `_awaiting_runner`, provenance, the `proofs-windows.json` result file and every test
+  above are unchanged; Phase 6.4 replaces the mechanism. `_RUNNER_GATED_TIERS` itself is untouched.
+- **Rules and proofs.** `schema_spec_format` RULE-9 (grammar, `@on` semantics, the two-module
+  parity and why) and RULE-10 (id charset and why). PROOF-9: the existing parity test keeps its
+  connector cases and gains `test_tier_and_platform_tags_split_identically_in_both_modules`
+  (`@unit @on(windows-2022)`, `@on(windows-2022, macos-14) @integration`, `@on(windows)` alone,
+  `@manual @on(x)`, bare `@windows`, the prose case, a stamped `@manual(...)`; both modules must
+  return equal tuples; both tags stripped; either order gives one tuple). PROOF-10:
+  `@on(Windows_2022)`, `@on(ubuntu-24.04)` and `@on(windows_2022)` each yield `[]` and one
+  warning naming the id; `@on(ubuntu-24)` is the positive control. Both descriptions grade
+  PROVABLE under `--check-proof-design`. Mutation: widening `_PLATFORM_ID_RE` to
+  `[a-z0-9][a-z0-9_-]*` in both modules fails PROOF-10 on `windows_2022`; the first attempt with
+  only `Windows_2022` and `ubuntu-24.04` survived that mutation (each violates on a second
+  character too), which is why the underscore-only id was added. Restored.
+- **Docs.** `references/formats/spec_format.md` 8 to 9: the `@windows` tier-table row is gone,
+  the "any `@<name>` is parsed as a tier" sentence now excludes `on`, and a "Platform tags"
+  section gives the grammar, the two examples, the family ids, the charset, the connector rule,
+  the legacy alias with its exact warning and the `@manual` rule. `audit_criteria.md` Pass D
+  gains an "Implausible platform tag" bullet (a description under `@on(...)` that any host could
+  verify is LOOSE); `spec_quality_guide.md` tier table and the runner-gated paragraph are
+  rewritten around `@on`. `@windows` mentions in `docs/`, `skills/` and
+  `references/remote_verification.md` are left for `purlin_docs` RULE-1 (Phase 11) as allocated.
+- **Sweep.** `bash dev/run_tests.sh`: 14 suites, `646 passed, 21 skipped` (was 644: PROOF-9 gained
+  one test, PROOF-10 is new). `git diff --stat specs/`: only `schema_spec_format.md` (+4) and
+  `schema_spec_format.proofs-unit.json` (+18, two entries, none lost); the alias touched no
+  other proof file because every legacy `@windows` fixture lives in test code, not in a
+  committed spec.
+- CLAUDE.md unchanged.
+
 ### 6.2 Registry and host detection (`config_engine`, `sync_status`)
 
 - Optional top-level `platforms` object in `.purlin/config.json` (NOT in `templates/config.json`,

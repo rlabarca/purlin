@@ -45,8 +45,76 @@ _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
 # "verify spec_format.md documents @integration, @e2e, and @windows" — which was
 # read as tier=windows and had its last clause silently truncated. Requiring that
 # the tag not follow a list connector (',' 'and' 'or') separates the two cases.
-_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\([^)]*\))?\s*$'
+_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$'
 _TIER_TAG_RE = re.compile(_TIER_TAG_BODY)
+
+# A platform id becomes a proof filename, a workflow name and an environment
+# variable, so the charset is what all three accept (schema_spec_format RULE-10).
+_PLATFORM_ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
+
+
+def _split_proof_tags(desc):
+    """Split the trailing tags off a proof description.
+
+    Returns (clean_desc, tier, platforms, warnings). Tags are read right to
+    left: `@on(<platform-id>[, ...])` names the platforms the proof must be
+    proved on, any other `@<name>` is the tier. At most one of each, in either
+    order; a second tier tag or a second `@on` stops the scan and stays in the
+    description, with a warning. `@on` alone means tier `unit`. `@on` on a
+    `@manual` proof is dropped: a human stamp is not a platform result. A bare
+    `@windows` tier is read as `@unit @on(windows)` with a warning naming the
+    rewrite (one release of compatibility). Platform ids outside
+    `[a-z0-9][a-z0-9-]*` are dropped with a warning; the survivors keep their
+    order, deduplicated. `platforms` is `[]` for a platform-agnostic proof.
+
+    The sibling module (purlin_server.py / static_checks.py) carries a
+    character-identical copy of this helper and of _TIER_TAG_BODY. The two are
+    independent by design: a shared import would couple the CLI to the server.
+    schema_spec_format PROOF-9 keeps them in step.
+    """
+    desc = desc.rstrip()
+    tier = None
+    platforms = None
+    warnings = []
+    while True:
+        m = _TIER_TAG_RE.search(desc)
+        if not m:
+            break
+        name, args = m.group(1), m.group(2)
+        if name == 'on':
+            if platforms is not None:
+                warnings.append('a second @on(...) precedes the trailing one; '
+                                'only the trailing @on is read')
+                break
+            platforms = []
+            ids = [p.strip() for p in (args or '').split(',') if p.strip()]
+            if not ids:
+                warnings.append('@on() names no platform: write @on(<platform-id>)')
+            for pid in ids:
+                if not _PLATFORM_ID_RE.match(pid):
+                    warnings.append(f'platform id {pid!r} is not [a-z0-9][a-z0-9-]*; '
+                                    'dropped (lower-case letters, digits and - only)')
+                elif pid not in platforms:
+                    platforms.append(pid)
+        else:
+            if tier is not None:
+                warnings.append(f'a second tier tag @{name} precedes @{tier}; '
+                                f'only the trailing tier tag is read')
+                break
+            tier = name
+        desc = desc[:m.start()].rstrip()
+    if tier == 'windows':
+        warnings.append('@windows is a platform, not a tier: write @unit @on(windows)')
+        tier = 'unit'
+        if platforms is None:
+            platforms = ['windows']
+    if tier is None:
+        tier = 'unit'
+    if tier == 'manual' and platforms is not None:
+        warnings.append('@on(...) on a @manual proof is ignored: '
+                        'a human stamp is not a platform result')
+        platforms = None
+    return desc, tier, platforms or [], warnings
 
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)', re.MULTILINE
@@ -159,6 +227,8 @@ def _scan_specs(project_root):
         proof_desc_by_rule = {}
         proof_desc_by_id = {}
         proof_tier_by_id = {}
+        proof_platforms_by_id = {}
+        proof_tag_warnings = []
         planned_proof_ids_by_rule = {}
         proof_section = _extract_section(content, '## Proof')
         if proof_section:
@@ -170,13 +240,15 @@ def _scan_specs(project_root):
                 proof_id = proof_match.group(1)
                 rule_ids_raw = proof_match.group(2)
                 proof_desc = proof_match.group(3).strip()
-                # Strip tier tags (@unit, @integration, @e2e, @manual...) from description
-                clean_desc = _TIER_TAG_RE.sub('', proof_desc).strip()
+                # Split the trailing tags (@unit, @e2e, @manual(...), @on(...))
+                # off the description: tier defaults to unit, platforms to [].
+                clean_desc, tier, platforms, tag_warnings = _split_proof_tags(proof_desc)
                 proof_descriptions.append(proof_desc)
                 proof_desc_by_id[proof_id] = clean_desc
-                # Tier from the trailing @tag (default unit)
-                tier_match = _TIER_TAG_RE.search(proof_desc)
-                proof_tier_by_id[proof_id] = tier_match.group(1) if tier_match else 'unit'
+                proof_tier_by_id[proof_id] = tier
+                proof_platforms_by_id[proof_id] = platforms
+                for message in tag_warnings:
+                    proof_tag_warnings.append((proof_id, message))
                 # Support multi-rule proofs: PROOF-8 (RULE-1, RULE-2, RULE-4)
                 rule_ids = [r.strip() for r in rule_ids_raw.split(',')]
                 for rule_id in rule_ids:
@@ -243,6 +315,8 @@ def _scan_specs(project_root):
             'proof_desc_by_rule': proof_desc_by_rule,
             'proof_desc_by_id': proof_desc_by_id,
             'proof_tier_by_id': proof_tier_by_id,
+            'proof_platforms_by_id': proof_platforms_by_id,
+            'proof_tag_warnings': proof_tag_warnings,
             'planned_proof_ids_by_rule': planned_proof_ids_by_rule,
             'visual_ref': visual_ref,
             'visual_hash': visual_hash,
@@ -700,12 +774,27 @@ _RUNNER_GATED_TIERS = frozenset({'windows'})
 
 
 def _runner_gated_proofs(info):
-    """{proof_id: tier} for this spec's proofs that declare a runner-gated tier."""
-    return {
-        pid: tier
-        for pid, tier in (info.get('proof_tier_by_id') or {}).items()
-        if tier in _RUNNER_GATED_TIERS
-    }
+    """{proof_id: tier} for this spec's proofs that declare a runner-gated tier.
+
+    Since the tag grammar gained `@on(...)` (schema_spec_format RULE-9), a bare
+    `@windows` parses as tier `unit` with platforms `['windows']`, and an
+    explicit `@unit @on(windows)` reads the same. Until the platform registry
+    replaces this mechanism, a unit-tier proof whose platforms name a gated
+    tier is gated under that name, so the awaiting/provenance surfaces and the
+    `proofs-windows.json` result file keep working unchanged.
+    """
+    platforms_by_id = info.get('proof_platforms_by_id') or {}
+    gated = {}
+    for pid, tier in (info.get('proof_tier_by_id') or {}).items():
+        if tier in _RUNNER_GATED_TIERS:
+            gated[pid] = tier
+            continue
+        if tier == 'unit':
+            for platform in platforms_by_id.get(pid) or []:
+                if platform in _RUNNER_GATED_TIERS:
+                    gated[pid] = platform
+                    break
+    return gated
 
 
 def _awaiting_runner(name, info, all_proofs):
@@ -1502,8 +1591,12 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         warnings.append(f"  WARNING: {len(info['unnumbered_lines'])} lines under ## Rules are not numbered.")
         warnings.append('  → Fix: rewrite as "- RULE-1: ...", "- RULE-2: ...", etc.')
         warnings.append(f"  → Run: purlin:spec {name}")
-
     advisories = []
+    # Tag grammar problems on individual proof lines (schema_spec_format
+    # RULE-9/10). Printed with the structural warnings but kept out of the
+    # verdict: a legacy `@windows` alias must not demote a PASSING feature.
+    for proof_id, message in info.get('proof_tag_warnings') or []:
+        advisories.append(f"  WARNING: {proof_id}: {message}")
 
     # Check visual reference staleness (computed once, used in multiple paths)
     visual_ref = info.get('visual_ref')

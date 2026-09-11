@@ -87,6 +87,24 @@
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_tier_and_platform_tags_split_identically_in_both_modules",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_platform_id_charset_rejects_dots_underscores_and_upper_case",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_schema_spec_format.py",
       "test_name": "test_real_spec_is_parsed_correctly",
       "status": "pass",
       "tier": "unit"

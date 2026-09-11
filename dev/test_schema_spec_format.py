@@ -218,12 +218,17 @@ class TestSpecFormatConventions:
 
 
 class TestTierTagParsing:
-    """RULE-9 — a trailing @word is only a tier tag when it is metadata.
+    """RULE-9 / RULE-10: the tag grammar, parsed identically by both modules.
 
-    schema_proof_format PROOF-4's description ends "...documents @integration,
-    @e2e, and @windows". Both parsers read that as tier=windows and truncated the
-    description at the final clause, so a host-runnable proof was classified as
-    platform-gated.
+    A trailing @word is only a tag when it is metadata: schema_proof_format
+    PROOF-4's description ends "...documents @integration, @e2e, and @windows".
+    Both parsers read that as tier=windows and truncated the description at the
+    final clause, so a host-runnable proof was classified as platform-gated.
+
+    The grammar has since gained `@on(<platform-id>[, ...])`. purlin_server and
+    static_checks each carry `_split_proof_tags` and cannot share it (the MCP
+    server does not import the CLI), so every case below runs through both and
+    the tuples must agree.
     """
 
     def _patterns(self):
@@ -268,6 +273,82 @@ class TestTierTagParsing:
         prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
         assert pat.sub('', prose).strip() == prose, \
             "a description with no tier tag must not be truncated"
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
+    def test_tier_and_platform_tags_split_identically_in_both_modules(self):
+        mods = self._patterns()
+        split_srv = mods['server']._split_proof_tags
+        split_chk = mods['checks']._split_proof_tags
+
+        # (description, expected tier, expected platforms, expected warning count)
+        cases = [
+            ('Lock the file @unit @on(windows-2022)', 'unit', ['windows-2022'], 0),
+            ('Lock the file @on(windows-2022, macos-14) @integration',
+             'integration', ['windows-2022', 'macos-14'], 0),
+            # @on alone: the tier defaults to unit.
+            ('Lock the file @on(windows)', 'unit', ['windows'], 0),
+            # A human stamp is not a platform result: platforms dropped, warned.
+            ('Review the layout @manual @on(x)', 'manual', [], 1),
+            # Legacy alias: one release of compatibility, with the rewrite named.
+            ('Lock the file @windows', 'unit', ['windows'], 1),
+            # Prose ending in an @word after a connector is not a tag at all.
+            ('verify `spec_format.md` documents @integration, @e2e, and @windows',
+             'unit', [], 0),
+            # A stamped manual proof keeps working; its args are not platforms.
+            ('Visual layout matches design @manual(dev@example.com, 2026-03-31, a1b2c3d)',
+             'manual', [], 0),
+        ]
+        for desc, tier, platforms, n_warnings in cases:
+            got = split_srv(desc)
+            assert got == split_chk(desc), (
+                f"{desc!r}: purlin_server returned {got!r}, "
+                f"static_checks returned {split_chk(desc)!r}")
+            clean, got_tier, got_platforms, warnings = got
+            assert got_tier == tier, f"{desc!r}: tier {got_tier!r}, expected {tier!r}"
+            assert got_platforms == platforms, (
+                f"{desc!r}: platforms {got_platforms!r}, expected {platforms!r}")
+            assert len(warnings) == n_warnings, f"{desc!r}: warnings {warnings!r}"
+            if platforms or tier != 'unit' or n_warnings:
+                assert ' @' not in clean, (
+                    f"{desc!r}: both tags must be stripped, got {clean!r}")
+
+        # The alias warning names the rewrite, so the fix is copy-pasteable.
+        _, _, _, warnings = split_srv('Lock the file @windows')
+        assert 'write @unit @on(windows)' in warnings[0], warnings
+
+        # The prose case is untouched: no tag, no truncation.
+        prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
+        assert split_srv(prose)[0] == prose, "a description with no tag must not be truncated"
+
+        # Either order is one grammar: the tuple must not depend on tag order.
+        assert (split_srv('Lock the file @unit @on(windows-2022)')
+                == split_srv('Lock the file @on(windows-2022) @unit'))
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-10", "RULE-10")
+    def test_platform_id_charset_rejects_dots_underscores_and_upper_case(self):
+        mods = self._patterns()
+        split_srv = mods['server']._split_proof_tags
+        split_chk = mods['checks']._split_proof_tags
+
+        # windows_2022 violates the charset only by its underscore, so this case
+        # is what fails if the pattern is widened to admit `_`.
+        for bad in ('Windows_2022', 'ubuntu-24.04', 'windows_2022'):
+            desc = f'Lock the file @unit @on({bad})'
+            got = split_srv(desc)
+            assert got == split_chk(desc), (
+                f"{desc!r}: purlin_server returned {got!r}, "
+                f"static_checks returned {split_chk(desc)!r}")
+            clean, tier, platforms, warnings = got
+            assert platforms == [], (
+                f"{bad!r} is not [a-z0-9][a-z0-9-]* and must be dropped, got {platforms!r}")
+            assert len(warnings) == 1 and bad in warnings[0], (
+                f"the warning must name the rejected id: {warnings!r}")
+            assert tier == 'unit' and clean == 'Lock the file', got
+
+        # The positive control: a well-formed id passes with no warning, so the
+        # rejections above are the charset and not a broken parser.
+        desc = 'Lock the file @unit @on(ubuntu-24)'
+        assert split_srv(desc) == split_chk(desc) == ('Lock the file', 'unit', ['ubuntu-24'], [])
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):

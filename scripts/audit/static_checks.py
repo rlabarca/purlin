@@ -897,8 +897,76 @@ def _read_rule_descriptions(spec_path):
 # purlin_server.py carries an identical pattern. The two modules are independent
 # (the MCP server does not import this CLI), so they are kept in step by
 # schema_spec_format PROOF-9 rather than by a shared import.
-_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\([^)]*\))?\s*$'
+_TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$'
 _TIER_TAG_RE = re.compile(_TIER_TAG_BODY)
+
+# A platform id becomes a proof filename, a workflow name and an environment
+# variable, so the charset is what all three accept (schema_spec_format RULE-10).
+_PLATFORM_ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
+
+
+def _split_proof_tags(desc):
+    """Split the trailing tags off a proof description.
+
+    Returns (clean_desc, tier, platforms, warnings). Tags are read right to
+    left: `@on(<platform-id>[, ...])` names the platforms the proof must be
+    proved on, any other `@<name>` is the tier. At most one of each, in either
+    order; a second tier tag or a second `@on` stops the scan and stays in the
+    description, with a warning. `@on` alone means tier `unit`. `@on` on a
+    `@manual` proof is dropped: a human stamp is not a platform result. A bare
+    `@windows` tier is read as `@unit @on(windows)` with a warning naming the
+    rewrite (one release of compatibility). Platform ids outside
+    `[a-z0-9][a-z0-9-]*` are dropped with a warning; the survivors keep their
+    order, deduplicated. `platforms` is `[]` for a platform-agnostic proof.
+
+    The sibling module (purlin_server.py / static_checks.py) carries a
+    character-identical copy of this helper and of _TIER_TAG_BODY. The two are
+    independent by design: a shared import would couple the CLI to the server.
+    schema_spec_format PROOF-9 keeps them in step.
+    """
+    desc = desc.rstrip()
+    tier = None
+    platforms = None
+    warnings = []
+    while True:
+        m = _TIER_TAG_RE.search(desc)
+        if not m:
+            break
+        name, args = m.group(1), m.group(2)
+        if name == 'on':
+            if platforms is not None:
+                warnings.append('a second @on(...) precedes the trailing one; '
+                                'only the trailing @on is read')
+                break
+            platforms = []
+            ids = [p.strip() for p in (args or '').split(',') if p.strip()]
+            if not ids:
+                warnings.append('@on() names no platform: write @on(<platform-id>)')
+            for pid in ids:
+                if not _PLATFORM_ID_RE.match(pid):
+                    warnings.append(f'platform id {pid!r} is not [a-z0-9][a-z0-9-]*; '
+                                    'dropped (lower-case letters, digits and - only)')
+                elif pid not in platforms:
+                    platforms.append(pid)
+        else:
+            if tier is not None:
+                warnings.append(f'a second tier tag @{name} precedes @{tier}; '
+                                f'only the trailing tier tag is read')
+                break
+            tier = name
+        desc = desc[:m.start()].rstrip()
+    if tier == 'windows':
+        warnings.append('@windows is a platform, not a tier: write @unit @on(windows)')
+        tier = 'unit'
+        if platforms is None:
+            platforms = ['windows']
+    if tier is None:
+        tier = 'unit'
+    if tier == 'manual' and platforms is not None:
+        warnings.append('@on(...) on a @manual proof is ignored: '
+                        'a human stamp is not a platform result')
+        platforms = None
+    return desc, tier, platforms or [], warnings
 
 
 _PROOF_DESC_RE = re.compile(
@@ -926,7 +994,7 @@ def _read_proof_descriptions(spec_path):
     proof_section = proof_section_match.group(1)
     results = []
     for m in _PROOF_DESC_RE.finditer(proof_section):
-        desc = _TIER_TAG_RE.sub('', m.group(3)).strip()
+        desc = _split_proof_tags(m.group(3))[0]
         results.append({
             'proof_id': m.group(1),
             'rule_ids': m.group(2),
@@ -1006,16 +1074,22 @@ def _design_finding(proof_id, rule_id, level, check, reason):
     }
 
 
-def _read_proof_tiers(spec_path):
-    """Map proof_id -> tier tag (default 'unit') from a spec's ## Proof section."""
+def _read_proof_tags(spec_path):
+    """(tiers, platforms) from a spec's ## Proof section.
+
+    tiers maps proof_id -> tier (default 'unit'); platforms maps proof_id ->
+    the `@on(...)` platform ids ([] when the proof is platform-agnostic).
+    """
     tiers = {}
+    platforms = {}
     if not spec_path or not os.path.isfile(spec_path):
-        return tiers
+        return tiers, platforms
     with open(spec_path, encoding='utf-8') as f:
         for m in _PROOF_DESC_RE.finditer(f.read()):
-            tag = _TIER_TAG_RE.search(m.group(3).rstrip())
-            tiers[m.group(1)] = tag.group(1) if tag else 'unit'
-    return tiers
+            _, tier, ids, _ = _split_proof_tags(m.group(3))
+            tiers[m.group(1)] = tier
+            platforms[m.group(1)] = ids
+    return tiers, platforms
 
 
 def check_proof_design(spec_path):
@@ -1026,7 +1100,7 @@ def check_proof_design(spec_path):
     references/audit_criteria.md, Pass D.
     """
     proofs = _read_proof_descriptions(spec_path)
-    tiers = _read_proof_tiers(spec_path)
+    tiers, _platforms = _read_proof_tags(spec_path)
 
     results = []
     for entry in proofs:

@@ -297,19 +297,20 @@ Assign a tier tag based on what the proof requires to execute. Proofs without a 
 | Pure logic, no I/O, no external dependencies | unit (no tag) | Validate input format, compute hash, parse config |
 | Needs database, network, filesystem, or external service | `@integration` | API roundtrip, database query, file system operations |
 | Needs browser, full app stack, or UI rendering | `@e2e` | Browser login flow, screenshot comparison, full page render — see "E2E proof descriptions" for how to write the description so it matches the tier |
-| Needs a specific runner the developer machine is not | `@windows` | Native `msvcrt` file locking, console codec behaviour under the Windows default encoding |
+| Needs a specific platform the developer machine is not | the tier it is, plus `@on(<platform-id>)` | `@unit @on(windows-2022)` for native `msvcrt` file locking or console codec behaviour under the Windows default encoding |
 | Requires human judgment — visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
 
 **When in doubt, tag `@integration`.** A fast test with an `@integration` tag is harmless. A slow test with no tag blocks the unit tier.
 
-**`@windows` is runner-gated**, the only such tier today. It is not a slower `@e2e`: it names a
-platform the test must run *on*, not a stack it needs. Use it only when the behaviour genuinely
-cannot be observed elsewhere — a real `msvcrt` lock, a native console codec — and never as a
-synonym for "touches Windows paths", which a normal test can simulate. A proof tagged this way
-with no result reports `AWAITING RUNNER` rather than `NO PROOF`, does not count against coverage
-and does not block a receipt, so tagging a runnable test `@windows` quietly removes it from the
-coverage denominator. Its description must still say what is observed on that runner, or Pass D
-grades it `LOOSE` like any other.
+**`@on(...)` is a platform tag, not a tier.** It names the platforms a proof must be proved *on*,
+not a stack it needs, and it removes the proof from the local coverage path: a proof tagged
+`@on(windows-2022)` with no result from that platform reports `AWAITING RUNNER` rather than
+`NO PROOF`, does not count against coverage and does not block a receipt. Use it only when the
+behaviour genuinely cannot be observed elsewhere (a real `msvcrt` lock, a native console codec,
+a case-insensitive filesystem) and never as a synonym for "touches Windows paths", which a
+normal test can simulate. A description under `@on(...)` that any host could verify is `LOOSE`
+under Pass D, because the tag hides a rule from local verification. The legacy bare `@windows`
+tier reads as `@unit @on(windows)` with a warning; rewrite it.
 
 Tier tags are not optional — they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing.
 
