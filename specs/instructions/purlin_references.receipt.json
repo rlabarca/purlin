@@ -1,8 +1,8 @@
 {
   "feature": "purlin_references",
-  "vhash": "57bc4507",
-  "commit": "01c04dc4dcf7b0f17f3c5b831a93ff7136921b9f",
-  "timestamp": "2026-09-11T20:56:53.624154+00:00",
+  "vhash": "d1015e69",
+  "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
+  "timestamp": "2026-09-11T21:32:29.401865+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -13,7 +13,10 @@
     "RULE-15",
     "RULE-16",
     "RULE-17",
+    "RULE-18",
+    "RULE-19",
     "RULE-2",
+    "RULE-20",
     "RULE-3",
     "RULE-4",
     "RULE-5",
@@ -94,8 +97,13 @@
       "status": "pass"
     },
     {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-19",
+      "rule": "RULE-19",
       "status": "pass"
     },
     {
@@ -106,6 +114,16 @@
     {
       "id": "PROOF-2",
       "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-20",
+      "rule": "RULE-20",
       "status": "pass"
     },
     {

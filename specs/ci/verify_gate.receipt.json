@@ -1,6 +1,6 @@
 {
-  "feature": "skill_anchor",
-  "vhash": "e492d09a",
+  "feature": "verify_gate",
+  "vhash": "81a8962e",
   "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
   "timestamp": "2026-09-11T21:32:29.401865+00:00",
   "rules": [
@@ -10,12 +10,28 @@
     "RULE-4",
     "RULE-5",
     "RULE-6",
-    "RULE-7"
+    "RULE-7",
+    "RULE-8",
+    "security_no_dangerous_patterns/RULE-1",
+    "security_no_dangerous_patterns/RULE-2",
+    "security_no_dangerous_patterns/RULE-3",
+    "security_no_dangerous_patterns/RULE-4",
+    "security_no_dangerous_patterns/RULE-5"
   ],
   "proofs": [
     {
       "id": "PROOF-1",
       "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
       "status": "pass"
     },
     {
@@ -29,8 +45,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-4",
       "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
       "status": "pass"
     },
     {
@@ -46,6 +77,11 @@
     {
       "id": "PROOF-7",
       "rule": "RULE-7",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-8",
+      "rule": "RULE-8",
       "status": "pass"
     }
   ]
