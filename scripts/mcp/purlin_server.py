@@ -2195,8 +2195,12 @@ def generate_digest(project_root):
         if v.get('is_anchor') and v.get('is_global')
     }
 
-    # Read cached audit data only — never trigger a new audit
+    # Read cached audit data only — never trigger a new audit. Both gauges are
+    # read here: the digest path used to take audit_summary alone and leave
+    # design_summary at its None default, so every pre-commit refresh blanked
+    # the Proof Design card that sync_status had just populated.
     audit_summary = _read_audit_summary(project_root)
+    design_summary = _read_design_summary(project_root)
 
     # Get git SHA
     git_sha = None
@@ -2219,7 +2223,8 @@ def generate_digest(project_root):
 
     return _write_report_data(
         project_root, features, all_proofs, config, global_anchors,
-        audit_summary, drift_data=drift_data, git_sha=git_sha,
+        audit_summary, design_summary=design_summary,
+        drift_data=drift_data, git_sha=git_sha,
     )
 
 

@@ -34,6 +34,7 @@ from purlin_server import (
     _scan_specs,
     _read_proofs,
     _write_report_data,
+    generate_digest,
 )
 import static_checks
 from static_checks import write_audit_cache, read_audit_cache, clear_audit_cache, prune_audit_cache
@@ -1944,6 +1945,62 @@ class TestProofDesignGauge:
         raw = open(os.path.join(self.tmp_dir, '.purlin', 'report-data.js')).read()
         data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
         assert data['design_summary'] is None
+
+    @pytest.mark.proof("report_data", "PROOF-25", "RULE-24", tier="e2e")
+    def test_both_entry_points_populate_both_gauges(self):
+        """RULE-24: generate_digest must read both caches, not just the audit one.
+
+        generate_digest is the pre-commit digest path. It read the audit cache
+        and left design_summary at its None default, so every pre-commit refresh
+        blanked the Proof Design card that sync_status had just populated: the
+        dashboard gauge flipped to "run purlin:audit" with a full design cache
+        sitting on disk. PROOF-24 could not catch it because it only ever
+        exercised sync_status.
+        """
+        _make_project(self.tmp_dir, with_git=True, with_report=True)
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._design_entry('PROVABLE', 'PROOF-1'),
+            'd2': self._design_entry('LOOSE', 'PROOF-2'),
+        }, static_checks.DESIGN_CACHE)
+        write_audit_cache(self.tmp_dir, {
+            'a1': _audit_entry('STRONG', 'login', 'PROOF-1', 'RULE-1'),
+        })
+
+        data_path = os.path.join(self.tmp_dir, '.purlin', 'report-data.js')
+
+        def read_data():
+            raw = open(data_path, encoding='utf-8').read()
+            return json.loads(
+                raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n')
+            )
+
+        # ── The digest entry point ────────────────────────────────────
+        assert generate_digest(self.tmp_dir), "generate_digest wrote nothing"
+        digest = read_data()
+        assert digest['design_summary'] is not None, (
+            "generate_digest dropped design_summary — the pre-commit digest "
+            "blanks the Proof Design gauge"
+        )
+        assert digest['design_summary']['design'] == 50
+        assert digest['design_summary']['loose'] == 1
+        assert digest['audit_summary'] is not None, \
+            "generate_digest dropped audit_summary"
+        assert digest['audit_summary']['integrity'] == 100
+
+        # ── The sync_status entry point, same project ─────────────────
+        os.remove(data_path)
+        sync_status(self.tmp_dir)
+        synced = read_data()
+        assert synced['design_summary'] is not None, \
+            "sync_status dropped design_summary"
+        assert synced['design_summary']['design'] == 50
+        assert synced['audit_summary'] is not None, \
+            "sync_status dropped audit_summary"
+        assert synced['audit_summary']['integrity'] == 100
+
+        # Neither path may disagree with the other about either gauge.
+        assert digest['design_summary']['design'] == synced['design_summary']['design']
+        assert digest['audit_summary']['integrity'] == synced['audit_summary']['integrity']
 
     def test_compute_design_excludes_structural(self):
         assert _compute_design(3, 1, 0) == (75, 4)

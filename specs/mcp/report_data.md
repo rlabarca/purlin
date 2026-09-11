@@ -29,6 +29,7 @@
 - RULE-21: Every feature entry includes a `description` field containing the text of the spec's `> Description:` metadata field (with multi-line continuations joined), or null if the field is absent
 - RULE-22: Planned proofs do not affect coverage — proved/total counts, vhash, and feature status are computed from executed proofs only; a rule whose only proofs are planned has status NONE
 - RULE-23: report-data.js carries a `design_summary` object with the Proof Design percentage and per-level counts, or null when no design cache exists, so the dashboard can render the gauge alongside integrity
+- RULE-24: Every entry point that writes `.purlin/report-data.js` populates BOTH gauges. `sync_status` and `generate_digest` (the pre-commit digest path) each read the audit cache and the design cache, so a digest refresh never blanks a gauge the other path had populated
 
 ## Proof
 
@@ -55,3 +56,4 @@
 - PROOF-22 (RULE-8): Create a spec whose `## Proof` section declares PROOF-1 (RULE-1) and PROOF-2 (RULE-1) `@integration`; write an executed proof result for PROOF-1 only; build report data; verify RULE-1's proofs array contains PROOF-1 with status pass and PROOF-2 with status "planned", empty test_file/test_name/audit, and tier "integration"; verify PROOF-1 does not also appear as planned @integration
 - PROOF-23 (RULE-22): Create a feature with one rule whose only proof is planned (no executed result); build report data; verify proved==0, feature status is UNTESTED, vhash is null, and the rule status is NONE @integration
 - PROOF-24 (RULE-23): Seed a design cache, regenerate report data, and verify `design_summary.design` matches the computed percentage and the per-level counts are present. Delete the design cache, regenerate, and verify `design_summary` is null
+- PROOF-25 (RULE-24): Seed both an audit cache and a design cache in a temp project; call `generate_digest` directly (not `sync_status`); parse the written report-data.js and verify `design_summary.design` equals the computed percentage and `audit_summary.integrity` is non-null. Then call `sync_status` on the same project and verify both objects are populated there too, so neither entry point can drop a gauge on its own @e2e
