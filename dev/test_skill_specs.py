@@ -584,6 +584,22 @@ class TestSkillBuild:
             "build exit criteria missing uncommitted proof files check"
 
 
+
+    @pytest.mark.proof("skill_build", "PROOF-20", "RULE-13")
+    def test_forbids_narrowing_the_proof_description(self):
+        """The cheap way to silence the assertion-change warning is to edit the
+        description down to match the test. That lowers Proof Design and leaves
+        Integrity looking fine, because Integrity is measured against the
+        description."""
+        content = _read('build')
+        assert re.search(r'(?i)never\s+resolve', content) or \
+               re.search(r'(?i)never\s+.{0,30}narrow', content), \
+            "build SKILL.md must forbid narrowing the proof description"
+        assert 'Proof Design' in content and 'Proof Integrity' in content, \
+            "the guard must name which gauge each choice moves"
+        assert re.search(r'(?i)anchor', content), \
+            "narrowing an anchor-rule description must be forbidden outright"
+
 # ── skill_drift ───────────────────────────────────────────────────────
 
 class TestSkillDrift:
@@ -618,6 +634,20 @@ class TestSkillDrift:
         assert 'git diff' in content, \
             "drift skill missing git diff requirement"
 
+
+
+    @pytest.mark.proof("skill_drift", "PROOF-6", "RULE-6")
+    def test_changed_specs_is_not_automatically_drift(self):
+        """Every specs/ edit classifies as CHANGED_SPECS, so a spec-first project
+        triggers it on every run. Calling that drift is wrong when no code exists."""
+        content = _read('drift')
+        assert 'CHANGED_SPECS' in content
+        assert re.search(r'(?i)does not imply', content), \
+            "drift SKILL.md must state CHANGED_SPECS does not imply code is out of sync"
+        assert 'Scope:' in content, \
+            "the check must be whether the spec's scope files exist"
+        assert 'purlin:build' in content, \
+            "with no implementation there is nothing to have drifted from — route to build"
 
 # ── skill_find ────────────────────────────────────────────────────────
 

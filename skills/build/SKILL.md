@@ -124,7 +124,17 @@ Reason: API returns 400 for validation errors, not 401. Spec rule may need updat
 → Run: purlin:spec <name> to review RULE-2
 ```
 
-If you changed what a test asserts (not just how), the proof description in the spec may be wrong. The commit message MUST explain why the assertion changed.
+If you changed what a test asserts (not just how), the proof description in the spec may be
+wrong. The commit message MUST explain why the assertion changed.
+
+**Never resolve the disagreement by narrowing the proof description.** Editing the description
+down to match whatever the test now does makes the warning disappear without improving
+anything: it lowers Proof Design, and it leaves Proof Integrity looking healthy because most
+Integrity criteria are comparisons against the description — a vague description has nothing
+to contradict a weak test. The description and the assertion are two statements of the same
+claim, so exactly one of them is wrong. Find out which. If the description is genuinely wrong,
+say so explicitly and fix it deliberately via `purlin:spec`; if the test is wrong, fix the
+test. And never narrow a description for an anchor rule: that contract belongs to someone else.
 
 ## Step 5 — Changeset Summary (mandatory)
 

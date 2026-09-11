@@ -108,6 +108,15 @@
       "test_name": "test_has_exit_criteria",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
+      "id": "PROOF-20",
+      "rule": "RULE-13",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_forbids_narrowing_the_proof_description",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

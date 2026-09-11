@@ -18,6 +18,7 @@
 - RULE-10: The changeset summary is included as the commit message body in the build commit
 - RULE-11: When running as proof fixer, the changeset summary maps fixed proofs instead of rules and omits the Decisions section
 - RULE-12: Build skill has exit criteria requiring tests pass, changeset summary printed, all changes committed, and no uncommitted proof files before the skill can complete
+- RULE-13: The assertion-change guard forbids resolving a description/assertion disagreement by narrowing the proof description, explains that doing so lowers Proof Design while leaving Proof Integrity flatteringly high, and forbids it outright for anchor rules
 
 ## Proof
 
@@ -40,3 +41,4 @@
 - PROOF-17 (RULE-9): Run purlin:build via claude -p with a spec containing ambiguous rules; verify agent output contains Changeset with RULE mappings, non-empty Decisions with real judgment calls, and non-empty Review with risk areas @e2e
 - PROOF-18 (RULE-10): After the agent build session, verify git log shows a feat(<name>): commit whose body contains RULE references and the changeset summary sections @e2e
 - PROOF-19 (RULE-12): After the agent build session, verify git status has no uncommitted proof files or source files, and proof files are tracked in git @e2e
+- PROOF-20 (RULE-13): Grep `skills/build/SKILL.md` for the assertion-change guard; verify it forbids narrowing the proof description, names both gauges, and forbids narrowing anchor-rule descriptions

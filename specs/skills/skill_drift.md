@@ -11,6 +11,7 @@
 - RULE-3: The `name` field in frontmatter is `drift`, matching the directory name
 - RULE-4: Skill references the `drift` MCP tool by name
 - RULE-5: Skill requires reading git diffs for behavioral changes, not just interpreting MCP categories
+- RULE-6: The classification step states that CHANGED_SPECS does not imply the code is out of sync, and requires checking whether the spec's `> Scope:` files exist before describing spec edits as drift — a project authored spec-first produces that category on every run
 
 ## Proof
 
@@ -19,3 +20,4 @@
 - PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `drift`
 - PROOF-4 (RULE-4): Grep `skills/drift/SKILL.md` for `drift`; verify the MCP tool is referenced
 - PROOF-5 (RULE-5): Grep `skills/drift/SKILL.md` for `git diff`; verify the diff-reading requirement is present
+- PROOF-6 (RULE-6): Grep `skills/drift/SKILL.md` for the CHANGED_SPECS caveat; verify it requires checking whether the scope files exist and routes to `purlin:build` rather than reporting a mismatch when they do not

@@ -68,7 +68,14 @@ Use the `since` field from the MCP output to determine the ref. Do not skip this
 
 ### 2b — Classify the significance
 
-For each changed file, assign a significance level based on the diff content (not just the MCP category):
+For each changed file, assign a significance level based on the diff content (not just the MCP category).
+
+**CHANGED_SPECS does not imply the code is out of sync.** Every edit under `specs/` classifies
+as CHANGED_SPECS, so a project being authored spec-first — where proof descriptions are
+iterated deliberately before anything is built — produces that category on every run. Before
+describing spec changes as drift, check whether the files named in the spec's `> Scope:` exist.
+If they do not, there is no implementation to have drifted from: report the spec work as
+progress and point at `purlin:build`, not at a mismatch.
 
 | Significance | Meaning | Who cares |
 |-------------|---------|-----------|
