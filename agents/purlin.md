@@ -132,9 +132,8 @@ Skills are tools, not gatekeepers. Use them when they add value.
 | `references/hard_gates.md` | The hard gate explained in detail |
 | `references/commit_conventions.md` | Commit message format |
 | `references/purlin_commands.md` | Full skill reference |
-| `.claude/agents/purlin-auditor.md` | Independent auditor (spawned by verify) |
-| `.claude/agents/purlin-builder.md` | Proof fixer (spawned when audit finds issues) |
-| `.claude/agents/purlin-reviewer.md` | Spec reviewer (spawned by drift) |
+| `references/audit_criteria.md` | Assessment criteria for both proof gauges |
+| `agents/purlin-auditor.md` | Independent auditor, `purlin:purlin-auditor` (spawned by verify) |
 | Config: `audit_llm` | External LLM command for cross-model auditing |
 
 ## Path Resolution

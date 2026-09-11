@@ -69,9 +69,9 @@ After loading the cache, categorize features for parallel execution:
 For features in the "Needs LLM" category, launch up to 3 parallel evaluations using the Agent tool:
 
 ```
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
+Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name>: ...")
+Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name>: ...")
+Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name>: ...")
 ```
 
 Each subagent receives:
@@ -250,7 +250,7 @@ AUDIT SUMMARY:
 
 Group findings by value tier (see `references/audit_criteria.md` § Finding Priority for the complete tier mapping). Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
 
-When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
+When handing findings to `purlin:build`, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The build loop fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
 
 If HOLLOW or WEAK proofs found, append directives:
 
@@ -285,9 +285,12 @@ When spawned by purlin:verify or another agent:
 - Load criteria via `--load-criteria` (see Step 1)
 - For each proof, assess as STRONG/WEAK/HOLLOW using the three-pass pipeline
 - After completing the audit, if HOLLOW or WEAK proofs are found:
-  - Spawn a purlin-builder to fix the identified issues
+  - Report the findings — the audit is read-only and never edits code or tests
   - Format each finding with the three-part structure (PROOF-ID, finding, fix)
-  - After the builder responds, re-audit the fixed proofs
+  - Remediation happens in the build loop: `purlin:build <feature>`. There is no separate
+    fixer agent to spawn — on hosts where agent types are fixed by the harness, one would
+    not be resolvable, so the instruction would be unfollowable
+  - After the fixes land, re-audit the affected proofs
   - If still WEAK or HOLLOW, provide more specific guidance
   - After 3 rounds on any single proof, move on
 - When all findings are addressed (or rounds exhausted): report the final integrity score
@@ -295,8 +298,8 @@ When spawned by purlin:verify or another agent:
 ### Anchor Rule Handling
 
 When a HOLLOW or WEAK proof is for an anchor rule:
-- Message the builder: "Fix the test to properly prove <anchor>/<rule>. The anchor is read-only — strengthen the test, don't suggest changing the rule."
-- If the rule itself is ambiguous: message the lead (not the builder): "Recommend to anchor author (<source>): <rule> could be clearer — <suggestion>"
+- State the fix directive: "Fix the test to properly prove <anchor>/<rule>. The anchor is read-only — strengthen the test, don't suggest changing the rule."
+- If the rule itself is ambiguous: message the lead: "Recommend to anchor author (<source>): <rule> could be clearer — <suggestion>"
 
 ## External LLM Mode
 
@@ -349,18 +352,18 @@ When external LLM is configured, the lead relays findings:
 
 1. Lead shells out to the external LLM per feature
 2. Lead parses the response
-3. Lead spawns a builder with each finding:
+3. Lead reports each finding for the build loop:
    ```
    [Gemini Pro audit] HOLLOW: login PROOF-3
    Criterion: mocks the function being tested
    Why: test passes even if bcrypt is misconfigured
    Fix: remove mock, use real bcrypt call
    ```
-4. Builder fixes and reports results back
+4. `purlin:build` applies the fixes and reports results back
 5. Lead shells out to external LLM again for re-audit
 6. Loop until no HOLLOW proofs or 3 rounds per proof
 
-The builder never calls the external LLM. The lead relays.
+The build loop never calls the external LLM. The lead relays.
 
 ## Step 3.5 — Prune Stale Cache Entries (full audit only)
 
@@ -403,7 +406,7 @@ INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
 - **Actionable recommendations.** Every HOLLOW or WEAK finding includes three parts:
   - **Criterion** — which specific criterion was violated (name it from audit_criteria.md)
   - **Why** — what real problem this creates (what bug or failure would slip through)
-  - **Fix** — a specific, concrete change the builder should make (not "improve the test" but "replace `expected = hash_func(input)` with `expected = '5e884898da28...'`")
+  - **Fix** — a specific, concrete change the build loop should make (not "improve the test" but "replace `expected = hash_func(input)` with `expected = '5e884898da28...'`")
 
   Bad fix recommendation: "Make the test stronger"
   Good fix recommendation: "Remove the bcrypt.checkpw mock. Store a password via `create_user('alice', 'secret')`, retrieve the stored hash, assert `bcrypt.checkpw(b'secret', stored_hash)` returns True"

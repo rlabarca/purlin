@@ -137,7 +137,7 @@ Audit findings are grouped by the value of fixing them — how much real coverag
 | MEDIUM | Self-confirming test (logic mirroring, mock target match) | Medium — test passes but could confirm bugs |
 | LOW | Weak assertion form (heuristic assert_true, assertion farming) | Low — test works but assertions are imprecise |
 
-When reporting, group findings by tier. When fixing (manually or via builder), work top-down: CRITICAL first, then HIGH, MEDIUM, LOW. This ensures the highest-value fixes happen first, regardless of how many low-value findings exist.
+When reporting, group findings by tier. When fixing (manually or via `purlin:build`), work top-down: CRITICAL first, then HIGH, MEDIUM, LOW. This ensures the highest-value fixes happen first, regardless of how many low-value findings exist.
 
 **Pass 1 (deterministic) tier mapping by check name:**
 

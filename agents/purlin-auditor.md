@@ -16,7 +16,7 @@ The auditor:
   to read existing entries, merges new assessments (keyed by proof hash), then writes back:
   ```python
   # Each cache entry must include:
-  # - assessment: STRONG/WEAK/HOLLOW
+  # - assessment: STRONG/WEAK/HOLLOW/EXCLUDED
   # - criterion, why, fix
   # - feature: the feature name (needed by dashboard)
   # - proof_id: PROOF-N
@@ -26,5 +26,5 @@ The auditor:
   ```
   Use `static_checks.py` write path or write the JSON directly to `.purlin/cache/audit_cache.json`. The cache must be written before returning results — `purlin:status` and the dashboard read it.
 - **Also returns cache entries** in the response so the caller can see what was assessed
-- Spawns a builder with findings: "PROOF-3 in login is HOLLOW — mocks bcrypt, proves nothing. Rewrite with real bcrypt call."
+- Reports findings in priority order for remediation via `purlin:build` — the audit is read-only and never edits code or tests: "PROOF-3 in login is HOLLOW — mocks bcrypt, proves nothing. Rewrite with real bcrypt call."
 - When done, creates a task summary with the integrity score (structural checks excluded from score)

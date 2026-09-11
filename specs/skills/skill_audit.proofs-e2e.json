@@ -15,7 +15,7 @@
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_independent_auditor_spawns_builder",
+      "test_name": "test_independent_auditor_routes_findings_to_build",
       "status": "pass",
       "tier": "e2e"
     },
@@ -24,7 +24,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_independent_auditor_re_audits_after_builder",
+      "test_name": "test_independent_auditor_re_audits_after_fixes_land",
       "status": "pass",
       "tier": "e2e"
     },

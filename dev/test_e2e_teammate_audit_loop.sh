@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E2E test: Verify-Audit-Build Loop
 # 7 proofs covering 7 rules — all @e2e.
-# Verifies that the skill definitions document the auditor/builder communication protocol.
+# Verifies that the skill definitions document the audit -> purlin:build remediation protocol.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,8 +30,11 @@ if ! echo "$audit_content" | grep -q "## When Running as Independent Auditor"; t
 fi
 # Scope criteria and assessment checks to the Independent Auditor section
 auditor_section=$(awk '/^## When Running as Independent Auditor/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$AUDIT_SKILL")
-if ! echo "$auditor_section" | grep -q "audit_criteria.md"; then
-  echo "    FAIL: Missing audit_criteria.md reference in independent auditor section"
+# RULE-4 requires the section to document reading the criteria. The skill points at the
+# single loader (Step 1 / --load-criteria) rather than restating audit_criteria.md here,
+# per the no-duplication rule in CLAUDE.md.
+if ! echo "$auditor_section" | grep -q -- "--load-criteria"; then
+  echo "    FAIL: Missing criteria-loading instruction (--load-criteria) in independent auditor section"
   proof1_ok=false
 fi
 if ! (echo "$auditor_section" | grep -q "STRONG" && echo "$auditor_section" | grep -q "WEAK" && echo "$auditor_section" | grep -q "HOLLOW"); then
@@ -47,28 +50,32 @@ else
 fi
 
 # ==========================================================================
-# PROOF-2: Audit independent auditor mode instructs spawning a builder
+# PROOF-2: Audit independent auditor mode routes findings to purlin:build
 # ==========================================================================
-echo "  --- PROOF-2: Audit independent auditor mode spawns builder with findings ---"
+echo "  --- PROOF-2: Audit independent auditor mode routes findings to purlin:build ---"
 
 # Extract independent auditor section (everything from ## When Running as Independent Auditor to the next ## heading)
 auditor_section=$(awk '/^## When Running as Independent Auditor/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$AUDIT_SKILL")
 proof2_ok=true
 
-if ! echo "$auditor_section" | grep -q "purlin-builder"; then
-  echo "    FAIL: Missing purlin-builder reference in independent auditor mode"
+if ! echo "$auditor_section" | grep -q "purlin:build"; then
+  echo "    FAIL: Missing purlin:build remediation route in independent auditor mode"
   proof2_ok=false
 fi
-if ! echo "$auditor_section" | grep -qi "spawn\|Spawn"; then
-  echo "    FAIL: Missing spawn instruction in independent auditor mode"
+if ! echo "$auditor_section" | grep -qi "read-only"; then
+  echo "    FAIL: Missing read-only statement in independent auditor mode"
+  proof2_ok=false
+fi
+if echo "$auditor_section" | grep -q "purlin-builder"; then
+  echo "    FAIL: purlin-builder is retired but still referenced in independent auditor mode"
   proof2_ok=false
 fi
 
 if $proof2_ok; then
-  echo "    PASS: Audit independent auditor mode instructs spawning a builder"
-  purlin_proof "skill_audit" "PROOF-5" "RULE-5" pass "audit independent auditor mode instructs spawning purlin-builder with findings"
+  echo "    PASS: Audit independent auditor mode routes findings to purlin:build"
+  purlin_proof "skill_audit" "PROOF-5" "RULE-5" pass "audit independent auditor mode routes HOLLOW/WEAK findings to purlin:build and states the audit is read-only"
 else
-  purlin_proof "skill_audit" "PROOF-5" "RULE-5" fail "audit independent auditor mode missing builder spawning protocol"
+  purlin_proof "skill_audit" "PROOF-5" "RULE-5" fail "audit independent auditor mode missing purlin:build remediation route"
 fi
 
 # ==========================================================================
@@ -109,7 +116,7 @@ fi
 # ==========================================================================
 # PROOF-4: Audit independent auditor mode re-audits fixed proofs
 # ==========================================================================
-echo "  --- PROOF-4: Audit independent auditor mode re-audits after builder fix ---"
+echo "  --- PROOF-4: Audit independent auditor mode re-audits after fixes land ---"
 
 proof4_ok=true
 

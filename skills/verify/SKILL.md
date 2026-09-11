@@ -154,14 +154,14 @@ When tests fail during verify:
 
 After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate context for unbiased evaluation. No exceptions, regardless of the number of proofs.
 
-Spawn a purlin-auditor with prompt:
+Spawn a `purlin:purlin-auditor` with prompt:
   "Audit all features that just received receipts: <feature list>.
    Load criteria via: python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
    Audit cache is at .purlin/cache/audit_cache.json — use cached results where proof hashes match.
    For each proof, read the spec description and the test code.
    Assess as STRONG/WEAK/HOLLOW.
-   If HOLLOW or WEAK findings exist, spawn a purlin-builder to fix them.
-   Loop until no HOLLOW proofs remain or 3 rounds per proof.
+   Report any HOLLOW or WEAK findings — remediation happens via purlin:build, not by
+   spawning a fixer agent. Loop until no HOLLOW proofs remain or 3 rounds per proof.
    Report the final integrity score."
 
 If HOLLOW or WEAK proofs are found:

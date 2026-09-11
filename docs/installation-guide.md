@@ -207,7 +207,7 @@ Remove old artifacts that are now managed by the plugin system:
 ```bash
 rm -rf .purlin/ pl-* *.sh
 rm -rf .claude/commands/
-rm -f .claude/agents/purlin-auditor.md .claude/agents/purlin-builder.md .claude/agents/purlin-reviewer.md
+rm -f .claude/agents/purlin-*.md
 ```
 
 This removes:
@@ -215,7 +215,7 @@ This removes:
 - `pl-*` — old symlinks at project root
 - `*.sh` — old shell scripts at project root
 - `.claude/commands/` — old command definitions (now provided by the plugin)
-- `.claude/agents/purlin-*.md` — old agent definitions (now provided by the plugin)
+- `.claude/agents/purlin-*.md` — old project-local agent definitions. The independent auditor now ships with the plugin as `purlin:purlin-auditor`; the former `purlin-builder` and `purlin-reviewer` are retired
 
 Then initialize and migrate:
 

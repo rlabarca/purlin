@@ -15,7 +15,7 @@
 - RULE-5: The `## Hard Gates` section defines exactly 1 gate: proof coverage
 - RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, drift → purlin:drift, spec → purlin:spec, verify → purlin:verify with independent audit, engineer items → drift + build/unit-test, QA items → drift + verify)
 - RULE-7: The `## Skills` table lists all 12 skills with their purpose
-- RULE-8: The `## References` table lists all 12 reference entries with their topic
+- RULE-8: The `## References` table lists all 11 reference entries with their topic
 
 ## Proof
 
@@ -26,4 +26,4 @@
 - PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it lists "Proof coverage" and contains exactly 1 gate
 - PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "drift", "spec", "verify", "engineer", and "QA"
 - PROOF-7 (RULE-7): Grep `agents/purlin.md` for `## Skills`; count table rows; verify there are 12 skill entries
-- PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 12 reference entries
+- PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 11 reference entries

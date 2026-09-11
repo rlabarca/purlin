@@ -128,18 +128,24 @@ class TestSkillAudit:
         assert 'HOLLOW' in content, "audit SKILL.md missing HOLLOW assessment level"
 
     @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5", tier="e2e")
-    def test_independent_auditor_spawns_builder(self):
+    def test_independent_auditor_routes_findings_to_build(self):
         content = _read('audit')
-        assert re.search(r'(?i)(spawn|purlin-builder)', content), \
-            "audit SKILL.md missing purlin-builder spawn protocol"
+        assert 'purlin:build' in content, \
+            "audit SKILL.md must route remediation to purlin:build"
+        assert re.search(r'(?i)read-only', content), \
+            "audit SKILL.md must state the audit is read-only"
+        assert 'purlin-builder' not in content, \
+            "purlin-builder is retired — it is not a spawnable type in consumer projects"
         assert re.search(r'(?i)(PROOF-ID|finding|fix)', content), \
-            "audit SKILL.md missing three-part finding structure for builder"
+            "audit SKILL.md missing three-part finding structure"
 
     @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6", tier="e2e")
-    def test_independent_auditor_re_audits_after_builder(self):
+    def test_independent_auditor_re_audits_after_fixes_land(self):
         content = _read('audit')
-        assert re.search(r'(?i)(re-audit|re.audit|after the builder responds)', content), \
-            "audit SKILL.md missing re-audit step after builder responds"
+        assert re.search(r'(?i)(re-audit|re.audit)', content), \
+            "audit SKILL.md missing re-audit step after fixes land"
+        assert re.search(r'(?i)after the fixes land', content), \
+            "audit SKILL.md must say re-audit happens after the fixes land"
 
     @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7", tier="e2e")
     def test_independent_auditor_terminates_after_3_rounds(self):
@@ -154,7 +160,7 @@ class TestSkillAudit:
         content = _read('audit')
         assert re.search(r'(?i)anchor rule', content), \
             "audit SKILL.md missing Anchor Rule Handling section"
-        assert re.search(r'(?i)(message the lead|lead.*not the builder)', content), \
+        assert re.search(r'(?i)message the lead', content), \
             "audit SKILL.md missing 'message the lead' for ambiguous anchor rules"
         assert re.search(r'(?i)(ambiguous|could be clearer)', content), \
             "audit SKILL.md missing ambiguous rule guidance in anchor handling"

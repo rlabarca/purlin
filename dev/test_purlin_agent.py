@@ -138,7 +138,7 @@ class TestPurlinAgent:
             assert purpose.strip(), f"Row {i+1} has empty purpose column"
 
     @pytest.mark.proof("purlin_agent", "PROOF-8", "RULE-8")
-    def test_references_table_twelve_entries(self):
+    def test_references_table_eleven_entries(self):
         content = _read()
         assert '## References' in content
         refs_match = re.search(r'## References\n(.*?)(?=^## |\Z)', content,
@@ -148,7 +148,7 @@ class TestPurlinAgent:
         # Count data rows (exclude header and separator)
         rows = [l for l in section.strip().splitlines()
                 if l.startswith('|') and '---' not in l and 'Document' not in l]
-        assert len(rows) == 12, f"Expected 12 reference rows, found {len(rows)}"
+        assert len(rows) == 11, f"Expected 11 reference rows, found {len(rows)}"
         # Verify each row has a meaningful topic column (>5 chars)
         for row in rows:
             cells = [c.strip() for c in row.split('|') if c.strip()]

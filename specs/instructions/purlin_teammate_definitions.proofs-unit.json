@@ -12,28 +12,19 @@
     },
     {
       "feature": "purlin_teammate_definitions",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_purlin_teammate_definitions.py",
-      "test_name": "test_builder_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_teammate_definitions",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_purlin_teammate_definitions.py",
-      "test_name": "test_reviewer_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_teammate_definitions",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_teammate_definitions.py",
-      "test_name": "test_all_three_in_agents_directory",
+      "test_name": "test_auditor_ships_with_plugin_not_project_local",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_teammate_definitions",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_teammate_definitions.py",
+      "test_name": "test_auditor_routes_remediation_to_build_not_a_spawned_agent",
       "status": "pass",
       "tier": "unit"
     }

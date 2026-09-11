@@ -10,8 +10,8 @@
 - RULE-2: Skill file contains a `## Usage` section documenting command syntax
 - RULE-3: The `name` field in frontmatter is `audit`, matching the directory name
 - RULE-4: Independent auditor mode documents instructions to read audit criteria and assess proofs as STRONG/WEAK/HOLLOW
-- RULE-5: Independent auditor mode documents spawning a builder with HOLLOW/WEAK findings
-- RULE-6: Independent auditor mode documents re-auditing fixed proofs after builder responds
+- RULE-5: Independent auditor mode documents routing HOLLOW/WEAK findings to `purlin:build` for remediation, and states that no fixer agent is spawned because the audit is read-only
+- RULE-6: Independent auditor mode documents re-auditing the affected proofs after the fixes land
 - RULE-7: Independent auditor mode terminates after all findings addressed or after 3 rounds on any single proof
 - RULE-8: Anchor rule handling documents reporting to the lead for ambiguous anchor rules
 - RULE-9: External LLM detects deliberately hollow tests (assert True, assert None) as non-STRONG
@@ -29,8 +29,8 @@
 - PROOF-2 (RULE-2): Grep `skills/audit/SKILL.md` for `## Usage`; verify the section exists
 - PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `audit`
 - PROOF-4 (RULE-4): e2e: Grep skills/audit/SKILL.md for independent auditor section; verify audit_criteria.md and STRONG/WEAK/HOLLOW @e2e
-- PROOF-5 (RULE-5): e2e: Grep independent auditor section for purlin-builder and Spawn; verify builder protocol @e2e
-- PROOF-6 (RULE-6): e2e: Grep independent auditor section for re-audit; verify re-check loop @e2e
+- PROOF-5 (RULE-5): e2e: Grep the independent auditor section; verify it routes remediation to `purlin:build`, states the audit is read-only, and contains no instruction to spawn a fixer agent @e2e
+- PROOF-6 (RULE-6): e2e: Grep the independent auditor section for the re-audit step after fixes land; verify the re-check loop @e2e
 - PROOF-7 (RULE-7): e2e: Grep independent auditor section for 3 rounds; verify termination condition @e2e
 - PROOF-8 (RULE-8): e2e: Grep anchor rule handling for report to lead; verify ambiguous anchor protocol @e2e
 - PROOF-9 (RULE-9): e2e: Audit hollow test code with external LLM; verify returns HOLLOW or WEAK @e2e
