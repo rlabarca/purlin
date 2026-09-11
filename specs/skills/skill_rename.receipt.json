@@ -1,12 +1,13 @@
 {
   "feature": "skill_rename",
-  "vhash": "7748e8cb",
-  "commit": "7e73a8aa1204972cc61847f7aba27fa59e65f575",
-  "timestamp": "2026-09-11T14:28:00.945249+00:00",
+  "vhash": "b3ef613b",
+  "commit": "b954dd0fcb012638a0fe5ada7ce57c3995385115",
+  "timestamp": "2026-09-11T18:30:05.944537+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
-    "RULE-3"
+    "RULE-3",
+    "RULE-4"
   ],
   "proofs": [
     {
@@ -22,6 +23,11 @@
     {
       "id": "PROOF-3",
       "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
       "status": "pass"
     }
   ]
