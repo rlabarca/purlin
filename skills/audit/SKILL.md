@@ -57,7 +57,7 @@ For each proof that reaches Pass 2, compute the proof hash from (rule text + pro
 PROOF-1 (RULE-1): STRONG ✓ (cached)
 ```
 
-After the audit completes, write all new assessments to the cache (both cached hits and fresh LLM results). This means the cache grows over time and subsequent runs are faster.
+After the audit completes, write all new assessments to the cache (both cached hits and fresh LLM results) — this is **Step 3.4 below**, which names the command. The cache grows over time, so subsequent runs are faster.
 
 ## Step 1.6 — Plan Parallel Execution
 
@@ -79,7 +79,7 @@ Each subagent receives:
 - The audit cache (so it can check for hits on its assigned feature)
 - The feature's spec and test files to evaluate
 
-When all subagents complete, merge their results into the final report and update the cache with all new assessments.
+When all subagents complete, merge their results into the final report, then write every assessment to the cache via **Step 3.4**. Subagents must not write the cache themselves — a single writer keeps the merge under one lock.
 
 For "Cache-only" features, evaluate them in the main context (no subagent needed — they're fast).
 
@@ -365,6 +365,54 @@ When external LLM is configured, the lead relays findings:
 
 The build loop never calls the external LLM. The lead relays.
 
+## Step 3.4 — Write Audit Cache (MANDATORY)
+
+**An audit that does not write the cache has produced no measurement.** Nothing else in this
+skill persists an assessment, and every later step assumes this one ran.
+
+Collect every assessment from this audit — cache hits and fresh results alike — into a JSON
+object keyed by proof hash, then pipe it to `--write-cache`:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
+  --write-cache --project-root <project_root> < <entries.json>
+```
+
+Pass `--project-root` explicitly. Every cache mode defaults to the current working directory,
+so a cwd that is not the project root silently reads or writes a different project's cache.
+
+Each entry needs all nine fields (see `references/audit_criteria.md` § Required entry fields):
+
+```json
+{
+  "a1b2c3d4e5f6a7b8": {
+    "assessment": "STRONG",
+    "criterion": "matches rule intent",
+    "why": "test exercises the rule correctly",
+    "fix": "none",
+    "feature": "login",
+    "proof_id": "PROOF-1",
+    "rule_id": "RULE-1",
+    "priority": "LOW",
+    "cached_at": "2026-04-03T00:00:00+00:00"
+  }
+}
+```
+
+`feature` and `proof_id` are the deduplication key — omit either and the whole batch collapses
+to one surviving entry, so the score gets computed from a single proof. `--write-cache` rejects
+such entries with exit 2 rather than merging them.
+
+Verify it landed before moving on:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --read-cache --project-root <project_root>
+```
+
+If the cache is absent, `_read_audit_summary()` in `purlin_server.py` returns `None`,
+`sync_status` reports `No audit data`, and the dashboard renders `—` — indistinguishable from
+never having audited at all.
+
 ## Step 3.5 — Prune Stale Cache Entries (full audit only)
 
 After writing all assessments to the cache, if this is a full audit (no specific feature argument), prune orphaned entries from deleted or renamed features. Collect all proof hashes that were computed during this audit (cache hits + fresh evaluations) into a temp file, one key per line:
@@ -379,6 +427,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --liv
 ```
 
 This removes cache entries for features that no longer exist while preserving all entries from the current audit. For single-feature audits, skip this step — they don't know which other features are live.
+
+**Never run this with an empty live-keys file.** Pruning against zero live keys is a full sweep
+that deletes every entry, including the ones Step 3.4 just wrote. If no proof hashes were
+computed during this audit, skip the prune entirely.
 
 ## Step 4 — Refresh Status and Report Integrity
 

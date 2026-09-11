@@ -54,6 +54,15 @@
       "test_name": "test_documents_which_lever_moves_which_assessment",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_cache_write_is_its_own_mandatory_step",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

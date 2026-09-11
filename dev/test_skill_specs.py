@@ -389,6 +389,38 @@ class TestSkillAudit:
                re.search(r'H\s*<=\s*\(1\s*-\s*T\)', body), \
             "lever section must state the reachability condition"
 
+    @pytest.mark.proof("skill_audit", "PROOF-18", "RULE-18")
+    def test_cache_write_is_its_own_mandatory_step(self):
+        """The cache write must be a numbered step naming the command, ordered before the
+        prune. Prose alone left every later step depending on something that never ran."""
+        content = _read('audit')
+
+        m = re.search(r'^## (Step [\d.]+) [^\n]*Write Audit Cache[^\n]*$', content, re.M)
+        assert m, "audit SKILL.md has no numbered 'Write Audit Cache' step"
+        heading = m.group(0)
+        assert re.search(r'(?i)mandatory', heading), \
+            "the cache-write step must be marked mandatory in its heading"
+
+        # Must be ordered before the prune step, which assumes it already ran
+        prune = content.find('## Step 3.5')
+        assert prune > m.start(), \
+            "the cache-write step must come before the prune step"
+
+        body = content[m.end():prune]
+        assert '--write-cache' in body, \
+            "the cache-write step must name the literal --write-cache command"
+        assert '--project-root' in body, \
+            "the cache-write step must pass --project-root explicitly (cache modes default to cwd)"
+        assert re.search(r'(?i)no measurement', body), \
+            "the step must state that an audit without a cache write produced no measurement"
+        for field in ('feature', 'proof_id'):
+            assert field in body, f"the documented entry shape must include {field}"
+
+        # The prune must warn against the empty-live-keys full sweep
+        prune_body = content[prune:content.find('## Step 4')]
+        assert re.search(r'(?i)empty live-keys', prune_body), \
+            "the prune step must warn against pruning with an empty live-keys file"
+
 
 # ── skill_build ───────────────────────────────────────────────────────
 

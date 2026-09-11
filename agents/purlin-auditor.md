@@ -24,7 +24,11 @@ The auditor:
   # - priority: CRITICAL/HIGH/MEDIUM/LOW
   # - cached_at: ISO 8601 timestamp
   ```
-  Use `static_checks.py` write path or write the JSON directly to `.purlin/cache/audit_cache.json`. The cache must be written before returning results — `purlin:status` and the dashboard read it.
+  Write it with `static_checks.py --write-cache --project-root <project_root>`, piping the JSON
+  on stdin. Never write `.purlin/cache/audit_cache.json` directly: `--write-cache` takes an
+  exclusive file lock around the read/merge/write cycle, and a direct write bypasses that lock,
+  so concurrent auditors clobber each other's entries. The cache must be written before
+  returning results — `purlin:status` and the dashboard read it.
 - **Also returns cache entries** in the response so the caller can see what was assessed
 - Reports findings in priority order for remediation via `purlin:build` — the audit is read-only and never edits code or tests: "PROOF-3 in login is HOLLOW — mocks bcrypt, proves nothing. Rewrite with real bcrypt call."
 - When done, creates a task summary with the integrity score (structural checks excluded from score)
