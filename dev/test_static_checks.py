@@ -25,6 +25,7 @@ from static_checks import (
     check_python,
     check_shell,
     check_spec_coverage,
+    clear_audit_cache,
     compute_proof_hash,
     prune_audit_cache,
     read_audit_cache,
@@ -1630,3 +1631,75 @@ class TestCacheEntryValidation:
             r = run(json.dumps({"h9": self._entry()}))
             assert r.returncode == 0, f"{r.stdout}{r.stderr}"
             assert json.loads(r.stdout)['status'] == 'merged'
+
+
+class TestCacheMutationLocking:
+    """RULE-25 — prune and clear hold the same exclusive lock as the writer.
+
+    The audit skill launches up to three parallel auditors and then prunes. With
+    prune unlocked, it could read the cache, a writer could merge new entries, and
+    the prune's write would drop them.
+    """
+
+    def _entry(self, feature, pid):
+        return {
+            "assessment": "STRONG", "criterion": "c", "why": "w", "fix": "none",
+            "feature": feature, "proof_id": pid, "rule_id": "RULE-1",
+            "priority": "LOW", "cached_at": "2026-01-01T00:00:00+00:00",
+        }
+
+    @pytest.mark.proof("static_checks", "PROOF-58", "RULE-25")
+    def test_prune_and_clear_take_the_exclusive_lock(self):
+        import threading
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+
+            # Both mutators must go through the platform-neutral lock helper.
+            for op in ('prune', 'clear'):
+                write_audit_cache(tmpdir, {'seed': self._entry('login', 'PROOF-1')})
+                calls = []
+                real = static_checks._lock_exclusive
+
+                def spy(lf):
+                    calls.append(lf.name)
+                    return real(lf)
+
+                with mock.patch.object(static_checks, '_lock_exclusive', side_effect=spy):
+                    if op == 'prune':
+                        prune_audit_cache(tmpdir, {'seed'})
+                    else:
+                        clear_audit_cache(tmpdir)
+                assert calls, f"{op}_audit_cache did not acquire the exclusive lock"
+                assert calls[0].endswith('audit_cache.json.lock'), \
+                    f"{op} locked {calls[0]!r}, not audit_cache.json.lock"
+
+            # A prune racing a write must serialize: the writer's entries either
+            # survive whole or were never committed. They must never vanish after
+            # write_audit_cache returned successfully.
+            write_audit_cache(tmpdir, {'seed': self._entry('login', 'PROOF-1')})
+            errors = []
+
+            def writer():
+                try:
+                    for i in range(20):
+                        write_audit_cache(
+                            tmpdir, {f'w{i}': self._entry('checkout', f'PROOF-{i}')})
+                except Exception as exc:  # pragma: no cover - surfaced via errors
+                    errors.append(exc)
+
+            def pruner():
+                try:
+                    for _ in range(20):
+                        prune_audit_cache(tmpdir, {'seed'})
+                except Exception as exc:  # pragma: no cover
+                    errors.append(exc)
+
+            t1, t2 = threading.Thread(target=writer), threading.Thread(target=pruner)
+            t1.start(); t2.start(); t1.join(); t2.join()
+            assert not errors, f"concurrent mutation raised: {errors}"
+
+            # The file must still be valid JSON — a torn write would break this.
+            final = json.load(open(cache_path, encoding='utf-8'))
+            assert isinstance(final, dict)
+            assert 'seed' in final, "the live key must survive every prune"

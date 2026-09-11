@@ -657,6 +657,15 @@
       "test_name": "test_write_cache_cli_reports_error_and_exits_2",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-58",
+      "rule": "RULE-25",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_prune_and_clear_take_the_exclusive_lock",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

@@ -1231,14 +1231,26 @@ def load_criteria(project_root, extra_path=None):
 
 
 def clear_audit_cache(project_root):
-    """Atomically replace the audit cache with an empty dict."""
+    """Atomically replace the audit cache with an empty dict.
+
+    Takes the same exclusive lock as write_audit_cache: without it, a clear can
+    interleave with a concurrent writer's read/merge/write cycle and the writer
+    resurrects everything the clear just removed.
+    """
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    lock_path = cache_path + '.lock'
     tmp_path = cache_path + '.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump({}, f)
-    os.replace(tmp_path, cache_path)
+
+    with open(lock_path, 'w', encoding='utf-8') as lock_file:
+        _lock_exclusive(lock_file)
+        try:
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump({}, f)
+            os.replace(tmp_path, cache_path)
+        finally:
+            _unlock(lock_file)
     return cache_path
 
 
@@ -1249,19 +1261,31 @@ def prune_audit_cache(project_root, live_keys):
     renamed features.  Entries whose key IS in live_keys are preserved
     with all fields intact.  An empty live_keys set produces an empty
     cache (full sweep).
-    """
-    cache = read_audit_cache(project_root)
-    pruned = {k: v for k, v in cache.items() if k in live_keys}
-    removed = len(cache) - len(pruned)
 
-    # Write atomically
+    The read/filter/write cycle is protected by the same exclusive lock as
+    write_audit_cache. Unlocked, a prune could read the cache, a concurrent
+    subagent's write could merge new entries, and the prune's write would then
+    drop them — the audit skill launches up to three parallel auditors and
+    prunes immediately afterwards, so the window is real.
+    """
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     cache_path = os.path.join(cache_dir, 'audit_cache.json')
+    lock_path = cache_path + '.lock'
     tmp_path = cache_path + '.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump(pruned, f, indent=2)
-    os.replace(tmp_path, cache_path)
+
+    with open(lock_path, 'w', encoding='utf-8') as lock_file:
+        _lock_exclusive(lock_file)
+        try:
+            cache = read_audit_cache(project_root)
+            pruned = {k: v for k, v in cache.items() if k in live_keys}
+            removed = len(cache) - len(pruned)
+
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(pruned, f, indent=2)
+            os.replace(tmp_path, cache_path)
+        finally:
+            _unlock(lock_file)
 
     return {'pruned': removed, 'kept': len(pruned)}
 
