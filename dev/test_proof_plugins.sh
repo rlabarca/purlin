@@ -3,7 +3,7 @@
 #   proof_common         — shared behavior (RULE-1..7) + discovery/warning (RULE-8..9)
 #   proof_plugins_pytest  — RULE-1..4
 #   proof_plugins_jest    — RULE-1..4
-#   proof_plugins_shell   — RULE-1..4
+#   proof_plugins_shell   — RULE-1..5
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -554,6 +554,32 @@ assert len(d['proofs']) == 1, f'expected 1, got {len(d[\"proofs\"])}'
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "proof_plugins_shell" "PROOF-4" "RULE-4" "shell entries cleared after finish" test_shell_clear
+
+# PROOF-5 (RULE-5): test_file recorded repo-relative, never a machine-absolute path
+test_shell_relative_path() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/a" "$d/nested"
+  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
+  cat > "$d/nested/abs_test.sh" << SHEOF
+#!/usr/bin/env bash
+source "$SHELL_HARNESS"
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "test"
+purlin_proof_finish
+SHEOF
+  chmod +x "$d/nested/abs_test.sh"
+  # Invoke by ABSOLUTE path — this is what bakes a home directory into proof files
+  (cd "$d" && bash "$d/nested/abs_test.sh")
+  python3 -c "
+import json
+e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
+tf = e['test_file']
+assert tf == 'nested/abs_test.sh', f'expected repo-relative nested/abs_test.sh, got {tf!r}'
+assert not tf.startswith('/'), f'absolute path leaked into proof file: {tf!r}'
+assert '..' not in tf, f'parent traversal in recorded path: {tf!r}'
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_plugins_shell" "PROOF-5" "RULE-5" "shell test_file is repo-relative" test_shell_relative_path
 
 echo "--- Installation and discovery ---"
 

@@ -40,6 +40,17 @@ for line in sys.stdin.read().strip().split('\n'):
     if len(parts) < 7:
         continue
     feature, proof_id, rule_id, status, test_name, test_file, tier = parts
+    # Record the test file repo-relative with POSIX separators. BASH_SOURCE is
+    # whatever path the caller was invoked with, so an absolute invocation would
+    # otherwise bake one machine's home directory into a committed proof file.
+    # Mirrors the pytest plugin's item.fspath.relto(config.rootdir).
+    if test_file and test_file != 'unknown':
+        try:
+            rel = os.path.relpath(os.path.realpath(test_file), os.path.realpath(os.getcwd()))
+        except ValueError:
+            rel = test_file
+        if not rel.startswith(os.pardir + os.sep) and rel != os.pardir:
+            test_file = rel.replace(os.sep, '/')
     key = (feature, tier)
     entries.setdefault(key, []).append({
         'feature': feature,

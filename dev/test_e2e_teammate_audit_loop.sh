@@ -7,7 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Load proof harness
+# Load proof harness. Every proof this script emits is declared @e2e in its spec
+# (skill_audit PROOF-4..8, skill_build PROOF-8, skill_verify PROOF-6), so the tier
+# must be set before purlin_proof runs — otherwise the entries land in the unit-tier
+# proof files and clobber the unit proofs that pytest writes for the same features.
+export PURLIN_PROOF_TIER="e2e"
 source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
 echo "=== e2e_teammate_audit_loop tests ==="
