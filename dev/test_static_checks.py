@@ -9,6 +9,7 @@ proof-file structural checks (proof_id_collision, proof_rule_orphan).
 import ast
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -1703,3 +1704,67 @@ class TestCacheMutationLocking:
             final = json.load(open(cache_path, encoding='utf-8'))
             assert isinstance(final, dict)
             assert 'seed' in final, "the live key must survive every prune"
+
+
+class TestCliSelfDocumentation:
+    """RULE-34 — the help text cannot drift from the dispatch chain.
+
+    The usage text had gone stale and omitted five real flags (--write-cache,
+    --clear-cache, --prune-cache, --load-criteria, --resolve-source), and the
+    module docstring claimed "exit 1 = at least one failed" while main() always
+    exits 0 for a completed analysis, contradicting RULE-7.
+    """
+
+    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-34")
+    def test_usage_matches_dispatch_chain(self):
+        src = open(_STATIC_CHECKS_PY, encoding='utf-8').read()
+        tree = ast.parse(src)
+
+        main_fn = next(
+            (n for n in tree.body
+             if isinstance(n, ast.FunctionDef) and n.name == 'main'), None)
+        assert main_fn is not None, "static_checks.py has no main()"
+
+        # Every string literal tested against sys.argv is a dispatch flag.
+        dispatched = set()
+        for node in ast.walk(main_fn):
+            if isinstance(node, ast.Compare) and isinstance(node.ops[0], ast.In):
+                left, right = node.left, node.comparators[0]
+                is_argv = (
+                    isinstance(right, ast.Attribute) and right.attr == 'argv'
+                ) or (
+                    isinstance(right, ast.Name) and right.id == 'argv'
+                )
+                if is_argv and isinstance(left, ast.Constant) \
+                        and isinstance(left.value, str) and left.value.startswith('--'):
+                    dispatched.add(left.value)
+        assert dispatched, "found no --flag dispatches in main(); detector is broken"
+
+        usage_text = ' '.join(static_checks._USAGE)
+        undocumented = sorted(f for f in dispatched if f not in usage_text)
+        assert not undocumented, \
+            f"main() dispatches on flags absent from _USAGE: {undocumented}"
+
+        # And _USAGE must not advertise a flag that does not exist.
+        advertised = set(re.findall(r'--[a-z][a-z-]+', usage_text))
+        # Sub-options are documented on the line of the mode they belong to.
+        sub_options = {'--spec-path', '--project-root', '--proof-path', '--rule',
+                       '--proof-desc', '--test-code', '--ext', '--extra',
+                       '--live-keys-file'}
+        phantom = sorted(f for f in advertised - sub_options if f not in dispatched)
+        assert not phantom, f"_USAGE advertises flags main() never dispatches on: {phantom}"
+
+        # RULE-7: the docstring must not promise a non-zero exit for a found defect.
+        docstring = ast.get_docstring(tree) or ''
+        assert 'Exit code 0 = all proofs passed, 1 = at least one failed' not in docstring, \
+            "module docstring still contradicts RULE-7's exit convention"
+        assert 'RULE-7' in docstring, \
+            "module docstring should cite the exit convention it follows"
+
+    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-34")
+    def test_bad_invocation_prints_every_usage_line(self):
+        r = subprocess.run([sys.executable, _STATIC_CHECKS_PY],
+                           capture_output=True, text=True)
+        assert r.returncode == 2, f"expected exit 2 for a bad invocation, got {r.returncode}"
+        for line in static_checks._USAGE:
+            assert line in r.stderr, f"usage line not printed: {line!r}"

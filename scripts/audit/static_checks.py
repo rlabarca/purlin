@@ -4,11 +4,22 @@
 Catches structural test problems (assert True, no assertions, logic mirroring,
 bare except, mock-target match) using Python's ast module and regex.
 
-Usage:
-    python3 scripts/audit/static_checks.py <test_file> <feature_name> [--spec-path <path>]
+Usage (see _USAGE below — it is the single source for this list):
+    static_checks.py <test_file> <feature_name> [--spec-path <path>]
+    static_checks.py --check-proof-file --proof-path <path> [--spec-path <path>]
+    static_checks.py --check-spec-coverage --spec-path <path>
+    static_checks.py --compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>
+    static_checks.py --resolve-source <test_name> [--project-root <path>] [--ext .cs]
+    static_checks.py --load-criteria [--project-root <path>] [--extra <path>]
+    static_checks.py --read-cache [--project-root <path>]
+    static_checks.py --write-cache [--project-root <path>]      (JSON object on stdin)
+    static_checks.py --clear-cache [--project-root <path>]
+    static_checks.py --prune-cache --live-keys-file <path> [--project-root <path>]
 
-Exit code 0 = all proofs passed, 1 = at least one failed.
-Output: JSON to stdout with per-proof results.
+Exit codes (RULE-7): 0 for any completed analysis — a detected defect is reported as
+`status: "fail"` in the JSON, never as a non-zero exit. Non-zero is reserved for real
+errors: 2 for bad arguments, missing files, or malformed input.
+Output: JSON to stdout.
 """
 
 import ast
@@ -1054,6 +1065,24 @@ def _unlock(lock_file):
 # from a single proof. See references/audit_criteria.md, Required entry fields.
 _CACHE_DEDUP_FIELDS = ('feature', 'proof_id')
 
+# Every CLI form this script accepts. Kept adjacent to the dispatch chain in main()
+# so the two cannot drift: RULE-34 asserts that every `--flag` main() dispatches on
+# appears here, which is what went wrong before — the help text had gone stale and
+# omitted five real flags.
+_USAGE = (
+    "<test_file> <feature_name> [--spec-path <path>]",
+    "--check-proof-file --proof-path <path> [--spec-path <path>]",
+    "--check-spec-coverage --spec-path <path>",
+    "--compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>",
+    "--resolve-source <test_name> [--project-root <path>] [--ext .cs]",
+    "--load-criteria [--project-root <path>] [--extra <path>]",
+    "--read-cache [--project-root <path>]",
+    "--write-cache [--project-root <path>]      (JSON object of entries on stdin)",
+    "--clear-cache [--project-root <path>]",
+    "--prune-cache --live-keys-file <path> [--project-root <path>]",
+)
+
+
 
 def _validate_cache_entries(cache):
     """Reject entries that would collapse into the empty ('', '') dedup bucket.
@@ -1463,11 +1492,8 @@ def main():
         sys.exit(0)
 
     if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <test_file> <feature_name> [--spec-path <path>]", file=sys.stderr)
-        print(f"       {sys.argv[0]} --check-proof-file --proof-path <path> [--spec-path <path>]", file=sys.stderr)
-        print(f"       {sys.argv[0]} --check-spec-coverage --spec-path <path>", file=sys.stderr)
-        print(f"       {sys.argv[0]} --compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>", file=sys.stderr)
-        print(f"       {sys.argv[0]} --read-cache [--project-root <path>]", file=sys.stderr)
+        prog = os.path.basename(sys.argv[0])
+        print(f"Usage: {prog} " + f"\n       {prog} ".join(_USAGE), file=sys.stderr)
         sys.exit(2)
 
     test_file = sys.argv[1]

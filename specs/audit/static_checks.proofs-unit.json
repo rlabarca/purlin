@@ -666,6 +666,24 @@
       "test_name": "test_prune_and_clear_take_the_exclusive_lock",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-59",
+      "rule": "RULE-34",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_usage_matches_dispatch_chain",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-59",
+      "rule": "RULE-34",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_bad_invocation_prints_every_usage_line",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
