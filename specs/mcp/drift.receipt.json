@@ -1,8 +1,8 @@
 {
   "feature": "drift",
   "vhash": "eb81ccd9",
-  "commit": "011ccbaa30dc0bae1ab95724e96609a5e91ecaba",
-  "timestamp": "2026-04-08T15:36:25.098091+00:00",
+  "commit": "7e73a8aa1204972cc61847f7aba27fa59e65f575",
+  "timestamp": "2026-09-11T14:28:00.945249+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -41,8 +41,23 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-10",
       "rule": "RULE-10",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-11",
+      "rule": "RULE-11",
       "status": "pass"
     },
     {
@@ -67,6 +82,11 @@
     },
     {
       "id": "PROOF-17",
+      "rule": "RULE-12",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-17",
       "rule": "RULE-15",
       "status": "pass"
     },
@@ -81,8 +101,38 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-3",
       "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-4",
+      "rule": "RULE-4",
       "status": "pass"
     },
     {
@@ -96,8 +146,33 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-6",
       "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-7",
+      "rule": "RULE-7",
       "status": "pass"
     },
     {
@@ -111,73 +186,13 @@
       "status": "pass"
     },
     {
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass"
+    },
+    {
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-1",
-      "rule": "schema_spec_format/RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "schema_spec_format/RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "schema_spec_format/RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "schema_spec_format/RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "schema_spec_format/RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-6",
-      "rule": "schema_spec_format/RULE-6",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-7",
-      "rule": "schema_spec_format/RULE-7",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "schema_spec_format/RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-1",
-      "rule": "security_no_dangerous_patterns/RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "security_no_dangerous_patterns/RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "security_no_dangerous_patterns/RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "security_no_dangerous_patterns/RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "security_no_dangerous_patterns/RULE-5",
       "status": "pass"
     }
   ]

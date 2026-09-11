@@ -1,8 +1,8 @@
 {
   "feature": "purlin_version",
   "vhash": "175608df",
-  "commit": "5336ff4a5d11a06dc1a5d9f9b75b8c2b10f473e2",
-  "timestamp": "2026-05-26T07:45:32.457582+00:00",
+  "commit": "7e73a8aa1204972cc61847f7aba27fa59e65f575",
+  "timestamp": "2026-09-11T14:28:00.945249+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",

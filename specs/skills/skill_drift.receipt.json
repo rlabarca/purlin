@@ -1,14 +1,15 @@
 {
   "feature": "skill_drift",
-  "vhash": "175608df",
-  "commit": "5f42a16ba84ca8b20a9185eabe1d7a8f73a84b72",
-  "timestamp": "2026-04-04T22:48:45.094616+00:00",
+  "vhash": "ffa93bb5",
+  "commit": "7e73a8aa1204972cc61847f7aba27fa59e65f575",
+  "timestamp": "2026-09-11T14:28:00.945249+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
     "RULE-3",
     "RULE-4",
-    "RULE-5"
+    "RULE-5",
+    "RULE-6"
   ],
   "proofs": [
     {
@@ -34,6 +35,11 @@
     {
       "id": "PROOF-5",
       "rule": "RULE-5",
+      "status": "pass"
+    },
+    {
+      "id": "PROOF-6",
+      "rule": "RULE-6",
       "status": "pass"
     }
   ]
