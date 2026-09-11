@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Evaluate proof quality — STRONG/WEAK/HOLLOW assessments
+description: Evaluate proof quality — Proof Design (provable?) and Proof Integrity (proven?)
 ---
 
 Audit all proofs (or a specific feature) against configurable criteria. Read-only — never modifies code or test files.

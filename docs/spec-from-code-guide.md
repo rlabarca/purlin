@@ -90,6 +90,8 @@ Completed categories are skipped. Questions already answered are not re-asked.
 
 Generated specs start UNTESTED — the code exists, but nothing proves it satisfies the rules. This is the reverse of the normal lifecycle: because the code was **not** built by `purlin:build`, the build loop's job here is to write the proof-marked tests, not to write code.
 
+**Grade the generated proof descriptions before writing any tests.** This is the single best moment for it: `purlin:audit --design` needs no tests, and reverse-engineered proof descriptions are exactly where LOOSE and UNPROVABLE ones cluster, because they were inferred from code rather than written from intent. Every one you fix here is a test you do not have to write twice.
+
 Run the build loop with the existing code as the source of truth:
 
 ```
@@ -105,7 +107,8 @@ Two things matter in this mode:
 The full loop:
 
 ```
-purlin:status          — see what needs tests (everything, initially)
-build <feature>        — tests only, code is source of truth (see above)
-purlin:verify          — lock in verification receipts
+purlin:status               — see what needs tests (everything, initially)
+purlin:audit --design       — grade the generated proof descriptions; fix with purlin:spec
+build <feature>             — tests only, code is source of truth (see above)
+purlin:verify               — lock in verification receipts
 ```

@@ -20,7 +20,7 @@ Claude reads the spec, writes tests with proof markers, runs them, fixes failure
 | `purlin:status` | See which rules are proved and which aren't |
 | `purlin:unit-test` | Run tests and emit proof files |
 | `purlin:verify` | Run all tests, issue verification receipts |
-| `purlin:audit` | Check if tests actually prove what they claim |
+| `purlin:audit` | Check proof quality: are the claims provable, and are they proven |
 
 ---
 
@@ -112,7 +112,7 @@ Not all proofs are equal:
 | **Level 2** | Code behavior with controlled inputs | `POST invalid password → 401` |
 | **Level 3** | End-to-end through the real system | `Open browser, enter wrong password, see error` |
 
-**Level 1 is hollow** — reject it. `assert x is not None` proves nothing about behavior.
+**Level 1 is UNPROVABLE** — reject it. `assert x is not None` proves nothing about behavior. `purlin:audit --design` flags a Level 1 *description* automatically, before any test is written against it. (HOLLOW is the matching verdict on the test side; the vocabularies stay separate on purpose — PROVABLE/LOOSE/UNPROVABLE describe descriptions, STRONG/WEAK/HOLLOW describe tests.)
 
 **Level 2 is the default** — fine for internal logic, data transforms, error handling, validation.
 
@@ -162,6 +162,21 @@ Manual proofs are first-class. A feature with 4 automated proofs and 1 manual st
 ---
 
 ## The Workflow
+
+There is no required order. This is the common path; `purlin:status` reads what exists and tells
+you the next step for the state you are actually in. Working spec-first, you stay at step 0
+until Proof Design is where you want it — nothing below needs to exist yet.
+
+### 0. Grade the proofs (no tests required)
+
+```
+purlin:audit <feature> --design
+```
+
+Scores every proof description as PROVABLE, LOOSE, UNPROVABLE or STRUCTURAL from the spec
+alone. Fix findings with `purlin:spec`. This is the cheapest step in the workflow: a LOOSE
+description caps what the test can prove, and an UNPROVABLE one guarantees the test gets
+written, audited, rejected and rewritten.
 
 ### 1. Check coverage
 
@@ -254,7 +269,15 @@ jobs:
 
 ## Proof Quality Auditing
 
-`purlin:audit` checks whether tests actually prove what they claim. Three passes:
+`purlin:audit` measures two gauges. It picks its mode from what exists — design-only when no
+proof has executed anywhere, both otherwise — and says which it chose.
+
+**Proof Design** (`--design`) asks *is the claim provable?* It reads the rule and its proof
+description, needs no test code, and grades each description PROVABLE, LOOSE, UNPROVABLE or
+STRUCTURAL. Score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE); STRUCTURAL is excluded, just as
+EXCLUDED is excluded from Integrity.
+
+**Proof Integrity** (`--integrity`) asks *is the claim proven?* It reads test code. Three passes:
 
 **Pass 0.5 — Proof-file structural checks** (deterministic, JSON-only). Pre-audit validation of `.proofs-*.json` files before reading source code. Catches proof ID collisions (same PROOF-N targeting different RULE-N values) and orphaned proofs (PROOF-N targeting non-existent RULE-N).
 
@@ -266,7 +289,26 @@ jobs:
 Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%
 ```
 
-Results are cached in `.purlin/cache/audit_cache.json`. The cache self-invalidates when rule text, proof descriptions, or test code changes.
+**Fix Design first.** Four WEAK criteria and three STRONG criteria are comparisons against the
+proof description ("the description says verify X AND Y but the test only checks X"). Against a
+description like "Verify authentication works" none of them can fire, so a test asserting
+almost nothing scores STRONG. A high Integrity score over LOOSE descriptions is evidence of an
+unfalsifiable spec, not of good tests.
+
+**What moves what.** HOLLOW is decided by static analysis of test code — no spec edit moves it.
+EXCLUDED is decided by the test's shape. WEAK is the only Integrity level spec prose can move,
+and narrowing a description to match a weak test lowers the claim instead of strengthening the
+evidence — never do that, and never on an anchor rule. The Design levels are the ones prose is
+meant to move.
+
+**Reaching a target.** With `N` behavioural proofs and `H` HOLLOW, the ceiling is `(N - H) / N`,
+a target `T` is reachable only if `H <= (1 - T) x N`, and the tests you must rewrite number
+`max(0, H - floor((1 - T) x N))`. For 287 proofs with 57 HOLLOW the ceiling is 80%, so a 90%
+target needs 29 tests rewritten — answer that before starting work, not after.
+
+Results are cached in `.purlin/cache/audit_cache.json`, and Design results in
+`.purlin/cache/design_cache.json` (keyed without test code, so a design grade survives test
+edits). Both self-invalidate when their inputs change.
 
 ### Quick path
 
@@ -277,7 +319,7 @@ purlin:audit login
 Or fix everything at once:
 
 ```
-do a purlin:audit and fix all HOLLOW and WEAK proofs, then re-verify
+do a purlin:audit and fix all HOLLOW and WEAK proofs in the build loop, and all UNPROVABLE and LOOSE proof descriptions with purlin:spec, then re-verify
 ```
 
 ### Cross-model auditing (experimental)

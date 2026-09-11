@@ -1,5 +1,67 @@
 # Release Notes
 
+## v0.10.0 — Two proof gauges: Proof Design and Proof Integrity
+
+### Added
+
+- **Proof Design — grade a spec's proofs before any code or test exists.** Every audit pass previously required test code (Pass 0.5 needs proof JSON; Pass 1 and Pass 2 read test files), so a proof *description* was only ever assessed transitively, as the yardstick for a test. `purlin:spec --review` grades rules and never reads the `## Proof` section at all. There was therefore no way to answer "are these proofs any good?" before building, and `agents/purlin.md` actively forbade trying ("If a spec exists but code doesn't, build the code first"). `check_proof_design` now grades each description PROVABLE / LOOSE / UNPROVABLE / STRUCTURAL from the rule and description alone, via `--check-proof-design` (`static_checks` RULE-35). Score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE), with STRUCTURAL excluded exactly as EXCLUDED is excluded from Integrity.
+
+  The detectors are the authoring rules already in `references/spec_quality_guide.md` made executable, not new criteria — "Recognizing Level 1 proofs" supplies the UNPROVABLE phrasings verbatim. Dogfooding it against this repo's own 543 proof descriptions drove two corrections: presence-only descriptions are STRUCTURAL rather than UNPROVABLE (the discriminator is "did code run to produce what is being asserted on", not the rule's wording), and absence assertions are FORBIDDEN-pattern proofs rather than Level 1 defects. Result: zero false UNPROVABLE across the repo, which scores 92%.
+
+- **The audit derives its mode instead of guessing.** New `--audit-scope` (`static_checks` RULE-36) reports per feature the rule count, declared vs executed proofs, test files, and `scope_files_exist` — which is what finally distinguishes "spec written, nothing built" from "code exists, tests missing". Nothing in the toolchain could tell those apart before, and they need different next steps. `purlin:audit` Step 0 maps that to design-only or both and announces the choice (`skill_audit` RULE-19/20). This also removes a hard failure: Pass 0.5 and Pass 1 exit 2 on missing files, so an audit on a spec-only project used to dead-end.
+
+- **Both gauges surface everywhere.** `sync_status` prints `Proof Design: N%`, and a project with no executed proofs now reads `Proof Integrity: no tests yet` instead of `No audit data` — the two were reported identically, which made a deliberate spec-first project look neglected (`sync_status` RULE-39). The dashboard gains a Proof Design card reusing the integrity colour bands, so `dashboard_visual` RULE-10 is unchanged (`purlin_report` RULE-34, `report_data` RULE-23). `purlin:spec` exit criteria now report the Design score for the descriptions just written and print the next-step directive (`skill_spec` RULE-10).
+
+- **Three authoring pathways, all supported.** Specs-and-proofs-first, specs-then-code-and-tests, and specs-then-code-then-tests-then-verify. `agents/purlin.md` now reads observable state rather than imposing an order (`purlin_agent` RULE-9/10/11), and the Core Loop's "Do the work — write code" opener is gone.
+
+### Fixed
+
+- **The documented audit-cache entry omitted the two fields the reader deduplicates on.** The example at `skills/audit/SKILL.md` showed five fields; `write_audit_cache()` and `_read_audit_summary()` both dedup on `(feature, proof_id)`. An agent following the docs produced entries whose key was `('', '')` for every proof, so on write they all collapsed into one surviving entry and integrity was computed from a single proof — a confident, plausible, wrong percentage. The example now shows all nine fields, and `write_audit_cache` rejects an entry missing either field with a `ValueError` naming the offending key, before touching the filesystem (`static_checks` RULE-33). `--write-cache` surfaces it as JSON with exit 2, and the previously unguarded `json.loads(sys.stdin.read())` no longer raises a traceback on malformed input. Note the docs disagreed with themselves: `agents/purlin-auditor.md` already listed the correct nine fields, and RULE-17 already required them.
+
+- **Nothing wrote the audit cache.** `skills/audit/SKILL.md` said "write all new assessments to the cache" in prose, inside the step that *reads* it, and named no command — `write-cache` appeared zero times in the file. Step 3.5 and Step 4 both opened by assuming a write step that did not exist, so an audit could complete, report per-proof assessments and leave no measurement behind: `sync_status` then printed "No audit data", indistinguishable from never auditing. Now Step 3.4, marked MANDATORY, with the literal command and an explicit `--project-root` (every cache mode silently defaults to `os.getcwd()`) (`skill_audit` RULE-18).
+
+- **`cached_at` re-stamping made staleness undetectable.** RULE-19 mandated stamping *every* entry with the current time, including entries merely carried forward from disk, so the 24h staleness check could never fire and `last_audit` always read "now" even when nothing was re-audited. The rule is reworded and PROOF-33 — which asserted the broken behaviour — now also proves carry-forward entries keep their timestamp.
+
+- **Two cache mutators held no lock.** `write_audit_cache` serialized its read→merge→write cycle but `clear_audit_cache` and `prune_audit_cache` did not, and `purlin:audit` launches up to three parallel auditors then prunes immediately after. RULE-25 now covers every mutating operation.
+
+- **`purlin-builder` was a dead artifact, and the root cause had three victims.** The plugin declared no agents, so all three `.claude/agents/purlin-*.md` definitions were project-local and reached no consumer: "spawn a purlin-builder" was unfollowable in any installed project. `purlin-builder` and `purlin-reviewer` are deleted (neither was ever invoked; `skills/drift/SKILL.md` never mentioned the reviewer it supposedly spawned), and `purlin-auditor` — the only real call site — is promoted to `agents/purlin-auditor.md` so it ships, resolving as `purlin:purlin-auditor`. Remediation everywhere now routes to `purlin:build`.
+
+- **Shell proofs recorded machine-absolute paths.** `shell_purlin.sh` stored `${BASH_SOURCE[1]}` verbatim, so 26 entries across six committed proof files held another machine's home directory. It now relativizes against the project root like the pytest plugin (`proof_plugins_shell` RULE-5). The reason those files never refreshed was a second defect: `dev/test_e2e_teammate_audit_loop.sh` never exported `PURLIN_PROOF_TIER`, so its `@e2e`-declared proofs wrote to unit-tier files and mutually clobbered the proofs pytest writes for the same features.
+
+- **The coverage table broke for two of its five statuses.** The status column was ruled for 9 characters and padded to 7, but `UNTESTED` and `VERIFIED` are 8 — and a spec-only project is 100% UNTESTED, so every row was misaligned (`sync_status` RULE-40). `_get_rule_proof_descs()` was dead code with zero call sites, so the report never showed the proof descriptions a user had just written, and the suggested marker printed the literal `"PROOF-N"` despite the real ids being parsed and available (RULE-41). And `purlin:build` appeared nowhere in `purlin_server.py`, so nothing could route a user into the build loop: a spec with no code was told to run `purlin:unit-test`, which collects nothing (RULE-42).
+
+- **`purlin:unit-test` gave a false diagnosis.** Zero collected tests reported "the proof plugin may not be loaded → `purlin:init --force`", sending users to re-scaffold working infrastructure (`skill_unit_test` RULE-6). **`purlin:verify` had no UNTESTED case** at all, so every feature in a spec-first project fell outside every defined branch (`skill_verify` RULE-7). **`references/hard_gates.md` contradicted the skill it documents**, saying only VERIFIED features receive a receipt when VERIFIED is the state *after* a receipt exists — read literally, no feature could ever receive its first one (`purlin_references` RULE-17). **`skills/status/SKILL.md` documented a sort order omitting FAILING and UNTESTED** (`skill_status` RULE-5).
+
+- **Stale CLI self-documentation.** The usage text listed five of ten CLI forms, omitting `--write-cache`, `--clear-cache`, `--prune-cache`, `--load-criteria` and `--resolve-source`, and the module docstring claimed an exit code contradicting RULE-7. Both are fixed, and RULE-34 parses the dispatch chain so they cannot drift again.
+
+### Changed
+
+- **`references/audit_criteria.md` → Criteria-Version 18.** Gains a `## Pass D` section defining the Design levels in full — restated rather than linked, because `:230` requires the file to be self-contained for external-LLM mode, which is now recorded as a deliberate exception to the no-duplication rule. It also marks the Integrity criteria that are *comparisons against the proof description* with `[relative]`. That is the substantive finding behind this release: four WEAK criteria and three STRONG criteria presuppose a specific description, so against "Verify authentication works" none can fire and a test asserting almost nothing scores STRONG. **Proof Design is therefore not merely a ceiling on Proof Integrity — it is a precondition for Integrity meaning anything.** A high Integrity score over LOOSE descriptions is evidence of an unfalsifiable spec.
+
+- **The Design vocabulary already existed under other names, so the duplicates are retired rather than joined.** `spec_quality_guide.md`'s "Writing Proof Descriptions" and "Recognizing Level 1 proofs" were already the Design criteria and are now labelled with the level each defect earns; the Level 1/2/3 rubric becomes the grading engine via one bridge rule (a Level 1 description against a behavioural rule is UNPROVABLE); "Level 1 is hollow" no longer calls a *description* hollow. HOLLOW, WEAK, STRONG and EXCLUDED are now test-only words everywhere, and `STRUCTURAL` (Design) relates to `EXCLUDED` (Integrity) by a stated causal link rather than by collision.
+
+- **`purlin:build` and `purlin:verify` audits are differentiated.** Both spawned an auditor; undifferentiated, that is the same project-wide audit twice for one number. build's is feature-scoped and advisory, verify's is project-wide and authoritative (`skill_verify` RULE-8).
+
+- **Docs retired the single-gauge model** across README, `docs/index.md`, the installation, lifecycle, testing-workflow, dashboard, spec-from-code, regulated-environments, collaboration and anchors guides, and `references/purlin_commands.md`. The flagship Figma example's own proofs named an internal function and mandated mocks — they would have scored UNPROVABLE under the gauge this release ships — and are rewritten as observable flows.
+
+- **Neither gauge is a gate.** `references/hard_gates.md` still documents exactly one hard gate (proof coverage) and now says so explicitly for both scores.
+
+### Testing
+
+- New proofs: `static_checks` PROOF-57 (cache entries missing the dedup key are rejected and the on-disk cache is left byte-identical), PROOF-58 (prune and clear take the exclusive lock; a prune racing a writer loses no committed entries), PROOF-59 (the usage text and docstring are checked against the dispatch chain via `ast`), PROOF-60/61/62 (each Design level; mode derivation across three project states; the design cache is separate, locked and validated); `sync_status` PROOF-69 (both gauges, STRUCTURAL excluded from the Design denominator), PROOF-70/71/72 (table alignment for every status, declared proof ids surfaced, directive routed on whether scope files exist); `report_data` PROOF-24; `purlin_report` PROOF-34/35; `purlin_agent` PROOF-9/10/11; `skill_audit` PROOF-17/18/19/20; `skill_spec` PROOF-10/11; `skill_verify` PROOF-7/8; `skill_build` PROOF-20; `skill_drift` PROOF-6; `skill_status` PROOF-5; `skill_unit_test` PROOF-6; `purlin_references` PROOF-16/17; `proof_plugins_shell` PROOF-5.
+
+- Four tests asserted behaviour this release changes and were updated rather than deleted around: `static_checks` PROOF-12's fixture (omitted both dedup fields), PROOF-33 (asserted every entry is re-stamped), `sync_status` PROOF-49 (wrote a feature-less entry *through* the now-strict writer, and is reseeded on disk so the reader's tolerance is still proven), and `skill_audit` PROOF-5/6 (asserted the builder spawn protocol).
+
+- `purlin_report` PROOF-34 is the one new proof not executed locally: it drives the real dashboard through Playwright and Chromium could not be downloaded in the build environment. PROOF-35 covers the same rule structurally and does run, so RULE-34 is not left unproven. It emits at the `integration` tier deliberately — two test files emitting one feature at one tier collide under feature-scoped overwrite, which purged all 33 committed browser proofs during development.
+
+- `dev/run_tests.sh` gains `test_purlin_report_markup.py`. Full suite: 413 passed, 8 skipped, zero NO PROOF and zero FAILING across all 40 features.
+
+**Upgrading an existing project:** no action required for the gauges — `purlin:audit` writes
+`.purlin/cache/design_cache.json` on its next run and `.purlin/cache/` is already gitignored.
+If your project kept its own copies of the retired teammate agents, delete them:
+`rm -f .claude/agents/purlin-builder.md .claude/agents/purlin-reviewer.md`. The auditor now
+ships with the plugin, so `rm -f .claude/agents/purlin-auditor.md` too, then `/reload-plugins`.
+
 ## v0.9.5 — Cross-platform audit Pass-1 (Windows) & C# support
 
 ### Fixed

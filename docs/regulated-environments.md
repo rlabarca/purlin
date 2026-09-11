@@ -16,7 +16,7 @@ Purlin does not satisfy FDA 21 CFR Part 11, HIPAA, SOC2, or similar regulatory f
 - **Not a signature system.** `@manual` stamps and `git config user.email` are developer conveniences, not legally binding electronic signatures. GPG-signed commits prove key possession, not identity or intent.
 - **Not tamper-proof.** Everything Purlin produces lives in the git repository, which is mutable. `git push --force` can erase any receipt.
 - **Not an audit trail.** Git history is a development log, not an immutable compliance record.
-- **Not a test quality gate.** Purlin proves that a test executed and passed. It does not prove that the test contains meaningful assertions. An AI agent can write `assert True` and produce a valid proof. Regulated teams must enforce independent human review of test logic (e.g., via CODEOWNERS or QMS-managed test approval) before accepting proof artifacts.
+- **Not a test quality gate.** Purlin proves that a test executed and passed. It does not prove that the test contains meaningful assertions. An AI agent can write `assert True` and produce a valid proof. The two quality gauges measure exactly this and are worth recording in your QMS evidence, but note that they are advisory scores rather than gates — neither blocks a receipt. Regulated teams must still enforce independent human review of test logic (e.g., via CODEOWNERS or QMS-managed test approval) before accepting proof artifacts.
 
 ---
 
@@ -103,7 +103,7 @@ When `@manual` stamps are required, the compliant flow is:
 
 ### Proof Quality Auditing
 
-Purlin's audit skill evaluates whether tests actually prove what they claim. For regulated teams, additional audit criteria can be appended from a compliance-controlled repository (built-in criteria always apply — additional criteria add stricter checks, never weaken defaults):
+Purlin's audit skill evaluates proof quality on two axes: whether the spec asked for checkable evidence (Proof Design) and whether the tests deliver it (Proof Integrity). For regulated teams, additional audit criteria can be appended from a compliance-controlled repository (built-in criteria always apply — additional criteria add stricter checks, never weaken defaults):
 
 ```json
 {
@@ -114,9 +114,9 @@ Purlin's audit skill evaluates whether tests actually prove what they claim. For
 
 The compliance team owns and versions the additional criteria file. Built-in Purlin criteria always apply as a baseline — the compliance file adds stricter checks on top. Developers cannot weaken the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
 
-This addresses the "test quality gate" concern: the audit pipeline (spec coverage → structural defects → semantic alignment) deterministically catches tautological tests and structural checks (excluded from audit) before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
+This addresses the "test quality gate" concern: the audit pipeline (proof-description grading → structural defects → semantic alignment) deterministically catches unprovable proof descriptions and tautological tests, and separates out structural checks, before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 
-For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin experimentally supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the builder. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's. This feature is experimental — external LLM response formats vary and may require iteration.
+For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin experimentally supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the implementer. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's. This feature is experimental — external LLM response formats vary and may require iteration.
 
 ```json
 { "audit_llm": "gemini -m pro -p \"{prompt}\"" }

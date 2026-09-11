@@ -2,7 +2,8 @@
 
 ## What You Need to Know
 
-Purlin connects three roles through a simple loop: **write specs → build code → prove it works**.
+Purlin connects three roles through a simple loop, and it asks three separate questions:
+**is the claim provable, is it proven, does it pass right now?**
 
 ```
 purlin:spec <topic>     — define what the feature must do (rules + proof descriptions)
@@ -12,6 +13,12 @@ purlin:verify           — lock in verification receipts
 ```
 
 **The progression:** UNTESTED → PARTIAL → PASSING → VERIFIED. Every rule needs a passing proof. Anchor rules count too.
+
+**Proof Design sits outside that progression.** It grades the proof *descriptions* in a spec
+and needs no tests, so it is measurable while every feature is still UNTESTED. That is what
+makes working spec-first real work rather than a waiting room: you can drive Proof Design to
+100% before writing a line of code. Proof Integrity — the STRONG/WEAK/HOLLOW score — needs
+tests and is what most of this guide discusses.
 
 **Already have code?** Run `purlin:spec-from-code` to generate specs from the existing codebase first — see [Generating Specs from Code](spec-from-code-guide.md).
 
@@ -23,15 +30,20 @@ purlin:verify           — lock in verification receipts
 
 ![Purlin Lifecycle](../assets/lifecycle-big-picture.svg)
 
+> The diagrams in this guide trace the build → test → verify path. They do not show the quality
+> gauges: `purlin:audit --design` runs against a spec before anything on these diagrams exists,
+> and the full `purlin:audit` runs after `purlin:verify`. Neither is a step in the flow, because
+> neither gates anything.
+
 Every role can do every job. The arrows show the typical flow, not restrictions.
 
 ## How It Works
 
 1. **Specs define rules.** A PM (or engineer, or anyone) writes `RULE-1: passwords must be hashed with bcrypt`. Rules are the constraints — what must be true.
-2. **Specs define proofs.** Each rule gets a proof blueprint: `PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database`. Proofs describe how to verify the rule holds. An agent or engineer writes both rules and proofs together — they're two sides of the same spec.
+2. **Specs define proofs.** Each rule gets a proof blueprint: `PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database`. Proofs describe how to verify the rule holds. `purlin:audit --design` grades each description — PROVABLE, LOOSE, UNPROVABLE or STRUCTURAL — with no test code, so a weak blueprint is caught here rather than after a test has been written against it. An agent or engineer writes both rules and proofs together — they're two sides of the same spec.
 3. **Tests implement proofs.** An engineer (or agent) writes a test marked `@pytest.mark.proof("login", "PROOF-1", "RULE-1")` that actually runs the assertion described in the proof blueprint.
 4. **`purlin:status` shows the gaps.** 3/5 rules proved means 2 rules still need tests.
-5. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash.
+5. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash. Verify alone owns pass/fail; the two quality gauges are advisory and never block it.
 
 That's it. No tracking system, no ledger, no state files. The filesystem is the state.
 
@@ -97,7 +109,17 @@ Summary: 42 features | 22 VERIFIED | 13 PASSING | 6 PARTIAL | 0 FAILING | 1 UNTE
 
 Each feature gets detailed per-rule coverage. Features needing attention (FAILING, PARTIAL) sort to the top. Uncommitted spec/proof changes are flagged so you know the report may not reflect the latest state.
 
-The integrity score comes from the last `purlin:audit` run. It shows what percentage of proofs are STRONG — tests that meaningfully prove their rules (manual stamps count as strong; structural checks are excluded). Run `purlin:audit` after significant test changes to refresh the score.
+Two quality scores come from the last `purlin:audit` run.
+
+**Proof Integrity** is the percentage of proofs that are STRONG — tests that meaningfully prove
+their rules (manual stamps count as strong; structural checks are excluded). Refresh it after
+significant test changes.
+
+**Proof Design** is the percentage of proof *descriptions* that are PROVABLE. It reads no test
+code, so it is available with nothing built, and it is the one to fix first: most Integrity
+criteria compare a test against its proof description, so a vague description leaves them
+nothing to catch. A high Integrity score over vague proofs means the spec is unfalsifiable, not
+that the tests are good.
 
 ### Verification Receipts
 
@@ -119,7 +141,8 @@ That's the daily loop. Everything below is detail for when you want more control
 
 ---
 
-**The PM defines what the software must do.** Purlin turns raw input (PRDs, customer feedback, plain descriptions) into specs with numbered rules and proof descriptions. As engineers build and test, `purlin:status` shows exactly which rules are proved. No more "is this feature done?" — the coverage number answers it.
+**The PM defines what the software must do.** Purlin turns raw input (PRDs, customer feedback, plain descriptions) into specs with numbered rules and proof descriptions. As engineers build and test, `purlin:status` shows exactly which rules are proved. No more "is this feature done?" — the coverage number answers it. Proof Design answers a
+different question the PM owns: are the proofs we are asking for actually provable?
 
 ![PM Workflow](../assets/lifecycle-pm-workflow.svg)
 
@@ -127,6 +150,7 @@ That's the daily loop. Everything below is detail for when you want more control
 
 | What you want | What you type |
 |---------------|---------------|
+| Grade the proof descriptions you wrote | `purlin:audit <feature> --design` |
 | See what changed | `/purlin:drift pm` |
 | Handle all PM work | `handle PM items` |
 | See rule coverage | `/purlin:status` |
@@ -267,7 +291,7 @@ After spec updates, new rules show as NO PROOF — which is correct. The enginee
 ### What PMs own
 
 - **Rules** in the `## Rules` section — what the code must do
-- **Proof descriptions** in the `## Proof` section — what tests should verify (the blueprint, not the test code)
+- **Proof descriptions** in the `## Proof` section — what tests should verify (the blueprint, not the test code). **The PM therefore owns the Proof Design score.** It grades exactly this artifact, needs no tests to compute, and caps what engineering's tests can ever demonstrate: an UNPROVABLE description guarantees a test that has to be rewritten, and a LOOSE one guarantees a test nobody can call wrong.
 - **Manual proof stamps** — verifying things automation can't check (brand voice, UX feel)
 
 ### PMs can also
@@ -307,7 +331,8 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 | Handle all engineer work | `handle engineer items` |
 | Work through all gaps | `work through the engineer action items` |
 | See coverage | `/purlin:status` |
-| Check proof quality | `purlin:audit login` |
+| Check proof quality (both gauges) | `purlin:audit login` |
+| Check proofs before building | `purlin:audit login --design` |
 | Ship it | `/purlin:verify` |
 | Open the dashboard | Open `purlin-report.html` in a browser |
 
@@ -316,7 +341,8 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 This is the most common workflow. You say `test login` and Claude:
 
 1. Reads the spec and its rules
-2. Checks if code exists — builds it if not
+2. Checks if code exists — builds it if not (if you would rather review the proof
+   descriptions first, run `purlin:audit --design` before this step; it needs no code)
 3. Writes tests with proof markers
 4. Runs `purlin:unit-test`
 5. If tests fail, fixes and retries
@@ -326,7 +352,18 @@ You can also say `build login` to just write code (Claude injects the spec rules
 
 ### Proof quality audit
 
-After `purlin:verify`, an audit runs automatically (three passes: proof-file structural checks → static defect detection → LLM classification + semantic alignment). Structural-only proofs are EXCLUDED from integrity scoring. `assert True` and friends get caught deterministically as HOLLOW. Everything else goes to the LLM for STRONG/WEAK judgment. Fix HOLLOW and WEAK proofs in the build loop and re-verify.
+After `purlin:verify`, an audit runs automatically. It measures two gauges.
+
+**Proof Integrity** (needs tests): proof-file structural checks → static defect detection →
+LLM classification and semantic alignment. Structural-only proofs are EXCLUDED from scoring.
+`assert True` and friends get caught deterministically as HOLLOW. Everything else goes to the
+LLM for STRONG/WEAK judgment. Fix HOLLOW and WEAK proofs in the build loop and re-verify —
+editing the spec cannot move them.
+
+**Proof Design** (specs only): each proof description is graded PROVABLE, LOOSE, UNPROVABLE or
+STRUCTURAL. Fix these with `purlin:spec`, since the description is the artifact at fault. Never
+narrow a description to match a weak test: that lowers Design and leaves Integrity
+flatteringly high.
 
 ### Engineers can also
 
@@ -351,7 +388,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 
 ---
 
-**QA verifies the code truly meets the spec — not just that tests pass, but that the right tests exist.** Purlin shows which rules lack proofs, which manual proofs are stale, and which features are ready for receipt (PASSING) vs needing more tests (PARTIAL). QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` — the last gate before code ships.
+**QA verifies the code truly meets the spec — not just that tests pass, but that the right tests exist, and that the spec asked for the right evidence in the first place.** Those last two are the two gauges: Proof Integrity asks whether the tests deliver, Proof Design asks whether the claims were checkable at all. Purlin shows which rules lack proofs, which manual proofs are stale, and which features are ready for receipt (PASSING) vs needing more tests (PARTIAL). QA stamps manual proofs for things automation can't check (visual quality, UX flow, brand voice) and runs `purlin:verify` — the last gate before code ships.
 
 ![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 
@@ -359,6 +396,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 
 | What you want | What you type |
 |---------------|---------------|
+| Check proof quality before sign-off | `purlin:audit` |
 | See what needs testing | `/purlin:drift qa` |
 | Handle all QA work | `handle QA items` |
 | See coverage gaps | `/purlin:status` |
@@ -478,7 +516,9 @@ You don't need to write simulation tests for every reference doc. You need:
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-Purlin's audit classifies each proof as structural or behavioral. Structural checks (grep, file exists, section present) verify document content, not system behavior — they count toward rule coverage but are excluded from the integrity score, and `purlin:drift` flags features whose code changed with only structural coverage. Add E2E proofs in `specs/integration/` to get real behavioral coverage.
+Purlin's audit classifies each proof as structural or behavioral. Structural checks (grep, file exists, section present) verify document content, not system behavior — they count toward rule coverage but are excluded from the Proof Integrity score, and `purlin:drift` flags features whose code changed with only structural coverage. Add E2E proofs in `specs/integration/` to get real behavioral coverage.
+
+The same judgment is reachable one stage earlier: a proof *description* whose only action is a grep is graded STRUCTURAL by Proof Design, and is likewise excluded from that score rather than counted against it. A STRUCTURAL description yields an EXCLUDED proof — one call, made twice.
 
 ---
 

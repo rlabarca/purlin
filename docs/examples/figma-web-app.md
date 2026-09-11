@@ -68,12 +68,20 @@ the design system.
 - RULE-5: Caches responses for 10 minutes to avoid rate limiting
 
 ## Proof
-- PROOF-1 (RULE-1): Mock API; call fetchWeather("Austin"); verify GET to /weather?q=Austin
-- PROOF-2 (RULE-2): Return temp_f=72.6 from mock; verify display shows "73°F"
-- PROOF-3 (RULE-3): Return condition="Clouds"; verify display shows "Cloudy"
-- PROOF-4 (RULE-4): Return HTTP 500; verify "Unable to load weather" displayed
-- PROOF-5 (RULE-5): Call fetchWeather("Austin") twice in 10 min; verify 1 API call
+- PROOF-1 (RULE-1): Stub the upstream API; load the app with city "Austin"; verify the outbound request is GET /weather?q=Austin
+- PROOF-2 (RULE-2): Stub the API returning temp_f=72.6; load the app; verify the screen shows "73F"
+- PROOF-3 (RULE-3): Stub the API returning condition="Clouds"; load the app; verify the screen shows "Cloudy"
+- PROOF-4 (RULE-4): Stub the API returning HTTP 500; load the app; verify "Unable to load weather" is displayed
+- PROOF-5 (RULE-5): Stub the API; load the app twice within 10 minutes; verify exactly 1 upstream request was made
 ```
+
+Note what those descriptions do *not* say. None names an internal function like
+`fetchWeather()`, and none says "call" -- they arrange a stubbed upstream, act the way a person
+would, and observe at a boundary (the outbound request, the rendered text). That is what keeps
+them PROVABLE: `purlin:audit --design` grades an `@e2e` description naming an internal call as
+UNPROVABLE, because a test written faithfully against it proves the function ran rather than
+that the feature works. Run `purlin:audit --design` on your own spec here -- it needs no code,
+and it is far cheaper than finding the problem after the tests exist.
 
 The spec requires `weather_design` -- so `purlin:status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
@@ -83,7 +91,7 @@ The spec requires `weather_design` -- so `purlin:status` includes the visual mat
 build it
 ```
 
-Claude reads the spec and the Figma design directly via MCP for full visual fidelity. The anchor says "match the design" -- so the builder reads the visual reference, not extracted rules:
+Claude reads the spec and the Figma design directly via MCP for full visual fidelity. The anchor says "match the design" -- so the build loop reads the visual reference, not extracted rules:
 
 - Reads Figma via MCP -- gets the full design context (layout, colors, typography, spacing)
 - Writes `src/components/WeatherDisplay.jsx` -- React component matching Figma layout

@@ -89,10 +89,10 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 
 ![Feature categories with coverage bars and status badges](images/dashboard-categories.png)
 
-- **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and proof integrity score
-- **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and integrity percentages. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
+- **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and both quality gauges: Proof Design and Proof Integrity
+- **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and Proof Integrity percentages. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
 - **Features section** — features grouped by category (matching `specs/` subdirectories). Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
-- **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
+- **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW for tests, PROVABLE/LOOSE/UNPROVABLE for proof descriptions). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
 - **Uncommitted files** — when `purlin:status` detects uncommitted spec or proof files, a collapsible section shows which files need committing
 - **Staleness indicator** — top-right corner shows time since last `purlin:status` run (amber after 1 hour, red after 24 hours)
 
@@ -121,26 +121,29 @@ purlin-report.html loads it (via <script> tag)
 browser renders the dashboard
 ```
 
-### Audit and integrity data
+### Audit and quality-gauge data
 
 ```
 purlin:audit
     |
     v
 writes .purlin/cache/audit_cache.json    (STRONG/WEAK/HOLLOW per proof)
+    plus .purlin/cache/design_cache.json   (PROVABLE/LOOSE/UNPROVABLE per description)
     |
     v
 purlin:status reads the cache on next run
     |
     v
-includes audit findings + integrity score in .purlin/report-data.js
+includes audit findings + both gauge scores in .purlin/report-data.js
     |
     v
-dashboard shows integrity score in summary strip
+dashboard shows both gauges in summary strip
     + per-proof STRONG/WEAK/HOLLOW in expanded detail
 ```
 
-`purlin:audit` populates the audit cache. `purlin:status` reads it and includes the findings in the data file. If no audit has run, the integrity score shows "--" until you run `purlin:audit`.
+`purlin:audit` populates both caches. `purlin:status` reads them and includes the findings in the data file. A gauge with no data shows "--".
+
+The two "--" states mean different things. Proof Design shows "--" only when no design audit has run. Proof Integrity shows "--" either because no audit has run *or* because no test has executed yet — and in that second case the card reads "no tests yet" rather than "run purlin:audit", because a project being authored spec-first is not a neglected one.
 
 The HTML file loads `.purlin/report-data.js` through a script tag. No fetch calls, no CORS, no server. Just a static file loading another static file.
 

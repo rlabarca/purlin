@@ -1,7 +1,7 @@
 # Purlin runtime (generated, not committed)
 .purlin/runtime/
 
-# Purlin cache (audit results, additional criteria)
+# Purlin cache (Proof Integrity and Proof Design results, additional criteria)
 .purlin/cache/
 
 # Purlin plugin cache

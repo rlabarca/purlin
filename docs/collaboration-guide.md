@@ -30,7 +30,7 @@ An anchor with `> Source:` is an external reference — a contract defined outsi
    ```
    here's our design system: figma.com/design/abc123/Brand-System
    ```
-3. The anchor's rules become part of the project's coverage. Engineers must write tests proving compliance.
+3. The anchor's rules become part of the project's coverage. Engineers must write tests proving compliance. Proof descriptions for anchor rules are graded like any other — but a LOOSE one must be fixed by strengthening the description, never by narrowing it, since the rule is a contract someone else owns.
 4. When the external source updates, `purlin:anchor sync` pulls the changes. If local rules conflict, `purlin:drift` surfaces them as PM action items.
 
 ### Examples
@@ -99,7 +99,9 @@ Select **warn** — the hook blocks only on FAILING proofs. Partial coverage (ru
 | `specs/**/*.receipt.json` | Verification receipts — certified completeness |
 | `.purlin/config.json` | Team settings (test framework, pre-push mode) |
 
-The next person runs `purlin:status` to see the current state, `purlin:drift` to see what changed, and picks up where you left off.
+Quality-gauge results are NOT shared: `.purlin/cache/` is gitignored, so Proof Design and Proof Integrity are per-machine and recomputed by whoever runs `purlin:audit`. The proof *descriptions* they grade do travel, in `specs/**/*.md`.
+
+The next person runs `purlin:status` to see the current state, `purlin:drift` to see what changed, and `purlin:audit` to recompute the quality gauges locally, then picks up where you left off.
 
 ### Merge conflicts in proof files
 

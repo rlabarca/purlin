@@ -1,6 +1,6 @@
 # Purlin Commands
 
-> 12 skills, no modes, no permission system.
+> 12 skills, no permission system. The only mode is `purlin:audit`, and it derives that from what exists rather than asking.
 
 ```
 Purlin — Spec-Driven Development
@@ -22,7 +22,10 @@ Purlin — Spec-Driven Development
 
   Quality
   ──────
-  purlin:audit [feature]        Evaluate proof quality (STRONG/WEAK/HOLLOW)
+  purlin:audit [feature]        Evaluate proof quality — mode derived from state
+  purlin:audit --design         Proof Design only: PROVABLE/LOOSE/UNPROVABLE
+                                (specs only — no tests needed)
+  purlin:audit --integrity      Proof Integrity only: STRONG/WEAK/HOLLOW
   purlin:audit --criteria <f>   Use a specific criteria file
 
   Reporting
@@ -52,7 +55,7 @@ Purlin — Spec-Driven Development
 | `purlin:build` | Implement from spec rules | Code files + test files |
 | `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
 | `purlin:unit-test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
-| `purlin:audit` | Evaluate proof quality | Nothing (read-only) |
+| `purlin:audit` | Evaluate proof quality (both gauges) | Audit and design caches |
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
 | `purlin:drift` | Drift detection since last verify | Nothing (read-only) |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |

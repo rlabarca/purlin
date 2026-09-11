@@ -99,6 +99,12 @@ Input handling security standards. Prevents common injection attacks.
 
 ### Writing FORBIDDEN proofs
 
+A FORBIDDEN proof asserts absence, and `purlin:audit --design` grades it STRUCTURAL: the thing
+being checked (source text) exists independently of the test, so no code ran to produce it.
+STRUCTURAL is not a criticism — it is the correct shape for a FORBIDDEN rule, and it is
+excluded from the Design score rather than counted against it. The same proof will come back
+EXCLUDED from Proof Integrity for the same reason.
+
 A FORBIDDEN pattern is a rule that says "X must not exist." The proof asserts absence:
 
 ```python
@@ -261,7 +267,7 @@ Compares `> Pinned:` timestamp to current Figma lastModified. If different, pull
 purlin:anchor sync --check-only
 ```
 
-Compares all anchors' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`.
+Compares all anchors' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`. (Note `purlin:verify --audit` is verify's clean-room re-execution flag, which is a different thing from the `purlin:audit` skill that grades proof quality.)
 
 ### Conflict resolution
 

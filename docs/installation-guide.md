@@ -10,7 +10,12 @@ build login                               ← code + tests, iterates until all r
 /purlin:verify                            ← verification receipt committed
 ```
 
-Three messages. Spec → code → ship. Everything else is detail.
+Three messages. Everything else is detail.
+
+That is the shortest path, not the only one. Purlin reads what exists rather than imposing an
+order, so you can also perfect a spec's proof descriptions first and grade them with
+`purlin:audit --design` before any code is written — which is worth doing, because a vague
+proof description caps what the eventual test can prove.
 
 ---
 
@@ -73,7 +78,7 @@ This does 7 things:
 4. **Verifies the MCP server** — Purlin's MCP server (the `sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin and registers automatically wherever the plugin is enabled, always tracking the installed plugin version. Projects initialized before v0.9.4 have a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server — init removes it (or run `purlin:init --mcp` to migrate just this step, then `/reload-plugins`).
 5. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are VERIFIED).
 6. **Installs pre-commit hook (project digest)** — regenerates `.purlin/report-data.js` (coverage + drift data) on every commit so stakeholders see current status without running Purlin tools. Modes: `auto` (default), `warn`, or `off`.
-7. **Configures audit criteria** — built-in criteria always apply. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
+7. **Configures audit criteria** — built-in criteria always apply, covering both quality gauges. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
 
 ### Proof Plugin Setup by Framework
 

@@ -7,6 +7,7 @@
 **Rule-Proof Spec-Driven Development**
 
 - Write better code through proof-based specs
+- Know whether a spec's proofs are any good *before* writing code or tests
 - Prove spec / code drift with signed verification
 - Enable multi-discipline collaboration with drift detection and anchor specs with external references
 
@@ -16,7 +17,7 @@
 |-------|---------------|
 | [The Purlin Lifecycle](lifecycle-guide.md) | Spec format, sync model, PM/Engineer/QA workflows, CI integration |
 | [Installation and Quick Start](installation-guide.md) | Quick start, installing Purlin, initializing a project, proof plugin setup |
-| [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
+| [Testing Workflow](testing-workflow-guide.md) | Proof markers, both quality gauges, custom plugins, tiers, manual proofs |
 | [Anchors and External References](anchors-guide.md) | Anchors, external references, FORBIDDEN patterns, cross-cutting constraints |
 | [Collaboration](collaboration-guide.md) | External anchors, branch handoff, merge conflicts |
 | [Dashboard](dashboard-guide.md) | Visual coverage dashboard — setup, usage, data flow |
@@ -59,7 +60,7 @@ See [references/purlin_commands.md](../references/purlin_commands.md) for the fu
 | Resource | What it covers |
 |----------|---------------|
 | [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
-| [Audit Criteria](../references/audit_criteria.md) | Three-pass audit -- spec coverage, structural checks, semantic alignment |
+| [Audit Criteria](../references/audit_criteria.md) | Both gauges -- Proof Design (specs only) and Proof Integrity (Pass 1 structural, Pass 2 semantic) |
 | [Drift Criteria](../references/drift_criteria.md) | File classification, drift detection, config field ownership |
 | [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
@@ -69,7 +70,7 @@ Key skills:
 - `purlin:build` -- implement from spec rules
 - `purlin:verify` -- run all tests, issue verification receipts
 - `purlin:unit-test` -- run tests and emit proof files
-- `purlin:audit` -- evaluate proof quality (STRONG/WEAK/HOLLOW)
+- `purlin:audit` -- evaluate proof quality: Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, no tests needed) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED)
 - `purlin:status` -- show rule coverage dashboard
 - `purlin:drift` -- drift detection and change summary
 - `purlin:spec-from-code` -- reverse-engineer specs from existing code
@@ -81,5 +82,7 @@ Key skills:
 ## Hard Gate (only 1)
 
 1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
+
+Neither quality gauge is a gate -- a low Proof Design or Proof Integrity score never blocks anything.
 
 Everything else is optional guidance.
