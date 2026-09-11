@@ -97,6 +97,7 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 .summary-card-number{font-size:28px;font-weight:700;line-height:1.1;margin-bottom:2px}
 .summary-card-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .summary-card-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
+.summary-card-sub.cov-label{font-size:11px;font-weight:600;letter-spacing:.01em}
 .sc-total .summary-card-number{color:var(--text-primary)}
 .sc-verified .summary-card-number{color:var(--green)}
 .sc-passing .summary-card-number{color:var(--green);opacity:.7}
@@ -288,7 +289,14 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 /* ===== RESPONSIVE ===== */
 table{min-width:830px}
 @media (max-width:1500px) {
-  .summary-strip{grid-template-columns:repeat(4,1fr)}
+  /* Two exactly-filled rows: the five status cards, then the two gauge cards.
+     repeat(4,1fr) tiled seven cards as 4+3 and left a card-sized hole beside
+     Proof Integrity, which read as a rendering failure rather than a layout.
+     10 columns divides as 5x2 and 2x5, so neither row has a gap, and the gauge
+     cards get the width their coverage sub-label wants. */
+  .summary-strip{grid-template-columns:repeat(10,1fr)}
+  .summary-strip>.summary-card{grid-column:span 2}
+  .summary-strip>.sc-integrity{grid-column:span 5}
 }
 @media (max-width:900px) {
   th,td{padding:8px 10px;font-size:12px}
@@ -298,7 +306,11 @@ table{min-width:830px}
   .cat-cov-bar{width:36px}
 }
 @media (max-width:700px) {
+  /* Below 900px a trailing gap is ordinary responsive wrapping. Reset the spans
+     from the block above, which still matches at this width. */
   .summary-strip{grid-template-columns:repeat(3,1fr)}
+  .summary-strip>.summary-card,
+  .summary-strip>.sc-integrity{grid-column:auto}
   .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
   .header-right{flex-wrap:wrap;gap:10px}
 }
@@ -623,26 +635,53 @@ table{min-width:830px}
          + esc(freshnessText(summary, which, audit, design)) + '</span>';
   }
 
+  /* Mirrors the server's _gauge_headline: report the coverage-weighted figure,
+     falling back to the assessed score for data written before it existed. */
+  function gaugeHeadline(summary, which) {
+    if (!summary) return null;
+    if (summary.weighted != null) return summary.weighted;
+    return which === 'design' ? summary.design : summary.integrity;
+  }
+
   function gaugeCard(summary, label, pct, counts) {
     var cov = summary && summary.coverage ? summary.coverage : null;
+    var covPct = (cov && cov.total) ? Math.round((cov.measured / cov.total) * 100) : null;
+
+    /* The sub-label answers a different question from the number above it:
+       "over how much?". So it carries its own colour, banded on measurement
+       coverage rather than on the score. It runs through intClass, so both
+       gauges and both rows of a card share one set of bands with nothing to
+       drift from (dashboard_visual RULE-10). A dim 10px denominator under a
+       large coloured percentage was read as decoration; this is the number
+       that says whether the percentage above it means anything. */
     var sub = counts;
+    var subCls = '';
+    var subTitle = counts;
+    if (covPct != null) {
+      sub = cov.measured + ' of ' + cov.total + ' measured';
+      subCls = ' cov-label ' + intClass(covPct);
+      subTitle = counts + ' · ' + covPct + '% measurement coverage';
+      if (summary && summary.assessed != null) {
+        subTitle += ' · ' + summary.assessed + '% of those assessed';
+      }
+    }
+
+    /* The band follows the number, because the number is already honest: pct is
+       coverage-weighted server-side, so a high score over a thin slice arrives
+       here as a low percentage rather than as a high one needing an override.
+       Forcing amber on incomplete coverage now does the opposite of its purpose,
+       promoting a genuinely red gauge to amber. */
     var cls;
     if (pct == null) {
       cls = ' int-na';
-      return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">&mdash;</div>'
-           + '<div class="summary-card-label">' + label + '</div>'
-           + '<div class="summary-card-sub">' + sub + '</div></div>';
-    }
-    if (cov && cov.complete === false) {
-      cls = ' int-mid';
-      sub = cov.measured + ' of ' + cov.total + ' measured';
     } else {
       cls = pct >= 80 ? '' : pct >= 50 ? ' int-mid' : ' int-lo';
-      if (cov) sub = cov.measured + ' of ' + cov.total + ' measured';
     }
-    return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">' + pct + '%</div>'
+    var num = pct == null ? '&mdash;' : pct + '%';
+
+    return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">' + num + '</div>'
          + '<div class="summary-card-label">' + label + '</div>'
-         + '<div class="summary-card-sub" title="' + counts + '">' + sub + '</div></div>';
+         + '<div class="summary-card-sub' + subCls + '" title="' + subTitle + '">' + sub + '</div></div>';
   }
 
   function render() {
@@ -695,13 +734,15 @@ table{min-width:830px}
     /* Both gauge cards. They reuse the same colour bands and CSS classes, so
        the dashboard_visual anchor (RULE-10) covers both.
 
-       A gauge below full measurement coverage is forced amber whatever its
-       percentage: 100% computed from 15 cached assessments over 608 executed
-       proofs is not a green project, and rendering it green was the defect
-       RULE-36 closes. The sub-label always states the denominator. */
-    h += gaugeCard(G, 'Proof Design', G ? G.design : null,
+       The headline is coverage-weighted, not the assessed score: 100% computed
+       from 15 cached assessments over 643 executed proofs is not a green
+       project, and it read 100% while 39 of 40 feature rows read `not audited`.
+       Weighted, it reads 2%. The sub-label keeps the denominator and the tooltip
+       keeps the assessed score, so a low gauge can still be told apart from a
+       thin one (RULE-36). */
+    h += gaugeCard(G, 'Proof Design', G ? gaugeHeadline(G, 'design') : null,
       G ? (G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U') : 'run purlin:audit');
-    h += gaugeCard(A, 'Proof Integrity', A ? A.integrity : null,
+    h += gaugeCard(A, 'Proof Integrity', A ? gaugeHeadline(A, 'integrity') : null,
       A ? (A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H')
         : (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit'));
     h += '</div>';

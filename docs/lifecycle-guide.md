@@ -106,7 +106,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 `purlin:status` shows a summary of all features with their coverage:
 
 ```
-22/42 features VERIFIED | Proof Design: 91% (566 of 586 measured, 3 hours ago) | Proof Integrity: 100% (15 of 592 measured, 78 days ago, run purlin:audit --integrity)
+22/42 features VERIFIED | Proof Design: 86% (566 of 586 measured, 91% of those assessed, 3 hours ago) | Proof Integrity: 2% (15 of 592 measured, 100% of those assessed, 78 days ago, run purlin:audit --integrity)
 ```
 
 Each gauge states its own measurement coverage and its own age. A percentage without its

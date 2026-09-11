@@ -35,9 +35,23 @@ class TestSummaryStripGauges:
         assert re.search(r'var\s+G\s*=\s*D\.design_summary', html), \
             "dashboard must bind design_summary from PURLIN_DATA"
 
-        # A card labelled Proof Design, reading .design.
+        # A card labelled Proof Design, whose headline comes from the shared
+        # helper rather than straight off .design. The helper returns the
+        # coverage-weighted figure (RULE-36), so reading .design directly is
+        # what put a 100% assessed score on the card beside 39 feature rows
+        # reading "not audited".
         assert 'Proof Design' in html, "no Proof Design card label"
-        assert re.search(r'G\.design', html), "the card must read design_summary.design"
+        assert re.search(r"gaugeHeadline\(G, 'design'\)", html), \
+            "the design card must take its headline from gaugeHeadline"
+        assert re.search(r"gaugeHeadline\(A, 'integrity'\)", html), \
+            "the integrity card must take its headline from the same helper"
+        hm = re.search(r'function gaugeHeadline\(summary, which\) \{(.*?)\n  \}',
+                       html, re.DOTALL)
+        assert hm, "gaugeHeadline helper not found"
+        assert 'summary.weighted' in hm.group(1), \
+            "gaugeHeadline must prefer the coverage-weighted figure"
+        assert re.search(r'summary\.design', hm.group(1)), \
+            "gaugeHeadline must fall back to the assessed score"
 
         # Both cards are built by one helper, which is what keeps their colour
         # bands identical without a second definition to drift from.
@@ -47,6 +61,10 @@ class TestSummaryStripGauges:
         block = m.group(1)
         assert 'int-mid' in block and 'int-lo' in block, \
             "the gauge card must reuse the integrity colour classes"
+        assert 'cov.complete' not in block, (
+            "the card must not override its band on incomplete coverage: the "
+            "headline is already coverage-weighted, so forcing amber promotes a "
+            "genuinely red gauge (RULE-36)")
         assert 'pct >= 80' in block and 'pct >= 50' in block, \
             "the gauge card must use the same 80/50 thresholds as integrity"
         assert 'sc-integrity' in block, \

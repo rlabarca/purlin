@@ -2847,8 +2847,17 @@ class TestGaugeCellsAndCoverage:
         }
 
         def design_summary(measured, total, complete):
+            """A gauge whose assessed score is always 100%, over varying coverage.
+
+            `weighted` is what the server computes as
+            passing / (gradeable + unmeasured); every measured description here
+            is PROVABLE, so that reduces to measured / total.
+            """
             return {
-                "design": 100, "provable": measured, "loose": 0, "unprovable": 0,
+                "design": 100,
+                "assessed": 100,
+                "weighted": round(measured / total * 100),
+                "provable": measured, "loose": 0, "unprovable": 0,
                 "structural": 0, "gradeable_total": measured,
                 "last_design_audit": None, "last_design_audit_relative": None,
                 "coverage": {"measured": measured, "total": total, "complete": complete},
@@ -2861,26 +2870,104 @@ class TestGaugeCellsAndCoverage:
                     return card
             raise AssertionError("Proof Design card not found")
 
-        # 100% over a thin slice: amber, with the denominator spelled out.
+        # A 100% assessed score over 11 of 560. The headline must be the weighted
+        # 2%, not the assessed 100%: this exact shape printed a confident 100%
+        # while 39 of 40 feature rows read "not audited".
         load_dashboard(page, dashboard,
                        data=make_data(dict(base, design_summary=design_summary(11, 560, False))))
         card = design_card()
-        assert card.query_selector(".summary-card-sub").text_content().strip() == "11 of 560 measured", \
+        sub = card.query_selector(".summary-card-sub")
+        num = card.query_selector(".summary-card-number").text_content().strip()
+        assert num == "2%", (
+            f"the headline must be the coverage-weighted figure, got {num!r}")
+        assert sub.text_content().strip() == "11 of 560 measured", \
             "the card must state what it measured over"
-        assert "int-mid" in card.get_attribute("class"), (
-            "a 100% score over 11 of 560 must render amber, not green: "
-            f"classes were {card.get_attribute('class')}"
-        )
+        cls = card.get_attribute("class")
+        assert "int-lo" in cls, (
+            "a weighted 2% must render red: the band follows the honest number, and "
+            f"forcing amber would promote it. Classes were {cls}")
+        sub_cls = sub.get_attribute("class")
+        assert "int-lo" in sub_cls, (
+            "2% measurement coverage must colour the sub-label red, not leave it grey: "
+            f"classes were {sub_cls}")
+        title = sub.get_attribute("title")
+        assert "2% measurement coverage" in title, \
+            f"the tooltip must state the coverage percentage, got {title!r}"
+        assert "100% of those assessed" in title, (
+            "the tooltip must keep the assessed score: a low headline from thin "
+            f"coverage needs a different fix than one from bad proofs. Got {title!r}")
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof38_coverage_partial.png"))
 
-        # Full coverage: the amber override lifts and 100% reads green.
+        # Mid band: 336 of 560 is 60% coverage, so headline and sub-label are amber.
+        load_dashboard(page, dashboard,
+                       data=make_data(dict(base, design_summary=design_summary(336, 560, False))))
+        card = design_card()
+        assert card.query_selector(".summary-card-number").text_content().strip() == "60%"
+        sub_cls = card.query_selector(".summary-card-sub").get_attribute("class")
+        assert "int-mid" in sub_cls and "int-lo" not in sub_cls, (
+            "60% measurement coverage must colour the sub-label amber: "
+            f"classes were {sub_cls}")
+
+        # Full coverage: the weighted figure collapses onto the assessed 100%, so
+        # the gauge reads green and means what it always did.
         load_dashboard(page, dashboard,
                        data=make_data(dict(base, design_summary=design_summary(560, 560, True))))
         card = design_card()
-        assert card.query_selector(".summary-card-sub").text_content().strip() == "560 of 560 measured"
+        sub = card.query_selector(".summary-card-sub")
+        assert card.query_selector(".summary-card-number").text_content().strip() == "100%", \
+            "at full coverage the weighted figure must equal the assessed score"
+        assert sub.text_content().strip() == "560 of 560 measured"
         cls = card.get_attribute("class")
         assert "int-mid" not in cls and "int-lo" not in cls, \
             f"a complete 100% must read green, classes were {cls}"
+        sub_cls = sub.get_attribute("class")
+        assert "int-hi" in sub_cls, (
+            "full measurement coverage must colour the sub-label green: "
+            f"classes were {sub_cls}")
+
+    @pytest.mark.proof("purlin_report", "PROOF-40", "RULE-38", tier="e2e")
+    def test_summary_strip_rows_are_exactly_filled(self, page, dashboard):
+        """RULE-38: no empty cells in the summary strip above 900px.
+
+        Seven cards in a four-column grid tiled as 4+3 and left a card-sized
+        hole beside Proof Integrity, which reads as a rendering failure rather
+        than a layout. 1600px and 1280px sit either side of the breakpoint.
+        """
+        load_dashboard(page, dashboard, data=make_data())
+
+        for width in (1600, 1280):
+            page.set_viewport_size({"width": width, "height": 900})
+            page.wait_for_timeout(120)
+            measured = page.evaluate(
+                r"""() => {
+                    const strip = document.querySelector('.summary-strip');
+                    const cs = getComputedStyle(strip);
+                    const cols = cs.gridTemplateColumns.split(' ').length;
+                    const spans = [...strip.children].map(el => {
+                        const v = getComputedStyle(el).gridColumn || '';
+                        const m = v.match(/span\s+(\d+)/);
+                        return m ? parseInt(m[1], 10) : 1;
+                    });
+                    const right = strip.getBoundingClientRect().right;
+                    const lastRight = Math.max(
+                        ...[...strip.children].map(el => el.getBoundingClientRect().right));
+                    const cardW = strip.children[0].getBoundingClientRect().width;
+                    return {cols, spans, gap: right - lastRight, cardW};
+                }"""
+            )
+            cols, spans = measured["cols"], measured["spans"]
+            total = sum(spans)
+            assert total % cols == 0, (
+                f"at {width}px the strip is {cols} columns and its cards span "
+                f"{total} in total, leaving {cols - (total % cols)} empty cell(s) "
+                f"in the last row; spans were {spans}"
+            )
+            # And nothing card-sized is left blank on the right of the last row.
+            assert measured["gap"] < measured["cardW"] * 0.5, (
+                f"at {width}px the last row ends {measured['gap']:.0f}px short of "
+                f"the strip's right edge, about a card's width ({measured['cardW']:.0f}px)"
+            )
+            page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"proof40_strip_{width}.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-39", "RULE-37", tier="e2e")
     def test_refresh_directive_names_only_the_stale_gauge(self, page, dashboard):

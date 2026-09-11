@@ -68,7 +68,7 @@ It looks like this, and each gauge carries its own measurement coverage and its 
 the two caches are independent:
 
 ```
-37/40 features VERIFIED | Proof Design: 91% (566 of 586 measured, 3 hours ago) | Proof Integrity: 100% (15 of 592 measured, 78 days ago, run purlin:audit --integrity)
+37/40 features VERIFIED | Proof Design: 86% (566 of 586 measured, 91% of those assessed, 3 hours ago) | Proof Integrity: 2% (15 of 592 measured, 100% of those assessed, 78 days ago, run purlin:audit --integrity)
 ```
 
 A percentage without its denominator is the thing to avoid: 100% over 15 of 592 assessments is

@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "sync_status",
+      "id": "PROOF-78",
+      "rule": "RULE-46",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

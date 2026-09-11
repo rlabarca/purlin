@@ -39,6 +39,15 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-40",
+      "rule": "RULE-38",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_summary_strip_rows_are_exactly_filled",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-39",
       "rule": "RULE-37",
       "test_file": "dev/test_purlin_report.py",

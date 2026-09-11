@@ -631,12 +631,30 @@ def _count_cache_entries(project_root, cache_name):
 
 def _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary):
-    """Give each gauge summary the denominator it is scored over.
+    """Give each gauge summary its denominator, and weight its headline by it.
 
-    A percentage with no denominator is the defect this closes: 100% Integrity
-    computed from 24 cached assessments over a repo of ~560 executed proofs
-    rendered identically to 100% over all of them. `complete` is what the
-    dashboard colours on, so a high score across a thin slice reads amber.
+    A percentage with no denominator is the first defect this closes: 100%
+    Integrity computed from 24 cached assessments over a repo of ~560 executed
+    proofs rendered identically to 100% over all of them.
+
+    Stating the denominator was not enough. The headline still read 100% while
+    39 of 40 feature rows read `not audited`, a roll-up contradicting every row
+    beneath it. So the reported figure is weighted by measurement coverage:
+
+        weighted = passing / (gradeable + unmeasured)
+
+    An unassessed item is unknown, not passing, so it sits in the denominator
+    until someone looks at it. An item excluded from scoring (STRUCTURAL for
+    Design, EXCLUDED for Integrity) stays out of both, because that is a correct
+    terminal state rather than an unknown. When coverage is complete `unmeasured`
+    is 0 and `weighted` equals the assessed score exactly, so the gauge does not
+    change meaning as it fills in.
+
+    `assessed` keeps the unweighted score for context. It is the number the
+    formulas in references/audit_criteria.md, skills/audit/SKILL.md and
+    sync_status RULE-29/33/43 define, and the per-feature gauges keep using it:
+    a feature is either fully assessed, where the two agree, or it reads
+    `not audited`.
 
     Integrity's population is every executed proof; Design's is every declared
     proof description, because a description is gradeable with nothing built.
@@ -648,9 +666,11 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
         for ids in info.get('planned_proof_ids_by_rule', {}).values()
     )
 
-    for summary, cache_name, total in (
-        (audit_summary, 'audit_cache.json', executed_total),
-        (design_summary, 'design_cache.json', declared_total),
+    for summary, cache_name, total, key, gradeable_key, passing_keys in (
+        (audit_summary, 'audit_cache.json', executed_total,
+         'integrity', 'behavioral_total', ('strong', 'manual')),
+        (design_summary, 'design_cache.json', declared_total,
+         'design', 'gradeable_total', ('provable',)),
     ):
         if summary is None:
             continue
@@ -660,6 +680,14 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
             'total': total,
             'complete': total > 0 and measured >= total,
         }
+
+        assessed = summary.get(key)
+        summary['assessed'] = assessed
+        unmeasured = max(total - measured, 0)
+        gradeable = summary.get(gradeable_key) or 0
+        denom = gradeable + unmeasured
+        passing = sum(summary.get(k) or 0 for k in passing_keys)
+        summary['weighted'] = round(passing / denom * 100) if denom else assessed
 
 
 def _gauge_token(gauge, which):
@@ -694,6 +722,20 @@ def _refresh_command(audit_summary, design_summary):
     return 'purlin:audit --design' if d_stale else 'purlin:audit --integrity'
 
 
+def _gauge_headline(summary, which):
+    """The figure a surface reports for a gauge: coverage-weighted, not assessed.
+
+    `_attach_gauge_coverage` computes `weighted`. Falling back to the assessed
+    score keeps this safe for a summary dict that never passed through there.
+    """
+    if not summary:
+        return None
+    weighted = summary.get('weighted')
+    if weighted is not None:
+        return weighted
+    return summary.get('design' if which == 'design' else 'integrity')
+
+
 def _gauge_suffix(summary, which, audit_summary, design_summary):
     """` (N of M measured, <age>)` for one gauge, from its own timestamp.
 
@@ -708,6 +750,12 @@ def _gauge_suffix(summary, which, audit_summary, design_summary):
     cov = summary.get('coverage')
     if cov and not cov.get('complete'):
         parts.append(f"{cov['measured']} of {cov['total']} measured")
+        # Name the unweighted score too. Without it a weighted 2% is
+        # indistinguishable from 2% of assessed proofs being STRONG, which is a
+        # different problem with a different fix.
+        assessed = summary.get('assessed')
+        if assessed is not None and assessed != _gauge_headline(summary, which):
+            parts.append(f"{assessed}% of those assessed")
     rel = summary.get('last_design_audit_relative' if which == 'design'
                       else 'last_audit_relative')
     if rel:
@@ -788,7 +836,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     # Design first: a high Integrity score over LOOSE descriptions measures an
     # unfalsifiable spec, so the gauge that bounds the other is reported first.
     if design_summary:
-        summary_line += (f" | Proof Design: {design_summary['design']}%"
+        summary_line += (f" | Proof Design: {_gauge_headline(design_summary, 'design')}%"
                          + _gauge_suffix(design_summary, 'design',
                                          audit_summary, design_summary))
     else:
@@ -797,7 +845,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
         summary_line += " | Proof Design: not measured"
 
     if audit_summary:
-        summary_line += (f" | Proof Integrity: {audit_summary['integrity']}%"
+        summary_line += (f" | Proof Integrity: {_gauge_headline(audit_summary, 'integrity')}%"
                          + _gauge_suffix(audit_summary, 'integrity',
                                          audit_summary, design_summary))
     else:

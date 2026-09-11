@@ -1330,18 +1330,27 @@ Invoice management.
         json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
         data = json.loads(json_str)
         dashboard_integrity = data['audit_summary']['integrity']
+        dashboard_weighted = data['audit_summary']['weighted']
 
         # --- All three must match ---
-        assert cli_integrity == expected_integrity, (
-            f"CLI integrity ({cli_integrity}%) != computed ({expected_integrity}%)\n"
-            f"  If CLI shows 20%, NONE rules are leaking into the denominator"
-        )
+        # `integrity` is the assessed score, the figure this rule is about: the
+        # denominator is the 3 assessed proofs, not the 5 rules. What the CLI
+        # prints is that score weighted by measurement coverage (RULE-46), so
+        # the CLI is compared against `weighted` and the assessed score is
+        # checked on its own. Comparing the CLI against `integrity` would only
+        # agree by accident, when the audit cache happens to cover every
+        # executed proof in the project.
         assert dashboard_integrity == expected_integrity, (
-            f"Dashboard integrity ({dashboard_integrity}%) != computed ({expected_integrity}%)\n"
-            f"  If dashboard shows 20%, NONE rules are leaking into the denominator"
+            f"Assessed integrity ({dashboard_integrity}%) != computed ({expected_integrity}%)\n"
+            f"  If it shows 20%, NONE rules are leaking into the denominator"
         )
-        assert cli_integrity == dashboard_integrity, (
-            f"CLI ({cli_integrity}%) != dashboard ({dashboard_integrity}%)"
+        assert cli_integrity == dashboard_weighted, (
+            f"CLI ({cli_integrity}%) != dashboard weighted ({dashboard_weighted}%); "
+            "both surfaces must report the same figure"
+        )
+        assert dashboard_weighted <= dashboard_integrity, (
+            f"weighted ({dashboard_weighted}%) must never exceed the assessed score "
+            f"({dashboard_integrity}%): coverage can only discount it"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-58", "RULE-34", tier="unit")
@@ -2104,9 +2113,30 @@ class TestStatusReportsBothGauges:
 
         out = sync_status(self.tmp_dir)
         line = next(l for l in out.splitlines() if 'features VERIFIED' in l)
-        assert 'Proof Design: 100% (2 of 3 measured' in line, (
-            "a perfect score over part of the project must state its denominator; "
-            f"got: {line}")
+        # 2 PROVABLE of 3 declared descriptions. The headline is weighted by
+        # coverage (RULE-46), so the third, ungraded description counts against
+        # it: 2 / (2 + 1) = 67%. The parenthetical carries the denominator and
+        # the 100% assessed score it was discounted from.
+        assert 'Proof Design: 67% (2 of 3 measured, 100% of those assessed' in line, (
+            "a perfect score over part of the project must be discounted by its "
+            f"coverage and still state both figures; got: {line}")
+        assert 'Proof Design: 100%' not in line, (
+            "the headline must not claim 100% when only 2 of 3 descriptions were "
+            f"graded; got: {line}")
+
+        # Grade the third: the weighted figure collapses onto the assessed score
+        # and the "of those assessed" clause drops away.
+        write_audit_cache(self.tmp_dir, {
+            'd1': self._entry('PROVABLE', 'login', 'PROOF-1'),
+            'd2': self._entry('PROVABLE', 'login', 'PROOF-2', 'RULE-2'),
+            'd3': self._entry('PROVABLE', 'login', 'PROOF-3', 'RULE-3'),
+        }, static_checks.DESIGN_CACHE)
+        full = next(l for l in sync_status(self.tmp_dir).splitlines()
+                    if 'features VERIFIED' in l)
+        assert 'Proof Design: 100%' in full, (
+            f"at full coverage the weighted figure must equal the assessed score; got: {full}")
+        assert 'of those assessed' not in full, (
+            f"at full coverage there is no second figure to report; got: {full}")
 
         # With no design cache the gauge says so rather than vanishing.
         os.remove(os.path.join(self.tmp_dir, '.purlin', 'cache', 'design_cache.json'))
@@ -2116,6 +2146,55 @@ class TestStatusReportsBothGauges:
             "an absent design cache must print a state, not omit the gauge; "
             f"got: {line}")
 
+
+    @pytest.mark.proof("sync_status", "PROOF-78", "RULE-46", tier="integration")
+    def test_project_gauge_is_weighted_by_measurement_coverage(self):
+        """RULE-46: the reported figure discounts what was never assessed.
+
+        The defect: 100% Integrity from 11 graded proofs printed beside 39 of 40
+        feature rows reading `not audited`. A roll-up that contradicts every row
+        beneath it is worse than no roll-up.
+        """
+        _make_project(self.tmp_dir, with_git=True)
+
+        def design_line(graded):
+            cache = {
+                f'd{i}': self._entry('PROVABLE', f, pid, rid)
+                for i, (f, pid, rid) in enumerate(graded)
+            }
+            write_audit_cache(self.tmp_dir, cache, static_checks.DESIGN_CACHE)
+            return next(l for l in sync_status(self.tmp_dir).splitlines()
+                        if 'features VERIFIED' in l)
+
+        import re
+
+        def pct(line):
+            m = re.search(r'Proof Design: (\d+)%', line)
+            assert m, line
+            return int(m.group(1))
+
+        # Everything graded is PROVABLE, so the assessed score is 100% at every
+        # step below. Only coverage changes, and only coverage moves the figure.
+        one = design_line([('login', 'PROOF-1', 'RULE-1')])
+        two = design_line([('login', 'PROOF-1', 'RULE-1'),
+                           ('login', 'PROOF-2', 'RULE-2')])
+
+        assert '100% of those assessed' in one, (
+            f"the assessed score must be reported beside the weighted one; got: {one}")
+        assert pct(one) < 100, (
+            f"a 100% assessed score over one description must not headline 100%; got: {one}")
+        assert pct(two) > pct(one), (
+            "grading more descriptions must raise the weighted figure even though the "
+            f"assessed score never moved; got {pct(one)}% then {pct(two)}%")
+
+        # The weighted figure is passing / (gradeable + unmeasured). With every
+        # graded description PROVABLE that is measured / total exactly.
+        m = re.search(r'(\d+) of (\d+) measured', two)
+        assert m, two
+        measured, total = int(m.group(1)), int(m.group(2))
+        assert pct(two) == round(measured / total * 100), (
+            f"expected {round(measured / total * 100)}% for {measured} of {total} "
+            f"all-PROVABLE descriptions, got {pct(two)}%")
 
     @pytest.mark.proof("sync_status", "PROOF-77", "RULE-45", tier="e2e")
     def test_each_gauge_reports_its_own_age_and_refresh_command(self):

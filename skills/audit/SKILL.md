@@ -553,17 +553,21 @@ The `sync_status` output includes both gauge percentages (computed by `_compute_
 After `sync_status` completes, report both scores it returned, Design first:
 
 ```
-PROOF DESIGN SCORE: <N>% (from sync_status, computed by _compute_design())
+PROOF DESIGN SCORE: <N>% (from sync_status, coverage-weighted)
   Formula: PROVABLE / (PROVABLE + LOOSE + UNPROVABLE) — STRUCTURAL excluded.
-  Measured over <M> of <T> declared proof descriptions.
+  Assessed score <A>%, measured over <M> of <T> declared proof descriptions.
 
-INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
+INTEGRITY SCORE: <N>% (from sync_status, coverage-weighted)
   Formula: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — proof quality only.
-  Measured over <M> of <T> executed proofs.
+  Assessed score <A>%, measured over <M> of <T> executed proofs.
 ```
 
-Report the coverage alongside each score. A percentage over a subset is not a project-wide
-percentage, and saying so is the difference between a measurement and a claim.
+Report both numbers. `<N>` is what sync_status prints: the assessed score weighted by
+measurement coverage, so it cannot claim more than was looked at. `<A>` is the assessed score
+the formula above produces over the cache's own entries. They are equal at full coverage. Below
+it, reporting `<A>` alone is the difference between a measurement and a claim — 100% Integrity
+from 11 graded proofs while every feature row reads `not audited`. See
+`references/audit_criteria.md` § Assessed score vs reported score.
 
 ## Which Lever Moves Which Assessment
 
@@ -584,6 +588,11 @@ Two consequences worth stating outright:
 - **A high Proof Integrity score over LOOSE descriptions means nothing.** Most WEAK criteria are
   comparisons against the description, so a vague description leaves them unable to fire. Fix
   Design first or the Integrity number is measuring an unfalsifiable spec.
+
+**Both figures move differently.** Rewriting a test moves the assessed score. Grading more
+proofs moves the reported one, even with no test touched, because it shrinks the unmeasured part
+of the denominator. A project stuck at a low reported score with a high assessed score needs a
+wider audit, not better tests.
 
 **Reaching a target Integrity score.** With `N` behavioural proofs and `H` HOLLOW: the ceiling is
 `(N − H) / N`, a target `T` is reachable iff `H ≤ (1 − T) × N`, and the number of tests that must

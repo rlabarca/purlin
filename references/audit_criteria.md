@@ -228,6 +228,29 @@ Design score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE) × 100%
 STRUCTURAL descriptions are excluded from the Design denominator, exactly as EXCLUDED proofs
 are excluded from the Integrity denominator.
 
+### Assessed score vs reported score
+
+Those two formulas score the population that was actually assessed. A project-wide surface
+reports a second figure, weighted by how much of the project that population covers:
+
+```
+reported = passing / (gradeable + unmeasured)
+```
+
+where `unmeasured` is the part of the project the cache has no assessment for. An unassessed
+item is unknown, not passing, so it sits in the denominator until someone looks at it. An item
+excluded from scoring stays out of both halves, because that is a correct terminal state rather
+than an unknown.
+
+At full coverage `unmeasured` is 0 and the reported figure equals the assessed score exactly,
+so the gauge does not change meaning as coverage fills in. Below full coverage the two differ,
+and both are shown: the headline is the reported figure, and the assessed score sits beside the
+denominator as context. This is what stops a project reporting 100% Integrity from 11 graded
+proofs while every feature row reads `not audited`.
+
+Per-feature gauges report the assessed score directly, because a feature is either fully
+assessed or reads `not audited` (there is no partial case to weight).
+
 ### What moves which assessment
 
 - **HOLLOW** is decided by Pass 1 reading test code. No edit to a spec moves a HOLLOW proof —

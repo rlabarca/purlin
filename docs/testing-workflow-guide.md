@@ -275,7 +275,8 @@ proof has executed anywhere, both otherwise — and says which it chose.
 **Proof Design** (`--design`) asks *is the claim provable?* It reads the rule and its proof
 description, needs no test code, and grades each description PROVABLE, LOOSE, UNPROVABLE or
 STRUCTURAL. Score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE); STRUCTURAL is excluded, just as
-EXCLUDED is excluded from Integrity.
+EXCLUDED is excluded from Integrity. That is the assessed score; what the dashboard and
+`purlin:status` headline is that score weighted by measurement coverage (see below).
 
 **Proof Integrity** (`--integrity`) asks *is the claim proven?* It reads test code. Three passes:
 
@@ -288,6 +289,23 @@ EXCLUDED is excluded from Integrity.
 ```
 Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%
 ```
+
+### Assessed score vs reported score
+
+Both formulas above score the proofs the audit cache actually holds. Every project-wide surface
+— the dashboard cards, the `purlin:status` summary line — reports that score weighted by how
+much of the project it covers:
+
+```
+reported = passing / (gradeable + unmeasured)
+```
+
+An unassessed proof is unknown, not passing, so it counts in the denominator until someone
+looks at it. At full coverage the two figures are equal. Below it they diverge, and both are
+shown: the headline is the reported figure, with the denominator and the assessed score beside
+it. Without this a repo reported 100% Integrity from 11 graded proofs while 39 of its 40 feature
+rows read `not audited`. Per-feature gauges report the assessed score directly, because a
+partially assessed feature reads `not audited` rather than a number.
 
 **Fix Design first.** Four WEAK criteria and three STRONG criteria are comparisons against the
 proof description ("the description says verify X AND Y but the test only checks X"). Against a
