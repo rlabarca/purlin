@@ -45,6 +45,15 @@
       "test_name": "test_requires_sync_status_not_optional",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "skill_unit_test",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_zero_tests_is_not_a_plugin_failure",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

@@ -10,6 +10,7 @@
 - RULE-2: Skill file contains a `## Usage` section documenting command syntax
 - RULE-3: The `name` field in frontmatter is `status`, matching the directory name
 - RULE-4: Skill references the `sync_status` MCP tool by name
+- RULE-5: The documented feature-table sort order matches the implementation: FAILING, PARTIAL, PASSING, VERIFIED, then UNTESTED
 
 ## Proof
 
@@ -17,3 +18,4 @@
 - PROOF-2 (RULE-2): Grep `skills/status/SKILL.md` for `## Usage`; verify the section exists
 - PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `status`
 - PROOF-4 (RULE-4): Grep `skills/status/SKILL.md` for `sync_status`; verify the MCP tool is referenced
+- PROOF-5 (RULE-5): Grep `skills/status/SKILL.md` for the sort order; verify all five statuses are named in the implementation's order, and compare against the priority map in `_build_summary_table`

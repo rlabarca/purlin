@@ -37,10 +37,22 @@ The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.
 
 ### Proof File Freshness Check
 
-After tests run, before reporting results, verify that proof files (`*.proofs-*.json`) were modified AFTER the test command started. If proof files are older than the test run or don't exist, the proof plugin didn't emit — something went wrong. Report:
+After tests run, before reporting results, verify that proof files (`*.proofs-*.json`) were modified AFTER the test command started.
+
+**First check whether any test ran at all.** If the runner collected zero tests, the proof
+plugin is working perfectly — there was simply nothing to emit. Report that instead, because
+sending someone to re-scaffold working infrastructure wastes their time and teaches them to
+distrust the warning:
 
 ```
-WARNING: Proof files were not updated by the test run. The proof plugin may not be loaded.
+No tests found. The proof plugin is fine — there is nothing to emit yet.
+→ Run: purlin:build <feature> to write code and tests from the spec
+```
+
+Only if tests DID run and proof files are still stale or absent has the plugin failed to emit:
+
+```
+WARNING: <N> tests ran but proof files were not updated. The proof plugin may not be loaded.
 → Check: is the proof plugin registered in conftest.py / jest.config.js?
 → Run: purlin:init --force to re-scaffold the proof plugin
 ```

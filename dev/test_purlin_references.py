@@ -251,3 +251,27 @@ class TestPurlinReferences:
             "spec_quality_guide.md proof-description sections must carry Design-level labels"
         assert 'UNPROVABLE' in guide, \
             "spec_quality_guide.md must use the Design vocabulary for Level 1 descriptions"
+
+
+class TestHardGatesAccuracy:
+    """RULE-17 — hard_gates.md contradicted the verify skill and, read literally,
+    described a state no feature could ever reach."""
+
+    @pytest.mark.proof("purlin_references", "PROOF-17", "RULE-17")
+    def test_receipt_condition_is_passing_not_verified(self):
+        gates = _read(os.path.join(REFS, 'hard_gates.md'))
+        assert 'PASSING' in gates, \
+            "hard_gates.md must name PASSING as the receipt condition"
+        assert re.search(r'(?i)VERIFIED\s+is\s+the\s+state\s+\*?after\*?\s+a\s+receipt', gates, re.S) or \
+               re.search(r'(?i)requiring\s+VERIFIED', gates, re.S), \
+            "hard_gates.md must explain that VERIFIED is the post-receipt state"
+        assert re.search(r'(?i)(deadlock|no\s+feature\s+could\s+ever)', gates, re.S), \
+            "hard_gates.md must record why requiring VERIFIED would deadlock"
+
+        # Still exactly one gate, and both gauges are explicitly not gates.
+        assert re.search(r'(?i)exactly 1 hard gate', gates), \
+            "the single-gate promise must survive"
+        not_gate = gates.split('What Is NOT a Gate', 1)
+        assert len(not_gate) == 2, "hard_gates.md missing the 'What Is NOT a Gate' list"
+        assert 'Proof Design' in not_gate[1] and 'Proof Integrity' in not_gate[1], \
+            "both gauges must be listed as non-gates"

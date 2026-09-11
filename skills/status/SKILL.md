@@ -20,7 +20,7 @@ sync_status(role: <from argument, optional>)
 
 ## Step 2 — Feature Table (mandatory)
 
-**Always** display a table with three columns: Feature, Coverage, and Status. Every feature and anchor must appear in this table, sorted by status (PARTIAL first, then PASSING, then VERIFIED). Anchors are labeled with `(anchor)` after the name.
+**Always** display a table with three columns: Feature, Coverage, and Status. Every feature and anchor must appear in this table, sorted by status: FAILING first, then PARTIAL, PASSING, VERIFIED, and UNTESTED last — attention-first, so what needs work is at the top. Anchors are labeled with `(anchor)` after the name.
 
 ```
   Feature                              Coverage   Status

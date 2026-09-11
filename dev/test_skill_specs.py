@@ -1865,6 +1865,27 @@ class TestSkillStatus:
             "status skill doesn't reference MCP tool 'sync_status'"
 
 
+
+    @pytest.mark.proof("skill_status", "PROOF-5", "RULE-5")
+    def test_documented_sort_order_matches_implementation(self):
+        """The skill claimed 'PARTIAL first, then PASSING, then VERIFIED' — omitting
+        FAILING and UNTESTED, and in a spec-only project every row is the status the
+        skill never mentioned."""
+        content = _read('status')
+        for status in ('FAILING', 'PARTIAL', 'PASSING', 'VERIFIED', 'UNTESTED'):
+            assert status in content, f"status skill must document {status} in the sort order"
+
+        # The documented order must match _build_summary_table's priority map.
+        import purlin_server, inspect
+        src = inspect.getsource(purlin_server._build_summary_table)
+        impl = re.search(r'priority = \{([^}]*)\}', src)
+        assert impl, "could not read the priority map from _build_summary_table"
+        impl_order = [m2.group(1) for m2 in
+                      re.finditer(r'"(\w+)":\s*\d', impl.group(1))]
+        doc_order = sorted(impl_order, key=lambda st: content.index(st))
+        assert doc_order == impl_order, (
+            f"documented order {doc_order} != implementation order {impl_order}")
+
 # ── skill_unit_test ───────────────────────────────────────────────────
 
 class TestSkillUnitTest:
@@ -1902,6 +1923,29 @@ class TestSkillUnitTest:
         assert 'not optional' in content, \
             "unit-test skill doesn't state sync_status is not optional"
 
+
+
+    @pytest.mark.proof("skill_unit_test", "PROOF-6", "RULE-6")
+    def test_zero_tests_is_not_a_plugin_failure(self):
+        """"No tests collected" and "the plugin failed to emit" are different, and
+        conflating them sent users to re-scaffold working infrastructure."""
+        content = _read('unit-test')
+        fresh = content.split('Proof File Freshness Check', 1)
+        assert len(fresh) == 2, "unit-test SKILL.md missing the freshness check"
+        section = fresh[1].split('## Step 3', 1)[0]
+
+        assert re.search(r'(?i)no tests (found|were collected|collected)', section), \
+            "the freshness check must handle the zero-tests case first"
+        assert re.search(r'(?i)plugin is (fine|working)', section), \
+            "zero tests means the plugin is fine — say so"
+        assert 'purlin:build' in section, \
+            "zero tests should route to purlin:build, not to re-scaffolding"
+
+        # The re-scaffold advice must be confined to the real-failure branch.
+        idx_ok = section.lower().find('plugin is fine')
+        idx_force = section.find('purlin:init --force')
+        assert idx_force > idx_ok, \
+            "purlin:init --force must only appear in the branch where tests actually ran"
 
 # ── skill_verify ──────────────────────────────────────────────────────
 
@@ -1951,3 +1995,34 @@ class TestSkillVerify:
         # Must reference the auditor agent (purlin-auditor)
         assert 'purlin-auditor' in content, \
             "verify skill Step 4e missing purlin-auditor reference"
+
+    @pytest.mark.proof("skill_verify", "PROOF-7", "RULE-7")
+    def test_untested_case_is_handled(self):
+        """Step 2 enumerated PASSING / PARTIAL / FAILING only. A spec-first project
+        is entirely UNTESTED, so every feature fell outside all defined cases."""
+        content = _read('verify')
+        assert 'UNTESTED' in content, "verify SKILL.md must handle the UNTESTED case"
+        step2 = content.split('UNTESTED', 1)[1][:900]
+        assert re.search(r'(?i)no\s+receipt', step2), \
+            "UNTESTED must issue no receipt"
+        assert re.search(r'(?i)not\s+a\s+failure', step2), \
+            "UNTESTED is not a failure and must not be reported as one"
+        assert 'purlin:build' in step2 and 'purlin:unit-test' in step2, \
+            "the next step must branch on whether the scope files exist"
+        assert '--design' in step2, \
+            "UNTESTED features should be pointed at the gauge that is measurable"
+
+    @pytest.mark.proof("skill_verify", "PROOF-8", "RULE-8")
+    def test_the_two_audits_are_distinguished(self):
+        """build and verify both spawn an auditor. Undifferentiated, that is a
+        duplicated project-wide audit for one number."""
+        verify = _read('verify')
+        build = _read('build')
+        assert re.search(r'(?i)authoritative', verify), \
+            "verify's audit must be identified as the authoritative one"
+        assert re.search(r'(?i)project-wide', verify), \
+            "verify's audit must be described as project-wide"
+        assert re.search(r'(?i)feature-scoped', build), \
+            "build's audit must be described as feature-scoped"
+        assert re.search(r'(?i)advisory', build), \
+            "build's audit must be described as advisory"

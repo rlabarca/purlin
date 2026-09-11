@@ -34,6 +34,13 @@ Read the coverage output from `purlin:unit-test --all` (which includes sync_stat
 - **PASSING** (ALL rules have passing proofs, no receipt yet): eligible for receipt.
 - **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
 - **FAILING** (any proof has status FAIL): report failures. No receipt.
+- **UNTESTED** (no proof has executed for the feature at all): no receipt, and this is not a
+  failure. Distinguish the two reasons, because the next step differs: when the files named in
+  the spec's `> Scope:` do not exist, nothing has been built yet — report
+  `→ Run: purlin:build <feature>`. When they do exist, the gap is tests —
+  report `→ Run: purlin:unit-test <feature>`. A project working spec-first will have every
+  feature UNTESTED by design; say so plainly rather than reporting it as a shortfall, and
+  point at `purlin:audit --design` for the gauge that is measurable in that state.
 
 ### External reference check (non-blocking)
 
@@ -152,7 +159,12 @@ When tests fail during verify:
 
 ### Step 4e — Independent Audit (automatic)
 
-After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate context for unbiased evaluation. No exceptions, regardless of the number of proofs.
+After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate
+context for unbiased evaluation. No exceptions, regardless of the number of proofs.
+
+**This is the authoritative, project-wide audit.** `purlin:build` also runs one, but that is
+feature-scoped and advisory — fast feedback on the feature just built. This one measures the
+whole project and is the number to report.
 
 Spawn a `purlin:purlin-auditor` with prompt:
   "Audit all features that just received receipts: <feature list>.

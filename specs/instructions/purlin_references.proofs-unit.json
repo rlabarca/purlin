@@ -144,6 +144,15 @@
       "test_name": "test_audit_criteria_defines_both_gauges",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_receipt_condition_is_passing_not_verified",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

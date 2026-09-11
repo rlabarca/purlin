@@ -154,3 +154,51 @@ class TestPurlinAgent:
             cells = [c.strip() for c in row.split('|') if c.strip()]
             assert len(cells) >= 2, f"Row missing topic column: {row}"
             assert len(cells[1]) > 5, f"Topic too short in row: {row}"
+
+
+class TestThreePathways:
+    """RULE-9/10/11 — the agent must support all three authoring pathways.
+
+    agents/purlin.md previously said "If a spec exists but code doesn't, build the
+    code first", which forbade the specs-and-proofs-first pathway outright, and its
+    Core Loop opened with "Do the work — write code".
+    """
+
+    @pytest.mark.proof("purlin_agent", "PROOF-9", "RULE-9")
+    def test_states_the_three_questions(self):
+        content = _read()
+        assert 'Proof Design' in content and 'Proof Integrity' in content, \
+            "the agent must know both gauges by name"
+        assert re.search(r'(?i)provable', content), "missing the 'is it provable' question"
+        assert re.search(r'(?i)proven', content), "missing the 'is it proven' question"
+        assert re.search(r'(?i)owns pass/fail', content), \
+            "must state that purlin:verify alone owns pass/fail"
+
+    @pytest.mark.proof("purlin_agent", "PROOF-10", "RULE-10")
+    def test_no_fixed_order_and_all_three_pathways(self):
+        content = _read()
+        assert 'build the code first' not in content, (
+            "this instruction forbids the specs-first pathway; the agent must read "
+            "state instead of imposing an order")
+        assert re.search(r'(?i)no fixed order', content), \
+            "the Core Loop must say there is no fixed order"
+        # Each pathway must be discoverable.
+        assert re.search(r'(?i)specs? and proofs first', content), \
+            "pathway A (specs and proofs first) must be named"
+        assert re.search(r'(?i)code and tests together', content), \
+            "pathway B must be named"
+        assert re.search(r'(?i)then tests', content), "pathway C must be named"
+        # And the state table must tell the two spec-only states apart.
+        assert 'Scope:' in content and re.search(r'(?i)UNTESTED', content), \
+            "the agent must know how the two spec-only states are distinguished"
+
+    @pytest.mark.proof("purlin_agent", "PROOF-11", "RULE-11")
+    def test_routes_design_intent_and_integrity_targets(self):
+        content = _read()
+        assert '--design' in content, \
+            "design-intent phrasings must route to purlin:audit --design"
+        assert re.search(r'(?i)are my proofs', content), \
+            "missing a design-intent trigger phrase"
+        # The ceiling arithmetic, so a target request is answered before work starts.
+        assert re.search(r'\(1\s*[−-]\s*T\)', content), \
+            "must carry the reachability condition for an integrity target"

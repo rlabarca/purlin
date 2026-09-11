@@ -72,6 +72,33 @@
       "test_name": "test_references_table_eleven_entries",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_states_the_three_questions",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_no_fixed_order_and_all_three_pathways",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_routes_design_intent_and_integrity_targets",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

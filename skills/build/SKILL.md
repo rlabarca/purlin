@@ -81,7 +81,18 @@ Review every proof marker just written. Apply tier heuristics from `references/s
 
 If ANY proof marker is missing a tier tag and the test clearly isn't unit tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
 
-After writing tests, ALWAYS spawn a purlin-auditor teammate to review proofs. Do NOT audit your own tests in the same context — the auditor must be independent. This applies regardless of the number of proofs.
+After writing tests, ALWAYS spawn an independent auditor to review the proofs you just wrote.
+Do NOT audit your own tests in the same context — the auditor must be independent.
+
+**This audit is feature-scoped and advisory.** It covers only the feature just built, reuses
+the audit cache so it is cheap, and exists for fast feedback while the code is fresh in
+context. It is not the project-wide audit: `purlin:verify` Step 4e runs that one, and that is
+the authoritative measurement. Running the same project-wide audit twice would double the cost
+for one number, so scope this one:
+
+```
+Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: ...")
+```
 
 ## Step 4 — Run Tests and Iterate
 

@@ -24,6 +24,7 @@
 - RULE-14: `audit_criteria.md` defines E2E Proof Tier Integrity criteria — tier mismatch (an `@e2e` test that never drives the real UI) and source-constant assertion (asserting a config constant where the rule describes runtime behavior) — applying to ALL `@e2e` proofs, not just design anchors
 - RULE-15: `supported_frameworks.md` documents end-to-end (browser) proofs: no dedicated e2e proof reporter ships, `@e2e` proofs are tool-agnostic, and proof emission wires through the existing plugins (Vitest/Jest markers or shell `purlin_proof` wrappers)
 - RULE-16: `audit_criteria.md` defines both gauges — Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, graded from the proof description with no test code) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED/MANUAL, graded from test code) — with a scoring formula for each, and marks the Integrity criteria that are comparisons against the proof description so a reader knows which ones a vague description disables. `spec_quality_guide.md` labels its proof-description sections with the Design level each defect is graded as
+- RULE-17: `hard_gates.md` states that receipts are issued for features reported PASSING and explains that VERIFIED is the post-receipt state, so requiring it would deadlock the first receipt. Its "What Is NOT a Gate" list records that a low Proof Design or Proof Integrity score never blocks
 
 ## Proof
 
@@ -43,3 +44,4 @@
 - PROOF-14 (RULE-14): Grep `references/audit_criteria.md` for "E2E Proof Tier Integrity", "tier mismatch", and "source-constant"; verify the section applies to all `@e2e` proofs, not only design anchors
 - PROOF-15 (RULE-15): Grep `references/supported_frameworks.md` for the end-to-end proofs section; verify it states no dedicated e2e reporter ships, describes tool-agnostic `@e2e` proofs, and documents wiring through existing plugins
 - PROOF-16 (RULE-16): Grep `references/audit_criteria.md` for `Pass D`, all four Design levels, both scoring formulas, and the `[relative]` markers; grep `references/spec_quality_guide.md` for the Design-level labels on its proof-description sections and for `Test Quality Rules (Proof Integrity)`
+- PROOF-17 (RULE-17): Grep `references/hard_gates.md`; verify it names PASSING as the receipt condition, explains the VERIFIED bootstrapping problem, and lists both gauges as non-gates

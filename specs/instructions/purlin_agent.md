@@ -16,6 +16,9 @@
 - RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, drift → purlin:drift, spec → purlin:spec, verify → purlin:verify with independent audit, engineer items → drift + build/unit-test, QA items → drift + verify)
 - RULE-7: The `## Skills` table lists all 12 skills with their purpose
 - RULE-8: The `## References` table lists all 11 reference entries with their topic
+- RULE-9: The agent instructions present the three questions (provable / proven / passes now) mapped to Proof Design, Proof Integrity and `purlin:verify`, and state that `purlin:verify` alone owns pass/fail
+- RULE-10: The Core Loop states there is no fixed order, enumerates the observable states with the next step for each, and names all three supported pathways — specs-and-proofs-first, specs-then-code-and-tests, and specs-then-code-then-tests-then-verify. It contains no instruction to build code first when a spec exists without code
+- RULE-11: Implicit routing includes design-intent triggers ("are my proofs any good", "before we build") routed to `purlin:audit --design`, and an integrity-target trigger that requires answering the ceiling arithmetic before starting work
 
 ## Proof
 
@@ -27,3 +30,6 @@
 - PROOF-6 (RULE-6): Grep `agents/purlin.md` for `## Implicit Routing`; verify it contains mappings for "test", "status", "drift", "spec", "verify", "engineer", and "QA"
 - PROOF-7 (RULE-7): Grep `agents/purlin.md` for `## Skills`; count table rows; verify there are 12 skill entries
 - PROOF-8 (RULE-8): Grep `agents/purlin.md` for `## References`; count table rows; verify there are 11 reference entries
+- PROOF-9 (RULE-9): Grep `agents/purlin.md` for the three-question table; verify it names Proof Design, Proof Integrity and `purlin:verify`, and states that verify owns pass/fail
+- PROOF-10 (RULE-10): Grep `agents/purlin.md` for the no-fixed-order statement and the state table; verify all three pathways are named and that the string "build the code first" does not appear anywhere in the file
+- PROOF-11 (RULE-11): Grep `agents/purlin.md` implicit routing for `purlin:audit --design` and for the ceiling formula; verify both are present
