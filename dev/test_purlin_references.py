@@ -93,7 +93,7 @@ class TestPurlinReferences:
             assert category in content, f"Missing category: {category}"
         expected_skills = {
             'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
-            'purlin:unit-test', 'purlin:verify', 'purlin:audit',
+            'purlin:test', 'purlin:verify', 'purlin:audit',
             'purlin:status', 'purlin:find', 'purlin:drift',
             'purlin:init', 'purlin:anchor',
             'purlin:rename',

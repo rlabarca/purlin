@@ -137,7 +137,7 @@ auth_login: 2/3 rules proved
   RULE-2: PASS (PROOF-2 in tests/test_login.py)
   RULE-3: NO PROOF
   → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
-  → Run: purlin:unit-test
+  → Run: purlin:test
 ```
 
 ## Skills
@@ -147,7 +147,7 @@ auth_login: 2/3 rules proved
 | `purlin:spec` | Create/edit specs |
 | `purlin:build` | Implement from spec rules |
 | `purlin:verify` | Run all tests, issue receipts |
-| `purlin:unit-test` | Run tests, emit proof files |
+| `purlin:test` | Run tests, emit proof files |
 | `purlin:audit` | Evaluate proof quality — Proof Design and Proof Integrity |
 | `purlin:status` | Show coverage + directives |
 | `purlin:drift` | Drift detection and change summary |

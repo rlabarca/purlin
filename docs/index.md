@@ -69,7 +69,7 @@ Key skills:
 - `purlin:spec` -- create/edit specs
 - `purlin:build` -- implement from spec rules
 - `purlin:verify` -- run all tests, issue verification receipts
-- `purlin:unit-test` -- run tests and emit proof files
+- `purlin:test` -- run tests and emit proof files
 - `purlin:audit` -- evaluate proof quality: Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, no tests needed) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED)
 - `purlin:status` -- show rule coverage dashboard
 - `purlin:drift` -- drift detection and change summary

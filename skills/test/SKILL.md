@@ -1,5 +1,5 @@
 ---
-name: unit-test
+name: test
 description: Run tests and emit proof files with coverage report
 ---
 
@@ -8,9 +8,9 @@ Run tests (unit tier unless `--all`), emit proof files via feature-scoped overwr
 ## Usage
 
 ```
-purlin:unit-test [feature]      Run tests for a specific feature (unit tier)
-purlin:unit-test                Run all unit-tier tests
-purlin:unit-test --all          Run all tests across all tiers
+purlin:test [feature]           Run tests for a specific feature (unit tier)
+purlin:test                     Run all unit-tier tests
+purlin:test --all               Run all tests across all tiers
 ```
 
 ## Step 1 — Detect Test Framework

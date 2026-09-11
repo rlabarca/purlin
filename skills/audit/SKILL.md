@@ -47,7 +47,7 @@ That reports, per feature, `rules`, `proofs_declared`, `proofs_executed`,
 
 `scope_files_exist` separates two states that look identical in a coverage report: a spec whose
 `> Scope:` files do not exist yet (nothing built — the next step is `purlin:build`) from one
-whose files exist but have no proofs (the next step is `purlin:unit-test`).
+whose files exist but have no proofs (the next step is `purlin:test`).
 
 **Announce the choice and the state behind it**, so the user can see why:
 

@@ -126,7 +126,7 @@ run the tests
 ```
 
 ```
-purlin:unit-test
+purlin:test
 
 6 tests passed. Proof files written.
 
@@ -169,7 +169,7 @@ In CI:
 ```yaml
 on: deploy
   - run: purlin:anchor sync --check-only  # fail if design changed
-  - run: purlin:verify --audit             # re-run all tests from scratch
+  - run: purlin:verify --recheck             # re-run all tests from scratch
 ```
 
 ```

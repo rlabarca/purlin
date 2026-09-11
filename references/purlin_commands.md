@@ -15,9 +15,9 @@ Purlin — Spec-Driven Development
   Building
   ──────
   purlin:build [name]           Inject spec rules into context, then implement
-  purlin:unit-test [feature]    Run tests, emit proof files, report coverage
+  purlin:test [feature]    Run tests, emit proof files, report coverage
   purlin:verify                 Run ALL tests, issue verification receipts
-  purlin:verify --audit         Clean-room re-execution, compare vhash to receipts
+  purlin:verify --recheck         Clean-room re-execution, compare vhash to receipts
   purlin:verify --manual <f> <P>  Stamp a manual proof
 
   Quality
@@ -54,7 +54,7 @@ Purlin — Spec-Driven Development
 | `purlin:spec` | Create/edit specs | `specs/<category>/<name>.md` |
 | `purlin:build` | Implement from spec rules | Code files + test files |
 | `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
-| `purlin:unit-test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
+| `purlin:test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
 | `purlin:audit` | Evaluate proof quality (both gauges) | Audit and design caches |
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
 | `purlin:drift` | Drift detection since last verify | Nothing (read-only) |

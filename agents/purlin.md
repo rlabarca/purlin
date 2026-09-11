@@ -33,7 +33,7 @@ Read the state, then act. These are the states, not a sequence to march through:
 | What exists | What is measurable | Next step |
 |---|---|---|
 | A spec, no code, no tests | **Proof Design** | `purlin:audit` to grade the proof descriptions, `purlin:spec` to fix them, `purlin:build` when the design is sound |
-| A spec and code, no tests | Design; coverage shows UNTESTED | `purlin:unit-test` |
+| A spec and code, no tests | Design; coverage shows UNTESTED | `purlin:test` |
 | A spec, code and tests | Design **and** Proof Integrity | `purlin:verify` |
 
 All three of these are legitimate, and users pick between them deliberately:
@@ -76,9 +76,9 @@ Add markers to tests so proof plugins emit `*.proofs-*.json` files that `sync_st
 ## Absolute Prohibitions
 
 - **NEVER weaken, loosen, remove, or rewrite a test to make it pass. FIX THE CODE.** (This protects Proof Integrity. The mirror-image mistake is narrowing a *proof description* to match a weak test, which lowers Proof Design instead — equally forbidden, and worse on an anchor rule, where the contract belongs to someone else.) This is the single most important rule in Purlin. When a test fails, the test is telling you the code is broken — the test is the spec's voice. If you change the test to match broken behavior, you have destroyed the proof and hidden the bug. The ONLY acceptable response to a failing test is to fix the production code until the test passes AS WRITTEN. If you genuinely believe the test itself is wrong (not the code), you MUST: (1) stop, (2) explain to the user exactly why you believe the test is wrong and the code is right, (3) get explicit approval before touching the test. **No exceptions. No shortcuts. No "adjusting the test to avoid the bug." Fix the code.**
-- **NEVER run test commands directly** (`pytest`, `jest`, `bash test.sh`). Always use `purlin:unit-test` — it detects the framework, emits proof files, and calls `sync_status`. Running tests directly skips proof emission and leaves the dashboard stale.
+- **NEVER run test commands directly** (`pytest`, `jest`, `bash test.sh`). Always use `purlin:test` — it detects the framework, emits proof files, and calls `sync_status`. Running tests directly skips proof emission and leaves the dashboard stale.
 - **NEVER write or edit spec files directly.** Always use `purlin:spec` — it validates format, shows delta reports of what's changing, and enforces tier review. Hand-written specs skip all of that and often have format errors that break `sync_status`.
-- **NEVER write code and tests outside the build loop.** Use `purlin:build` — it injects spec rules into context, delegates to `purlin:unit-test`, and iterates on failures with root cause analysis. Writing code directly skips the spec-driven constraint that prevents drift.
+- **NEVER write code and tests outside the build loop.** Use `purlin:build` — it injects spec rules into context, delegates to `purlin:test`, and iterates on failures with root cause analysis. Writing code directly skips the spec-driven constraint that prevents drift.
 - **NEVER write receipt files manually or claim verification happened.** Always use `purlin:verify` — it runs all tests, spawns an independent auditor, and only issues receipts when everything passes. Manual receipts are forgeries.
 - **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
 - **NEVER use `git push --force` to main or production branches.**
@@ -100,13 +100,13 @@ Everything else is optional guidance. See `references/hard_gates.md`.
 
 `sync_status` is called by multiple skills. To avoid redundant calls:
 
-- `purlin:unit-test` ALWAYS calls `sync_status` after tests (mandatory, not optional)
-- `purlin:build` delegates to `purlin:unit-test` — do NOT call `sync_status` separately
-- `purlin:verify` delegates to `purlin:unit-test --all` — do NOT call `sync_status` separately
+- `purlin:test` ALWAYS calls `sync_status` after tests (mandatory, not optional)
+- `purlin:build` delegates to `purlin:test` — do NOT call `sync_status` separately
+- `purlin:verify` delegates to `purlin:test --all` — do NOT call `sync_status` separately
 - `purlin:status` calls `sync_status` directly — this IS its purpose
 - `purlin:spec-from-code` calls `sync_status` per category batch after committing
 
-If a skill delegates to `purlin:unit-test`, read coverage from unit-test's output. Never double-call.
+If a skill delegates to `purlin:test`, read coverage from that skill's output. Never double-call.
 
 ## Implicit Routing
 
@@ -115,7 +115,7 @@ When the user's intent is clear, act directly:
 - "what's the status?" → call `sync_status`
 - "what changed?" / "what drifted?" / "what did the team do?" → use `purlin:drift`
 - "write a spec for X" / "update the spec" / "handle PM items" / "fix spec drift" → invoke `purlin:spec` for each affected feature
-- "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:drift --role eng`, then invoke `purlin:build` or `purlin:unit-test` for each item
+- "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:drift --role eng`, then invoke `purlin:build` or `purlin:test` for each item
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:drift --role qa`, then invoke `purlin:verify`
 - Figma URL pasted (figma.com/design/...) → IMMEDIATELY create a design anchor: run `purlin:anchor add-figma <url>`. Do NOT just read the Figma and wait — the anchor must be created as the first action. After creating the anchor, ask: "Design anchor created. What should this app do? Describe the behavior and I'll create a feature spec."
 - Image pasted or referenced (screenshot, mockup, design comp) → run `purlin:spec --anchor` to create a design anchor
@@ -153,7 +153,7 @@ Do NOT silently update specs — always ask first. The engineer may have intenti
 | `purlin:spec` | Scaffold/edit specs in 3-section format |
 | `purlin:build` | Inject spec rules into context, then implement |
 | `purlin:verify` | Run all tests, issue verification receipts |
-| `purlin:unit-test` | Run tests, emit proof files |
+| `purlin:test` | Run tests, emit proof files |
 | `purlin:status` | Show rule coverage via sync_status |
 | `purlin:drift` | Detect spec drift, summarize changes since last verification |
 | `purlin:init` | Initialize project, scaffold proof plugin |

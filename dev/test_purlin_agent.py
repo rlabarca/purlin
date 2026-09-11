@@ -125,7 +125,7 @@ class TestPurlinAgent:
         assert len(rows) == 12, f"Expected 12 skill rows, found {len(rows)}: {rows}"
         expected_skills = {
             'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
-            'purlin:unit-test', 'purlin:verify', 'purlin:audit',
+            'purlin:test', 'purlin:verify', 'purlin:audit',
             'purlin:status', 'purlin:find', 'purlin:drift',
             'purlin:init', 'purlin:anchor',
             'purlin:rename',

@@ -108,7 +108,7 @@ The next person runs `purlin:status` to see the current state, `purlin:drift` to
 Proof files (`.proofs-*.json`) are generated from test results, not hand-written. When merging:
 
 1. Accept either version of the conflicting proof file (doesn't matter which).
-2. Run `purlin:unit-test` to regenerate from the merged code.
+2. Run `purlin:test` to regenerate from the merged code.
 3. Commit the regenerated file.
 
 This works because proof files are feature-scoped — testing feature X only rewrites X's entries.

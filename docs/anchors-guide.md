@@ -267,7 +267,7 @@ Compares `> Pinned:` timestamp to current Figma lastModified. If different, pull
 purlin:anchor sync --check-only
 ```
 
-Compares all anchors' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --audit`. (Note `purlin:verify --audit` is verify's clean-room re-execution flag, which is a different thing from the `purlin:audit` skill that grades proof quality.)
+Compares all anchors' `> Pinned:` to remote sources without pulling. Fails if stale. Use in CI before `purlin:verify --recheck`.
 
 ### Conflict resolution
 

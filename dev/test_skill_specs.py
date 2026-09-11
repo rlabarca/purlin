@@ -1070,7 +1070,7 @@ class TestSkillSpec:
             "exit criteria must grade the proof descriptions just written"
         assert re.search(r'(?i)advisory', body), \
             "the Design report must be advisory, never blocking"
-        assert 'purlin:build' in body and 'purlin:unit-test' in body, \
+        assert 'purlin:build' in body and 'purlin:test' in body, \
             "exit criteria must print the next-step directive for the current state"
 
 
@@ -1266,52 +1266,52 @@ class TestSkillStatus:
         assert doc_order == impl_order, (
             f"documented order {doc_order} != implementation order {impl_order}")
 
-# ── skill_unit_test ───────────────────────────────────────────────────
+# ── skill_test ───────────────────────────────────────────────────
 
-class TestSkillUnitTest:
+class TestSkillTest:
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("skill_test", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
-        content = _read('unit-test')
-        assert '---' in content, "unit-test SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'unit-test')
+        content = _read('test')
+        assert '---' in content, "test SKILL.md must have YAML frontmatter delimiters"
+        _assert_frontmatter(content, 'test')
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("skill_test", "PROOF-2", "RULE-2")
     def test_has_usage_section(self):
-        content = _read('unit-test')
-        assert '## Usage' in content, "unit-test SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'unit-test')
+        content = _read('test')
+        assert '## Usage' in content, "test SKILL.md must have a ## Usage section"
+        _assert_usage(content, 'test')
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("skill_test", "PROOF-3", "RULE-3")
     def test_name_matches_directory(self):
-        content = _read('unit-test')
-        assert 'name:' in content, "unit-test SKILL.md must have a name: field"
-        _assert_name_matches(content, 'unit-test')
+        content = _read('test')
+        assert 'name:' in content, "test SKILL.md must have a name: field"
+        _assert_name_matches(content, 'test')
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("skill_test", "PROOF-4", "RULE-4")
     def test_has_commit_instructions(self):
-        content = _read('unit-test')
+        content = _read('test')
         assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
-            "unit-test skill missing positive commit instruction"
-        _assert_commit_instructions(content, 'unit-test')
+            "test skill missing positive commit instruction"
+        _assert_commit_instructions(content, 'test')
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("skill_test", "PROOF-5", "RULE-5")
     def test_requires_sync_status_not_optional(self):
-        content = _read('unit-test')
+        content = _read('test')
         assert 'sync_status' in content, \
-            "unit-test skill doesn't reference sync_status"
+            "test skill doesn't reference sync_status"
         assert 'not optional' in content, \
-            "unit-test skill doesn't state sync_status is not optional"
+            "test skill doesn't state sync_status is not optional"
 
 
 
-    @pytest.mark.proof("skill_unit_test", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("skill_test", "PROOF-6", "RULE-6")
     def test_zero_tests_is_not_a_plugin_failure(self):
         """"No tests collected" and "the plugin failed to emit" are different, and
         conflating them sent users to re-scaffold working infrastructure."""
-        content = _read('unit-test')
+        content = _read('test')
         fresh = content.split('Proof File Freshness Check', 1)
-        assert len(fresh) == 2, "unit-test SKILL.md missing the freshness check"
+        assert len(fresh) == 2, "test SKILL.md missing the freshness check"
         section = fresh[1].split('## Step 3', 1)[0]
 
         assert re.search(r'(?i)no tests (found|were collected|collected)', section), \
@@ -1387,7 +1387,7 @@ class TestSkillVerify:
             "UNTESTED must issue no receipt"
         assert re.search(r'(?i)not\s+a\s+failure', step2), \
             "UNTESTED is not a failure and must not be reported as one"
-        assert 'purlin:build' in step2 and 'purlin:unit-test' in step2, \
+        assert 'purlin:build' in step2 and 'purlin:test' in step2, \
             "the next step must branch on whether the scope files exist"
         assert '--design' in step2, \
             "UNTESTED features should be pointed at the gauge that is measurable"

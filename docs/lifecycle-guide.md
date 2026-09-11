@@ -346,7 +346,7 @@ This is the most common workflow. You say `test login` and Claude:
 2. Checks if code exists — builds it if not (if you would rather review the proof
    descriptions first, run `purlin:audit --design` before this step; it needs no code)
 3. Writes tests with proof markers
-4. Runs `purlin:unit-test`
+4. Runs `purlin:test`
 5. If tests fail, fixes and retries
 6. Repeats until coverage shows PASSING (all rules proved) — `purlin:verify` then moves it to VERIFIED
 
@@ -402,7 +402,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 | See what needs testing | `/purlin:drift qa` |
 | Handle all QA work | `handle QA items` |
 | See coverage gaps | `/purlin:status` |
-| Run all tests | `/purlin:unit-test` |
+| Run all tests | `/purlin:test` |
 | Verify and ship | `/purlin:verify` |
 | Stamp a manual proof | `/purlin:verify --manual checkout PROOF-4` |
 | Write a test for an unproved rule | `write a test for login RULE-3` |
@@ -489,7 +489,7 @@ The real proof that instructions work is: **does the agent produce correct outpu
 ## Rules
 - RULE-1: purlin:init creates .purlin/ and specs/ directories
 - RULE-2: purlin:spec-from-code generates specs with numbered rules and observable proofs
-- RULE-3: purlin:unit-test emits proof files next to specs
+- RULE-3: purlin:test emits proof files next to specs
 - RULE-4: purlin:status reports coverage with → directives
 - RULE-5: purlin:verify issues receipts with valid vhash
 

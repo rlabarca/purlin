@@ -13,7 +13,7 @@
 - RULE-3: The `## Specs` section includes the 2-section format template with `> Description:`, `## Rules`, `## Proof`
 - RULE-4: The `## Proof Markers` section documents marker syntax for all 3 frameworks: pytest, Jest, and shell
 - RULE-5: The `## Hard Gates` section defines exactly 1 gate: proof coverage
-- RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, drift → purlin:drift, spec → purlin:spec, verify → purlin:verify with independent audit, engineer items → drift + build/unit-test, QA items → drift + verify)
+- RULE-6: The `## Implicit Routing` section maps user intents to actions including role-based priority handling (test/build/fix → read spec + build, status → sync_status, drift → purlin:drift, spec → purlin:spec, verify → purlin:verify with independent audit, engineer items → drift + build/test, QA items → drift + verify)
 - RULE-7: The `## Skills` table lists all 12 skills with their purpose
 - RULE-8: The `## References` table lists all 11 reference entries with their topic
 - RULE-9: The agent instructions present the three questions (provable / proven / passes now) mapped to Proof Design, Proof Integrity and `purlin:verify`, and state that `purlin:verify` alone owns pass/fail

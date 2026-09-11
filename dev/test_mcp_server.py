@@ -1552,7 +1552,7 @@ class TestCoverageReportUsability:
 
     All three defects hit a spec-first project hardest: every row is UNTESTED, so
     every row had a broken border; the proof descriptions the user just wrote were
-    not shown at all; and the only directive offered was purlin:unit-test, which
+    not shown at all; and the only directive offered was purlin:test, which
     collects nothing when no code exists.
     """
 
@@ -1615,13 +1615,13 @@ class TestCoverageReportUsability:
                 "a spec whose scope files do not exist must route to purlin:build"
             assert out.count('→ Run: purlin:build login') == 1, \
                 f"the directive must appear once, got:\n{out}"
-            assert 'Run: purlin:unit-test' not in out, \
-                "unit-test collects nothing when no code exists"
+            assert 'Run: purlin:test' not in out, \
+                "purlin:test collects nothing when no code exists"
 
             # Scope file present: the gap is tests, not code.
             os.makedirs(os.path.join(tmpdir, 'src'), exist_ok=True)
             with open(os.path.join(tmpdir, 'src', 'auth.py'), 'w') as f:
                 f.write('def auth(): pass\n')
             out = sync_status(tmpdir)
-            assert 'Run: purlin:unit-test' in out
+            assert 'Run: purlin:test' in out
             assert 'purlin:build' not in out

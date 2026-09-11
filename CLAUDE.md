@@ -29,7 +29,7 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 
 ## Skill and Reference Deduplication (CRITICAL)
 
-**Never duplicate logic across skills or agent instructions.** When the same concept (proof markers, commit formats, test quality rules, framework detection, failure diagnosis) appears in multiple skills, it MUST live in a single reference file in `references/` and be pointed to from each skill. Skills that need the same behavior should call each other rather than reimplement — e.g., `purlin:build` and `purlin:verify` delegate test execution to `purlin:unit-test` instead of inlining their own `pytest`/`jest`/`bash` commands.
+**Never duplicate logic across skills or agent instructions.** When the same concept (proof markers, commit formats, test quality rules, framework detection, failure diagnosis) appears in multiple skills, it MUST live in a single reference file in `references/` and be pointed to from each skill. Skills that need the same behavior should call each other rather than reimplement — e.g., `purlin:build` and `purlin:verify` delegate test execution to `purlin:test` instead of inlining their own `pytest`/`jest`/`bash` commands.
 
 **Before adding instructions to a skill, check:**
 1. Does another skill already have this logic? → Reference it or call that skill

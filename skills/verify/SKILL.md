@@ -9,7 +9,7 @@ Run the FULL test suite across all tiers, then issue verification receipts for e
 
 ```
 purlin:verify                           Run all tests, issue receipts for all covered features
-purlin:verify --audit                   Clean-room re-execution, compare vhash to committed receipt
+purlin:verify --recheck                   Clean-room re-execution, compare vhash to committed receipt
 purlin:verify --manual <feature> <PROOF-N>  Stamp a manual proof in the spec
 ```
 
@@ -25,11 +25,11 @@ If the user says yes, commit the changes. If no, proceed but note the receipts m
 
 ### Step 1 — Run All Tests
 
-Run the full test suite across all tiers by calling `purlin:unit-test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
+Run the full test suite across all tiers by calling `purlin:test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
 
 ### Step 2 — Collect Results
 
-Read the coverage output from `purlin:unit-test --all` (which includes sync_status results). For each feature:
+Read the coverage output from `purlin:test --all` (which includes sync_status results). For each feature:
 
 - **PASSING** (ALL rules have passing proofs, no receipt yet): eligible for receipt.
 - **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
@@ -38,7 +38,7 @@ Read the coverage output from `purlin:unit-test --all` (which includes sync_stat
   failure. Distinguish the two reasons, because the next step differs: when the files named in
   the spec's `> Scope:` do not exist, nothing has been built yet — report
   `→ Run: purlin:build <feature>`. When they do exist, the gap is tests —
-  report `→ Run: purlin:unit-test <feature>`. A project working spec-first will have every
+  report `→ Run: purlin:test <feature>`. A project working spec-first will have every
   feature UNTESTED by design; say so plainly rather than reporting it as a shortfall, and
   point at `purlin:audit --design` for the gauge that is measurable in that state.
 
@@ -200,11 +200,11 @@ Commit per `references/commit_conventions.md` using the `verify:` prefix: `verif
 
 ---
 
-## --audit Mode
+## --recheck Mode
 
 Clean-room re-execution that compares results against committed receipts.
 
-1. Run the full test suite via `purlin:unit-test --all` (same as default mode).
+1. Run the full test suite via `purlin:test --all` (same as default mode).
 2. Compute vhash for each feature.
 3. Compare against existing `*.receipt.json` files.
 4. For each feature with a matching receipt, verify it has behavioral proofs (structural-only features cannot have receipts).

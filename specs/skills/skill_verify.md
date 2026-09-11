@@ -12,7 +12,7 @@
 - RULE-4: Skill includes commit instructions or git operations for file modifications
 - RULE-5: Skill prohibits modifying code or test files during verification
 - RULE-6: Verify skill Step 4e documents independent audit that reports the final integrity score
-- RULE-7: Step 2 handles UNTESTED features explicitly: no receipt, not reported as a failure, with the next step chosen by whether the spec's `> Scope:` files exist (`purlin:build` when absent, `purlin:unit-test` when present), and a pointer to `purlin:audit --design` for the gauge measurable in that state
+- RULE-7: Step 2 handles UNTESTED features explicitly: no receipt, not reported as a failure, with the next step chosen by whether the spec's `> Scope:` files exist (`purlin:build` when absent, `purlin:test` when present), and a pointer to `purlin:audit --design` for the gauge measurable in that state
 - RULE-8: The project-wide audit in Step 4e is identified as the authoritative measurement, distinct from the feature-scoped advisory audit that `purlin:build` runs
 
 ## Proof

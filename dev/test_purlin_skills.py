@@ -59,7 +59,7 @@ class TestPurlinSkills:
     @pytest.mark.proof("purlin_skills", "PROOF-5", "RULE-5")
     def test_modify_skills_have_commit_instructions(self):
         # Skills listed in PROOF-5 description (config excluded — modifies local-only file)
-        for skill in ('build', 'spec', 'unit-test', 'verify', 'init', 'anchor'):
+        for skill in ('build', 'spec', 'test', 'verify', 'init', 'anchor'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
             # Assert a positive commit instruction, not just the word "commit"
@@ -81,12 +81,12 @@ class TestPurlinSkills:
 
     @pytest.mark.proof("purlin_skills", "PROOF-7", "RULE-7")
     def test_build_and_unittest_require_sync_status(self):
-        for skill in ('build', 'unit-test'):
+        for skill in ('build', 'test'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
             assert 'sync_status' in content, \
                 f"{skill} skill doesn't reference sync_status"
-        for skill_name in ('build', 'unit-test'):
+        for skill_name in ('build', 'test'):
             content = _read(os.path.join(SKILLS_DIR, skill_name, 'SKILL.md'))
             assert 'not optional' in content, \
                 f"{skill_name} skill doesn't state sync_status is not optional"

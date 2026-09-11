@@ -1193,7 +1193,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             test_name = proof.get('test_name', '?')
             lines.append(f"  {key}: FAIL ({label})")
             lines.append(f"  \u2192 Fix: {test_name} is failing. Check the test or fix the code.")
-            lines.append(f"  \u2192 Run: purlin:unit-test")
+            lines.append(f"  \u2192 Run: purlin:test")
         elif manual:
             mp_id, mp_info = manual
             if mp_info.get('stamped'):
@@ -1237,11 +1237,11 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
             # Route by what exists. purlin:build appeared nowhere in this file, so
             # nothing could send a user into the build loop: a spec with no code was
-            # told to run purlin:unit-test, which collects no tests.
+            # told to run purlin:test, which collects no tests.
             if not _scope_files_exist(project_root, info):
                 lines.append(f"  \u2192 Run: purlin:build {name}")
             else:
-                lines.append(f"  \u2192 Run: purlin:unit-test")
+                lines.append(f"  \u2192 Run: purlin:test")
 
     # If no proof files at all. The per-rule branch above already emits a directive
     # for every uncovered rule, so repeating it here just duplicated the line; emit
@@ -1249,7 +1249,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     feature_proofs = all_proofs.get(name, [])
     if not feature_proofs and not manual_proofs and not active_entries:
         if _scope_files_exist(project_root, info):
-            lines.append(f"  \u2192 Run: purlin:unit-test")
+            lines.append(f"  \u2192 Run: purlin:test")
         else:
             lines.append(f"  \u2192 Run: purlin:build {name}")
 

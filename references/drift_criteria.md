@@ -173,7 +173,7 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
 | `version` | `purlin:init` | — | from `VERSION` |
-| `test_framework` | `purlin:init` (Step 3) | `purlin:unit-test` (Step 1) | `"auto"` |
+| `test_framework` | `purlin:init` (Step 3) | `purlin:test` (Step 1) | `"auto"` |
 | `spec_dir` | `purlin:init` | `sync_status` MCP tool | `"specs"` |
 | `pre_push` | `purlin:init` | pre-push hook | `"warn"` |
 | `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
@@ -182,4 +182,4 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
 | `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
 
-`purlin:init` is the only skill that writes config. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `unit-test` auto-detects the framework).
+`purlin:init` is the only skill that writes config. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).

@@ -2,7 +2,7 @@
   "tier": "unit",
   "proofs": [
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_skill_specs.py",
@@ -11,7 +11,7 @@
       "tier": "unit"
     },
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_skill_specs.py",
@@ -20,7 +20,7 @@
       "tier": "unit"
     },
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-3",
       "rule": "RULE-3",
       "test_file": "dev/test_skill_specs.py",
@@ -29,7 +29,7 @@
       "tier": "unit"
     },
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_skill_specs.py",
@@ -38,7 +38,7 @@
       "tier": "unit"
     },
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_skill_specs.py",
@@ -47,7 +47,7 @@
       "tier": "unit"
     },
     {
-      "feature": "skill_unit_test",
+      "feature": "skill_test",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_skill_specs.py",

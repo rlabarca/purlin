@@ -421,7 +421,7 @@ class TestRule7OutputFormat:
 
     @pytest.mark.proof("pre_push_hook", "PROOF-13", "RULE-7", tier="integration")
     def test_recovery_message_lists_feature_specific_commands(self, tmp_path):
-        """Recovery message must include /purlin:unit-test <feature_name>,
+        """Recovery message must include /purlin:test <feature_name>,
         /purlin:status, and /purlin:build so the developer knows exactly
         which commands to run."""
         tmpdir = str(tmp_path)
@@ -439,8 +439,8 @@ class TestRule7OutputFormat:
 
         _, output = _run_hook(tmpdir)
 
-        assert "/purlin:unit-test test_feature" in output, (
-            f"Expected '/purlin:unit-test test_feature' in recovery output:\n{output}"
+        assert "/purlin:test test_feature" in output, (
+            f"Expected '/purlin:test test_feature' in recovery output:\n{output}"
         )
         assert "/purlin:status" in output, (
             f"Expected '/purlin:status' in recovery output:\n{output}"
@@ -531,7 +531,7 @@ class TestRule8StrictMode:
     @pytest.mark.proof("pre_push_hook", "PROOF-14", "RULE-8", tier="integration")
     def test_strict_mode_recovery_includes_verify_command(self, tmp_path):
         """When strict mode blocks a push the recovery steps must include
-        /purlin:verify and /purlin:unit-test so the developer knows how to
+        /purlin:verify and /purlin:test so the developer knows how to
         reach VERIFIED status."""
         tmpdir = str(tmp_path)
         _create_test_project(tmpdir, num_rules=3)
@@ -559,8 +559,8 @@ class TestRule8StrictMode:
         assert "/purlin:verify" in output, (
             f"Expected '/purlin:verify' in strict mode recovery output:\n{output}"
         )
-        assert "/purlin:unit-test" in output, (
-            f"Expected '/purlin:unit-test' in strict mode recovery output:\n{output}"
+        assert "/purlin:test" in output, (
+            f"Expected '/purlin:test' in strict mode recovery output:\n{output}"
         )
 
 

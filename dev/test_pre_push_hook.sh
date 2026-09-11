@@ -564,7 +564,7 @@ fi
 
 # ==========================================================================
 # PROOF-13 (RULE-7): Recovery message lists feature-specific
-#   /purlin:unit-test commands for each failing feature.
+#   /purlin:test commands for each failing feature.
 # ==========================================================================
 TMPDIR13=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR13"
@@ -582,22 +582,22 @@ has_unit_test_cmd=false
 has_status_cmd=false
 has_build_cmd=false
 
-echo "$output13" | grep -q "/purlin:unit-test test_feature" && has_unit_test_cmd=true
+echo "$output13" | grep -q "/purlin:test test_feature" && has_unit_test_cmd=true
 echo "$output13" | grep -q "/purlin:status" && has_status_cmd=true
 echo "$output13" | grep -q "/purlin:build" && has_build_cmd=true
 
 if $has_unit_test_cmd && $has_status_cmd && $has_build_cmd; then
   echo "  PASS: recovery message lists feature-specific skill commands"
-  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" pass "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build"
+  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" pass "recovery message lists /purlin:test <feature>, /purlin:status, and /purlin:build"
 else
   echo "  FAIL: expected unit-test=$has_unit_test_cmd status=$has_status_cmd build=$has_build_cmd"
   echo "  Output: $output13"
-  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" fail "recovery message lists /purlin:unit-test <feature>, /purlin:status, and /purlin:build"
+  purlin_proof "pre_push_hook" "PROOF-13" "RULE-7" fail "recovery message lists /purlin:test <feature>, /purlin:status, and /purlin:build"
 fi
 
 # ==========================================================================
 # PROOF-14 (RULE-8): Strict mode block message includes /purlin:verify
-#   recovery step and feature-specific /purlin:unit-test command.
+#   recovery step and feature-specific /purlin:test command.
 # ==========================================================================
 TMPDIR14=$(mktemp -d)
 ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR14"
@@ -622,16 +622,16 @@ has_unit_test_cmd14=false
 has_recovery14=false
 
 echo "$output14" | grep -q "/purlin:verify" && has_verify_cmd=true
-echo "$output14" | grep -q "/purlin:unit-test" && has_unit_test_cmd14=true
+echo "$output14" | grep -q "/purlin:test" && has_unit_test_cmd14=true
 echo "$output14" | grep -q "RECOVERY STEPS" && has_recovery14=true
 
 if [[ $ec14 -eq 1 ]] && $has_verify_cmd && $has_unit_test_cmd14 && $has_recovery14; then
   echo "  PASS: strict mode block includes recovery steps with /purlin:verify"
-  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" pass "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps"
+  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" pass "strict mode block message includes /purlin:verify and /purlin:test recovery steps"
 else
   echo "  FAIL: exit=$ec14 verify=$has_verify_cmd unit-test=$has_unit_test_cmd14 recovery=$has_recovery14"
   echo "  Output: $output14"
-  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" fail "strict mode block message includes /purlin:verify and /purlin:unit-test recovery steps"
+  purlin_proof "pre_push_hook" "PROOF-14" "RULE-8" fail "strict mode block message includes /purlin:verify and /purlin:test recovery steps"
 fi
 
 # --- Emit proof files ---

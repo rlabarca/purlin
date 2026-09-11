@@ -166,10 +166,10 @@ for p, r in [('PROOF-1','RULE-1'),('PROOF-2','RULE-2'),('PROOF-3','RULE-3'),('PR
     add('skill_status', p, r, 'STRONG', 'behavioral_assertions',
         'Test reads actual skill file and asserts specific text content/patterns, proving the rule requirement is present.', 'N/A')
 
-# ── skill_unit_test ────────────────────────────────────────────────────────────
+# ── skill_test ────────────────────────────────────────────────────────────
 for p, r in [('PROOF-1','RULE-1'),('PROOF-2','RULE-2'),('PROOF-3','RULE-3'),
              ('PROOF-4','RULE-4'),('PROOF-5','RULE-5')]:
-    add('skill_unit_test', p, r, 'STRONG', 'behavioral_assertions',
+    add('skill_test', p, r, 'STRONG', 'behavioral_assertions',
         'Test reads actual skill file and asserts specific text content/patterns, proving the rule requirement is present.', 'N/A')
 
 # ── schema_proof_format ────────────────────────────────────────────────────────

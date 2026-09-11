@@ -590,7 +590,7 @@ Features with implementation notes: J
 
 Next:
   purlin:status      — see what needs tests
-  purlin:unit-test   — write proof-marked tests
+  purlin:test   — write proof-marked tests
   purlin:spec <name> — refine a generated spec
 ```
 

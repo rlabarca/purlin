@@ -18,7 +18,7 @@ Claude reads the spec, writes tests with proof markers, runs them, fixes failure
 |---------|-------------|
 | `test <feature>` | Write tests, fix code, iterate until proved |
 | `purlin:status` | See which rules are proved and which aren't |
-| `purlin:unit-test` | Run tests and emit proof files |
+| `purlin:test` | Run tests and emit proof files |
 | `purlin:verify` | Run all tests, issue verification receipts |
 | `purlin:audit` | Check proof quality: are the claims provable, and are they proven |
 
@@ -187,7 +187,7 @@ purlin:status
 ### 2. Write and run tests
 
 ```
-purlin:unit-test
+purlin:test
 ```
 
 The proof plugin collects markers and writes proof files using feature-scoped overwrite — only the tested feature's entries are replaced.
@@ -251,16 +251,16 @@ jobs:
 |---------|-------------|----------|
 | PR / branch push | unit + `@integration` | Any FAIL |
 | Merge to main | All tiers | Any FAIL or partial coverage |
-| Nightly | `purlin:verify --audit` | vhash mismatch |
+| Nightly | `purlin:verify --recheck` | vhash mismatch |
 
 ### Deploy gate
 
-`purlin:verify --audit` is a clean-room re-execution: re-runs every test, recomputes vhash, and compares against committed receipts.
+`purlin:verify --recheck` is a clean-room re-execution: re-runs every test, recomputes vhash, and compares against committed receipts.
 
 ```yaml
 - name: Deploy Gate
   run: |
-    # Run purlin:verify --audit via Claude Code in CI
+    # Run purlin:verify --recheck via Claude Code in CI
     # This re-runs all tests (all tiers) and validates vhash against committed receipts
     pytest
 ```
@@ -406,7 +406,7 @@ Full JSON schema: [references/formats/proofs_format.md](../references/formats/pr
 Proof files are derived state. When merging:
 
 1. Accept either version of the conflicting file
-2. Run `purlin:unit-test` to regenerate from the merged code
+2. Run `purlin:test` to regenerate from the merged code
 3. Commit the result
 
 This works because proof files are feature-scoped — testing feature X only rewrites X's entries.

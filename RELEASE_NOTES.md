@@ -4,6 +4,19 @@
 
 ### Changed
 
+- **BREAKING: `purlin:unit-test` is now `purlin:test`.** The skill runs every tier when given
+  `--all`, so the old name described a flag rather than the skill. It is also the single owner of
+  test execution (`purlin:build` and `purlin:verify` delegate to it rather than invoking runners
+  themselves), which makes the narrower name actively misleading. **There is no alias:** update
+  any script, prompt or muscle memory that says `purlin:unit-test`. The `skill_unit_test` spec is
+  renamed to `skill_test` along with its proof and receipt files.
+
+- **BREAKING: `purlin:verify --audit` is now `purlin:verify --recheck`.** The old flag collided
+  with the `purlin:audit` skill, which measures something entirely different: `--recheck` is
+  clean-room re-execution against committed receipts, while `purlin:audit` grades proof quality.
+  The collision was real enough that `docs/anchors-guide.md` carried an inline parenthetical
+  explaining the two were not the same thing. That parenthetical is now deleted.
+
 - **The version string now has exactly one place to edit.** It lived in four files and the
   `purlin_version` spec checked three, so this repo's own `.purlin/config.json` sat at `0.9.2`
   while `VERSION`, `templates/config.json` and `.claude-plugin/plugin.json` all read `0.10.0`.

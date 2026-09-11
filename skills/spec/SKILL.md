@@ -434,6 +434,6 @@ The spec operation is NOT complete until all of the following are true. Verify e
 
    - Proof descriptions have `UNPROVABLE` findings → `→ Run: purlin:spec <name>` to fix them first
    - The files in `> Scope:` do not exist yet → `→ Run: purlin:build <name>`
-   - Code exists but has no proofs → `→ Run: purlin:unit-test <name>`
+   - Code exists but has no proofs → `→ Run: purlin:test <name>`
 
 If any criterion is not met, fix it before completing. Do not respond to the user with "done" or "complete" until all four are verified.
