@@ -510,7 +510,7 @@ class TestSkillAudit:
         content = _read('audit')
         section = content.split('## Step 0', 1)
         assert len(section) == 2, "audit SKILL.md has no Step 0 mode-selection step"
-        body = section[1].split('## Step D', 1)[0]
+        body = section[1].split('## Step 1 ', 1)[0]
 
         assert '--audit-scope' in body, "Step 0 must invoke --audit-scope"
         assert 'design' in body and 'both' in body, \
@@ -529,7 +529,7 @@ class TestSkillAudit:
         content = _read('audit')
         section = content.split('## Step D', 1)
         assert len(section) == 2, "audit SKILL.md has no Proof Design pass"
-        body = section[1].split('## Step 1 ', 1)[0]
+        body = section[1].split('## Step 1.5', 1)[0]
 
         assert '--check-proof-design' in body
         for level in ('PROVABLE', 'LOOSE', 'UNPROVABLE', 'STRUCTURAL'):
@@ -568,7 +568,7 @@ class TestSkillAudit:
             "the write step must state an unresolvable (feature, proof_id) exits 2"
 
         # Criteria step: exit 2 stops the audit, with no fall back.
-        crit = content[content.index('## Step 1 '):content.index('## Step 1.5')]
+        crit = content[content.index('## Step 1 '):content.index('## Step D')]
         assert re.search(r'(?i)exits 2, stop', crit), \
             "the criteria step must stop the audit when --load-criteria exits 2"
         assert 'purlin:init --sync-audit-criteria' in crit, \

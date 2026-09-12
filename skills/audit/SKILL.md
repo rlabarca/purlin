@@ -60,9 +60,33 @@ Mode: Proof Design only — 12 features, 47 proof descriptions, 0 executed proof
       No test code to grade yet. Run purlin:build to reach Proof Integrity.
 ```
 
-In design-only mode, run Step 1 (criteria) then Step D below, and skip Steps 1.6, 2, 3.5. Step
-3.4 still applies: write the design cache. Never run Pass 0.5 or Pass 1 without proof files —
-they exit 2, which is the crash this step exists to prevent.
+In design-only mode, skip Steps 1.6, 2 and 3.5. Step 3.4 still applies: write the design
+cache. Never run Pass 0.5 or Pass 1 without proof files: they exit 2, which is the crash this
+step exists to prevent.
+
+## Step 1 — Load Criteria
+
+Load combined criteria via the single-source function:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
+```
+
+**Interpreter:** every `static_checks.py` invocation below is written as `python3`, but `python3` is not always on PATH (notably on Windows, where the launcher is `python` or `py -3`). Probe for an available interpreter and use the first that resolves — `python3`, then `python`, then `py -3` — for all `static_checks.py` commands in this skill.
+
+If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
+
+This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.
+
+Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
+
+**If the command exits 2, stop and print its message verbatim.** It exits 2 when the built-in
+criteria cannot be read, or when `audit_criteria` is configured and the cached
+`.purlin/cache/additional_criteria.md` is missing, carries no
+`<!-- purlin-criteria-sha: <sha> -->` first line, or carries one that does not equal
+`audit_criteria_pinned`. There is no fall back to the built-in criteria: a project that pinned a
+compliance standard and got graded against something else would read exactly like one that was
+graded correctly. The fix is `purlin:init --sync-audit-criteria`, and the message says so.
 
 ## Step D — Proof Design Pass
 
@@ -112,30 +136,6 @@ PROOF DESIGN SCORE: 50%  (PROVABLE / (PROVABLE + LOOSE + UNPROVABLE))
 Remediation for a Design finding is `purlin:spec <feature>` — the description is the artifact
 that is wrong. Never narrow a description to match a weak test, and never reword an anchor
 rule.
-
-## Step 1 — Load Criteria
-
-Load combined criteria via the single-source function:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
-```
-
-**Interpreter:** every `static_checks.py` invocation below is written as `python3`, but `python3` is not always on PATH (notably on Windows, where the launcher is `python` or `py -3`). Probe for an available interpreter and use the first that resolves — `python3`, then `python`, then `py -3` — for all `static_checks.py` commands in this skill.
-
-If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
-
-This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.
-
-Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
-
-**If the command exits 2, stop and print its message verbatim.** It exits 2 when the built-in
-criteria cannot be read, or when `audit_criteria` is configured and the cached
-`.purlin/cache/additional_criteria.md` is missing, carries no
-`<!-- purlin-criteria-sha: <sha> -->` first line, or carries one that does not equal
-`audit_criteria_pinned`. There is no fall back to the built-in criteria: a project that pinned a
-compliance standard and got graded against something else would read exactly like one that was
-graded correctly. The fix is `purlin:init --sync-audit-criteria`, and the message says so.
 
 ## Step 1.5 — Load Audit Cache
 
