@@ -370,7 +370,7 @@ class TestRegistration:
 class TestNoSecondModuleLoad:
     """sync_status RULE-64 - the hook's static_checks is the server's too."""
 
-    @pytest.mark.proof("sync_status", "PROOF-107", "RULE-64", tier="integration")
+    @pytest.mark.proof("sync_status", "PROOF-120", "RULE-64", tier="integration")
     def test_the_hook_run_loads_static_checks_once(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path))
         module = _load_hook_module()
