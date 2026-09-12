@@ -3,19 +3,19 @@
   "proofs": [
     {
       "feature": "skill_audit",
-      "id": "PROOF-14",
-      "rule": "RULE-14",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_load_criteria_assembles_builtin_plus_additional_and_pass1_still_works",
+      "id": "PROOF-27",
+      "rule": "RULE-13",
+      "test_file": "dev/test_e2e_fake_audit_llm.sh",
+      "test_name": "custom audit LLM configured and used in the two-pass flow",
       "status": "pass",
       "tier": "e2e"
     },
     {
       "feature": "skill_audit",
-      "id": "PROOF-27",
-      "rule": "RULE-13",
-      "test_file": "dev/test_e2e_fake_audit_llm.sh",
-      "test_name": "custom audit LLM configured and used in the two-pass flow",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_load_criteria_assembles_builtin_plus_additional_and_pass1_still_works",
       "status": "pass",
       "tier": "e2e"
     }

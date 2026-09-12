@@ -3,24 +3,6 @@
   "proofs": [
     {
       "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_multilang_proof_plugins.py",
@@ -385,6 +367,24 @@
       "rule": "RULE-18",
       "test_file": "dev/test_multilang_proof_plugins.py",
       "test_name": "test_the_exempt_plugins_named_in_rule_18_are_the_ones_without_a_skip_set",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
       "status": "pass",
       "tier": "integration"
     }
