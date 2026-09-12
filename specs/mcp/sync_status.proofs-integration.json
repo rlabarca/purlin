@@ -138,6 +138,33 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-96",
+      "rule": "RULE-5",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_current_stamp_counts_and_a_scope_change_takes_it_back",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-97",
+      "rule": "RULE-59",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_re_stamping_after_a_receipt_stales_that_receipt",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-98",
+      "rule": "RULE-5",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_stamp_without_scope_is_uncountable",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

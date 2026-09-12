@@ -433,19 +433,78 @@ def _read_proofs(project_root, legacy=None):
     return all_proofs
 
 
-def _check_manual_staleness(project_root, scope_files, commit_sha):
-    """Check if any scope files have commits newer than the manual stamp's SHA."""
-    if not scope_files or not commit_sha:
+def _scope_changed_since(project_root, scope, sha):
+    """True when a file named by `scope` has a commit after `sha`.
+
+    One question asked by two callers that must never disagree: the manual
+    stamp's staleness line and the coverage count that trusts the same stamp.
+    While the count lived elsewhere a stamp could read PASS in the detail and
+    still be refused by the counter, or the reverse, and nothing in the report
+    would say which was right.
+
+    Returns False when there is no scope or no sha to compare against, and
+    when git cannot answer: an unanswerable question is not evidence of
+    change. `_manual_ok_keys` refuses the no-scope case before calling, so the
+    False here never becomes a silent "still current".
+    """
+    if not scope or not sha:
         return False
+    if isinstance(scope, str):
+        scope = [part.strip() for part in scope.split(',') if part.strip()]
     try:
         result = subprocess.run(
             ['git', 'log', '--oneline', '--end-of-options',
-             f'{commit_sha}..HEAD', '--'] + scope_files,
+             f'{sha}..HEAD', '--'] + list(scope),
             capture_output=True, text=True, cwd=project_root, timeout=5
         )
         return bool(result.stdout.strip())
     except (subprocess.SubprocessError, OSError):
         return False
+
+
+def _check_manual_staleness(project_root, scope_files, commit_sha):
+    """Check if any scope files have commits newer than the manual stamp's SHA."""
+    return _scope_changed_since(project_root, scope_files, commit_sha)
+
+
+def _manual_ok_keys(project_root, info):
+    """The manual stamps that count toward this feature's coverage.
+
+    A stamp counts when it names a rule the feature owns, carries the whole
+    `@manual(email, date, sha)` triple, and the spec's `> Scope:` has not
+    changed since that sha. A spec with no `> Scope:` has nothing to compare
+    against, so a stamp on it can never be shown to be out of date and none of
+    its stamps count (sync_status RULE-5).
+
+    Returns the stamps themselves, not just their rule ids, because the same
+    list is what enters the verification hash: re-stamping the same rule with a
+    new date or sha must move the vhash and stale the receipt (RULE-59). The
+    `feature` field is filled in by the caller, which is the only place that
+    knows the feature's name.
+    """
+    scope = info.get('scope') or []
+    if not scope:
+        return []
+    own_rules = info.get('rules') or {}
+    counted = []
+    for stamp_key, stamp in sorted((info.get('manual_proofs') or {}).items()):
+        if not stamp.get('stamped'):
+            continue
+        sha = (stamp.get('commit_sha') or '').strip()
+        rule = stamp.get('rule') or ''
+        if not sha or rule not in own_rules:
+            continue
+        if _scope_changed_since(project_root, scope, sha):
+            continue
+        counted.append({
+            'feature': '',
+            'proof_id': stamp_key.split('_', 1)[0],
+            'rule': rule,
+            'email': (stamp.get('email') or '').strip(),
+            'date': stamp.get('date') or '',
+            'sha': sha,
+        })
+    return counted
 
 
 def _check_visual_hash(project_root, visual_ref, stored_hash):
@@ -2600,7 +2659,7 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
     RULE-54).
 
     Returns a dict of `rule_entries`, `active_entries`, `proof_by_rule`,
-    `relevant_proofs`, `rules_text`, `manual_ok`, `proved`, `has_fail`,
+    `relevant_proofs`, `rules_text`, `manual_ok`, `manual_ok_rules`, `proved`, `has_fail`,
     `vhash`, `awaiting`, `awaiting_rule_count`, `undeclared`, `platforms` (the
     `_platform_results` record), `unresolved_requires`, `receipt` and
     `has_current_receipt`.
@@ -2620,12 +2679,17 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         key: _rule_text_for(key, label, src, info, all_features)
         for key, label, src in active_entries
     }
-    # Manual stamps do not yet count toward coverage, so none enters the hash.
-    # The parameter is wired now so the phase that counts them changes one
-    # list, not the formula.
-    manual_ok = []
-    proved = sum(1 for key, _, _ in active_entries
-                 if proof_by_rule.get(key, {}).get('status') == 'pass')
+    # A current stamp on an own rule counts as proved and enters the hash. An
+    # executed proof still wins for display: the detail prints PASS from the
+    # test, and FAIL from the test even when a stamp sits on the same rule, so
+    # a stamp can never paper over a failing run.
+    manual_ok = _manual_ok_keys(project_root, info)
+    for stamp in manual_ok:
+        stamp['feature'] = name
+    manual_ok_rules = {stamp['rule'] for stamp in manual_ok}
+    proved = sum(1 for key, label, _ in active_entries
+                 if proof_by_rule.get(key, {}).get('status') == 'pass'
+                 or (label == 'own' and key in manual_ok_rules))
     has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
                    for key, _, _ in active_entries)
     vhash = _compute_vhash(rules_text, relevant_proofs, manual_ok)
@@ -2643,6 +2707,7 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         'relevant_proofs': relevant_proofs,
         'rules_text': rules_text,
         'manual_ok': manual_ok,
+        'manual_ok_rules': manual_ok_rules,
         'proved': proved,
         'has_fail': has_fail,
         'vhash': vhash,
@@ -2866,7 +2931,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         for missing_name in unresolved_requires:
             lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
         if manual_proofs and not info.get('scope'):
-            lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected. Add > Scope: to enable stale detection.")
+            lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected, so the stamp does not count toward coverage. Add > Scope: to enable stale detection.")
         _append_scope_suggestions(lines, name, info, all_features, global_anchors)
         lines.extend(advisories)
         return lines
@@ -2976,7 +3041,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         lines.append(f'  \u26a0 Requires "{missing_name}" but no spec with that name exists')
 
     if manual_proofs and not info.get('scope'):
-        lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected. Add > Scope: to enable stale detection.")
+        lines.append("  \u26a0 Manual proof without > Scope: \u2014 staleness cannot be detected, so the stamp does not count toward coverage. Add > Scope: to enable stale detection.")
 
     _append_scope_suggestions(lines, name, info, all_features, global_anchors)
     return lines

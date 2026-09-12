@@ -107,30 +107,35 @@ echo "  --- Phase A: Fresh manual stamp → PASS ---"
 
 STATUS_A=$(run_sync_status "$TMPDIR")
 
-STAMP_DATE_A="2026-04-01"
+phase_a_count=false
+phase_a_row=false
+phase_a_vhash=false
+phase_a_fresh=false
+
+# The fraction is the assertion, not the wording of the manual line. RULE-1 is
+# proved by the proof file and RULE-2 by the stamp, so the feature reads 2 of 2
+# and PASSING and prints a vhash, which only a fully proved feature gets. The
+# old string check passed even while the stamp counted for nothing, because a
+# 1/2 feature still printed `PASS (..., manual, verified ...)` on its rule line.
+echo "$STATUS_A" | grep -q "login: PASSING" && echo "$STATUS_A" | grep -q "2/2 rules proved" && phase_a_count=true
+echo "$STATUS_A" | grep "login" | grep -q "2/2" && phase_a_row=true
+echo "$STATUS_A" | grep -Eq "vhash=[0-9a-f]{8}" && phase_a_vhash=true
+echo "$STATUS_A" | grep -q "MANUAL PROOF STALE" || phase_a_fresh=true
+
 phase_a_ok=false
-# The manual proof line should show PASS with the verified date
-# PASS (not STALE) proves the SHA freshness check passed internally
-if echo "$STATUS_A" | grep -q "PASS.*manual.*verified.*${STAMP_DATE_A}"; then
-  # Also verify NOT stale — proves the SHA comparison evaluated correctly
-  if ! echo "$STATUS_A" | grep -q "MANUAL PROOF STALE"; then
-    echo "    Phase A PASS: manual proof shows PASS (not STALE) with verified date ${STAMP_DATE_A}"
-    phase_a_ok=true
-  else
-    echo "    Phase A FAIL: manual proof shows STALE despite matching SHA"
-    echo "    Status output:"
-    echo "$STATUS_A"
-  fi
+if $phase_a_count && $phase_a_row && $phase_a_vhash && $phase_a_fresh; then
+  echo "    Phase A PASS: 2/2 rules proved, PASSING, vhash printed, stamp not stale"
+  phase_a_ok=true
 else
-  echo "    Phase A FAIL: expected manual proof PASS with verified date ${STAMP_DATE_A}"
+  echo "    Phase A FAIL: count=$phase_a_count row=$phase_a_row vhash=$phase_a_vhash fresh=$phase_a_fresh"
   echo "    Status output:"
   echo "$STATUS_A"
 fi
 
 if $phase_a_ok; then
-  purlin_proof "sync_status" "PROOF-26" "RULE-5" pass "stamped manual proof shows PASS with verified date"
+  purlin_proof "sync_status" "PROOF-26" "RULE-5" pass "current stamp counts: 2/2 PASSING with a vhash"
 else
-  purlin_proof "sync_status" "PROOF-26" "RULE-5" fail "stamped manual proof shows PASS with verified date"
+  purlin_proof "sync_status" "PROOF-26" "RULE-5" fail "current stamp counts: 2/2 PASSING with a vhash"
 fi
 
 # ==========================================================================
@@ -146,24 +151,29 @@ STATUS_B=$(run_sync_status "$TMPDIR")
 
 phase_b_stale=false
 phase_b_directive=false
+phase_b_count=false
+phase_b_partial=false
 
 echo "$STATUS_B" | grep -q "MANUAL PROOF STALE" && phase_b_stale=true
 echo "$STATUS_B" | grep -q "Re-verify and run: purlin:verify --manual" && phase_b_directive=true
+# The stamp stops counting, so the fraction drops and the row reads PARTIAL.
+echo "$STATUS_B" | grep -q "login: 1/2 rules proved" && phase_b_count=true
+echo "$STATUS_B" | grep "login" | grep -q "PARTIAL" && phase_b_partial=true
 
 phase_b_ok=false
-if $phase_b_stale && $phase_b_directive; then
-  echo "    Phase B PASS: manual proof shows STALE with re-verify directive"
+if $phase_b_stale && $phase_b_directive && $phase_b_count && $phase_b_partial; then
+  echo "    Phase B PASS: 1/2 rules proved, PARTIAL, STALE with re-verify directive"
   phase_b_ok=true
 else
-  echo "    Phase B FAIL: stale=$phase_b_stale directive=$phase_b_directive"
+  echo "    Phase B FAIL: stale=$phase_b_stale directive=$phase_b_directive count=$phase_b_count partial=$phase_b_partial"
   echo "    Status output:"
   echo "$STATUS_B"
 fi
 
 if $phase_b_ok; then
-  purlin_proof "sync_status" "PROOF-27" "RULE-5" pass "scope file change makes manual proof STALE with directive"
+  purlin_proof "sync_status" "PROOF-27" "RULE-5" pass "a committed scope change takes the stamp back out: 1/2 PARTIAL"
 else
-  purlin_proof "sync_status" "PROOF-27" "RULE-5" fail "scope file change makes manual proof STALE with directive"
+  purlin_proof "sync_status" "PROOF-27" "RULE-5" fail "a committed scope change takes the stamp back out: 1/2 PARTIAL"
 fi
 
 # ==========================================================================
@@ -200,24 +210,21 @@ SPEC
 STATUS_C=$(run_sync_status "$TMPDIR")
 
 phase_c_ok=false
-if echo "$STATUS_C" | grep -q "PASS.*manual.*verified.*${STAMP_DATE_C}"; then
-  # Also verify NOT stale
-  if ! echo "$STATUS_C" | grep -q "MANUAL PROOF STALE"; then
-    echo "    Phase C PASS: re-stamped manual proof shows PASS again"
-    phase_c_ok=true
-  else
-    echo "    Phase C FAIL: still shows STALE after re-stamp"
-  fi
+if echo "$STATUS_C" | grep -q "2/2 rules proved" \
+   && echo "$STATUS_C" | grep -q "login: PASSING" \
+   && ! echo "$STATUS_C" | grep -q "MANUAL PROOF STALE"; then
+  echo "    Phase C PASS: the re-stamp puts the rule back in the count, 2/2 PASSING"
+  phase_c_ok=true
 else
-  echo "    Phase C FAIL: expected manual proof PASS with new date"
+  echo "    Phase C FAIL: expected 2/2 PASSING and no STALE after the re-stamp"
   echo "    Status output:"
   echo "$STATUS_C"
 fi
 
 if $phase_c_ok; then
-  purlin_proof "sync_status" "PROOF-28" "RULE-5" pass "re-stamp clears stale state, shows PASS"
+  purlin_proof "sync_status" "PROOF-28" "RULE-5" pass "re-stamping at the new HEAD puts the rule back: 2/2 PASSING"
 else
-  purlin_proof "sync_status" "PROOF-28" "RULE-5" fail "re-stamp clears stale state, shows PASS"
+  purlin_proof "sync_status" "PROOF-28" "RULE-5" fail "re-stamping at the new HEAD puts the rule back: 2/2 PASSING"
 fi
 
 # --- Emit proof files ---

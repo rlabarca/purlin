@@ -101,6 +101,8 @@ When `@manual` stamps are required, the compliant flow is:
 4. The QMS (or CI pipeline) injects the cryptographically signed approval token into the spec file or a locked artifact, which Purlin reads to satisfy the coverage check — stopping the `→ MANUAL PROOF NEEDED` directives
 5. CI verifies the QMS approval token before accepting the manual proof
 
+Be precise about what a `@manual` stamp is worth on its own: a stamp counts toward coverage; it is not a signature. It records that the named person said they checked the rule on the named day, against the code as it stood at the named commit, and it stops counting the moment a commit touches the spec's `> Scope:`. Nothing authenticates the name, so the stamp is an audit trail entry rather than an approval. The QMS token in step 4 is what carries authentication and intent.
+
 ### Proof Quality Auditing
 
 Purlin's audit skill evaluates proof quality on two axes: whether the spec asked for checkable evidence (Proof Design) and whether the tests deliver it (Proof Integrity). For regulated teams, additional audit criteria can be appended from a compliance-controlled repository (built-in criteria always apply — additional criteria add stricter checks, never weaken defaults):

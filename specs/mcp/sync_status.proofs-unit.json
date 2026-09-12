@@ -87,7 +87,7 @@
       "id": "PROOF-26",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "stamped manual proof shows PASS with verified date",
+      "test_name": "current stamp counts: 2/2 PASSING with a vhash",
       "status": "pass",
       "tier": "unit"
     },
@@ -96,7 +96,7 @@
       "id": "PROOF-27",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "scope file change makes manual proof STALE with directive",
+      "test_name": "a committed scope change takes the stamp back out: 1/2 PARTIAL",
       "status": "pass",
       "tier": "unit"
     },
@@ -105,7 +105,7 @@
       "id": "PROOF-28",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "re-stamp clears stale state, shows PASS",
+      "test_name": "re-stamping at the new HEAD puts the rule back: 2/2 PASSING",
       "status": "pass",
       "tier": "unit"
     },

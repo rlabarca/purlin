@@ -1729,6 +1729,53 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   fraction, not only the `PASS ... manual` string. `docs/regulated-environments.md` "Human
   Approval Workflow" gains "a stamp counts toward coverage; it is not a signature."
 
+## DONE — Phase 10.2: manual stamps count (`feat(sync_status): a current manual stamp counts toward coverage`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `sync_status` RULE-5 amended and RULE-59 new, with PROOF-96
+  (RULE-5), PROOF-97 (RULE-59) and PROOF-98 (RULE-5); PROOF-26/27/28 rewritten against the same
+  RULE-5. Next free `sync_status` RULE-60/PROOF-99. Nothing else moved: RULE-6 already described
+  the `M` segment, and the `manual` parameter of `_compute_vhash` and the issuer's `manual` key
+  were already wired and empty.
+- **The counting.** `_manual_ok_keys(project_root, info)` returns the stamps that count: a
+  stamped `@manual(email, date, sha)` on one of the feature's own rules whose `> Scope:` has not
+  been committed to since that sha. It returns the stamps, not just the rule ids, because the
+  same list is what enters the hash. `_feature_verdict` fills in each stamp's `feature`, and
+  `proved` counts `pass or (own and key in manual_ok_rules)`. Display is unchanged and an
+  executed proof still wins it: the rule-line branch reads the test first, so a FAIL stays FAIL
+  with a stamp beside it.
+- **One function for one question.** `_scope_changed_since(project_root, scope, sha)` is the
+  generalised form of the old `_check_manual_staleness`, which is now a two-line call into it.
+  The staleness line and the counter cannot disagree, which they could have the moment the count
+  grew its own comparison.
+- **No `> Scope:` means uncountable.** `_manual_ok_keys` returns nothing for such a spec and the
+  existing advisory gained the clause `so the stamp does not count toward coverage`, so the line
+  that says staleness cannot be detected also says what that costs.
+- **The vhash.** `manual_ok` is passed to `_compute_vhash`, so the `M` segments RULE-6 already
+  specified are finally populated and a re-stamp moves the hash. `dev/issue_receipts.py` counts
+  the same stamps when deciding what is unproved (reading only `proof_by_rule` there would have
+  skipped every feature the report called PASSING) and writes them into `receipt.manual`.
+- **Pass D.** `sync_status` PROOF-26, 27, 28, 96, 97 and 98 all PROVABLE. The nine non-PROVABLE
+  descriptions in that spec (PROOF-3/5/7/9/10/11/70 LOOSE, PROOF-56/75 STRUCTURAL) all predate
+  this phase.
+- **Mutations (2, each restored).** Counting a stale stamp (`if False and
+  _scope_changed_since(...)`) kills PROOF-96 at the 1/2 assertion; dropping the `M` segments from
+  `_compute_vhash` kills PROOF-97, which then reads the same vhash before and after the re-stamp.
+- **Docs.** `skills/verify/SKILL.md` Step 3 gained a "Manual stamps in the count" block and the
+  `--manual` section says the rule leaves the count until the stamp is refreshed;
+  `docs/regulated-environments.md` "Human Approval Workflow" gained the paragraph that a stamp
+  counts toward coverage and is not a signature. `docs/testing-workflow-guide.md:162` claimed a
+  feature with four automated proofs and one stamp is VERIFIED; that is now true and the line was
+  left alone.
+- **This repo counts no stamps.** No spec here carries a stamped `@manual(...)`, so every
+  feature's vhash is unchanged by the formula gaining a populated segment and the receipt count
+  stays 39 of 41. The behaviour is proved on temp repositories, which is the only place a
+  `git log <sha>..HEAD` question can be asked with a known answer.
+- **Sweep.** `bash dev/run_tests.sh` reads `753 passed, 27 skipped`, 14 suites, 0 failed, up from
+  `750 passed, 27 skipped`: the three new tests in `dev/test_mcp_server.py`.
+  `git diff --stat specs/` after the sweep: the spec, the three rewritten e2e test names, and the
+  three new integration entries.
+
+
 ### 10.3 Evidence older than code (warn, never block)
 
 - Rejected: comparing proof-file git dates to scope git dates. A re-executed file with unchanged

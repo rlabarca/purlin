@@ -92,6 +92,17 @@ A proof file that the recorded run did not execute and no runner committed is
 evidence with no witness. The issuer names the file and the count and issues
 nothing for that feature.
 
+#### Manual stamps in the count
+
+A rule carrying a current `@manual(email, date, sha)` stamp counts as proved, so a
+feature can reach PASSING on a mix of tests and stamps and the issuer receipts it.
+A stamp is current only while nothing in the spec's `> Scope:` has been committed
+since its sha, and a spec with no `> Scope:` has no stamps that count at all. The
+stamps that counted go into the receipt's `manual` array and into the vhash, so
+re-stamping the same rule stales the receipt. See `specs/mcp/sync_status.md`
+RULE-5 and RULE-59. A stamp is coverage, not a signature: it records that a named
+person said they checked something on a named day.
+
 #### Platform-partial receipts
 
 A feature declaring a proof `@on(windows-2022)` that has no result there still
@@ -287,4 +298,4 @@ purlin:verify --manual auth_login PROOF-3
 
 5. Commit: `git commit -m "verify(<feature>): manual stamp PROOF-3"`
 
-Manual stamps become stale when files in `> Scope:` are modified after the stamp's commit SHA. `sync_status` detects this and issues a `→ Re-verify` directive.
+Manual stamps become stale when files in `> Scope:` are modified after the stamp's commit SHA. `sync_status` detects this and issues a `→ Re-verify` directive, and the rule leaves the coverage count until the stamp is refreshed.

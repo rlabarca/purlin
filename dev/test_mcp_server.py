@@ -2794,3 +2794,134 @@ class TestPlatformsLineAndDetailLines:
         for line in [l for l in plain if l.startswith('│')]:
             assert len(line.split('│')[3]) == 10, (
                 f"the status cell must stay 8 wide plus its two spaces: {line!r}")
+
+
+class TestManualStampsCount:
+    """sync_status RULE-5 and RULE-59: a current stamp is coverage, and the
+    stamp is bound into the vhash.
+
+    Every case runs against a real git repository, because the whole question
+    is what git says changed since the sha the stamp names.
+    """
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        os.makedirs(os.path.join(self.project_root, 'specs', 'auth'))
+        os.makedirs(os.path.join(self.project_root, 'src'))
+        self._git('init')
+        self._git('config', 'user.email', 'test@test.com')
+        self._git('config', 'user.name', 'Test')
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    def _git(self, *args):
+        return subprocess.run(['git'] + list(args), cwd=self.project_root,
+                              capture_output=True, text=True, check=True)
+
+    def _commit(self, message):
+        self._git('add', '-A')
+        self._git('commit', '-m', message)
+        return self._git('rev-parse', '--short', 'HEAD').stdout.strip()
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    def _spec(self, stamp_sha, stamp_date='2026-04-01', scope='> Scope: src/app.py\n'):
+        self._write('specs/auth/login.md',
+                    '# Feature: login\n\n'
+                    f'{scope}\n'
+                    '## What it does\nHandles login.\n\n'
+                    '## Rules\n'
+                    '- RULE-1: Valid credentials return a session token\n'
+                    '- RULE-2: The login screen matches the design\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): POST valid creds; verify a token comes back\n'
+                    '- PROOF-2 (RULE-2): Compare the rendered screen to the design '
+                    f'@manual(dev@test.com, {stamp_date}, {stamp_sha})\n')
+        self._write('specs/auth/login.proofs-unit.json', json.dumps({
+            'tier': 'unit',
+            'proofs': [{'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                        'test_file': 'dev/test_login.py',
+                        'test_name': 'test_valid_creds', 'status': 'pass',
+                        'tier': 'unit'}],
+        }, indent=2) + '\n')
+
+    @pytest.mark.proof("sync_status", "PROOF-96", "RULE-5", tier="integration")
+    def test_a_current_stamp_counts_and_a_scope_change_takes_it_back(self):
+        """One automated pass plus one current stamp is full coverage; a
+        committed change to the scope takes the stamp's rule back out."""
+        self._write('src/app.py', 'v1\n')
+        sha = self._commit('initial')
+        self._spec(sha)
+        self._commit('stamp PROOF-2 at HEAD')
+
+        current = purlin_server.sync_status(self.project_root)
+        assert 'login: PASSING' in current, current
+        assert '2/2 rules proved' in current, current
+        assert '│ login   │      2/2 │' in current, current
+        assert re.search(r'vhash=[0-9a-f]{8}', current), current
+        assert 'MANUAL PROOF STALE' not in current, current
+
+        # The scope changes in a commit of its own. The stamp still names the
+        # earlier sha, so it no longer says anything about this code.
+        self._write('src/app.py', 'v2\n')
+        self._commit('change the scope')
+
+        after = purlin_server.sync_status(self.project_root)
+        assert 'login: 1/2 rules proved' in after, after
+        assert 'login: PASSING' not in after, after
+        assert 'MANUAL PROOF STALE' in after, after
+        rows = [l for l in after.splitlines() if '│ login' in l]
+        assert rows and 'PARTIAL' in rows[0], (rows, after)
+
+    @pytest.mark.proof("sync_status", "PROOF-97", "RULE-59", tier="integration")
+    def test_re_stamping_after_a_receipt_stales_that_receipt(self):
+        """The stamp is in the vhash, so re-stamping the same rule with a new
+        date moves the hash and the receipt issued against the old one is
+        stale. Without the M segment the two hashes are equal and a re-stamp
+        is invisible."""
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+        import issue_receipts
+
+        self._write('src/app.py', 'v1\n')
+        sha = self._commit('initial')
+        self._spec(sha, stamp_date='2026-04-01')
+        self._commit('stamp PROOF-2 at HEAD')
+
+        issued, _ = issue_receipts.main(self.project_root, quiet=True,
+                                        run_check=False)
+        assert [name for name, _, _ in issued] == ['login'], issued
+        first_vhash = issued[0][1]
+        self._commit('receipt login')
+        verified = purlin_server.sync_status(self.project_root)
+        assert 'login: VERIFIED' in verified, verified
+
+        # Same rule, same scope, same sha: only the human and the date change.
+        self._spec(sha, stamp_date='2026-04-02')
+        self._commit('re-stamp PROOF-2')
+
+        after = purlin_server.sync_status(self.project_root)
+        assert 'Receipt stale (vhash mismatch)' in after, after
+        assert 'login: VERIFIED' not in after, after
+        second = re.search(r'vhash=([0-9a-f]{8})', after)
+        assert second and second.group(1) != first_vhash, (first_vhash, after)
+
+    @pytest.mark.proof("sync_status", "PROOF-98", "RULE-5", tier="integration")
+    def test_a_stamp_without_scope_is_uncountable(self):
+        """No `> Scope:` means nothing to compare the stamp's sha against, so
+        the stamp cannot be shown to be out of date and does not count."""
+        self._write('src/app.py', 'v1\n')
+        sha = self._commit('initial')
+        self._spec(sha, scope='')
+        self._commit('stamp PROOF-2 with no Scope')
+
+        result = purlin_server.sync_status(self.project_root)
+        assert 'login: 1/2 rules proved' in result, result
+        assert 'login: PASSING' not in result, result
+        assert ('Manual proof without > Scope:' in result
+                and 'does not count toward coverage' in result), result

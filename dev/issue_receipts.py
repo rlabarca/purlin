@@ -229,8 +229,14 @@ def main(root=None, quiet=False, run_check=True):
                                       global_anchors, root, registry)
         active = verdict['active_entries']
         proof_by_rule = verdict['proof_by_rule']
-        unproved = [k for k, _, _ in active
-                    if proof_by_rule.get(k, {}).get('status') != 'pass']
+        # A rule carrying a current manual stamp is proved (sync_status
+        # RULE-5), exactly as `_feature_verdict` counted it. Reading only
+        # `proof_by_rule` here is what made the issuer skip a feature the
+        # report called PASSING.
+        manual_ok_rules = verdict['manual_ok_rules']
+        unproved = [k for k, label, _ in active
+                    if proof_by_rule.get(k, {}).get('status') != 'pass'
+                    and not (label == 'own' and k in manual_ok_rules)]
         if not active:
             skipped.append((name, 'no active rules'))
             continue
@@ -274,8 +280,8 @@ def main(root=None, quiet=False, run_check=True):
                                p['test_name']),
             ),
         }
-        # Manual stamps do not yet count toward coverage, so the list is empty
-        # and the key is omitted; the phase that counts them fills it.
+        # The stamps that counted, so a reader can see which rules were proved
+        # by a human rather than by a test. Omitted when there are none.
         if verdict['manual_ok']:
             receipt['manual'] = verdict['manual_ok']
         receipt['evidence'] = {'test_run': test_run, 'proof_files': rows}
