@@ -83,7 +83,7 @@ would make a receipt unobtainable on every machine but the runner. The receipt
 records the gap instead, so it never claims more than was verified:
 
 ```json
-  "awaiting_runner": [{"id": "PROOF-53", "tier": "windows"}]
+  "awaiting_runner": [{"id": "PROOF-53", "tier": "unit", "platform": "windows"}]
 ```
 
 The key is omitted when nothing is awaiting, so an ordinary receipt is unchanged.

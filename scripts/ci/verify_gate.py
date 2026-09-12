@@ -73,8 +73,8 @@ def _findings(payload):
     """(unverified, awaiting) as lists of report lines.
 
     `unverified` is every non-anchor feature that is not VERIFIED. `awaiting`
-    is every feature carrying runner-gated proofs with no result at their
-    tier: complete locally, unproved on a platform the project claims.
+    is every proof declared `@on(<platform>)` with no result satisfying that
+    platform: complete locally, unproved on a platform the project claims.
     """
     unverified, awaiting = [], []
     for feat in payload.get('features') or []:
@@ -87,9 +87,24 @@ def _findings(payload):
                 f"({feat.get('proved', 0)}/{feat.get('total', 0)} rules proved)")
         for entry in feat.get('awaiting_runner') or []:
             awaiting.append(
-                f"{name}: {entry.get('id', '?')} declared @{entry.get('tier', '?')} "
-                f"with no result there")
+                f"{name}: {entry.get('id', '?')} declared "
+                f"@on({entry.get('platform', '?')}) with no result there")
     return unverified, awaiting
+
+
+def _by_platform(payload):
+    """One report line per declared platform, from `platforms.summary`."""
+    summary = (payload.get('platforms') or {}).get('summary') or {}
+    lines = []
+    for platform in sorted(summary):
+        agg = summary[platform] or {}
+        lines.append(
+            f"{platform}: {agg.get('proofs_proved', 0)} proved, "
+            f"{agg.get('proofs_awaiting', 0)} awaiting, "
+            f"{agg.get('proofs_failing', 0)} failing "
+            f"({agg.get('features', 0)} feature"
+            f"{'s' if agg.get('features', 0) != 1 else ''})")
+    return lines
 
 
 def check(project_root, out=sys.stdout):
@@ -110,13 +125,34 @@ def check(project_root, out=sys.stdout):
               "the mode must not disable the declaration invisibly.", file=out)
         return EXIT_BAD_INVOCATION
 
+    # A malformed `platforms` entry was dropped from the registry, so a proof
+    # naming it may be matching every host of its family or nothing at all.
+    # Evidence read through a broken registry is unreadable evidence: exit 2
+    # in every mode, the same way a missing payload does.
+    registry_errors = (payload.get('platforms') or {}).get('errors') or []
+    if registry_errors:
+        print(f"verify-gate: the platforms registry in .purlin/config.json has "
+              f"{len(registry_errors)} invalid entr"
+              f"{'ies' if len(registry_errors) != 1 else 'y'}:", file=out)
+        for error in registry_errors:
+            print(f"  {error}", file=out)
+        print("verify-gate: failing closed. A gate that cannot resolve the "
+              "platforms the evidence names cannot read the evidence.", file=out)
+        return EXIT_BAD_INVOCATION
+
     unverified, awaiting = _findings(payload)
+    by_platform = _by_platform(payload)
 
     print(f"verify-gate: remote_verification = {mode}", file=out)
     print(_ENFORCEMENT_NOTE, file=out)
 
     if mode == 'off':
         print("verify-gate: disabled for this project. Reporting only.", file=out)
+
+    if by_platform:
+        print(f"\nBy platform ({len(by_platform)}):", file=out)
+        for line in by_platform:
+            print(f"  {line}", file=out)
 
     # The findings are printed identically in all three modes. Only the verdict
     # differs, so a project can read what 'required' would have blocked before

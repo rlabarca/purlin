@@ -15,7 +15,7 @@ name: verify-gate
 #   This repo declares "optional", so the job reports findings and passes. Declaring
 #   "required" is what turns the same findings into an exit 1.
 #
-# Governed by specs/ci/verify_gate.md (RULE-1 through RULE-6).
+# Governed by specs/ci/verify_gate.md (RULE-1 through RULE-9).
 
 on:
   push:
@@ -24,14 +24,14 @@ on:
       - '.purlin/config.json'
       - 'scripts/ci/verify_gate.py'
       - 'scripts/mcp/purlin_server.py'
-      - '.github/workflows/verify-gate.yml'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'specs/**'
       - '.purlin/config.json'
       - 'scripts/ci/verify_gate.py'
       - 'scripts/mcp/purlin_server.py'
-      - '.github/workflows/verify-gate.yml'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Full history: the gate's payload includes runner provenance, which
-      # sync_status reads with `git log -1` on each runner-gated tier file.
+      # sync_status reads with `git log -1` on each platform-scoped proof file.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

@@ -12,6 +12,24 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-32",
+      "rule": "RULE-31",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_top_level_platforms_is_always_present",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-33",
+      "rule": "RULE-32",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_platforms_record_and_status_vocabulary",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
       "test_file": "dev/test_report_data.py",

@@ -36,6 +36,15 @@
       "test_name": "test_output_and_source_both_name_branch_protection",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_registry_errors_exit_two_in_every_mode_and_by_platform_counts",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

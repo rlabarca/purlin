@@ -2936,7 +2936,7 @@ class TestGaugeCellsAndCoverage:
         data = make_data()
         feats = data["features"]
         assert len(feats) >= 2, "need two features to contrast"
-        feats[0]["awaiting_runner"] = [{"id": "PROOF-2", "tier": "windows"}]
+        feats[0]["awaiting_runner"] = [{"id": "PROOF-2", "tier": "windows", "platform": "windows"}]
         waiting_name, waiting_status = feats[0]["name"], feats[0]["status"]
         feats[1]["awaiting_runner"] = []
         clean_name = feats[1]["name"]

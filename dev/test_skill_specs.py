@@ -1461,9 +1461,12 @@ class TestSkillVerify:
             features = ps._scan_specs(tmp)
             all_proofs = ps._read_proofs(tmp)
 
-            awaiting = ps._awaiting_runner('locking', features['locking'], all_proofs)
-            assert awaiting == [('PROOF-2', 'windows')], awaiting
-            assert ps._awaiting_runner('plain', features['plain'], all_proofs) == []
+            registry, _ = ps._platform_registry({})
+            awaiting = ps._awaiting_runner('locking', features['locking'], all_proofs,
+                                           registry)
+            assert awaiting == [('PROOF-2', 'unit', 'windows')], awaiting
+            assert ps._awaiting_runner('plain', features['plain'], all_proofs,
+                                       registry) == []
 
             # The issuer writes exactly what RULE-9 requires.
             src = open(issuer).read()
@@ -1477,7 +1480,7 @@ class TestSkillVerify:
             rule_entries, _ = ps._build_coverage_rules(
                 'locking', features['locking'], features, {})
             active, aw, gated = ps._active_rule_entries(
-                'locking', features['locking'], rule_entries, all_proofs)
+                'locking', features['locking'], rule_entries, all_proofs, registry)
             assert len(active) == 1 and gated == 1, (active, gated)
             proof_by_rule = ps._build_proof_lookup('locking', rule_entries, all_proofs)
             proved = sum(1 for k, _, _ in active

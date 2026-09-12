@@ -39,12 +39,21 @@ def _write_spec(tmp_dir, name, content, subdir='app'):
     return path
 
 
-def _write_proofs(tmp_dir, name, proofs, tier='unit', subdir='app'):
+def _write_proofs(tmp_dir, name, proofs, tier='unit', subdir='app', platform=None):
+    """Write an agnostic proof file, or a platform-scoped one when `platform`
+    is given (`<name>.proofs-<tier>@<platform>.json`, with `platform` at the
+    top level and on every entry, proofs_format.md v5)."""
     spec_dir = os.path.join(tmp_dir, 'specs', subdir)
     os.makedirs(spec_dir, exist_ok=True)
-    path = os.path.join(spec_dir, f'{name}.proofs-{tier}.json')
+    suffix = f'@{platform}' if platform else ''
+    path = os.path.join(spec_dir, f'{name}.proofs-{tier}{suffix}.json')
+    data = {'tier': tier, 'proofs': proofs}
+    if platform:
+        data['platform'] = platform
+        for p in proofs:
+            p['platform'] = platform
     with open(path, 'w') as f:
-        json.dump({'tier': tier, 'proofs': proofs}, f)
+        json.dump(data, f)
     return path
 
 
@@ -1024,8 +1033,17 @@ def _cache_entry(assessment, feature, proof_id, rule_id='RULE-1'):
     }
 
 
+def _entry(feature, pid, rule, status='pass'):
+    return {"feature": feature, "id": pid, "rule": rule,
+            "test_file": "dev/t.py", "test_name": f"t_{pid.lower()}",
+            "status": status, "tier": "unit"}
+
+
+_PLATFORM_KEYS = ('registry', 'host', 'local', 'remote', 'errors', 'summary')
+
+
 class TestAwaitingRunnerPayload:
-    """report_data RULE-29 and RULE-19."""
+    """report_data RULE-29, RULE-31, RULE-32 and RULE-19."""
 
     def setup_method(self):
         self.tmp = tempfile.mkdtemp()
@@ -1034,50 +1052,195 @@ class TestAwaitingRunnerPayload:
     def teardown_method(self):
         shutil.rmtree(self.tmp)
 
-    def _build(self):
+    def _config(self, **fields):
+        cfg = {'report': True}
+        cfg.update(fields)
+        with open(os.path.join(self.tmp, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+        return cfg
+
+    def _build(self, config=None):
         features = purlin_server._scan_specs(self.tmp)
         proofs = purlin_server._read_proofs(self.tmp)
         anchors = {k: v for k, v in features.items() if v.get('is_global')}
         return purlin_server._build_report_data(
-            self.tmp, features, proofs, {'report': True}, anchors, None)
+            self.tmp, features, proofs, config or {'report': True}, anchors, None)
 
-    @pytest.mark.proof("report_data", "PROOF-30", "RULE-29", tier="integration")
-    def test_awaiting_runner_explains_the_coverage_it_reduced(self):
+    def _both(self, config=None):
+        """(_build_report_data payload, read_report_payload payload): the two
+        entry points must agree on every platform key."""
+        built = self._build(config)
+        read = purlin_server.read_report_payload(self.tmp)
+        for key in ('platforms', 'platform_testing'):
+            assert built[key] == read[key], (
+                f"top-level {key!r} differs between _build_report_data and "
+                f"read_report_payload:\n{built[key]}\n{read[key]}")
+        by_built = {f['name']: f for f in built['features']}
+        by_read = {f['name']: f for f in read['features']}
+        for name, feat in by_built.items():
+            for key in ('platforms', 'awaiting_runner', 'undeclared'):
+                assert feat[key] == by_read[name][key], (
+                    f"{name}.{key} differs between the two entry points")
+        return built, read
+
+    def _write_locking(self, tag2='@unit @on(windows)'):
         _write_spec(self.tmp, 'locking',
                     '# Feature: locking\n\n'
                     '## What it does\nLocks.\n\n'
                     '## Rules\n- RULE-1: POSIX\n- RULE-2: Windows\n\n'
                     '## Proof\n'
                     '- PROOF-1 (RULE-1): fcntl locks @unit\n'
-                    '- PROOF-2 (RULE-2): msvcrt locks on a real windows runner @windows\n')
-        _write_proofs(self.tmp, 'locking', [
-            {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "dev/t.py", "test_name": "t", "status": "pass", "tier": "unit"},
-        ])
+                    f'- PROOF-2 (RULE-2): msvcrt locks on a real windows runner {tag2}\n')
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1')])
+
+    def _write_plain(self):
         _write_spec(self.tmp, 'plain',
                     '# Feature: plain\n\n'
                     '## What it does\nPlain.\n\n'
                     '## Rules\n- RULE-1: A\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): a @unit\n')
-        _write_proofs(self.tmp, 'plain', [
-            {"feature": "plain", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "dev/t.py", "test_name": "t", "status": "pass", "tier": "unit"},
-        ])
+        _write_proofs(self.tmp, 'plain', [_entry('plain', 'PROOF-1', 'RULE-1')])
 
-        by_name = {f['name']: f for f in self._build()['features']}
+    @pytest.mark.proof("report_data", "PROOF-30", "RULE-29", tier="integration")
+    def test_awaiting_runner_explains_the_coverage_it_reduced(self):
+        self._write_locking('@unit @on(windows)')
+        self._write_plain()
+        cfg = self._config()
+
+        built, _ = self._both(cfg)
+        by_name = {f['name']: f for f in built['features']}
 
         locking = by_name['locking']
-        assert locking['awaiting_runner'] == [{'id': 'PROOF-2', 'tier': 'windows'}], (
-            f"expected the windows proof to be listed, got {locking['awaiting_runner']}")
+        assert locking['awaiting_runner'] == [
+            {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'windows'}], (
+            f"expected the windows proof to be listed as a triple, got "
+            f"{locking['awaiting_runner']}")
+        assert locking['undeclared'] == [], locking['undeclared']
         assert locking['total'] == 1, (
             "the windows-only rule must leave the coverage denominator, so the payload "
             f"reports 1 rather than 2; got {locking['total']}")
         assert locking['proved'] == 1
 
-        # A feature with nothing awaiting carries an empty list, not a missing
-        # key: a consumer must be able to read the field unconditionally.
-        assert by_name['plain']['awaiting_runner'] == [], by_name['plain']['awaiting_runner']
-        assert 'awaiting_runner' in by_name['plain']
+        # A feature with nothing awaiting carries empty lists, not missing
+        # keys: a consumer must be able to read the fields unconditionally.
+        for key in ('awaiting_runner', 'undeclared'):
+            assert key in by_name['plain'], f"plain must carry {key!r}"
+            assert by_name['plain'][key] == [], by_name['plain'][key]
+
+        # A result on a platform nobody declared sits beside the awaiting
+        # list, so the two cannot be confused.
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-2', 'RULE-2')],
+                      platform='ubuntu-24')
+        built, _ = self._both(cfg)
+        locking = {f['name']: f for f in built['features']}['locking']
+        assert locking['undeclared'] == [
+            {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'ubuntu-24'}], locking['undeclared']
+        assert locking['awaiting_runner'] == [
+            {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'windows'}], (
+            f"an undeclared result must not clear the awaiting entry: "
+            f"{locking['awaiting_runner']}")
+
+    @pytest.mark.proof("report_data", "PROOF-32", "RULE-31", tier="integration")
+    def test_top_level_platforms_is_always_present(self, monkeypatch):
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'macos', 'version': '14.7.1', 'distro': '', 'arch': 'arm64', 'id': None})
+
+        # Nothing declared: the keys are there and empty, not absent.
+        self._write_plain()
+        cfg = self._config()
+        built, _ = self._both(cfg)
+        assert built['platform_testing'] is False, built['platform_testing']
+        assert set(built['platforms']) == set(_PLATFORM_KEYS), sorted(built['platforms'])
+        assert built['platforms']['local'] == [] and built['platforms']['remote'] == []
+        assert built['platforms']['errors'] == [] and built['platforms']['summary'] == {}
+        assert sorted(built['platforms']['registry']) == ['linux', 'macos', 'windows']
+        assert built['platforms']['host']['os'] == 'macos'
+
+        # Declared on a registered id, plus one malformed registry entry.
+        self._write_locking('@unit @on(windows-2022)')
+        _write_spec(self.tmp, 'mac',
+                    '# Feature: mac\n\n## What it does\nM.\n\n'
+                    '## Rules\n- RULE-1: A\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): a @unit @on(macos)\n')
+        _write_proofs(self.tmp, 'mac', [_entry('mac', 'PROOF-1', 'RULE-1')],
+                      platform='macos')
+        cfg = self._config(platforms={
+            'windows-2022': {'os': 'windows', 'runner': {'provider': 'github'}},
+            'mac-typo': {'os': 'macos', 'vresion': '14'},
+        })
+        built, _ = self._both(cfg)
+        p = built['platforms']
+        assert built['platform_testing'] is True
+        assert p['registry']['windows-2022'] == {
+            'os': 'windows', 'runner': {'provider': 'github'}}, p['registry']
+        assert 'mac-typo' not in p['registry']
+        assert len(p['errors']) == 1 and 'mac-typo' in p['errors'][0], p['errors']
+        assert p['local'] == ['macos'] and p['remote'] == ['windows-2022'], (p['local'], p['remote'])
+        assert p['summary'] == {
+            'macos': {'features': 1, 'proofs_awaiting': 0, 'proofs_failing': 0,
+                      'proofs_proved': 1},
+            'windows-2022': {'features': 1, 'proofs_awaiting': 1, 'proofs_failing': 0,
+                             'proofs_proved': 0},
+        }, p['summary']
+
+    @pytest.mark.proof("report_data", "PROOF-33", "RULE-32", tier="integration")
+    def test_per_feature_platforms_record_and_status_vocabulary(self):
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n'
+                    '## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: POSIX\n- RULE-2: Windows\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): locks @unit @on(macos, windows)\n'
+                    '- PROOF-2 (RULE-2): msvcrt locks @unit @on(windows)\n')
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1')],
+                      platform='macos')
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1'),
+                                            _entry('locking', 'PROOF-2', 'RULE-2', 'fail')],
+                      platform='windows')
+        self._write_plain()
+        cfg = self._config()
+
+        built, _ = self._both(cfg)
+        by_name = {f['name']: f for f in built['features']}
+        recs = by_name['locking']['platforms']
+        assert set(recs) == {'macos', 'windows'}, sorted(recs)
+        assert recs['macos'] == {
+            'total': 1, 'proved': 1, 'failing': [], 'awaiting': [], 'status': 'PROVED',
+            'results': {'PROOF-1': 'pass'}, 'provenance': None}, recs['macos']
+        assert recs['windows'] == {
+            'total': 2, 'proved': 1, 'failing': ['PROOF-2'], 'awaiting': [],
+            'status': 'FAILING', 'results': {'PROOF-1': 'pass', 'PROOF-2': 'fail'},
+            'provenance': None}, recs['windows']
+        assert by_name['plain']['platforms'] == {}, by_name['plain']['platforms']
+
+        # Proof objects: `@on` proofs carry platforms and results, agnostic
+        # proofs carry neither key.
+        rules = {r['id']: r for r in by_name['locking']['rules']}
+        p1 = next(p for p in rules['RULE-1']['proofs'] if p['id'] == 'PROOF-1')
+        assert p1['platforms'] == ['macos', 'windows'], p1
+        assert p1['results'] == {'macos': 'pass', 'windows': 'pass'}, p1
+        plain_proof = by_name['plain']['rules'][0]['proofs'][0]
+        assert 'platforms' not in plain_proof and 'results' not in plain_proof, plain_proof
+
+        # Windows with PROOF-1 passing and PROOF-2 unproved: PARTIAL.
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1')],
+                      platform='windows')
+        built, _ = self._both(cfg)
+        win = {f['name']: f for f in built['features']}['locking']['platforms']['windows']
+        assert win['status'] == 'PARTIAL' and win['awaiting'] == ['PROOF-2'], win
+        assert win['results'] == {'PROOF-1': 'pass', 'PROOF-2': None}, win
+
+        # No windows file at all: AWAITING, every result None.
+        os.remove(os.path.join(self.tmp, 'specs', 'app', 'locking.proofs-unit@windows.json'))
+        built, _ = self._both(cfg)
+        win = {f['name']: f for f in built['features']}['locking']['platforms']['windows']
+        assert win['status'] == 'AWAITING' and win['proved'] == 0, win
+        assert win['results'] == {'PROOF-1': None, 'PROOF-2': None}, win
+        assert win['awaiting'] == ['PROOF-1', 'PROOF-2'], win
+
+        for feat in built['features']:
+            for rec in feat['platforms'].values():
+                assert rec['status'] in ('PROVED', 'FAILING', 'PARTIAL', 'AWAITING'), rec
 
     @pytest.mark.proof("report_data", "PROOF-19", "RULE-19", tier="integration")
     def test_feature_category_is_the_parent_directory_name(self):

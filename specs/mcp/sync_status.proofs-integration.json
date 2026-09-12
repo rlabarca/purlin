@@ -6,7 +6,7 @@
       "id": "PROOF-79",
       "rule": "RULE-47",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_awaiting_runner_is_distinct_from_no_proof_and_does_not_block",
+      "test_name": "test_awaiting_names_the_platform_and_only_a_satisfying_result_clears_it",
       "status": "pass",
       "tier": "integration"
     },
@@ -15,7 +15,34 @@
       "id": "PROOF-80",
       "rule": "RULE-48",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_runner_provenance_comes_from_the_commit_not_the_proof_file",
+      "test_name": "test_provenance_comes_from_the_scoped_files_commit_not_the_proof_file",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-85",
+      "rule": "RULE-52",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_platforms_block_says_where_each_declared_platform_can_be_proved",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-86",
+      "rule": "RULE-53",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_an_undeclared_platform_result_is_named_and_counts_toward_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-87",
+      "rule": "RULE-47",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_rule_with_one_platform_proved_stays_in_and_counts",
       "status": "pass",
       "tier": "integration"
     },

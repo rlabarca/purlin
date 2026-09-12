@@ -47,8 +47,11 @@ jobs:
             # idempotency check. sync_status reads the trailer back with
             # `git log -1` (specs/mcp/sync_status.md RULE-48). Without it the
             # report reads "runner not recorded", which is a gap, not a state.
-            # Required by specs/ci/verify_gate.md RULE-7.
+            # The Purlin-Platform trailer names the platform id the file is
+            # scoped to, so sync_status can cross-check it against the filename.
+            # Both required by specs/ci/verify_gate.md RULE-7.
             git commit -m "test(static_checks): windows-native proofs from windows-latest [skip ci]" \
-                       -m "Purlin-Runner: github-actions/windows-latest"
+                       -m "Purlin-Runner: github-actions/windows-latest" \
+                       -m "Purlin-Platform: windows"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi

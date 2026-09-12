@@ -606,6 +606,112 @@ same commit as the phase's last work. Run whole test files only; finish with
   there`, a "By platform" section from `platforms.summary`, `platforms.errors` non-empty is exit 2
   in every mode. `verify-gate.yml` adds `.github/workflows/**` to its paths.
 
+## DONE — Phase 6.4: server satisfaction model (`feat(sync_status,report_data,verify_gate): per-platform satisfaction`, receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `sync_status` RULE-47/48 amended, RULE-52 (Platforms
+  block) and RULE-53 (undeclared results) new; PROOF-79/80 rewritten, PROOF-83's fixture
+  amended (see below), PROOF-85 (RULE-52), PROOF-86 (RULE-53), PROOF-87 (RULE-47) new; next free
+  RULE-54/PROOF-88. `report_data` RULE-29 amended, RULE-31 (top-level `platforms` and
+  `platform_testing`) and RULE-32 (per-feature `platforms` record, per-proof keys) new;
+  PROOF-30 rewritten, PROOF-32/33 new; next free RULE-33/PROOF-34. `verify_gate` RULE-2/4/7
+  amended, RULE-9 (registry errors exit 2, By-platform section) new; PROOF-2/4/7 updated,
+  PROOF-9 new; next free RULE-10/PROOF-10, so 6.6's rebase loop and preflight land as
+  RULE-10/11 and PROOF-10/11, not the RULE-9/10 the phase text pencilled.
+- **Server** (`scripts/mcp/purlin_server.py`). `_RUNNER_GATED_TIERS`, `_runner_gated_proofs` and
+  `_runner_provenance` are gone. New block under `_attach_gauge_coverage`:
+  `_platform_scoped_proofs` (819), `_result_satisfies` (834: `R == D`, or D in
+  `_PLATFORM_OS_VALUES` and `registry[R].os == D`, nothing else), `_platform_results` (853:
+  `results`, `awaiting`, `undeclared`, plus `satisfied_by` `{D: [(tier, R)]}` for provenance),
+  `_awaiting_runner(name, info, all_proofs, registry)` (910, triples), `_mark_undeclared_results`
+  (915), `_PROVENANCE_CACHE` (944) and `_platform_provenance` (947: `%H%x00%cI%x00` plus both
+  trailers, memoized per `(abs root, relpath)`, cleared on entry to `sync_status`,
+  `read_report_payload` and `generate_digest`; falls back to the legacy `proofs-windows.json`
+  name when the scoped file does not exist). Beside `_host_platform_ids`:
+  `_declared_platform_counts` (1294), `_platform_dispatch_note` (1304), `_platforms_block` (1323),
+  passed to `_build_summary_table` as `platform_lines` and printed after the mode line.
+  `_runner_lines(project_root, name, info, pres, awaiting_rule_count)` (1980) is platform-keyed
+  and also prints the RULE-53 advisory; `_active_rule_entries(..., registry)` (2037) excludes a
+  rule only when every planned proof is scoped and awaiting on every platform it declares.
+  `_feature_platform_records` (2640) builds the RULE-32 record; `_build_report_data` (2689)
+  resolves the registry and host once, computes `_platform_results` per feature, and emits
+  `awaiting_runner` triples, `undeclared`, per-feature `platforms`, per-proof `platforms`/
+  `results` (only for `@on` proofs, executed and planned), top-level `platforms` and
+  `platform_testing`. `_compute_drift` resolves config for the registry too.
+- **Decision the phase text left open: "counts toward nothing" is enforced, not just reported.**
+  `_mark_undeclared_results` stamps `undeclared: True` in memory on a scoped entry whose
+  platform satisfies none of its proof's declared platforms, and `_build_proof_lookup`,
+  `_build_all_proofs_lookup` and `_collect_relevant_proofs` skip stamped entries, so an
+  undeclared result moves no rule, appears under no rule in the payload and enters no vhash.
+  Every entry point stamps after `_read_proofs`: `sync_status`, `read_report_payload`,
+  `generate_digest`, `_compute_drift` and `dev/issue_receipts.py`. A caller that forgets gets
+  the pre-6.4 counting; PROOF-86 pins sync_status and the payload.
+- **Decision: an agnostic result for an `@on` proof satisfies no platform and keeps the rule
+  excluded.** With the denominator rule keyed on `(pid, platform)` literally, a proof declared
+  `@on(foo)` whose only result is agnostic is awaiting on foo, and a rule it is the only proof
+  for leaves the denominator. That made sync_status PROOF-83's one-rule fixture read `0/0`
+  instead of PASSING, so the fixture (and its description) gained a second rule proved
+  agnostically: the advisory's "no demotion" claim is now tested against a rule that is proved
+  here. Nothing else in 6.2 moved.
+- **Payload shape.** Per feature: `platforms: {id: {total, proved, failing[], awaiting[], status
+  PROVED|FAILING|PARTIAL|AWAITING, results{pid: pass|fail|null}, provenance{commit, when, runner,
+  trailer_platform}|null}}` (`{}` when nothing declared; no `receipt` sub-key yet, 6.5's),
+  `awaiting_runner: [{id, tier, platform}]`, `undeclared: [{id, tier, platform}]`. Top-level
+  `platforms: {registry (no `_id`), host, local[], remote[], errors[], summary{id: {features,
+  proofs_awaiting, proofs_failing, proofs_proved}}}` over declared ids, and `platform_testing`.
+  PROOF-30/32/33 assert `_build_report_data` and `read_report_payload` agree on all of it.
+- **Text.** `⚠ AWAITING RUNNER: N proofs declared @on(<platform>) with no result — ids`;
+  `✓ @on(<platform>) proved remotely <when> (<runner>[ (trailer says <x>)])[ via @<R>]`;
+  `⚠ Undeclared platform result: PROOF-N has a result in <feature>.proofs-<tier>@<R>.json but
+  declares no platform it satisfies; it counts toward nothing`; `Platforms: host <os> <version>
+  <arch>[ (PURLIN_PLATFORM=<id>)]` / `  local:  <id> (N proofs); run with PURLIN_PLATFORM=<id>`
+  (one line per id; `none of the declared platforms is this host` when empty) / `  runner: <id>
+  (N proofs; github workflow <name> | no runner configured | runner provider <x> is not one
+  purlin:test can dispatch | unregistered)`. The mode line's "runner-gated proofs" wording is
+  untouched for Phase 8. On this repo the block reads `host macos ... arm64`, `local: none`,
+  `runner: windows (2 proofs; no runner configured)`, and static_checks prints
+  `✓ @on(windows) proved remotely 74 days ago (runner not recorded)`: the legacy file's commit
+  (`986fef5c`, PR #5) carried no trailer, which was already the case before this phase.
+- **Gate** (`scripts/ci/verify_gate.py`): `_findings` prints `declared @on(<platform>) with no
+  result there`; `_by_platform` (95) renders `By platform (N):` from `platforms.summary`, one
+  `id: P proved, A awaiting, F failing (K features)` line each, in every mode; a non-empty
+  `platforms.errors` exits 2 in every mode after printing each error, before any finding.
+  `verify-gate.yml` triggers on `.github/workflows/**` (both `push` and `pull_request`);
+  `windows-proofs.yml` gained `-m "Purlin-Platform: windows"` (minimal edit; Phase 7 rewrites it).
+- **Elsewhere.** `dev/issue_receipts.py` writes the triple and stamps undeclared results;
+  `skills/verify/SKILL.md` sample is `{"id": "PROOF-53", "tier": "unit", "platform": "windows"}`;
+  `dev/test_purlin_report.py` PROOF-41 fixture carries `platform` (render unchanged: it still
+  groups by `tier`, Phase 8's); `dev/test_skill_specs.py` skill_verify PROOF-9 passes the
+  registry and expects the triple; `dev/test_report_data.py` `_write_proofs` gained `platform=`;
+  `dev/test_verify_gate.py` `_spec` declares `@unit @on(windows-2022)` and `_make_project`
+  registers it. Not changed, noted for 6.5: the issuer still computes `active` without
+  `_active_rule_entries`, so a feature whose rule is only awaiting is skipped as `unproved`
+  while sync_status reads PASSING; pre-existing, and 6.5's one-verdict function is where it
+  is fixed.
+- **Pass D.** All 13 new or amended descriptions grade PROVABLE except verify_gate PROOF-7
+  (STRUCTURAL, a grep over workflow files, as before). Zero UNPROVABLE, zero LOOSE among them;
+  no em-dashes or en-dashes in any line this phase wrote.
+- **Mutations (each applied, its proof run with bytecode caching disabled, restored; all
+  caught).** Drop the family clause of `_result_satisfies` (PROOF-79); drop the trailer
+  cross-check (PROOF-80: `trailer says other` missing); `any` for `all` over a rule's proofs
+  and `any` for `all` over a proof's platforms in `_active_rule_entries` (PROOF-87, which gained
+  its two-proof rule because the one-rule fixture could not tell the two apart); let an
+  undeclared result reach `_build_proof_lookup`, `_build_all_proofs_lookup` or
+  `_collect_relevant_proofs` (PROOF-86, whose fixture was moved to a rule that stays in the
+  denominator because a fail on an excluded rule is invisible either way); print the Platforms
+  block with nothing declared and read an unregistered id as `no runner configured`
+  (PROOF-85); registry errors not exiting 2 (verify_gate PROOF-9); never report FAILING per
+  platform (report_data PROOF-33); `platform_testing` always true (PROOF-32). Two same-size
+  mutations first "survived" because Python reused a `.pyc` whose mtime matched the restored
+  file to the second; re-run with `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` removed.
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `676 passed, 27 skipped` (was
+  670/27: +6 are sync_status PROOF-85/86/87, report_data PROOF-32/33, verify_gate PROOF-9).
+  `git diff --stat specs/`: every changed proof file gained entries or kept its count; no
+  entry lost. Subset runs during development churned `sync_status.proofs-unit.json` and
+  `skill_spec_from_code.proofs-unit.json`; both were restored with
+  `git checkout -- 'specs/**/*.proofs-*.json'` before the sweep, whose output is what is
+  committed.
+- CLAUDE.md unchanged. `references/formats/proofs_format.md` unchanged: no field moved.
+
 ### 6.5 vhash v2, receipt v2, one verdict function (`sync_status` RULE-6, `skill_verify`)
 
 Unified formula (the two designs reconciled; user chose `\x00` separators):

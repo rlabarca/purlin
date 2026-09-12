@@ -30,6 +30,11 @@ def main(root=None, quiet=False):
     root = root or ROOT
     features = ps._scan_specs(root)
     all_proofs = ps._read_proofs(root)
+    # The platform registry decides which scoped result satisfies which
+    # declared platform (sync_status RULE-47), and which results count toward
+    # nothing (RULE-53); resolved once, the same way sync_status does.
+    registry, _errors = ps._platform_registry(ps.resolve_config(root))
+    ps._mark_undeclared_results(features, all_proofs, registry)
     global_anchors = {
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')
@@ -73,10 +78,11 @@ def main(root=None, quiet=False):
         # skill_verify RULE-9: a platform-partial receipt says so. The key is
         # omitted entirely when nothing is awaiting, so an ordinary receipt is
         # byte-identical to one issued before this existed.
-        awaiting = ps._awaiting_runner(name, info, all_proofs)
+        awaiting = ps._awaiting_runner(name, info, all_proofs, registry)
         if awaiting:
             receipt['awaiting_runner'] = [
-                {'id': pid, 'tier': tier} for pid, tier in awaiting
+                {'id': pid, 'tier': tier, 'platform': platform}
+                for pid, tier, platform in awaiting
             ]
         # info['path'] is project-relative, so it must be resolved against
         # `root`. Without the join this only worked when cwd happened to be the

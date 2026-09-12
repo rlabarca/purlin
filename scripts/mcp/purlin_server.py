@@ -804,85 +804,191 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
         summary['weighted'] = round(passing / denom * 100) if denom else assessed
 
 
-# Tiers that cannot execute on an arbitrary developer machine: they need a
-# specific runner. A proof declaring one of these is not missing when it has no
-# result here, it is waiting, and the two must not report identically. Since
-# proofs_format.md v5 no tier is runner-gated (schema_proof_format RULE-4): the
-# name here is the platform a legacy `@windows` proof aliases to, and the file
-# `_read_proofs` reads as unit@windows. Phase 6.4 replaces this set with the
-# platform registry.
-_RUNNER_GATED_TIERS = frozenset({'windows'})
+# ---------------------------------------------------------------------------
+# Platform satisfaction model (sync_status RULE-47/48/52/53)
+# ---------------------------------------------------------------------------
+#
+# A proof declaring `@on(<platforms>)` is proved on a platform only by a
+# result from a file scoped to a platform that satisfies it. A proof with no
+# result on a declared platform is not missing, it is waiting, and the two
+# must not report identically. Nothing here is runner-gated by tier: since
+# proofs_format.md v5 the tier says what kind of test a proof is and the
+# platform tag says where it must run.
 
 
-def _runner_gated_proofs(info):
-    """{proof_id: tier} for this spec's proofs that declare a runner-gated tier.
+def _platform_scoped_proofs(info):
+    """{proof_id: (tier, [platform_id, ...])} for this spec's `@on` proofs.
 
-    Since the tag grammar gained `@on(...)` (schema_spec_format RULE-9), a bare
-    `@windows` parses as tier `unit` with platforms `['windows']`, and an
-    explicit `@unit @on(windows)` reads the same. Until the platform registry
-    replaces this mechanism, a unit-tier proof whose platforms name a gated
-    tier is gated under that name, so the awaiting/provenance surfaces and the
-    `proofs-windows.json` result file keep working unchanged.
+    Built from `proof_platforms_by_id`, so the legacy `@windows` alias (tier
+    `unit`, platforms `['windows']`, schema_spec_format RULE-9) is scoped the
+    same way as an explicit `@unit @on(windows)`.
     """
-    platforms_by_id = info.get('proof_platforms_by_id') or {}
-    gated = {}
-    for pid, tier in (info.get('proof_tier_by_id') or {}).items():
-        if tier in _RUNNER_GATED_TIERS:
-            gated[pid] = tier
+    tiers = info.get('proof_tier_by_id') or {}
+    scoped = {}
+    for pid, platforms in (info.get('proof_platforms_by_id') or {}).items():
+        if platforms:
+            scoped[pid] = (tiers.get(pid, 'unit'), list(platforms))
+    return scoped
+
+
+def _result_satisfies(result_platform, declared, registry):
+    """Whether a result scoped to `result_platform` proves the declared id.
+
+    Exactly two ways: the ids are equal, or the declared id is a family id
+    (`windows`, `macos`, `linux`) and the registry entry for the result's id
+    has that `os`. Nothing else: a family result never satisfies a specific
+    id (a `windows` file says nothing about `windows-2022`), and an id the
+    registry does not hold satisfies nothing but itself.
+    """
+    if not result_platform:
+        return False
+    if result_platform == declared:
+        return True
+    if declared in _PLATFORM_OS_VALUES:
+        entry = (registry or {}).get(result_platform)
+        return bool(entry) and entry.get('os') == declared
+    return False
+
+
+def _platform_results(name, info, all_proofs, registry):
+    """Per-proof, per-platform satisfaction for one feature.
+
+    Returns a dict:
+      results:      {proof_id: {declared_platform: 'pass' | 'fail' | None}}
+                    (fail wins when several files satisfy the same platform)
+      awaiting:     sorted [(proof_id, tier, platform)] with no satisfying result
+      undeclared:   sorted [(proof_id, tier, result_platform)] for scoped results
+                    that satisfy none of that proof's declared platforms
+      satisfied_by: {declared_platform: sorted [(tier, result_platform)]}, the
+                    scoped files whose results satisfied it (for provenance)
+
+    A proof with no declared platforms never yields undeclared entries (a
+    scoped result for it counts like any other), and an agnostic result
+    (platform None) is never undeclared: it satisfies no platform and is
+    simply not a platform result.
+    """
+    scoped = _platform_scoped_proofs(info)
+    results = {pid: {p: None for p in platforms}
+               for pid, (_tier, platforms) in scoped.items()}
+    satisfied_by = {}
+    undeclared = set()
+    for entry in all_proofs.get(name, []):
+        pid = entry.get('id')
+        result_platform = entry.get('platform')
+        if not result_platform or pid not in scoped:
             continue
-        if tier == 'unit':
-            for platform in platforms_by_id.get(pid) or []:
-                if platform in _RUNNER_GATED_TIERS:
-                    gated[pid] = platform
-                    break
-    return gated
+        tier, platforms = scoped[pid]
+        matched = False
+        status = entry.get('status')
+        for declared in platforms:
+            if not _result_satisfies(result_platform, declared, registry):
+                continue
+            matched = True
+            satisfied_by.setdefault(declared, set()).add(
+                (entry.get('tier') or tier, result_platform))
+            current = results[pid][declared]
+            if status == 'fail':
+                results[pid][declared] = 'fail'
+            elif status == 'pass' and current is None:
+                results[pid][declared] = 'pass'
+        if not matched:
+            undeclared.add((pid, entry.get('tier') or tier, result_platform))
+    awaiting = sorted(
+        (pid, scoped[pid][0], platform)
+        for pid, by_platform in results.items()
+        for platform, status in by_platform.items()
+        if status is None
+    )
+    return {
+        'results': results,
+        'awaiting': awaiting,
+        'undeclared': sorted(undeclared),
+        'satisfied_by': {p: sorted(files) for p, files in satisfied_by.items()},
+    }
 
 
-def _awaiting_runner(name, info, all_proofs):
-    """Declared runner-gated proofs with no executed result in their own tier.
+def _awaiting_runner(name, info, all_proofs, registry):
+    """Sorted [(proof_id, tier, platform)] declared with no satisfying result."""
+    return _platform_results(name, info, all_proofs, registry)['awaiting']
 
-    Keyed on (proof id, tier) rather than proof id alone: a proof declared
-    @windows is satisfied only by a windows-tier result, so an entry for the
-    same id at another tier does not count. Returns [(proof_id, tier)] sorted.
+
+def _mark_undeclared_results(features, all_proofs, registry):
+    """Stamp `undeclared: True` (in memory only) on every scoped result that
+    satisfies none of its proof's declared platforms (sync_status RULE-53).
+
+    The rule lookups skip stamped entries, so such a result moves no rule to
+    PASS or FAIL and enters no vhash: it counts toward nothing but the
+    advisory that names it. Returns the number of entries stamped.
     """
-    gated = _runner_gated_proofs(info)
-    if not gated:
-        return []
-    # A result satisfies the gate under its tier or under the platform its file
-    # is scoped to: a legacy `proofs-windows.json` reads as unit@windows, and a
-    # `proofs-unit@windows.json` result names the platform the same way.
-    executed = set()
-    for e in all_proofs.get(name, []):
-        executed.add((e.get('id'), e.get('tier')))
-        if e.get('platform'):
-            executed.add((e.get('id'), e.get('platform')))
-    return sorted((pid, tier) for pid, tier in gated.items()
-                  if (pid, tier) not in executed)
+    stamped = 0
+    for name, info in features.items():
+        scoped = _platform_scoped_proofs(info)
+        if not scoped:
+            continue
+        for entry in all_proofs.get(name, []):
+            pid = entry.get('id')
+            result_platform = entry.get('platform')
+            if not result_platform or pid not in scoped:
+                continue
+            if not any(_result_satisfies(result_platform, d, registry)
+                       for d in scoped[pid][1]):
+                entry['undeclared'] = True
+                stamped += 1
+    return stamped
 
 
-def _runner_provenance(project_root, spec_path, feature, tier):
-    """When a runner-gated tier file was last committed, and by which runner.
+# One `git log` per scoped proof file per report run. Keyed by (project root,
+# project-relative path); `sync_status`, `read_report_payload` and
+# `generate_digest` clear it on entry so a run never reads the previous run's
+# answer for a file that has since been committed.
+_PROVENANCE_CACHE = {}
+
+
+def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
+    """When a scoped proof file was last committed, by which runner, for which
+    platform: {commit, when, runner, trailer_platform}, or None when the file
+    has no commit.
 
     Proof entries deliberately carry no timestamp: that is what makes the CI
     workflow's `git diff --cached --quiet` guard idempotent. So provenance is
     read back out of git instead of stored in the file, with the runner taken
-    from the commit's `Purlin-Runner:` trailer. Zero new fields.
+    from the commit's `Purlin-Runner:` trailer and the platform it claims from
+    `Purlin-Platform:`. A trailer platform that disagrees with the filename is
+    returned as is, so the caller can say so. Zero new fields.
     """
     # spec_path is already project-relative and git runs with cwd=project_root,
     # so relativizing again would resolve against the process cwd instead.
-    rel = os.path.join(os.path.dirname(spec_path), f'{feature}.proofs-{tier}.json')
+    spec_dir = os.path.dirname(spec_path)
+    rel = os.path.join(spec_dir, f'{feature}.proofs-{tier}@{platform_id}.json')
+    if tier == 'unit' and platform_id in _LEGACY_PLATFORM_TIERS and \
+            not os.path.isfile(os.path.join(project_root, rel)):
+        # The pre-Format-Version-5 spelling, still read as unit@<platform>.
+        rel = os.path.join(spec_dir, f'{feature}.proofs-{platform_id}.json')
+    key = (os.path.abspath(project_root), rel)
+    if key in _PROVENANCE_CACHE:
+        return _PROVENANCE_CACHE[key]
+    result = None
     try:
         out = subprocess.run(
-            ['git', 'log', '-1', '--format=%cI%x00%(trailers:key=Purlin-Runner,valueonly)',
+            ['git', 'log', '-1',
+             '--format=%H%x00%cI%x00%(trailers:key=Purlin-Runner,valueonly)'
+             '%x00%(trailers:key=Purlin-Platform,valueonly)',
              '--', rel],
             cwd=project_root, capture_output=True, text=True, timeout=10,
         )
     except (OSError, subprocess.SubprocessError):
-        return None
-    if out.returncode != 0 or not out.stdout.strip():
-        return None
-    when, _, runner = out.stdout.strip().partition('\x00')
-    return {'when': when.strip(), 'runner': runner.strip() or None}
+        out = None
+    if out is not None and out.returncode == 0 and out.stdout.strip():
+        parts = [p.strip() for p in out.stdout.strip().split('\x00')]
+        parts += [''] * (4 - len(parts))
+        result = {
+            'commit': parts[0],
+            'when': parts[1],
+            'runner': parts[2] or None,
+            'trailer_platform': parts[3] or None,
+        }
+    _PROVENANCE_CACHE[key] = result
+    return result
 
 
 def _gauge_token(gauge, which):
@@ -1185,6 +1291,75 @@ def _host_platform_ids(registry, host):
                   if _platform_satisfied_by_host(entry, host))
 
 
+def _declared_platform_counts(features):
+    """{platform_id: number of proofs declaring it} across every spec."""
+    counts = {}
+    for info in features.values():
+        for _tier, platforms in _platform_scoped_proofs(info).values():
+            for pid in platforms:
+                counts[pid] = counts.get(pid, 0) + 1
+    return counts
+
+
+def _platform_dispatch_note(registry, platform_id):
+    """How `purlin:test` would reach a platform the host is not, for the
+    `runner:` line of the Platforms block."""
+    entry = registry.get(platform_id)
+    if entry is None:
+        return 'unregistered'
+    runner = entry.get('runner')
+    if not runner:
+        return 'no runner configured'
+    provider = runner.get('provider')
+    if provider != 'github':
+        return f'runner provider {provider} is not one purlin:test can dispatch'
+    if runner.get('workflow'):
+        return f'github workflow {runner["workflow"]}'
+    if runner.get('runs_on'):
+        return f'github runs_on {runner["runs_on"]}, no workflow named'
+    return 'github runner, no workflow named'
+
+
+def _platforms_block(features, registry, host):
+    """The `Platforms:` lines of the summary (sync_status RULE-52), or [].
+
+    Printed only when some proof declares a platform: a project with no
+    `@on` has nothing to run anywhere but here. Every declared id lands on
+    exactly one line: under `local:` when this host satisfies it (with the
+    `PURLIN_PLATFORM` value that makes the plugin write the scoped file),
+    under `runner:` otherwise, with how a runner would reach it, and an id
+    that is neither registered nor a family id is listed as unregistered
+    rather than dropped.
+    """
+    counts = _declared_platform_counts(features)
+    if not counts:
+        return []
+    satisfied = set(_host_platform_ids(registry, host))
+    head = f"Platforms: host {host.get('os') or '?'}"
+    if host.get('version'):
+        head += f" {host['version']}"
+    if host.get('arch'):
+        head += f" {host['arch']}"
+    if host.get('id'):
+        head += f" (PURLIN_PLATFORM={host['id']})"
+    lines = [head]
+
+    def proofs(n):
+        return f"{n} proof{'s' if n != 1 else ''}"
+
+    local = [pid for pid in sorted(counts) if pid in satisfied]
+    remote = [pid for pid in sorted(counts) if pid not in satisfied]
+    if not local:
+        lines.append("  local:  none of the declared platforms is this host")
+    for pid in local:
+        lines.append(f"  local:  {pid} ({proofs(counts[pid])}); "
+                     f"run with PURLIN_PLATFORM={pid}")
+    for pid in remote:
+        lines.append(f"  runner: {pid} ({proofs(counts[pid])}; "
+                     f"{_platform_dispatch_note(registry, pid)})")
+    return lines
+
+
 def _remote_verification_line(config, awaiting_count):
     """The project's declared remote-verification mode, or '' when silent.
 
@@ -1224,8 +1399,13 @@ def _remote_verification_line(config, awaiting_count):
 
 
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
-                         gauges_by_feature=None, config=None, awaiting_count=0):
-    """Build a coverage summary table with Unicode box-drawing characters."""
+                         gauges_by_feature=None, config=None, awaiting_count=0,
+                         platform_lines=None):
+    """Build a coverage summary table with Unicode box-drawing characters.
+
+    `platform_lines` is the Platforms block (sync_status RULE-52), printed
+    after the remote-verification line and before the detail.
+    """
     if not summary_rows:
         return []
 
@@ -1326,6 +1506,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     rv_line = _remote_verification_line(config or {}, awaiting_count)
     if rv_line:
         lines.append(rv_line)
+    lines.extend(platform_lines or [])
 
     lines.append("")  # blank line before detail
 
@@ -1402,6 +1583,7 @@ def _check_legacy_mcp_entry(project_root):
 
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
+    _PROVENANCE_CACHE.clear()
     features = _scan_specs(project_root)
     legacy_proof_files = []
     all_proofs = _read_proofs(project_root, legacy=legacy_proof_files)
@@ -1416,6 +1598,7 @@ def sync_status(project_root, role=None):
     # summary reports the declared remote-verification mode (RULE-49).
     config = resolve_config(project_root)
     registry, registry_errors = _platform_registry(config)
+    _mark_undeclared_results(features, all_proofs, registry)
 
     # Warn about a legacy version-pinned MCP entry (shadows the plugin-bundled server)
     legacy_mcp = _check_legacy_mcp_entry(project_root)
@@ -1500,7 +1683,7 @@ def sync_status(project_root, role=None):
         rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
         active_entries, _awaiting, _gated = _active_rule_entries(
-            name, info, rule_entries, all_proofs)
+            name, info, rule_entries, all_proofs, registry)
         active_total = len(active_entries)
         proved = sum(1 for key, _, _ in active_entries
                      if proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -1513,7 +1696,7 @@ def sync_status(project_root, role=None):
         if all_proved_passing and receipt:
             cli_rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
             cli_active, _, _ = _active_rule_entries(
-                name, info, cli_rule_entries, all_proofs)
+                name, info, cli_rule_entries, all_proofs, registry)
             cli_all_proofs_list = _collect_relevant_proofs(name, cli_rule_entries, all_proofs)
             cli_vhash = _compute_vhash(
                 {key: True for key, _, _ in cli_active}, cli_all_proofs_list
@@ -1595,13 +1778,17 @@ def sync_status(project_root, role=None):
     # `config` was resolved above the preamble; the summary block reports the
     # declared remote-verification mode (RULE-49), so the table builder needs it.
     awaiting_count = sum(
-        len(_awaiting_runner(name, info, all_proofs))
+        len(_awaiting_runner(name, info, all_proofs, registry))
         for name, info in features.items()
     )
+    # The Platforms block (RULE-52): where each declared platform can be
+    # proved from here. Empty when no proof declares one.
+    platform_lines = _platforms_block(features, registry, _detect_host_platform())
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
-                                       gauges_by_feature, config, awaiting_count)
+                                       gauges_by_feature, config, awaiting_count,
+                                       platform_lines)
 
     # Report data generation (side effect)
     if config.get('report'):
@@ -1674,8 +1861,11 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
     all_rule_keys = {key for key, _, _, _ in rule_entries}
 
     proof_by_rule = {}
-    # Own proofs
+    # Own proofs. A result stamped `undeclared` (a scoped file for a platform
+    # its proof does not declare, sync_status RULE-53) counts toward nothing.
     for p in all_proofs.get(name, []):
+        if p.get('undeclared'):
+            continue
         rule = p.get('rule', '')
         if rule not in proof_by_rule or p.get('status') == 'fail':
             proof_by_rule[rule] = p
@@ -1684,6 +1874,8 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
     source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
+            if p.get('undeclared'):
+                continue
             rule = p.get('rule', '')
             key = f"{src_name}/{rule}"
             if key in all_rule_keys:
@@ -1702,12 +1894,16 @@ def _build_all_proofs_lookup(name, rule_entries, all_proofs):
     by_rule = {}
 
     for p in all_proofs.get(name, []):
+        if p.get('undeclared'):
+            continue
         rule = p.get('rule', '')
         by_rule.setdefault(rule, []).append(p)
 
     source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
+            if p.get('undeclared'):
+                continue
             rule = p.get('rule', '')
             key = f"{src_name}/{rule}"
             if key in all_rule_keys:
@@ -1717,13 +1913,19 @@ def _build_all_proofs_lookup(name, rule_entries, all_proofs):
 
 
 def _collect_relevant_proofs(name, rule_entries, all_proofs):
-    """Collect all proof entries relevant to the combined rule set (for vhash)."""
+    """Collect all proof entries relevant to the combined rule set (for vhash).
+
+    Undeclared platform results (sync_status RULE-53) are left out, so a file
+    for a platform nobody declared cannot move a vhash.
+    """
     all_rule_keys = {key for key, _, _, _ in rule_entries}
 
-    proofs = list(all_proofs.get(name, []))
+    proofs = [p for p in all_proofs.get(name, []) if not p.get('undeclared')]
     source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
+            if p.get('undeclared'):
+                continue
             key = f"{src_name}/{p.get('rule', '')}"
             if key in all_rule_keys:
                 proofs.append(p)
@@ -1775,49 +1977,64 @@ def _gauge_directives(name, gauges):
     return out
 
 
-def _runner_lines(project_root, name, info, all_proofs, awaiting, awaiting_rule_count):
-    """Report runner-gated proofs: what is waiting, and what a runner already proved.
+def _runner_lines(project_root, name, info, pres, awaiting_rule_count):
+    """Report platform proofs: what is waiting, what does not count, and what
+    a runner already proved.
 
-    A proof declaring @windows that has never run reported nothing at all. Its
-    rule read PASS off a local proof, so the dashboard, the summary line and the
-    receipt were all silent about a platform the project claims to support. That
-    silence is the defect; the fix is a distinct AWAITING RUNNER signal that does
-    not count against coverage and does not block a receipt.
+    A proof declaring a platform that has never run there reported nothing at
+    all. Its rule read PASS off a local proof, so the dashboard, the summary
+    line and the receipt were all silent about a platform the project claims
+    to support. That silence is the defect; the fix is a distinct AWAITING
+    RUNNER signal per platform that does not count against coverage and does
+    not block a receipt (sync_status RULE-47).
+
+    `pres` is the feature's `_platform_results`.
     """
     out = []
+    awaiting = pres['awaiting']
     if awaiting:
-        by_tier = {}
-        for pid, tier in awaiting:
-            by_tier.setdefault(tier, []).append(pid)
-        for tier in sorted(by_tier):
-            ids = ', '.join(by_tier[tier])
-            n = len(by_tier[tier])
+        by_platform = {}
+        for pid, _tier, platform in awaiting:
+            by_platform.setdefault(platform, []).append(pid)
+        for platform in sorted(by_platform):
+            ids = ', '.join(by_platform[platform])
+            n = len(by_platform[platform])
             out.append(f"  \u26a0 AWAITING RUNNER: {n} proof{'s' if n != 1 else ''} "
-                       f"declared @{tier} with no result \u2014 {ids}")
+                       f"declared @on({platform}) with no result \u2014 {ids}")
         if awaiting_rule_count:
             out.append(f"  \u2192 {awaiting_rule_count} rule"
                        f"{'s' if awaiting_rule_count != 1 else ''} left the coverage "
                        f"denominator: every declared proof needs a runner")
-        out.append("  \u2192 Run: purlin:test \u2014 it dispatches a runner for that tier "
+        out.append("  \u2192 Run: purlin:test \u2014 it dispatches a runner for that platform "
                    "and pulls back the proofs it commits. Not a failure and not a blocker")
 
+    # A scoped file for a platform its proof does not declare (RULE-53).
+    # Named, because a result that silently counts toward nothing looks like
+    # a result that was never produced.
+    for pid, tier, platform in pres['undeclared']:
+        out.append(f"  \u26a0 Undeclared platform result: {pid} has a result in "
+                   f"{name}.proofs-{tier}@{platform}.json but declares no platform "
+                   f"it satisfies; it counts toward nothing")
+
     # What a runner did prove, and when. Read from git rather than the proof
-    # file, which carries no timestamp on purpose.
-    proved_tiers = sorted(
-        {tier for tier in _runner_gated_proofs(info).values()} -
-        {tier for _, tier in awaiting}
-    )
-    for tier in proved_tiers:
-        prov = _runner_provenance(project_root, info['path'], name, tier)
-        if not prov:
-            continue
-        when = _relative_time(prov['when']) if prov.get('when') else 'unknown'
-        runner = prov.get('runner') or 'runner not recorded'
-        out.append(f"  \u2713 @{tier} proved remotely {when} ({runner})")
+    # file, which carries no timestamp on purpose (RULE-48).
+    for platform in sorted(pres['satisfied_by']):
+        for tier, result_platform in pres['satisfied_by'][platform]:
+            prov = _platform_provenance(project_root, info['path'], name, tier,
+                                        result_platform)
+            if not prov:
+                continue
+            when = _relative_time(prov['when']) if prov.get('when') else 'unknown'
+            runner = prov.get('runner') or 'runner not recorded'
+            trailer = prov.get('trailer_platform')
+            if trailer and trailer != result_platform:
+                runner += f" (trailer says {trailer})"
+            via = '' if result_platform == platform else f" via @{result_platform}"
+            out.append(f"  \u2713 @on({platform}) proved remotely {when} ({runner}){via}")
     return out
 
 
-def _active_rule_entries(name, info, rule_entries, all_proofs):
+def _active_rule_entries(name, info, rule_entries, all_proofs, registry):
     """The rules that count toward coverage, and why the others do not.
 
     Four surfaces computed this independently: the detail report, the summary
@@ -1827,17 +2044,28 @@ def _active_rule_entries(name, info, rule_entries, all_proofs):
     the detail beneath it said 1/1 PASSING. One definition, four callers.
 
     Excluded: DEFERRED rules, and rules whose every declared proof is
-    runner-gated and unproved. A required anchor rule is never excluded on
-    runner grounds, because it is proved under the anchor's own feature name.
+    awaiting on every platform it declares. A rule with any satisfying
+    result stays in and counts what that result proves, so a proof declared
+    on two platforms and proved on one keeps its rule in the denominator with
+    the other platform reported as awaiting. A required anchor rule is never
+    excluded on platform grounds, because it is proved under the anchor's own
+    feature name.
 
-    Returns (active_entries, awaiting, awaiting_rule_count).
+    Returns (active_entries, awaiting, awaiting_rule_count), where `awaiting`
+    is the sorted [(proof_id, tier, platform)] list.
     """
-    awaiting = _awaiting_runner(name, info, all_proofs)
+    awaiting = _awaiting_runner(name, info, all_proofs, registry)
     awaiting_rules = set()
     if awaiting:
-        awaiting_ids = {pid for pid, _ in awaiting}
+        awaiting_keys = {(pid, platform) for pid, _tier, platform in awaiting}
+        scoped = _platform_scoped_proofs(info)
+
+        def fully_awaiting(pid):
+            return pid in scoped and all(
+                (pid, platform) in awaiting_keys for platform in scoped[pid][1])
+
         for rule_id, pids in (info.get('planned_proof_ids_by_rule') or {}).items():
-            if pids and set(pids) <= awaiting_ids:
+            if pids and all(fully_awaiting(pid) for pid in pids):
                 awaiting_rules.add(rule_id)
 
     active, gated = [], 0
@@ -1873,7 +2101,8 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     # leaves the coverage denominator the way a DEFERRED rule does. Warn, never
     # block: a missing Windows runner must not turn a green repo red.
     active_entries, awaiting, awaiting_rule_count = _active_rule_entries(
-        name, info, rule_entries, all_proofs)
+        name, info, rule_entries, all_proofs, registry)
+    pres = _platform_results(name, info, all_proofs, registry)
     active_total = len(active_entries)
     proved = sum(1 for key, _, _ in active_entries
                  if proof_by_rule.get(key, {}).get('status') == 'pass')
@@ -1963,8 +2192,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             lines.append(f"{name}: {header_status}")
         lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         lines.append(f"  vhash={vhash}")
-        lines.extend(_runner_lines(project_root, name, info, all_proofs,
-                                   awaiting, awaiting_rule_count))
+        lines.extend(_runner_lines(project_root, name, info, pres, awaiting_rule_count))
 
         if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
@@ -2011,8 +2239,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
     lines.extend(advisories)
-    lines.extend(_runner_lines(project_root, name, info, all_proofs,
-                               awaiting, awaiting_rule_count))
+    lines.extend(_runner_lines(project_root, name, info, pres, awaiting_rule_count))
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -2410,9 +2637,68 @@ def _check_uncommitted_all(project_root):
     return files
 
 
+def _feature_platform_records(project_root, name, info, pres):
+    """Per-platform record for one feature (report_data RULE-32).
+
+    {platform_id: {total, proved, failing[], awaiting[], status, results{},
+    provenance{commit, when, runner, trailer_platform} | None}}, keyed by
+    every platform some proof of this feature declares; `{}` when none does.
+    Status: FAILING when any result on that platform failed, PROVED when
+    every declared proof passed there, AWAITING when none has a result,
+    PARTIAL otherwise. Provenance comes from the scoped file that satisfied
+    the platform, preferring the file named for the platform itself.
+    """
+    by_platform = {}
+    for pid, (_tier, platforms) in _platform_scoped_proofs(info).items():
+        for platform in platforms:
+            by_platform.setdefault(platform, {})[pid] = pres['results'][pid][platform]
+    records = {}
+    for platform in sorted(by_platform):
+        results = dict(sorted(by_platform[platform].items()))
+        failing = [pid for pid, st in results.items() if st == 'fail']
+        awaiting = [pid for pid, st in results.items() if st is None]
+        proved = sum(1 for st in results.values() if st == 'pass')
+        if failing:
+            status = 'FAILING'
+        elif proved == len(results):
+            status = 'PROVED'
+        elif proved == 0:
+            status = 'AWAITING'
+        else:
+            status = 'PARTIAL'
+        provenance = None
+        files = sorted(pres['satisfied_by'].get(platform) or [],
+                       key=lambda f: (f[1] != platform, f))
+        for tier, result_platform in files:
+            provenance = _platform_provenance(project_root, info['path'], name,
+                                              tier, result_platform)
+            if provenance:
+                break
+        records[platform] = {
+            'total': len(results),
+            'proved': proved,
+            'failing': failing,
+            'awaiting': awaiting,
+            'status': status,
+            'results': results,
+            'provenance': provenance,
+        }
+    return records
+
+
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, design_summary=None):
     """Build the structured PURLIN_DATA dict for the dashboard."""
+    # The platform registry and host, resolved once per payload: every
+    # feature's satisfaction model reads the same registry (report_data
+    # RULE-31/32), and the CI gate reads the registry's errors from here.
+    registry, registry_errors = _platform_registry(config)
+    host = _detect_host_platform()
+    pres_by_feature = {
+        name: _platform_results(name, info, all_proofs, registry)
+        for name, info in features.items()
+    }
+    platform_summary = {}
     audit_by_feature = _read_audit_cache_by_feature(project_root)
     # Read the design cache here rather than accepting it as a parameter. A
     # defaulted parameter is what let generate_digest silently blank the Design
@@ -2452,7 +2738,17 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
 
         active_entries, awaiting_runner, awaiting_rule_count = _active_rule_entries(
-            name, info, rule_entries, all_proofs)
+            name, info, rule_entries, all_proofs, registry)
+        pres = pres_by_feature[name]
+        platform_records = _feature_platform_records(project_root, name, info, pres)
+        for platform, record in platform_records.items():
+            agg = platform_summary.setdefault(platform, {
+                'features': 0, 'proofs_awaiting': 0, 'proofs_failing': 0,
+                'proofs_proved': 0})
+            agg['features'] += 1
+            agg['proofs_awaiting'] += len(record['awaiting'])
+            agg['proofs_failing'] += len(record['failing'])
+            agg['proofs_proved'] += record['proved']
         deferred_count = sum(1 for _, _, _, d in rule_entries if d)
         active_total = len(active_entries)
 
@@ -2517,9 +2813,22 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             # Get proof descriptions from the source spec
             if label == 'own':
                 src_info = info
+                src_name = name
             else:
                 src_info = features.get(src_feature, {})
+                src_name = src_feature
             desc_by_id = src_info.get('proof_desc_by_id', {})
+            # `@on` proofs carry their declared platforms and per-platform
+            # results on the proof object (report_data RULE-32); agnostic
+            # proofs carry neither key.
+            src_scoped = _platform_scoped_proofs(src_info)
+            src_results = (pres_by_feature.get(src_name) or {}).get('results') or {}
+
+            def platform_keys(pid):
+                if pid not in src_scoped:
+                    return {}
+                return {'platforms': list(src_scoped[pid][1]),
+                        'results': dict(src_results.get(pid) or {})}
 
             proofs_data = []
             audit_feat = name if label == 'own' else src_feature
@@ -2536,6 +2845,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'tier': p.get('tier', 'unit'),
                     'status': p.get('status', ''),
                     'audit': proof_audit,
+                    **platform_keys(pid),
                 })
 
             # Planned proofs: spec PROOF-N entries with no executed result.
@@ -2554,6 +2864,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'tier': tier_by_id.get(pid, 'unit'),
                     'status': 'planned',
                     'audit': '',
+                    **platform_keys(pid),
                 })
 
             if is_deferred:
@@ -2599,11 +2910,18 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'proved': proved,
             'total': active_total,
             'deferred': deferred_count,
-            # Proofs declared at a runner-gated tier with no result there. The
-            # coverage fraction above already excludes the rules they are the
-            # only proof for, so without this the dashboard would show a clean
-            # 1/1 and never say a platform is unproven (sync_status RULE-47).
-            'awaiting_runner': [{'id': pid, 'tier': tier} for pid, tier in awaiting_runner],
+            # Proofs declared on a platform with no satisfying result there.
+            # The coverage fraction above already excludes the rules they are
+            # the only proof for, so without this the dashboard would show a
+            # clean 1/1 and never say a platform is unproven (sync_status
+            # RULE-47, report_data RULE-29).
+            'awaiting_runner': [{'id': pid, 'tier': tier, 'platform': platform}
+                                for pid, tier, platform in awaiting_runner],
+            # Scoped results that satisfy no declared platform; they count
+            # toward nothing (sync_status RULE-53).
+            'undeclared': [{'id': pid, 'tier': tier, 'platform': platform}
+                           for pid, tier, platform in pres['undeclared']],
+            'platforms': platform_records,
             'status': status,
             'vhash': vhash,
             'receipt': receipt_data,
@@ -2615,6 +2933,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         })
 
     uncommitted_files = _check_uncommitted_all(project_root)
+    declared_ids = sorted(_declared_platform_counts(features))
+    host_ids = set(_host_platform_ids(registry, host))
 
     return {
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -2625,6 +2945,19 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         # a gate that cannot tell "mode absent" from "older payload" cannot fail
         # closed on the difference (report_data RULE-30).
         'remote_verification': config.get('remote_verification', 'off'),
+        # Always present too (report_data RULE-31), for the same reason: the
+        # gate exits 2 on `platforms.errors`, and a key that is sometimes
+        # absent cannot be told from an older payload.
+        'platforms': {
+            'registry': {pid: {k: v for k, v in entry.items() if k != '_id'}
+                         for pid, entry in sorted(registry.items())},
+            'host': host,
+            'local': [pid for pid in declared_ids if pid in host_ids],
+            'remote': [pid for pid in declared_ids if pid not in host_ids],
+            'errors': list(registry_errors),
+            'summary': {pid: platform_summary[pid] for pid in sorted(platform_summary)},
+        },
+        'platform_testing': bool(declared_ids),
         'docs_url': _get_plugin_docs_url(),
         'summary': summary,
         'features': feature_list,
@@ -2650,6 +2983,7 @@ def read_report_payload(project_root):
     rendered summary table. Returns None when the directory is not a readable
     Purlin project, which the gate turns into a bad-invocation exit.
     """
+    _PROVENANCE_CACHE.clear()
     config = resolve_config(project_root)
     if not config:
         return None
@@ -2657,6 +2991,8 @@ def read_report_payload(project_root):
     if not features:
         return None
     all_proofs = _read_proofs(project_root)
+    registry, _registry_errors = _platform_registry(config)
+    _mark_undeclared_results(features, all_proofs, registry)
     global_anchors = {
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')
@@ -3012,6 +3348,8 @@ def _compute_drift(project_root, since=None):
 
     # Collect proof status per feature (including required + global rules)
     all_proofs = _read_proofs(project_root)
+    registry, _registry_errors = _platform_registry(resolve_config(project_root))
+    _mark_undeclared_results(features, all_proofs, registry)
     global_anchors = {
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')
@@ -3026,7 +3364,7 @@ def _compute_drift(project_root, since=None):
             continue
         deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
         active_entries, _, _ = _active_rule_entries(
-            name, info, rule_entries, all_proofs)
+            name, info, rule_entries, all_proofs, registry)
         active_total = len(active_entries)
         proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
         proved = sum(1 for key, _, _ in active_entries
@@ -3196,6 +3534,7 @@ def generate_digest(project_root):
     IMPORTANT: Does NOT trigger a new audit. Uses cached audit data only.
     Runs sync_status internals (coverage scan) and drift.
     """
+    _PROVENANCE_CACHE.clear()
     config = resolve_config(project_root)
     if not config:
         return None
@@ -3205,6 +3544,8 @@ def generate_digest(project_root):
         return None
 
     all_proofs = _read_proofs(project_root)
+    registry, _registry_errors = _platform_registry(config)
+    _mark_undeclared_results(features, all_proofs, registry)
     global_anchors = {
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')

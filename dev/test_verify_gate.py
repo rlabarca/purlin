@@ -1,4 +1,4 @@
-"""Tests for verify_gate — 8 proofs covering the CI verification gate.
+"""Tests for verify_gate: 9 proofs covering the CI verification gate.
 
 The gate decides whether a branch may merge, from the structured status
 payload. Two things it must never do: parse the rendered summary table (which
@@ -35,11 +35,11 @@ WORKFLOW_DIR = os.path.join(ROOT, '.github', 'workflows')
 
 def _spec(windows_proof=False):
     """A two-rule feature. RULE-2 is proved at unit tier either way; the
-    optional extra @windows proof covers the SAME rule, so declaring it
-    changes the awaiting list and nothing else: same rules, same executed
-    proofs, same vhash, same receipt."""
+    optional extra `@unit @on(windows-2022)` proof covers the SAME rule, so
+    declaring it changes the awaiting list and nothing else: same rules, same
+    executed proofs, same vhash, same receipt."""
     extra = ('- PROOF-3 (RULE-2): msvcrt path locks on a real windows runner '
-             '@windows\n') if windows_proof else ''
+             '@unit @on(windows-2022)\n') if windows_proof else ''
     return (
         '# Feature: locking\n\n'
         '> Description: File locking.\n\n'
@@ -54,14 +54,19 @@ def _spec(windows_proof=False):
 
 
 def _make_project(mode='required', windows_proof=False, proofs_pass=True,
-                  receipt=True):
-    """A temp Purlin project. Returns its root."""
+                  receipt=True, platforms=None):
+    """A temp Purlin project. Returns its root.
+
+    The config registers `windows-2022` (the id `_spec` declares) unless
+    `platforms` overrides the registry."""
     root = tempfile.mkdtemp()
     os.makedirs(os.path.join(root, '.purlin'))
     spec_dir = os.path.join(root, 'specs', 'app')
     os.makedirs(spec_dir)
 
-    cfg = {'report': False, 'remote_verification': mode}
+    cfg = {'report': False, 'remote_verification': mode,
+           'platforms': {'windows-2022': {'os': 'windows'}}
+           if platforms is None else platforms}
     with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
         json.dump(cfg, f)
     with open(os.path.join(spec_dir, 'locking.md'), 'w') as f:
@@ -193,6 +198,16 @@ class TestExitCodes:
             for d in (clean, broken, empty):
                 shutil.rmtree(d)
 
+        # The workflow that runs the gate fires on every workflow change, so a
+        # runner workflow edit re-runs the gate that reads its output.
+        text = open(os.path.join(WORKFLOW_DIR, 'verify-gate.yml')).read()
+        for trigger in ('push', 'pull_request'):
+            block = re.search(rf'^  {trigger}:\n((?:    .*\n)+)', text, re.M)
+            assert block, f"verify-gate.yml has no {trigger} trigger with paths"
+            assert "- '.github/workflows/**'" in block.group(1), (
+                f"verify-gate.yml {trigger} paths must include .github/workflows/**:"
+                f"\n{block.group(1)}")
+
 
 class TestModeDecidesTheVerdict:
 
@@ -249,8 +264,8 @@ class TestAwaitingRunnerBlocksUnderRequired:
             assert code == 1, (
                 f"a VERIFIED feature awaiting a runner must fail 'required', "
                 f"got {code}:\n{out}")
-            assert 'PROOF-3' in out and 'windows' in out, (
-                f"the gate must name the awaited proof and its tier:\n{out}")
+            assert 'PROOF-3' in out and '@on(windows-2022)' in out, (
+                f"the gate must name the awaited proof and its platform:\n{out}")
 
             code, out = _run(clean)
             assert code == 0, (
@@ -338,10 +353,14 @@ class TestRunnerWorkflowProvenance:
             assert 'Purlin-Runner:' in text, (
                 f"{fn} commits a proof file with no Purlin-Runner trailer, so "
                 "sync_status will report 'runner not recorded'")
-            # The trailer must be on the commit, not in a comment.
-            assert re.search(r'-m\s+["\']Purlin-Runner:', text), (
-                f"{fn} mentions Purlin-Runner but not as a commit message "
-                "trailer; git only reads it from the commit")
+            assert 'Purlin-Platform:' in text, (
+                f"{fn} commits a proof file with no Purlin-Platform trailer, so "
+                "sync_status cannot cross-check the platform against the filename")
+            # The trailers must be on the commit, not in a comment.
+            for trailer in ('Purlin-Runner:', 'Purlin-Platform:'):
+                assert re.search(r'-m\s+["\']' + trailer, text), (
+                    f"{fn} mentions {trailer} but not as a commit message "
+                    "trailer; git only reads it from the commit")
 
     @pytest.mark.proof("verify_gate", "PROOF-8", "RULE-8")
     def test_every_commit_back_workflow_carries_both_loop_guards(self):
@@ -359,3 +378,49 @@ class TestRunnerWorkflowProvenance:
             assert '[skip ci]' in text, (
                 f"{fn} has no [skip ci] in its commit subject; paths-ignore "
                 "alone does not cover every trigger path")
+
+
+class TestRegistryErrorsAndByPlatform:
+
+    @pytest.mark.proof("verify_gate", "PROOF-9", "RULE-9", tier="integration")
+    def test_registry_errors_exit_two_in_every_mode_and_by_platform_counts(self):
+        """Evidence read through a broken registry is unreadable evidence: a
+        proof naming a dropped id may match every host of its family or
+        nothing at all, and the gate cannot tell which."""
+        root = _make_project(mode='required', windows_proof=True)
+        cfg_path = os.path.join(root, '.purlin', 'config.json')
+        spec_dir = os.path.join(root, 'specs', 'app')
+        try:
+            # Healthy registry: the By platform section counts the awaited proof.
+            code, out = _run(root)
+            assert code == 1, out
+            assert 'By platform (1):' in out, out
+            assert 'windows-2022: 0 proved, 1 awaiting, 0 failing (1 feature)' in out, out
+
+            # A scoped result arrives: the same line now reads proved.
+            with open(os.path.join(spec_dir, 'locking.proofs-unit@windows-2022.json'),
+                      'w') as f:
+                json.dump({'tier': 'unit', 'platform': 'windows-2022', 'proofs': [
+                    {'feature': 'locking', 'id': 'PROOF-3', 'rule': 'RULE-2',
+                     'test_file': 'tests/test_lock.py', 'test_name': 'test_msvcrt',
+                     'status': 'pass', 'tier': 'unit', 'platform': 'windows-2022'}]}, f)
+            code, out = _run(root)
+            assert 'windows-2022: 1 proved, 0 awaiting, 0 failing (1 feature)' in out, out
+            assert 'Awaiting a runner' not in out, out
+
+            # Break the registry: exit 2 under every mode, with the error named.
+            for mode in ('required', 'optional', 'off'):
+                with open(cfg_path, 'w') as f:
+                    json.dump({'report': False, 'remote_verification': mode,
+                               'platforms': {'windows-2022': {'os': 'windows',
+                                                              'vresion': '10'}}}, f)
+                code, out = _run(root)
+                assert code == 2, (
+                    f"mode {mode!r}: a registry error must be a bad invocation "
+                    f"(2), got {code}:\n{out}")
+                assert 'windows-2022' in out and 'vresion' in out, (
+                    f"mode {mode!r}: the error must be printed:\n{out}")
+                assert 'PASS' not in out, (
+                    f"mode {mode!r}: unreadable evidence must never pass:\n{out}")
+        finally:
+            shutil.rmtree(root)
