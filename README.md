@@ -103,7 +103,7 @@ expensive one. Note the order matters: most Integrity checks compare a test agai
 description, so a vague description leaves them nothing to catch — a high Integrity score over
 vague proofs means the spec is unfalsifiable, not that the tests are good.
 
-**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and both quality gauges, per feature and in aggregate. You don't need to use it — the CLI table carries the same five columns and the same numbers — but it's there if you want it.
+**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and both quality gauges, per feature and in aggregate. When any proof declares `@on(<platform-id>)`, the Verified, Passing and Proof Integrity cards split per platform and open a modal showing which platform proved what, and each feature row carries a chip per platform. You don't need to use it — the CLI table carries the same five columns and the same numbers — but it's there if you want it.
 
 ### Upgrading from an older version of Purlin
 
@@ -166,7 +166,7 @@ The `tools/` directory contains skills for non-engineer stakeholders who interac
 
 | Tool | Audience | What it does |
 |------|----------|-------------|
-| `tools/QA/purlin-qa-report` | QA | Fetches project digest, produces triaged HTML report of failures, drift, both quality gauges, manual tests due, and sign-off readiness |
+| `tools/QA/purlin-qa-report` | QA | Fetches project digest, produces triaged HTML report of failures, drift, both quality gauges, per-platform holds, manual tests due, and readiness |
 | `tools/PM/purlin-anchor-userstories` | Product | Creates and maintains user story anchor files that drive spec-driven development |
 
 Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md` contents into project instructions). They clone the repo, read the project digest, and produce visual reports — no dev tools needed.

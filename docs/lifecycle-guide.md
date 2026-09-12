@@ -45,7 +45,7 @@ Every role can do every job. The arrows show the typical flow, not restrictions.
 2. **Specs define proofs.** Each rule gets a proof blueprint: `PROOF-1 (RULE-1): Store a password; verify bcrypt hash in database`. Proofs describe how to verify the rule holds. `purlin:audit --design` grades each description — PROVABLE, LOOSE, UNPROVABLE or STRUCTURAL — with no test code, so a weak blueprint is caught here rather than after a test has been written against it. An agent or engineer writes both rules and proofs together — they're two sides of the same spec.
 3. **Tests implement proofs.** An engineer (or agent) writes a test marked `@pytest.mark.proof("login", "PROOF-1", "RULE-1")` that actually runs the assertion described in the proof blueprint.
 4. **`purlin:status` shows the gaps.** 3/5 rules proved means 2 rules still need tests.
-5. **`purlin:verify` locks it in.** All rules proved = verification receipt with a tamper-evident hash. Verify alone owns pass/fail; the two quality gauges are advisory and never block it.
+5. **`purlin:verify` locks it in.** All rules proved = a verification receipt carrying a `vhash` that binds the rule text, the proofs and the platforms they were proved on, so the receipt goes stale the moment any of those change. Verify alone owns pass/fail; the two quality gauges are advisory and never block it.
 
 That's it. No tracking system, no ledger, no state files. The filesystem is the state.
 
@@ -539,21 +539,4 @@ The same judgment is reachable one stage earlier: a proof *description* whose on
 
 ## Enforcement
 
-Proofs keep specs and code in sync — but only if they're actually run. Purlin ships a pre-push hook; CI and deploy gates are your responsibility:
-
-### Layer 1: Pre-push hook (provided by Purlin)
-
-`purlin:init` installs a git pre-push hook. Every time you push, unit-tier tests run automatically. Two modes:
-
-- **Warn mode** (default) — blocks on FAILING proofs, warns on PARTIAL and UNTESTED coverage. For incremental development.
-- **Strict mode** — blocks unless ALL features are VERIFIED. For teams that want hard enforcement.
-
-Set during `purlin:init` or changed later with `purlin:init --pre-push`. The Purlin agent is **prohibited** from using `--no-verify` to bypass the hook.
-
-### Layer 2: CI pipeline (not provided by Purlin)
-
-Your CI runs tiered tests per trigger — PRs get unit + `@integration`, merges to main get all tiers. See the [Testing Workflow Guide](testing-workflow-guide.md#ci-pipeline) for CI pipeline examples.
-
-### Layer 3: CI verification gate (not provided by Purlin)
-
-A clean-room re-execution step you configure in your CI pipeline before deploy. Re-runs tests, recomputes vhashes, and compares to committed receipts. If they match, CI independently confirmed the developer's verification. See the [Testing Workflow Guide](testing-workflow-guide.md#deploy-gate) for setup.
+Proofs keep specs and code in sync only if something actually runs them, and what runs them is a stack of layers that starts with `purlin:verify`'s own coverage gate and ends at branch protection. Each layer, what it blocks and who can turn it off is described once, in [references/hard_gates.md](../references/hard_gates.md), "Enforcement Layers"; the CI examples you would paste into a workflow are in the [Testing Workflow Guide](testing-workflow-guide.md#ci-pipeline).

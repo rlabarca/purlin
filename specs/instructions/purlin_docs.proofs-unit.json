@@ -1,0 +1,104 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_no_signed_or_tamper_evident_claims_outside_the_negations",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-2",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_bare_windows_tag_appears_only_as_a_documented_legacy_alias",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-3",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_regulated_page_states_what_the_vhash_binds_and_does_not",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-4",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_no_test_lock_file_and_audit_config_described_as_enforced",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-5",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_pass_d_is_split_into_its_deterministic_and_llm_halves",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-6",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_index_names_platforms_the_layers_both_gauges_and_update",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-7",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_exactly_one_enforcement_layer_table_and_three_pointers",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-8",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_no_yaml_example_invokes_a_skill_or_a_deploy_event",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-9",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_gate_examples_run_real_tests_first_and_fetch_full_history",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-10",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_every_lifecycle_svg_has_a_tracked_mermaid_source",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-11",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_the_three_dashboard_screenshots_exist_and_are_referenced",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

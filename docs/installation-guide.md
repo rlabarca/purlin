@@ -133,6 +133,24 @@ Default config (`version` is set from the installed framework's `VERSION` file a
 
 `mutation_checks` is off by default. When it is on, every new or amended proof is mutation-checked before the commit that carries it: break the behaviour, watch the proof fail, restore. It is the only check that catches a proof which passes against broken code, and it costs roughly twice the tokens and minutes per proof; see [spec_quality_guide.md § Mutation check](../references/spec_quality_guide.md#mutation-check). `purlin:init` asks; `purlin:init --mutation-checks on|off` changes it later.
 
+Two further fields are optional and `purlin:init` never writes them. `platforms` is the registry the `@on(<platform-id>)` proof tags resolve against; the family ids `windows`, `macos` and `linux` work with no config at all, and an entry is what adds a version, an architecture or a runner:
+
+```json
+{
+  "platforms": {
+    "windows-2022": {
+      "os": "windows",
+      "version": ">=10.0.20348",
+      "arch": "x86_64",
+      "runner": { "provider": "github", "runs_on": "windows-2022", "workflow": "purlin-windows-2022-proofs" }
+    },
+    "figma-mcp": { "kind": "environment", "label": "a host with the Figma MCP server configured" }
+  }
+}
+```
+
+See [Testing Workflow Guide § Platforms](testing-workflow-guide.md#platforms). `audit_llm` and `audit_criteria` are the cross-model and compliance-criteria fields; see [Regulated Environments](regulated-environments.md).
+
 The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` creates a `purlin-report.html` symlink at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
 Read or update config with the `purlin_config` MCP tool, or edit the files directly.

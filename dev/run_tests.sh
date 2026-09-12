@@ -171,6 +171,7 @@ run_suite "E2E Additional Criteria" bash "$SCRIPT_DIR/test_e2e_additional_criter
 run_suite "All Pytest Tests" run_pytest \
   "$SCRIPT_DIR/test_config_engine.py" \
   "$SCRIPT_DIR/test_mcp_server.py" \
+  "$SCRIPT_DIR/test_purlin_docs.py" \
   "$SCRIPT_DIR/test_purlin_references.py" \
   "$SCRIPT_DIR/test_tools_qa.py" \
   "$SCRIPT_DIR/test_purlin_agent.py" \

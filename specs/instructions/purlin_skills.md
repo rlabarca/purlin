@@ -18,7 +18,7 @@
 - RULE-9: Build skill includes test failure diagnosis guidance requiring root cause analysis before fixing
 - RULE-10: Drift skill requires reading git diffs for behavioral changes, not just interpreting MCP categories
 - RULE-11: Spec skill update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
-- RULE-12: Skills that write proof descriptions (build, spec, spec-from-code) include mandatory tier tag review
+- RULE-12: Skills that write proof descriptions or proof markers (build, spec, spec-from-code) include a mandatory tier tag review and, beside it, a mandatory platform tag review. A tier says what kind of test a proof is and `@on(<platform-id>)` says where it must run; they are independent, and the platform review has to name both directions, because appending `@on(...)` to a proof any host could verify removes its rule from the coverage denominator just as surely as omitting a needed one leaves the rule unproved on the platform that matters
 - RULE-13: Init skill `--add-plugin` validates plugin files against language-specific patterns (Python: `proofs`+`json`, JS: `proofs`+`JSON`, Shell: `purlin_proof`, Java: `proofs`+`Proof`) and warns if validation fails
 - RULE-14: Init skill `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
 - RULE-15: Init skill `--list-plugins` identifies built-in plugins (`pytest_purlin`, `jest_purlin`, `purlin-proof`) by framework name and labels all others as `custom`
@@ -38,7 +38,7 @@
 - PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both are present
 - PROOF-10 (RULE-10): Grep `skills/drift/SKILL.md` for `git diff`; verify the diff-reading requirement is present
 - PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
-- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md`, `skills/spec/SKILL.md`, and `skills/spec-from-code/SKILL.md` for `tier`; verify all three contain tier review requirements
+- PROOF-12 (RULE-12): For each of `skills/build/SKILL.md`, `skills/spec/SKILL.md` and `skills/spec-from-code/SKILL.md`, verify the file carries a tier review instruction naming the tier tags, and a platform review instruction that names `@on(` (or `platforms=` in the marker-writing skill) and states the failure mode of a stray tag: an `@on` proof with no result there leaves the coverage denominator. Deleting the platform paragraph from any one of the three fails the proof naming that file
 - PROOF-13 (RULE-13): Grep `skills/init/SKILL.md` for the validation table language entries (`Python`, `JavaScript`, `Shell`, `Java`) and the warning text `doesn't look like a standard proof plugin`; verify all present
 - PROOF-14 (RULE-14): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
 - PROOF-15 (RULE-15): Grep `skills/init/SKILL.md` for `pytest_purlin.py` with `Python/pytest`, `jest_purlin.js` with `JavaScript/Jest`, and the label `custom`; verify the labeling table exists

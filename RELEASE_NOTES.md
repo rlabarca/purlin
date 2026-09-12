@@ -2,6 +2,56 @@
 
 ## Unreleased
 
+Platform-generic remote verification. A proof can now name the platforms it must be proved on,
+the host is detected, results are scoped per platform, and everything from the status table to
+the dashboard to the CI gate reports per platform rather than pretending one machine saw it all.
+Alongside it, the compliance-adjacent promises that were not backed by mechanism are either
+backed or withdrawn.
+
+Test sweep at this commit: 802 passed, 27 skipped across 14 suites, as recorded by
+`dev/run_tests.sh` in `.purlin/runtime/test_run.json` (the pytest pool counts per test; each
+shell suite counts as one).
+
+### Added
+
+- **`@on(<platform-id>)` platform tags.** A tier says what kind of test a proof is; `@on(...)`
+  says where it has to run, and a proof carries both (`@unit @on(windows-2022, macos-14)`). Ids
+  resolve against an optional `platforms` registry in `.purlin/config.json`; the family ids
+  `windows`, `macos` and `linux` need no config. An entry with `kind: "environment"` names a tool
+  rather than a host (a Figma MCP server, a CLI that spends money) and is satisfied only by an
+  explicit `PURLIN_PLATFORM`. `spec_format.md` is at Format-Version 9.
+
+- **Platform-scoped proof files.** `<feature>.proofs-<tier>@<platform-id>.json`, carrying a
+  `platform` field at the top level and on every entry. The marker decides and the environment
+  names: a marker with no declared platforms writes the agnostic file whatever `PURLIN_PLATFORM`
+  says. All eight proof plugins implement the same semantics and all eight now write `test_file`
+  with forward slashes on every OS. `proofs_format.md` is at Format-Version 5.
+
+- **Host detection and per-platform satisfaction.** `sync_status` detects the host, prints a
+  `Platforms:` block naming what runs locally and what needs a runner, and reports each declared
+  platform as proved, failing or awaiting. A result from a family id satisfies a specific entry of
+  that family; nothing else satisfies. A result under an id its proof does not declare counts
+  toward nothing and is reported as an undeclared platform result rather than silently ignored.
+
+- **Per-platform reporting.** `purlin:status` keeps its five columns and gains the platform lines;
+  the dashboard's Verified, Passing and Proof Integrity cards split per platform and open a modal,
+  and each feature row carries a chip per platform. `scripts/ci/verify_gate.py --check` prints a
+  By-platform section and exits 2 when the registry is unreadable.
+
+- **`purlin:init --update`.** Detects what a project needs after the plugin moves under it, from
+  the project's own contents rather than from its `version` field, shows the delta, asks before
+  writing, and migrates legacy `@windows` tags, `proofs-windows.json` files, legacy markers, stale
+  `.purlin/plugins/` copies, missing config fields and the legacy `.mcp.json` entry. Every skill
+  points at one advisory anchor when a migration is pending.
+
+- **`mutation_checks` config field**, off by default. When on, every new or amended proof is
+  mutation-checked before the commit that carries it.
+
+- **A run marker.** `dev/run_tests.sh` writes `.purlin/runtime/test_run.json`, and the receipt
+  issuer refuses to issue against a failed run, a different commit, or evidence no recorded run
+  produced. That refusal is the mechanism; it is why three features on this branch read PASSING
+  rather than VERIFIED until a runner witnesses them.
+
 ### Changed
 
 - **BREAKING: `purlin:unit-test` is now `purlin:test`.** The skill runs every tier when given
@@ -17,45 +67,92 @@
   The collision was real enough that `docs/anchors-guide.md` carried an inline parenthetical
   explaining the two were not the same thing. That parenthetical is now deleted.
 
-- **The version string now has exactly one place to edit.** It lived in four files and the
-  `purlin_version` spec checked three, so this repo's own `.purlin/config.json` sat at `0.9.2`
-  while `VERSION`, `templates/config.json` and `.claude-plugin/plugin.json` all read `0.10.0`.
-  The dashboard reported the stale number. Two further copies hid in prose: the config-field
-  tables in `skills/init/SKILL.md` and `references/drift_criteria.md` both still said `"0.9.0"`,
-  two releases behind.
+- **BREAKING: the verification hash is version 2.** It binds the rule text, the feature, the proof
+  id, the rule, the status, the tier, the platform, the test file, the test name and every counted
+  manual stamp, `\x00`-separated. Version 1 bound rule ids and proof statuses only, so rewording a
+  rule or re-pointing a proof at a different test left the receipt reading current. Every v1
+  receipt reads stale until `purlin:verify` re-issues it. The receipt itself is documented in a new
+  `references/formats/receipt_format.md` at Format-Version 2, and it now carries an `evidence`
+  block recording the run and the provenance of every contributing proof file.
 
-  `dev/bump_version.sh <semver>` writes `VERSION` and propagates it to every derived location;
-  `--check` exits 1 naming each file that disagrees. The script's header comment is the
-  authoritative list of derived locations and `--check` reads that same list, so the inventory
-  cannot drift away from the gate enforcing it. Because `purlin:init` already stamps config.json
-  from `${CLAUDE_PLUGIN_ROOT}/VERSION`, the two doc tables now cite the VERSION file by name
-  instead of restating a number, retiring those locations rather than syncing them.
+- **A current `@manual` stamp counts toward coverage.** It printed `PASS (manual)` and incremented
+  nothing, so a feature whose only gap was a stamped rule could never be verified. The stamp enters
+  the vhash, so moving it, re-dating it or changing hands invalidates the receipt.
 
-  CI record: `.github/workflows/version-check.yml` runs `--check` on every push or PR touching a
-  version-bearing file, then runs the `purlin_version` proofs. The job log prints `VERSION`
-  alongside each location marked `ok` / `DRIFT` / `absent`, so what the version was and what
-  disagreed is recorded per commit. New rules: `purlin_version` RULE-6/7/8, with proofs.
+- **The pre-push hook reads the payload.** Three modes (`warn`, `strict`, `off`), whole-name
+  matching, nested specs counted, a comma-list `test_framework` that announces both arms, and no
+  fail-open path that reports a pass it did not earn: when the hook cannot resolve the plugin root
+  it warns in `warn` and exits 1 in `strict`.
+
+- **The audit cache re-keys and invalidates.** A cache entry records the criteria it was graded
+  against and the auditor that graded it; an entry whose key no longer matches reads `invalidated`
+  rather than as a grade. The criteria pin is enforced on every audit with no fall back to the
+  built-in criteria.
+
+- **The version string has exactly one place to edit.** `dev/bump_version.sh <semver>` writes
+  `VERSION` and propagates it to every derived location; `--check` exits 1 naming each file that
+  disagrees, and `.github/workflows/version-check.yml` runs it on every push or PR that touches a
+  version-bearing file. The two doc tables that restated a number now cite the `VERSION` file by
+  name. New rules: `purlin_version` RULE-6/7/8/9, with proofs.
+
+- **Docs state what the hash actually binds.** `docs/regulated-environments.md` gained "What the
+  vhash binds" and "What it does not bind"; the enforcement model is described once, in
+  `references/hard_gates.md` under "Enforcement Layers", and the three guides that carried copies
+  now link it. The CI examples are workflows a runner can execute. New spec: `purlin_docs`.
 
 ### Fixed
 
 - **The pre-commit digest blanked the Proof Design gauge.** `generate_digest`, the entry point
   the pre-commit hook uses to write `.purlin/report-data.js`, read the audit cache and left
   `design_summary` at its `None` default. Every digest refresh therefore erased the Proof Design
-  card that `sync_status` had just populated, and the dashboard read "run purlin:audit" with a
-  full design cache on disk. `report_data` RULE-23 already required the field and PROOF-24 proved
-  it, but only ever through `sync_status`; a defaulted parameter let the second entry point
-  violate the rule while the proof stayed green. RULE-24 now requires every writer of
-  report-data.js to populate both gauges, and PROOF-25 exercises `generate_digest` directly.
+  card that `sync_status` had just populated. RULE-24 now requires every writer of report-data.js
+  to populate both gauges, and PROOF-25 exercises `generate_digest` directly.
 
-- `dev/test_purlin_version.py` was outside `dev/run_tests.sh` and is now in the pooled pytest
-  session. It is the sole writer of `purlin_version` proofs, so it cannot collide under
-  feature-scoped overwrite. Full suite: 393 passed, 8 skipped across 5 suites, 40/40 VERIFIED.
+- **Eight test files backed committed proofs and were not in the sweep.** `dev/run_tests.sh` now
+  runs fourteen suites, and `proof_common` RULE-14 keeps it that way: every test file a committed
+  proof names is either executed by the sweep or named only by platform-scoped proof files whose
+  id the registry declares.
 
-- `docs/images/dashboard-{summary,categories}.png` were captured on 18 June and showed the old
-  six-card summary strip with no Proof Design card. `dev/capture_doc_screenshots.py` regenerates
-  them from the live dashboard, so the next refresh is a command rather than a manual crop.
-  `dashboard-features.png` is deleted: it was byte-identical to `dashboard-summary.png` and
-  referenced by zero markdown files.
+- **`git ls-remote` was handed an anchor's `> Source:` with no `--`.** Hardened, with the security
+  anchor's scope widened past `.py` and `phpunit_purlin.php`'s `exec()` replaced with `proc_open`.
+
+- **Four legacy files were tracked under `.purlin/cache/` despite the gitignore**, and the
+  committed digest carried `git_sha: null`. Both fixed, each with a rule.
+
+- **A skipped test lost its committed entry** when a sibling in the same file ran. It is now
+  preserved: only an executed test replaces an entry, and only a deleted file reaps one.
+
+- `docs/images/*.png` are regenerated by `dev/capture_doc_screenshots.py`, and the five lifecycle
+  diagrams have tracked Mermaid sources under `assets/src/` so they can be changed at all.
+
+### Upgrade notes
+
+Run **`purlin:init --update`** after updating the plugin. It migrates, in one pass and only after
+showing you the delta:
+
+- legacy `@windows` proof tags to `@unit @on(<platform-id>)` (the id defaults to the `windows` OS
+  family; `--platform-id <id>` names a different one)
+- `<feature>.proofs-windows.json` to `<feature>.proofs-unit@<platform-id>.json`, stamping
+  `platform` on the file and every entry
+- every proof plugin's `windows`-tier marker to tier `unit` plus the platform
+- stale `.purlin/plugins/` copies to the installed plugin's files
+- missing config fields from the template, stamping `version` from the installed `VERSION`
+- the legacy `purlin` entry out of `.mcp.json`
+
+Then the rest, in the order they bite:
+
+- **Receipts are re-issued, not migrated.** A v1 receipt reads stale until `purlin:verify` runs.
+  The update never writes one: a receipt is a claim that tests ran, and the update ran none.
+- **`--compute-proof-hash` is gone**, replaced by `--cache-key`. The old flag hashed proof content
+  under a formula that never invalidated.
+- **`purlin:init --pre-push` now offers `off`** alongside `warn` and `strict`. `off` prints one
+  line saying the hook is off and checks nothing, which is not the same as a hook that passed.
+- **`mutation_checks` is opt-in** and off by default. Turn it on with
+  `purlin:init --mutation-checks on`.
+- **`dev/build_audit_cache.py` is removed.** It hand-wrote grades under a key formula that never
+  invalidated; after the re-keying change every such entry reads `invalidated` anyway.
+- **Format versions bumped:** spec 9, proofs 5, receipt 2 (new file), anchor 5,
+  supported_frameworks 6. A consumer tool that parses any of these should read the version line.
 
 ## v0.10.0 — Two proof gauges: Proof Design and Proof Integrity
 

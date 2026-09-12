@@ -81,6 +81,15 @@
       "test_name": "test_config_version_field_docs_carry_no_semver_literal",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_unreleased_counts_match_the_recorded_run",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

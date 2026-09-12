@@ -8,7 +8,7 @@
 
 - Write better code through proof-based specs
 - Know whether a spec's proofs are any good *before* writing code or tests
-- Prove spec / code drift with signed verification
+- Detect spec / code drift and record what was proved in a verification receipt
 - Enable multi-discipline collaboration with drift detection and anchor specs with external references
 
 ## Guides
@@ -22,6 +22,8 @@
 | [Collaboration](collaboration-guide.md) | External anchors, branch handoff, merge conflicts |
 | [Dashboard](dashboard-guide.md) | Visual coverage dashboard — setup, usage, data flow |
 | [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 -- what Purlin is and isn't |
+| [Remote Verification and Platforms](../references/remote_verification.md) | `@on(<platform-id>)` proofs, the `platforms` registry, runner workflows, what travels back |
+| [Hard Gates](../references/hard_gates.md) | The one gate, and the enforcement layers around it |
 
 ## Example Workflows
 
@@ -71,13 +73,14 @@ Key skills:
 - `purlin:verify` -- run all tests, issue verification receipts
 - `purlin:test` -- run tests and emit proof files
 - `purlin:audit` -- evaluate proof quality: Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, no tests needed) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED)
-- `purlin:status` -- show rule coverage dashboard
+- `purlin:status` -- show rule coverage plus both gauges, Proof Design and Proof Integrity
 - `purlin:drift` -- drift detection and change summary
 - `purlin:spec-from-code` -- reverse-engineer specs from existing code
 - `purlin:find` -- search specs by name
 - `purlin:rename` -- rename a feature across specs, proofs, markers, and references
 - `purlin:anchor` -- sync cross-cutting constraints from external sources
-- `purlin:init` -- initialize and configure a project
+- `purlin:init` -- initialize and configure a project; `purlin:init --update` migrates a project
+  after the plugin moves under it
 
 ## Hard Gate (only 1)
 
@@ -86,3 +89,8 @@ Key skills:
 Neither quality gauge is a gate -- a low Proof Design or Proof Integrity score never blocks anything.
 
 Everything else is optional guidance.
+
+That one gate is Layer 0. Above it sit the pre-push hook, your own CI test run and the CI gate job
+branch protection marks required; `purlin:verify --recheck` is a local re-run and not a layer at
+all. All four are described once, in
+[references/hard_gates.md](../references/hard_gates.md), "Enforcement Layers".

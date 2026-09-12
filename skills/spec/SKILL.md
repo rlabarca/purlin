@@ -210,6 +210,12 @@ After the core spec (What it does, Rules, Proof) is solid, add metadata:
 2. If the user mentioned code files, populate `> Scope:` (verify paths exist)
 3. If the user mentioned technologies, populate `> Stack:`
 4. Apply tier tags to proofs per `references/spec_quality_guide.md`
+4b. **Platform tag review (mandatory):** for every proof whose rule names a platform (a
+    Windows path API, an APFS behaviour, a tool the host either has or does not), ask the
+    user which platform ids it must be proved on and append `@on(<id>[, <id>])` beside the
+    tier. Never append `@on(...)` to a proof any host could verify: an `@on` proof with no
+    result there reads AWAITING RUNNER and leaves the coverage denominator, so a stray tag
+    quietly hides the rule. See `references/formats/spec_format.md` ("Platform tags").
 5. Check if any rules are FORBIDDEN patterns and format proofs as grep-based assertions per "FORBIDDEN Grep Precision"
 6. Suggest the category per `references/spec_quality_guide.md` ("Spec Categories")
 
@@ -252,6 +258,7 @@ Before committing, verify:
 - `## Proof` has at least one `PROOF-N (RULE-N):` line, each mapping to a rule
 - Proof descriptions are observable assertions, not vague instructions
 - Every proof description has an appropriate tier tag per `references/spec_quality_guide.md` ("Tier Tags on Proofs")
+- Every proof whose rule is platform-specific carries `@on(<platform-id>)` beside its tier, and no proof any host could verify carries one
 - Every `@e2e` proof describes an observable flow (arrange → act → observe through the real running app) and does not name a source file or internal function, per `references/spec_quality_guide.md` ("E2E proof descriptions") — rewrite as a boundary observation or retag if not
 - All `> Scope:` file paths exist on disk
 - **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`

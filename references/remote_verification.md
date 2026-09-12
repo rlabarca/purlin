@@ -323,10 +323,13 @@ required and why `purlin:test` never amends or re-commits a file a runner commit
 Both quality gauges are **per-machine**. A CI run starts with no cache and reports both as
 unmeasured, which is honest but not useful. Two recommendations:
 
-- **Proof Design is deterministic and free.** It grades proof *descriptions*, needs no test code,
-  and costs no LLM calls. CI can recompute it from scratch on every run and publish the result as a
-  job artifact. That gives the project one authoritative Design figure rather than a different one
-  per clone.
+- **Pass D1 is deterministic; Pass D2 is an LLM pass.** Proof Design grades proof *descriptions*
+  and needs no test code, but only its first half is free: D1 is the grep-and-parse grading,
+  reproducible on any machine with no model call, and D2 is the judgement about whether a
+  description matches its rule, which is a model reading prose. CI can recompute D1 from scratch on
+  every run and publish the result as a job artifact, which gives the project one authoritative
+  figure for that half rather than a different one per clone; budget for D2 the way you budget for
+  Integrity.
 - **Proof Integrity costs LLM calls.** Recompute it in CI only where `audit_llm` is configured, and
   publish it as an artifact rather than committing it. Committing a cache would make a gauge that
   is advisory by design look like a tracked contract.

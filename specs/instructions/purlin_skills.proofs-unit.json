@@ -105,7 +105,7 @@
       "id": "PROOF-12",
       "rule": "RULE-12",
       "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_proof_writing_skills_have_tier_review",
+      "test_name": "test_proof_writing_skills_review_both_the_tier_and_the_platform",
       "status": "pass",
       "tier": "unit"
     },

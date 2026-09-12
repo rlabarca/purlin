@@ -72,7 +72,15 @@ Each RULE must have at least one PROOF — both own rules AND required rules. Fo
 
 # Required rule from api_rest_conventions — uses THE ANCHOR's name
 @pytest.mark.proof("api_rest_conventions", "PROOF-1", "RULE-1")
+
+# A proof the spec declared @on(...): the marker carries the same ids
+@pytest.mark.proof("login", "PROOF-9", "RULE-9", tier="unit", platforms=("windows-2022",))
 ```
+
+The `platforms=` argument mirrors the spec's `@on(...)` tag and is what sends the result to
+`login.proofs-unit@<platform>.json` instead of the plain tier file. The marker decides: a marker
+with no `platforms=` writes the agnostic file whatever `PURLIN_PLATFORM` says. Every plugin has
+the same argument under its own syntax; see `references/formats/proofs_format.md`.
 
 **Tier review (mandatory before running tests):**
 Review every proof marker just written. Apply tier heuristics from `references/spec_quality_guide.md`:
@@ -82,6 +90,11 @@ Review every proof marker just written. Apply tier heuristics from `references/s
 - Pure logic/in-memory → unit (no tag)
 
 If ANY proof marker is missing a tier tag and the test clearly isn't unit tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
+
+**Platform review (same pass):** if the spec's proof description carries `@on(<id>, ...)`, the
+marker must carry `platforms=` with exactly those ids. A declared platform with no matching
+marker means the run writes an agnostic file that satisfies nothing, and the proof reads AWAITING
+RUNNER forever.
 
 **Mutation check (branches on `mutation_checks` in `.purlin/config.json`):**
 
@@ -115,7 +128,7 @@ The iteration loop is: **write code → write tests → run `purlin:test` → re
 purlin:test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
 ```
 
-`purlin:test` is the single owner of test execution: **never invoke a test runner directly from this skill** (no `pytest`, no `npx jest`, no `bash dev/*.sh`). Delegate to `purlin:test` and read its output. It handles test framework detection, tier classification, proof file emission, freshness checks, remote execution of runner-gated tiers, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:test` and follow any `→` directives for uncovered rules.
+`purlin:test` is the single owner of test execution: **never invoke a test runner directly from this skill** (no `pytest`, no `npx jest`, no `bash dev/*.sh`). Delegate to `purlin:test` and read its output. It handles test framework detection, tier classification, proof file emission, freshness checks, remote execution for platforms this host does not satisfy, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:test` and follow any `→` directives for uncovered rules.
 
 **When a test fails, diagnose the root cause before fixing:**
 1. Read the failing assertion — what did the test expect vs what did it get?

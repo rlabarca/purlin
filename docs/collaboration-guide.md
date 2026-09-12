@@ -98,10 +98,14 @@ Select **warn**: the hook blocks only on FAILING proofs. Partial coverage (rules
 |----------|---------|
 | `specs/**/*.md` | The rules — what the code must do |
 | `specs/**/*.proofs-*.json` | Test results — which rules are proved |
+| `specs/**/*.proofs-*@<platform>.json` | Test results from one named platform, committed by whoever ran there |
 | `specs/**/*.receipt.json` | Verification receipts — certified completeness |
-| `.purlin/config.json` | Team settings (test framework, pre-push mode) |
+| `.purlin/config.json` | Team settings (test framework, pre-push mode, the `platforms` registry) |
+| `.purlin/report-data.js` | The derived numbers the dashboard reads |
 
-Quality-gauge results are NOT shared: `.purlin/cache/` is gitignored, so Proof Design and Proof Integrity are per-machine and recomputed by whoever runs `purlin:audit`. The proof *descriptions* they grade do travel, in `specs/**/*.md`.
+Platform-scoped proof files travel like any other proof file, and they are how a result from a machine you do not have reaches you: a `windows-2022` runner commits `<feature>.proofs-unit@windows-2022.json` with a `Purlin-Runner:` trailer, and your checkout reads it as evidence for that platform without ever running Windows. Your local run never rewrites it, because a run only writes the scope it ran in.
+
+`.purlin/report-data.js` travels too, and it carries derived numbers rather than evidence: coverage, both gauge summaries and the per-platform roll-up, regenerated on every `purlin:status`. Read it as a cached view, not as a source. Caches do not travel: `.purlin/cache/` is gitignored, so Proof Design and Proof Integrity grades are per-machine and recomputed by whoever runs `purlin:audit`. The proof *descriptions* they grade do travel, in `specs/**/*.md`.
 
 The next person runs `purlin:status` to see the current state, `purlin:drift` to see what changed, and `purlin:audit` to recompute the quality gauges locally, then picks up where you left off.
 
@@ -114,3 +118,5 @@ Proof files (`.proofs-*.json`) are generated from test results, not hand-written
 3. Commit the regenerated file.
 
 This works because the merge is write-scoped: re-running a test file rewrites only that file's entries for that feature and tier. Re-run every suite that writes the conflicting tier file, not just one, or the suites you skip keep whatever the merge inherited.
+
+**Never hand-merge a platform-scoped file.** A conflict in `<feature>.proofs-unit@windows-2022.json` is two machines reporting on the same platform, and the only honest fix is a run on that platform: take either side, then re-run there (`PURLIN_PLATFORM=windows-2022` locally, or dispatch the runner through `purlin:test`) and commit what it writes. Editing the JSON by hand produces a result no run ever produced, which is the one thing a proof file must never contain.

@@ -56,7 +56,7 @@ UNTESTED  →  PARTIAL  →  PASSING  →  VERIFIED
 | **UNTESTED** | No proofs exist for this feature. Zero tests reference its rules. | Write tests with proof markers: `test <feature>` |
 | **PARTIAL** | Some rules have passing proofs, but not all. No proofs are failing. | Write tests for the remaining rules. Coverage shows `proved/total` (e.g., 3/5). |
 | **PASSING** | **All** rules have passing proofs. Ready for verification. | Run `purlin:verify` to issue a receipt and move to VERIFIED. |
-| **VERIFIED** | All rules proved + a verification receipt has been issued. The receipt contains a tamper-evident `vhash`. | No action needed. If code changes, the receipt becomes stale and status drops back. |
+| **VERIFIED** | All rules proved + a verification receipt has been issued. The receipt's `vhash` binds the rule text, the proofs and their platforms, so it stops matching as soon as any of those move. | No action needed. If code changes, the receipt becomes stale and status drops back. |
 | **FAILING** | At least one proof exists but its test is failing. | Fix the failing test or the code it tests. This blocks progress. |
 
 ### How anchors affect status

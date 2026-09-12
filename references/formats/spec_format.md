@@ -144,7 +144,7 @@ A tier says what kind of test a proof is. A platform tag says where it must be p
 
 A proof with no `@on` is platform-agnostic: any host's result satisfies it. A proof with `@on` is satisfied only by a result from each platform it names; `@on` alone (no tier tag) means `@unit`. Platform ids resolve against the `platforms` registry in `.purlin/config.json`; the family ids `windows`, `macos` and `linux` are always available. An id is `[a-z0-9][a-z0-9-]*` (it becomes a proof filename, a workflow name and an environment value); an id with a dot, an underscore or an upper-case letter is dropped with a `sync_status` warning.
 
-A tag is recognised only when it does not follow a list connector (`,`, `and`, `or`), so a description whose prose ends in `@integration, @e2e, and @windows` has no tag and is not truncated.
+A tag is recognised only when it does not follow a list connector (`,`, `and`, `or`), so a description whose prose ends in `@unit, @integration, and @e2e` has no tag and is not truncated.
 
 Legacy: a bare `@windows` tier is still read, as `@unit @on(windows)`, with the warning `@windows is a platform, not a tier: write @unit @on(windows)`. Rewrite it; the alias lasts one release. `@on` on a `@manual` proof is ignored with a warning: a human stamp is not a platform result.
 

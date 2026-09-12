@@ -56,7 +56,7 @@ Config template fields (from `templates/config.json`), plus the optional `platfo
 | `test_framework` | `"auto"` | Detected test framework(s) |
 | `spec_dir` | `"specs"` | Directory containing specs |
 | `pre_push` | `"warn"` | Pre-push hook mode (`warn`, `strict` or `off`); any other value blocks every push |
-| `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` discovers a runner-gated proof |
+| `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` finds a proof declared `@on(<platform-id>)` for a platform this host does not satisfy |
 | `mutation_checks` | `false` | Whether every new or amended proof is mutation-checked before the commit that carries it (Step 7d). Asked, never defaulted silently; what the check is worth and what it costs is stated once in `references/spec_quality_guide.md` § Mutation check |
 | `report` | `true` | HTML dashboard report generation |
 | `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |

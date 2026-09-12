@@ -13,8 +13,8 @@ Purlin does not satisfy FDA 21 CFR Part 11, HIPAA, SOC2, or similar regulatory f
 ## What Purlin Is NOT
 
 - **Not a QMS.** Purlin does not manage document control, change control, or approval workflows.
-- **Not a signature system.** `@manual` stamps and `git config user.email` are developer conveniences, not legally binding electronic signatures. GPG-signed commits prove key possession, not identity or intent.
-- **Not tamper-proof.** Everything Purlin produces lives in the git repository, which is mutable. `git push --force` can erase any receipt.
+- **Not a signature system.** `@manual` stamps and `git config user.email` are developer conveniences, not legally binding electronic signatures. GPG-signed commits prove key possession, not identity or intent. Nothing Purlin issues is signed verification: the `vhash` is a change detector, not a token, and no key is involved anywhere in it.
+- **Not tamper-evident.** Everything Purlin produces lives in the git repository, which is mutable. `git push --force` can erase any receipt, and a receipt rewritten in place reads exactly like one that was earned.
 - **Not an audit trail.** Git history is a development log, not an immutable compliance record.
 - **Not a test quality gate.** Purlin proves that a test executed and passed. It does not prove that the test contains meaningful assertions. An AI agent can write `assert True` and produce a valid proof. The two quality gauges measure exactly this and are worth recording in your QMS evidence, but note that they are advisory scores rather than gates — neither blocks a receipt. Regulated teams must still enforce independent human review of test logic (e.g., via CODEOWNERS or QMS-managed test approval) before accepting proof artifacts.
 
@@ -36,15 +36,7 @@ These artifacts are **inputs to your compliance pipeline**, not the pipeline its
 
 ### Purlin's enforcement layers
 
-Purlin's pre-push hook is the built-in enforcement layer. CI and deploy gates are integration patterns you configure:
-
-| Layer | Trust level | What it catches |
-|-------|------------|----------------|
-| **Layer 1: Git pre-push hook** | Low — local, bypassable with `--no-verify` | Developer mistakes (broken proofs before they reach remote) |
-| **Layer 2: CI pipeline** | Medium — remote, configured by team | Code that doesn't pass tiered proof checks |
-| **Layer 3: Deploy gate (`purlin:verify --recheck`)** | Higher — clean-room re-execution | Tampered proof files, weakened tests, stale receipts |
-
-**For regulated environments, Layer 3 is required but not sufficient.** The `--recheck` re-execution proves the tests pass in CI, but it doesn't prove the tests are meaningful (see "Not a test quality gate" above). Your QMS must independently verify test quality.
+Purlin's one gate is skill logic; the pre-push hook, your CI test run and the required CI gate job are the layers above it, and each is described once in [references/hard_gates.md](../references/hard_gates.md), "Enforcement Layers". For regulated environments no layer there is sufficient on its own: every one of them proves that tests ran and passed, and none proves the tests are meaningful (see "Not a test quality gate" above), so your QMS must independently verify test quality.
 
 ---
 
@@ -76,7 +68,7 @@ Developer / AI Agent
 
 3. **Audit trail lives outside git.** Verification receipts are ingested into an immutable external ledger. Git history is a convenient view, not the compliance record.
 
-4. **Test lock hashes live outside the repo.** Approved test hashes are stored in the external QMS or compliance ledger, not in `.test-lock.json` inside the repo where the agent can modify them.
+4. **Test lock hashes live outside the repo.** Approved test hashes are stored in the external QMS or compliance ledger, never in a file inside the repo where the agent can modify them. Purlin ships no such file and reads none: the registry in the diagram above is something your compliance infrastructure owns.
 
 ---
 
@@ -90,7 +82,34 @@ Purlin's `RULE-N` lines in specs and `PROOF-N` entries in proof files create a m
 
 ### Verification Evidence
 
-The `vhash` in verification receipts is a deterministic hash of rule IDs + proof statuses. Your CI pipeline can use the `vhash` to verify that the developer's local state matches the CI environment, before the CI runner executes its own clean-room verification to submit to the QMS. The local `vhash` is evidence that the developer ran the tests — the CI `purlin:verify --recheck` run is the evidence that the tests pass in a trusted environment.
+Your CI pipeline can compare the `vhash` in a committed receipt against the one it recomputes, to see whether the developer's local state matches what CI reads, before the CI runner executes its own clean-room verification to submit to the QMS. The local `vhash` is evidence that the developer ran the tests. The CI `purlin:verify --recheck` run is the evidence that the tests pass in a trusted environment. Be precise about what the number carries; the contract is `references/formats/receipt_format.md`.
+
+#### What the vhash binds
+
+Version 2 of the receipt hashes these fields, `\x00`-separated so no value can be forged across a boundary:
+
+| Bound | Why it is in the hash |
+|---|---|
+| The **rule text** of every active rule, whitespace-normalised | Rewording a rule after it was proved changes the hash, so the receipt goes stale instead of silently covering the new wording |
+| The **feature** each proof belongs to | `PROOF-1` under an anchor and `PROOF-1` under a feature are different claims |
+| The **proof id** and the **rule** it proves | Re-pointing a proof at a different rule changes the hash |
+| The proof's **status** | A `fail` that later reads `pass` is a different receipt |
+| The proof's **tier** | A rule proved only at `unit` is not one proved at `e2e` |
+| The proof's **platform** | A result from `windows-2022` and one from `macos-14` are separate evidence, and an `@on` proof binds the platform it was proved on |
+| The proof's **test file** and **test name** | Pointing a proof at a different test changes the hash, so the receipt names the test it was earned by |
+| Every counted **manual stamp**: feature, proof id, rule, email, date and commit | A stamp that moves, changes hands or is re-dated changes the hash |
+
+#### What it does not bind
+
+| Not bound | Consequence |
+|---|---|
+| The **content of the test code** | The named test can be rewritten to `assert True` and the hash does not move. Only the two quality gauges and human review look inside a test |
+| **Who ran it** | The receipt records a git author and a `Purlin-Runner:` trailer where a runner committed one. Neither is authenticated |
+| **When it ran** | The receipt carries a timestamp the machine that wrote it supplied |
+| **That the test is meaningful** | See "Not a test quality gate" above. A passing proof is a claim about execution, never about relevance |
+| **The runner's honesty** | A remote result is trusted because the workflow file and the branch protection around it are trusted, not because anything in the receipt proves where the bytes came from |
+
+A vhash is a change detector. It answers "is this receipt still about the code and rules in front of me?" and nothing else.
 
 ### Human Approval Workflow
 
@@ -118,7 +137,7 @@ The compliance team owns and versions the additional criteria file. Built-in Pur
 
 The pin is enforced rather than recorded. Every audit reads that header and compares it to `audit_criteria_pinned`; if the cached file is missing, carries no header, or names a different commit, the audit stops and prints why. There is no fall back to the built-in criteria, because a project graded against a standard it did not pin reads exactly like one graded correctly.
 
-This addresses the "test quality gate" concern: the audit pipeline (proof-description grading → structural defects → semantic alignment) deterministically catches unprovable proof descriptions and tautological tests, and separates out structural checks, before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
+This addresses the "test quality gate" concern: the audit pipeline (proof-description grading → structural defects → semantic alignment) catches unprovable proof descriptions and tautological tests, and separates out structural checks, before the LLM evaluates anything. Be exact about which half is which: Pass D1 is deterministic; Pass D2 is an LLM pass. D1 is the grep-and-parse grading of a proof description, reproducible on any machine with no model call, and D2 is the judgement about whether the description matches the rule, which is a model reading prose. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 
 For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin experimentally supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the implementer. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's. This feature is experimental — external LLM response formats vary and may require iteration.
 

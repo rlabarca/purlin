@@ -222,58 +222,91 @@ Runs ALL tests (every tier), issues receipts for features with 100% coverage.
 
 ## Enforcement
 
-| Layer | What it does | Blocks on | Setup |
-|-------|-------------|-----------|-------|
-| **Pre-push hook** | Runs unit tests before push | FAILING proofs | Automatic (`purlin:init`) |
-| **CI pipeline** | Runs tiered tests per trigger | FAILING + coverage gates | You write it |
-| **Deploy gate** | Clean-room verification | vhash mismatch | You write it |
-
-### Pre-push hook
-
-Two modes (set via `purlin:init --pre-push`):
-
-- **warn** (default) — blocks FAILING proofs, allows partial coverage with a warning
-- **strict** — blocks anything not VERIFIED
+The pre-push hook, your own CI test run and the CI gate job branch protection marks required are layers on top of `purlin:verify`'s coverage gate. What each one blocks, who can turn it off and why `purlin:verify --recheck` is not one of them is described once, in [references/hard_gates.md](../references/hard_gates.md), "Enforcement Layers". What follows is the pipeline you paste into a workflow file.
 
 ### CI pipeline
 
-Purlin doesn't ship pipeline configs — you write them. Example (GitHub Actions):
+Purlin ships no pipeline configs; you write them. A CI job that runs your tests and then reads the result is two steps. Example (GitHub Actions):
 
 ```yaml
-on:
-  pull_request:        # PRs: unit + integration tiers
-  push:
-    branches: [main]   # main: all tiers
+on: [push, pull_request]
 
 jobs:
   proofs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -r requirements.txt
-      - if: github.event_name == 'pull_request'
-        run: pytest -m "not e2e"
-      - if: github.event_name == 'push'
-        run: pytest
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Purlin tooling
+        run: |
+          # Pin the tag: substitute the version you installed, e.g. v0.10.0.
+          git clone --depth 1 --branch v<VERSION> \
+            https://github.com/rlabarca/purlin.git "$RUNNER_TEMP/purlin"
+          echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"
+      - name: Run the tests
+        run: |
+          pip install -r requirements.txt
+          pytest
+      - name: Verification gate
+        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/ci/verify_gate.py" --check
 ```
 
-| Trigger | Tiers to run | Block on |
+`fetch-depth: 0` matters: the gate reads `git log` per proof file to report when each platform was last proved and by which runner, and a shallow clone has no history to read.
+
+Running every tier in the test step regenerates the proof files from the code as pushed, so the VERIFIED the gate then reads is a clean-room reading rather than a re-read of whatever the developer happened to commit. `verify_gate.py --check` exits 1 when a feature is not VERIFIED or is awaiting a runner, and exits 2 when the platform registry is unreadable; branch protection marking the job required is what makes the exit code matter.
+
+| Trigger | Tiers to run | Gate reads |
 |---------|-------------|----------|
 | PR / branch push | unit + `@integration` | Any FAIL |
-| Merge to main | All tiers | Any FAIL or partial coverage |
-| Nightly | `purlin:verify --recheck` | vhash mismatch |
+| Merge to main | All tiers | Any FAIL, partial coverage, or a platform awaiting a runner |
 
-### Deploy gate
+## Platforms
 
-`purlin:verify --recheck` is a clean-room re-execution: re-runs every test, recomputes vhash, and compares against committed receipts.
+A tier says what kind of test a proof is. A platform says where it has to run. A proof names its platforms with a trailing `@on(...)` tag beside its tier:
 
-```yaml
-- name: Deploy Gate
-  run: |
-    # Run purlin:verify --recheck via Claude Code in CI
-    # This re-runs all tests (all tiers) and validates vhash against committed receipts
-    pytest
 ```
+- PROOF-53 (RULE-29): the msvcrt path locks a file another process cannot open @unit @on(windows-2022)
+- PROOF-54 (RULE-30): the default console codec round-trips a non-ASCII path @unit @on(windows-2022, macos-14)
+```
+
+### The registry
+
+Ids resolve against an optional `platforms` object in `.purlin/config.json`. Three family ids are built in and need no config at all: `windows`, `macos` and `linux`. A project writes an entry to pin a version, an architecture or a runner:
+
+```json
+{
+  "platforms": {
+    "windows-2022": {
+      "os": "windows",
+      "version": ">=10.0.20348",
+      "arch": "x86_64",
+      "runner": { "provider": "github", "runs_on": "windows-2022", "workflow": "purlin-windows-2022-proofs" }
+    },
+    "macos-14": { "os": "macos", "version": "14", "arch": "arm64" },
+    "figma-mcp": { "kind": "environment", "label": "a host with the Figma MCP server configured" }
+  }
+}
+```
+
+An id is `[a-z0-9][a-z0-9-]*`: it becomes a filename, a workflow name and an environment value. An entry with `kind: "environment"` names a tool rather than a host, carries no `os`, and is satisfied only by an explicit `PURLIN_PLATFORM` equal to its id, because nothing a machine reports about itself can show that a CLI or an MCP server answers there. A malformed entry is dropped and named in the `purlin:status` preamble rather than silently ignored.
+
+### `PURLIN_PLATFORM` and scoped proof files
+
+`PURLIN_PLATFORM` is the one input a run gives the proof plugins about where it is. When it is set, a marker that declares platforms writes `<feature>.proofs-<tier>@<that-id>.json`; when it is not, the plugin falls back to the detected OS family. A marker that declares no platforms always writes the plain `<feature>.proofs-<tier>.json`, whatever the variable says: the marker decides, the environment only names.
+
+Scoped files are ordinary committed evidence. They travel with the branch, they merge per platform, and a run on one platform never rewrites another platform's file.
+
+### What `purlin:test` does per platform
+
+For every declared id the host satisfies, it runs the suite locally with `PURLIN_PLATFORM=<id>` set. For every declared id the host does not satisfy, it looks at the registry entry: with a `github` runner it pushes the branch, dispatches that workflow, watches the run and pulls back the proof files the runner committed; with no runner, or a provider it cannot dispatch, it reports the platform as awaiting and says so. It offers, with your consent, to write the workflow file and the registry entry the first time.
+
+A proof declared on a platform nothing satisfies reads `AWAITING RUNNER` rather than `NO PROOF`. It warns and never blocks: it does not count against coverage, a receipt is still issued, and that receipt records the gap as platform-partial. Which is why declaring `@on(...)` on a test any host could run quietly removes it from the coverage denominator, and why Proof Design grades such a description LOOSE.
+
+The workflow template, both commit trailers (`Purlin-Runner:` and `Purlin-Platform:`) and the loop guards are in [references/remote_verification.md](../references/remote_verification.md). When the plugin moves under a project that still carries legacy `@windows` tags or `proofs-windows.json` files, `purlin:init --update` rewrites them to `@unit @on(<id>)` and renames the files.
 
 ---
 

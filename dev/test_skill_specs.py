@@ -1600,7 +1600,8 @@ class TestSkillVerify:
                         '## Rules\n- RULE-1: POSIX\n- RULE-2: Windows\n\n'
                         '## Proof\n'
                         '- PROOF-1 (RULE-1): fcntl locks @unit\n'
-                        '- PROOF-2 (RULE-2): msvcrt locks on a real windows runner @windows\n')
+                        '- PROOF-2 (RULE-2): msvcrt locks on a real windows runner '
+                        '@unit @on(windows-2022)\n')
             with open(os.path.join(spec_dir, 'plain.md'), 'w') as f:
                 f.write('# Feature: plain\n\n## What it does\nP.\n\n'
                         '## Rules\n- RULE-1: A\n\n'
@@ -1617,10 +1618,12 @@ class TestSkillVerify:
             features = ps._scan_specs(tmp)
             all_proofs = ps._read_proofs(tmp)
 
-            registry, _ = ps._platform_registry({})
+            registry, errors = ps._platform_registry(
+                {'platforms': {'windows-2022': {'os': 'windows'}}})
+            assert errors == [], errors
             awaiting = ps._awaiting_runner('locking', features['locking'], all_proofs,
                                            registry)
-            assert awaiting == [('PROOF-2', 'unit', 'windows')], awaiting
+            assert awaiting == [('PROOF-2', 'unit', 'windows-2022')], awaiting
             assert ps._awaiting_runner('plain', features['plain'], all_proofs,
                                        registry) == []
 

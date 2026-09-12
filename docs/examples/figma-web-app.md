@@ -162,18 +162,40 @@ In 5 messages:
 
 The design anchor ensures every feature that requires it proves the visual match via screenshot comparison. Behavioral requirements live in the feature spec. If a designer updates the Figma file, run `purlin:anchor sync` -- `purlin:status` shows which proofs are stale.
 
-## Later: Checking a Deployed Version
+## Later: Checking It in CI
 
-In CI:
+A skill is something you invoke in a Claude Code session; a workflow cannot call one. What CI runs is your test command, and then the gate that reads the result:
 
 ```yaml
-on: deploy
-  - run: purlin:anchor sync --check-only  # fail if design changed
-  - run: purlin:verify --recheck             # re-run all tests from scratch
+on: [push, pull_request]
+
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Purlin tooling
+        run: |
+          # Pin the tag: substitute the version you installed, e.g. v0.10.0.
+          git clone --depth 1 --branch v<VERSION> \
+            https://github.com/rlabarca/purlin.git "$RUNNER_TEMP/purlin"
+          echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"
+      - name: Run the tests
+        run: |
+          npm ci
+          npx jest
+      - name: Verification gate
+        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/ci/verify_gate.py" --check
 ```
 
 ```
-Clean-room re-execution: all tests pass.
-vhash MATCH -- CI independently confirms verification.
-Deploy approved.
+Verification gate: 4 features, 4 VERIFIED.
+Every rule has a passing proof and a current receipt.
 ```
+
+Running the whole suite in the test step regenerates the proof files from the code as pushed, so what the gate reads is a clean-room result rather than whatever was committed. `fetch-depth: 0` is required: the gate reads `git log` per proof file. To catch a design change, keep the Figma anchor's `> Pinned:` SHA under the same check by running `purlin:anchor sync` in a session and pushing the result; `purlin:status` reports a stale anchor and the gate refuses a feature whose anchor rule is no longer proved.

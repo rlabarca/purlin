@@ -119,7 +119,7 @@ class TestPurlinSkills:
                 f"spec skill missing '{keyword}' in delta report structure"
 
     @pytest.mark.proof("purlin_skills", "PROOF-12", "RULE-12")
-    def test_proof_writing_skills_have_tier_review(self):
+    def test_proof_writing_skills_review_both_the_tier_and_the_platform(self):
         for skill in ('build', 'spec', 'spec-from-code'):
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
@@ -129,6 +129,18 @@ class TestPurlinSkills:
             # Must also reference the actual tier tags
             assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
                 f"{skill} skill missing tier tag references (@integration/@e2e/unit)"
+            # A tier is not a platform. The same pass must review @on(...).
+            assert re.search(r'(?i)platform[ -]tag review|platform review',
+                             content), \
+                (f"{skill} skill has no platform review step; a tier says what "
+                 f"kind of test a proof is, never where it must run")
+            assert '@on(' in content or 'platforms=' in content, \
+                (f"{skill} skill never names the platform tag it is supposed "
+                 f"to review")
+            assert re.search(r'(?i)(coverage\s+denominator|AWAITING\s+RUNNER)',
+                             content), \
+                (f"{skill} skill states no consequence for a stray @on(...); "
+                 f"without it the review has no bar to apply")
 
     @pytest.mark.proof("purlin_skills", "PROOF-13", "RULE-13")
     def test_init_add_plugin_validates_by_language(self):

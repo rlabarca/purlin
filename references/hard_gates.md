@@ -38,18 +38,25 @@ installs no `PreToolUse`, `PostToolUse` or `Stop` handler. So every **NEVER** in
 is an instruction to the agent, not a mechanism that stops it. An agent that ignores one is not
 blocked by anything inside this repository.
 
-The controls that survive an agent ignoring an instruction are the enforcement layers below it,
-each of which runs outside the agent's turn:
+The controls that survive an agent ignoring an instruction run outside the agent's turn: the
+proof-coverage gate inside `purlin:verify`, the pre-push hook, the CI gate job
+(`scripts/ci/verify_gate.py --check`), and Branch protection making that job required. Read the
+**NEVER** list as the agent's contract and "Enforcement Layers" below as what holds when the
+contract is broken.
 
-| Layer | Where it runs | What an ignoring agent cannot do |
+## Enforcement Layers
+
+This is the project's only enforcement-layer table. `docs/regulated-environments.md`,
+`docs/lifecycle-guide.md` and `docs/testing-workflow-guide.md` link here instead of carrying a
+copy, because three copies drifted into three different answers about what blocks a push.
+
+| Layer | Where it runs | What it blocks |
 |---|---|---|
-| The proof-coverage gate | `purlin:verify`'s issuer | write a receipt for a rule with no passing proof |
-| The pre-push hook | `git push`, on the developer's machine | push past a `strict` gate result |
-| CI (`scripts/ci/verify_gate.py --check`) | the forge, on a branch the agent cannot configure | turn a required check green |
-| Branch protection | the forge's settings | merge without that check |
-
-Read the **NEVER** list as the agent's contract and this table as what holds when the contract is
-broken. `docs/regulated-environments.md` is where the layers are described in full.
+| **Layer 0: skill logic** | inside `purlin:verify`, in the developer's session | a receipt for any feature with a rule that has no passing proof. This is Gate 1 above, the framework's one gate, and nobody can turn it off: it is how the skill works. Every layer below it is something a project configures for itself |
+| **Layer 1: git pre-push hook** | `git push`, on the developer's machine | in `warn`, a FAILING proof; in `strict`, anything not VERIFIED; in `off`, nothing at all, and it prints one line saying so. The developer sets the mode with `purlin:init --pre-push` and can bypass any mode with `--no-verify`. Caveat worth knowing before you rely on it: when the hook cannot resolve the plugin root it has no evidence to read, so it prints a WARNING and allows the push in `warn` and exits 1 in `strict`, rather than reporting a pass it did not earn |
+| **Layer 2: your CI test run** | the forge, on the triggers your workflow declares | whatever your own test job blocks on. Purlin ships no pipeline config; you write it. Running every tier here regenerates the proof files from the code as pushed, which is what makes Layer 3 a clean-room reading rather than a re-read of what the developer committed |
+| **Layer 3: `scripts/ci/verify_gate.py --check`** | the forge, as a job branch protection marks required | a merge while any feature is not VERIFIED or is awaiting a runner. `.purlin/config.json`'s `remote_verification` field **declares** which bar the project holds itself to; branch protection is what **enforces** it, because the field is a file in the tree the agent can edit |
+| **Not a layer: `purlin:verify --recheck`** | a Claude Code session, on a developer's machine | nothing. It is a local clean-room re-run that re-executes the tests and compares the recomputed vhash against the committed receipts. No workflow can invoke a skill, so it is a check you choose to run, never a gate that runs on you |
 
 ## Project Policy Is Not a Framework Gate
 

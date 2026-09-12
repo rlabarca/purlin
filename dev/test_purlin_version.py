@@ -1,4 +1,4 @@
-"""Tests for purlin_version — 8 rules.
+"""Tests for purlin_version — 9 rules.
 
 Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
@@ -324,3 +324,40 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
                 assert 'VERSION' in ln, \
                     (f"{rel} `version` row does not reference the VERSION file: "
                      f"{ln.strip()!r}")
+
+
+class TestReleaseNotesCounts:
+    """RULE-9 - the Unreleased counts are checked against the run marker, not
+    against the memory of whoever wrote them."""
+
+    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9")
+    def test_unreleased_counts_match_the_recorded_run(self):
+        import json as _json
+        import re as _re
+
+        notes_path = os.path.join(PROJECT_ROOT, 'RELEASE_NOTES.md')
+        with open(notes_path, encoding='utf-8') as f:
+            notes = f.read()
+        assert '## Unreleased' in notes, "RELEASE_NOTES.md has no Unreleased section"
+        section = notes.split('## Unreleased', 1)[1]
+        section = _re.split(r'^## ', section, maxsplit=1, flags=_re.MULTILINE)[0]
+        hits = _re.findall(r'(\d+) passed, (\d+) skipped', section)
+        assert len(hits) == 1, (
+            f"the Unreleased section must state the sweep counts exactly once "
+            f"as 'N passed, M skipped'; found {len(hits)}: {hits}")
+        passed, skipped = int(hits[0][0]), int(hits[0][1])
+
+        marker_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                   'test_run.json')
+        if not os.path.isfile(marker_path):
+            pytest.skip(
+                f"no run marker at {marker_path}; run `bash dev/run_tests.sh` "
+                f"to record one, then the notes can be checked against it")
+        with open(marker_path, encoding='utf-8') as f:
+            marker = _json.load(f)
+        assert passed == marker.get('passed'), (
+            f"RELEASE_NOTES.md Unreleased says {passed} passed; the recorded "
+            f"run says {marker.get('passed')}")
+        assert skipped == marker.get('skipped'), (
+            f"RELEASE_NOTES.md Unreleased says {skipped} skipped; the recorded "
+            f"run says {marker.get('skipped')}")
