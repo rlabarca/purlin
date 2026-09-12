@@ -1423,6 +1423,107 @@ Watch: the Verified card reads 40 not 41 whenever the windows-2022 result file i
 that is the intended honesty and the sub-label says why. `pre-push.sh` drops `PASSING*` from its
 informational list until Phase 9 moves it to the payload; its gate list is unaffected.
 
+## DONE — Phase 8: per-platform reporting (five commits, each followed by a sweep, `python3 dev/issue_receipts.py` and its own `verify:` commit)
+
+- **Commits, in order.** `cc0b99ec` feat(report_data,sync_status) 8.1, `58351175` verify 205d517d;
+  `8cba0466` feat(sync_status) 8.2 server, `a3bc7d48` verify da6f5d48; `98589567`
+  feat(purlin_report,dashboard_visual) 8.3, `cefbc9d7` verify 923143e4; `4ebfb980`
+  docs(skill_status) 8.2 skill, `62eb2d83` verify 6256b2ef; `7bb6cba3` docs 8.4 with the three
+  screenshots, and the closing `verify:` carrying this section.
+- **Numbers taken (landing order).** `report_data` RULE-4/5/8/29/31/32 amended, RULE-35 (honest
+  VERIFIED and `platform_complete`), RULE-36 (`platforms.summary` rows and per-platform
+  Integrity) and RULE-37 (every key present) new with PROOF-36/37/38; PROOF-4/5/8/22/30/32/33
+  updated; next free RULE-38/PROOF-39. `sync_status` RULE-18/35/40/47/48/53 amended, RULE-56
+  (per-platform Integrity), RULE-57 (Platforms line grammar) and RULE-58 (detail lines and the
+  bound) new with PROOF-90..95; PROOF-79/80/86/87 updated; next free RULE-59/PROOF-96.
+  `purlin_report` RULE-3/4/14/36/38/39 amended, RULE-41 (the one modal helper), RULE-42 (which
+  cards open it) and RULE-43 (colour by meaning) new with PROOF-43..47; next free
+  RULE-44/PROOF-48. `dashboard_visual` RULE-12 new with PROOF-12; next free RULE-13/PROOF-13.
+  `skill_status` RULE-6 amended, RULE-9/10 new with PROOF-9/10 and PROOF-6 extended; next free
+  RULE-11/PROOF-11. `pre_push_hook` RULE-8 amended with PROOF-27 extended (below).
+  `verify_gate` PROOF-4 and `skill_test` PROOF-9 updated for the new vocabulary and line text.
+- **The reconciliation, as built.** Every in-memory entry already carried `platform` from
+  `_read_proofs`, so nothing moved there. `_feature_platform_records` became `_platform_records`
+  with the record shape `{declared, proved, failed[], awaiting[], status, receipted, provenance}`
+  over `_platform_status`, whose four-word return set (FAILING | AWAITING | PASSING | VERIFIED)
+  is asserted by AST. `_platform_summary` and `_platform_integrity` are new; `_host_id` resolves
+  `PURLIN_PLATFORM`, else a satisfied registry id preferring a project-registered one over its
+  family, else `unregistered`. `_determine_status` gained `platform_complete` and all five call
+  sites pass it, `_report_feature`'s header ternary included, which PROOF-91 pins by asserting
+  the function contains no `VERIFIED` literal at all.
+- **Deviation, recorded: `platforms.summary` carries no host row unless some proof declares the
+  host.** The phase text says "summary rows only for platforms some proof declares" and also that
+  agnostic results belong to the host for per-platform Integrity. Both hold only when the host is
+  itself declared, which it is not in this repository. The rule is written the literal way: rows
+  exist for declared platforms only, and the host owns the agnostic entries when it is one of
+  them. The consequence here is that the Integrity modal reports windows-2022 over its 2 entries
+  and says nothing about the ~740 agnostic ones, which is honest but thin; a host row for an
+  undeclared host is a candidate for a later phase if the modal proves hard to read.
+- **A defect Phase 8 created and closed in the same commit.** Phase 9's strict pre-push gate
+  blocks every non-VERIFIED non-anchor feature, so the honest VERIFIED of 8.1 would have let an
+  awaiting platform block a push by another route, which `pre_push_hook` RULE-8 already forbade
+  in both modes. The gate now exempts a feature held at PASSING with a current receipt, prints
+  `<feature>: PASSING (N/N rules proved, awaiting a declared platform); not blocked, the platform
+  has not run yet` in every mode including strict, and PROOF-27 gained a control project with
+  nothing awaiting that still exits 1.
+- **This repository's real output.** Nothing is held here: the only declared platform is
+  `windows-2022` and the runner has proved it, so no row carries the `*` marker and no legend
+  line prints. The Platforms line reads
+
+      Platforms (host: macos): windows-2022 1/1 verified, Integrity 0% (0 of 2 measured), proved 1 hour ago (github-actions/windows-2022)
+
+  and `static_checks` reads
+
+      static_checks: VERIFIED
+        35/35 rules proved ✓
+        vhash=8f25adfe
+        ✓ windows-2022: 2/2 proved remotely 1 hour ago (github-actions/windows-2022)
+
+  `Integrity 0% (0 of 2 measured)` is RULE-46 weighting over an empty audit cache, not a defect.
+  The RULE-52 `Platforms:` block still prints after the mode line; the two answer different
+  questions (where a platform can be proved from here, versus how much is proved there) and 8.2
+  placed the new line above the mode line rather than replacing the block.
+- **Pass D.** `--check-proof-design` on every edited spec: all sixteen new descriptions grade
+  PROVABLE except the ten `skill_status` ones, which grade STRUCTURAL, the only proof a rule
+  about committed prose can have. Zero UNPROVABLE and zero LOOSE among them; the LOOSE
+  descriptions that remain in `sync_status`, `report_data` and `purlin_report` are all older than
+  this phase.
+- **Em-dashes.** Two deliberate exceptions, both for internal consistency: the new
+  `## Step 3c — Platforms Line` heading matches its four sibling headings in
+  `skills/status/SKILL.md`, and the two new `docs/dashboard-guide.md` bullets match the eight
+  siblings in their list. Every other line of new prose has none, and the `— ` inside preserved
+  rule text is older than this phase.
+- **Mutations (30, each applied with `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` removed, its
+  proof run, restored; all caught).** 8.1: `_determine_status` ignoring `platform_complete`
+  (PROOF-36, PROOF-91); `_platform_status` ignoring `awaiting` (PROOF-33, PROOF-37);
+  per-platform Integrity computed over the whole project (PROOF-90); the per-proof `platform` key
+  dropped (PROOF-8, PROOF-22); awaiting proof objects not emitted (PROOF-22);
+  `held_by_platform` never computed (PROOF-36); a summary row for every registry id (PROOF-32/37/38);
+  `host_id` dropped (PROOF-32/38); the strict gate blocking a held feature (pre_push_hook PROOF-27).
+  8.2: the `*` marker and the legend dropped (PROOF-94); `status_width` ruled from the vocabulary
+  (PROOF-95); the Platforms line suppressed (PROOF-92); zero clauses printed (PROOF-92); the host
+  not sorted first (PROOF-93); the platform-partial receipt line dropped (PROOF-93); the directive
+  printed with nothing awaiting (PROOF-93); the failing form losing its proof ids (PROOF-93).
+  8.3: the overlay mounted in `#app` (PROOF-43); `render()` not closing the modal (PROOF-43);
+  cards clickable with `platform_testing` false (PROOF-44); Escape not closing (PROOF-44); Tab not
+  trapped (PROOF-44); the awaiting chip coloured green (PROOF-46, dashboard_visual PROOF-12); the
+  chip strip altering the badge (PROOF-46); the Verified sub-label always generic (PROOF-45); the
+  overlay hardcoding a hex tint (PROOF-43, PROOF-12); the Platforms block falling back to the tier
+  block (PROOF-47). 8.2 skill: the marker and legend removed from the sample (PROOF-6); the
+  Platforms step removed (PROOF-9); the AWAITING RUNNER definition removed and the Step 3b row
+  removed (PROOF-10).
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `739 passed, 27 skipped` (was
+  726/27; +13 are report_data PROOF-36/37/38, sync_status PROOF-90..95, purlin_report
+  PROOF-43..47 and dashboard_visual PROOF-12, less the two that landed inside existing tests).
+  Every sweep reaped `proof_plugins_php` PROOF-1/2 from
+  `proof_plugins_php.proofs-integration.json` (plan item 10.5c, a sibling agent's fix); the two
+  entries were restored from `git show HEAD:` before each commit.
+  `dashboard_visual` gained a `proofs-e2e.json` file for PROOF-12; its PROOF-1..11 keep emitting
+  at the unit tier, which is where their markers put them.
+- **Receipts: 39 of 41** at every step. `figma_web` and `skill_spec` stay witness-less until
+  Phase 10.6. `docs/` and `tools/QA/` are in no spec's Scope, so the 8.4 commit moved no vhash.
+- CLAUDE.md unchanged.
+
 ---
 
 ## Phase 9: the pre-push hook (`pre_push_hook`)
